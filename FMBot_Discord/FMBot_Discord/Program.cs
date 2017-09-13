@@ -118,7 +118,7 @@ namespace FMBot_Discord
     }
 
 
-    public class FMCommands : ModuleBase<SocketCommandContext>
+    public class FMCommands : ModuleBase
     {
         private string DBFileName = "database.txt";
         private string ConfigFileName = "config.json";
