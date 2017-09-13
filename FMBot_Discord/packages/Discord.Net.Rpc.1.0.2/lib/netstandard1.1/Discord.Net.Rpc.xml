@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Discord.Net.Rpc</name>
+    </assembly>
+    <members>
+        <member name="M:Discord.Rpc.DiscordRpcClient.#ctor(System.String,System.String)">
+            <summary> Creates a new RPC discord client. </summary>
+        </member>
+        <member name="M:Discord.Rpc.DiscordRpcClient.#ctor(System.String,System.String,Discord.Rpc.DiscordRpcConfig)">
+            <summary> Creates a new RPC discord client. </summary>
+        </member>
+        <member name="P:Discord.Rpc.DiscordRpcConfig.ConnectionTimeout">
+            <summary> Gets or sets the time, in milliseconds, to wait for a connection to complete before aborting. </summary>
+        </member>
+        <member name="P:Discord.Rpc.DiscordRpcConfig.WebSocketProvider">
+            <summary> Gets or sets the provider used to generate new websocket connections. </summary>
+        </member>
+    </members>
+</doc>

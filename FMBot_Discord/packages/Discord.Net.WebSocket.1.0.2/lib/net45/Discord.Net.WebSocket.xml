@@ -1,0 +1,270 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Discord.Net.WebSocket</name>
+    </assembly>
+    <members>
+        <member name="F:Discord.API.Gateway.GatewayOpCode.Dispatch">
+            <summary> C←S - Used to send most events. </summary>
+        </member>
+        <member name="F:Discord.API.Gateway.GatewayOpCode.Heartbeat">
+            <summary> C↔S - Used to keep the connection alive and measure latency. </summary>
+        </member>
+        <member name="F:Discord.API.Gateway.GatewayOpCode.Identify">
+            <summary> C→S - Used to associate a connection with a token and specify configuration. </summary>
+        </member>
+        <member name="F:Discord.API.Gateway.GatewayOpCode.StatusUpdate">
+            <summary> C→S - Used to update client's status and current game id. </summary>
+        </member>
+        <member name="F:Discord.API.Gateway.GatewayOpCode.VoiceStateUpdate">
+            <summary> C→S - Used to join a particular voice channel. </summary>
+        </member>
+        <member name="F:Discord.API.Gateway.GatewayOpCode.VoiceServerPing">
+            <summary> C→S - Used to ensure the guild's voice server is alive. </summary>
+        </member>
+        <member name="F:Discord.API.Gateway.GatewayOpCode.Resume">
+            <summary> C→S - Used to resume a connection after a redirect occurs. </summary>
+        </member>
+        <member name="F:Discord.API.Gateway.GatewayOpCode.Reconnect">
+            <summary> C←S - Used to notify a client that they must reconnect to another gateway. </summary>
+        </member>
+        <member name="F:Discord.API.Gateway.GatewayOpCode.RequestGuildMembers">
+            <summary> C→S - Used to request members that were withheld by large_threshold </summary>
+        </member>
+        <member name="F:Discord.API.Gateway.GatewayOpCode.InvalidSession">
+            <summary> C←S - Used to notify the client that their session has expired and cannot be resumed. </summary>
+        </member>
+        <member name="F:Discord.API.Gateway.GatewayOpCode.Hello">
+            <summary> C←S - Used to provide information to the client immediately on connection. </summary>
+        </member>
+        <member name="F:Discord.API.Gateway.GatewayOpCode.HeartbeatAck">
+            <summary> C←S - Used to reply to a client's heartbeat. </summary>
+        </member>
+        <member name="F:Discord.API.Gateway.GatewayOpCode.GuildSync">
+            <summary> C→S - Used to request presence updates from particular guilds. </summary>
+        </member>
+        <member name="F:Discord.API.Voice.VoiceOpCode.Identify">
+            <summary> C→S - Used to associate a connection with a token. </summary>
+        </member>
+        <member name="F:Discord.API.Voice.VoiceOpCode.SelectProtocol">
+            <summary> C→S - Used to specify configuration. </summary>
+        </member>
+        <member name="F:Discord.API.Voice.VoiceOpCode.Ready">
+            <summary> C←S - Used to notify that the voice connection was successful and informs the client of available protocols. </summary>
+        </member>
+        <member name="F:Discord.API.Voice.VoiceOpCode.Heartbeat">
+            <summary> C→S - Used to keep the connection alive and measure latency. </summary>
+        </member>
+        <member name="F:Discord.API.Voice.VoiceOpCode.HeartbeatAck">
+            <summary> C←S - Used to reply to a client's heartbeat. </summary>
+        </member>
+        <member name="F:Discord.API.Voice.VoiceOpCode.SessionDescription">
+            <summary> C←S - Used to provide an encryption key to the client. </summary>
+        </member>
+        <member name="F:Discord.API.Voice.VoiceOpCode.Speaking">
+            <summary> C↔S - Used to inform that a certain user is speaking. </summary>
+        </member>
+        <member name="M:Discord.Audio.AudioClient.#ctor(Discord.WebSocket.SocketGuild,System.Int32,System.UInt64)">
+            <summary> Creates a new REST/WebSocket discord client. </summary>
+        </member>
+        <member name="M:Discord.Audio.AudioClient.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="T:Discord.Audio.Streams.BufferedWriteStream">
+            <summary> Wraps another stream with a timed buffer. </summary>
+        </member>
+        <member name="T:Discord.Audio.Streams.InputStream">
+            <summary> Reads the payload from an RTP frame </summary>
+        </member>
+        <member name="T:Discord.Audio.Streams.OpusDecodeStream">
+            <summary> Converts Opus to PCM </summary>
+        </member>
+        <member name="T:Discord.Audio.Streams.OpusEncodeStream">
+            <summary> Converts PCM to Opus </summary>
+        </member>
+        <member name="T:Discord.Audio.Streams.OutputStream">
+            <summary> Wraps an IAudioClient, sending voice data on write. </summary>
+        </member>
+        <member name="T:Discord.Audio.Streams.RTPReadStream">
+            <summary> Reads the payload from an RTP frame </summary>
+        </member>
+        <member name="T:Discord.Audio.Streams.RTPWriteStream">
+            <summary> Wraps data in an RTP frame </summary>
+        </member>
+        <member name="T:Discord.Audio.Streams.SodiumDecryptStream">
+            <summary> Decrypts an RTP frame using libsodium </summary>
+        </member>
+        <member name="T:Discord.Audio.Streams.SodiumEncryptStream">
+            <summary> Encrypts an RTP frame using libsodium </summary>
+        </member>
+        <member name="P:Discord.WebSocket.DiscordShardedClient.Latency">
+            <summary> Gets the estimated round-trip latency, in milliseconds, to the gateway server. </summary>
+        </member>
+        <member name="M:Discord.WebSocket.DiscordShardedClient.#ctor">
+            <summary> Creates a new REST/WebSocket discord client. </summary>
+        </member>
+        <member name="M:Discord.WebSocket.DiscordShardedClient.#ctor(Discord.WebSocket.DiscordSocketConfig)">
+            <summary> Creates a new REST/WebSocket discord client. </summary>
+        </member>
+        <member name="M:Discord.WebSocket.DiscordShardedClient.#ctor(System.Int32[])">
+            <summary> Creates a new REST/WebSocket discord client. </summary>
+        </member>
+        <member name="M:Discord.WebSocket.DiscordShardedClient.#ctor(System.Int32[],Discord.WebSocket.DiscordSocketConfig)">
+            <summary> Creates a new REST/WebSocket discord client. </summary>
+        </member>
+        <member name="M:Discord.WebSocket.DiscordShardedClient.StartAsync">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordShardedClient.StopAsync">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordShardedClient.GetApplicationInfoAsync">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordShardedClient.GetGuild(System.UInt64)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordShardedClient.CreateGuildAsync(System.String,Discord.IVoiceRegion,System.IO.Stream)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordShardedClient.GetChannel(System.UInt64)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordShardedClient.GetConnectionsAsync">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordShardedClient.GetInviteAsync(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordShardedClient.GetUser(System.UInt64)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordShardedClient.GetUser(System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordShardedClient.GetVoiceRegion(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordShardedClient.DownloadUsersAsync(System.Collections.Generic.IEnumerable{Discord.WebSocket.SocketGuild})">
+            <summary> Downloads the users list for the provided guilds, if they don't have a complete list. </summary>
+        </member>
+        <member name="P:Discord.WebSocket.DiscordSocketClient.ShardId">
+            <summary> Gets the shard of of this client. </summary>
+        </member>
+        <member name="P:Discord.WebSocket.DiscordSocketClient.ConnectionState">
+            <summary> Gets the current connection state of this client. </summary>
+        </member>
+        <member name="P:Discord.WebSocket.DiscordSocketClient.Latency">
+            <summary> Gets the estimated round-trip latency, in milliseconds, to the gateway server. </summary>
+        </member>
+        <member name="M:Discord.WebSocket.DiscordSocketClient.#ctor">
+            <summary> Creates a new REST/WebSocket discord client. </summary>
+        </member>
+        <member name="M:Discord.WebSocket.DiscordSocketClient.#ctor(Discord.WebSocket.DiscordSocketConfig)">
+            <summary> Creates a new REST/WebSocket discord client. </summary>
+        </member>
+        <member name="M:Discord.WebSocket.DiscordSocketClient.GetApplicationInfoAsync">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordSocketClient.GetGuild(System.UInt64)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordSocketClient.CreateGuildAsync(System.String,Discord.IVoiceRegion,System.IO.Stream)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordSocketClient.GetChannel(System.UInt64)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordSocketClient.GetConnectionsAsync">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordSocketClient.GetInviteAsync(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordSocketClient.GetUser(System.UInt64)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordSocketClient.GetUser(System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordSocketClient.GetVoiceRegion(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.DiscordSocketClient.DownloadUsersAsync(System.Collections.Generic.IEnumerable{Discord.IGuild})">
+            <summary> Downloads the users list for the provided guilds, if they don't have a complete list. </summary>
+        </member>
+        <member name="P:Discord.WebSocket.DiscordSocketConfig.GatewayHost">
+            <summary> Gets or sets the websocket host to connect to. If null, the client will use the /gateway endpoint. </summary>
+        </member>
+        <member name="P:Discord.WebSocket.DiscordSocketConfig.ConnectionTimeout">
+            <summary> Gets or sets the time, in milliseconds, to wait for a connection to complete before aborting. </summary>
+        </member>
+        <member name="P:Discord.WebSocket.DiscordSocketConfig.ShardId">
+            <summary> Gets or sets the id for this shard. Must be less than TotalShards. </summary>
+        </member>
+        <member name="P:Discord.WebSocket.DiscordSocketConfig.TotalShards">
+            <summary> Gets or sets the total number of shards for this application. </summary>
+        </member>
+        <member name="P:Discord.WebSocket.DiscordSocketConfig.MessageCacheSize">
+            <summary> Gets or sets the number of messages per channel that should be kept in cache. Setting this to zero disables the message cache entirely. </summary>
+        </member>
+        <member name="P:Discord.WebSocket.DiscordSocketConfig.LargeThreshold">
+            <summary> 
+            Gets or sets the max number of users a guild may have for offline users to be included in the READY packet. Max is 250.
+            </summary>
+        </member>
+        <member name="P:Discord.WebSocket.DiscordSocketConfig.WebSocketProvider">
+            <summary> Gets or sets the provider used to generate new websocket connections. </summary>
+        </member>
+        <member name="P:Discord.WebSocket.DiscordSocketConfig.UdpSocketProvider">
+            <summary> Gets or sets the provider used to generate new udp sockets. </summary>
+        </member>
+        <member name="P:Discord.WebSocket.DiscordSocketConfig.AlwaysDownloadUsers">
+            <summary> Gets or sets whether or not all users should be downloaded as guilds come available. </summary>
+        </member>
+        <member name="P:Discord.WebSocket.DiscordSocketConfig.HandlerTimeout">
+            <summary> Gets or sets the timeout for event handlers, in milliseconds, after which a warning will be logged. Null disables this check. </summary>
+        </member>
+        <member name="P:Discord.WebSocket.ISocketMessageChannel.CachedMessages">
+            <summary> Gets all messages in this channel's cache. </summary>
+        </member>
+        <member name="M:Discord.WebSocket.ISocketMessageChannel.SendMessageAsync(System.String,System.Boolean,Discord.Embed,Discord.RequestOptions)">
+            <summary> Sends a message to this message channel. </summary>
+        </member>
+        <member name="M:Discord.WebSocket.ISocketMessageChannel.SendFileAsync(System.String,System.String,System.Boolean,Discord.RequestOptions)">
+            <summary> Sends a file to this text channel, with an optional caption. </summary>
+        </member>
+        <member name="M:Discord.WebSocket.ISocketMessageChannel.SendFileAsync(System.IO.Stream,System.String,System.String,System.Boolean,Discord.RequestOptions)">
+            <summary> Sends a file to this text channel, with an optional caption. </summary>
+        </member>
+        <member name="M:Discord.WebSocket.ISocketMessageChannel.GetCachedMessages(System.Int32)">
+            <summary> Gets the last N messages from this message channel. </summary>
+        </member>
+        <member name="M:Discord.WebSocket.ISocketMessageChannel.GetCachedMessages(System.UInt64,Discord.Direction,System.Int32)">
+            <summary> Gets a collection of messages in this channel. </summary>
+        </member>
+        <member name="M:Discord.WebSocket.ISocketMessageChannel.GetCachedMessages(Discord.IMessage,Discord.Direction,System.Int32)">
+            <summary> Gets a collection of messages in this channel. </summary>
+        </member>
+        <member name="M:Discord.WebSocket.ISocketMessageChannel.GetPinnedMessagesAsync(Discord.RequestOptions)">
+            <summary> Gets a collection of pinned messages in this channel. </summary>
+        </member>
+        <member name="P:Discord.WebSocket.SocketGuildUser.Hierarchy">
+            <summary> The position of the user within the role hirearchy. </summary>
+            <remarks> The returned value equal to the position of the highest role the user has, 
+            or int.MaxValue if user is the server owner. </remarks>
+        </member>
+        <member name="M:Discord.WebSocket.SocketGuildUser.AddRoleAsync(Discord.IRole,Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.SocketGuildUser.AddRolesAsync(System.Collections.Generic.IEnumerable{Discord.IRole},Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.SocketGuildUser.RemoveRoleAsync(Discord.IRole,Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.WebSocket.SocketGuildUser.RemoveRolesAsync(System.Collections.Generic.IEnumerable{Discord.IRole},Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>

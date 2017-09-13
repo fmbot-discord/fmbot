@@ -1,0 +1,101 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Discord.Net.Rest</name>
+    </assembly>
+    <members>
+        <member name="M:Discord.Rest.BaseDiscordClient.#ctor(Discord.Rest.DiscordRestConfig,Discord.API.DiscordRestApiClient)">
+            <summary> Creates a new REST-only discord client. </summary>
+        </member>
+        <member name="M:Discord.Rest.BaseDiscordClient.LoginAsync(Discord.TokenType,System.String,System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.BaseDiscordClient.LogoutAsync">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.BaseDiscordClient.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.DiscordRestClient.GetApplicationInfoAsync(Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.DiscordRestClient.GetChannelAsync(System.UInt64,Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.DiscordRestClient.GetPrivateChannelsAsync(Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.DiscordRestClient.GetConnectionsAsync(Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.DiscordRestClient.GetInviteAsync(System.String,Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.DiscordRestClient.GetGuildAsync(System.UInt64,Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.DiscordRestClient.GetGuildEmbedAsync(System.UInt64,Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.DiscordRestClient.GetGuildSummariesAsync(Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.DiscordRestClient.GetGuildSummariesAsync(System.UInt64,System.Int32,Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.DiscordRestClient.GetGuildsAsync(Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.DiscordRestClient.CreateGuildAsync(System.String,Discord.IVoiceRegion,System.IO.Stream,Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.DiscordRestClient.GetUserAsync(System.UInt64,Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.DiscordRestClient.GetGuildUserAsync(System.UInt64,System.UInt64,Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.DiscordRestClient.GetVoiceRegionsAsync(Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.DiscordRestClient.GetVoiceRegionAsync(System.String,Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="P:Discord.Rest.DiscordRestConfig.RestClientProvider">
+            <summary> Gets or sets the provider used to generate new REST connections. </summary>
+        </member>
+        <member name="M:Discord.Rest.IRestMessageChannel.SendMessageAsync(System.String,System.Boolean,Discord.Embed,Discord.RequestOptions)">
+            <summary> Sends a message to this message channel. </summary>
+        </member>
+        <member name="M:Discord.Rest.IRestMessageChannel.SendFileAsync(System.IO.Stream,System.String,System.String,System.Boolean,Discord.RequestOptions)">
+            <summary> Sends a file to this text channel, with an optional caption. </summary>
+        </member>
+        <member name="M:Discord.Rest.IRestMessageChannel.GetMessageAsync(System.UInt64,Discord.RequestOptions)">
+            <summary> Gets a message from this message channel with the given id, or null if not found. </summary>
+        </member>
+        <member name="M:Discord.Rest.IRestMessageChannel.GetMessagesAsync(System.Int32,Discord.RequestOptions)">
+            <summary> Gets the last N messages from this message channel. </summary>
+        </member>
+        <member name="M:Discord.Rest.IRestMessageChannel.GetMessagesAsync(System.UInt64,Discord.Direction,System.Int32,Discord.RequestOptions)">
+            <summary> Gets a collection of messages in this channel. </summary>
+        </member>
+        <member name="M:Discord.Rest.IRestMessageChannel.GetMessagesAsync(Discord.IMessage,Discord.Direction,System.Int32,Discord.RequestOptions)">
+            <summary> Gets a collection of messages in this channel. </summary>
+        </member>
+        <member name="M:Discord.Rest.IRestMessageChannel.GetPinnedMessagesAsync(Discord.RequestOptions)">
+            <summary> Gets a collection of pinned messages in this channel. </summary>
+        </member>
+        <member name="M:Discord.Rest.RestGuildUser.AddRoleAsync(Discord.IRole,Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.RestGuildUser.AddRolesAsync(System.Collections.Generic.IEnumerable{Discord.IRole},Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.RestGuildUser.RemoveRoleAsync(Discord.IRole,Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+        <member name="M:Discord.Rest.RestGuildUser.RemoveRolesAsync(System.Collections.Generic.IEnumerable{Discord.IRole},Discord.RequestOptions)">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>

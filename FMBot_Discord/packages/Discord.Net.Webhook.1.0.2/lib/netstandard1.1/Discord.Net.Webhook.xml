@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Discord.Net.Webhook</name>
+    </assembly>
+    <members>
+        <member name="M:Discord.Webhook.DiscordWebhookClient.#ctor(System.UInt64,System.String)">
+            <summary> Creates a new Webhook discord client. </summary>
+        </member>
+        <member name="M:Discord.Webhook.DiscordWebhookClient.#ctor(System.UInt64,System.String,Discord.Rest.DiscordRestConfig)">
+            <summary> Creates a new Webhook discord client. </summary>
+        </member>
+    </members>
+</doc>

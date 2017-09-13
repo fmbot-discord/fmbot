@@ -1,0 +1,1502 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Discord.Net.Core</name>
+    </assembly>
+    <members>
+        <member name="P:Discord.Audio.IAudioClient.ConnectionState">
+            <summary> Gets the current connection state of this client. </summary>
+        </member>
+        <member name="P:Discord.Audio.IAudioClient.Latency">
+            <summary> Gets the estimated round-trip latency, in milliseconds, to the voice websocket server. </summary>
+        </member>
+        <member name="P:Discord.Audio.IAudioClient.UdpLatency">
+            <summary> Gets the estimated round-trip latency, in milliseconds, to the voice UDP server. </summary>
+        </member>
+        <member name="M:Discord.Audio.IAudioClient.CreateOpusStream(System.Int32)">
+            <summary>Creates a new outgoing stream accepting Opus-encoded data.</summary>
+        </member>
+        <member name="M:Discord.Audio.IAudioClient.CreateDirectOpusStream">
+            <summary>Creates a new outgoing stream accepting Opus-encoded data. This is a direct stream with no internal timer.</summary>
+        </member>
+        <member name="M:Discord.Audio.IAudioClient.CreatePCMStream(Discord.Audio.AudioApplication,System.Nullable{System.Int32},System.Int32,System.Int32)">
+            <summary>Creates a new outgoing stream accepting PCM (raw) data.</summary>
+        </member>
+        <member name="M:Discord.Audio.IAudioClient.CreateDirectPCMStream(Discord.Audio.AudioApplication,System.Nullable{System.Int32},System.Int32)">
+            <summary>Creates a new direct outgoing stream accepting PCM (raw) data. This is a direct stream with no internal timer.</summary>
+        </member>
+        <member name="P:Discord.DiscordConfig.DefaultRetryMode">
+            <summary> Gets or sets how a request should act in the case of an error, by default. </summary>
+        </member>
+        <member name="P:Discord.DiscordConfig.LogLevel">
+            <summary> Gets or sets the minimum log level severity that will be sent to the Log event. </summary>
+        </member>
+        <member name="P:Discord.DiscordConfig.DisplayInitialLog">
+            <summary> Gets or sets whether the initial log entry should be printed. </summary>
+        </member>
+        <member name="T:Discord.GuildChannelProperties">
+            <summary>
+            Modify an IGuildChannel with the specified changes.
+            </summary>
+            <example>
+            <code language="c#">
+            await (Context.Channel as ITextChannel)?.ModifyAsync(x =>
+            {
+                x.Name = "do-not-enter";
+            });
+            </code>
+            </example>
+        </member>
+        <member name="P:Discord.GuildChannelProperties.Name">
+            <summary>
+            Set the channel to this name
+            </summary>
+            <remarks>
+            When modifying an ITextChannel, the Name MUST be alphanumeric with dashes.
+            It must match the following RegEx: [a-z0-9-_]{2,100}
+            </remarks>
+            <exception cref="T:Discord.Net.HttpException">A BadRequest will be thrown if the name does not match the above RegEx.</exception>
+        </member>
+        <member name="P:Discord.GuildChannelProperties.Position">
+            <summary>
+            Move the channel to the following position. This is 0-based!
+            </summary>
+        </member>
+        <member name="M:Discord.IAudioChannel.ConnectAsync(System.Action{Discord.Audio.IAudioClient})">
+            <summary> Connects to this audio channel. </summary>
+        </member>
+        <member name="P:Discord.IChannel.Name">
+            <summary> Gets the name of this channel. </summary>
+        </member>
+        <member name="P:Discord.IChannel.IsNsfw">
+            <summary> Checks if the channel is NSFW. </summary>
+        </member>
+        <member name="M:Discord.IChannel.GetUsersAsync(Discord.CacheMode,Discord.RequestOptions)">
+            <summary> Gets a collection of all users in this channel. </summary>
+        </member>
+        <member name="M:Discord.IChannel.GetUserAsync(System.UInt64,Discord.CacheMode,Discord.RequestOptions)">
+            <summary> Gets a user in this channel with the provided id. </summary>
+        </member>
+        <member name="P:Discord.IDMChannel.Recipient">
+            <summary> Gets the recipient of all messages in this channel. </summary>
+        </member>
+        <member name="M:Discord.IDMChannel.CloseAsync(Discord.RequestOptions)">
+            <summary> Closes this private channel, removing it from your channel list. </summary>
+        </member>
+        <member name="M:Discord.IGroupChannel.LeaveAsync(Discord.RequestOptions)">
+            <summary> Leaves this group. </summary>
+        </member>
+        <member name="P:Discord.IGuildChannel.Position">
+            <summary> Gets the position of this channel in the guild's channel list, relative to others of the same type. </summary>
+        </member>
+        <member name="P:Discord.IGuildChannel.Guild">
+            <summary> Gets the guild this channel is a member of. </summary>
+        </member>
+        <member name="P:Discord.IGuildChannel.GuildId">
+            <summary> Gets the id of the guild this channel is a member of. </summary>
+        </member>
+        <member name="P:Discord.IGuildChannel.PermissionOverwrites">
+            <summary> Gets a collection of permission overwrites for this channel. </summary>
+        </member>
+        <member name="M:Discord.IGuildChannel.CreateInviteAsync(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Boolean,System.Boolean,Discord.RequestOptions)">
+            <summary> Creates a new invite to this channel. </summary>
+            <param name="maxAge"> The time (in seconds) until the invite expires. Set to null to never expire. </param>
+            <param name="maxUses"> The max amount  of times this invite may be used. Set to null to have unlimited uses. </param>
+            <param name="isTemporary"> If true, a user accepting this invite will be kicked from the guild after closing their client. </param>
+        </member>
+        <member name="M:Discord.IGuildChannel.GetInvitesAsync(Discord.RequestOptions)">
+            <summary> Returns a collection of all invites to this channel. </summary>
+        </member>
+        <member name="M:Discord.IGuildChannel.ModifyAsync(System.Action{Discord.GuildChannelProperties},Discord.RequestOptions)">
+            <summary> Modifies this guild channel. </summary>
+        </member>
+        <member name="M:Discord.IGuildChannel.GetPermissionOverwrite(Discord.IRole)">
+            <summary> Gets the permission overwrite for a specific role, or null if one does not exist. </summary>
+        </member>
+        <member name="M:Discord.IGuildChannel.GetPermissionOverwrite(Discord.IUser)">
+            <summary> Gets the permission overwrite for a specific user, or null if one does not exist. </summary>
+        </member>
+        <member name="M:Discord.IGuildChannel.RemovePermissionOverwriteAsync(Discord.IRole,Discord.RequestOptions)">
+            <summary> Removes the permission overwrite for the given role, if one exists. </summary>
+        </member>
+        <member name="M:Discord.IGuildChannel.RemovePermissionOverwriteAsync(Discord.IUser,Discord.RequestOptions)">
+            <summary> Removes the permission overwrite for the given user, if one exists. </summary>
+        </member>
+        <member name="M:Discord.IGuildChannel.AddPermissionOverwriteAsync(Discord.IRole,Discord.OverwritePermissions,Discord.RequestOptions)">
+            <summary> Adds or updates the permission overwrite for the given role. </summary>
+        </member>
+        <member name="M:Discord.IGuildChannel.AddPermissionOverwriteAsync(Discord.IUser,Discord.OverwritePermissions,Discord.RequestOptions)">
+            <summary> Adds or updates the permission overwrite for the given user. </summary>
+        </member>
+        <member name="M:Discord.IGuildChannel.GetUsersAsync(Discord.CacheMode,Discord.RequestOptions)">
+            <summary> Gets a collection of all users in this channel. </summary>
+        </member>
+        <member name="M:Discord.IGuildChannel.GetUserAsync(System.UInt64,Discord.CacheMode,Discord.RequestOptions)">
+            <summary> Gets a user in this channel with the provided id.</summary>
+        </member>
+        <member name="M:Discord.IMessageChannel.SendMessageAsync(System.String,System.Boolean,Discord.Embed,Discord.RequestOptions)">
+            <summary> Sends a message to this message channel. </summary>
+        </member>
+        <member name="M:Discord.IMessageChannel.SendFileAsync(System.IO.Stream,System.String,System.String,System.Boolean,Discord.RequestOptions)">
+            <summary> Sends a file to this text channel, with an optional caption. </summary>
+        </member>
+        <member name="M:Discord.IMessageChannel.GetMessageAsync(System.UInt64,Discord.CacheMode,Discord.RequestOptions)">
+            <summary> Gets a message from this message channel with the given id, or null if not found. </summary>
+        </member>
+        <member name="M:Discord.IMessageChannel.GetMessagesAsync(System.Int32,Discord.CacheMode,Discord.RequestOptions)">
+            <summary> Gets the last N messages from this message channel. </summary>
+        </member>
+        <member name="M:Discord.IMessageChannel.GetMessagesAsync(System.UInt64,Discord.Direction,System.Int32,Discord.CacheMode,Discord.RequestOptions)">
+            <summary> Gets a collection of messages in this channel. </summary>
+        </member>
+        <member name="M:Discord.IMessageChannel.GetMessagesAsync(Discord.IMessage,Discord.Direction,System.Int32,Discord.CacheMode,Discord.RequestOptions)">
+            <summary> Gets a collection of messages in this channel. </summary>
+        </member>
+        <member name="M:Discord.IMessageChannel.GetPinnedMessagesAsync(Discord.RequestOptions)">
+            <summary> Gets a collection of pinned messages in this channel. </summary>
+        </member>
+        <member name="M:Discord.IMessageChannel.DeleteMessagesAsync(System.Collections.Generic.IEnumerable{Discord.IMessage},Discord.RequestOptions)">
+            <summary> Bulk deletes multiple messages. </summary>
+        </member>
+        <member name="M:Discord.IMessageChannel.DeleteMessagesAsync(System.Collections.Generic.IEnumerable{System.UInt64},Discord.RequestOptions)">
+            <summary> Bulk deletes multiple messages. </summary>
+        </member>
+        <member name="M:Discord.IMessageChannel.TriggerTypingAsync(Discord.RequestOptions)">
+            <summary> Broadcasts the "user is typing" message to all users in this channel, lasting 10 seconds. </summary>
+        </member>
+        <member name="M:Discord.IMessageChannel.EnterTypingState(Discord.RequestOptions)">
+            <summary> Continuously broadcasts the "user is typing" message to all users in this channel until the returned object is disposed. </summary>
+        </member>
+        <member name="P:Discord.ITextChannel.Topic">
+            <summary> Gets the current topic for this text channel. </summary>
+        </member>
+        <member name="M:Discord.ITextChannel.ModifyAsync(System.Action{Discord.TextChannelProperties},Discord.RequestOptions)">
+            <summary> Modifies this text channel. </summary>
+        </member>
+        <member name="P:Discord.IVoiceChannel.Bitrate">
+            <summary> Gets the bitrate, in bits per second, clients in this voice channel are requested to use. </summary>
+        </member>
+        <member name="P:Discord.IVoiceChannel.UserLimit">
+            <summary> Gets the max amount of users allowed to be connected to this channel at one time. </summary>
+        </member>
+        <member name="M:Discord.IVoiceChannel.ModifyAsync(System.Action{Discord.VoiceChannelProperties},Discord.RequestOptions)">
+            <summary> Modifies this voice channel. </summary>
+        </member>
+        <member name="P:Discord.ReorderChannelProperties.Id">
+            <summary>The id of the channel to apply this position to.</summary>
+        </member>
+        <member name="P:Discord.ReorderChannelProperties.Position">
+            <summary>The new zero-based position of this channel. </summary>
+        </member>
+        <member name="T:Discord.TextChannelProperties">
+            <inheritdoc />
+        </member>
+        <member name="P:Discord.TextChannelProperties.Topic">
+            <summary>
+            What the topic of the channel should be set to.
+            </summary>
+        </member>
+        <member name="T:Discord.VoiceChannelProperties">
+            <inheritdoc />
+        </member>
+        <member name="P:Discord.VoiceChannelProperties.Bitrate">
+            <summary>
+            The bitrate of the voice connections in this channel. Must be greater than 8000
+            </summary>
+        </member>
+        <member name="P:Discord.VoiceChannelProperties.UserLimit">
+            <summary>
+            The maximum number of users that can be present in a channel.
+            </summary>
+        </member>
+        <member name="T:Discord.Emoji">
+            <summary>
+            A unicode emoji
+            </summary>
+        </member>
+        <member name="P:Discord.Emoji.Name">
+            <summary>
+            The unicode representation of this emote.
+            </summary>
+        </member>
+        <member name="M:Discord.Emoji.#ctor(System.String)">
+            <summary>
+            Creates a unicode emoji.
+            </summary>
+            <param name="unicode">The pure UTF-8 encoding of an emoji</param>
+        </member>
+        <member name="T:Discord.Emote">
+            <summary>
+            A custom image-based emote
+            </summary>
+        </member>
+        <member name="P:Discord.Emote.Name">
+            <summary>
+            The display name (tooltip) of this emote
+            </summary>
+        </member>
+        <member name="P:Discord.Emote.Id">
+            <summary>
+            The ID of this emote
+            </summary>
+        </member>
+        <member name="M:Discord.Emote.Parse(System.String)">
+            <summary>
+            Parse an Emote from its raw format
+            </summary>
+            <param name="text">The raw encoding of an emote; for example, &lt;:dab:277855270321782784&gt;</param>
+            <returns>An emote</returns>
+        </member>
+        <member name="T:Discord.GuildEmote">
+            <summary>
+            An image-based emote that is attached to a guild
+            </summary>
+        </member>
+        <member name="T:Discord.IEmote">
+            <summary>
+            A general container for any type of emote in a message.
+            </summary>
+        </member>
+        <member name="P:Discord.IEmote.Name">
+            <summary>
+            The display name or unicode representation of this emote
+            </summary>
+        </member>
+        <member name="F:Discord.DefaultMessageNotifications.AllMessages">
+            <summary> By default, all messages will trigger notifications. </summary>
+        </member>
+        <member name="F:Discord.DefaultMessageNotifications.MentionsOnly">
+            <summary> By default, only mentions will trigger notifications. </summary>
+        </member>
+        <member name="T:Discord.GuildEmbedProperties">
+            <summary>
+            Modify the widget of an IGuild with the specified parameters
+            </summary>
+        </member>
+        <member name="P:Discord.GuildEmbedProperties.Enabled">
+            <summary>
+            Should the widget be enabled?
+            </summary>
+        </member>
+        <member name="P:Discord.GuildEmbedProperties.Channel">
+            <summary>
+            What channel should the invite place users in, if not null.
+            </summary>
+        </member>
+        <member name="P:Discord.GuildEmbedProperties.ChannelId">
+            <summary>
+            What channel should the invite place users in, if not null.
+            </summary>
+        </member>
+        <member name="T:Discord.GuildProperties">
+            <summary>
+            Modify an IGuild with the specified changes
+            </summary>
+            <example>
+            <code language="c#">
+            await Context.Guild.ModifyAsync(async x =>
+            {
+                x.Name = "aaaaaah";
+                x.RegionId = (await Context.Client.GetOptimalVoiceRegionAsync()).Id;
+            });
+            </code>
+            </example>
+            <see cref="T:Discord.IGuild"/>
+        </member>
+        <member name="P:Discord.GuildProperties.Name">
+            <summary>
+            The name of the Guild
+            </summary>
+        </member>
+        <member name="P:Discord.GuildProperties.Region">
+            <summary>
+            The region for the Guild's voice connections
+            </summary>
+        </member>
+        <member name="P:Discord.GuildProperties.RegionId">
+            <summary>
+            The ID of the region for the Guild's voice connections
+            </summary>
+        </member>
+        <member name="P:Discord.GuildProperties.VerificationLevel">
+            <summary>
+            What verification level new users need to achieve before speaking
+            </summary>
+        </member>
+        <member name="P:Discord.GuildProperties.DefaultMessageNotifications">
+            <summary>
+            The default message notification state for the guild
+            </summary>
+        </member>
+        <member name="P:Discord.GuildProperties.AfkTimeout">
+            <summary>
+            How many seconds before a user is sent to AFK. This value MUST be one of: (60, 300, 900, 1800, 3600).
+            </summary>
+        </member>
+        <member name="P:Discord.GuildProperties.Icon">
+            <summary>
+            The icon of the guild
+            </summary>
+        </member>
+        <member name="P:Discord.GuildProperties.Splash">
+            <summary>
+            The guild's splash image
+            </summary>
+            <remarks>
+            The guild must be partnered for this value to have any effect.
+            </remarks>
+        </member>
+        <member name="P:Discord.GuildProperties.AfkChannel">
+            <summary>
+            The IVoiceChannel where AFK users should be sent.
+            </summary>
+        </member>
+        <member name="P:Discord.GuildProperties.AfkChannelId">
+            <summary>
+            The ID of the IVoiceChannel where AFK users should be sent.
+            </summary>
+        </member>
+        <member name="P:Discord.GuildProperties.Owner">
+            <summary>
+            The owner of this guild.
+            </summary>
+        </member>
+        <member name="P:Discord.GuildProperties.OwnerId">
+            <summary>
+            The ID of the owner of this guild.
+            </summary>
+        </member>
+        <member name="P:Discord.IGuild.Name">
+            <summary> Gets the name of this guild. </summary>
+        </member>
+        <member name="P:Discord.IGuild.AFKTimeout">
+            <summary> Gets the amount of time (in seconds) a user must be inactive in a voice channel for until they are automatically moved to the AFK voice channel, if one is set. </summary>
+        </member>
+        <member name="P:Discord.IGuild.IsEmbeddable">
+            <summary> Returns true if this guild is embeddable (e.g. widget) </summary>
+        </member>
+        <member name="P:Discord.IGuild.DefaultMessageNotifications">
+            <summary> Gets the default message notifications for users who haven't explicitly set their notification settings. </summary>
+        </member>
+        <member name="P:Discord.IGuild.MfaLevel">
+            <summary> Gets the level of mfa requirements a user must fulfill before being allowed to perform administrative actions in this guild. </summary>
+        </member>
+        <member name="P:Discord.IGuild.VerificationLevel">
+            <summary> Gets the level of requirements a user must fulfill before being allowed to post messages in this guild. </summary>
+        </member>
+        <member name="P:Discord.IGuild.IconId">
+            <summary> Returns the id of this guild's icon, or null if one is not set. </summary>
+        </member>
+        <member name="P:Discord.IGuild.IconUrl">
+            <summary> Returns the url to this guild's icon, or null if one is not set. </summary>
+        </member>
+        <member name="P:Discord.IGuild.SplashId">
+            <summary> Returns the id of this guild's splash image, or null if one is not set. </summary>
+        </member>
+        <member name="P:Discord.IGuild.SplashUrl">
+            <summary> Returns the url to this guild's splash image, or null if one is not set. </summary>
+        </member>
+        <member name="P:Discord.IGuild.Available">
+            <summary> Returns true if this guild is currently connected and ready to be used. Only applies to the WebSocket client. </summary>
+        </member>
+        <member name="P:Discord.IGuild.AFKChannelId">
+            <summary> Gets the id of the AFK voice channel for this guild if set, or null if not. </summary>
+        </member>
+        <member name="P:Discord.IGuild.DefaultChannelId">
+            <summary> Gets the id of the the default channel for this guild. </summary>
+        </member>
+        <member name="P:Discord.IGuild.EmbedChannelId">
+            <summary> Gets the id of the embed channel for this guild if set, or null if not. </summary>
+        </member>
+        <member name="P:Discord.IGuild.OwnerId">
+            <summary> Gets the id of the user that created this guild. </summary>
+        </member>
+        <member name="P:Discord.IGuild.VoiceRegionId">
+            <summary> Gets the id of the region hosting this guild's voice channels. </summary>
+        </member>
+        <member name="P:Discord.IGuild.AudioClient">
+            <summary> Gets the IAudioClient currently associated with this guild. </summary>
+        </member>
+        <member name="P:Discord.IGuild.EveryoneRole">
+            <summary> Gets the built-in role containing all users in this guild. </summary>
+        </member>
+        <member name="P:Discord.IGuild.Emotes">
+            <summary> Gets a collection of all custom emojis for this guild. </summary>
+        </member>
+        <member name="P:Discord.IGuild.Features">
+            <summary> Gets a collection of all extra features added to this guild. </summary>
+        </member>
+        <member name="P:Discord.IGuild.Roles">
+            <summary> Gets a collection of all roles in this guild. </summary>
+        </member>
+        <member name="M:Discord.IGuild.ModifyAsync(System.Action{Discord.GuildProperties},Discord.RequestOptions)">
+            <summary> Modifies this guild. </summary>
+        </member>
+        <member name="M:Discord.IGuild.ModifyEmbedAsync(System.Action{Discord.GuildEmbedProperties},Discord.RequestOptions)">
+            <summary> Modifies this guild's embed. </summary>
+        </member>
+        <member name="M:Discord.IGuild.ReorderChannelsAsync(System.Collections.Generic.IEnumerable{Discord.ReorderChannelProperties},Discord.RequestOptions)">
+            <summary> Bulk modifies the channels of this guild. </summary>
+        </member>
+        <member name="M:Discord.IGuild.ReorderRolesAsync(System.Collections.Generic.IEnumerable{Discord.ReorderRoleProperties},Discord.RequestOptions)">
+            <summary> Bulk modifies the roles of this guild. </summary>
+        </member>
+        <member name="M:Discord.IGuild.LeaveAsync(Discord.RequestOptions)">
+            <summary> Leaves this guild. If you are the owner, use Delete instead. </summary>
+        </member>
+        <member name="M:Discord.IGuild.GetBansAsync(Discord.RequestOptions)">
+            <summary> Gets a collection of all users banned on this guild. </summary>
+        </member>
+        <member name="M:Discord.IGuild.AddBanAsync(Discord.IUser,System.Int32,System.String,Discord.RequestOptions)">
+            <summary> Bans the provided user from this guild and optionally prunes their recent messages. </summary>
+            <param name="pruneDays">The number of days to remove messages from this user for - must be between [0, 7]</param>
+        </member>
+        <member name="M:Discord.IGuild.AddBanAsync(System.UInt64,System.Int32,System.String,Discord.RequestOptions)">
+            <summary> Bans the provided user id from this guild and optionally prunes their recent messages. </summary>
+            <param name="pruneDays">The number of days to remove messages from this user for - must be between [0, 7]</param>
+        </member>
+        <member name="M:Discord.IGuild.RemoveBanAsync(Discord.IUser,Discord.RequestOptions)">
+            <summary> Unbans the provided user if it is currently banned. </summary>
+        </member>
+        <member name="M:Discord.IGuild.RemoveBanAsync(System.UInt64,Discord.RequestOptions)">
+            <summary> Unbans the provided user id if it is currently banned. </summary>
+        </member>
+        <member name="M:Discord.IGuild.GetChannelsAsync(Discord.CacheMode,Discord.RequestOptions)">
+            <summary> Gets a collection of all channels in this guild. </summary>
+        </member>
+        <member name="M:Discord.IGuild.GetChannelAsync(System.UInt64,Discord.CacheMode,Discord.RequestOptions)">
+            <summary> Gets the channel in this guild with the provided id, or null if not found. </summary>
+        </member>
+        <member name="M:Discord.IGuild.CreateTextChannelAsync(System.String,Discord.RequestOptions)">
+            <summary> Creates a new text channel. </summary>
+        </member>
+        <member name="M:Discord.IGuild.CreateVoiceChannelAsync(System.String,Discord.RequestOptions)">
+            <summary> Creates a new voice channel. </summary>
+        </member>
+        <member name="M:Discord.IGuild.GetInvitesAsync(Discord.RequestOptions)">
+            <summary> Gets a collection of all invites to this guild. </summary>
+        </member>
+        <member name="M:Discord.IGuild.GetRole(System.UInt64)">
+            <summary> Gets the role in this guild with the provided id, or null if not found. </summary>
+        </member>
+        <member name="M:Discord.IGuild.CreateRoleAsync(System.String,System.Nullable{Discord.GuildPermissions},System.Nullable{Discord.Color},System.Boolean,Discord.RequestOptions)">
+            <summary> Creates a new role. </summary>
+        </member>
+        <member name="M:Discord.IGuild.GetUsersAsync(Discord.CacheMode,Discord.RequestOptions)">
+            <summary> Gets a collection of all users in this guild. </summary>
+        </member>
+        <member name="M:Discord.IGuild.GetUserAsync(System.UInt64,Discord.CacheMode,Discord.RequestOptions)">
+            <summary> Gets the user in this guild with the provided id, or null if not found. </summary>
+        </member>
+        <member name="M:Discord.IGuild.GetCurrentUserAsync(Discord.CacheMode,Discord.RequestOptions)">
+            <summary> Gets the current user for this guild. </summary>
+        </member>
+        <member name="M:Discord.IGuild.GetOwnerAsync(Discord.CacheMode,Discord.RequestOptions)">
+            <summary> Gets the owner of this guild. </summary>
+        </member>
+        <member name="M:Discord.IGuild.DownloadUsersAsync">
+            <summary> Downloads all users for this guild if the current list is incomplete. </summary>
+        </member>
+        <member name="M:Discord.IGuild.PruneUsersAsync(System.Int32,System.Boolean,Discord.RequestOptions)">
+            <summary> Removes all users from this guild if they have not logged on in a provided number of days or, if simulate is true, returns the number of users that would be removed. </summary>
+        </member>
+        <member name="P:Discord.IUserGuild.Name">
+            <summary> Gets the name of this guild. </summary>
+        </member>
+        <member name="P:Discord.IUserGuild.IconUrl">
+            <summary> Returns the url to this guild's icon, or null if one is not set. </summary>
+        </member>
+        <member name="P:Discord.IUserGuild.IsOwner">
+            <summary> Returns true if the current user owns this guild. </summary>
+        </member>
+        <member name="P:Discord.IUserGuild.Permissions">
+            <summary> Returns the current user's permissions for this guild. </summary>
+        </member>
+        <member name="P:Discord.IVoiceRegion.Id">
+            <summary> Gets the unique identifier for this voice region. </summary>
+        </member>
+        <member name="P:Discord.IVoiceRegion.Name">
+            <summary> Gets the name of this voice region. </summary>
+        </member>
+        <member name="P:Discord.IVoiceRegion.IsVip">
+            <summary> Returns true if this voice region is exclusive to VIP accounts. </summary>
+        </member>
+        <member name="P:Discord.IVoiceRegion.IsOptimal">
+            <summary> Returns true if this voice region is the closest to your machine. </summary>
+        </member>
+        <member name="P:Discord.IVoiceRegion.SampleHostname">
+            <summary> Gets an example hostname for this voice region. </summary>
+        </member>
+        <member name="P:Discord.IVoiceRegion.SamplePort">
+            <summary> Gets an example port for this voice region. </summary>
+        </member>
+        <member name="F:Discord.MfaLevel.Disabled">
+            <summary> Users have no additional MFA restriction on this guild. </summary>
+        </member>
+        <member name="F:Discord.MfaLevel.Enabled">
+            <summary> Users must have MFA enabled on their account to perform administrative actions. </summary>
+        </member>
+        <member name="F:Discord.VerificationLevel.None">
+            <summary> Users have no additional restrictions on sending messages to this guild. </summary>
+        </member>
+        <member name="F:Discord.VerificationLevel.Low">
+            <summary> Users must have a verified email on their account. </summary>
+        </member>
+        <member name="F:Discord.VerificationLevel.Medium">
+            <summary> Users must fulfill the requirements of Low, and be registered on Discord for at least 5 minutes. </summary>
+        </member>
+        <member name="F:Discord.VerificationLevel.High">
+            <summary> Users must fulfill the requirements of Medium, and be a member of this guild for at least 10 minutes. </summary>
+        </member>
+        <member name="F:Discord.VerificationLevel.Extreme">
+            <summary> Users must fulfill the requirements of High, and must have a verified phone on their Discord account. </summary>
+        </member>
+        <member name="M:Discord.IDeletable.DeleteAsync(Discord.RequestOptions)">
+            <summary> Deletes this object and all its children. </summary>
+        </member>
+        <member name="P:Discord.IEntity`1.Id">
+            <summary> Gets the unique identifier for this object. </summary>
+        </member>
+        <member name="T:Discord.Image">
+            <summary>
+            An image that will be uploaded to Discord.
+            </summary>
+        </member>
+        <member name="M:Discord.Image.#ctor(System.IO.Stream)">
+            <summary>
+            Create the image with a Stream.
+            </summary>
+            <param name="stream">This must be some type of stream with the contents of a file in it.</param>
+        </member>
+        <member name="P:Discord.IMentionable.Mention">
+            <summary> Returns a special string used to mention this object.  </summary>
+        </member>
+        <member name="P:Discord.IInvite.Code">
+            <summary> Gets the unique identifier for this invite. </summary>
+        </member>
+        <member name="P:Discord.IInvite.Url">
+            <summary> Gets the url used to accept this invite, using Code. </summary>
+        </member>
+        <member name="P:Discord.IInvite.Channel">
+            <summary> Gets the channel this invite is linked to. </summary>
+        </member>
+        <member name="P:Discord.IInvite.ChannelId">
+            <summary> Gets the id of the channel this invite is linked to. </summary>
+        </member>
+        <member name="P:Discord.IInvite.ChannelName">
+            <summary> Gets the name of the channel this invite is linked to. </summary>
+        </member>
+        <member name="P:Discord.IInvite.Guild">
+            <summary> Gets the guild this invite is linked to. </summary>
+        </member>
+        <member name="P:Discord.IInvite.GuildId">
+            <summary> Gets the id of the guild this invite is linked to. </summary>
+        </member>
+        <member name="P:Discord.IInvite.GuildName">
+            <summary> Gets the name of the guild this invite is linked to. </summary>
+        </member>
+        <member name="M:Discord.IInvite.AcceptAsync(Discord.RequestOptions)">
+            <summary> Accepts this invite and joins the target guild. This will fail on bot accounts. </summary>
+        </member>
+        <member name="P:Discord.IInviteMetadata.Inviter">
+            <summary> Gets the user that created this invite. </summary>
+        </member>
+        <member name="P:Discord.IInviteMetadata.IsRevoked">
+            <summary> Returns true if this invite was revoked. </summary>
+        </member>
+        <member name="P:Discord.IInviteMetadata.IsTemporary">
+            <summary> Returns true if users accepting this invite will be removed from the guild when they log off. </summary>
+        </member>
+        <member name="P:Discord.IInviteMetadata.MaxAge">
+            <summary> Gets the time (in seconds) until the invite expires, or null if it never expires. </summary>
+        </member>
+        <member name="P:Discord.IInviteMetadata.MaxUses">
+            <summary> Gets the max amount of times this invite may be used, or null if there is no limit. </summary>
+        </member>
+        <member name="P:Discord.IInviteMetadata.Uses">
+            <summary> Gets the amount of times this invite has been used. </summary>
+        </member>
+        <member name="P:Discord.IInviteMetadata.CreatedAt">
+            <summary> Gets when this invite was created. </summary>
+        </member>
+        <member name="M:Discord.IUpdateable.UpdateAsync(Discord.RequestOptions)">
+            <summary> Updates this object's properties with its current state. </summary>
+        </member>
+        <member name="P:Discord.IMessage.Type">
+            <summary> Gets the type of this system message. </summary>
+        </member>
+        <member name="P:Discord.IMessage.Source">
+            <summary> Gets the source of this message. </summary>
+        </member>
+        <member name="P:Discord.IMessage.IsTTS">
+            <summary> Returns true if this message was sent as a text-to-speech message. </summary>
+        </member>
+        <member name="P:Discord.IMessage.IsPinned">
+            <summary> Returns true if this message was added to its channel's pinned messages. </summary>
+        </member>
+        <member name="P:Discord.IMessage.Content">
+            <summary> Returns the content for this message. </summary>
+        </member>
+        <member name="P:Discord.IMessage.Timestamp">
+            <summary> Gets the time this message was sent. </summary>
+        </member>
+        <member name="P:Discord.IMessage.EditedTimestamp">
+            <summary> Gets the time of this message's last edit, if any. </summary>
+        </member>
+        <member name="P:Discord.IMessage.Channel">
+            <summary> Gets the channel this message was sent to. </summary>
+        </member>
+        <member name="P:Discord.IMessage.Author">
+            <summary> Gets the author of this message. </summary>
+        </member>
+        <member name="P:Discord.IMessage.Attachments">
+            <summary> Returns all attachments included in this message. </summary>
+        </member>
+        <member name="P:Discord.IMessage.Embeds">
+            <summary> Returns all embeds included in this message. </summary>
+        </member>
+        <member name="P:Discord.IMessage.Tags">
+            <summary> Returns all tags included in this message's content. </summary>
+        </member>
+        <member name="P:Discord.IMessage.MentionedChannelIds">
+            <summary> Returns the ids of channels mentioned in this message. </summary>
+        </member>
+        <member name="P:Discord.IMessage.MentionedRoleIds">
+            <summary> Returns the ids of roles mentioned in this message. </summary>
+        </member>
+        <member name="P:Discord.IMessage.MentionedUserIds">
+            <summary> Returns the ids of users mentioned in this message. </summary>
+        </member>
+        <member name="M:Discord.IUserMessage.ModifyAsync(System.Action{Discord.MessageProperties},Discord.RequestOptions)">
+            <summary> Modifies this message. </summary>
+        </member>
+        <member name="M:Discord.IUserMessage.PinAsync(Discord.RequestOptions)">
+            <summary> Adds this message to its channel's pinned messages. </summary>
+        </member>
+        <member name="M:Discord.IUserMessage.UnpinAsync(Discord.RequestOptions)">
+            <summary> Removes this message from its channel's pinned messages. </summary>
+        </member>
+        <member name="P:Discord.IUserMessage.Reactions">
+            <summary> Returns all reactions included in this message. </summary>
+        </member>
+        <member name="M:Discord.IUserMessage.AddReactionAsync(Discord.IEmote,Discord.RequestOptions)">
+            <summary> Adds a reaction to this message. </summary>
+        </member>
+        <member name="M:Discord.IUserMessage.RemoveReactionAsync(Discord.IEmote,Discord.IUser,Discord.RequestOptions)">
+            <summary> Removes a reaction from message. </summary>
+        </member>
+        <member name="M:Discord.IUserMessage.RemoveAllReactionsAsync(Discord.RequestOptions)">
+            <summary> Removes all reactions from this message. </summary>
+        </member>
+        <member name="M:Discord.IUserMessage.Resolve(Discord.TagHandling,Discord.TagHandling,Discord.TagHandling,Discord.TagHandling,Discord.TagHandling)">
+            <summary> Transforms this message's text into a human readable form by resolving its tags. </summary>
+        </member>
+        <member name="T:Discord.MessageProperties">
+            <summary>
+            Modify a message with the specified parameters.
+            </summary>
+            <remarks>
+            The content of a message can be cleared with String.Empty; if and only if an Embed is present.
+            </remarks>
+            <example>
+            <code language="c#">
+            var message = await ReplyAsync("abc");
+            await message.ModifyAsync(x =>
+            {
+                x.Content = "";
+                x.Embed = new EmbedBuilder()
+                    .WithColor(new Color(40, 40, 120))
+                    .WithAuthor(a => a.Name = "foxbot")
+                    .WithTitle("Embed!")
+                    .WithDescription("This is an embed.");
+            });
+            </code>
+            </example>
+        </member>
+        <member name="P:Discord.MessageProperties.Content">
+            <summary>
+            The content of the message
+            </summary>
+            <remarks>
+            This must be less than 2000 characters.
+            </remarks>
+        </member>
+        <member name="P:Discord.MessageProperties.Embed">
+            <summary>
+            The embed the message should display
+            </summary>
+        </member>
+        <member name="P:Discord.ReactionMetadata.ReactionCount">
+            <summary> Gets the number of reactions </summary>
+        </member>
+        <member name="P:Discord.ReactionMetadata.IsMe">
+            <summary> Returns true if the current user has used this reaction </summary>
+        </member>
+        <member name="F:Discord.ChannelPermissions.None">
+            <summary> Gets a blank ChannelPermissions that grants no permissions. </summary>
+        </member>
+        <member name="F:Discord.ChannelPermissions.Text">
+            <summary> Gets a ChannelPermissions that grants all permissions for text channels. </summary>
+        </member>
+        <member name="F:Discord.ChannelPermissions.Voice">
+            <summary> Gets a ChannelPermissions that grants all permissions for voice channels. </summary>
+        </member>
+        <member name="F:Discord.ChannelPermissions.DM">
+            <summary> Gets a ChannelPermissions that grants all permissions for direct message channels. </summary>
+        </member>
+        <member name="F:Discord.ChannelPermissions.Group">
+            <summary> Gets a ChannelPermissions that grants all permissions for group channels. </summary>
+        </member>
+        <member name="M:Discord.ChannelPermissions.All(Discord.IChannel)">
+            <summary> Gets a ChannelPermissions that grants all permissions for a given channelType. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.RawValue">
+            <summary> Gets a packed value representing all the permissions in this ChannelPermissions. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.CreateInstantInvite">
+            <summary> If True, a user may create invites. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.ManageChannel">
+            <summary> If True, a user may create, delete and modify this channel. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.AddReactions">
+            <summary> If true, a user may add reactions. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.ReadMessages">
+            <summary> If True, a user may join channels. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.SendMessages">
+            <summary> If True, a user may send messages. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.SendTTSMessages">
+            <summary> If True, a user may send text-to-speech messages. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.ManageMessages">
+            <summary> If True, a user may delete messages. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.EmbedLinks">
+            <summary> If True, Discord will auto-embed links sent by this user. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.AttachFiles">
+            <summary> If True, a user may send files. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.ReadMessageHistory">
+            <summary> If True, a user may read previous messages. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.MentionEveryone">
+            <summary> If True, a user may mention @everyone. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.UseExternalEmojis">
+            <summary> If True, a user may use custom emoji from other guilds. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.Connect">
+            <summary> If True, a user may connect to a voice channel. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.Speak">
+            <summary> If True, a user may speak in a voice channel. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.MuteMembers">
+            <summary> If True, a user may mute users. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.DeafenMembers">
+            <summary> If True, a user may deafen users. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.MoveMembers">
+            <summary> If True, a user may move other users between voice channels. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.UseVAD">
+            <summary> If True, a user may use voice-activity-detection rather than push-to-talk. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.ManagePermissions">
+            <summary> If True, a user may adjust permissions. This also implictly grants all other permissions. </summary>
+        </member>
+        <member name="P:Discord.ChannelPermissions.ManageWebhooks">
+            <summary> If True, a user may edit the webhooks for this channel. </summary>
+        </member>
+        <member name="M:Discord.ChannelPermissions.#ctor(System.UInt64)">
+            <summary> Creates a new ChannelPermissions with the provided packed value. </summary>
+        </member>
+        <member name="M:Discord.ChannelPermissions.#ctor(System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean)">
+            <summary> Creates a new ChannelPermissions with the provided permissions. </summary>
+        </member>
+        <member name="M:Discord.ChannelPermissions.Modify(System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Boolean,System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean})">
+            <summary> Creates a new ChannelPermissions from this one, changing the provided non-null permissions. </summary>
+        </member>
+        <member name="F:Discord.GuildPermissions.None">
+            <summary> Gets a blank GuildPermissions that grants no permissions. </summary>
+        </member>
+        <member name="F:Discord.GuildPermissions.Webhook">
+            <summary> Gets a GuildPermissions that grants all guild permissions for webhook users. </summary>
+        </member>
+        <member name="F:Discord.GuildPermissions.All">
+            <summary> Gets a GuildPermissions that grants all guild permissions. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.RawValue">
+            <summary> Gets a packed value representing all the permissions in this GuildPermissions. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.CreateInstantInvite">
+            <summary> If True, a user may create invites. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.BanMembers">
+            <summary> If True, a user may ban users from the guild. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.KickMembers">
+            <summary> If True, a user may kick users from the guild. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.Administrator">
+            <summary> If True, a user is granted all permissions, and cannot have them revoked via channel permissions. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.ManageChannels">
+            <summary> If True, a user may create, delete and modify channels. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.ManageGuild">
+            <summary> If True, a user may adjust guild properties. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.AddReactions">
+            <summary> If true, a user may add reactions. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.ReadMessages">
+            <summary> If True, a user may join channels. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.SendMessages">
+            <summary> If True, a user may send messages. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.SendTTSMessages">
+            <summary> If True, a user may send text-to-speech messages. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.ManageMessages">
+            <summary> If True, a user may delete messages. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.EmbedLinks">
+            <summary> If True, Discord will auto-embed links sent by this user. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.AttachFiles">
+            <summary> If True, a user may send files. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.ReadMessageHistory">
+            <summary> If True, a user may read previous messages. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.MentionEveryone">
+            <summary> If True, a user may mention @everyone. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.UseExternalEmojis">
+            <summary> If True, a user may use custom emoji from other guilds. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.Connect">
+            <summary> If True, a user may connect to a voice channel. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.Speak">
+            <summary> If True, a user may speak in a voice channel. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.MuteMembers">
+            <summary> If True, a user may mute users. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.DeafenMembers">
+            <summary> If True, a user may deafen users. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.MoveMembers">
+            <summary> If True, a user may move other users between voice channels. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.UseVAD">
+            <summary> If True, a user may use voice-activity-detection rather than push-to-talk. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.ChangeNickname">
+            <summary> If True, a user may change their own nickname. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.ManageNicknames">
+            <summary> If True, a user may change the nickname of other users. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.ManageRoles">
+            <summary> If True, a user may adjust roles. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.ManageWebhooks">
+            <summary> If True, a user may edit the webhooks for this guild. </summary>
+        </member>
+        <member name="P:Discord.GuildPermissions.ManageEmojis">
+            <summary> If True, a user may edit the emojis for this guild. </summary>
+        </member>
+        <member name="M:Discord.GuildPermissions.#ctor(System.UInt64)">
+            <summary> Creates a new GuildPermissions with the provided packed value. </summary>
+        </member>
+        <member name="M:Discord.GuildPermissions.#ctor(System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Boolean,System.Boolean,System.Boolean)">
+            <summary> Creates a new GuildPermissions with the provided permissions. </summary>
+        </member>
+        <member name="M:Discord.GuildPermissions.Modify(System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean})">
+            <summary> Creates a new GuildPermissions from this one, changing the provided non-null permissions. </summary>
+        </member>
+        <member name="P:Discord.Overwrite.TargetId">
+            <summary> Gets the unique identifier for the object this overwrite is targeting. </summary>
+        </member>
+        <member name="P:Discord.Overwrite.TargetType">
+            <summary> Gets the type of object this overwrite is targeting. </summary>
+        </member>
+        <member name="P:Discord.Overwrite.Permissions">
+            <summary> Gets the permissions associated with this overwrite entry. </summary>
+        </member>
+        <member name="M:Discord.Overwrite.#ctor(System.UInt64,Discord.PermissionTarget,Discord.OverwritePermissions)">
+            <summary> Creates a new Overwrite with provided target information and modified permissions. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.InheritAll">
+            <summary> Gets a blank OverwritePermissions that inherits all permissions. </summary>
+        </member>
+        <member name="M:Discord.OverwritePermissions.AllowAll(Discord.IChannel)">
+            <summary> Gets a OverwritePermissions that grants all permissions for a given channelType. </summary>
+        </member>
+        <member name="M:Discord.OverwritePermissions.DenyAll(Discord.IChannel)">
+            <summary> Gets a OverwritePermissions that denies all permissions for a given channelType. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.AllowValue">
+            <summary> Gets a packed value representing all the allowed permissions in this OverwritePermissions. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.DenyValue">
+            <summary> Gets a packed value representing all the denied permissions in this OverwritePermissions. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.CreateInstantInvite">
+            <summary> If Allowed, a user may create invites. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.ManageChannel">
+            <summary> If Allowed, a user may create, delete and modify this channel. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.AddReactions">
+            <summary> If Allowed, a user may add reactions. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.ReadMessages">
+            <summary> If Allowed, a user may join channels. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.SendMessages">
+            <summary> If Allowed, a user may send messages. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.SendTTSMessages">
+            <summary> If Allowed, a user may send text-to-speech messages. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.ManageMessages">
+            <summary> If Allowed, a user may delete messages. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.EmbedLinks">
+            <summary> If Allowed, Discord will auto-embed links sent by this user. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.AttachFiles">
+            <summary> If Allowed, a user may send files. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.ReadMessageHistory">
+            <summary> If Allowed, a user may read previous messages. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.MentionEveryone">
+            <summary> If Allowed, a user may mention @everyone. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.UseExternalEmojis">
+            <summary> If Allowed, a user may use custom emoji from other guilds. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.Connect">
+            <summary> If Allowed, a user may connect to a voice channel. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.Speak">
+            <summary> If Allowed, a user may speak in a voice channel. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.MuteMembers">
+            <summary> If Allowed, a user may mute users. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.DeafenMembers">
+            <summary> If Allowed, a user may deafen users. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.MoveMembers">
+            <summary> If Allowed, a user may move other users between voice channels. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.UseVAD">
+            <summary> If Allowed, a user may use voice-activity-detection rather than push-to-talk. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.ManagePermissions">
+            <summary> If Allowed, a user may adjust permissions. This also implictly grants all other permissions. </summary>
+        </member>
+        <member name="P:Discord.OverwritePermissions.ManageWebhooks">
+            <summary> If True, a user may edit the webhooks for this channel. </summary>
+        </member>
+        <member name="M:Discord.OverwritePermissions.#ctor(System.UInt64,System.UInt64)">
+            <summary> Creates a new OverwritePermissions with the provided allow and deny packed values. </summary>
+        </member>
+        <member name="M:Discord.OverwritePermissions.#ctor(Discord.PermValue,Discord.PermValue,Discord.PermValue,Discord.PermValue,Discord.PermValue,Discord.PermValue,Discord.PermValue,Discord.PermValue,Discord.PermValue,Discord.PermValue,Discord.PermValue,Discord.PermValue,Discord.PermValue,Discord.PermValue,Discord.PermValue,Discord.PermValue,Discord.PermValue,Discord.PermValue,Discord.PermValue,Discord.PermValue)">
+            <summary> Creates a new ChannelPermissions with the provided permissions. </summary>
+        </member>
+        <member name="M:Discord.OverwritePermissions.Modify(System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue},System.Nullable{Discord.PermValue})">
+            <summary> Creates a new OverwritePermissions from this one, changing the provided non-null permissions. </summary>
+        </member>
+        <member name="F:Discord.Color.Default">
+            <summary> Gets the default user color value. </summary>
+        </member>
+        <member name="F:Discord.Color.Teal">
+            <summary> Gets the teal color value </summary>
+        </member>
+        <member name="F:Discord.Color.DarkTeal">
+            <summary> Gets the dark teal color value </summary>
+        </member>
+        <member name="F:Discord.Color.Green">
+            <summary> Gets the green color value </summary>
+        </member>
+        <member name="F:Discord.Color.DarkGreen">
+            <summary> Gets the dark green color value </summary>
+        </member>
+        <member name="F:Discord.Color.Blue">
+            <summary> Gets the blue color value </summary>
+        </member>
+        <member name="F:Discord.Color.DarkBlue">
+            <summary> Gets the dark blue color value </summary>
+        </member>
+        <member name="F:Discord.Color.Purple">
+            <summary> Gets the purple color value </summary>
+        </member>
+        <member name="F:Discord.Color.DarkPurple">
+            <summary> Gets the dark purple color value </summary>
+        </member>
+        <member name="F:Discord.Color.Magenta">
+            <summary> Gets the magenta color value </summary>
+        </member>
+        <member name="F:Discord.Color.DarkMagenta">
+            <summary> Gets the dark magenta color value </summary>
+        </member>
+        <member name="F:Discord.Color.Gold">
+            <summary> Gets the gold color value </summary>
+        </member>
+        <member name="F:Discord.Color.LightOrange">
+            <summary> Gets the light orange color value </summary>
+        </member>
+        <member name="F:Discord.Color.Orange">
+            <summary> Gets the orange color value </summary>
+        </member>
+        <member name="F:Discord.Color.DarkOrange">
+            <summary> Gets the dark orange color value </summary>
+        </member>
+        <member name="F:Discord.Color.Red">
+            <summary> Gets the red color value </summary>
+        </member>
+        <member name="F:Discord.Color.DarkRed">
+            <summary> Gets the dark red color value </summary>
+        </member>
+        <member name="F:Discord.Color.LightGrey">
+            <summary> Gets the light grey color value </summary>
+        </member>
+        <member name="F:Discord.Color.LighterGrey">
+            <summary> Gets the lighter grey color value </summary>
+        </member>
+        <member name="F:Discord.Color.DarkGrey">
+            <summary> Gets the dark grey color value </summary>
+        </member>
+        <member name="F:Discord.Color.DarkerGrey">
+            <summary> Gets the darker grey color value </summary>
+        </member>
+        <member name="P:Discord.Color.RawValue">
+            <summary> Gets the encoded value for this color. </summary>
+        </member>
+        <member name="P:Discord.Color.R">
+            <summary> Gets the red component for this color. </summary>
+        </member>
+        <member name="P:Discord.Color.G">
+            <summary> Gets the green component for this color. </summary>
+        </member>
+        <member name="P:Discord.Color.B">
+            <summary> Gets the blue component for this color. </summary>
+        </member>
+        <member name="P:Discord.IRole.Guild">
+            <summary> Gets the guild owning this role.</summary>
+        </member>
+        <member name="P:Discord.IRole.Color">
+            <summary> Gets the color given to users of this role. </summary>
+        </member>
+        <member name="P:Discord.IRole.IsHoisted">
+            <summary> Returns true if users of this role are separated in the user list. </summary>
+        </member>
+        <member name="P:Discord.IRole.IsManaged">
+            <summary> Returns true if this role is automatically managed by Discord. </summary>
+        </member>
+        <member name="P:Discord.IRole.IsMentionable">
+            <summary> Returns true if this role may be mentioned in messages. </summary>
+        </member>
+        <member name="P:Discord.IRole.Name">
+            <summary> Gets the name of this role. </summary>
+        </member>
+        <member name="P:Discord.IRole.Permissions">
+            <summary> Gets the permissions granted to members of this role. </summary>
+        </member>
+        <member name="P:Discord.IRole.Position">
+            <summary> Gets this role's position relative to other roles in the same guild. </summary>
+        </member>
+        <member name="P:Discord.ReorderRoleProperties.Id">
+            <summary>The id of the role to be edited</summary>
+        </member>
+        <member name="P:Discord.ReorderRoleProperties.Position">
+            <summary>The new zero-based position of the role.</summary>
+        </member>
+        <member name="T:Discord.RoleProperties">
+            <summary>
+            Modify an IRole with the specified parameters
+            </summary>
+            <example>
+            <code language="c#">
+            await role.ModifyAsync(x =>
+            {
+                x.Color = new Color(180, 15, 40);
+                x.Hoist = true;
+            });
+            </code>
+            </example>
+            <seealso cref="T:Discord.IRole"/>
+        </member>
+        <member name="P:Discord.RoleProperties.Name">
+            <summary>
+            The name of the role
+            </summary>
+            <remarks>
+            If this role is the EveryoneRole, this value may not be set.
+            </remarks>
+        </member>
+        <member name="P:Discord.RoleProperties.Permissions">
+            <summary>
+            The role's GuildPermissions
+            </summary>
+        </member>
+        <member name="P:Discord.RoleProperties.Position">
+            <summary>
+            The position of the role. This is 0-based!
+            </summary>
+            <remarks>
+            If this role is the EveryoneRole, this value may not be set.
+            </remarks>
+        </member>
+        <member name="P:Discord.RoleProperties.Color">
+            <summary>
+            The color of the Role.
+            </summary>
+            <remarks>
+            If this role is the EveryoneRole, this value may not be set.
+            </remarks>
+        </member>
+        <member name="P:Discord.RoleProperties.Hoist">
+            <summary>
+            Whether or not this role should be displayed independently in the userlist.
+            </summary>
+            <remarks>
+            If this role is the EveryoneRole, this value may not be set.
+            </remarks>
+        </member>
+        <member name="P:Discord.RoleProperties.Mentionable">
+            <summary>
+            Whether or not this role can be mentioned.
+            </summary>
+            <remarks>
+            If this role is the EveryoneRole, this value may not be set.
+            </remarks>
+        </member>
+        <member name="T:Discord.GuildUserProperties">
+            <summary>
+            Modify an IGuildUser with the following parameters.
+            </summary>
+            <example>
+            <code language="c#">
+            await (Context.User as IGuildUser)?.ModifyAsync(x =>
+            {
+                x.Nickname = $"festive {Context.User.Username}";
+            });
+            </code>
+            </example>
+            <seealso cref="T:Discord.IGuildUser"/>
+        </member>
+        <member name="P:Discord.GuildUserProperties.Mute">
+            <summary>
+            Should the user be guild-muted in a voice channel?
+            </summary>
+            <remarks>
+            If this value is set to true, no user will be able to hear this user speak in the guild.
+            </remarks>
+        </member>
+        <member name="P:Discord.GuildUserProperties.Deaf">
+            <summary>
+            Should the user be guild-deafened in a voice channel?
+            </summary>
+            <remarks>
+            If this value is set to true, this user will not be able to hear anyone speak in the guild.
+            </remarks>
+        </member>
+        <member name="P:Discord.GuildUserProperties.Nickname">
+            <summary>
+            Should the user have a nickname set? 
+            </summary>
+            <remarks>
+            To clear the user's nickname, this value can be set to null.
+            </remarks>
+        </member>
+        <member name="P:Discord.GuildUserProperties.Roles">
+            <summary>
+            What roles should the user have?
+            </summary>
+            <remarks>
+            To add a role to a user: <see cref="M:Discord.IGuildUser.AddRolesAsync(System.Collections.Generic.IEnumerable{Discord.IRole},Discord.RequestOptions)"/>
+            To remove a role from a user: <see cref="M:Discord.IGuildUser.RemoveRolesAsync(System.Collections.Generic.IEnumerable{Discord.IRole},Discord.RequestOptions)"/>
+            </remarks>
+        </member>
+        <member name="P:Discord.GuildUserProperties.RoleIds">
+            <summary>
+            What roles should the user have?
+            </summary>
+            <remarks>
+            To add a role to a user: <see cref="M:Discord.IGuildUser.AddRolesAsync(System.Collections.Generic.IEnumerable{Discord.IRole},Discord.RequestOptions)"/>
+            To remove a role from a user: <see cref="M:Discord.IGuildUser.RemoveRolesAsync(System.Collections.Generic.IEnumerable{Discord.IRole},Discord.RequestOptions)"/>
+            </remarks>
+        </member>
+        <member name="P:Discord.GuildUserProperties.Channel">
+            <summary>
+            Move a user to a voice channel.
+            </summary>
+            <remarks>
+            This user MUST already be in a Voice Channel for this to work.
+            </remarks>
+        </member>
+        <member name="P:Discord.GuildUserProperties.ChannelId">
+            <summary>
+            Move a user to a voice channel.
+            </summary>
+            <remarks>
+            This user MUST already be in a Voice Channel for this to work.
+            </remarks>
+        </member>
+        <member name="T:Discord.IGuildUser">
+            <summary> A Guild-User pairing. </summary>
+        </member>
+        <member name="P:Discord.IGuildUser.JoinedAt">
+            <summary> Gets when this user joined this guild. </summary>
+        </member>
+        <member name="P:Discord.IGuildUser.Nickname">
+            <summary> Gets the nickname for this user. </summary>
+        </member>
+        <member name="P:Discord.IGuildUser.GuildPermissions">
+            <summary> Gets the guild-level permissions for this user. </summary>
+        </member>
+        <member name="P:Discord.IGuildUser.Guild">
+            <summary> Gets the guild for this user. </summary>
+        </member>
+        <member name="P:Discord.IGuildUser.GuildId">
+            <summary> Gets the id of the guild for this user. </summary>
+        </member>
+        <member name="P:Discord.IGuildUser.RoleIds">
+            <summary> Returns a collection of the ids of the roles this user is a member of in this guild, including the guild's @everyone role. </summary>
+        </member>
+        <member name="M:Discord.IGuildUser.GetPermissions(Discord.IGuildChannel)">
+            <summary> Gets the level permissions granted to this user to a given channel. </summary>
+        </member>
+        <member name="M:Discord.IGuildUser.KickAsync(System.String,Discord.RequestOptions)">
+            <summary> Kicks this user from this guild. </summary>
+        </member>
+        <member name="M:Discord.IGuildUser.ModifyAsync(System.Action{Discord.GuildUserProperties},Discord.RequestOptions)">
+            <summary> Modifies this user's properties in this guild. </summary>
+        </member>
+        <member name="M:Discord.IGuildUser.AddRoleAsync(Discord.IRole,Discord.RequestOptions)">
+            <summary> Adds a role to this user in this guild. </summary>
+        </member>
+        <member name="M:Discord.IGuildUser.AddRolesAsync(System.Collections.Generic.IEnumerable{Discord.IRole},Discord.RequestOptions)">
+            <summary> Adds roles to this user in this guild. </summary>
+        </member>
+        <member name="M:Discord.IGuildUser.RemoveRoleAsync(Discord.IRole,Discord.RequestOptions)">
+            <summary> Removes a role from this user in this guild. </summary>
+        </member>
+        <member name="M:Discord.IGuildUser.RemoveRolesAsync(System.Collections.Generic.IEnumerable{Discord.IRole},Discord.RequestOptions)">
+            <summary> Removes roles from this user in this guild. </summary>
+        </member>
+        <member name="P:Discord.IPresence.Game">
+            <summary> Gets the game this user is currently playing, if any. </summary>
+        </member>
+        <member name="P:Discord.IPresence.Status">
+            <summary> Gets the current status of this user. </summary>
+        </member>
+        <member name="P:Discord.ISelfUser.Email">
+            <summary> Gets the email associated with this user. </summary>
+        </member>
+        <member name="P:Discord.ISelfUser.IsVerified">
+            <summary> Returns true if this user's email has been verified. </summary>
+        </member>
+        <member name="P:Discord.ISelfUser.IsMfaEnabled">
+            <summary> Returns true if this user has enabled MFA on their account. </summary>
+        </member>
+        <member name="P:Discord.IUser.AvatarId">
+            <summary> Gets the id of this user's avatar. </summary>
+        </member>
+        <member name="M:Discord.IUser.GetAvatarUrl(Discord.ImageFormat,System.UInt16)">
+            <summary> Gets the url to this user's avatar. </summary>
+        </member>
+        <member name="P:Discord.IUser.Discriminator">
+            <summary> Gets the per-username unique id for this user. </summary>
+        </member>
+        <member name="P:Discord.IUser.DiscriminatorValue">
+            <summary> Gets the per-username unique id for this user. </summary>
+        </member>
+        <member name="P:Discord.IUser.IsBot">
+            <summary> Returns true if this user is a bot user. </summary>
+        </member>
+        <member name="P:Discord.IUser.IsWebhook">
+            <summary> Returns true if this user is a webhook user. </summary>
+        </member>
+        <member name="P:Discord.IUser.Username">
+            <summary> Gets the username for this user. </summary>
+        </member>
+        <member name="M:Discord.IUser.GetOrCreateDMChannelAsync(Discord.RequestOptions)">
+            <summary> Returns a private message channel to this user, creating one if it does not already exist. </summary>
+        </member>
+        <member name="P:Discord.IVoiceState.IsDeafened">
+            <summary> Returns true if the guild has deafened this user. </summary>
+        </member>
+        <member name="P:Discord.IVoiceState.IsMuted">
+            <summary> Returns true if the guild has muted this user. </summary>
+        </member>
+        <member name="P:Discord.IVoiceState.IsSelfDeafened">
+            <summary> Returns true if this user has marked themselves as deafened. </summary>
+        </member>
+        <member name="P:Discord.IVoiceState.IsSelfMuted">
+            <summary> Returns true if this user has marked themselves as muted. </summary>
+        </member>
+        <member name="P:Discord.IVoiceState.IsSuppressed">
+            <summary> Returns true if the guild is temporarily blocking audio to/from this user. </summary>
+        </member>
+        <member name="P:Discord.IVoiceState.VoiceChannel">
+            <summary> Gets the voice channel this user is currently in, if any. </summary>
+        </member>
+        <member name="P:Discord.IVoiceState.VoiceSessionId">
+            <summary> Gets the unique identifier for this user's voice session. </summary>
+        </member>
+        <member name="T:Discord.SelfUserProperties">
+            <summary>
+            Modify the current user with the specified arguments
+            </summary>
+            <example>
+            <code language="c#">
+            await Context.Client.CurrentUser.ModifyAsync(x =>
+            {
+                x.Avatar = new Image(File.OpenRead("avatar.jpg"));
+            });
+            </code>
+            </example>
+            <seealso cref="T:Discord.ISelfUser"/>
+        </member>
+        <member name="P:Discord.SelfUserProperties.Username">
+            <summary>
+            Your username
+            </summary>
+        </member>
+        <member name="P:Discord.SelfUserProperties.Avatar">
+            <summary>
+            Your avatar
+            </summary>
+        </member>
+        <member name="M:Discord.Format.Bold(System.String)">
+            <summary> Returns a markdown-formatted string with bold formatting. </summary>
+        </member>
+        <member name="M:Discord.Format.Italics(System.String)">
+            <summary> Returns a markdown-formatted string with italics formatting. </summary>
+        </member>
+        <member name="M:Discord.Format.Underline(System.String)">
+            <summary> Returns a markdown-formatted string with underline formatting. </summary>
+        </member>
+        <member name="M:Discord.Format.Strikethrough(System.String)">
+            <summary> Returns a markdown-formatted string with strikethrough formatting. </summary>
+        </member>
+        <member name="M:Discord.Format.Code(System.String,System.String)">
+            <summary> Returns a markdown-formatted string with codeblock formatting. </summary>
+        </member>
+        <member name="M:Discord.Format.Sanitize(System.String)">
+            <summary> Sanitizes the string, safely escaping any Markdown sequences. </summary>
+        </member>
+        <member name="P:Discord.RequestOptions.Timeout">
+            <summary> 
+            The max time, in milliseconds, to wait for this request to complete. If null, a request will not time out. 
+            If a rate limit has been triggered for this request's bucket and will not be unpaused in time, this request will fail immediately. 
+            </summary>
+        </member>
+        <member name="P:Discord.RequestOptions.AuditLogReason">
+            <summary>
+            The reason for this action in the guild's audit log
+            </summary>
+        </member>
+        <member name="T:Discord.RetryMode">
+            <summary> Specifies how a request should act in the case of an error. </summary>
+        </member>
+        <member name="F:Discord.RetryMode.AlwaysFail">
+            <summary> If a request fails, an exception is thrown immediately. </summary>
+        </member>
+        <member name="F:Discord.RetryMode.RetryTimeouts">
+            <summary> Retry if a request timed out. </summary>
+        </member>
+        <member name="F:Discord.RetryMode.RetryRatelimit">
+            <summary> Retry if a request failed due to a ratelimit. </summary>
+        </member>
+        <member name="F:Discord.RetryMode.Retry502">
+            <summary> Retry if a request failed due to an HTTP error 502. </summary>
+        </member>
+        <member name="F:Discord.RetryMode.AlwaysRetry">
+            <summary> Continuously retry a request until it times out, its cancel token is triggered, or the server responds with a non-502 error. </summary>
+        </member>
+        <member name="T:Discord.Cacheable`2">
+            <summary>
+            Contains an entity that may be cached.
+            </summary>
+            <typeparam name="TEntity">The type of entity that is cached</typeparam>
+            <typeparam name="TId">The type of this entity's ID</typeparam>
+        </member>
+        <member name="P:Discord.Cacheable`2.HasValue">
+            <summary>
+            Is this entity cached?
+            </summary>
+        </member>
+        <member name="P:Discord.Cacheable`2.Id">
+            <summary>
+            The ID of this entity.
+            </summary>
+        </member>
+        <member name="P:Discord.Cacheable`2.Value">
+            <summary>
+            The entity, if it could be pulled from cache.
+            </summary>
+            <remarks>
+            This value is not guaranteed to be set; in cases where the entity cannot be pulled from cache, it is null.
+            </remarks>
+        </member>
+        <member name="M:Discord.Cacheable`2.DownloadAsync">
+            <summary>
+            Downloads this entity to cache.
+            </summary>
+            <returns>An awaitable Task containing the downloaded entity.</returns>
+            <exception cref="T:Discord.Net.HttpException">Thrown when used from a user account.</exception>
+            <exception cref="T:System.NullReferenceException">Thrown when the message is deleted.</exception>
+        </member>
+        <member name="M:Discord.Cacheable`2.GetOrDownloadAsync">
+            <summary>
+            Returns the cached entity if it exists; otherwise downloads it.
+            </summary>
+            <returns>An awaitable Task containing a cached or downloaded entity.</returns>
+            <exception cref="T:Discord.Net.HttpException">Thrown when used from a user account.</exception>
+            <exception cref="T:System.NullReferenceException">Thrown when the message is deleted and is not in cache.</exception>
+        </member>
+        <member name="M:Discord.MentionUtils.ParseUser(System.String)">
+            <summary> Parses a provided user mention string. </summary>
+        </member>
+        <member name="M:Discord.MentionUtils.TryParseUser(System.String,System.UInt64@)">
+            <summary> Tries to parse a provided user mention string. </summary>
+        </member>
+        <member name="M:Discord.MentionUtils.ParseChannel(System.String)">
+            <summary> Parses a provided channel mention string. </summary>
+        </member>
+        <member name="M:Discord.MentionUtils.TryParseChannel(System.String,System.UInt64@)">
+            <summary>Tries to parse a provided channel mention string. </summary>
+        </member>
+        <member name="M:Discord.MentionUtils.ParseRole(System.String)">
+            <summary> Parses a provided role mention string. </summary>
+        </member>
+        <member name="M:Discord.MentionUtils.TryParseRole(System.String,System.UInt64@)">
+            <summary>Tries to parse a provided role mention string. </summary>
+        </member>
+        <member name="P:Discord.Optional`1.Value">
+            <summary> Gets the value for this paramter. </summary>
+        </member>
+        <member name="P:Discord.Optional`1.IsSpecified">
+            <summary> Returns true if this value has been specified. </summary>
+        </member>
+        <member name="M:Discord.Optional`1.#ctor(`0)">
+            <summary> Creates a new Parameter with the provided value. </summary>
+        </member>
+    </members>
+</doc>
