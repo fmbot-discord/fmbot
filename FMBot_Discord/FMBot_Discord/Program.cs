@@ -2,7 +2,6 @@
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Discord;
@@ -164,10 +163,11 @@ namespace FMBot_Discord
 
                 builder.WithAuthor(eab);
                 builder.WithDescription("Recently Played");
-                if (NetValid.RemoteFileExists(currentTrack.Images.Largest.ToString()))
+                /*if (NetValid.RemoteFileExists(currentTrack.Images.Largest.ToString()))
                 {
                     builder.WithThumbnailUrl(currentTrack.Images.Largest.ToString());
-                }
+                }*/
+                //commented since on some tracks the album art function causes an error. pee.
                 builder.AddInlineField("Current Track", currentTrack.Name);
                 builder.AddInlineField(currentTrack.AlbumName, currentTrack.ArtistName);
                 builder.AddInlineField("Previous Track", lastTrack.Name);
