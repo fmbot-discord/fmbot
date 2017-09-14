@@ -163,6 +163,8 @@ namespace FMBot_Discord
                 builder.WithAuthor(eab);
                 builder.WithDescription("Recently Played");
 
+
+
                 string nulltext = "[unknown or corrupted]";
 
                 string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
@@ -172,6 +174,13 @@ namespace FMBot_Discord
                 string LastTrackName = string.IsNullOrWhiteSpace(lastTrack.Name) ? nulltext : lastTrack.Name;
                 string LastArtistName = string.IsNullOrWhiteSpace(lastTrack.ArtistName) ? nulltext : lastTrack.ArtistName;
                 string LastAlbumName = string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? nulltext : lastTrack.AlbumName;
+
+                string ThumbnailImage = currentTrack.Images.Largest.ToString();
+
+                if (!string.IsNullOrWhiteSpace(ThumbnailImage))
+                {
+                    builder.WithThumbnailUrl(ThumbnailImage);
+                }
 
                 builder.AddInlineField("Current Track", TrackName);
                 builder.AddInlineField(AlbumName, ArtistName);
