@@ -13,7 +13,6 @@ using Microsoft.Extensions.DependencyInjection;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Objects;
 using IF.Lastfm.Core.Api.Enums;
-using System.Net;
 
 namespace FMBot_Discord
 {
@@ -165,10 +164,19 @@ namespace FMBot_Discord
                 builder.WithDescription("Recently Played");
 
                 string nulltext = "[unknown or corrupted]";
-                builder.AddInlineField("Current Track", string.IsNullOrWhiteSpace(currentTrack.Name) ? currentTrack.Name : nulltext);
-                builder.AddInlineField(string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? currentTrack.AlbumName : nulltext, string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? currentTrack.ArtistName : nulltext);
-                builder.AddInlineField("Previous Track", string.IsNullOrWhiteSpace(lastTrack.Name) ? lastTrack.Name : nulltext);
-                builder.AddInlineField(string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? lastTrack.AlbumName : nulltext, string.IsNullOrWhiteSpace(lastTrack.ArtistName) ? lastTrack.ArtistName : nulltext);
+
+                string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
+                string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
+                string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nulltext : currentTrack.AlbumName;
+
+                string LastTrackName = string.IsNullOrWhiteSpace(lastTrack.Name) ? nulltext : lastTrack.Name;
+                string LastArtistName = string.IsNullOrWhiteSpace(lastTrack.ArtistName) ? nulltext : lastTrack.ArtistName;
+                string LastAlbumName = string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? nulltext : lastTrack.AlbumName;
+
+                builder.AddInlineField("Current Track", TrackName);
+                builder.AddInlineField(AlbumName, ArtistName);
+                builder.AddInlineField("Previous Track", LastTrackName);
+                builder.AddInlineField(LastAlbumName, LastArtistName);
 
                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
                 efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
@@ -222,9 +230,9 @@ namespace FMBot_Discord
                 {
                     LastTrack track = tracks.Content.ElementAt(i);
                     int correctnum = (i + 1);
-                    string TrackName = string.IsNullOrWhiteSpace(track.Name) ? track.ArtistName : nulltext;
-                    string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? track.ArtistName : nulltext;
-                    string AlbumName = string.IsNullOrWhiteSpace(track.AlbumName) ? track.AlbumName : nulltext;
+                    string TrackName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.ArtistName;
+                    string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
+                    string AlbumName = string.IsNullOrWhiteSpace(track.AlbumName) ? nulltext : track.AlbumName;
                     builder.AddField("Track #" + correctnum.ToString() + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
                 }
 
@@ -281,7 +289,7 @@ namespace FMBot_Discord
                     LastArtist artist = artists.Content.ElementAt(i);
                     int correctnum = (i + 1);
 
-                    string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? artist.Name : nulltext;
+                    string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? nulltext : artist.Name;
                     builder.AddField("Artist #" + correctnum.ToString() + ":", ArtistName);
                 }
 
@@ -338,8 +346,8 @@ namespace FMBot_Discord
                     LastAlbum album = albums.Content.ElementAt(i);
                     int correctnum = (i + 1);
 
-                    string AlbumName = string.IsNullOrWhiteSpace(album.Name) ? album.Name : nulltext;
-                    string ArtistName = string.IsNullOrWhiteSpace(album.Name) ? album.Name : nulltext;
+                    string AlbumName = string.IsNullOrWhiteSpace(album.Name) ? nulltext : album.Name;
+                    string ArtistName = string.IsNullOrWhiteSpace(album.ArtistName) ? nulltext : album.ArtistName;
                     builder.AddField("Album #" + correctnum.ToString() + ":", AlbumName + "|" + ArtistName);
                 }
 
