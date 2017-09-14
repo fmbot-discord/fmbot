@@ -131,6 +131,11 @@ namespace FMBot_Discord
         [Command("fm")]
         public async Task fmAsync(IUser user = null)
         {
+            if (user.ToString().Equals("null"))
+            {
+                user = null;
+            }
+
             var DiscordUser = user ?? Context.Message.Author;
             string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
@@ -193,8 +198,13 @@ namespace FMBot_Discord
         }
 
         [Command("fmrecent")]
-        public async Task fmrecentAsync(IUser user = null)
+        public async Task fmrecentAsync(IUser user = null, int num = 5)
         {
+            if (user.ToString().Equals("null"))
+            {
+                user = null;
+            }
+
             var DiscordUser = user ?? Context.Message.Author;
             string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
@@ -214,7 +224,7 @@ namespace FMBot_Discord
                 // to our client's configuration
                 var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
                 var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
-                var tracks = await client.User.GetRecentScrobbles(LastFMName, null, 1, 5);
+                var tracks = await client.User.GetRecentScrobbles(LastFMName, null, 1, num);
 
                 EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                 eab.IconUrl = DiscordUser.GetAvatarUrl();
@@ -226,11 +236,12 @@ namespace FMBot_Discord
                 builder.WithDescription("Top 5 Recent Tracks");
 
                 string nulltext = "[unknown or corrupted]";
-                for (int i = 0; i <= 4; i++)
+                int indexval = (num - 1);
+                for (int i = 0; i <= indexval; i++)
                 {
                     LastTrack track = tracks.Content.ElementAt(i);
                     int correctnum = (i + 1);
-                    string TrackName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.ArtistName;
+                    string TrackName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.Name;
                     string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
                     string AlbumName = string.IsNullOrWhiteSpace(track.AlbumName) ? nulltext : track.AlbumName;
                     builder.AddField("Track #" + correctnum.ToString() + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
@@ -251,8 +262,13 @@ namespace FMBot_Discord
         }
 
         [Command("fmartists")]
-        public async Task fmartistsAsync(IUser user = null)
+        public async Task fmartistsAsync(IUser user = null, int num = 5)
         {
+            if (user.ToString().Equals("null"))
+            {
+                user = null;
+            }
+
             var DiscordUser = user ?? Context.Message.Author;
             string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
@@ -272,7 +288,7 @@ namespace FMBot_Discord
                 // to our client's configuration
                 var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
                 var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
-                var artists = await client.User.GetTopArtists(LastFMName, LastStatsTimeSpan.Overall, 1, 5);
+                var artists = await client.User.GetTopArtists(LastFMName, LastStatsTimeSpan.Overall, 1, num);
 
                 EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                 eab.IconUrl = DiscordUser.GetAvatarUrl();
@@ -284,7 +300,8 @@ namespace FMBot_Discord
                 builder.WithDescription("Top 5 Artists");
 
                 string nulltext = "[unknown or corrupted]";
-                for (int i = 0; i <= 4; i++)
+                int indexval = (num - 1);
+                for (int i = 0; i <= indexval; i++)
                 {
                     LastArtist artist = artists.Content.ElementAt(i);
                     int correctnum = (i + 1);
@@ -308,8 +325,13 @@ namespace FMBot_Discord
         }
 
         [Command("fmalbums")]
-        public async Task fmalbumsAsync(IUser user = null)
+        public async Task fmalbumsAsync(IUser user = null, int num = 5)
         {
+            if (user.ToString().Equals("null"))
+            {
+                user = null;
+            }
+
             var DiscordUser = user ?? Context.Message.Author;
             string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
@@ -329,7 +351,7 @@ namespace FMBot_Discord
                 // to our client's configuration
                 var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
                 var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
-                var albums = await client.User.GetTopAlbums(LastFMName, LastStatsTimeSpan.Overall, 1, 5);
+                var albums = await client.User.GetTopAlbums(LastFMName, LastStatsTimeSpan.Overall, 1, num);
 
                 EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                 eab.IconUrl = DiscordUser.GetAvatarUrl();
@@ -341,14 +363,15 @@ namespace FMBot_Discord
                 builder.WithDescription("Top 5 Albums");
 
                 string nulltext = "[unknown or corrupted]";
-                for (int i = 0; i <= 4; i++)
+                int indexval = (num - 1);
+                for (int i = 0; i <= indexval; i++)
                 {
                     LastAlbum album = albums.Content.ElementAt(i);
                     int correctnum = (i + 1);
 
                     string AlbumName = string.IsNullOrWhiteSpace(album.Name) ? nulltext : album.Name;
                     string ArtistName = string.IsNullOrWhiteSpace(album.ArtistName) ? nulltext : album.ArtistName;
-                    builder.AddField("Album #" + correctnum.ToString() + ":", AlbumName + "|" + ArtistName);
+                    builder.AddField("Album #" + correctnum.ToString() + ":", AlbumName + " | " + ArtistName);
                 }
 
                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
