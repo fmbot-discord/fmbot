@@ -163,15 +163,12 @@ namespace FMBot_Discord
 
                 builder.WithAuthor(eab);
                 builder.WithDescription("Recently Played");
-                /*if (NetValid.RemoteFileExists(currentTrack.Images.Largest.ToString()))
-                {
-                    builder.WithThumbnailUrl(currentTrack.Images.Largest.ToString());
-                }*/
-                //commented since on some tracks the album art function causes an error. pee.
-                builder.AddInlineField("Current Track", currentTrack.Name);
-                builder.AddInlineField(currentTrack.AlbumName, currentTrack.ArtistName);
-                builder.AddInlineField("Previous Track", lastTrack.Name);
-                builder.AddInlineField(lastTrack.AlbumName, lastTrack.ArtistName);
+
+                string nulltext = "[unknown or corrupted]";
+                builder.AddInlineField("Current Track", string.IsNullOrWhiteSpace(currentTrack.Name) ? currentTrack.Name : nulltext);
+                builder.AddInlineField(string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? currentTrack.AlbumName : nulltext, string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? currentTrack.ArtistName : nulltext);
+                builder.AddInlineField("Previous Track", string.IsNullOrWhiteSpace(lastTrack.Name) ? lastTrack.Name : nulltext);
+                builder.AddInlineField(string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? lastTrack.AlbumName : nulltext, string.IsNullOrWhiteSpace(lastTrack.ArtistName) ? lastTrack.ArtistName : nulltext);
 
                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
                 efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
@@ -220,12 +217,15 @@ namespace FMBot_Discord
                 builder.WithAuthor(eab);
                 builder.WithDescription("Top 5 Recent Tracks");
 
+                string nulltext = "[unknown or corrupted]";
                 for (int i = 0; i <= 4; i++)
                 {
                     LastTrack track = tracks.Content.ElementAt(i);
                     int correctnum = (i + 1);
-
-                    builder.AddField("Track #" + correctnum.ToString() + ":", track.Name + " - " + track.ArtistName + " | " + track.AlbumName);
+                    string TrackName = string.IsNullOrWhiteSpace(track.Name) ? track.ArtistName : nulltext;
+                    string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? track.ArtistName : nulltext;
+                    string AlbumName = string.IsNullOrWhiteSpace(track.AlbumName) ? track.AlbumName : nulltext;
+                    builder.AddField("Track #" + correctnum.ToString() + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
                 }
 
                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
@@ -275,12 +275,14 @@ namespace FMBot_Discord
                 builder.WithAuthor(eab);
                 builder.WithDescription("Top 5 Artists");
 
+                string nulltext = "[unknown or corrupted]";
                 for (int i = 0; i <= 4; i++)
                 {
                     LastArtist artist = artists.Content.ElementAt(i);
                     int correctnum = (i + 1);
 
-                    builder.AddField("Artist #" + correctnum.ToString() + ":", artist.Name);
+                    string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? artist.Name : nulltext;
+                    builder.AddField("Artist #" + correctnum.ToString() + ":", ArtistName);
                 }
 
                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
@@ -330,12 +332,15 @@ namespace FMBot_Discord
                 builder.WithAuthor(eab);
                 builder.WithDescription("Top 5 Albums");
 
+                string nulltext = "[unknown or corrupted]";
                 for (int i = 0; i <= 4; i++)
                 {
                     LastAlbum album = albums.Content.ElementAt(i);
                     int correctnum = (i + 1);
 
-                    builder.AddField("Album #" + correctnum.ToString() + ":", album.Name + "|" + album.ArtistName);
+                    string AlbumName = string.IsNullOrWhiteSpace(album.Name) ? album.Name : nulltext;
+                    string ArtistName = string.IsNullOrWhiteSpace(album.Name) ? album.Name : nulltext;
+                    builder.AddField("Album #" + correctnum.ToString() + ":", AlbumName + "|" + ArtistName);
                 }
 
                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
@@ -381,12 +386,18 @@ namespace FMBot_Discord
             // next, let's load the values from that file
             // to our client's configuration
             var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
-            string SelfName = Context.Client.CurrentUser.Username.ToString();
+            var SelfName = Context.Client.CurrentUser;
             string prefix = cfgjson.CommandPrefix;
-            var builder = new EmbedBuilder()
-            {
-                Description = "Commands for " + SelfName
-            };
+
+            var DiscordUser = Context.Message.Author;
+
+            EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+            eab.IconUrl = SelfName.GetAvatarUrl();
+            eab.Name = SelfName.Username;
+
+            var builder = new EmbedBuilder();
+            builder.WithAuthor(eab);
+            builder.WithDescription("Commands for " + SelfName.Username.ToString());
 
             foreach (var module in _service.Modules)
             {
@@ -467,30 +478,6 @@ namespace FMBot_Discord
             }
 
             return "NULL";
-        }
-    }
-
-    public class NetValid
-    {
-        public static bool RemoteFileExists(string url)
-        {
-            try
-            {
-                //Creating the HttpWebRequest
-                HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
-                //Setting the Request method HEAD, you can also use GET too.
-                request.Method = "HEAD";
-                //Getting the Web Response.
-                HttpWebResponse response = request.GetResponse() as HttpWebResponse;
-                //Returns TRUE if the Status code == 200
-                response.Close();
-                return (response.StatusCode == HttpStatusCode.OK);
-            }
-            catch
-            {
-                //Any exception will returns false.
-                return false;
-            }
         }
     }
 
