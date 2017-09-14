@@ -131,11 +131,6 @@ namespace FMBot_Discord
         [Command("fm")]
         public async Task fmAsync(IUser user = null)
         {
-            if (user.ToString().Equals("null"))
-            {
-                user = null;
-            }
-
             var DiscordUser = user ?? Context.Message.Author;
             string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
@@ -200,11 +195,6 @@ namespace FMBot_Discord
         [Command("fmrecent")]
         public async Task fmrecentAsync(IUser user = null, int num = 5)
         {
-            if (user.ToString().Equals("null"))
-            {
-                user = null;
-            }
-
             var DiscordUser = user ?? Context.Message.Author;
             string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
@@ -233,7 +223,7 @@ namespace FMBot_Discord
 
                 var builder = new EmbedBuilder();
                 builder.WithAuthor(eab);
-                builder.WithDescription("Top 5 Recent Tracks");
+                builder.WithDescription("Top " + num + " Recent Tracks");
 
                 string nulltext = "[unknown or corrupted]";
                 int indexval = (num - 1);
@@ -264,11 +254,6 @@ namespace FMBot_Discord
         [Command("fmartists")]
         public async Task fmartistsAsync(IUser user = null, int num = 5)
         {
-            if (user.ToString().Equals("null"))
-            {
-                user = null;
-            }
-
             var DiscordUser = user ?? Context.Message.Author;
             string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
@@ -297,7 +282,7 @@ namespace FMBot_Discord
 
                 var builder = new EmbedBuilder();
                 builder.WithAuthor(eab);
-                builder.WithDescription("Top 5 Artists");
+                builder.WithDescription("Top " + num + " Artists");
 
                 string nulltext = "[unknown or corrupted]";
                 int indexval = (num - 1);
@@ -327,11 +312,6 @@ namespace FMBot_Discord
         [Command("fmalbums")]
         public async Task fmalbumsAsync(IUser user = null, int num = 5)
         {
-            if (user.ToString().Equals("null"))
-            {
-                user = null;
-            }
-
             var DiscordUser = user ?? Context.Message.Author;
             string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
@@ -360,7 +340,7 @@ namespace FMBot_Discord
 
                 var builder = new EmbedBuilder();
                 builder.WithAuthor(eab);
-                builder.WithDescription("Top 5 Albums");
+                builder.WithDescription("Top " + num + " Albums");
 
                 string nulltext = "[unknown or corrupted]";
                 int indexval = (num - 1);
