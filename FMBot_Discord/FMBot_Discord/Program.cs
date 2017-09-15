@@ -173,14 +173,20 @@ namespace FMBot_Discord
                 string LastArtistName = string.IsNullOrWhiteSpace(lastTrack.ArtistName) ? nulltext : lastTrack.ArtistName;
                 string LastAlbumName = string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? nulltext : lastTrack.AlbumName;
 
-                var AlbumInfo = await client.Album.GetInfoByMbidAsync(currentTrack.ArtistMbid);
-                var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
-                var AlbumThumbnail = (AlbumImages != null ) ? AlbumImages.Small.AbsoluteUri : null;
-                string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
-
-                if (!string.IsNullOrWhiteSpace(ThumbnailImage))
+                try
                 {
-                    builder.WithThumbnailUrl(ThumbnailImage);
+                    var AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
+                    var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
+                    var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
+                    string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
+
+                    if (!string.IsNullOrWhiteSpace(ThumbnailImage))
+                    {
+                        builder.WithThumbnailUrl(ThumbnailImage);
+                    }
+                }
+                catch (Exception)
+                {
                 }
 
                 builder.AddInlineField("Current Track", TrackName);
