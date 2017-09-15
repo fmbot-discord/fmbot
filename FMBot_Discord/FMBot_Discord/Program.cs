@@ -110,8 +110,8 @@ namespace FMBot_Discord
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully)
             var result = await commands.ExecuteAsync(context, argPos, services);
-            //if (!result.IsSuccess)
-                //await context.Channel.SendMessageAsync(result.ErrorReason);
+            if (!result.IsSuccess)
+                Console.WriteLine("[FMBot]: Error - " + result.Error + ": " + result.ErrorReason);
         }
     }
 
@@ -163,8 +163,6 @@ namespace FMBot_Discord
                 builder.WithAuthor(eab);
                 builder.WithDescription("Recently Played");
 
-
-
                 string nulltext = "[unknown or corrupted]";
 
                 string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
@@ -175,12 +173,15 @@ namespace FMBot_Discord
                 string LastArtistName = string.IsNullOrWhiteSpace(lastTrack.ArtistName) ? nulltext : lastTrack.ArtistName;
                 string LastAlbumName = string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? nulltext : lastTrack.AlbumName;
 
-                string ThumbnailImage = currentTrack.Images.Largest.ToString();
+                //OH DEAR GOD HELP ME PLEASE.
+                //GIVE ME MERCY.
+                //AAAAAUUUUGGHHHHH....
+                //var ThumbnailImage = currentTrack.Images;
 
-                if (!string.IsNullOrWhiteSpace(ThumbnailImage))
-                {
-                    builder.WithThumbnailUrl(ThumbnailImage);
-                }
+                //if (!string.IsNullOrWhiteSpace(ThumbnailImage.Largest.ToString()))
+                //{
+                //builder.WithThumbnailUrl(ThumbnailImage.Largest.ToString());
+                //}
 
                 builder.AddInlineField("Current Track", TrackName);
                 builder.AddInlineField(AlbumName, ArtistName);
