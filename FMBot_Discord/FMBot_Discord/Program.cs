@@ -246,10 +246,31 @@ namespace FMBot_Discord
                 for (int i = 0; i <= indexval; i++)
                 {
                     LastTrack track = tracks.Content.ElementAt(i);
-                    int correctnum = (i + 1);
+
                     string TrackName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.Name;
                     string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
                     string AlbumName = string.IsNullOrWhiteSpace(track.AlbumName) ? nulltext : track.AlbumName;
+
+                    try
+                    {
+                        if (track.Equals(0))
+                        {
+                            var AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
+                            var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
+                            var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
+                            string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
+
+                            if (!string.IsNullOrWhiteSpace(ThumbnailImage))
+                            {
+                                builder.WithThumbnailUrl(ThumbnailImage);
+                            }
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+                    int correctnum = (i + 1);
                     builder.AddField("Track #" + correctnum.ToString() + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
                 }
 
@@ -305,9 +326,29 @@ namespace FMBot_Discord
                 for (int i = 0; i <= indexval; i++)
                 {
                     LastArtist artist = artists.Content.ElementAt(i);
-                    int correctnum = (i + 1);
 
                     string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? nulltext : artist.Name;
+
+                    try
+                    {
+                        if (artist.Equals(0))
+                        {
+                            var ArtistInfo = await client.Artist.GetInfoAsync(ArtistName);
+                            var ArtistImages = (ArtistInfo.Content.MainImage != null) ? ArtistInfo.Content.MainImage : null;
+                            var ArtistThumbnail = (ArtistImages != null) ? ArtistImages.Large.AbsoluteUri : null;
+                            string ThumbnailImage = (ArtistThumbnail != null) ? ArtistThumbnail.ToString() : null;
+
+                            if (!string.IsNullOrWhiteSpace(ThumbnailImage))
+                            {
+                                builder.WithThumbnailUrl(ThumbnailImage);
+                            }
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+                    int correctnum = (i + 1);
                     builder.AddField("Artist #" + correctnum.ToString() + ":", ArtistName);
                 }
 
@@ -363,10 +404,30 @@ namespace FMBot_Discord
                 for (int i = 0; i <= indexval; i++)
                 {
                     LastAlbum album = albums.Content.ElementAt(i);
-                    int correctnum = (i + 1);
 
                     string AlbumName = string.IsNullOrWhiteSpace(album.Name) ? nulltext : album.Name;
                     string ArtistName = string.IsNullOrWhiteSpace(album.ArtistName) ? nulltext : album.ArtistName;
+
+                    try
+                    {
+                        if (album.Equals(0))
+                        {
+                            var AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
+                            var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
+                            var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
+                            string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
+
+                            if (!string.IsNullOrWhiteSpace(ThumbnailImage))
+                            {
+                                builder.WithThumbnailUrl(ThumbnailImage);
+                            }
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+                    int correctnum = (i + 1);
                     builder.AddField("Album #" + correctnum.ToString() + ":", AlbumName + " | " + ArtistName);
                 }
 
