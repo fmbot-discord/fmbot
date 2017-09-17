@@ -234,15 +234,6 @@ namespace FMBot_Discord
                 var tracks = await client.User.GetRecentScrobbles(LastFMName, null, 1, 2);
                 LastTrack currentTrack = tracks.Content.ElementAt(0);
                 LastTrack lastTrack = tracks.Content.ElementAt(1);
-                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                eab.IconUrl = DiscordUser.GetAvatarUrl();
-                eab.Name = DiscordUser.Username;
-                eab.Url = "https://www.last.fm/user/" + LastFMName;
-
-                var builder = new EmbedBuilder();
-
-                builder.WithAuthor(eab);
-                builder.WithDescription("Recently Played on YouTube");
 
                 //if we are null, don't search for it.
                 string nulltext = "";
@@ -256,6 +247,18 @@ namespace FMBot_Discord
                 var items = new VideoSearch();
                 var item = items.SearchQuery(querystring, 1).ElementAt(0);
 
+                await Context.Channel.SendMessageAsync(item.Url);
+
+                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                eab.IconUrl = DiscordUser.GetAvatarUrl();
+                eab.Name = DiscordUser.Username;
+                eab.Url = "https://www.last.fm/user/" + LastFMName;
+
+                var builder = new EmbedBuilder();
+
+                builder.WithAuthor(eab);
+                builder.WithDescription("Recently Played on YouTube");
+
                 builder.AddField(TrackName, ArtistName + " | " + AlbumName);
 
                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
@@ -268,7 +271,7 @@ namespace FMBot_Discord
 
                 builder.WithFooter(efb);
 
-                await Context.Channel.SendMessageAsync(item.Url, false, builder.Build());
+                await Context.Channel.SendMessageAsync("", false, builder.Build());
             }
         }
 
