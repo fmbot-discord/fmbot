@@ -253,7 +253,7 @@ namespace FMBot_Discord
 
                     try
                     {
-                        if (track.Equals(0))
+                        if (i == 0)
                         {
                             var AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
                             var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
@@ -331,7 +331,7 @@ namespace FMBot_Discord
 
                     try
                     {
-                        if (artist.Equals(0))
+                        if (i == 0)
                         {
                             var ArtistInfo = await client.Artist.GetInfoAsync(ArtistName);
                             var ArtistImages = (ArtistInfo.Content.MainImage != null) ? ArtistInfo.Content.MainImage : null;
@@ -410,7 +410,7 @@ namespace FMBot_Discord
 
                     try
                     {
-                        if (album.Equals(0))
+                        if (i == 0)
                         {
                             var AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
                             var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
