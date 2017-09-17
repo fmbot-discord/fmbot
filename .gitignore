@@ -15,5 +15,6 @@ ipch
 *.sdf
 *.opensdf
 *.idb
+*.zip
 [Dd]ebug*/
 [Rr]elease*/
