@@ -190,9 +190,9 @@ namespace FMBot_Discord
                 {
                 }
 
-                builder.AddField("Current Track", TrackName);
+                builder.AddInlineField("Current Track", TrackName);
                 builder.AddInlineField(AlbumName, ArtistName);
-                builder.AddField("Previous Track", LastTrackName);
+                builder.AddInlineField("Previous Track", LastTrackName);
                 builder.AddInlineField(LastAlbumName, LastArtistName);
 
                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
@@ -235,12 +235,9 @@ namespace FMBot_Discord
                 LastTrack currentTrack = tracks.Content.ElementAt(0);
                 LastTrack lastTrack = tracks.Content.ElementAt(1);
 
-                //if we are null, don't search for it.
-                string nulltext = "";
-
-                string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
-                string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
-                string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nulltext : currentTrack.AlbumName;
+                string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? null : currentTrack.Name;
+                string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? null : currentTrack.ArtistName;
+                string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? null : currentTrack.AlbumName;
 
                 string querystring = TrackName + " - " + ArtistName + " " + AlbumName;
 
@@ -259,7 +256,13 @@ namespace FMBot_Discord
                 builder.WithAuthor(eab);
                 builder.WithDescription("Recently Played on YouTube");
 
-                builder.AddField(TrackName, ArtistName + " | " + AlbumName);
+                string nulltext = "[unknown or corrupted]";
+
+                string TrackName2 = string.IsNullOrWhiteSpace(TrackName) ? nulltext : TrackName;
+                string ArtistName2 = string.IsNullOrWhiteSpace(ArtistName) ? nulltext : ArtistName;
+                string AlbumName2 = string.IsNullOrWhiteSpace(AlbumName) ? nulltext : AlbumName;
+
+                builder.AddField(TrackName2, ArtistName2 + " | " + AlbumName2);
 
                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
                 efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
