@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Objects;
 using IF.Lastfm.Core.Api.Enums;
+using YoutubeSearch;
 
 namespace FMBot_Discord
 {
@@ -189,10 +190,73 @@ namespace FMBot_Discord
                 {
                 }
 
-                builder.AddInlineField("Current Track", TrackName);
+                builder.AddField("Current Track", TrackName);
                 builder.AddInlineField(AlbumName, ArtistName);
-                builder.AddInlineField("Previous Track", LastTrackName);
+                builder.AddField("Previous Track", LastTrackName);
                 builder.AddInlineField(LastAlbumName, LastArtistName);
+
+                EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
+
+                var userinfo = await client.User.GetInfoAsync(LastFMName);
+                var playcount = userinfo.Content.Playcount;
+
+                efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+
+                builder.WithFooter(efb);
+
+                await Context.Channel.SendMessageAsync("", false, builder.Build());
+            }
+        }
+
+        [Command("fmyt")]
+        public async Task fmytAsync(IUser user = null)
+        {
+            var DiscordUser = user ?? Context.Message.Author;
+            string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
+            if (LastFMName.Equals("NULL"))
+            {
+                await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
+            }
+            else
+            {
+                // first, let's load our configuration file
+                Console.WriteLine("[FMBot] Loading Configuration");
+                var json = "";
+                using (var fs = File.OpenRead(ConfigFileName))
+                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                    json = await sr.ReadToEndAsync();
+
+                // next, let's load the values from that file
+                // to our client's configuration
+                var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+                var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+                var tracks = await client.User.GetRecentScrobbles(LastFMName, null, 1, 2);
+                LastTrack currentTrack = tracks.Content.ElementAt(0);
+                LastTrack lastTrack = tracks.Content.ElementAt(1);
+                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                eab.IconUrl = DiscordUser.GetAvatarUrl();
+                eab.Name = DiscordUser.Username;
+                eab.Url = "https://www.last.fm/user/" + LastFMName;
+
+                var builder = new EmbedBuilder();
+
+                builder.WithAuthor(eab);
+                builder.WithDescription("Recently Played");
+
+                string nulltext = "[unknown or corrupted]";
+
+                string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
+                string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
+                string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nulltext : currentTrack.AlbumName;
+
+                string querystring = TrackName + " - " + ArtistName + " " + AlbumName;
+
+                var items = new VideoSearch();
+                var item = items.SearchQuery(querystring, 1).ElementAt(0);
+
+                builder.AddField("Current Track on YouTube", item.Url);
+                builder.AddField(TrackName, ArtistName + " | " + AlbumName);
 
                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
                 efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
