@@ -244,7 +244,8 @@ namespace FMBot_Discord
                 builder.WithAuthor(eab);
                 builder.WithDescription("Recently Played");
 
-                string nulltext = "[unknown or corrupted]";
+                //if we are null, don't search for it.
+                string nulltext = "";
 
                 string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
                 string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
