@@ -121,6 +121,7 @@ namespace FMBot_Discord
     {
         private string DBFileName = "database.txt";
         private string ConfigFileName = "config.json";
+        private ulong OwnerID = 184013824850919425;
 
         private readonly CommandService _service;
 
@@ -156,7 +157,7 @@ namespace FMBot_Discord
                 LastTrack lastTrack = tracks.Content.ElementAt(1);
                 EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                 eab.IconUrl = DiscordUser.GetAvatarUrl();
-                eab.Name = DiscordUser.Username;
+                eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
                 eab.Url = "https://www.last.fm/user/" + LastFMName;
 
                 var builder = new EmbedBuilder();
@@ -164,7 +165,7 @@ namespace FMBot_Discord
                 builder.WithAuthor(eab);
                 builder.WithDescription("Recently Played");
 
-                string nulltext = "[unknown or corrupted]";
+                string nulltext = "[undefined]";
 
                 string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
                 string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
@@ -190,7 +191,7 @@ namespace FMBot_Discord
                 {
                 }
 
-                builder.AddInlineField("Current Track", TrackName);
+                builder.AddInlineField("Recent Track", TrackName);
                 builder.AddInlineField(AlbumName, ArtistName);
                 builder.AddInlineField("Previous Track", LastTrackName);
                 builder.AddInlineField(LastAlbumName, LastArtistName);
@@ -239,16 +240,21 @@ namespace FMBot_Discord
                 string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? null : currentTrack.ArtistName;
                 string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? null : currentTrack.AlbumName;
 
-                string querystring = TrackName + " - " + ArtistName + " " + AlbumName;
+                try
+                {
+                    string querystring = TrackName + " - " + ArtistName + " " + AlbumName;
+                    var items = new VideoSearch();
+                    var item = items.SearchQuery(querystring, 1).ElementAt(0);
 
-                var items = new VideoSearch();
-                var item = items.SearchQuery(querystring, 1).ElementAt(0);
-
-                await Context.Channel.SendMessageAsync(item.Url);
+                    await Context.Channel.SendMessageAsync(item.Url);
+                }
+                catch (Exception)
+                {
+                }
 
                 EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                 eab.IconUrl = DiscordUser.GetAvatarUrl();
-                eab.Name = DiscordUser.Username;
+                eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
                 eab.Url = "https://www.last.fm/user/" + LastFMName;
 
                 var builder = new EmbedBuilder();
@@ -256,7 +262,7 @@ namespace FMBot_Discord
                 builder.WithAuthor(eab);
                 builder.WithDescription("Recently Played on YouTube");
 
-                string nulltext = "[unknown or corrupted]";
+                string nulltext = "[undefined]";
 
                 string TrackName2 = string.IsNullOrWhiteSpace(TrackName) ? nulltext : TrackName;
                 string ArtistName2 = string.IsNullOrWhiteSpace(ArtistName) ? nulltext : ArtistName;
@@ -304,14 +310,14 @@ namespace FMBot_Discord
 
                 EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                 eab.IconUrl = DiscordUser.GetAvatarUrl();
-                eab.Name = DiscordUser.Username;
+                eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
                 eab.Url = "https://www.last.fm/user/" + LastFMName;
 
                 var builder = new EmbedBuilder();
                 builder.WithAuthor(eab);
-                builder.WithDescription("Top " + num + " Recent Tracks");
+                builder.WithDescription("Top " + num + " Recent Track List");
 
-                string nulltext = "[unknown or corrupted]";
+                string nulltext = "[undefined]";
                 int indexval = (num - 1);
                 for (int i = 0; i <= indexval; i++)
                 {
@@ -384,14 +390,14 @@ namespace FMBot_Discord
 
                 EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                 eab.IconUrl = DiscordUser.GetAvatarUrl();
-                eab.Name = DiscordUser.Username;
+                eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
                 eab.Url = "https://www.last.fm/user/" + LastFMName;
 
                 var builder = new EmbedBuilder();
                 builder.WithAuthor(eab);
-                builder.WithDescription("Top " + num + " Artists");
+                builder.WithDescription("Top " + num + " Artist List");
 
-                string nulltext = "[unknown or corrupted]";
+                string nulltext = "[undefined]";
                 int indexval = (num - 1);
                 for (int i = 0; i <= indexval; i++)
                 {
@@ -462,14 +468,14 @@ namespace FMBot_Discord
 
                 EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                 eab.IconUrl = DiscordUser.GetAvatarUrl();
-                eab.Name = DiscordUser.Username;
+                eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
                 eab.Url = "https://www.last.fm/user/" + LastFMName;
 
                 var builder = new EmbedBuilder();
                 builder.WithAuthor(eab);
-                builder.WithDescription("Top " + num + " Albums");
+                builder.WithDescription("Top " + num + " Album List");
 
-                string nulltext = "[unknown or corrupted]";
+                string nulltext = "[undefined]";
                 int indexval = (num - 1);
                 for (int i = 0; i <= indexval; i++)
                 {
@@ -579,6 +585,23 @@ namespace FMBot_Discord
             }
 
             await ReplyAsync("", false, builder.Build());
+        }
+
+        [Command("broadcast")]
+        public async Task broadcastAsync(string message)
+        {
+            var DiscordUser = Context.Message.Author;
+            ulong BroadcastChannelID = 209847309385596928;
+            ITextChannel channel = await Context.Guild.GetTextChannelAsync(BroadcastChannelID);
+
+            if (DiscordUser.Id.Equals(OwnerID))
+            {
+                await channel.SendMessageAsync(message);
+            }
+            else
+            {
+                await ReplyAsync("We apologize, but you are not qualified for this operation.");
+            }
         }
 
         [Command("invite"), Summary("Invites the bot to a server")]
