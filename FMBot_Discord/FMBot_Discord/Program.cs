@@ -14,6 +14,7 @@ using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Objects;
 using IF.Lastfm.Core.Api.Enums;
 using YoutubeSearch;
+using System.Collections.Generic;
 
 namespace FMBot_Discord
 {
@@ -59,6 +60,8 @@ namespace FMBot_Discord
                 WebSocketProvider = WS4NetProvider.Instance,
                 LogLevel = LogSeverity.Verbose
             });
+
+            await client.SetGameAsync("🎶");
 
             client.Log += Log;
 
@@ -121,7 +124,6 @@ namespace FMBot_Discord
     {
         private string DBFileName = "database.txt";
         private string ConfigFileName = "config.json";
-        private ulong OwnerID = 184013824850919425;
 
         private readonly CommandService _service;
 
@@ -521,6 +523,80 @@ namespace FMBot_Discord
             }
         }
 
+        [Command("fmstats")]
+        public async Task fmstatsAsync(IUser user = null, int num = 5)
+        {
+            var DiscordUser = user ?? Context.Message.Author;
+            string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
+            if (LastFMName.Equals("NULL"))
+            {
+                await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
+            }
+            else
+            {
+                // first, let's load our configuration file
+                Console.WriteLine("[FMBot] Loading Configuration");
+                var json = "";
+                using (var fs = File.OpenRead(ConfigFileName))
+                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                    json = await sr.ReadToEndAsync();
+
+                // next, let's load the values from that file
+                // to our client's configuration
+                var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+                var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+                var albums = await client.User.GetTopAlbums(LastFMName, LastStatsTimeSpan.Overall, 1, num);
+
+                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                eab.IconUrl = DiscordUser.GetAvatarUrl();
+                eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                eab.Url = "https://www.last.fm/user/" + LastFMName;
+
+                var builder = new EmbedBuilder();
+                builder.WithAuthor(eab);
+                builder.WithDescription("Last.FM Statistics for " + LastFMName);
+
+                var userinfo = await client.User.GetInfoAsync(LastFMName);
+
+                try
+                {
+                    var userinfoImages = (userinfo.Content.Avatar != null) ? userinfo.Content.Avatar : null;
+                    var userinfoThumbnail = (userinfoImages != null) ? userinfoImages.Large.AbsoluteUri : null;
+                    string ThumbnailImage = (userinfoThumbnail != null) ? userinfoThumbnail.ToString() : null;
+
+                    if (!string.IsNullOrWhiteSpace(ThumbnailImage))
+                    {
+                        builder.WithThumbnailUrl(ThumbnailImage);
+                    }
+                }
+                catch (Exception)
+                {
+                }
+                
+                var playcount = userinfo.Content.Playcount;
+                var usertype = userinfo.Content.Type;
+                var playlists = userinfo.Content.Playlists;
+                var premium = userinfo.Content.IsSubscriber;
+                string URI = "https://www.last.fm/user/" + LastFMName;
+
+                builder.AddInlineField("Last.FM Name: ", LastFMName);
+                builder.AddInlineField("Profile URL: ", URI);
+                builder.AddInlineField("User Type: ", usertype.ToString());
+                builder.AddInlineField("Total Tracks: ", playcount.ToString());
+                builder.AddInlineField("Total Playlists: ", playlists.ToString());
+                builder.AddInlineField("Has Premium? ", premium.ToString());
+
+                EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
+
+                efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+
+                builder.WithFooter(efb);
+
+                await Context.Channel.SendMessageAsync("", false, builder.Build());
+            }
+        }
+
         [Command("fmset"), Summary("Sets your Last.FM name.")]
         public async Task fmsetAsync([Summary("Your Last.FM name")] string name)
         {
@@ -593,14 +669,14 @@ namespace FMBot_Discord
             var DiscordUser = Context.Message.Author;
             ulong BroadcastChannelID = 209847309385596928;
             ITextChannel channel = await Context.Guild.GetTextChannelAsync(BroadcastChannelID);
-
-            if (DiscordUser.Id.Equals(OwnerID))
+            //OwnerIDs = Bitl, Mirage
+            List<ulong> BroadcastID = new List<ulong>(new ulong[] { 184013824850919425, 183730395836186624 });
+            foreach (ulong item in BroadcastID)
             {
-                await channel.SendMessageAsync(message);
-            }
-            else
-            {
-                await ReplyAsync("We apologize, but you are not qualified for this operation.");
+                if (DiscordUser.Id.Equals(item))
+                {
+                    await channel.SendMessageAsync(message);
+                }
             }
         }
 
