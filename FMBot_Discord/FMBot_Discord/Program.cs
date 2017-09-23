@@ -664,9 +664,10 @@ namespace FMBot_Discord
         }
 
         [Command("broadcast")]
-        public async Task broadcastAsync(string message)
+        public async Task broadcastAsync(string message, string ThumbnailURL = null)
         {
             var DiscordUser = Context.Message.Author;
+            var SelfUser = Context.Client.CurrentUser;
             ulong BroadcastChannelID = 209847309385596928;
             ITextChannel channel = await Context.Guild.GetTextChannelAsync(BroadcastChannelID);
             //OwnerIDs = Bitl, Mirage
@@ -675,7 +676,31 @@ namespace FMBot_Discord
             {
                 if (DiscordUser.Id.Equals(item))
                 {
-                    await channel.SendMessageAsync(message);
+                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                    eab.IconUrl = DiscordUser.GetAvatarUrl();
+                    eab.Name = DiscordUser.Username;
+
+                    var builder = new EmbedBuilder();
+                    builder.WithAuthor(eab);
+
+                    try
+                    {
+                        if (!string.IsNullOrWhiteSpace(ThumbnailURL))
+                        {
+                            builder.WithThumbnailUrl(ThumbnailURL);
+                        }
+                        else
+                        {
+                            builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+                    builder.AddField("Announcement", message);
+
+                    await channel.SendMessageAsync("", false, builder.Build());
                 }
             }
         }
