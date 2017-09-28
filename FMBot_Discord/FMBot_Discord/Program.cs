@@ -729,6 +729,12 @@ namespace FMBot_Discord
         {
             await ReplyAsync("Report bugs here: https://github.com/Bitl/FMBot_Discord/issues");
         }
+
+        [Command("server"), Summary("Discord Server")]
+        public async Task serverAsync()
+        {
+            await ReplyAsync("https://discord.gg/E6y28WG");
+        }
     }
 
     public class DBase
