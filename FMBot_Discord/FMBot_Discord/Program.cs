@@ -105,6 +105,21 @@ namespace FMBot_Discord
             // Don't process the command if it was a System Message
             var message = messageParam as SocketUserMessage;
             if (message == null) return;
+
+            var DiscordCaller = message.Author;
+
+            // first, let's load our configuration file
+            Console.WriteLine("[FMBot] Loading Configuration");
+            var json = "";
+            using (var fs = File.OpenRead(ConfigFileName))
+            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                json = await sr.ReadToEndAsync();
+
+            // next, let's load the values from that file
+            // to our client's configuration
+            var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+
+            if (User.IncomingRequest(DiscordCaller.Id, double.Parse(cfgjson.Cooldown)) == false) return;
             // Create a number to track where the prefix ends and the command begins
             int argPos = 0;
             // Determine if the message is a command, based on if it starts with '!' or a mention prefix
@@ -287,8 +302,19 @@ namespace FMBot_Discord
         }
 
         [Command("fmrecent")]
-        public async Task fmrecentAsync(IUser user = null, int num = 5)
+        public async Task fmrecentAsync(IUser user = null)
         {
+            // first, let's load our configuration file
+            Console.WriteLine("[FMBot] Loading Configuration");
+            var json = "";
+            using (var fs = File.OpenRead(ConfigFileName))
+            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                json = await sr.ReadToEndAsync();
+
+            // next, let's load the values from that file
+            // to our client's configuration
+            var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+            int num = int.Parse(cfgjson.Listnum);
             var DiscordUser = user ?? Context.Message.Author;
             string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
@@ -297,16 +323,6 @@ namespace FMBot_Discord
             }
             else
             {
-                // first, let's load our configuration file
-                Console.WriteLine("[FMBot] Loading Configuration");
-                var json = "";
-                using (var fs = File.OpenRead(ConfigFileName))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                    json = await sr.ReadToEndAsync();
-
-                // next, let's load the values from that file
-                // to our client's configuration
-                var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
                 var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
                 var tracks = await client.User.GetRecentScrobbles(LastFMName, null, 1, num);
 
@@ -367,8 +383,19 @@ namespace FMBot_Discord
         }
 
         [Command("fmartists")]
-        public async Task fmartistsAsync(IUser user = null, int num = 5)
+        public async Task fmartistsAsync(IUser user = null)
         {
+            // first, let's load our configuration file
+            Console.WriteLine("[FMBot] Loading Configuration");
+            var json = "";
+            using (var fs = File.OpenRead(ConfigFileName))
+            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                json = await sr.ReadToEndAsync();
+
+            // next, let's load the values from that file
+            // to our client's configuration
+            var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+            int num = int.Parse(cfgjson.Listnum);
             var DiscordUser = user ?? Context.Message.Author;
             string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
@@ -377,16 +404,6 @@ namespace FMBot_Discord
             }
             else
             {
-                // first, let's load our configuration file
-                Console.WriteLine("[FMBot] Loading Configuration");
-                var json = "";
-                using (var fs = File.OpenRead(ConfigFileName))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                    json = await sr.ReadToEndAsync();
-
-                // next, let's load the values from that file
-                // to our client's configuration
-                var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
                 var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
                 var artists = await client.User.GetTopArtists(LastFMName, LastStatsTimeSpan.Overall, 1, num);
 
@@ -445,8 +462,19 @@ namespace FMBot_Discord
         }
 
         [Command("fmalbums")]
-        public async Task fmalbumsAsync(IUser user = null, int num = 5)
+        public async Task fmalbumsAsync(IUser user = null)
         {
+            // first, let's load our configuration file
+            Console.WriteLine("[FMBot] Loading Configuration");
+            var json = "";
+            using (var fs = File.OpenRead(ConfigFileName))
+            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                json = await sr.ReadToEndAsync();
+
+            // next, let's load the values from that file
+            // to our client's configuration
+            var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+            int num = int.Parse(cfgjson.Listnum);
             var DiscordUser = user ?? Context.Message.Author;
             string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
@@ -455,16 +483,6 @@ namespace FMBot_Discord
             }
             else
             {
-                // first, let's load our configuration file
-                Console.WriteLine("[FMBot] Loading Configuration");
-                var json = "";
-                using (var fs = File.OpenRead(ConfigFileName))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                    json = await sr.ReadToEndAsync();
-
-                // next, let's load the values from that file
-                // to our client's configuration
-                var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
                 var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
                 var albums = await client.User.GetTopAlbums(LastFMName, LastStatsTimeSpan.Overall, 1, num);
 
@@ -524,8 +542,19 @@ namespace FMBot_Discord
         }
 
         [Command("fmstats")]
-        public async Task fmstatsAsync(IUser user = null, int num = 5)
+        public async Task fmstatsAsync(IUser user = null)
         {
+            // first, let's load our configuration file
+            Console.WriteLine("[FMBot] Loading Configuration");
+            var json = "";
+            using (var fs = File.OpenRead(ConfigFileName))
+            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                json = await sr.ReadToEndAsync();
+
+            // next, let's load the values from that file
+            // to our client's configuration
+            var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+            int num = int.Parse(cfgjson.Listnum);
             var DiscordUser = user ?? Context.Message.Author;
             string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
@@ -534,18 +563,7 @@ namespace FMBot_Discord
             }
             else
             {
-                // first, let's load our configuration file
-                Console.WriteLine("[FMBot] Loading Configuration");
-                var json = "";
-                using (var fs = File.OpenRead(ConfigFileName))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                    json = await sr.ReadToEndAsync();
-
-                // next, let's load the values from that file
-                // to our client's configuration
-                var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
                 var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
-                var albums = await client.User.GetTopAlbums(LastFMName, LastStatsTimeSpan.Overall, 1, num);
 
                 EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                 eab.IconUrl = DiscordUser.GetAvatarUrl();
@@ -572,7 +590,7 @@ namespace FMBot_Discord
                 catch (Exception)
                 {
                 }
-                
+
                 var playcount = userinfo.Content.Playcount;
                 var usertype = userinfo.Content.Type;
                 var playlists = userinfo.Content.Playlists;
@@ -729,11 +747,37 @@ namespace FMBot_Discord
         {
             await ReplyAsync("Report bugs here: https://github.com/Bitl/FMBot_Discord/issues");
         }
+    }
 
-        [Command("server"), Summary("Discord Server")]
-        public async Task serverAsync()
+    class User
+    {
+        public ulong ID { get; set; }
+        public DateTime LastRequest { get; set; }
+        public static List<User> Users = new List<User>(); // list of all users
+
+        public static bool IncomingRequest(ulong DiscordID, double cooltime)//requesting user == username of the person messaging your bot
         {
-            await ReplyAsync("https://discord.gg/E6y28WG");
+            User TempUser = Users.FirstOrDefault(User => User.ID.Equals(DiscordID));
+            if (TempUser != null)// check to see if you have handled a request in the past from this user.
+            {
+                if ((DateTime.Now - TempUser.LastRequest).TotalSeconds >= cooltime) // checks if more than 30 seconds have passed between the last requests send by the user
+                {
+                    Users.Find(User => User.ID.Equals(DiscordID)).LastRequest = DateTime.Now; // update their last request time to now.
+                    return true;
+                }
+                else // if less than 30 seconds has passed return false.
+                {
+                    return false;
+                }
+            }
+            else // if no user is found, create a new user, and add it to the list
+            {
+                User NewUser = new User();
+                NewUser.ID = DiscordID;
+                NewUser.LastRequest = DateTime.Now;
+                Users.Add(NewUser);
+                return true;
+            }
         }
     }
 
@@ -783,5 +827,11 @@ namespace FMBot_Discord
 
         [JsonProperty("prefix")]
         public string CommandPrefix { get; private set; }
+
+        [JsonProperty("cooldown")]
+        public string Cooldown { get; private set; }
+
+        [JsonProperty("listnum")]
+        public string Listnum { get; private set; }
     }
 }
