@@ -24,8 +24,6 @@ namespace FMBot_Discord
         private DiscordSocketClient client;
         private IServiceProvider services;
         private string prefix;
-        private string DBFileName = "database.txt";
-        private string ConfigFileName = "config.json";
 
         public static void Main(string[] args)
             => new Program().MainAsync().GetAwaiter().GetResult();
@@ -35,14 +33,14 @@ namespace FMBot_Discord
             // first, let's load our configuration file
             Console.WriteLine("[FMBot] Loading Configuration");
             var json = "";
-            using (var fs = File.OpenRead(ConfigFileName))
+            using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
             using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                 json = await sr.ReadToEndAsync();
 
-            if (!File.Exists(DBFileName))
+            if (!File.Exists(GlobalVars.DBFileName))
             {
                 Console.WriteLine("[FMBot] Warning: DB not found. Creating empty DB file.");
-                File.Create(DBFileName).Dispose();
+                File.Create(GlobalVars.DBFileName).Dispose();
                 Console.WriteLine("[FMBot] DB File exists. Loading.");
             }
             else
@@ -109,9 +107,8 @@ namespace FMBot_Discord
             var DiscordCaller = message.Author;
 
             // first, let's load our configuration file
-            Console.WriteLine("[FMBot] Loading Configuration");
             var json = "";
-            using (var fs = File.OpenRead(ConfigFileName))
+            using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
             using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                 json = await sr.ReadToEndAsync();
 
@@ -137,9 +134,6 @@ namespace FMBot_Discord
 
     public class FMCommands : ModuleBase
     {
-        private string DBFileName = "database.txt";
-        private string ConfigFileName = "config.json";
-
         private readonly CommandService _service;
 
         public FMCommands(CommandService service)
@@ -151,7 +145,7 @@ namespace FMBot_Discord
         public async Task fmAsync(IUser user = null)
         {
             var DiscordUser = user ?? Context.Message.Author;
-            string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
+            string LastFMName = DBase.GetNameForID(GlobalVars.DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
             {
                 await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
@@ -161,7 +155,7 @@ namespace FMBot_Discord
                 // first, let's load our configuration file
                 Console.WriteLine("[FMBot] Loading Configuration");
                 var json = "";
-                using (var fs = File.OpenRead(ConfigFileName))
+                using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
                 using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                     json = await sr.ReadToEndAsync();
 
@@ -231,7 +225,7 @@ namespace FMBot_Discord
         public async Task fmytAsync(IUser user = null)
         {
             var DiscordUser = user ?? Context.Message.Author;
-            string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
+            string LastFMName = DBase.GetNameForID(GlobalVars.DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
             {
                 await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
@@ -241,7 +235,7 @@ namespace FMBot_Discord
                 // first, let's load our configuration file
                 Console.WriteLine("[FMBot] Loading Configuration");
                 var json = "";
-                using (var fs = File.OpenRead(ConfigFileName))
+                using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
                 using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                     json = await sr.ReadToEndAsync();
 
@@ -307,7 +301,7 @@ namespace FMBot_Discord
             // first, let's load our configuration file
             Console.WriteLine("[FMBot] Loading Configuration");
             var json = "";
-            using (var fs = File.OpenRead(ConfigFileName))
+            using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
             using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                 json = await sr.ReadToEndAsync();
 
@@ -316,7 +310,7 @@ namespace FMBot_Discord
             var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
             int num = int.Parse(cfgjson.Listnum);
             var DiscordUser = user ?? Context.Message.Author;
-            string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
+            string LastFMName = DBase.GetNameForID(GlobalVars.DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
             {
                 await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
@@ -388,7 +382,7 @@ namespace FMBot_Discord
             // first, let's load our configuration file
             Console.WriteLine("[FMBot] Loading Configuration");
             var json = "";
-            using (var fs = File.OpenRead(ConfigFileName))
+            using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
             using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                 json = await sr.ReadToEndAsync();
 
@@ -397,7 +391,7 @@ namespace FMBot_Discord
             var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
             int num = int.Parse(cfgjson.Listnum);
             var DiscordUser = user ?? Context.Message.Author;
-            string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
+            string LastFMName = DBase.GetNameForID(GlobalVars.DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
             {
                 await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
@@ -467,7 +461,7 @@ namespace FMBot_Discord
             // first, let's load our configuration file
             Console.WriteLine("[FMBot] Loading Configuration");
             var json = "";
-            using (var fs = File.OpenRead(ConfigFileName))
+            using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
             using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                 json = await sr.ReadToEndAsync();
 
@@ -476,7 +470,7 @@ namespace FMBot_Discord
             var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
             int num = int.Parse(cfgjson.Listnum);
             var DiscordUser = user ?? Context.Message.Author;
-            string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
+            string LastFMName = DBase.GetNameForID(GlobalVars.DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
             {
                 await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
@@ -547,7 +541,7 @@ namespace FMBot_Discord
             // first, let's load our configuration file
             Console.WriteLine("[FMBot] Loading Configuration");
             var json = "";
-            using (var fs = File.OpenRead(ConfigFileName))
+            using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
             using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                 json = await sr.ReadToEndAsync();
 
@@ -556,7 +550,7 @@ namespace FMBot_Discord
             var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
             int num = int.Parse(cfgjson.Listnum);
             var DiscordUser = user ?? Context.Message.Author;
-            string LastFMName = DBase.GetNameForID(DBFileName, DiscordUser.Id.ToString());
+            string LastFMName = DBase.GetNameForID(GlobalVars.DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
             {
                 await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
@@ -619,10 +613,10 @@ namespace FMBot_Discord
         public async Task fmsetAsync([Summary("Your Last.FM name")] string name)
         {
             string SelfID = Context.Message.Author.Id.ToString();
-            string LastFMName = DBase.GetNameForID(DBFileName, SelfID);
+            string LastFMName = DBase.GetNameForID(GlobalVars.DBFileName, SelfID);
             if (LastFMName.Equals("NULL"))
             {
-                DBase.WriteEntry(DBFileName, SelfID, name);
+                DBase.WriteEntry(GlobalVars.DBFileName, SelfID, name);
                 await ReplyAsync("Your Last.FM name has been set to '" + name + "'.");
             }
             else
@@ -631,13 +625,13 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("help")]
-        public async Task HelpAsync()
+        [Command("fmhelp")]
+        public async Task fmhelpAsync()
         {
             // first, let's load our configuration file
             Console.WriteLine("[FMBot] Loading Configuration");
             var json = "";
-            using (var fs = File.OpenRead(ConfigFileName))
+            using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
             using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                 json = await sr.ReadToEndAsync();
 
@@ -655,10 +649,14 @@ namespace FMBot_Discord
 
             var builder = new EmbedBuilder();
             builder.WithAuthor(eab);
-            builder.WithDescription("Commands for " + SelfName.Username.ToString());
 
             foreach (var module in _service.Modules)
             {
+                if (module.Name.Equals("AdminCommands"))
+                {
+                    continue;
+                }
+
                 string description = null;
                 foreach (var cmd in module.Commands)
                 {
@@ -671,7 +669,7 @@ namespace FMBot_Discord
                 {
                     builder.AddField(x =>
                     {
-                        x.Name = module.Name;
+                        x.Name = "Commands";
                         x.Value = description;
                         x.IsInline = false;
                     });
@@ -679,48 +677,6 @@ namespace FMBot_Discord
             }
 
             await ReplyAsync("", false, builder.Build());
-        }
-
-        [Command("broadcast")]
-        public async Task broadcastAsync(string message, string ThumbnailURL = null)
-        {
-            var DiscordUser = Context.Message.Author;
-            var SelfUser = Context.Client.CurrentUser;
-            ulong BroadcastChannelID = 209847309385596928;
-            ITextChannel channel = await Context.Guild.GetTextChannelAsync(BroadcastChannelID);
-            //OwnerIDs = Bitl, Mirage
-            List<ulong> BroadcastID = new List<ulong>(new ulong[] { 184013824850919425, 183730395836186624 });
-            foreach (ulong item in BroadcastID)
-            {
-                if (DiscordUser.Id.Equals(item))
-                {
-                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                    eab.IconUrl = DiscordUser.GetAvatarUrl();
-                    eab.Name = DiscordUser.Username;
-
-                    var builder = new EmbedBuilder();
-                    builder.WithAuthor(eab);
-
-                    try
-                    {
-                        if (!string.IsNullOrWhiteSpace(ThumbnailURL))
-                        {
-                            builder.WithThumbnailUrl(ThumbnailURL);
-                        }
-                        else
-                        {
-                            builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
-                        }
-                    }
-                    catch (Exception)
-                    {
-                    }
-
-                    builder.AddField("Announcement", message);
-
-                    await channel.SendMessageAsync("", false, builder.Build());
-                }
-            }
         }
 
         [Command("invite"), Summary("Invites the bot to a server")]
@@ -749,7 +705,166 @@ namespace FMBot_Discord
         }
     }
 
-    class User
+    public class AdminCommands : ModuleBase
+    {
+        //OwnerIDs = Bitl, Mirage, Opus v84, [opti], GreystarMusic
+        private readonly List<ulong> AdminIDs = new List<ulong>(new ulong[] {
+            184013824850919425,
+            183730395836186624,
+            205759116889554946,
+            120954630388580355,
+            205832344744099840
+        });
+
+        private readonly CommandService _service;
+
+        public AdminCommands(CommandService service)
+        {
+            _service = service;
+        }
+
+        private bool IsAdmin(IUser user)
+        {
+            foreach (ulong item in AdminIDs)
+            {
+                if (user.Id.Equals(item))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
+        [Command("announce"), Summary("Sends an announcement to the main server.")]
+        public async Task announceAsync(string message, string ThumbnailURL = null)
+        {
+            var DiscordUser = Context.Message.Author;
+            var SelfUser = Context.Client.CurrentUser;
+            ulong BroadcastChannelID = 209847309385596928;
+            ITextChannel channel = await Context.Guild.GetTextChannelAsync(BroadcastChannelID);
+            if (IsAdmin(DiscordUser))
+            {
+                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                eab.IconUrl = DiscordUser.GetAvatarUrl();
+                eab.Name = DiscordUser.Username;
+
+                var builder = new EmbedBuilder();
+                builder.WithAuthor(eab);
+
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(ThumbnailURL))
+                    {
+                        builder.WithThumbnailUrl(ThumbnailURL);
+                    }
+                    else
+                    {
+                        builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
+                    }
+                }
+                catch (Exception)
+                {
+                }
+
+                builder.AddField("Announcement", message);
+
+                await channel.SendMessageAsync("", false, builder.Build());
+            }
+        }
+
+        [Command("dbcheck"), Summary("Checks if an entry is in the database.")]
+        public async Task dbcheckAsync(IUser user = null)
+        {
+            var DiscordUser = Context.Message.Author;
+            if (IsAdmin(DiscordUser))
+            {
+                var ChosenUser = user ?? Context.Message.Author;
+                string LastFMName = DBase.GetNameForID(GlobalVars.DBFileName, ChosenUser.Id.ToString());
+                if (!LastFMName.Equals("NULL"))
+                {
+                    await ReplyAsync("The user's Last.FM name is: '" + LastFMName + "'");
+                }
+                else
+                {
+                    await ReplyAsync("The user's Last.FM Name has not been set.");
+                }
+            }
+        }
+
+        [Command("clearcache"), Summary("Clears the cooldown cache and resets the cooldown for all users.")]
+        public async Task clearcacheAsync()
+        {
+            var DiscordUser = Context.Message.Author;
+            if (IsAdmin(DiscordUser))
+            {
+                User.Users.Clear();
+                await ReplyAsync("Cooldown cache reset for all users.");
+            }
+        }
+
+        [Command("fmadmin")]
+        public async Task HelpAsync()
+        {
+            var DiscordUser = Context.Message.Author;
+            if (IsAdmin(DiscordUser))
+            {
+                // first, let's load our configuration file
+                Console.WriteLine("[FMBot] Loading Configuration");
+                var json = "";
+                using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
+                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                    json = await sr.ReadToEndAsync();
+
+                // next, let's load the values from that file
+                // to our client's configuration
+                var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+                var SelfName = Context.Client.CurrentUser;
+                string prefix = cfgjson.CommandPrefix;
+
+                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                eab.IconUrl = SelfName.GetAvatarUrl();
+                eab.Name = SelfName.Username;
+
+                var builder = new EmbedBuilder();
+                builder.WithAuthor(eab);
+
+                foreach (var module in _service.Modules)
+                {
+                    if (module.Name.Equals("FMCommands"))
+                    {
+                        continue;
+                    }
+
+                    string description = null;
+                    foreach (var cmd in module.Commands)
+                    {
+                        var result = await cmd.CheckPreconditionsAsync(Context);
+                        if (result.IsSuccess)
+                            description += $"{prefix}{cmd.Aliases.First()}\n";
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(description))
+                    {
+                        builder.AddField(x =>
+                        {
+                            x.Name = "Admin Commands";
+                            x.Value = description;
+                            x.IsInline = false;
+                        });
+                    }
+                }
+
+                await ReplyAsync("", false, builder.Build());
+            }
+        }
+    }
+
+    public class User
     {
         public ulong ID { get; set; }
         public DateTime LastRequest { get; set; }
@@ -833,5 +948,12 @@ namespace FMBot_Discord
 
         [JsonProperty("listnum")]
         public string Listnum { get; private set; }
+    }
+
+    public class GlobalVars
+    {
+        public static string DBFileName = "database.txt";
+        public static string DBTempName = "database.tmp";
+        public static string ConfigFileName = "config.json";
     }
 }
