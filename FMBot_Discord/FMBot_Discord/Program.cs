@@ -3,11 +3,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Drawing;
 using Newtonsoft.Json;
 using Discord;
 using Discord.WebSocket;
 using Discord.Net.Providers.WS4Net;
 using Discord.Commands;
+using System.Collections;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using IF.Lastfm.Core.Api;
@@ -200,6 +202,7 @@ namespace FMBot_Discord
                 }
                 catch (Exception)
                 {
+                    builder.WithThumbnailUrl("missingimg.png");
                 }
 
                 builder.AddInlineField("Recent Track", TrackName);
@@ -356,6 +359,7 @@ namespace FMBot_Discord
                     }
                     catch (Exception)
                     {
+                        builder.WithThumbnailUrl("missingimg.png");
                     }
 
                     int correctnum = (i + 1);
@@ -435,6 +439,7 @@ namespace FMBot_Discord
                     }
                     catch (Exception)
                     {
+                        builder.WithThumbnailUrl("missingimg.png");
                     }
 
                     int correctnum = (i + 1);
@@ -515,10 +520,116 @@ namespace FMBot_Discord
                     }
                     catch (Exception)
                     {
+                        builder.WithThumbnailUrl("missingimg.png");
                     }
 
                     int correctnum = (i + 1);
                     builder.AddField("Album #" + correctnum.ToString() + ":", AlbumName + " | " + ArtistName);
+                }
+
+                EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
+
+                var userinfo = await client.User.GetInfoAsync(LastFMName);
+                var playcount = userinfo.Content.Playcount;
+
+                efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+
+                builder.WithFooter(efb);
+
+                await Context.Channel.SendMessageAsync("", false, builder.Build());
+            }
+        }
+
+        [Command("fmchart")]
+        public async Task fmachartAsync(IUser user = null)
+        {
+            // first, let's load our configuration file
+            Console.WriteLine("[FMBot] Loading Configuration");
+            var json = "";
+            using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
+            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                json = await sr.ReadToEndAsync();
+
+            // next, let's load the values from that file
+            // to our client's configuration
+            var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+            int num = int.Parse(cfgjson.Listnum);
+            var DiscordUser = user ?? Context.Message.Author;
+            string LastFMName = DBase.GetNameForID(GlobalVars.DBFileName, DiscordUser.Id.ToString());
+            if (LastFMName.Equals("NULL"))
+            {
+                await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
+            }
+            else
+            {
+                var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+                var albums = await client.User.GetTopAlbums(LastFMName, LastStatsTimeSpan.Overall, 1, num);
+
+                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                eab.IconUrl = DiscordUser.GetAvatarUrl();
+                eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                eab.Url = "https://www.last.fm/user/" + LastFMName;
+
+                var builder = new EmbedBuilder();
+                builder.WithAuthor(eab);
+                builder.WithDescription("Top " + num + " Album Chart (Beta)");
+
+                string nulltext = "[undefined]";
+                int indexval = (num - 1);
+                string[] arr = new string[num];
+                for (int i = 0; i <= indexval; i++)
+                {
+                    LastAlbum album = albums.Content.ElementAt(i);
+
+                    string AlbumName = string.IsNullOrWhiteSpace(album.Name) ? nulltext : album.Name;
+                    string ArtistName = string.IsNullOrWhiteSpace(album.ArtistName) ? nulltext : album.ArtistName;
+
+                    try
+                    {
+                        if (i == 0)
+                        {
+                            var AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
+                            var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
+                            var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
+                            string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
+
+                            if (!string.IsNullOrWhiteSpace(ThumbnailImage))
+                            {
+                                arr[i] = ThumbnailImage;
+                            }
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        arr[i] = "missingimg.png";
+                    }
+                }
+
+                try
+                {
+                    System.Drawing.Image[] images = new System.Drawing.Image[arr.Length];
+                    for (int k = 0; k < arr.Length; k++)
+                    {
+                        images[k] = Utils.DownloadImage(arr[k]);
+                    }
+
+                    Random random = new Random();
+                    int randid = random.Next(2147483647);
+                    string fileName = "FMCache\\FMChart_" + randid + ".jpg";
+                    System.Drawing.Image mergedImage = Utils.MergeImages(images);
+                    if (mergedImage != null)
+                    {
+                        mergedImage.Save(fileName);
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(fileName))
+                    {
+                        builder.WithImageUrl(fileName);
+                    }
+                }
+                catch (Exception)
+                {
                 }
 
                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
@@ -583,6 +694,7 @@ namespace FMBot_Discord
                 }
                 catch (Exception)
                 {
+                    builder.WithThumbnailUrl("missingimg.png");
                 }
 
                 var playcount = userinfo.Content.Playcount;
@@ -674,6 +786,8 @@ namespace FMBot_Discord
                         x.IsInline = false;
                     });
                 }
+
+                builder.WithThumbnailUrl(SelfName.GetAvatarUrl());
             }
 
             await ReplyAsync("", false, builder.Build());
@@ -702,6 +816,56 @@ namespace FMBot_Discord
         public async Task bugsAsync()
         {
             await ReplyAsync("Report bugs here: https://github.com/Bitl/FMBot_Discord/issues");
+        }
+    }
+
+    public class Utils
+    {
+        public static System.Drawing.Image DownloadImage(string _URL)
+        {
+            System.Drawing.Image _tmpImage = null;
+            try
+            {
+                System.Net.HttpWebRequest _HttpWebRequest = (System.Net.HttpWebRequest)System.Net.WebRequest.Create(_URL);
+                _HttpWebRequest.AllowWriteStreamBuffering = true;
+                _HttpWebRequest.Timeout = 20000;
+                System.Net.WebResponse _WebResponse = _HttpWebRequest.GetResponse();
+                Stream _WebStream = _WebResponse.GetResponseStream();
+                _tmpImage = System.Drawing.Image.FromStream(_WebStream);
+                _WebResponse.Close();
+            }
+            catch (Exception _Exception)
+            {
+                Console.WriteLine("Exception caught in process: {0}", _Exception.ToString());
+                return null;
+            }
+            return _tmpImage;
+        }
+
+        public static System.Drawing.Image MergeImages(System.Drawing.Image[] images)
+        {
+            if (images == null || images.Length <= 0) { return null; }
+            Int32 imageWSize = 0; Int32 imageHSize = 0; for (int i = 0; i < images.Length; i++) { if (images[i].Width > imageWSize) imageWSize = images[i].Width; if (images[i].Height > imageHSize) imageHSize = images[i].Height; }
+            Int32 width = 0; Int32 height = 0; int picsInOneLine = 10; if (images.Length >= picsInOneLine) { width = picsInOneLine * imageWSize; decimal d = (images.Length + picsInOneLine) / picsInOneLine; height = (int)Math.Round(d) * imageHSize; } else { width = images.Length * imageWSize; height = imageHSize; }
+            Bitmap bitmap = new Bitmap(width, height); int hhh = -1; int www = 0; for (int i = 0; i < images.Length; i++)
+            {
+                Bitmap image = new Bitmap(images[i]); if (i % picsInOneLine == 0) { hhh++; www = 0; }
+                //Get All of the x Pixels         
+                for (int w = 0; w < imageWSize; w++)
+                {
+                    //Get All of the Y Pixels             
+                    for (int h = 0; h < imageHSize; h++)
+                    {
+                        //Set the Cooresponding Pixel                 
+                        int ww = w + (www * imageWSize);
+                        int hh = h + (hhh * imageHSize);
+                        bitmap.SetPixel(ww, hh, image.GetPixel(w, h));
+                    }
+                }
+                www++;
+            }
+            //Return the new Bitmap     
+            return bitmap;
         }
     }
 
@@ -857,6 +1021,8 @@ namespace FMBot_Discord
                             x.IsInline = false;
                         });
                     }
+
+                    builder.WithThumbnailUrl(SelfName.GetAvatarUrl());
                 }
 
                 await ReplyAsync("", false, builder.Build());
