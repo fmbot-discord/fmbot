@@ -115,8 +115,6 @@ namespace FMBot_Discord
             // next, let's load the values from that file
             // to our client's configuration
             var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
-
-            if (User.IncomingRequest(DiscordCaller.Id, double.Parse(cfgjson.Cooldown)) == false) return;
             // Create a number to track where the prefix ends and the command begins
             int argPos = 0;
             // Determine if the message is a command, based on if it starts with '!' or a mention prefix
@@ -125,9 +123,18 @@ namespace FMBot_Discord
             var context = new CommandContext(client, message);
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully)
-            var result = await commands.ExecuteAsync(context, argPos, services);
-            if (!result.IsSuccess)
-                Console.WriteLine("[FMBot]: Error - " + result.Error + ": " + result.ErrorReason);
+            if (User.IncomingRequest(DiscordCaller.Id, double.Parse(cfgjson.Cooldown)) == false)
+            {
+                await context.Channel.SendMessageAsync("Please wait a bit before you can use the command again.");
+            }
+            else
+            {
+                var result = await commands.ExecuteAsync(context, argPos, services);
+                if (!result.IsSuccess)
+                {
+                    Console.WriteLine("[FMBot]: Error - " + result.Error + ": " + result.ErrorReason);
+                }
+            }
         }
     }
 
@@ -163,61 +170,137 @@ namespace FMBot_Discord
                 // to our client's configuration
                 var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
                 var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
-                var tracks = await client.User.GetRecentScrobbles(LastFMName, null, 1, 2);
-                LastTrack currentTrack = tracks.Content.ElementAt(0);
-                LastTrack lastTrack = tracks.Content.ElementAt(1);
-                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                eab.IconUrl = DiscordUser.GetAvatarUrl();
-                eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
-                eab.Url = "https://www.last.fm/user/" + LastFMName;
-
-                var builder = new EmbedBuilder();
-
-                builder.WithAuthor(eab);
-                builder.WithDescription("Recently Played");
-
-                string nulltext = "[undefined]";
-
-                string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
-                string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
-                string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nulltext : currentTrack.AlbumName;
-
-                string LastTrackName = string.IsNullOrWhiteSpace(lastTrack.Name) ? nulltext : lastTrack.Name;
-                string LastArtistName = string.IsNullOrWhiteSpace(lastTrack.ArtistName) ? nulltext : lastTrack.ArtistName;
-                string LastAlbumName = string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? nulltext : lastTrack.AlbumName;
-
                 try
                 {
-                    var AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
-                    var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
-                    var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
-                    string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
-
-                    if (!string.IsNullOrWhiteSpace(ThumbnailImage))
+                    var tracks = await client.User.GetRecentScrobbles(LastFMName, null, 1, 2);
+                    LastTrack currentTrack = tracks.Content.ElementAt(0);
+                    LastTrack lastTrack = tracks.Content.ElementAt(1);
+                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                    eab.IconUrl = DiscordUser.GetAvatarUrl();
+                    if (AdminCommands.IsAdmin(DiscordUser))
                     {
-                        builder.WithThumbnailUrl(ThumbnailImage);
+                        eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
                     }
+                    else
+                    {
+                        eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                    }
+                    eab.Url = "https://www.last.fm/user/" + LastFMName;
+
+                    var builder = new EmbedBuilder();
+
+                    builder.WithAuthor(eab);
+                    builder.WithDescription("Recently Played");
+
+                    string nulltext = "[undefined]";
+
+                    string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
+                    string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
+                    string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nulltext : currentTrack.AlbumName;
+
+                    string LastTrackName = string.IsNullOrWhiteSpace(lastTrack.Name) ? nulltext : lastTrack.Name;
+                    string LastArtistName = string.IsNullOrWhiteSpace(lastTrack.ArtistName) ? nulltext : lastTrack.ArtistName;
+                    string LastAlbumName = string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? nulltext : lastTrack.AlbumName;
+
+                    try
+                    {
+                        var AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
+                        var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
+                        var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
+                        string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
+
+                        if (!string.IsNullOrWhiteSpace(ThumbnailImage))
+                        {
+                            builder.WithThumbnailUrl(ThumbnailImage);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+                    builder.AddInlineField("Recent Track", TrackName);
+                    builder.AddInlineField(AlbumName, ArtistName);
+                    builder.AddInlineField("Previous Track", LastTrackName);
+                    builder.AddInlineField(LastAlbumName, LastArtistName);
+
+                    EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                    efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
+
+                    var userinfo = await client.User.GetInfoAsync(LastFMName);
+                    var playcount = userinfo.Content.Playcount;
+
+                    efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+
+                    builder.WithFooter(efb);
+
+                    await Context.Channel.SendMessageAsync("", false, builder.Build());
                 }
                 catch (Exception)
                 {
+                    try
+                    {
+                        var tracks = await client.User.GetRecentScrobbles(LastFMName, null, 1, 2);
+                        LastTrack currentTrack = tracks.Content.ElementAt(0);
+                        LastTrack lastTrack = tracks.Content.ElementAt(1);
+                        EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                        eab.IconUrl = DiscordUser.GetAvatarUrl();
+                        if (AdminCommands.IsAdmin(DiscordUser))
+                        {
+                            eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                        }
+                        else
+                        {
+                            eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                        }
+                        eab.Url = "https://www.last.fm/user/" + LastFMName;
+
+                        var builder = new EmbedBuilder();
+
+                        builder.WithAuthor(eab);
+                        builder.WithDescription("Recently Played");
+
+                        string nulltext = "[undefined]";
+
+                        string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
+                        string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
+                        string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nulltext : currentTrack.AlbumName;
+
+                        try
+                        {
+                            var AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
+                            var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
+                            var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
+                            string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
+
+                            if (!string.IsNullOrWhiteSpace(ThumbnailImage))
+                            {
+                                builder.WithThumbnailUrl(ThumbnailImage);
+                            }
+                        }
+                        catch (Exception)
+                        {
+                        }
+
+                        builder.AddInlineField("Recent Track", TrackName);
+                        builder.AddInlineField(AlbumName, ArtistName);
+
+                        EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                        efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
+
+                        var userinfo = await client.User.GetInfoAsync(LastFMName);
+                        var playcount = userinfo.Content.Playcount;
+
+                        efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+
+                        builder.WithFooter(efb);
+
+                        await Context.Channel.SendMessageAsync("", false, builder.Build());
+                    }
+                    catch (Exception)
+                    {
+                        await ReplyAsync("Your have no scrobbles on your Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then try using .fm again!");
+                    }
                 }
-
-                builder.AddInlineField("Recent Track", TrackName);
-                builder.AddInlineField(AlbumName, ArtistName);
-                builder.AddInlineField("Previous Track", LastTrackName);
-                builder.AddInlineField(LastAlbumName, LastArtistName);
-
-                EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
-
-                var userinfo = await client.User.GetInfoAsync(LastFMName);
-                var playcount = userinfo.Content.Playcount;
-
-                efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
-
-                builder.WithFooter(efb);
-
-                await Context.Channel.SendMessageAsync("", false, builder.Build());
             }
         }
 
@@ -243,55 +326,69 @@ namespace FMBot_Discord
                 // to our client's configuration
                 var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
                 var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
-                var tracks = await client.User.GetRecentScrobbles(LastFMName, null, 1, 2);
-                LastTrack currentTrack = tracks.Content.ElementAt(0);
-                LastTrack lastTrack = tracks.Content.ElementAt(1);
-
-                string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? null : currentTrack.Name;
-                string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? null : currentTrack.ArtistName;
-                string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? null : currentTrack.AlbumName;
-
                 try
                 {
-                    string querystring = TrackName + " - " + ArtistName + " " + AlbumName;
-                    var items = new VideoSearch();
-                    var item = items.SearchQuery(querystring, 1).ElementAt(0);
+                    var tracks = await client.User.GetRecentScrobbles(LastFMName, null, 1, 2);
+                    LastTrack currentTrack = tracks.Content.ElementAt(0);
+                    LastTrack lastTrack = tracks.Content.ElementAt(1);
 
-                    await Context.Channel.SendMessageAsync(item.Url);
+                    string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? null : currentTrack.Name;
+                    string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? null : currentTrack.ArtistName;
+                    string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? null : currentTrack.AlbumName;
+
+                    try
+                    {
+                        string querystring = TrackName + " - " + ArtistName + " " + AlbumName;
+                        var items = new VideoSearch();
+                        var item = items.SearchQuery(querystring, 1).ElementAt(0);
+
+                        await Context.Channel.SendMessageAsync(item.Url);
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                    eab.IconUrl = DiscordUser.GetAvatarUrl();
+                    if (AdminCommands.IsAdmin(DiscordUser))
+                    {
+                        eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                    }
+                    else
+                    {
+                        eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                    }
+                    eab.Url = "https://www.last.fm/user/" + LastFMName;
+
+                    var builder = new EmbedBuilder();
+
+                    builder.WithAuthor(eab);
+                    builder.WithDescription("Recently Played on YouTube");
+
+                    string nulltext = "[undefined]";
+
+                    string TrackName2 = string.IsNullOrWhiteSpace(TrackName) ? nulltext : TrackName;
+                    string ArtistName2 = string.IsNullOrWhiteSpace(ArtistName) ? nulltext : ArtistName;
+                    string AlbumName2 = string.IsNullOrWhiteSpace(AlbumName) ? nulltext : AlbumName;
+
+                    builder.AddField(TrackName2, ArtistName2 + " | " + AlbumName2);
+
+                    EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                    efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
+
+                    var userinfo = await client.User.GetInfoAsync(LastFMName);
+                    var playcount = userinfo.Content.Playcount;
+
+                    efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+
+                    builder.WithFooter(efb);
+
+                    await Context.Channel.SendMessageAsync("", false, builder.Build());
                 }
                 catch (Exception)
                 {
+                    await ReplyAsync("Your have no scrobbles on your Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then try using .fmyt again!");
                 }
-
-                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                eab.IconUrl = DiscordUser.GetAvatarUrl();
-                eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
-                eab.Url = "https://www.last.fm/user/" + LastFMName;
-
-                var builder = new EmbedBuilder();
-
-                builder.WithAuthor(eab);
-                builder.WithDescription("Recently Played on YouTube");
-
-                string nulltext = "[undefined]";
-
-                string TrackName2 = string.IsNullOrWhiteSpace(TrackName) ? nulltext : TrackName;
-                string ArtistName2 = string.IsNullOrWhiteSpace(ArtistName) ? nulltext : ArtistName;
-                string AlbumName2 = string.IsNullOrWhiteSpace(AlbumName) ? nulltext : AlbumName;
-
-                builder.AddField(TrackName2, ArtistName2 + " | " + AlbumName2);
-
-                EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
-
-                var userinfo = await client.User.GetInfoAsync(LastFMName);
-                var playcount = userinfo.Content.Playcount;
-
-                efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
-
-                builder.WithFooter(efb);
-
-                await Context.Channel.SendMessageAsync("", false, builder.Build());
             }
         }
 
@@ -318,61 +415,75 @@ namespace FMBot_Discord
             else
             {
                 var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
-                var tracks = await client.User.GetRecentScrobbles(LastFMName, null, 1, num);
-
-                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                eab.IconUrl = DiscordUser.GetAvatarUrl();
-                eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
-                eab.Url = "https://www.last.fm/user/" + LastFMName;
-
-                var builder = new EmbedBuilder();
-                builder.WithAuthor(eab);
-                builder.WithDescription("Top " + num + " Recent Track List");
-
-                string nulltext = "[undefined]";
-                int indexval = (num - 1);
-                for (int i = 0; i <= indexval; i++)
+                try
                 {
-                    LastTrack track = tracks.Content.ElementAt(i);
+                    var tracks = await client.User.GetRecentScrobbles(LastFMName, null, 1, num);
 
-                    string TrackName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.Name;
-                    string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
-                    string AlbumName = string.IsNullOrWhiteSpace(track.AlbumName) ? nulltext : track.AlbumName;
-
-                    try
+                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                    eab.IconUrl = DiscordUser.GetAvatarUrl();
+                    if (AdminCommands.IsAdmin(DiscordUser))
                     {
-                        if (i == 0)
-                        {
-                            var AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
-                            var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
-                            var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
-                            string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
+                        eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                    }
+                    else
+                    {
+                        eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                    }
+                    eab.Url = "https://www.last.fm/user/" + LastFMName;
 
-                            if (!string.IsNullOrWhiteSpace(ThumbnailImage))
+                    var builder = new EmbedBuilder();
+                    builder.WithAuthor(eab);
+                    builder.WithDescription("Top " + num + " Recent Track List");
+
+                    string nulltext = "[undefined]";
+                    int indexval = (num - 1);
+                    for (int i = 0; i <= indexval; i++)
+                    {
+                        LastTrack track = tracks.Content.ElementAt(i);
+
+                        string TrackName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.Name;
+                        string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
+                        string AlbumName = string.IsNullOrWhiteSpace(track.AlbumName) ? nulltext : track.AlbumName;
+
+                        try
+                        {
+                            if (i == 0)
                             {
-                                builder.WithThumbnailUrl(ThumbnailImage);
+                                var AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
+                                var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
+                                var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
+                                string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
+
+                                if (!string.IsNullOrWhiteSpace(ThumbnailImage))
+                                {
+                                    builder.WithThumbnailUrl(ThumbnailImage);
+                                }
                             }
                         }
-                    }
-                    catch (Exception)
-                    {
+                        catch (Exception)
+                        {
+                        }
+
+                        int correctnum = (i + 1);
+                        builder.AddField("Track #" + correctnum.ToString() + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
                     }
 
-                    int correctnum = (i + 1);
-                    builder.AddField("Track #" + correctnum.ToString() + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
+                    EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                    efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
+
+                    var userinfo = await client.User.GetInfoAsync(LastFMName);
+                    var playcount = userinfo.Content.Playcount;
+
+                    efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+
+                    builder.WithFooter(efb);
+
+                    await Context.Channel.SendMessageAsync("", false, builder.Build());
                 }
-
-                EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
-
-                var userinfo = await client.User.GetInfoAsync(LastFMName);
-                var playcount = userinfo.Content.Playcount;
-
-                efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
-
-                builder.WithFooter(efb);
-
-                await Context.Channel.SendMessageAsync("", false, builder.Build());
+                catch (Exception)
+                {
+                    await ReplyAsync("Your have no scrobbles on your Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then try using .fmrecent again!");
+                }
             }
         }
 
@@ -399,59 +510,73 @@ namespace FMBot_Discord
             else
             {
                 var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
-                var artists = await client.User.GetTopArtists(LastFMName, LastStatsTimeSpan.Overall, 1, num);
-
-                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                eab.IconUrl = DiscordUser.GetAvatarUrl();
-                eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
-                eab.Url = "https://www.last.fm/user/" + LastFMName;
-
-                var builder = new EmbedBuilder();
-                builder.WithAuthor(eab);
-                builder.WithDescription("Top " + num + " Artist List");
-
-                string nulltext = "[undefined]";
-                int indexval = (num - 1);
-                for (int i = 0; i <= indexval; i++)
+                try
                 {
-                    LastArtist artist = artists.Content.ElementAt(i);
+                    var artists = await client.User.GetTopArtists(LastFMName, LastStatsTimeSpan.Overall, 1, num);
 
-                    string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? nulltext : artist.Name;
-
-                    try
+                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                    eab.IconUrl = DiscordUser.GetAvatarUrl();
+                    if (AdminCommands.IsAdmin(DiscordUser))
                     {
-                        if (i == 0)
-                        {
-                            var ArtistInfo = await client.Artist.GetInfoAsync(ArtistName);
-                            var ArtistImages = (ArtistInfo.Content.MainImage != null) ? ArtistInfo.Content.MainImage : null;
-                            var ArtistThumbnail = (ArtistImages != null) ? ArtistImages.Large.AbsoluteUri : null;
-                            string ThumbnailImage = (ArtistThumbnail != null) ? ArtistThumbnail.ToString() : null;
+                        eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                    }
+                    else
+                    {
+                        eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                    }
+                    eab.Url = "https://www.last.fm/user/" + LastFMName;
 
-                            if (!string.IsNullOrWhiteSpace(ThumbnailImage))
+                    var builder = new EmbedBuilder();
+                    builder.WithAuthor(eab);
+                    builder.WithDescription("Top " + num + " Artist List");
+
+                    string nulltext = "[undefined]";
+                    int indexval = (num - 1);
+                    for (int i = 0; i <= indexval; i++)
+                    {
+                        LastArtist artist = artists.Content.ElementAt(i);
+
+                        string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? nulltext : artist.Name;
+
+                        try
+                        {
+                            if (i == 0)
                             {
-                                builder.WithThumbnailUrl(ThumbnailImage);
+                                var ArtistInfo = await client.Artist.GetInfoAsync(ArtistName);
+                                var ArtistImages = (ArtistInfo.Content.MainImage != null) ? ArtistInfo.Content.MainImage : null;
+                                var ArtistThumbnail = (ArtistImages != null) ? ArtistImages.Large.AbsoluteUri : null;
+                                string ThumbnailImage = (ArtistThumbnail != null) ? ArtistThumbnail.ToString() : null;
+
+                                if (!string.IsNullOrWhiteSpace(ThumbnailImage))
+                                {
+                                    builder.WithThumbnailUrl(ThumbnailImage);
+                                }
                             }
                         }
-                    }
-                    catch (Exception)
-                    {
+                        catch (Exception)
+                        {
+                        }
+
+                        int correctnum = (i + 1);
+                        builder.AddField("Artist #" + correctnum.ToString() + ":", ArtistName);
                     }
 
-                    int correctnum = (i + 1);
-                    builder.AddField("Artist #" + correctnum.ToString() + ":", ArtistName);
+                    EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                    efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
+
+                    var userinfo = await client.User.GetInfoAsync(LastFMName);
+                    var playcount = userinfo.Content.Playcount;
+
+                    efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+
+                    builder.WithFooter(efb);
+
+                    await Context.Channel.SendMessageAsync("", false, builder.Build());
                 }
-
-                EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
-
-                var userinfo = await client.User.GetInfoAsync(LastFMName);
-                var playcount = userinfo.Content.Playcount;
-
-                efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
-
-                builder.WithFooter(efb);
-
-                await Context.Channel.SendMessageAsync("", false, builder.Build());
+                catch (Exception)
+                {
+                    await ReplyAsync("Your have no scrobbles on your Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then try using .fmartists again!");
+                }
             }
         }
 
@@ -478,60 +603,74 @@ namespace FMBot_Discord
             else
             {
                 var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
-                var albums = await client.User.GetTopAlbums(LastFMName, LastStatsTimeSpan.Overall, 1, num);
-
-                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                eab.IconUrl = DiscordUser.GetAvatarUrl();
-                eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
-                eab.Url = "https://www.last.fm/user/" + LastFMName;
-
-                var builder = new EmbedBuilder();
-                builder.WithAuthor(eab);
-                builder.WithDescription("Top " + num + " Album List");
-
-                string nulltext = "[undefined]";
-                int indexval = (num - 1);
-                for (int i = 0; i <= indexval; i++)
+                try
                 {
-                    LastAlbum album = albums.Content.ElementAt(i);
+                    var albums = await client.User.GetTopAlbums(LastFMName, LastStatsTimeSpan.Overall, 1, num);
 
-                    string AlbumName = string.IsNullOrWhiteSpace(album.Name) ? nulltext : album.Name;
-                    string ArtistName = string.IsNullOrWhiteSpace(album.ArtistName) ? nulltext : album.ArtistName;
-
-                    try
+                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                    eab.IconUrl = DiscordUser.GetAvatarUrl();
+                    if (AdminCommands.IsAdmin(DiscordUser))
                     {
-                        if (i == 0)
-                        {
-                            var AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
-                            var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
-                            var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
-                            string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
+                        eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                    }
+                    else
+                    {
+                        eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                    }
+                    eab.Url = "https://www.last.fm/user/" + LastFMName;
 
-                            if (!string.IsNullOrWhiteSpace(ThumbnailImage))
+                    var builder = new EmbedBuilder();
+                    builder.WithAuthor(eab);
+                    builder.WithDescription("Top " + num + " Album List");
+
+                    string nulltext = "[undefined]";
+                    int indexval = (num - 1);
+                    for (int i = 0; i <= indexval; i++)
+                    {
+                        LastAlbum album = albums.Content.ElementAt(i);
+
+                        string AlbumName = string.IsNullOrWhiteSpace(album.Name) ? nulltext : album.Name;
+                        string ArtistName = string.IsNullOrWhiteSpace(album.ArtistName) ? nulltext : album.ArtistName;
+
+                        try
+                        {
+                            if (i == 0)
                             {
-                                builder.WithThumbnailUrl(ThumbnailImage);
+                                var AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
+                                var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
+                                var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
+                                string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
+
+                                if (!string.IsNullOrWhiteSpace(ThumbnailImage))
+                                {
+                                    builder.WithThumbnailUrl(ThumbnailImage);
+                                }
                             }
                         }
-                    }
-                    catch (Exception)
-                    {
+                        catch (Exception)
+                        {
+                        }
+
+                        int correctnum = (i + 1);
+                        builder.AddField("Album #" + correctnum.ToString() + ":", AlbumName + " | " + ArtistName);
                     }
 
-                    int correctnum = (i + 1);
-                    builder.AddField("Album #" + correctnum.ToString() + ":", AlbumName + " | " + ArtistName);
+                    EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                    efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
+
+                    var userinfo = await client.User.GetInfoAsync(LastFMName);
+                    var playcount = userinfo.Content.Playcount;
+
+                    efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+
+                    builder.WithFooter(efb);
+
+                    await Context.Channel.SendMessageAsync("", false, builder.Build());
                 }
-
-                EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
-
-                var userinfo = await client.User.GetInfoAsync(LastFMName);
-                var playcount = userinfo.Content.Playcount;
-
-                efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
-
-                builder.WithFooter(efb);
-
-                await Context.Channel.SendMessageAsync("", false, builder.Build());
+                catch (Exception)
+                {
+                    await ReplyAsync("Your have no scrobbles on your Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then try using .fmalbums again!");
+                }
             }
         }
 
@@ -561,7 +700,14 @@ namespace FMBot_Discord
 
                 EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                 eab.IconUrl = DiscordUser.GetAvatarUrl();
-                eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                if (AdminCommands.IsAdmin(DiscordUser))
+                {
+                    eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                }
+                else
+                {
+                    eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                }
                 eab.Url = "https://www.last.fm/user/" + LastFMName;
 
                 var builder = new EmbedBuilder();
@@ -708,13 +854,6 @@ namespace FMBot_Discord
     public class AdminCommands : ModuleBase
     {
         //OwnerIDs = Bitl, Mirage, Opus v84, [opti], GreystarMusic
-        private readonly List<ulong> AdminIDs = new List<ulong>(new ulong[] {
-            184013824850919425,
-            183730395836186624,
-            205759116889554946,
-            120954630388580355,
-            205832344744099840
-        });
 
         private readonly CommandService _service;
 
@@ -723,21 +862,16 @@ namespace FMBot_Discord
             _service = service;
         }
 
-        private bool IsAdmin(IUser user)
+        public static bool IsAdmin(IUser user)
         {
-            foreach (ulong item in AdminIDs)
+            if (user.Id.Equals(184013824850919425) || user.Id.Equals(183730395836186624) || user.Id.Equals(205759116889554946) || user.Id.Equals(120954630388580355) || user.Id.Equals(205832344744099840))
             {
-                if (user.Id.Equals(item))
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                return true;
             }
-
-            return false;
+            else
+            {
+                return false;
+            }
         }
 
         [Command("announce"), Summary("Sends an announcement to the main server.")]
