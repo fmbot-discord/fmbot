@@ -93,9 +93,20 @@ namespace FMBot_Discord
         public async Task InstallCommands()
         {
             // Hook the MessageReceived Event into our Command Handler
-            client.MessageReceived += HandleCommand;
+            client.MessageReceived += HandleCommand_MessageReceived;
+            client.MessageUpdated += HandleCommand_MessageEdited;
             // Discover all of the commands in this assembly and load them.
             await commands.AddModulesAsync(Assembly.GetEntryAssembly());
+        }
+
+        public async Task HandleCommand_MessageReceived(SocketMessage messageParam)
+        {
+            await HandleCommand(messageParam);
+        }
+
+        public async Task HandleCommand_MessageEdited(Cacheable<IMessage, ulong> before, SocketMessage after, ISocketMessageChannel channel)
+        {
+            await HandleCommand(after);
         }
 
         public async Task HandleCommand(SocketMessage messageParam)
@@ -118,17 +129,59 @@ namespace FMBot_Discord
             // Create a number to track where the prefix ends and the command begins
             int argPos = 0;
             // Determine if the message is a command, based on if it starts with '!' or a mention prefix
-            if (!(message.HasCharPrefix(Convert.ToChar(prefix), ref argPos) || message.HasMentionPrefix(client.CurrentUser, ref argPos))) return;
-            // Create a Command Context
-            var context = new CommandContext(client, message);
-            // Execute the command. (result does not indicate a return value, 
-            // rather an object stating if the command executed successfully)
-            if (User.IncomingRequest(DiscordCaller.Id, double.Parse(cfgjson.Cooldown)) == false)
+            if (!message.HasCharPrefix(Convert.ToChar(prefix), ref argPos)) return;
+
+            //admins bypass any valid command check and cooldown.
+            if (!AdminCommands.IsAdmin(DiscordCaller))
             {
-                await context.Channel.SendMessageAsync("Please wait a bit before you can use the command again.");
+                bool sendCMD = false;
+
+                foreach (var module in commands.Modules)
+                {
+                    foreach (var cmd in module.Commands)
+                    {
+                        //Console.WriteLine(module.Name + " -> " + prefix + cmd.Aliases.First());
+                        var messageSearch = prefix + cmd.Aliases.First();
+                        if (messageSearch.Equals(message.Content))
+                        {
+                            sendCMD = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (sendCMD == true)
+                {
+                    // Create a Command Context
+                    var context = new CommandContext(client, message);
+
+                    // Execute the command. (result does not indicate a return value, 
+                    // rather an object stating if the command executed successfully)
+                    if (User.IncomingRequest(DiscordCaller.Id, double.Parse(cfgjson.Cooldown)) == false)
+                    {
+                        await context.Channel.SendMessageAsync("Please wait a bit before you can use the command again.");
+                    }
+                    else
+                    {
+                        var result = await commands.ExecuteAsync(context, argPos, services);
+                        if (!result.IsSuccess)
+                        {
+                            Console.WriteLine("[FMBot]: Error - " + result.Error + ": " + result.ErrorReason);
+                        }
+                    }
+                }
+                else
+                {
+                    return;
+                }
             }
             else
             {
+                // Create a Command Context
+                var context = new CommandContext(client, message);
+
+                // Execute the command. (result does not indicate a return value, 
+                // rather an object stating if the command executed successfully)
                 var result = await commands.ExecuteAsync(context, argPos, services);
                 if (!result.IsSuccess)
                 {
@@ -151,7 +204,7 @@ namespace FMBot_Discord
         [Command("fm")]
         public async Task fmAsync(IUser user = null)
         {
-            var DiscordUser = user ?? Context.Message.Author;
+            var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
             string LastFMName = DBase.GetNameForID(GlobalVars.DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
             {
@@ -179,11 +232,11 @@ namespace FMBot_Discord
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
                     if (AdminCommands.IsAdmin(DiscordUser))
                     {
-                        eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
                     }
                     else
                     {
-                        eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
                     }
                     eab.Url = "https://www.last.fm/user/" + LastFMName;
 
@@ -307,7 +360,7 @@ namespace FMBot_Discord
         [Command("fmyt")]
         public async Task fmytAsync(IUser user = null)
         {
-            var DiscordUser = user ?? Context.Message.Author;
+            var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
             string LastFMName = DBase.GetNameForID(GlobalVars.DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
             {
@@ -352,11 +405,11 @@ namespace FMBot_Discord
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
                     if (AdminCommands.IsAdmin(DiscordUser))
                     {
-                        eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
                     }
                     else
                     {
-                        eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
                     }
                     eab.Url = "https://www.last.fm/user/" + LastFMName;
 
@@ -406,7 +459,7 @@ namespace FMBot_Discord
             // to our client's configuration
             var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
             int num = int.Parse(cfgjson.Listnum);
-            var DiscordUser = user ?? Context.Message.Author;
+            var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
             string LastFMName = DBase.GetNameForID(GlobalVars.DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
             {
@@ -423,11 +476,11 @@ namespace FMBot_Discord
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
                     if (AdminCommands.IsAdmin(DiscordUser))
                     {
-                        eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
                     }
                     else
                     {
-                        eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
                     }
                     eab.Url = "https://www.last.fm/user/" + LastFMName;
 
@@ -501,7 +554,7 @@ namespace FMBot_Discord
             // to our client's configuration
             var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
             int num = int.Parse(cfgjson.Listnum);
-            var DiscordUser = user ?? Context.Message.Author;
+            var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
             string LastFMName = DBase.GetNameForID(GlobalVars.DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
             {
@@ -518,11 +571,11 @@ namespace FMBot_Discord
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
                     if (AdminCommands.IsAdmin(DiscordUser))
                     {
-                        eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
                     }
                     else
                     {
-                        eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
                     }
                     eab.Url = "https://www.last.fm/user/" + LastFMName;
 
@@ -594,7 +647,7 @@ namespace FMBot_Discord
             // to our client's configuration
             var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
             int num = int.Parse(cfgjson.Listnum);
-            var DiscordUser = user ?? Context.Message.Author;
+            var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
             string LastFMName = DBase.GetNameForID(GlobalVars.DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
             {
@@ -611,11 +664,11 @@ namespace FMBot_Discord
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
                     if (AdminCommands.IsAdmin(DiscordUser))
                     {
-                        eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
                     }
                     else
                     {
-                        eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
                     }
                     eab.Url = "https://www.last.fm/user/" + LastFMName;
 
@@ -688,7 +741,7 @@ namespace FMBot_Discord
             // to our client's configuration
             var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
             int num = int.Parse(cfgjson.Listnum);
-            var DiscordUser = user ?? Context.Message.Author;
+            var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
             string LastFMName = DBase.GetNameForID(GlobalVars.DBFileName, DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
             {
@@ -702,11 +755,11 @@ namespace FMBot_Discord
                 eab.IconUrl = DiscordUser.GetAvatarUrl();
                 if (AdminCommands.IsAdmin(DiscordUser))
                 {
-                    eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                    eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
                 }
                 else
                 {
-                    eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                    eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
                 }
                 eab.Url = "https://www.last.fm/user/" + LastFMName;
 
@@ -877,7 +930,7 @@ namespace FMBot_Discord
         [Command("announce"), Summary("Sends an announcement to the main server.")]
         public async Task announceAsync(string message, string ThumbnailURL = null)
         {
-            var DiscordUser = Context.Message.Author;
+            var DiscordUser = (IGuildUser)Context.Message.Author;
             var SelfUser = Context.Client.CurrentUser;
             ulong BroadcastChannelID = 209847309385596928;
             ITextChannel channel = await Context.Guild.GetTextChannelAsync(BroadcastChannelID);
@@ -885,7 +938,14 @@ namespace FMBot_Discord
             {
                 EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                 eab.IconUrl = DiscordUser.GetAvatarUrl();
-                eab.Name = DiscordUser.Username;
+                if (DiscordUser.Nickname == DiscordUser.Username)
+                {
+                    eab.Name = DiscordUser.Username;
+                }
+                else
+                {
+                    eab.Name = DiscordUser.Nickname + " ( " + DiscordUser.Username + ")";
+                }
 
                 var builder = new EmbedBuilder();
                 builder.WithAuthor(eab);
