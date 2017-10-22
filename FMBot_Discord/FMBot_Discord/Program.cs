@@ -230,13 +230,27 @@ namespace FMBot_Discord
                     LastTrack lastTrack = tracks.Content.ElementAt(1);
                     EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
-                    if (AdminCommands.IsAdmin(DiscordUser))
+                    if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
                     {
-                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
+                        if (AdminCommands.IsAdmin(DiscordUser))
+                        {
+                            eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                        }
+                        else
+                        {
+                            eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                        }
                     }
                     else
                     {
-                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
+                        if (AdminCommands.IsAdmin(DiscordUser))
+                        {
+                            eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
+                        }
+                        else
+                        {
+                            eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
+                        }
                     }
                     eab.Url = "https://www.last.fm/user/" + LastFMName;
 
@@ -297,13 +311,27 @@ namespace FMBot_Discord
                         LastTrack lastTrack = tracks.Content.ElementAt(1);
                         EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                         eab.IconUrl = DiscordUser.GetAvatarUrl();
-                        if (AdminCommands.IsAdmin(DiscordUser))
+                        if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
                         {
-                            eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                            if (AdminCommands.IsAdmin(DiscordUser))
+                            {
+                                eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                            }
+                            else
+                            {
+                                eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                            }
                         }
                         else
                         {
-                            eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                            if (AdminCommands.IsAdmin(DiscordUser))
+                            {
+                                eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
+                            }
+                            else
+                            {
+                                eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
+                            }
                         }
                         eab.Url = "https://www.last.fm/user/" + LastFMName;
 
@@ -403,13 +431,27 @@ namespace FMBot_Discord
 
                     EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
-                    if (AdminCommands.IsAdmin(DiscordUser))
+                    if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
                     {
-                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
+                        if (AdminCommands.IsAdmin(DiscordUser))
+                        {
+                            eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                        }
+                        else
+                        {
+                            eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                        }
                     }
                     else
                     {
-                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
+                        if (AdminCommands.IsAdmin(DiscordUser))
+                        {
+                            eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
+                        }
+                        else
+                        {
+                            eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
+                        }
                     }
                     eab.Url = "https://www.last.fm/user/" + LastFMName;
 
@@ -474,13 +516,27 @@ namespace FMBot_Discord
 
                     EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
-                    if (AdminCommands.IsAdmin(DiscordUser))
+                    if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
                     {
-                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
+                        if (AdminCommands.IsAdmin(DiscordUser))
+                        {
+                            eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                        }
+                        else
+                        {
+                            eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                        }
                     }
                     else
                     {
-                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
+                        if (AdminCommands.IsAdmin(DiscordUser))
+                        {
+                            eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
+                        }
+                        else
+                        {
+                            eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
+                        }
                     }
                     eab.Url = "https://www.last.fm/user/" + LastFMName;
 
@@ -569,13 +625,27 @@ namespace FMBot_Discord
 
                     EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
-                    if (AdminCommands.IsAdmin(DiscordUser))
+                    if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
                     {
-                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
+                        if (AdminCommands.IsAdmin(DiscordUser))
+                        {
+                            eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                        }
+                        else
+                        {
+                            eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                        }
                     }
                     else
                     {
-                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
+                        if (AdminCommands.IsAdmin(DiscordUser))
+                        {
+                            eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
+                        }
+                        else
+                        {
+                            eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
+                        }
                     }
                     eab.Url = "https://www.last.fm/user/" + LastFMName;
 
@@ -662,13 +732,27 @@ namespace FMBot_Discord
 
                     EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
-                    if (AdminCommands.IsAdmin(DiscordUser))
+                    if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
                     {
-                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
+                        if (AdminCommands.IsAdmin(DiscordUser))
+                        {
+                            eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                        }
+                        else
+                        {
+                            eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                        }
                     }
                     else
                     {
-                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
+                        if (AdminCommands.IsAdmin(DiscordUser))
+                        {
+                            eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
+                        }
+                        else
+                        {
+                            eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
+                        }
                     }
                     eab.Url = "https://www.last.fm/user/" + LastFMName;
 
@@ -753,13 +837,28 @@ namespace FMBot_Discord
 
                 EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                 eab.IconUrl = DiscordUser.GetAvatarUrl();
-                if (AdminCommands.IsAdmin(DiscordUser))
+                bool Admin = AdminCommands.IsAdmin(DiscordUser);
+                if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
                 {
-                    eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
+                    if (Admin)
+                    {
+                        eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
+                    }
+                    else
+                    {
+                        eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
+                    }
                 }
                 else
                 {
-                    eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
+                    if (Admin)
+                    {
+                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
+                    }
+                    else
+                    {
+                        eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
+                    }
                 }
                 eab.Url = "https://www.last.fm/user/" + LastFMName;
 
@@ -796,6 +895,7 @@ namespace FMBot_Discord
                 builder.AddInlineField("Total Tracks: ", playcount.ToString());
                 builder.AddInlineField("Total Playlists: ", playlists.ToString());
                 builder.AddInlineField("Has Premium? ", premium.ToString());
+                builder.AddInlineField("Is FMBot Admin? ", Admin.ToString());
 
                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
                 efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
@@ -938,13 +1038,13 @@ namespace FMBot_Discord
             {
                 EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                 eab.IconUrl = DiscordUser.GetAvatarUrl();
-                if (DiscordUser.Nickname == DiscordUser.Username)
+                if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
                 {
                     eab.Name = DiscordUser.Username;
                 }
                 else
                 {
-                    eab.Name = DiscordUser.Nickname + " ( " + DiscordUser.Username + ")";
+                    eab.Name = DiscordUser.Nickname + " (" + DiscordUser.Username + ")";
                 }
 
                 var builder = new EmbedBuilder();
