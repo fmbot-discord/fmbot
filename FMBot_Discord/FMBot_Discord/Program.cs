@@ -134,45 +134,23 @@ namespace FMBot_Discord
             //admins bypass any valid command check and cooldown.
             if (!AdminCommands.IsAdmin(DiscordCaller))
             {
-                bool sendCMD = false;
+                // Create a Command Context
+                var context = new CommandContext(client, message);
 
-                foreach (var module in commands.Modules)
+                // Execute the command. (result does not indicate a return value, 
+                // rather an object stating if the command executed successfully)
+                if (User.IncomingRequest(DiscordCaller.Id, double.Parse(cfgjson.Cooldown)) == false)
                 {
-                    foreach (var cmd in module.Commands)
-                    {
-                        //Console.WriteLine(module.Name + " -> " + prefix + cmd.Aliases.First());
-                        var messageSearch = prefix + cmd.Aliases.First();
-                        if (messageSearch.Equals(message.Content))
-                        {
-                            sendCMD = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (sendCMD == true)
-                {
-                    // Create a Command Context
-                    var context = new CommandContext(client, message);
-
-                    // Execute the command. (result does not indicate a return value, 
-                    // rather an object stating if the command executed successfully)
-                    if (User.IncomingRequest(DiscordCaller.Id, double.Parse(cfgjson.Cooldown)) == false)
-                    {
-                        await context.Channel.SendMessageAsync("Please wait a bit before you can use the command again.");
-                    }
-                    else
-                    {
-                        var result = await commands.ExecuteAsync(context, argPos, services);
-                        if (!result.IsSuccess)
-                        {
-                            Console.WriteLine("[FMBot]: Error - " + result.Error + ": " + result.ErrorReason);
-                        }
-                    }
+                    await context.Channel.SendMessageAsync("Please wait a bit before you can use the command again.");
                 }
                 else
                 {
-                    return;
+                    var result = await commands.ExecuteAsync(context, argPos, services);
+
+                    if (!result.IsSuccess)
+                    {
+                        Console.WriteLine("[FMBot]: Error - " + result.Error + ": " + result.ErrorReason);
+                    }
                 }
             }
             else
