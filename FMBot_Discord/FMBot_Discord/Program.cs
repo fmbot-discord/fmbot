@@ -531,7 +531,6 @@ namespace FMBot_Discord
                 {
                     var tracks = await client.User.GetRecentScrobbles(LastFMName, null, 1, 2);
                     LastTrack currentTrack = tracks.Content.ElementAt(0);
-                    LastTrack lastTrack = tracks.Content.ElementAt(1);
 
                     string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? null : currentTrack.Name;
                     string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? null : currentTrack.ArtistName;
