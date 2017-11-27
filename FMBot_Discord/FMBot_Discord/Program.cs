@@ -553,31 +553,26 @@ namespace FMBot_Discord
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
                     if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
                     {
-                        if (AdminCommands.IsAdmin(DiscordUser))
-                        {
-                            eab.Name = DiscordUser.Username + " (" + LastFMName + ", FMBot Admin)";
-                        }
-                        else
-                        {
-                            eab.Name = DiscordUser.Username + " (" + LastFMName + ")";
-                        }
+                        eab.Name = DiscordUser.Username;
                     }
                     else
                     {
-                        if (AdminCommands.IsAdmin(DiscordUser))
-                        {
-                            eab.Name = DiscordUser.Nickname + " (" + LastFMName + ", FMBot Admin)";
-                        }
-                        else
-                        {
-                            eab.Name = DiscordUser.Nickname + " (" + LastFMName + ")";
-                        }
+                        eab.Name = DiscordUser.Nickname;
                     }
-                    eab.Url = "https://www.last.fm/user/" + LastFMName;
 
                     var builder = new EmbedBuilder();
-
                     builder.WithAuthor(eab);
+                    string URI = "https://www.last.fm/user/" + LastFMName;
+                    builder.WithUrl(URI);
+                    bool Admin = AdminCommands.IsAdmin(DiscordUser);
+                    if (Admin)
+                    {
+                        builder.WithTitle(LastFMName + ", FMBot Admin");
+                    }
+                    else
+                    {
+                        builder.WithTitle(LastFMName);
+                    }
                     builder.WithDescription("Recently Played on YouTube");
 
                     string nulltext = "[undefined]";
