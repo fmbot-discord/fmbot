@@ -125,40 +125,15 @@ namespace FMBot_Discord
             // Determine if the message is a command, based on if it starts with '!' or a mention prefix
             if (!message.HasCharPrefix(Convert.ToChar(prefix), ref argPos)) return;
 
-            //admins bypass any valid command check and cooldown.
-            if (!AdminCommands.IsAdmin(DiscordCaller))
+            // Create a Command Context
+            var context = new CommandContext(client, message);
+
+            // Execute the command. (result does not indicate a return value, 
+            // rather an object stating if the command executed successfully)
+            var result = await commands.ExecuteAsync(context, argPos, services);
+            if (!result.IsSuccess)
             {
-                // Create a Command Context
-                var context = new CommandContext(client, message);
-
-                // Execute the command. (result does not indicate a return value, 
-                // rather an object stating if the command executed successfully)
-                if (User.IncomingRequest(DiscordCaller.Id, double.Parse(cfgjson.Cooldown)) == false)
-                {
-                    await context.Channel.SendMessageAsync("Please wait a bit before you can use the command again.");
-                }
-                else
-                {
-                    var result = await commands.ExecuteAsync(context, argPos, services);
-
-                    if (!result.IsSuccess)
-                    {
-                        Console.WriteLine("[FMBot]: Error - " + result.Error + ": " + result.ErrorReason);
-                    }
-                }
-            }
-            else
-            {
-                // Create a Command Context
-                var context = new CommandContext(client, message);
-
-                // Execute the command. (result does not indicate a return value, 
-                // rather an object stating if the command executed successfully)
-                var result = await commands.ExecuteAsync(context, argPos, services);
-                if (!result.IsSuccess)
-                {
-                    Console.WriteLine("[FMBot]: Error - " + result.Error + ": " + result.ErrorReason);
-                }
+                Console.WriteLine("[FMBot]: Error - " + result.Error + ": " + result.ErrorReason);
             }
         }
     }
@@ -1218,17 +1193,6 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("clearcache"), Summary("Clears the cooldown cache and resets the cooldown for all users.")]
-        public async Task clearcacheAsync()
-        {
-            var DiscordUser = Context.Message.Author;
-            if (IsAdmin(DiscordUser))
-            {
-                User.Users.Clear();
-                await ReplyAsync("Cooldown cache reset for all users.");
-            }
-        }
-
         [Command("fmadmin")]
         public async Task HelpAsync()
         {
@@ -1421,9 +1385,6 @@ namespace FMBot_Discord
 
         [JsonProperty("prefix")]
         public string CommandPrefix { get; private set; }
-
-        [JsonProperty("cooldown")]
-        public string Cooldown { get; private set; }
 
         [JsonProperty("listnum")]
         public string Listnum { get; private set; }
