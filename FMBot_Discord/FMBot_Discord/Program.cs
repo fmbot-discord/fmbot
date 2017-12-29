@@ -53,7 +53,7 @@ namespace FMBot_Discord
                 LogLevel = LogSeverity.Verbose
             });
 
-            await client.SetGameAsync("🎶 .fmhelp 🎶");
+            await client.SetGameAsync("🎶 Say .fmhelp to use 🎶");
 
             client.Log += Log;
 
@@ -1024,6 +1024,14 @@ namespace FMBot_Discord
             await ReplyAsync("Your Last.FM name has been set to '" + name + "' and your FMBot mode has been set to '" + LastFMMode + "'.");
         }
 
+        [Command("fmremove"), Summary("Deletes your FMBot data.")]
+        public async Task fmremoveAsync()
+        {
+            string SelfID = Context.Message.Author.Id.ToString();
+            DBase.RemoveEntry(SelfID);
+            await ReplyAsync("Your FMBot settings have been successfully deleted.");
+        }
+
         [Command("fmhelp")]
         public async Task fmhelpAsync()
         {
@@ -1250,43 +1258,18 @@ namespace FMBot_Discord
         }
     }
 
-    public class User
-    {
-        public ulong ID { get; set; }
-        public DateTime LastRequest { get; set; }
-        public static List<User> Users = new List<User>(); // list of all users
-
-        public static bool IncomingRequest(ulong DiscordID, double cooltime)//requesting user == username of the person messaging your bot
-        {
-            User TempUser = Users.FirstOrDefault(User => User.ID.Equals(DiscordID));
-            if (TempUser != null)// check to see if you have handled a request in the past from this user.
-            {
-                if ((DateTime.Now - TempUser.LastRequest).TotalSeconds >= cooltime) // checks if more than 30 seconds have passed between the last requests send by the user
-                {
-                    Users.Find(User => User.ID.Equals(DiscordID)).LastRequest = DateTime.Now; // update their last request time to now.
-                    return true;
-                }
-                else // if less than 30 seconds has passed return false.
-                {
-                    return false;
-                }
-            }
-            else // if no user is found, create a new user, and add it to the list
-            {
-                User NewUser = new User();
-                NewUser.ID = DiscordID;
-                NewUser.LastRequest = DateTime.Now;
-                Users.Add(NewUser);
-                return true;
-            }
-        }
-    }
-
     public class DBase
     {
         public static void WriteEntry(string id, string name, int fmval = 0)
         {
             File.WriteAllText(GlobalVars.UsersFolder + id + ".txt", name + Environment.NewLine + fmval.ToString());
+            File.SetAttributes(GlobalVars.UsersFolder + id + ".txt", FileAttributes.Normal);
+        }
+
+        public static void RemoveEntry(string id)
+        {
+            File.SetAttributes(GlobalVars.UsersFolder + id + ".txt", FileAttributes.Normal);
+            File.Delete(GlobalVars.UsersFolder + id + ".txt");
         }
 
         public static string GetNameForID(string id)
