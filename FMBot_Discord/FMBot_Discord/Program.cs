@@ -23,7 +23,7 @@ namespace FMBot_Discord
         private CommandService commands;
         private DiscordSocketClient client;
         private IServiceProvider services;
-        private string prefix;
+        private string prefix = "!";
 
         public static void Main(string[] args)
             => new Program().MainAsync().GetAwaiter().GetResult();
@@ -57,7 +57,7 @@ namespace FMBot_Discord
 
             client.Log += Log;
 
-            prefix = cfgjson.CommandPrefix;
+            //prefix = cfgjson.CommandPrefix;
 
             Console.WriteLine("[FMBot] Registering Commands");
             commands = new CommandService();
@@ -479,7 +479,7 @@ namespace FMBot_Discord
                 await ReplyAsync("Your Last.FM name cannot be found. Please use the fmset command.");
             }
         }
-        
+
         [Command("fmyt")]
         public async Task fmytAsync(IUser user = null)
         {
@@ -591,7 +591,8 @@ namespace FMBot_Discord
                 // next, let's load the values from that file
                 // to our client's configuration
                 var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
-                int num = int.Parse(cfgjson.Listnum);
+                //int num = int.Parse(cfgjson.Listnum);
+                int num = 5;
                 var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
@@ -685,6 +686,92 @@ namespace FMBot_Discord
             catch (Exception)
             {
                 await ReplyAsync("Your Last.FM name cannot be found. Please use the fmset command.");
+            }
+        }
+
+        [Command("fmfriendsrecent")]
+        public async Task fmfriendsrecentAsync(IUser user = null)
+        {
+            try
+            {
+                // first, let's load our configuration file
+                Console.WriteLine("[FMBot] Loading Configuration");
+                var json = "";
+                using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
+                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                    json = await sr.ReadToEndAsync();
+
+                // next, let's load the values from that file
+                // to our client's configuration
+                var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+                var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
+                string[] LastFMFriends = DBase.GetFriendsForID(DiscordUser.Id.ToString());
+                if (LastFMFriends == null || !LastFMFriends.Any())
+                {
+                    await ReplyAsync("No lastfm friends found. Please use fmsetfriends.");
+                }
+                else
+                {
+                    var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+                    try
+                    {
+                        EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                        bool Admin = AdminCommands.IsAdmin(DiscordUser);
+
+                        eab.IconUrl = DiscordUser.GetAvatarUrl();
+
+                        eab.Name = DiscordUser.Username;
+
+                        var builder = new EmbedBuilder();
+                        builder.WithAuthor(eab);
+                        if (Admin)
+                        {
+                            eab.Name = DiscordUser.Username + ", FMBot Admin";
+                        }
+                        else
+                        {
+                            eab.Name = DiscordUser.Username;
+                        }
+
+                        builder.WithDescription("Songs from " + LastFMFriends.Count() + " friends");
+
+                        string nulltext = "[undefined]";
+                        int indexval = (LastFMFriends.Count() - 1);
+                        int playcount = 0;
+                        foreach (var friend in LastFMFriends)
+                        {
+                            var tracks = await client.User.GetRecentScrobbles(friend, null, 1, 1);
+
+                            string TrackName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().Name) ? nulltext : tracks.FirstOrDefault().Name;
+                            string ArtistName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().ArtistName) ? nulltext : tracks.FirstOrDefault().ArtistName;
+                            string AlbumName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().AlbumName) ? nulltext : tracks.FirstOrDefault().AlbumName;
+
+                            builder.AddField(friend.ToString() + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
+
+                            // count how many scrobbles everyone has together (if the bot is too slow, consider removing this?)
+                            var userinfo = await client.User.GetInfoAsync(friend);
+                            playcount = playcount + userinfo.Content.Playcount;
+                        }
+
+                        EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                        efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
+
+
+                        efb.Text = "Amount of scrobbles of all your friends together: " + playcount.ToString();
+
+                        builder.WithFooter(efb);
+
+                        await Context.Channel.SendMessageAsync("", false, builder.Build());
+                    }
+                    catch (Exception)
+                    {
+                        await ReplyAsync("Your friends have no scrobbles on their Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then try using fmrecent again!");
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                await ReplyAsync("Your friends could not be found.");
             }
         }
 
@@ -1024,6 +1111,16 @@ namespace FMBot_Discord
             await ReplyAsync("Your Last.FM name has been set to '" + name + "' and your FMBot mode has been set to '" + LastFMMode + "'.");
         }
 
+        [Command("fmsetfriends"), Summary("Sets your friends Last.FM names.")]
+        public async Task fmfriendssetAsync([Summary("First friend name")] params String[] friends)
+        {
+            string SelfID = Context.Message.Author.Id.ToString();
+
+            DBase.WriteFriendsEntry(SelfID, friends);
+
+            await ReplyAsync("Succesfully set " + friends.Count() + " friends.");
+        }
+
         [Command("fmremove"), Summary("Deletes your FMBot data.")]
         public async Task fmremoveAsync()
         {
@@ -1127,7 +1224,7 @@ namespace FMBot_Discord
 
         public static bool IsAdmin(IUser user)
         {
-            if (user.Id.Equals(184013824850919425) || user.Id.Equals(183730395836186624) || user.Id.Equals(205759116889554946) || user.Id.Equals(120954630388580355) || user.Id.Equals(205832344744099840) || user.Id.Equals(175357072035151872))
+            if (user.Id.Equals(184013824850919425) || user.Id.Equals(183730395836186624) || user.Id.Equals(205759116889554946) || user.Id.Equals(120954630388580355) || user.Id.Equals(205832344744099840) || user.Id.Equals(175357072035151872) || user.Id.Equals(125740103539621888))
             {
                 return true;
             }
@@ -1266,6 +1363,18 @@ namespace FMBot_Discord
             File.SetAttributes(GlobalVars.UsersFolder + id + ".txt", FileAttributes.Normal);
         }
 
+        public static void WriteFriendsEntry(string id, params String[] stringArray)
+        {
+            string text = "";
+            foreach (var friend in stringArray)
+            {
+                text += friend;
+                text += Environment.NewLine;
+            }
+            File.WriteAllText(GlobalVars.UsersFolder + id + "friends" + ".txt", text);
+            File.SetAttributes(GlobalVars.UsersFolder + id + ".txt", FileAttributes.Normal);
+        }
+
         public static void RemoveEntry(string id)
         {
             File.SetAttributes(GlobalVars.UsersFolder + id + ".txt", FileAttributes.Normal);
@@ -1286,6 +1395,12 @@ namespace FMBot_Discord
             }
 
             return "NULL";
+        }
+
+        public static String[] GetFriendsForID(string id)
+        {
+            string[] lines = File.ReadAllLines(GlobalVars.UsersFolder + id + "friends" + ".txt");
+            return lines;
         }
 
         public static int GetModeIntForID(string id)
