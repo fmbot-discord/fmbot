@@ -23,7 +23,7 @@ namespace FMBot_Discord
         private CommandService commands;
         private DiscordSocketClient client;
         private IServiceProvider services;
-        private string prefix = "!";
+        private string prefix;
 
         public static void Main(string[] args)
             => new Program().MainAsync().GetAwaiter().GetResult();
@@ -57,7 +57,7 @@ namespace FMBot_Discord
 
             client.Log += Log;
 
-            //prefix = cfgjson.CommandPrefix;
+            prefix = cfgjson.CommandPrefix;
 
             Console.WriteLine("[FMBot] Registering Commands");
             commands = new CommandService();
@@ -591,8 +591,8 @@ namespace FMBot_Discord
                 // next, let's load the values from that file
                 // to our client's configuration
                 var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
-                //int num = int.Parse(cfgjson.Listnum);
-                int num = 5;
+                int num = int.Parse(cfgjson.Listnum);
+
                 var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
