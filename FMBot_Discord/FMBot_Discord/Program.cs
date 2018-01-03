@@ -53,7 +53,7 @@ namespace FMBot_Discord
                 LogLevel = LogSeverity.Verbose
             });
 
-            await client.SetGameAsync("🎶 Say .fmhelp to use 🎶");
+            await client.SetGameAsync("🎶 Say " + prefix + "fmhelp to use 🎶");
 
             client.Log += Log;
 
@@ -690,6 +690,7 @@ namespace FMBot_Discord
         }
 
         [Command("fmfriendsrecent")]
+        [Alias("fmrecentfriends")]
         public async Task fmfriendsrecentAsync(IUser user = null)
         {
             try
@@ -769,9 +770,9 @@ namespace FMBot_Discord
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                await ReplyAsync("Your friends could not be found.");
+                await ReplyAsync("Your friends could not be found. Please set your friends using fmsetfriends.");
             }
         }
 
@@ -1111,7 +1112,7 @@ namespace FMBot_Discord
             await ReplyAsync("Your Last.FM name has been set to '" + name + "' and your FMBot mode has been set to '" + LastFMMode + "'.");
         }
 
-        [Command("fmsetfriends"), Summary("Sets your friends Last.FM names.")]
+        [Command("fmsetfriends"), Alias("fmfriendsset"), Summary("Sets your friends Last.FM names.")]
         public async Task fmfriendssetAsync([Summary("First friend name")] params String[] friends)
         {
             string SelfID = Context.Message.Author.Id.ToString();
@@ -1400,6 +1401,7 @@ namespace FMBot_Discord
         public static String[] GetFriendsForID(string id)
         {
             string[] lines = File.ReadAllLines(GlobalVars.UsersFolder + id + "friends" + ".txt");
+
             return lines;
         }
 
