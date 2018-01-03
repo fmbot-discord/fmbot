@@ -18,3 +18,5 @@ ipch
 *.zip
 [Dd]ebug*/
 [Rr]elease*/
+# Config
+config.json
