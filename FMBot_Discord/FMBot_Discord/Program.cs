@@ -772,11 +772,7 @@ namespace FMBot_Discord
 
                         Bitmap stitchedImage = GlobalVars.Combine(BitmapList, true);
 
-                        System.Drawing.Imaging.Encoder qualityEncoder = System.Drawing.Imaging.Encoder.Quality;
-                        EncoderParameters jpgEncode = new EncoderParameters(1);
-                        EncoderParameter imageQuality = new EncoderParameter(qualityEncoder, long.Parse(cfgjson.ChartQuality));
-                        jpgEncode.Param[0] = imageQuality;
-                        stitchedImage.Save(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.jpg", GlobalVars.GetEncoder(System.Drawing.Imaging.ImageFormat.Jpeg), jpgEncode);
+                        stitchedImage.Save(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
                         await Context.Channel.SendFileAsync(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.jpg");
                     }
 
@@ -1677,9 +1673,6 @@ namespace FMBot_Discord
 
         [JsonProperty("chartrows")]
         public string ChartRows { get; private set; }
-
-        [JsonProperty("chartquality")]
-        public string ChartQuality { get; private set; }
     }
 
     public class GlobalVars
@@ -1773,19 +1766,6 @@ namespace FMBot_Discord
             }
 
             return list;
-        }
-
-        public static ImageCodecInfo GetEncoder(System.Drawing.Imaging.ImageFormat format)
-        {
-            ImageCodecInfo[] codecs = ImageCodecInfo.GetImageDecoders();
-            foreach (ImageCodecInfo codec in codecs)
-            {
-                if (codec.FormatID == format.Guid)
-                {
-                    return codec;
-                }
-            }
-            return null;
         }
     }
 }
