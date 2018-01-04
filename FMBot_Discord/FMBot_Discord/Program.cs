@@ -777,7 +777,7 @@ namespace FMBot_Discord
                         efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
 
 
-                        efb.Text = amountOfScrobbles + playcount.ToString();
+                        efb.Text = amountOfScrobbles + playcount.ToString("N0");
 
                         builder.WithFooter(efb);
 
