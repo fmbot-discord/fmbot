@@ -53,11 +53,12 @@ namespace FMBot_Discord
                 LogLevel = LogSeverity.Verbose
             });
 
-            await client.SetGameAsync("🎶 Say " + prefix + "fmhelp to use 🎶");
 
             client.Log += Log;
 
             prefix = cfgjson.CommandPrefix;
+
+            await client.SetGameAsync("🎶 Say " + prefix + "fmhelp to use 🎶");
 
             Console.WriteLine("[FMBot] Registering Commands");
             commands = new CommandService();
@@ -690,7 +691,7 @@ namespace FMBot_Discord
         }
 
         [Command("fmfriendsrecent")]
-        [Alias("fmrecentfriends")]
+        [Alias("fmrecentfriends", "fmfriends")]
         public async Task fmfriendsrecentAsync(IUser user = null)
         {
             try
@@ -734,11 +735,27 @@ namespace FMBot_Discord
                             eab.Name = DiscordUser.Username;
                         }
 
-                        builder.WithDescription("Songs from " + LastFMFriends.Count() + " friends");
+                        var loadingText = "Loading your LastFM friends...";
+                        var amountOfScrobbles = "Amount of scrobbles of all your friends together: ";
+
+                        if (LastFMFriends.Count() > 1)
+                        {
+                            builder.WithDescription("Songs from " + LastFMFriends.Count() + " friends");
+                        }
+                        else
+                        {
+                            builder.WithDescription("Songs from " + 1 + " friend");
+                            loadingText = "Loading your LastFM friend...";
+                            amountOfScrobbles = "Amount of scrobbles of your friend: ";
+                        }
+
 
                         string nulltext = "[undefined]";
                         int indexval = (LastFMFriends.Count() - 1);
                         int playcount = 0;
+
+                        var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
+
                         foreach (var friend in LastFMFriends)
                         {
                             var tracks = await client.User.GetRecentScrobbles(friend, null, 1, 1);
@@ -746,11 +763,13 @@ namespace FMBot_Discord
                             string TrackName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().Name) ? nulltext : tracks.FirstOrDefault().Name;
                             string ArtistName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().ArtistName) ? nulltext : tracks.FirstOrDefault().ArtistName;
                             string AlbumName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().AlbumName) ? nulltext : tracks.FirstOrDefault().AlbumName;
+                            //string LastPlayed = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().TimePlayed.ToString()) ? nulltext : tracks.FirstOrDefault().TimePlayed.ToString();
 
-                            builder.AddField(friend.ToString() + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
+                            var userinfo = await client.User.GetInfoAsync(friend);
+
+                            builder.AddField(userinfo.Content.Name + ":", ArtistName + " - " + TrackName);
 
                             // count how many scrobbles everyone has together (if the bot is too slow, consider removing this?)
-                            var userinfo = await client.User.GetInfoAsync(friend);
                             playcount = playcount + userinfo.Content.Playcount;
                         }
 
@@ -758,11 +777,12 @@ namespace FMBot_Discord
                         efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
 
 
-                        efb.Text = "Amount of scrobbles of all your friends together: " + playcount.ToString();
+                        efb.Text = amountOfScrobbles + playcount.ToString("N0");
 
                         builder.WithFooter(efb);
 
                         await Context.Channel.SendMessageAsync("", false, builder.Build());
+                        await loadingmsg.DeleteAsync();
                     }
                     catch (Exception)
                     {
@@ -1119,7 +1139,14 @@ namespace FMBot_Discord
 
             DBase.WriteFriendsEntry(SelfID, friends);
 
-            await ReplyAsync("Succesfully set " + friends.Count() + " friends.");
+            if (friends.Count() > 1)
+            {
+                await ReplyAsync("Succesfully set " + friends.Count() + " friends.");
+            }
+            else
+            {
+                await ReplyAsync("Succesfully set " + 1 + " friend.");
+            }
         }
 
         [Command("fmremove"), Summary("Deletes your FMBot data.")]
@@ -1373,7 +1400,7 @@ namespace FMBot_Discord
                 text += Environment.NewLine;
             }
             File.WriteAllText(GlobalVars.UsersFolder + id + "friends" + ".txt", text);
-            File.SetAttributes(GlobalVars.UsersFolder + id + ".txt", FileAttributes.Normal);
+            File.SetAttributes(GlobalVars.UsersFolder + id + "friends" + ".txt", FileAttributes.Normal);
         }
 
         public static void RemoveEntry(string id)

@@ -1,5 +1,5 @@
 {
-  "CommandPrefix": "!",
+  "Prefix": "!",
   "Token": "",
   "FMKey": "",
   "FMSecret": "",
