@@ -15,6 +15,9 @@ using IF.Lastfm.Core.Objects;
 using IF.Lastfm.Core.Api.Enums;
 using YoutubeSearch;
 using System.Collections.Generic;
+using System.Net;
+using System.Drawing;
+using System.Drawing.Imaging;
 
 namespace FMBot_Discord
 {
@@ -53,11 +56,11 @@ namespace FMBot_Discord
                 LogLevel = LogSeverity.Verbose
             });
 
-            await client.SetGameAsync("🎶 Say " + prefix + "fmhelp to use 🎶");
-
             client.Log += Log;
 
             prefix = cfgjson.CommandPrefix;
+
+            await client.SetGameAsync("🎶 Say " + prefix + "fmhelp to use 🎶");
 
             Console.WriteLine("[FMBot] Registering Commands");
             commands = new CommandService();
@@ -689,8 +692,137 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmfriendsrecent")]
-        [Alias("fmrecentfriends")]
+        [Command("fmchart")]
+        public async Task fmchartAsync(IUser user = null)
+        {
+            try
+            {
+                // first, let's load our configuration file
+                Console.WriteLine("[FMBot] Loading Configuration");
+                var json = "";
+                using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
+                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                    json = await sr.ReadToEndAsync();
+
+                // next, let's load the values from that file
+                // to our client's configuration
+                var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+                int num = int.Parse(cfgjson.Listnum);
+                var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
+                string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
+                if (LastFMName.Equals("NULL"))
+                {
+                    await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
+                }
+                else
+                {
+                    var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+                    int max = int.Parse(cfgjson.ChartAlbums);
+                    int rows = int.Parse(cfgjson.ChartRows);
+
+                    List<Bitmap> images = new List<Bitmap>();
+
+                    try
+                    {
+                        var tracks = await client.User.GetTopAlbums(LastFMName, LastStatsTimeSpan.Week, 1, max);
+
+                        string nulltext = "[undefined]";
+                        for (int al = 0; al < max; ++al)
+                        {
+                            LastAlbum track = tracks.Content.ElementAt(al);
+
+                            string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
+                            string AlbumName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.Name;
+
+                            try
+                            {
+                                var AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
+                                var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
+                                var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
+                                string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
+
+                                WebRequest request = WebRequest.Create(ThumbnailImage);
+                                WebResponse response = request.GetResponse();
+                                Stream responseStream = response.GetResponseStream();
+                                Bitmap cover = new Bitmap(responseStream);
+                                images.Add(cover);
+                            }
+                            catch (Exception)
+                            {
+                                Bitmap cover = new Bitmap(GlobalVars.BasePath + "unknown.png");
+                                images.Add(cover);
+                            }
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+                    finally
+                    {
+                        List<List<Bitmap>> ImageLists = GlobalVars.splitBitmapList(images, rows);
+
+                        List<Bitmap> BitmapList = new List<Bitmap>();
+
+                        foreach (List<Bitmap> list in ImageLists.ToArray())
+                        {
+                            //combine them into one image
+                            Bitmap stitchedRow = GlobalVars.Combine(list);
+                            BitmapList.Add(stitchedRow);
+                        }
+
+                        Bitmap stitchedImage = GlobalVars.Combine(BitmapList, true);
+
+                        System.Drawing.Imaging.Encoder qualityEncoder = System.Drawing.Imaging.Encoder.Quality;
+                        EncoderParameters jpgEncode = new EncoderParameters(1);
+                        EncoderParameter imageQuality = new EncoderParameter(qualityEncoder, long.Parse(cfgjson.ChartQuality));
+                        jpgEncode.Param[0] = imageQuality;
+                        stitchedImage.Save(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.jpg", GlobalVars.GetEncoder(System.Drawing.Imaging.ImageFormat.Jpeg), jpgEncode);
+                        await Context.Channel.SendFileAsync(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.jpg");
+                    }
+
+                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                    eab.IconUrl = DiscordUser.GetAvatarUrl();
+                    if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
+                    {
+                        eab.Name = DiscordUser.Username;
+                    }
+                    else
+                    {
+                        eab.Name = DiscordUser.Nickname;
+                    }
+
+                    var builder = new EmbedBuilder();
+                    builder.WithAuthor(eab);
+                    string URI = "https://www.last.fm/user/" + LastFMName;
+                    builder.WithUrl(URI);
+                    bool Admin = AdminCommands.IsAdmin(DiscordUser);
+                    if (Admin)
+                    {
+                        builder.WithTitle(LastFMName + ", FMBot Admin");
+                    }
+                    else
+                    {
+                        builder.WithTitle(LastFMName);
+                    }
+                    builder.WithDescription("Last.FM Weekly Chart for " + LastFMName);
+                    var userinfo = await client.User.GetInfoAsync(LastFMName);
+                    EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                    efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
+                    var playcount = userinfo.Content.Playcount;
+                    efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+
+                    builder.WithFooter(efb);
+
+                    await Context.Channel.SendMessageAsync("", false, builder.Build());
+                }
+            }
+            catch (Exception)
+            {
+                await ReplyAsync("Error: Cannot generate chart. You may not have scrobbled anything this week or your Last.FM name cannot be found.");
+            }
+        }
+
+        [Command("fmfriends")]
         public async Task fmfriendsrecentAsync(IUser user = null)
         {
             try
@@ -709,7 +841,7 @@ namespace FMBot_Discord
                 string[] LastFMFriends = DBase.GetFriendsForID(DiscordUser.Id.ToString());
                 if (LastFMFriends == null || !LastFMFriends.Any())
                 {
-                    await ReplyAsync("No lastfm friends found. Please use fmsetfriends.");
+                    await ReplyAsync("Your LastFM friends were unable to be found. Please use fmsetfriends.");
                 }
                 else
                 {
@@ -720,7 +852,6 @@ namespace FMBot_Discord
                         bool Admin = AdminCommands.IsAdmin(DiscordUser);
 
                         eab.IconUrl = DiscordUser.GetAvatarUrl();
-
                         eab.Name = DiscordUser.Username;
 
                         var builder = new EmbedBuilder();
@@ -734,31 +865,48 @@ namespace FMBot_Discord
                             eab.Name = DiscordUser.Username;
                         }
 
-                        builder.WithDescription("Songs from " + LastFMFriends.Count() + " friends");
+                        var amountOfScrobbles = "Amount of scrobbles of all your friends together: ";
+
+                        if (LastFMFriends.Count() > 1)
+                        {
+                            builder.WithDescription("Songs from " + LastFMFriends.Count() + " friends");
+                        }
+                        else
+                        {
+                            builder.WithDescription("Songs from your friend");
+                            amountOfScrobbles = "Amount of scrobbles from your friend: ";
+                        }
 
                         string nulltext = "[undefined]";
                         int indexval = (LastFMFriends.Count() - 1);
                         int playcount = 0;
-                        foreach (var friend in LastFMFriends)
+
+                        try
                         {
-                            var tracks = await client.User.GetRecentScrobbles(friend, null, 1, 1);
+                            foreach (var friend in LastFMFriends)
+                            {
+                                var tracks = await client.User.GetRecentScrobbles(friend, null, 1, 1);
 
-                            string TrackName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().Name) ? nulltext : tracks.FirstOrDefault().Name;
-                            string ArtistName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().ArtistName) ? nulltext : tracks.FirstOrDefault().ArtistName;
-                            string AlbumName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().AlbumName) ? nulltext : tracks.FirstOrDefault().AlbumName;
+                                string TrackName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().Name) ? nulltext : tracks.FirstOrDefault().Name;
+                                string ArtistName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().ArtistName) ? nulltext : tracks.FirstOrDefault().ArtistName;
+                                string AlbumName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().AlbumName) ? nulltext : tracks.FirstOrDefault().AlbumName;
 
-                            builder.AddField(friend.ToString() + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
+                                builder.AddField(friend.ToString() + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
 
-                            // count how many scrobbles everyone has together (if the bot is too slow, consider removing this?)
-                            var userinfo = await client.User.GetInfoAsync(friend);
-                            playcount = playcount + userinfo.Content.Playcount;
+                                // count how many scrobbles everyone has together (if the bot is too slow, consider removing this?)
+                                var userinfo = await client.User.GetInfoAsync(friend);
+                                playcount = playcount + userinfo.Content.Playcount;
+                            }
+                        }
+                        catch (Exception)
+                        {
+
                         }
 
                         EmbedFooterBuilder efb = new EmbedFooterBuilder();
                         efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
 
-
-                        efb.Text = "Amount of scrobbles of all your friends together: " + playcount.ToString();
+                        efb.Text = amountOfScrobbles + playcount.ToString();
 
                         builder.WithFooter(efb);
 
@@ -770,7 +918,7 @@ namespace FMBot_Discord
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 await ReplyAsync("Your friends could not be found. Please set your friends using fmsetfriends.");
             }
@@ -1113,13 +1261,19 @@ namespace FMBot_Discord
         }
 
         [Command("fmsetfriends"), Alias("fmfriendsset"), Summary("Sets your friends Last.FM names.")]
-        public async Task fmfriendssetAsync([Summary("First friend name")] params String[] friends)
+        public async Task fmfriendssetAsync([Summary("First friend name")] params string[] friends)
         {
             string SelfID = Context.Message.Author.Id.ToString();
-
             DBase.WriteFriendsEntry(SelfID, friends);
 
-            await ReplyAsync("Succesfully set " + friends.Count() + " friends.");
+            if (friends.Count() > 1)
+            {
+                await ReplyAsync("Succesfully set " + friends.Count() + " friends.");
+            }
+            else
+            {
+                await ReplyAsync("Succesfully set a friend.");
+            }
         }
 
         [Command("fmremove"), Summary("Deletes your FMBot data.")]
@@ -1128,6 +1282,14 @@ namespace FMBot_Discord
             string SelfID = Context.Message.Author.Id.ToString();
             DBase.RemoveEntry(SelfID);
             await ReplyAsync("Your FMBot settings have been successfully deleted.");
+        }
+
+        [Command("fmunsetfriends"), Summary("Deletes your FMBot friend data.")]
+        public async Task fmunsetfriendsAsync()
+        {
+            string SelfID = Context.Message.Author.Id.ToString();
+            DBase.RemoveFriends(SelfID);
+            await ReplyAsync("Your FMBot friend settings have been successfully deleted.");
         }
 
         [Command("fmhelp")]
@@ -1214,7 +1376,7 @@ namespace FMBot_Discord
 
     public class AdminCommands : ModuleBase
     {
-        //OwnerIDs = Bitl, Mirage, Opus v84, [opti], GreystarMusic, Lemonadeaholic
+        //OwnerIDs = Bitl, Tytygigas, Opus v84, [opti], GreystarMusic, Lemonadeaholic, LantaarnAppel
 
         private readonly CommandService _service;
 
@@ -1364,7 +1526,7 @@ namespace FMBot_Discord
             File.SetAttributes(GlobalVars.UsersFolder + id + ".txt", FileAttributes.Normal);
         }
 
-        public static void WriteFriendsEntry(string id, params String[] stringArray)
+        public static void WriteFriendsEntry(string id, params string[] stringArray)
         {
             string text = "";
             foreach (var friend in stringArray)
@@ -1372,14 +1534,36 @@ namespace FMBot_Discord
                 text += friend;
                 text += Environment.NewLine;
             }
-            File.WriteAllText(GlobalVars.UsersFolder + id + "friends" + ".txt", text);
-            File.SetAttributes(GlobalVars.UsersFolder + id + ".txt", FileAttributes.Normal);
+            File.WriteAllText(GlobalVars.UsersFolder + id + "-friends.txt", text);
+            File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
         }
 
         public static void RemoveEntry(string id)
         {
-            File.SetAttributes(GlobalVars.UsersFolder + id + ".txt", FileAttributes.Normal);
-            File.Delete(GlobalVars.UsersFolder + id + ".txt");
+            if (File.Exists(GlobalVars.UsersFolder + id + ".txt"))
+            {
+                File.SetAttributes(GlobalVars.UsersFolder + id + ".txt", FileAttributes.Normal);
+                File.Delete(GlobalVars.UsersFolder + id + ".txt");
+            }
+            if (File.Exists(GlobalVars.UsersFolder + id + "-friends.txt"))
+            {
+                File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
+                File.Delete(GlobalVars.UsersFolder + id + "-friends.txt");
+            }
+            if (File.Exists(GlobalVars.UsersFolder + id + "-chart.jpg"))
+            {
+                File.SetAttributes(GlobalVars.UsersFolder + id + "-chart.jpg", FileAttributes.Normal);
+                File.Delete(GlobalVars.UsersFolder + id + "-chart.jpg");
+            }
+        }
+
+        public static void RemoveFriends(string id)
+        {
+            if (File.Exists(GlobalVars.UsersFolder + id + "-friends.txt"))
+            {
+                File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
+                File.Delete(GlobalVars.UsersFolder + id + "-friends.txt");
+            }
         }
 
         public static string GetNameForID(string id)
@@ -1398,10 +1582,9 @@ namespace FMBot_Discord
             return "NULL";
         }
 
-        public static String[] GetFriendsForID(string id)
+        public static string[] GetFriendsForID(string id)
         {
-            string[] lines = File.ReadAllLines(GlobalVars.UsersFolder + id + "friends" + ".txt");
-
+            string[] lines = File.ReadAllLines(GlobalVars.UsersFolder + id + "-friends.txt");
             return lines;
         }
 
@@ -1488,6 +1671,15 @@ namespace FMBot_Discord
 
         [JsonProperty("listnum")]
         public string Listnum { get; private set; }
+
+        [JsonProperty("chartalbums")]
+        public string ChartAlbums { get; private set; }
+
+        [JsonProperty("chartrows")]
+        public string ChartRows { get; private set; }
+
+        [JsonProperty("chartquality")]
+        public string ChartQuality { get; private set; }
     }
 
     public class GlobalVars
@@ -1495,5 +1687,105 @@ namespace FMBot_Discord
         public static string ConfigFileName = "config.json";
         public static string BasePath = AppDomain.CurrentDomain.BaseDirectory;
         public static string UsersFolder = BasePath + "users/";
+
+        public static Bitmap Combine(List<Bitmap> images, bool vertical = false)
+        {
+            //read all images into memory
+            Bitmap finalImage = null;
+
+            try
+            {
+                int width = 0;
+                int height = 0;
+
+                foreach (Bitmap image in images.ToArray())
+                {
+                    //create a Bitmap from the file and add it to the list
+                    Bitmap bitmap = image;
+
+                    //update the size of the final bitmap
+                    if (vertical == true)
+                    {
+                        width = bitmap.Width > width ? bitmap.Width : width;
+                        height += bitmap.Height;
+                    }
+                    else
+                    {
+                        width += bitmap.Width;
+                        height = bitmap.Height > height ? bitmap.Height : height;
+                    }
+
+                    images.Add(bitmap);
+                }
+
+                //create a bitmap to hold the combined image
+                finalImage = new Bitmap(width, height);
+
+                //get a graphics object from the image so we can draw on it
+                using (Graphics g = Graphics.FromImage(finalImage))
+                {
+                    //set background color
+                    g.Clear(System.Drawing.Color.Black);
+
+                    //go through each image and draw it on the final image
+                    int offset = 0;
+                    foreach (Bitmap image in images)
+                    {
+                        if (vertical == true)
+                        {
+                            g.DrawImage(image, new Rectangle(0, offset, image.Width, image.Height));
+                            offset += image.Height;
+                        }
+                        else
+                        {
+                            g.DrawImage(image, new Rectangle(offset, 0, image.Width, image.Height));
+                            offset += image.Width;
+                        }
+                    }
+                }
+
+                return finalImage;
+            }
+            catch (Exception ex)
+            {
+                if (finalImage != null)
+                    finalImage.Dispose();
+
+                throw ex;
+            }
+            finally
+            {
+                //clean up memory
+                foreach (Bitmap image in images)
+                {
+                    image.Dispose();
+                }
+            }
+        }
+
+        public static List<List<Bitmap>> splitBitmapList(List<Bitmap> locations, int nSize)
+        {
+            var list = new List<List<Bitmap>>();
+
+            for (int i = 0; i < locations.Count; i += nSize)
+            {
+                list.Add(locations.GetRange(i, Math.Min(nSize, locations.Count - i)));
+            }
+
+            return list;
+        }
+
+        public static ImageCodecInfo GetEncoder(System.Drawing.Imaging.ImageFormat format)
+        {
+            ImageCodecInfo[] codecs = ImageCodecInfo.GetImageDecoders();
+            foreach (ImageCodecInfo codec in codecs)
+            {
+                if (codec.FormatID == format.Guid)
+                {
+                    return codec;
+                }
+            }
+            return null;
+        }
     }
 }

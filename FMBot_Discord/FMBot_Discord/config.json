@@ -1,7 +1,10 @@
 {
-  "CommandPrefix": "!",
-  "Token": "",
-  "FMKey": "",
-  "FMSecret": "",
-  "Listnum": "5"
+	"token": "",
+	"fmkey": "",
+	"fmsecret": "",
+	"prefix": ".",
+    "listnum": "5",
+    "chartalbums": "9",
+    "chartrows": "3",
+    "chartquality": "80"
 }
