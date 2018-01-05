@@ -484,6 +484,7 @@ namespace FMBot_Discord
         }
 
         [Command("fmyt")]
+        [Alias("fmyoutube")]
         public async Task fmytAsync(IUser user = null)
         {
             var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
@@ -580,6 +581,7 @@ namespace FMBot_Discord
         }
 
         [Command("fmrecent")]
+        [Alias("fmrecenttracks")]
         public async Task fmrecentAsync(IUser user = null)
         {
             try
@@ -693,8 +695,11 @@ namespace FMBot_Discord
         }
 
         [Command("fmchart")]
-        public async Task fmchartAsync(IUser user = null)
+        public async Task fmchartAsync(IUser user = null, string time = "weekly")
         {
+            var loadingText = "Loading your FMBot chart...";
+            var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
+
             try
             {
                 // first, let's load our configuration file
@@ -724,7 +729,22 @@ namespace FMBot_Discord
 
                     try
                     {
-                        var tracks = await client.User.GetTopAlbums(LastFMName, LastStatsTimeSpan.Week, 1, max);
+                        LastStatsTimeSpan timespan = LastStatsTimeSpan.Week;
+
+                        if (time.Equals("weekly"))
+                        {
+                            timespan = LastStatsTimeSpan.Week;
+                        }
+                        else if (time.Equals("monthly"))
+                        {
+                            timespan = LastStatsTimeSpan.Month;
+                        }
+                        else if (time.Equals("yearly"))
+                        {
+                            timespan = LastStatsTimeSpan.Year;
+                        }
+
+                        var tracks = await client.User.GetTopAlbums(LastFMName, timespan, 1, max);
 
                         string nulltext = "[undefined]";
                         for (int al = 0; al < max; ++al)
@@ -800,7 +820,20 @@ namespace FMBot_Discord
                     {
                         builder.WithTitle(LastFMName);
                     }
-                    builder.WithDescription("Last.FM Weekly Chart for " + LastFMName);
+
+                    if (time.Equals("weekly"))
+                    {
+                        builder.WithDescription("Last.FM Weekly Chart for " + LastFMName);
+                    }
+                    else if (time.Equals("monthly"))
+                    {
+                        builder.WithDescription("Last.FM Monthly Chart for " + LastFMName);
+                    }
+                    else if (time.Equals("yearly"))
+                    {
+                        builder.WithDescription("Last.FM Yearly Chart for " + LastFMName);
+                    }
+
                     var userinfo = await client.User.GetInfoAsync(LastFMName);
                     EmbedFooterBuilder efb = new EmbedFooterBuilder();
                     efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
@@ -814,11 +847,14 @@ namespace FMBot_Discord
             }
             catch (Exception)
             {
-                await ReplyAsync("Error: Cannot generate chart. You may not have scrobbled anything this week or your Last.FM name cannot be found.");
+                await ReplyAsync("Error: Cannot generate chart. You may not have scrobbled anything this time period or your Last.FM name cannot be found.");
             }
+
+            await loadingmsg.DeleteAsync();
         }
 
         [Command("fmfriends")]
+        [Alias("fmrecentfriends", "fmfriendsrecent")]
         public async Task fmfriendsrecentAsync(IUser user = null)
         {
             try
@@ -1142,6 +1178,7 @@ namespace FMBot_Discord
         }
 
         [Command("fmstats")]
+        [Alias("fminfo")]
         public async Task fmstatsAsync(IUser user = null)
         {
             try
@@ -1242,6 +1279,7 @@ namespace FMBot_Discord
         }
 
         [Command("fmset"), Summary("Sets your Last.FM name.")]
+        [Alias("fmsetname")]
         public async Task fmsetAsync([Summary("Your Last.FM name")] string name, [Summary("The mode you want to use.")] string mode = "embedmini")
         {
             string SelfID = Context.Message.Author.Id.ToString();
@@ -1273,6 +1311,7 @@ namespace FMBot_Discord
         }
 
         [Command("fmremove"), Summary("Deletes your FMBot data.")]
+        [Alias("fmdelete")]
         public async Task fmremoveAsync()
         {
             string SelfID = Context.Message.Author.Id.ToString();
@@ -1281,6 +1320,7 @@ namespace FMBot_Discord
         }
 
         [Command("fmunsetfriends"), Summary("Deletes your FMBot friend data.")]
+        [Alias("fmremovefriends", "fmfmdeletefriends")]
         public async Task fmunsetfriendsAsync()
         {
             string SelfID = Context.Message.Author.Id.ToString();
@@ -1341,6 +1381,8 @@ namespace FMBot_Discord
 
             builder.AddField("FMBot Modes for the fmset command:", "embedmini\nembedfull\ntextfull\ntextmini");
 
+            builder.AddField("FMBot Time Periods for the fmchart command:", "weekly\nmonthly\nyearly");
+
             await ReplyAsync("", false, builder.Build());
         }
 
@@ -1394,6 +1436,7 @@ namespace FMBot_Discord
         }
 
         [Command("announce"), Summary("Sends an announcement to the main server.")]
+        [Alias("fmannounce", "fmnews", "news", "fmannouncement", "announcement")]
         public async Task announceAsync(string message, string ThumbnailURL = null)
         {
             var DiscordUser = (IGuildUser)Context.Message.Author;
