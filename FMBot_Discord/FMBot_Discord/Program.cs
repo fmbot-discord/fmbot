@@ -131,7 +131,7 @@ namespace FMBot_Discord
             // Create a Command Context
             var context = new CommandContext(client, message);
 
-            // Execute the command. (result does not indicate a return value, 
+            // Execute the command. (result does not indicate a return value,
             // rather an object stating if the command executed successfully)
             var result = await commands.ExecuteAsync(context, argPos, services);
             if (!result.IsSuccess)
@@ -818,7 +818,8 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmfriends")]
+        [Command("fmfriendsrecent")]
+        [Alias("fmrecentfriends", "fmfriends")]
         public async Task fmfriendsrecentAsync(IUser user = null)
         {
             try
@@ -861,6 +862,7 @@ namespace FMBot_Discord
                             eab.Name = DiscordUser.Username;
                         }
 
+                        var loadingText = "Loading your LastFM friends...";
                         var amountOfScrobbles = "Amount of scrobbles of all your friends together: ";
 
                         if (LastFMFriends.Count() > 1)
@@ -876,6 +878,8 @@ namespace FMBot_Discord
                         string nulltext = "[undefined]";
                         int indexval = (LastFMFriends.Count() - 1);
                         int playcount = 0;
+
+                        var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
 
                         try
                         {
@@ -902,11 +906,13 @@ namespace FMBot_Discord
                         EmbedFooterBuilder efb = new EmbedFooterBuilder();
                         efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
 
-                        efb.Text = amountOfScrobbles + playcount.ToString();
+
+                        efb.Text = amountOfScrobbles + playcount.ToString("N0");
 
                         builder.WithFooter(efb);
 
                         await Context.Channel.SendMessageAsync("", false, builder.Build());
+                        await loadingmsg.DeleteAsync();
                     }
                     catch (Exception)
                     {
