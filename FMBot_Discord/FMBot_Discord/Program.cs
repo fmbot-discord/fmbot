@@ -695,7 +695,7 @@ namespace FMBot_Discord
         }
 
         [Command("fmchart")]
-        public async Task fmchartAsync(IUser user = null, string time = "weekly")
+        public async Task fmchartAsync(string time = "weekly", IUser user = null)
         {
             var loadingText = "Loading your FMBot chart...";
             var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
@@ -742,6 +742,10 @@ namespace FMBot_Discord
                         else if (time.Equals("yearly"))
                         {
                             timespan = LastStatsTimeSpan.Year;
+                        }
+                        else if (time.Equals("overall"))
+                        {
+                            timespan = LastStatsTimeSpan.Overall;
                         }
 
                         var tracks = await client.User.GetTopAlbums(LastFMName, timespan, 1, max);
@@ -832,6 +836,176 @@ namespace FMBot_Discord
                     else if (time.Equals("yearly"))
                     {
                         builder.WithDescription("Last.FM Yearly Chart for " + LastFMName);
+                    }
+                    else if (time.Equals("overall"))
+                    {
+                        builder.WithDescription("Last.FM Overall Chart for " + LastFMName);
+                    }
+
+                    var userinfo = await client.User.GetInfoAsync(LastFMName);
+                    EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                    efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
+                    var playcount = userinfo.Content.Playcount;
+                    efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+
+                    builder.WithFooter(efb);
+
+                    await Context.Channel.SendMessageAsync("", false, builder.Build());
+                }
+            }
+            catch (Exception)
+            {
+                await ReplyAsync("Error: Cannot generate chart. You may not have scrobbled anything this time period or your Last.FM name cannot be found.");
+            }
+
+            await loadingmsg.DeleteAsync();
+        }
+
+        [Command("fmartistchart")]
+        public async Task fmartistchartAsync(string time = "weekly", IUser user = null)
+        {
+            var loadingText = "Loading your FMBot artist chart...";
+            var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
+
+            try
+            {
+                // first, let's load our configuration file
+                Console.WriteLine("[FMBot] Loading Configuration");
+                var json = "";
+                using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
+                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                    json = await sr.ReadToEndAsync();
+
+                // next, let's load the values from that file
+                // to our client's configuration
+                var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+                int num = int.Parse(cfgjson.Listnum);
+                var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
+                string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
+                if (LastFMName.Equals("NULL"))
+                {
+                    await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
+                }
+                else
+                {
+                    var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+                    int max = int.Parse(cfgjson.ChartAlbums);
+                    int rows = int.Parse(cfgjson.ChartRows);
+
+                    List<Bitmap> images = new List<Bitmap>();
+
+                    try
+                    {
+                        LastStatsTimeSpan timespan = LastStatsTimeSpan.Week;
+
+                        if (time.Equals("weekly"))
+                        {
+                            timespan = LastStatsTimeSpan.Week;
+                        }
+                        else if (time.Equals("monthly"))
+                        {
+                            timespan = LastStatsTimeSpan.Month;
+                        }
+                        else if (time.Equals("yearly"))
+                        {
+                            timespan = LastStatsTimeSpan.Year;
+                        }
+                        else if (time.Equals("overall"))
+                        {
+                            timespan = LastStatsTimeSpan.Overall;
+                        }
+
+                        var artists = await client.User.GetTopArtists(LastFMName, timespan, 1, max);
+
+                        string nulltext = "[undefined]";
+                        for (int al = 0; al < max; ++al)
+                        {
+                            LastArtist artist = artists.Content.ElementAt(al);
+
+                            string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? nulltext : artist.Name;
+
+                            try
+                            {
+                                var ArtistInfo = await client.Artist.GetInfoAsync(ArtistName);
+                                var ArtistImages = (ArtistInfo.Content.MainImage != null) ? ArtistInfo.Content.MainImage : null;
+                                var ArtistThumbnail = (ArtistImages != null) ? ArtistImages.Large.AbsoluteUri : null;
+                                string ThumbnailImage = (ArtistThumbnail != null) ? ArtistThumbnail.ToString() : null;
+
+                                WebRequest request = WebRequest.Create(ThumbnailImage);
+                                WebResponse response = request.GetResponse();
+                                Stream responseStream = response.GetResponseStream();
+                                Bitmap cover = new Bitmap(responseStream);
+                                images.Add(cover);
+                            }
+                            catch (Exception)
+                            {
+                                Bitmap cover = new Bitmap(GlobalVars.BasePath + "unknown.png");
+                                images.Add(cover);
+                            }
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+                    finally
+                    {
+                        List<List<Bitmap>> ImageLists = GlobalVars.splitBitmapList(images, rows);
+
+                        List<Bitmap> BitmapList = new List<Bitmap>();
+
+                        foreach (List<Bitmap> list in ImageLists.ToArray())
+                        {
+                            //combine them into one image
+                            Bitmap stitchedRow = GlobalVars.Combine(list);
+                            BitmapList.Add(stitchedRow);
+                        }
+
+                        Bitmap stitchedImage = GlobalVars.Combine(BitmapList, true);
+
+                        stitchedImage.Save(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
+                        await Context.Channel.SendFileAsync(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.jpg");
+                    }
+
+                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                    eab.IconUrl = DiscordUser.GetAvatarUrl();
+                    if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
+                    {
+                        eab.Name = DiscordUser.Username;
+                    }
+                    else
+                    {
+                        eab.Name = DiscordUser.Nickname;
+                    }
+
+                    var builder = new EmbedBuilder();
+                    builder.WithAuthor(eab);
+                    string URI = "https://www.last.fm/user/" + LastFMName;
+                    builder.WithUrl(URI);
+                    bool Admin = AdminCommands.IsAdmin(DiscordUser);
+                    if (Admin)
+                    {
+                        builder.WithTitle(LastFMName + ", FMBot Admin");
+                    }
+                    else
+                    {
+                        builder.WithTitle(LastFMName);
+                    }
+
+                    if (time.Equals("weekly"))
+                    {
+                        builder.WithDescription("Last.FM Weekly Artist Chart for " + LastFMName);
+                    }
+                    else if (time.Equals("monthly"))
+                    {
+                        builder.WithDescription("Last.FM Monthly Artist Chart for " + LastFMName);
+                    }
+                    else if (time.Equals("yearly"))
+                    {
+                        builder.WithDescription("Last.FM Yearly Artist Chart for " + LastFMName);
+                    }
+                    else if (time.Equals("overall"))
+                    {
+                        builder.WithDescription("Last.FM Overall Artist Chart for " + LastFMName);
                     }
 
                     var userinfo = await client.User.GetInfoAsync(LastFMName);
@@ -1294,11 +1468,29 @@ namespace FMBot_Discord
             await ReplyAsync("Your Last.FM name has been set to '" + name + "' and your FMBot mode has been set to '" + LastFMMode + "'.");
         }
 
-        [Command("fmsetfriends"), Alias("fmfriendsset"), Summary("Sets your friends Last.FM names.")]
-        public async Task fmfriendssetAsync([Summary("First friend name")] params string[] friends)
+        [Command("fmsetfriends"), Summary("Sets your friends Last.FM names.")]
+        [Alias("fmfriendsset")]
+        public async Task fmfriendssetAsync([Summary("Friend names")] params string[] friends)
         {
             string SelfID = Context.Message.Author.Id.ToString();
             DBase.WriteFriendsEntry(SelfID, friends);
+
+            if (friends.Count() > 1)
+            {
+                await ReplyAsync("Succesfully set " + friends.Count() + " friends.");
+            }
+            else
+            {
+                await ReplyAsync("Succesfully set a friend.");
+            }
+        }
+
+        [Command("fmaddfriends"), Summary("Adds your friends Last.FM names.")]
+        [Alias("fmfriendsadd")]
+        public async Task fmfriendsaddAsync([Summary("Friend names")] params string[] friends)
+        {
+            string SelfID = Context.Message.Author.Id.ToString();
+            DBase.AddFriendsEntry(SelfID, friends);
 
             if (friends.Count() > 1)
             {
@@ -1381,7 +1573,7 @@ namespace FMBot_Discord
 
             builder.AddField("FMBot Modes for the fmset command:", "embedmini\nembedfull\ntextfull\ntextmini");
 
-            builder.AddField("FMBot Time Periods for the fmchart command:", "weekly\nmonthly\nyearly");
+            builder.AddField("FMBot Time Periods for the fmchart and fmartistchart commands:", "weekly\nmonthly\nyearly\noverall");
 
             await ReplyAsync("", false, builder.Build());
         }
@@ -1426,6 +1618,18 @@ namespace FMBot_Discord
         public static bool IsAdmin(IUser user)
         {
             if (user.Id.Equals(184013824850919425) || user.Id.Equals(183730395836186624) || user.Id.Equals(205759116889554946) || user.Id.Equals(120954630388580355) || user.Id.Equals(205832344744099840) || user.Id.Equals(175357072035151872) || user.Id.Equals(125740103539621888))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public static bool IsOwner(IUser user)
+        {
+            if (user.Id.Equals(184013824850919425))
             {
                 return true;
             }
@@ -1500,8 +1704,58 @@ namespace FMBot_Discord
             }
         }
 
+        [Command("fmserverreboot")]
+        [Alias("fmreboot")]
+        public async Task fmserverrebootAsync()
+        {
+            var DiscordUser = Context.Message.Author;
+            if (IsOwner(DiscordUser))
+            {
+                // first, let's load our configuration file
+                Console.WriteLine("[FMBot] Loading Configuration");
+                var json = "";
+                using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
+                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                    json = await sr.ReadToEndAsync();
+
+                // next, let's load the values from that file
+                // to our client's configuration
+                var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+                string Data = "SUBID=" + cfgjson.VultrSubID;
+                string Reponse = "";
+                StreamWriter Sw = null;
+                StreamReader Sr = null;
+                try
+                {
+                    await ReplyAsync("Rebooting server...");
+                    HttpWebRequest Req = (HttpWebRequest)WebRequest.Create("https://api.vultr.com/v1/server/reboot");
+                    Req.Method = "POST";
+                    Req.ContentType = "application/x-www-form-urlencoded";
+                    Req.Headers.Add("API-Key: " + cfgjson.VultrKey);
+                    using (var sw = new StreamWriter(Req.GetRequestStream()))
+                    {
+                        sw.Write(Data);
+                    }
+                    Sr = new
+                    StreamReader(((HttpWebResponse)Req.GetResponse()).GetResponseStream());
+                    Reponse = Sr.ReadToEnd();
+                    Sr.Close();
+                }
+                catch (Exception ex)
+                {
+                    if (Sw != null)
+                        Sw.Close();
+                    if (Sr != null)
+                        Sr.Close();
+
+                    await ReplyAsync("Error rebooting server. Look in bot console.");
+                    Console.WriteLine("[FMBot] [VULTR API] Error: " + ex.Message);
+                }
+            }
+        }
+
         [Command("fmadmin")]
-        public async Task HelpAsync()
+        public async Task AdminAsync()
         {
             var DiscordUser = Context.Message.Author;
             if (IsAdmin(DiscordUser))
@@ -1574,6 +1828,18 @@ namespace FMBot_Discord
                 text += Environment.NewLine;
             }
             File.WriteAllText(GlobalVars.UsersFolder + id + "-friends.txt", text);
+            File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
+        }
+
+        public static void AddFriendsEntry(string id, params string[] stringArray)
+        {
+            string text = "";
+            foreach (var friend in stringArray)
+            {
+                text += friend;
+                text += Environment.NewLine;
+            }
+            File.AppendAllText(GlobalVars.UsersFolder + id + "-friends.txt", text);
             File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
         }
 
@@ -1716,6 +1982,12 @@ namespace FMBot_Discord
 
         [JsonProperty("chartrows")]
         public string ChartRows { get; private set; }
+
+        [JsonProperty("vultrkey")]
+        public string VultrKey { get; private set; }
+
+        [JsonProperty("vultrsubid")]
+        public string VultrSubID { get; private set; }
     }
 
     public class GlobalVars
