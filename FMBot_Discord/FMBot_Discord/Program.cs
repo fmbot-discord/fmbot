@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Threading;
 
 namespace FMBot_Discord
 {
@@ -26,6 +27,7 @@ namespace FMBot_Discord
         private CommandService commands;
         private DiscordSocketClient client;
         private IServiceProvider services;
+        private readonly IServiceCollection map = new ServiceCollection();
         private string prefix;
 
         public static void Main(string[] args)
@@ -61,14 +63,12 @@ namespace FMBot_Discord
             prefix = cfgjson.CommandPrefix;
 
             await client.SetGameAsync("🎶 Say " + prefix + "fmhelp to use 🎶");
+            await client.SetStatusAsync(UserStatus.DoNotDisturb);
 
             Console.WriteLine("[FMBot] Registering Commands");
             commands = new CommandService();
 
             string token = cfgjson.Token; // Remember to keep this private!
-
-            services = new ServiceCollection()
-                .BuildServiceProvider();
 
             await InstallCommands();
 
@@ -89,11 +89,13 @@ namespace FMBot_Discord
 
         public async Task InstallCommands()
         {
-            // Hook the MessageReceived Event into our Command Handler
+            map.AddSingleton(new TimerService(client));
+            services = map.BuildServiceProvider();
+
+            await commands.AddModulesAsync(Assembly.GetEntryAssembly());
+
             client.MessageReceived += HandleCommand_MessageReceived;
             client.MessageUpdated += HandleCommand_MessageEdited;
-            // Discover all of the commands in this assembly and load them.
-            await commands.AddModulesAsync(Assembly.GetEntryAssembly());
         }
 
         public async Task HandleCommand_MessageReceived(SocketMessage messageParam)
@@ -141,6 +143,99 @@ namespace FMBot_Discord
         }
     }
 
+    public class TimerService
+    {
+        private readonly Timer _timer; // 2) Add a field like this
+                                       // This example only concerns a single timer.
+                                       // If you would like to have multiple independant timers,
+                                       // you could use a collection such as List<Timer>,
+                                       // or even a Dictionary<string, Timer> to quickly get
+                                       // a specific Timer instance by name.
+
+        public TimerService(DiscordSocketClient client)
+        {
+            _timer = new Timer(async _ =>
+            {
+                try
+                {
+                    // first, let's load our configuration file
+                    Console.WriteLine("[FMBot] Loading Configuration");
+                    var json = "";
+                    using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
+                    using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                        json = await sr.ReadToEndAsync();
+
+                    // next, let's load the values from that file
+                    // to our client's configuration
+                    var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+                    int num = int.Parse(cfgjson.Listnum);
+                    string LastFMName = DBase.GetRandFMName();
+                    if (!LastFMName.Equals("NULL"))
+                    {
+                        var fmclient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+
+                        try
+                        {
+                            var tracks = await fmclient.User.GetRecentScrobbles(LastFMName, null, 1, 2);
+                            LastTrack currentTrack = tracks.Content.ElementAt(0);
+
+                            string nulltext = "";
+
+                            string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
+                            string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
+                            string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nulltext : currentTrack.AlbumName;
+
+                            try
+                            {
+                                var AlbumInfo = await fmclient.Album.GetInfoAsync(ArtistName, AlbumName);
+                                var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
+                                var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
+                                string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
+
+                                WebRequest request = WebRequest.Create(ThumbnailImage);
+                                WebResponse response = request.GetResponse();
+                                using (Stream output = File.Create(GlobalVars.BasePath + "newavatar.png"))
+                                using (Stream input = response.GetResponseStream())
+                                {
+                                    input.CopyTo(output);
+                                    if (File.Exists(GlobalVars.BasePath + "newavatar.png"))
+                                    {
+                                        File.SetAttributes(GlobalVars.BasePath + "newavatar.png", FileAttributes.Normal);
+                                    }
+
+                                    output.Close();
+                                    input.Close();
+                                }
+
+                                if (File.Exists(GlobalVars.BasePath + "newavatar.png"))
+                                {
+                                    var fileStream = new FileStream(GlobalVars.BasePath + "newavatar.png", FileMode.Open);
+                                    await client.CurrentUser.ModifyAsync(u => u.Avatar = new Discord.Image(fileStream));
+                                    fileStream.Close();
+                                }
+                            }
+                            catch (Exception)
+                            {
+                            }
+                        }
+                        catch (Exception)
+                        {
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    var fileStream = new FileStream(GlobalVars.BasePath + "avatar.png", FileMode.Open);
+                    var image = new Discord.Image(fileStream);
+                    await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
+                    fileStream.Close();
+                }
+            },
+            null,
+            TimeSpan.FromSeconds(30),  // 4) Time that message should fire after the timer is created
+            TimeSpan.FromMinutes(120)); // 5) Time after which message should repeat (use `Timeout.Infinite` for no repeat)
+        }
+    }
 
     public class FMCommands : ModuleBase
     {
@@ -237,7 +332,6 @@ namespace FMBot_Discord
                             builder.AddField("Recent Track: " + TrackName, ArtistName + " | " + AlbumName);
 
                             EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                            efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
 
                             var userinfo = await client.User.GetInfoAsync(LastFMName);
                             var playcount = userinfo.Content.Playcount;
@@ -313,7 +407,6 @@ namespace FMBot_Discord
                                 builder.AddField("Previous Track: " + LastTrackName, LastArtistName + " | " + LastAlbumName);
 
                                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                                efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
 
                                 var userinfo = await client.User.GetInfoAsync(LastFMName);
                                 var playcount = userinfo.Content.Playcount;
@@ -380,7 +473,6 @@ namespace FMBot_Discord
                                 builder.AddField("Recent Track: " + TrackName, ArtistName + " | " + AlbumName);
 
                                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                                efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
 
                                 var userinfo = await client.User.GetInfoAsync(LastFMName);
                                 var playcount = userinfo.Content.Playcount;
@@ -562,7 +654,6 @@ namespace FMBot_Discord
                     builder.AddField(TrackName2, ArtistName2 + " | " + AlbumName2);
 
                     EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                    efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
 
                     var userinfo = await client.User.GetInfoAsync(LastFMName);
                     var playcount = userinfo.Content.Playcount;
@@ -671,7 +762,6 @@ namespace FMBot_Discord
                         }
 
                         EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                        efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
 
                         var userinfo = await client.User.GetInfoAsync(LastFMName);
                         var playcount = userinfo.Content.Playcount;
@@ -844,7 +934,6 @@ namespace FMBot_Discord
 
                     var userinfo = await client.User.GetInfoAsync(LastFMName);
                     EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                    efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
                     var playcount = userinfo.Content.Playcount;
                     efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
 
@@ -1010,7 +1099,6 @@ namespace FMBot_Discord
 
                     var userinfo = await client.User.GetInfoAsync(LastFMName);
                     EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                    efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
                     var playcount = userinfo.Content.Playcount;
                     efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
 
@@ -1110,7 +1198,6 @@ namespace FMBot_Discord
                         }
 
                         EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                        efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
 
                         efb.Text = amountOfScrobbles + playcount.ToString();
 
@@ -1217,7 +1304,6 @@ namespace FMBot_Discord
                         }
 
                         EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                        efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
 
                         var userinfo = await client.User.GetInfoAsync(LastFMName);
                         var playcount = userinfo.Content.Playcount;
@@ -1328,7 +1414,6 @@ namespace FMBot_Discord
                         }
 
                         EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                        efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
 
                         var userinfo = await client.User.GetInfoAsync(LastFMName);
                         var playcount = userinfo.Content.Playcount;
@@ -1437,7 +1522,6 @@ namespace FMBot_Discord
                     builder.AddInlineField("Is FMBot Admin? ", Admin.ToString());
 
                     EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                    efb.IconUrl = Context.Client.CurrentUser.GetAvatarUrl();
 
                     efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
 
@@ -1468,7 +1552,7 @@ namespace FMBot_Discord
             await ReplyAsync("Your Last.FM name has been set to '" + name + "' and your FMBot mode has been set to '" + LastFMMode + "'.");
         }
 
-        [Command("fmsetfriends"), Summary("Sets your friends Last.FM names.")]
+        [Command("fmsetfriends"), Summary("Sets your friends' Last.FM names.")]
         [Alias("fmfriendsset")]
         public async Task fmfriendssetAsync([Summary("Friend names")] params string[] friends)
         {
@@ -1485,7 +1569,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmaddfriends"), Summary("Adds your friends Last.FM names.")]
+        [Command("fmaddfriends"), Summary("Adds your friends' Last.FM names.")]
         [Alias("fmfriendsadd")]
         public async Task fmfriendsaddAsync([Summary("Friend names")] params string[] friends)
         {
@@ -1494,11 +1578,11 @@ namespace FMBot_Discord
 
             if (friends.Count() > 1)
             {
-                await ReplyAsync("Succesfully set " + friends.Count() + " friends.");
+                await ReplyAsync("Succesfully added " + friends.Count() + " friends.");
             }
             else
             {
-                await ReplyAsync("Succesfully set a friend.");
+                await ReplyAsync("Succesfully added a friend.");
             }
         }
 
@@ -1876,6 +1960,26 @@ namespace FMBot_Discord
             string line;
 
             using (StreamReader file = new StreamReader(GlobalVars.UsersFolder + id + ".txt"))
+            {
+                while ((line = file.ReadLine()) != null)
+                {
+                    file.Close();
+                    return line;
+                }
+            }
+
+            return "NULL";
+        }
+
+        public static string GetRandFMName()
+        {
+            Random rand = new Random();
+            List<string> files = Directory.GetFiles(GlobalVars.UsersFolder).Where(F => F.ToLower().EndsWith(".txt")).ToList();
+            string randomFile = files[rand.Next(0, files.Count)];
+
+            string line;
+
+            using (StreamReader file = new StreamReader(randomFile))
             {
                 while ((line = file.ReadLine()) != null)
                 {
