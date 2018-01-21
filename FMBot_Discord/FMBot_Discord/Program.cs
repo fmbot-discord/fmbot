@@ -203,11 +203,18 @@ namespace FMBot_Discord
                                 {
                                     try
                                     {
-                                        trackString = ArtistName + " - " + AlbumName;
+                                        trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
                                     }
                                     catch (Exception)
                                     {
-                                        trackString = "Unable to get information for this album cover avatar.";
+                                        try
+                                        {
+                                            trackString = ArtistName + " - " + AlbumName;
+                                        }
+                                        catch (Exception)
+                                        {
+                                            trackString = "Unable to get information for this album cover avatar.";
+                                        }
                                     }
                                 }
 
