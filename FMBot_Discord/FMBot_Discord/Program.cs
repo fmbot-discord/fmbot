@@ -152,6 +152,8 @@ namespace FMBot_Discord
                                        // or even a Dictionary<string, Timer> to quickly get
                                        // a specific Timer instance by name.
 
+        private string trackString = "";
+
         public TimerService(DiscordSocketClient client)
         {
             _timer = new Timer(async _ =>
@@ -168,7 +170,6 @@ namespace FMBot_Discord
                     // next, let's load the values from that file
                     // to our client's configuration
                     var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
-                    int num = int.Parse(cfgjson.Listnum);
                     string LastFMName = DBase.GetRandFMName();
                     if (!LastFMName.Equals("NULL"))
                     {
@@ -213,6 +214,13 @@ namespace FMBot_Discord
                                     await client.CurrentUser.ModifyAsync(u => u.Avatar = new Discord.Image(fileStream));
                                     fileStream.Close();
                                 }
+
+                                ulong DiscordID = DBase.GetIDForName(LastFMName);
+                                SocketUser FeaturedUser = client.GetUser(DiscordID);
+
+                                trackString = ArtistName + " - " + AlbumName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
+
+                                Console.WriteLine("[FMBot] Changed to: " + trackString);
                             }
                             catch (Exception)
                             {
@@ -232,18 +240,25 @@ namespace FMBot_Discord
                 }
             },
             null,
-            TimeSpan.FromSeconds(30),  // 4) Time that message should fire after the timer is created
+            TimeSpan.FromSeconds(15),  // 4) Time that message should fire after the timer is created
             TimeSpan.FromMinutes(120)); // 5) Time after which message should repeat (use `Timeout.Infinite` for no repeat)
+        }
+
+        public string GetTrackString()
+        {
+            return trackString;
         }
     }
 
     public class FMCommands : ModuleBase
     {
         private readonly CommandService _service;
+        private readonly TimerService _timer;
 
-        public FMCommands(CommandService service)
+        public FMCommands(CommandService service, TimerService timer)
         {
             _service = service;
+            _timer = timer;
         }
 
         [Command("fm")]
@@ -802,7 +817,6 @@ namespace FMBot_Discord
                 // next, let's load the values from that file
                 // to our client's configuration
                 var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
-                int num = int.Parse(cfgjson.Listnum);
                 var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
@@ -968,7 +982,6 @@ namespace FMBot_Discord
                 // next, let's load the values from that file
                 // to our client's configuration
                 var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
-                int num = int.Parse(cfgjson.Listnum);
                 var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
@@ -1452,7 +1465,6 @@ namespace FMBot_Discord
                 // next, let's load the values from that file
                 // to our client's configuration
                 var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
-                int num = int.Parse(cfgjson.Listnum);
                 var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
@@ -1533,6 +1545,77 @@ namespace FMBot_Discord
             catch (Exception)
             {
                 await ReplyAsync("Your Last.FM name cannot be found. Please use the fmset command.");
+            }
+        }
+
+        [Command("fmfeatured")]
+        [Alias("fmavatar", "fmfeatureduser", "fmfeaturedalbum")]
+        public async Task fmfeaturedAsync()
+        {
+            try
+            {
+                // first, let's load our configuration file
+                Console.WriteLine("[FMBot] Loading Configuration");
+                var json = "";
+                using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
+                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                    json = await sr.ReadToEndAsync();
+
+                // next, let's load the values from that file
+                // to our client's configuration
+                var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+                var DiscordUser = (IGuildUser)Context.Message.Author;
+                string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
+                if (LastFMName.Equals("NULL"))
+                {
+                    await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
+                }
+                else
+                {
+                    var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+
+                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                    eab.IconUrl = DiscordUser.GetAvatarUrl();
+                    if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
+                    {
+                        eab.Name = DiscordUser.Username;
+                    }
+                    else
+                    {
+                        eab.Name = DiscordUser.Nickname;
+                    }
+
+                    var builder = new EmbedBuilder();
+                    string URI = "https://www.last.fm/user/" + LastFMName;
+                    builder.WithUrl(URI);
+                    bool Admin = AdminCommands.IsAdmin(DiscordUser);
+                    if (Admin)
+                    {
+                        builder.WithTitle(LastFMName + ", FMBot Admin");
+                    }
+                    else
+                    {
+                        builder.WithTitle(LastFMName);
+                    }
+                    builder.WithDescription("FMBot Featured Album");
+
+                    var SelfUser = Context.Client.CurrentUser;
+                    builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
+                    builder.AddInlineField("Featured Album:", _timer.GetTrackString());
+
+                    var userinfo = await client.User.GetInfoAsync(LastFMName);
+                    var playcount = userinfo.Content.Playcount;
+                    EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                    efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+
+                    builder.WithFooter(efb);
+
+                    await Context.Channel.SendMessageAsync("", false, builder.Build());
+                }
+            }
+            catch (Exception)
+            {
+                await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
             }
         }
 
@@ -1648,7 +1731,7 @@ namespace FMBot_Discord
                 {
                     builder.AddField(x =>
                     {
-                        x.Name = "Commands";
+                        x.Name = "FMBot Commands";
                         x.Value = description;
                         x.IsInline = false;
                     });
@@ -1971,6 +2054,21 @@ namespace FMBot_Discord
             return "NULL";
         }
 
+        public static ulong GetIDForName(string name)
+        {
+            foreach (string file in Directory.GetFiles(GlobalVars.UsersFolder, "*.txt"))
+            {
+                if (File.ReadAllText(file).Contains(name))
+                {
+                    string nameConvert = Path.GetFileNameWithoutExtension(file);
+                    ulong DiscordID = Convert.ToUInt64(nameConvert);
+                    return DiscordID;
+                }
+            }
+
+            return 0;
+        }
+
         public static string GetRandFMName()
         {
             Random rand = new Random();
@@ -2092,6 +2190,12 @@ namespace FMBot_Discord
 
         [JsonProperty("vultrsubid")]
         public string VultrSubID { get; private set; }
+
+        [JsonProperty("timerinittime")]
+        public string TimerInitTime { get; private set; }
+
+        [JsonProperty("timerepeattime")]
+        public string TimeRepeatTime { get; private set; }
     }
 
     public class GlobalVars
