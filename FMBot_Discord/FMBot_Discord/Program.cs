@@ -193,6 +193,26 @@ namespace FMBot_Discord
                                 var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
                                 string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
 
+                                try
+                                {
+                                    ulong DiscordID = DBase.GetIDForName(LastFMName);
+                                    SocketUser FeaturedUser = client.GetUser(DiscordID);
+                                    trackString = ArtistName + " - " + AlbumName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
+                                }
+                                catch (Exception)
+                                {
+                                    try
+                                    {
+                                        trackString = ArtistName + " - " + AlbumName;
+                                    }
+                                    catch (Exception)
+                                    {
+                                        trackString = "Unable to get information for this album cover avatar.";
+                                    }
+                                }
+
+                                Console.WriteLine("[FMBot] Changed to: " + trackString);
+
                                 WebRequest request = WebRequest.Create(ThumbnailImage);
                                 WebResponse response = request.GetResponse();
                                 using (Stream output = File.Create(GlobalVars.BasePath + "newavatar.png"))
@@ -214,13 +234,6 @@ namespace FMBot_Discord
                                     await client.CurrentUser.ModifyAsync(u => u.Avatar = new Discord.Image(fileStream));
                                     fileStream.Close();
                                 }
-
-                                ulong DiscordID = DBase.GetIDForName(LastFMName);
-                                SocketUser FeaturedUser = client.GetUser(DiscordID);
-
-                                trackString = ArtistName + " - " + AlbumName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
-
-                                Console.WriteLine("[FMBot] Changed to: " + trackString);
                             }
                             catch (Exception)
                             {
@@ -233,6 +246,7 @@ namespace FMBot_Discord
                 }
                 catch (Exception)
                 {
+                    trackString = "Unable to get information for this album cover avatar.";
                     var fileStream = new FileStream(GlobalVars.BasePath + "avatar.png", FileMode.Open);
                     var image = new Discord.Image(fileStream);
                     await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
