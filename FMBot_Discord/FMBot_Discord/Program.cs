@@ -365,6 +365,21 @@ namespace FMBot_Discord
                                     await client.CurrentUser.ModifyAsync(u => u.Avatar = new Discord.Image(fileStream));
                                     fileStream.Close();
                                 }
+                                
+                                ulong BroadcastChannelID = 405010695222984704;
+                                ITextChannel channel = await client.GetChannelAsync(BroadcastChannelID);
+                                
+                                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                                eab.Name = client.CurrentUser.Username;
+
+                                var builder = new EmbedBuilder();
+                                builder.WithDescription("FMBot Featured Album");
+
+                                var SelfUser = client.CurrentUser;
+                                builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
+                                builder.AddInlineField("Featured Album:", GetTrackString());
+
+                                await channel.SendMessageAsync("", false, builder.Build());
                             }
                             catch (Exception)
                             {
