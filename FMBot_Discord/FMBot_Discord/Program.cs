@@ -369,15 +369,12 @@ namespace FMBot_Discord
                                 ulong BroadcastChannelID = 405010695222984704;
                                 ITextChannel channel = await client.GetChannelAsync(BroadcastChannelID);
                                 
-                                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                                eab.Name = client.CurrentUser.Username;
-
                                 var builder = new EmbedBuilder();
-                                builder.WithDescription("FMBot Featured Album");
+                                builder.WithDescription("Featured Album");
 
                                 var SelfUser = client.CurrentUser;
                                 builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
-                                builder.AddInlineField("Featured Album:", GetTrackString());
+                                builder.AddInlineField("Featured Album:", trackString);
 
                                 await channel.SendMessageAsync("", false, builder.Build());
                             }
