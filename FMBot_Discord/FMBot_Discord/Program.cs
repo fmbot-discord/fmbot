@@ -1900,7 +1900,7 @@ namespace FMBot_Discord
         [Command("fmdonate"), Summary("Please donate if you like this bot!")]
         public async Task donateAsync()
         {
-            await ReplyAsync("Even though this bot is running for free, this bot needs funds in order to run for more than a year. If you like the bot and you would like to support its development, please donate to me at: https://www.paypal.me/Bitl");
+            await ReplyAsync("If you like the bot and you would like to support its development, feel free to support the developer at: https://www.paypal.me/Bitl");
         }
 
         [Command("fmgithub"), Summary("GitHub Page")]
@@ -1913,6 +1913,12 @@ namespace FMBot_Discord
         public async Task bugsAsync()
         {
             await ReplyAsync("Report bugs here: https://github.com/Bitl/FMBot_Discord/issues");
+        }
+        
+        [Command("fmserver"), Summary("Join the Discord server!")]
+        public async Task serverAsync()
+        {
+            await ReplyAsync("Join the Discord server! https://discord.gg/srmpCaa");
         }
     }
 
@@ -1957,7 +1963,7 @@ namespace FMBot_Discord
         {
             var DiscordUser = (IGuildUser)Context.Message.Author;
             var SelfUser = Context.Client.CurrentUser;
-            ulong BroadcastChannelID = 369654929293574165;
+            ulong BroadcastChannelID = 404987449886900224;
             ITextChannel channel = await Context.Guild.GetTextChannelAsync(BroadcastChannelID);
             if (IsAdmin(DiscordUser))
             {
