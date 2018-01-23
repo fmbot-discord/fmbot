@@ -3,9 +3,13 @@
 	"fmkey": "",
 	"fmsecret": "",
 	"prefix": ".",
-    "listnum": "5",
-    "chartalbums": "9",
+	"listnum": "5",
+	"chartalbums": "9",
     "chartrows": "3",
-    "vultrkey": "",
-    "vultrsubid": ""
+	"vultrkey": "",
+    "vultrsubid": "",
+	"baseserver": "",
+	"announcementchannel": "",
+	"featuredchannel": "",
+	"botowner": ""
 }

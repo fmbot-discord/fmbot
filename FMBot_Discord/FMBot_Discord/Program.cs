@@ -365,18 +365,25 @@ namespace FMBot_Discord
                                     await client.CurrentUser.ModifyAsync(u => u.Avatar = new Discord.Image(fileStream));
                                     fileStream.Close();
                                 }
-                                
-                                ulong BroadcastChannelID = 405010695222984704;
-                                ITextChannel channel = await client.GetChannelAsync(BroadcastChannelID);
-                                
-                                var builder = new EmbedBuilder();
-                                builder.WithDescription("Featured Album");
 
-                                var SelfUser = client.CurrentUser;
-                                builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
-                                builder.AddInlineField("Featured Album:", trackString);
+                                try
+                                {
+                                    ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
+                                    ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.FeaturedChannel);
 
-                                await channel.SendMessageAsync("", false, builder.Build());
+                                    SocketGuild guild = client.GetGuild(BroadcastServerID);
+                                    SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
+
+                                    var builder = new EmbedBuilder();
+                                    var SelfUser = client.CurrentUser;
+                                    builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
+                                    builder.AddInlineField("Featured Album:", trackString);
+
+                                    await channel.SendMessageAsync("", false, builder.Build());
+                                }
+                                catch (Exception)
+                                {
+                                }
                             }
                             catch (Exception)
                             {
@@ -1711,64 +1718,12 @@ namespace FMBot_Discord
         {
             try
             {
-                // first, let's load our configuration file
-                Console.WriteLine("[FMBot] Loading Configuration");
-                var json = "";
-                using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                    json = await sr.ReadToEndAsync();
+                var builder = new EmbedBuilder();
+                var SelfUser = Context.Client.CurrentUser;
+                builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
+                builder.AddInlineField("Featured Album:", _timer.GetTrackString());
 
-                // next, let's load the values from that file
-                // to our client's configuration
-                var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
-                var DiscordUser = (IGuildUser)Context.Message.Author;
-                string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
-                if (LastFMName.Equals("NULL"))
-                {
-                    await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
-                }
-                else
-                {
-                    var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
-
-                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                    eab.IconUrl = DiscordUser.GetAvatarUrl();
-                    if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
-                    {
-                        eab.Name = DiscordUser.Username;
-                    }
-                    else
-                    {
-                        eab.Name = DiscordUser.Nickname;
-                    }
-
-                    var builder = new EmbedBuilder();
-                    string URI = "https://www.last.fm/user/" + LastFMName;
-                    builder.WithUrl(URI);
-                    bool Admin = AdminCommands.IsAdmin(DiscordUser);
-                    if (Admin)
-                    {
-                        builder.WithTitle(LastFMName + ", FMBot Admin");
-                    }
-                    else
-                    {
-                        builder.WithTitle(LastFMName);
-                    }
-                    builder.WithDescription("FMBot Featured Album");
-
-                    var SelfUser = Context.Client.CurrentUser;
-                    builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
-                    builder.AddInlineField("Featured Album:", _timer.GetTrackString());
-
-                    var userinfo = await client.User.GetInfoAsync(LastFMName);
-                    var playcount = userinfo.Content.Playcount;
-                    EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                    efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
-
-                    builder.WithFooter(efb);
-
-                    await Context.Channel.SendMessageAsync("", false, builder.Build());
-                }
+                await Context.Channel.SendMessageAsync("", false, builder.Build());
             }
             catch (Exception)
             {
@@ -1947,7 +1902,7 @@ namespace FMBot_Discord
 
         public static bool IsAdmin(IUser user)
         {
-            if (user.Id.Equals(184013824850919425) || user.Id.Equals(183730395836186624) || user.Id.Equals(205759116889554946) || user.Id.Equals(120954630388580355) || user.Id.Equals(205832344744099840) || user.Id.Equals(175357072035151872) || user.Id.Equals(125740103539621888))
+            if (IsOwner(user) || user.Id.Equals(183730395836186624) || user.Id.Equals(205759116889554946) || user.Id.Equals(120954630388580355) || user.Id.Equals(205832344744099840) || user.Id.Equals(175357072035151872) || user.Id.Equals(125740103539621888))
             {
                 return true;
             }
@@ -1959,7 +1914,18 @@ namespace FMBot_Discord
 
         public static bool IsOwner(IUser user)
         {
-            if (user.Id.Equals(184013824850919425))
+            // first, let's load our configuration file
+            Console.WriteLine("[FMBot] Loading Configuration");
+            var json = "";
+            using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
+            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                json = sr.ReadToEnd();
+
+            // next, let's load the values from that file
+            // to our client's configuration
+            var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+
+            if (user.Id.Equals(Convert.ToUInt64(cfgjson.BotOwner)))
             {
                 return true;
             }
@@ -1973,44 +1939,62 @@ namespace FMBot_Discord
         [Alias("fmannounce", "fmnews", "news", "fmannouncement", "announcement")]
         public async Task announceAsync(string message, string ThumbnailURL = null)
         {
+            // first, let's load our configuration file
+            Console.WriteLine("[FMBot] Loading Configuration");
+            var json = "";
+            using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
+            using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                json = await sr.ReadToEndAsync();
+
+            // next, let's load the values from that file
+            // to our client's configuration
+            var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+
             var DiscordUser = (IGuildUser)Context.Message.Author;
             var SelfUser = Context.Client.CurrentUser;
-            ulong BroadcastChannelID = 404987449886900224;
-            ITextChannel channel = await Context.Guild.GetTextChannelAsync(BroadcastChannelID);
-            if (IsAdmin(DiscordUser))
+            try
             {
-                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                eab.IconUrl = DiscordUser.GetAvatarUrl();
-                if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
+                ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.AnnouncementChannel);
+                ITextChannel channel = await Context.Guild.GetTextChannelAsync(BroadcastChannelID);
+                if (IsAdmin(DiscordUser))
                 {
-                    eab.Name = DiscordUser.Username;
-                }
-                else
-                {
-                    eab.Name = DiscordUser.Nickname + " (" + DiscordUser.Username + ")";
-                }
-
-                var builder = new EmbedBuilder();
-                builder.WithAuthor(eab);
-
-                try
-                {
-                    if (!string.IsNullOrWhiteSpace(ThumbnailURL))
+                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                    eab.IconUrl = DiscordUser.GetAvatarUrl();
+                    if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
                     {
-                        builder.WithThumbnailUrl(ThumbnailURL);
+                        eab.Name = DiscordUser.Username;
                     }
                     else
                     {
-                        builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
+                        eab.Name = DiscordUser.Nickname + " (" + DiscordUser.Username + ")";
                     }
-                }
-                catch (Exception)
-                {
-                }
 
-                builder.AddField("Announcement", message);
+                    var builder = new EmbedBuilder();
+                    builder.WithAuthor(eab);
 
-                await channel.SendMessageAsync("", false, builder.Build());
+                    try
+                    {
+                        if (!string.IsNullOrWhiteSpace(ThumbnailURL))
+                        {
+                            builder.WithThumbnailUrl(ThumbnailURL);
+                        }
+                        else
+                        {
+                            builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+                    builder.AddField("Announcement", message);
+
+                    await channel.SendMessageAsync("", false, builder.Build());
+                }
+            }
+            catch (Exception)
+            {
+                await ReplyAsync("The announcement channel has not been set.");
             }
         }
 
@@ -2354,11 +2338,17 @@ namespace FMBot_Discord
         [JsonProperty("vultrsubid")]
         public string VultrSubID { get; private set; }
 
-        [JsonProperty("timerinittime")]
-        public string TimerInitTime { get; private set; }
+        [JsonProperty("baseserver")]
+        public string BaseServer { get; private set; }
 
-        [JsonProperty("timerepeattime")]
-        public string TimeRepeatTime { get; private set; }
+        [JsonProperty("announcementchannel")]
+        public string AnnouncementChannel { get; private set; }
+
+        [JsonProperty("featuredchannel")]
+        public string FeaturedChannel { get; private set; }
+
+        [JsonProperty("botowner")]
+        public string BotOwner { get; private set; }
     }
 
     public class GlobalVars
