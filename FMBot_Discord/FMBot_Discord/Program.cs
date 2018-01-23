@@ -366,6 +366,8 @@ namespace FMBot_Discord
                                     fileStream.Close();
                                 }
 
+                                await Task.Delay(5000);
+
                                 try
                                 {
                                     ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
