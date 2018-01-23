@@ -1365,8 +1365,11 @@ namespace FMBot_Discord
                                 builder.AddField(friend.ToString() + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
 
                                 // count how many scrobbles everyone has together (if the bot is too slow, consider removing this?)
-                                var userinfo = await client.User.GetInfoAsync(friend);
-                                playcount = playcount + userinfo.Content.Playcount;
+                                if (LastFMFriends.Count() <= 8)
+                                {
+                                    var userinfo = await client.User.GetInfoAsync(friend);
+                                    playcount = playcount + userinfo.Content.Playcount;
+                                }
                             }
                         }
                         catch (Exception)
@@ -1374,11 +1377,12 @@ namespace FMBot_Discord
 
                         }
 
-                        EmbedFooterBuilder efb = new EmbedFooterBuilder();
-
-                        efb.Text = amountOfScrobbles + playcount.ToString();
-
-                        builder.WithFooter(efb);
+                        if (LastFMFriends.Count() <= 8)
+                        {
+                            EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                            efb.Text = amountOfScrobbles + playcount.ToString();
+                            builder.WithFooter(efb);
+                        }
 
                         await Context.Channel.SendMessageAsync("", false, builder.Build());
                     }
