@@ -1352,7 +1352,7 @@ namespace FMBot_Discord
 
             foreach (var module in _service.Modules)
             {
-                if (module.Name.Equals("FMBotFMBotAdminUtil"))
+                if (module.Name.Equals("FMBotAdminCommands"))
                 {
                     continue;
                 }
