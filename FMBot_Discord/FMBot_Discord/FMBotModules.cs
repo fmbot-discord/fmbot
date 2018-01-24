@@ -188,6 +188,7 @@ namespace FMBot_Discord
                                         ulong DiscordID = DBase.GetIDForName(LastFMName);
                                         SocketUser FeaturedUser = client.GetUser(DiscordID);
                                         trackString = ArtistName + " - " + AlbumName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
+                                        Console.WriteLine("Changed avatar to: " + trackString);
                                     }
                                     catch (Exception)
                                     {
