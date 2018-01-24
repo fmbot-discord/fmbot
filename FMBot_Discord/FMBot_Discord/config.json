@@ -11,5 +11,7 @@
 	"baseserver": "",
 	"announcementchannel": "",
 	"featuredchannel": "",
-	"botowner": ""
+    "botowner": "",
+    "timerinit": "15",
+    "timerrepeat": "120"
 }
