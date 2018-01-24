@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static FMBot_Discord.FMBotModules;
 
 namespace FMBot_Discord
 {

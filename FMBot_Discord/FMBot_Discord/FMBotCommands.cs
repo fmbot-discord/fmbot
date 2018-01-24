@@ -1,17 +1,14 @@
 ﻿using Discord;
 using Discord.Commands;
-using Discord.WebSocket;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Objects;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 using YoutubeSearch;
 using static FMBot_Discord.FMBotModules;

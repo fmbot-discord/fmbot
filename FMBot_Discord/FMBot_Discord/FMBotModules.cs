@@ -1,17 +1,11 @@
-﻿
-
-using Discord;
+﻿using Discord;
 using Discord.WebSocket;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Objects;
-using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using static FMBot_Discord.FMBotUtil;
@@ -20,30 +14,6 @@ namespace FMBot_Discord
 {
     public class FMBotModules
     {
-        public class LoggerService
-        {
-            // Change log levels if desired:
-            private static readonly LogSeverity _debug = LogSeverity.Debug;
-            private static readonly LogSeverity _info = LogSeverity.Info;
-            private static readonly LogSeverity _critical = LogSeverity.Critical;
-
-            private static Func<LogMessage, Task> _logger;
-            private readonly DiscordSocketClient _discord;
-
-            public LoggerService(DiscordSocketClient discord, Func<LogMessage, Task> logger = null)
-            {
-                _discord = discord;
-                _logger = logger ?? (_ => Task.CompletedTask);
-            }
-
-            public static Task DebugAsync(string message, string logSource = "")
-                => _logger.Invoke(new LogMessage(_debug, logSource, message));
-            public static Task InfoAsync(string message, string logSource = "")
-                => _logger.Invoke(new LogMessage(_info, logSource, message));
-            public static Task CriticalAsync(string message, string logSource = "", Exception error = null)
-                => _logger.Invoke(new LogMessage(_critical, logSource, message, error));
-        }
-
         public class ReliabilityService
         {
             /*
@@ -77,19 +47,23 @@ namespace FMBot_Discord
             // Should we attempt to reset the client? Set this to false if your client is still locking up.
             private static readonly bool _attemptReset = true;
 
+            // Change log levels if desired:
+            private static readonly LogSeverity _debug = LogSeverity.Debug;
+            private static readonly LogSeverity _info = LogSeverity.Info;
+            private static readonly LogSeverity _critical = LogSeverity.Critical;
+
             // --- End Configuration Section ---
 
             private readonly DiscordSocketClient _discord;
-            
+            private static Func<LogMessage, Task> _logger;
+
             private CancellationTokenSource _cts;
 
-            // for the LoggerService
-            private const string LogSource = "Reliability";
-
-            public ReliabilityService(DiscordSocketClient discord)
+            public ReliabilityService(DiscordSocketClient discord, Func<LogMessage, Task> logger = null)
             {
                 _cts = new CancellationTokenSource();
                 _discord = discord;
+                _logger = logger ?? (_ => Task.CompletedTask);
 
                 _discord.Connected += ConnectedAsync;
                 _discord.Disconnected += DisconnectedAsync;
@@ -98,10 +72,10 @@ namespace FMBot_Discord
             public Task ConnectedAsync()
             {
                 // Cancel all previous state checks and reset the CancelToken - client is back online
-                _ = LoggerService.DebugAsync("Client reconnected, resetting cancel tokens...", LogSource);
+                _ = DebugAsync("Client reconnected, resetting cancel tokens...");
                 _cts.Cancel();
                 _cts = new CancellationTokenSource();
-                _ = LoggerService.DebugAsync("Client reconnected, cancel tokens reset.", LogSource);
+                _ = DebugAsync("Client reconnected, cancel tokens reset.");
 
                 return Task.CompletedTask;
             }
@@ -109,12 +83,12 @@ namespace FMBot_Discord
             public Task DisconnectedAsync(Exception _e)
             {
                 // Check the state after <timeout> to see if we reconnected
-                _ = LoggerService.InfoAsync("Client disconnected, starting timeout task...", LogSource);
+                _ = InfoAsync("Client disconnected, starting timeout task...");
                 _ = Task.Delay(_timeout, _cts.Token).ContinueWith(async _ =>
                 {
-                    await LoggerService.DebugAsync("Timeout expired, continuing to check client state...", LogSource);
+                    await DebugAsync("Timeout expired, continuing to check client state...");
                     await CheckStateAsync();
-                    await LoggerService.DebugAsync("State came back okay", LogSource);
+                    await DebugAsync("State came back okay");
                 });
 
                 return Task.CompletedTask;
@@ -126,7 +100,7 @@ namespace FMBot_Discord
                 if (_discord.ConnectionState == ConnectionState.Connected) return;
                 if (_attemptReset)
                 {
-                    await LoggerService.InfoAsync("Attempting to reset the client", LogSource);
+                    await InfoAsync("Attempting to reset the client");
 
                     var timeout = Task.Delay(_timeout);
                     var connect = _discord.StartAsync();
@@ -134,26 +108,35 @@ namespace FMBot_Discord
 
                     if (task == timeout)
                     {
-                        await LoggerService.CriticalAsync("Client reset timed out (task deadlocked?), killing process", LogSource);
+                        await CriticalAsync("Client reset timed out (task deadlocked?), killing process");
                         FailFast();
                     }
                     else if (connect.IsFaulted)
                     {
-                        await LoggerService.CriticalAsync("Client reset faulted, killing process", LogSource, connect.Exception);
+                        await CriticalAsync("Client reset faulted, killing process", connect.Exception);
                         FailFast();
                     }
                     else
                     {
-                        await LoggerService.InfoAsync("Client reset succesfully!", LogSource);
+                        await InfoAsync("Client reset succesfully!");
                     }
                 }
 
-                await LoggerService.CriticalAsync("Client did not reconnect in time, killing process", LogSource);
+                await CriticalAsync("Client did not reconnect in time, killing process");
                 FailFast();
             }
 
             private void FailFast()
                 => Environment.Exit(1);
+
+            private const string LogSource = "Reliability";
+
+            public static Task DebugAsync(string message)
+                => _logger.Invoke(new LogMessage(_debug, LogSource, message));
+            public static Task InfoAsync(string message)
+                => _logger.Invoke(new LogMessage(_info, LogSource, message));
+            public static Task CriticalAsync(string message, Exception error = null)
+                => _logger.Invoke(new LogMessage(_critical, LogSource, message, error));
         }
 
         public class TimerService
@@ -225,9 +208,7 @@ namespace FMBot_Discord
                                         }
                                     }
 
-                                    Console.WriteLine();
-
-                                    await LoggerService.InfoAsync("Changed avatar to: " + trackString, LogSource);
+                                    Console.WriteLine("Changed avatar to: " + trackString);
 
                                     WebRequest request = WebRequest.Create(ThumbnailImage);
                                     WebResponse response = request.GetResponse();

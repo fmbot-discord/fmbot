@@ -1,15 +1,11 @@
-﻿
-
-using Discord;
+﻿using Discord;
 using Discord.Commands;
 using Discord.Net.Providers.WS4Net;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 using static FMBot_Discord.FMBotModules;
 using static FMBot_Discord.FMBotUtil;
@@ -83,8 +79,7 @@ namespace FMBot_Discord
 
         public async Task InstallCommands()
         {
-            map.AddSingleton(new LoggerService(client, Log));
-            map.AddSingleton(new ReliabilityService(client));
+            map.AddSingleton(new ReliabilityService(client, Log));
             map.AddSingleton(new TimerService(client));
             services = map.BuildServiceProvider();
 
