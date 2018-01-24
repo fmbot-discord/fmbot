@@ -248,12 +248,10 @@ namespace FMBot_Discord
                 public string TimerRepeat { get; private set; }
             }
 
-            private const string LogSource = "JsonCfg";
-
             public static async Task<ConfigJson> GetJSONDataAsync()
             {
                 // first, let's load our configuration file
-                await LoggerService.InfoAsync("Loading Configuration", LogSource);
+                Console.WriteLine("Loading Configuration");
                 var json = "";
                 using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
                 using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
