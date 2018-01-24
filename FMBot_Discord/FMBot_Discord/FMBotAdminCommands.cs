@@ -112,7 +112,7 @@ namespace FMBot_Discord
                 try
                 {
                     await ReplyAsync("Rebooting server...");
-                    await (Context.Client as DiscordSocketClient).SetStatusAsync(UserStatus.Offline);
+                    await (Context.Client as DiscordSocketClient).SetStatusAsync(UserStatus.Invisible);
                     HttpWebRequest Req = (HttpWebRequest)WebRequest.Create("https://api.vultr.com/v1/server/reboot");
                     Req.Method = "POST";
                     Req.ContentType = "application/x-www-form-urlencoded";
@@ -147,7 +147,7 @@ namespace FMBot_Discord
             if (FMBotAdminUtil.IsOwner(DiscordUser))
             {
                 await ReplyAsync("Restarting bot...");
-                await (Context.Client as DiscordSocketClient).SetStatusAsync(UserStatus.Offline);
+                await (Context.Client as DiscordSocketClient).SetStatusAsync(UserStatus.Invisible);
                 Environment.Exit(1);
             }
         }

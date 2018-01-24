@@ -45,9 +45,6 @@ namespace FMBot_Discord
 
                 prefix = cfgjson.CommandPrefix;
 
-                await client.SetGameAsync("🎶 Say " + prefix + "fmhelp to use 🎶");
-                await client.SetStatusAsync(UserStatus.DoNotDisturb);
-
                 Console.WriteLine("Registering Commands and Modules...");
                 commands = new CommandService();
 
@@ -60,6 +57,9 @@ namespace FMBot_Discord
                 await client.StartAsync();
 
                 Console.WriteLine("Logged In.");
+
+                await client.SetGameAsync("🎶 Say " + prefix + "fmhelp to use 🎶");
+                await client.SetStatusAsync(UserStatus.DoNotDisturb);
 
                 // Block this task until the program is closed.
                 await Task.Delay(-1);

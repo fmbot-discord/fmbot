@@ -194,21 +194,22 @@ namespace FMBot_Discord
                                         try
                                         {
                                             trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
+                                            Console.WriteLine("Changed avatar to: " + trackString);
                                         }
                                         catch (Exception)
                                         {
                                             try
                                             {
                                                 trackString = ArtistName + " - " + AlbumName;
+                                                Console.WriteLine("Changed avatar to: " + trackString);
                                             }
                                             catch (Exception)
                                             {
                                                 trackString = "Unable to get information for this album cover avatar.";
+                                                Console.WriteLine("Unable to get information for this album cover avatar.");
                                             }
                                         }
                                     }
-
-                                    Console.WriteLine("Changed avatar to: " + trackString);
 
                                     WebRequest request = WebRequest.Create(ThumbnailImage);
                                     WebResponse response = request.GetResponse();
@@ -276,6 +277,7 @@ namespace FMBot_Discord
             private async void UseDefaultAvatar(DiscordSocketClient client)
             {
                 trackString = "Unable to get information for this album cover avatar.";
+                Console.WriteLine("Unable to get information for this album cover avatar.");
                 var fileStream = new FileStream(GlobalVars.BasePath + "avatar.png", FileMode.Open);
                 var image = new Discord.Image(fileStream);
                 await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
