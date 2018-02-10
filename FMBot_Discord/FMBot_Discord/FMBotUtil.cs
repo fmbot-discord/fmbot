@@ -15,34 +15,24 @@ namespace FMBot_Discord
     {
         public class DBase
         {
-            public static void WriteEntry(string id, string name, int fmval = 0)
+            public static string FMAdminString = "IsAdmin";
+            public static string FMSuperAdminString = "IsSuperAdmin";
+
+            public static void WriteEntry(string id, string name, int fmval = 0, int IsAdmin = 0)
             {
-                File.WriteAllText(GlobalVars.UsersFolder + id + ".txt", name + Environment.NewLine + fmval.ToString());
+                string AdminString = "";
+
+                if (IsAdmin == 1)
+                {
+                    AdminString = FMAdminString;
+                }
+                else if (IsAdmin == 2)
+                {
+                    AdminString = FMSuperAdminString;
+                }
+
+                File.WriteAllText(GlobalVars.UsersFolder + id + ".txt", name + Environment.NewLine + fmval.ToString() + Environment.NewLine + AdminString);
                 File.SetAttributes(GlobalVars.UsersFolder + id + ".txt", FileAttributes.Normal);
-            }
-
-            public static void WriteFriendsEntry(string id, params string[] stringArray)
-            {
-                string text = "";
-                foreach (var friend in stringArray)
-                {
-                    text += friend;
-                    text += Environment.NewLine;
-                }
-                File.WriteAllText(GlobalVars.UsersFolder + id + "-friends.txt", text);
-                File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
-            }
-
-            public static void AddFriendsEntry(string id, params string[] stringArray)
-            {
-                string text = "";
-                foreach (var friend in stringArray)
-                {
-                    text += friend;
-                    text += Environment.NewLine;
-                }
-                File.AppendAllText(GlobalVars.UsersFolder + id + "-friends.txt", text);
-                File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
             }
 
             public static void RemoveEntry(string id)
@@ -64,13 +54,9 @@ namespace FMBot_Discord
                 }
             }
 
-            public static void RemoveFriends(string id)
+            public static bool EntryExists(string id)
             {
-                if (File.Exists(GlobalVars.UsersFolder + id + "-friends.txt"))
-                {
-                    File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
-                    File.Delete(GlobalVars.UsersFolder + id + "-friends.txt");
-                }
+                return File.Exists(GlobalVars.UsersFolder + id + ".txt");
             }
 
             public static string GetNameForID(string id)
@@ -122,12 +108,6 @@ namespace FMBot_Discord
                 }
 
                 return "NULL";
-            }
-
-            public static string[] GetFriendsForID(string id)
-            {
-                string[] lines = File.ReadAllLines(GlobalVars.UsersFolder + id + "-friends.txt");
-                return lines;
             }
 
             public static int GetModeIntForID(string id)
@@ -194,6 +174,101 @@ namespace FMBot_Discord
                     return "NULL";
                 }
             }
+
+            public static bool CheckAdmin(string id)
+            {
+                if (File.ReadLines(GlobalVars.UsersFolder + id + ".txt").Any(line => line.Contains(FMAdminString)))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            public static bool CheckSuperAdmin(string id)
+            {
+                if (File.ReadLines(GlobalVars.UsersFolder + id + ".txt").Any(line => line.Contains(FMSuperAdminString)))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            public static string GetAdminStringFromID(string id)
+            {
+                if (File.ReadLines(GlobalVars.UsersFolder + id + ".txt").Any(line => line.Contains(FMAdminString)))
+                {
+                    return FMAdminString;
+                }
+                else if (File.ReadLines(GlobalVars.UsersFolder + id + ".txt").Any(line => line.Contains(FMSuperAdminString)))
+                {
+                    return FMSuperAdminString;
+                }
+                else
+                {
+                    return "";
+                }
+            }
+
+            public static int GetAdminIntFromID(string id)
+            {
+                if (File.ReadLines(GlobalVars.UsersFolder + id + ".txt").Any(line => line.Contains(FMAdminString)))
+                {
+                    return 1;
+                }
+                else if (File.ReadLines(GlobalVars.UsersFolder + id + ".txt").Any(line => line.Contains(FMSuperAdminString)))
+                {
+                    return 2;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+
+            public static void WriteFriendsEntry(string id, params string[] stringArray)
+            {
+                string text = "";
+                foreach (var friend in stringArray)
+                {
+                    text += friend;
+                    text += Environment.NewLine;
+                }
+                File.WriteAllText(GlobalVars.UsersFolder + id + "-friends.txt", text);
+                File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
+            }
+
+            public static void AddFriendsEntry(string id, params string[] stringArray)
+            {
+                string text = "";
+                foreach (var friend in stringArray)
+                {
+                    text += friend;
+                    text += Environment.NewLine;
+                }
+                File.AppendAllText(GlobalVars.UsersFolder + id + "-friends.txt", text);
+                File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
+            }
+
+            public static void RemoveFriends(string id)
+            {
+                if (File.Exists(GlobalVars.UsersFolder + id + "-friends.txt"))
+                {
+                    File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
+                    File.Delete(GlobalVars.UsersFolder + id + "-friends.txt");
+                }
+            }
+
+            public static string[] GetFriendsForID(string id)
+            {
+                string[] lines = File.ReadAllLines(GlobalVars.UsersFolder + id + "-friends.txt");
+                return lines;
+            }
         }
 
         public class JsonCfg
@@ -212,15 +287,6 @@ namespace FMBot_Discord
 
                 [JsonProperty("prefix")]
                 public string CommandPrefix { get; private set; }
-
-                [JsonProperty("listnum")]
-                public string Listnum { get; private set; }
-
-                [JsonProperty("chartalbums")]
-                public string ChartAlbums { get; private set; }
-
-                [JsonProperty("chartrows")]
-                public string ChartRows { get; private set; }
 
                 [JsonProperty("vultrkey")]
                 public string VultrKey { get; private set; }
@@ -283,6 +349,16 @@ namespace FMBot_Discord
             public static string ConfigFileName = "config.json";
             public static string BasePath = AppDomain.CurrentDomain.BaseDirectory;
             public static string UsersFolder = BasePath + "users/";
+
+            public static string GetLine(string filePath, int line)
+            {
+                using (var sr = new StreamReader(filePath))
+                {
+                    for (int i = 1; i < line; i++)
+                        sr.ReadLine();
+                    return sr.ReadLine();
+                }
+            }
 
             public static Bitmap Combine(List<Bitmap> images, bool vertical = false)
             {
@@ -376,7 +452,21 @@ namespace FMBot_Discord
         {
             public static bool IsAdmin(IUser user)
             {
-                if (IsOwner(user) || user.Id.Equals(183730395836186624) || user.Id.Equals(205759116889554946) || user.Id.Equals(120954630388580355) || user.Id.Equals(205832344744099840) || user.Id.Equals(175357072035151872) || user.Id.Equals(125740103539621888))
+                if (IsSuperAdmin(user) || DBase.CheckAdmin(user.Id.ToString()))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            public static bool IsSuperAdmin(IUser user)
+            {
+                var cfgjson = JsonCfg.GetJSONData();
+
+                if (IsOwner(user) || DBase.CheckSuperAdmin(user.Id.ToString()))
                 {
                     return true;
                 }

@@ -13,8 +13,6 @@ namespace FMBot_Discord
 {
     public class FMBotAdminCommands : ModuleBase
     {
-        //OwnerIDs = Bitl, Tytygigas, Opus v84, [opti], GreystarMusic, Lemonadeaholic, LantaarnAppel
-
         private readonly CommandService _service;
 
         public FMBotAdminCommands(CommandService service)
@@ -144,11 +142,101 @@ namespace FMBot_Discord
         public async Task fmbotrestartAsync()
         {
             var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.IsOwner(DiscordUser))
+            if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
             {
                 await ReplyAsync("Restarting bot...");
                 await (Context.Client as DiscordSocketClient).SetStatusAsync(UserStatus.Invisible);
                 Environment.Exit(1);
+            }
+        }
+
+        [Command("fmbotshutdown")]
+        [Alias("fmshutdown")]
+        public async Task fmbotshutdownAsync()
+        {
+            var DiscordUser = Context.Message.Author;
+            if (FMBotAdminUtil.IsOwner(DiscordUser))
+            {
+                await ReplyAsync("Shutting down bot...");
+                await (Context.Client as DiscordSocketClient).SetStatusAsync(UserStatus.Invisible);
+                Environment.Exit(0);
+            }
+        }
+
+        [Command("fmservershutdown")]
+        [Alias("fmhardshutdown", "fmhalt", "fmserverhalt")]
+        public async Task fmservershutdownAsync()
+        {
+            var DiscordUser = Context.Message.Author;
+            if (FMBotAdminUtil.IsOwner(DiscordUser))
+            {
+                var cfgjson = await JsonCfg.GetJSONDataAsync();
+
+                string Data = "SUBID=" + cfgjson.VultrSubID;
+                string Reponse = "";
+                StreamWriter Sw = null;
+                StreamReader Sr = null;
+                try
+                {
+                    await ReplyAsync("Shutting down server...");
+                    await (Context.Client as DiscordSocketClient).SetStatusAsync(UserStatus.Invisible);
+                    HttpWebRequest Req = (HttpWebRequest)WebRequest.Create("https://api.vultr.com/v1/server/halt");
+                    Req.Method = "POST";
+                    Req.ContentType = "application/x-www-form-urlencoded";
+                    Req.Headers.Add("API-Key: " + cfgjson.VultrKey);
+                    using (var sw = new StreamWriter(Req.GetRequestStream()))
+                    {
+                        sw.Write(Data);
+                    }
+                    Sr = new
+                    StreamReader(((HttpWebResponse)Req.GetResponse()).GetResponseStream());
+                    Reponse = Sr.ReadToEnd();
+                    Sr.Close();
+                }
+                catch (Exception ex)
+                {
+                    if (Sw != null)
+                        Sw.Close();
+                    if (Sr != null)
+                        Sr.Close();
+
+                    await ReplyAsync("Error rebooting server. Look in bot console.");
+                    Console.WriteLine("Vultr API Error: " + ex.Message);
+                }
+            }
+        }
+
+        [Command("fmsetperms")]
+        public async Task fmsetpermsAsync(IUser user = null, int permtype = 0)
+        {
+            var DiscordUser = Context.Message.Author;
+            if (FMBotAdminUtil.IsOwner(DiscordUser))
+            {
+                var ChosenUser = user ?? Context.Message.Author;
+                string UserID = ChosenUser.Id.ToString();
+                string LastFMName = DBase.GetNameForID(UserID);
+                int LastFMMode = DBase.GetModeIntForID(UserID);
+                if (!LastFMName.Equals("NULL"))
+                {
+                    DBase.WriteEntry(UserID, LastFMName, LastFMMode, permtype);
+
+                    if (permtype == 1)
+                    {
+                        await ReplyAsync("The user now has Admin permissions");
+                    }
+                    else if (permtype == 2)
+                    {
+                        await ReplyAsync("The user now has Super Admin permissions");
+                    }
+                    else
+                    {
+                        await ReplyAsync("The user now has User permissions");
+                    }
+                }
+                else
+                {
+                    await ReplyAsync("The user's Last.FM name has not been set.");
+                }
             }
         }
 
