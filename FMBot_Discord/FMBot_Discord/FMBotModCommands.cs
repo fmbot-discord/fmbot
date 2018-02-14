@@ -1,12 +1,11 @@
-﻿using Discord;
-using Discord.Commands;
+﻿using Discord.Commands;
 using Discord.WebSocket;
 using System.Threading.Tasks;
 using static FMBot_Discord.FMBotUtil;
 
 namespace FMBot_Discord
 {
-    class FMBotModCommands : ModuleBase
+    public class FMBotModCommands : ModuleBase
     {
         private readonly CommandService _service;
 
