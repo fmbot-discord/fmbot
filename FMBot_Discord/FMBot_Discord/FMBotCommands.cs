@@ -1506,32 +1506,34 @@ namespace FMBot_Discord
         public async Task fmfriendssetAsync([Summary("Friend names")] params string[] friends)
         {
             string SelfID = Context.Message.Author.Id.ToString();
-            DBase.WriteFriendsEntry(SelfID, friends);
 
-            if (friends.Count() > 1)
-            {
-                await ReplyAsync("Succesfully set " + friends.Count() + " friends.");
-            }
-            else
-            {
-                await ReplyAsync("Succesfully set a friend.");
-            }
-        }
+            int friendcount = DBase.RemoveFriendsEntry(SelfID, friends);
 
-        [Command("fmaddfriends"), Summary("Adds your friends' Last.FM names.")]
-        [Alias("fmfriendsadd")]
-        public async Task fmfriendsaddAsync([Summary("Friend names")] params string[] friends)
-        {
-            string SelfID = Context.Message.Author.Id.ToString();
-            DBase.AddFriendsEntry(SelfID, friends);
-
-            if (friends.Count() > 1)
+            if (friendcount > 1 || friendcount < 1)
             {
-                await ReplyAsync("Succesfully added " + friends.Count() + " friends.");
+                await ReplyAsync("Succesfully added " + friendcount + " friends.");
             }
             else
             {
                 await ReplyAsync("Succesfully added a friend.");
+            }
+        }
+
+        [Command("fmremovefriends"), Summary("Remove your friends' Last.FM names.")]
+        [Alias("fmfriendsremove")]
+        public async Task fmfriendsremoveAsync([Summary("Friend names")] params string[] friends)
+        {
+            string SelfID = Context.Message.Author.Id.ToString();
+
+            int friendcount = DBase.RemoveFriendsEntry(SelfID, friends);
+
+            if (friendcount > 1 || friendcount < 1)
+            {
+                await ReplyAsync("Succesfully removed " + friendcount + " friends.");
+            }
+            else
+            {
+                await ReplyAsync("Succesfully removed a friend.");
             }
         }
 
@@ -1542,15 +1544,6 @@ namespace FMBot_Discord
             string SelfID = Context.Message.Author.Id.ToString();
             DBase.RemoveEntry(SelfID);
             await ReplyAsync("Your FMBot settings have been successfully deleted.");
-        }
-
-        [Command("fmunsetfriends"), Summary("Deletes your FMBot friend data.")]
-        [Alias("fmremovefriends", "fmfmdeletefriends")]
-        public async Task fmunsetfriendsAsync()
-        {
-            string SelfID = Context.Message.Author.Id.ToString();
-            DBase.RemoveFriends(SelfID);
-            await ReplyAsync("Your FMBot friend settings have been successfully deleted.");
         }
 
         [Command("fmhelp")]
@@ -1572,24 +1565,28 @@ namespace FMBot_Discord
 
             foreach (var module in _service.Modules)
             {
-                if (module.Name.Equals("FMBotAdminCommands"))
-                {
-                    continue;
-                }
-
                 string description = null;
                 foreach (var cmd in module.Commands)
                 {
                     var result = await cmd.CheckPreconditionsAsync(Context);
                     if (result.IsSuccess)
-                        description += $"{prefix}{cmd.Aliases.First()}\n";
+                    {
+                        if (!string.IsNullOrWhiteSpace(cmd.Summary))
+                        {
+                            description += $"{prefix}{cmd.Aliases.First()} - {cmd.Summary}\n";
+                        }
+                        else
+                        {
+                            description += $"{prefix}{cmd.Aliases.First()}\n";
+                        }
+                    }
                 }
 
                 if (!string.IsNullOrWhiteSpace(description))
                 {
                     builder.AddField(x =>
                     {
-                        x.Name = "FMBot Commands";
+                        x.Name = module.Name;
                         x.Value = description;
                         x.IsInline = false;
                     });

@@ -74,26 +74,6 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("dbcheck"), Summary("Checks if an entry is in the database.")]
-        public async Task dbcheckAsync(IUser user = null)
-        {
-            var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.IsAdmin(DiscordUser))
-            {
-                var ChosenUser = user ?? Context.Message.Author;
-                string LastFMName = DBase.GetNameForID(ChosenUser.Id.ToString());
-                string LastFMMode = DBase.GetNameForModeInt(DBase.GetModeIntForID(ChosenUser.Id.ToString()));
-                if (!LastFMName.Equals("NULL"))
-                {
-                    await ReplyAsync("The user's Last.FM name is '" + LastFMName + "'. Their mode is set to '" + LastFMMode + "'.");
-                }
-                else
-                {
-                    await ReplyAsync("The user's Last.FM name has not been set.");
-                }
-            }
-        }
-
         [Command("fmserverreboot")]
         [Alias("fmreboot")]
         public async Task fmserverrebootAsync()
@@ -237,55 +217,6 @@ namespace FMBot_Discord
                 {
                     await ReplyAsync("The user's Last.FM name has not been set.");
                 }
-            }
-        }
-
-        [Command("fmadmin")]
-        [Alias("fmadminhelp")]
-        public async Task AdminAsync()
-        {
-            var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.IsAdmin(DiscordUser))
-            {
-                var cfgjson = await JsonCfg.GetJSONDataAsync();
-
-                var SelfName = Context.Client.CurrentUser;
-                string prefix = cfgjson.CommandPrefix;
-
-                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                eab.IconUrl = SelfName.GetAvatarUrl();
-                eab.Name = SelfName.Username;
-
-                var builder = new EmbedBuilder();
-                builder.WithAuthor(eab);
-
-                foreach (var module in _service.Modules)
-                {
-                    if (module.Name.Equals("FMBotCommands"))
-                    {
-                        continue;
-                    }
-
-                    string description = null;
-                    foreach (var cmd in module.Commands)
-                    {
-                        var result = await cmd.CheckPreconditionsAsync(Context);
-                        if (result.IsSuccess)
-                            description += $"{prefix}{cmd.Aliases.First()}\n";
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(description))
-                    {
-                        builder.AddField(x =>
-                        {
-                            x.Name = "Admin Commands";
-                            x.Value = description;
-                            x.IsInline = false;
-                        });
-                    }
-                }
-
-                await ReplyAsync("", false, builder.Build());
             }
         }
     }

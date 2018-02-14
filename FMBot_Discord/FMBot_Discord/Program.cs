@@ -87,6 +87,7 @@ namespace FMBot_Discord
 
             client.MessageReceived += HandleCommand_MessageReceived;
             client.MessageUpdated += HandleCommand_MessageEdited;
+            client.CurrentUserUpdated += HandleCommand_CurrentUserUpdated;
         }
 
         public async Task HandleCommand_MessageReceived(SocketMessage messageParam)
@@ -99,13 +100,41 @@ namespace FMBot_Discord
             await HandleCommand(after);
         }
 
+        public Task HandleCommand_CurrentUserUpdated(SocketSelfUser before, SocketSelfUser after)
+        {
+            string status_after = "Online";
+            string status_before = "Online";
+
+            switch (before.Status)
+            {
+                case UserStatus.Offline: status_before = "Offline"; break;
+                case UserStatus.Online: status_before = "Online"; break;
+                case UserStatus.Idle: status_before = "Idle"; break;
+                case UserStatus.AFK: status_before = "AFK"; break;
+                case UserStatus.DoNotDisturb: status_before = "Do Not Disturb"; break;
+                case UserStatus.Invisible: status_before = "Invisible/Offline"; break;
+            }
+
+            switch (after.Status)
+            {
+                case UserStatus.Offline: status_after = "Offline"; break;
+                case UserStatus.Online: status_after = "Online"; break;
+                case UserStatus.Idle: status_after = "Idle"; break;
+                case UserStatus.AFK: status_after = "AFK"; break;
+                case UserStatus.DoNotDisturb: status_after = "Do Not Disturb"; break;
+                case UserStatus.Invisible: status_after = "Invisible/Offline"; break;
+            }
+
+            Console.WriteLine("Status of bot changed from " + status_before + " to " + status_after);
+
+            return Task.CompletedTask;
+        }
+
         public async Task HandleCommand(SocketMessage messageParam)
         {
             // Don't process the command if it was a System Message
             var message = messageParam as SocketUserMessage;
             if (message == null) return;
-
-            var DiscordCaller = message.Author;
 
             // Create a number to track where the prefix ends and the command begins
             int argPos = 0;
@@ -114,6 +143,17 @@ namespace FMBot_Discord
 
             // Create a Command Context
             var context = new CommandContext(client, message);
+
+            var DiscordCaller = message.Author as SocketGuildUser;
+            string callerid = DiscordCaller.Id.ToString();
+            string callerserverid = DiscordCaller.Guild.Id.ToString();
+            bool isonblacklist = DBase.IsUserOnBlacklist(callerid, callerserverid);
+
+            if (isonblacklist == true)
+            {
+                await context.Channel.SendMessageAsync("You have been blacklisted from the server. Please contact a server moderator or administrator if you have any questions regarding this decision.");
+                return;
+            }
 
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully)

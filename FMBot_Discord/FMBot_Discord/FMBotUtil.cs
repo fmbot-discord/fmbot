@@ -7,6 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace FMBot_Discord
@@ -231,37 +232,147 @@ namespace FMBot_Discord
                 }
             }
 
-            public static void WriteFriendsEntry(string id, params string[] stringArray)
+            public static bool BlacklistExists(string id)
             {
-                string text = "";
-                foreach (var friend in stringArray)
-                {
-                    text += friend;
-                    text += Environment.NewLine;
-                }
-                File.WriteAllText(GlobalVars.UsersFolder + id + "-friends.txt", text);
-                File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
+                return File.Exists(GlobalVars.UsersFolder + id + "-blacklist.txt");
             }
 
-            public static void AddFriendsEntry(string id, params string[] stringArray)
+            public static bool AddToBlacklist(string id, string serverid)
             {
-                string text = "";
-                foreach (var friend in stringArray)
+                if (!BlacklistExists(id))
                 {
-                    text += friend;
-                    text += Environment.NewLine;
+                    File.Create(GlobalVars.UsersFolder + id + "-blacklist.txt");
+                    File.SetAttributes(GlobalVars.UsersFolder + id + "-blacklist.txt", FileAttributes.Normal);
                 }
-                File.AppendAllText(GlobalVars.UsersFolder + id + "-friends.txt", text);
-                File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
+
+                string[] blacklist = File.ReadAllLines(GlobalVars.UsersFolder + id + "-blacklist.txt");
+
+                if (blacklist.Contains(serverid))
+                {
+                    return false;
+                }
+
+                Array.Resize(ref blacklist, blacklist.Length + 1);
+                blacklist[blacklist.Length - 1] = serverid;
+
+                File.WriteAllLines(GlobalVars.UsersFolder + id + "-blacklist.txt", blacklist);
+                File.SetAttributes(GlobalVars.UsersFolder + id + "-blacklist.txt", FileAttributes.Normal);
+
+                return true;
             }
 
-            public static void RemoveFriends(string id)
+            public static bool RemoveFromBlacklist(string id, string serverid)
             {
-                if (File.Exists(GlobalVars.UsersFolder + id + "-friends.txt"))
+                if (!BlacklistExists(id))
                 {
+                    return false;
+                }
+
+                string[] blacklist = File.ReadAllLines(GlobalVars.UsersFolder + id + "-blacklist.txt");
+
+                if (blacklist.Contains(serverid))
+                {
+                    var list = new List<string>(blacklist);
+                    list.Remove(serverid);
+                    blacklist = list.ToArray();
+
+                    File.WriteAllLines(GlobalVars.UsersFolder + id + "-blacklist.txt", blacklist);
+                    File.SetAttributes(GlobalVars.UsersFolder + id + "-blacklist.txt", FileAttributes.Normal);
+
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            public static bool IsUserOnBlacklist(string id, string serverid)
+            {
+                if (!BlacklistExists(id))
+                {
+                    return false;
+                }
+
+                string[] blacklist = File.ReadAllLines(GlobalVars.UsersFolder + id + "-blacklist.txt");
+
+                if (blacklist.Contains(serverid))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            public static bool FriendsExists(string id)
+            {
+                return File.Exists(GlobalVars.UsersFolder + id + "-friends.txt");
+            }
+
+            public static int AddFriendsEntry(string id, string[] friendlist)
+            {
+                if (!FriendsExists(id))
+                {
+                    File.Create(GlobalVars.UsersFolder + id + "-friends.txt");
                     File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
-                    File.Delete(GlobalVars.UsersFolder + id + "-friends.txt");
                 }
+
+                string[] friends = File.ReadAllLines(GlobalVars.UsersFolder + id + "-friends.txt");
+
+                int listcount = friendlist.Count();
+
+                foreach (var friend in friends)
+                {
+                    if (!friends.Contains(friend))
+                    {
+                        Array.Resize(ref friends, friends.Length + 1);
+                        friends[friends.Length - 1] = friend;
+                    }
+                    else
+                    {
+                        listcount = listcount - 1;
+                        continue;
+                    }
+                }
+
+                File.WriteAllLines(GlobalVars.UsersFolder + id + "-friends.txt", friends);
+                File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
+
+                return listcount;
+            }
+
+            public static int RemoveFriendsEntry(string id, params string[] friendlist)
+            {
+                if (!FriendsExists(id))
+                {
+                    return 0;
+                }
+
+                string[] friends = File.ReadAllLines(GlobalVars.UsersFolder + id + "-friends.txt");
+
+                int listcount = friendlist.Count();
+
+                foreach (var friend in friendlist)
+                {
+                    if (friends.Contains(friend))
+                    {
+                        var list = new List<string>(friends);
+                        list.Remove(friend);
+                        friends = list.ToArray();
+                    }
+                    else
+                    {
+                        listcount = listcount - 1;
+                        continue;
+                    }
+                }
+
+                File.WriteAllLines(GlobalVars.UsersFolder + id + "-friends.txt", friends);
+                File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
+
+                return listcount;
             }
 
             public static string[] GetFriendsForID(string id)
@@ -358,6 +469,11 @@ namespace FMBot_Discord
                         sr.ReadLine();
                     return sr.ReadLine();
                 }
+            }
+
+            public static string MultiLine(params string[] args)
+            {
+                return string.Join(Environment.NewLine, args);
             }
 
             public static Bitmap Combine(List<Bitmap> images, bool vertical = false)
