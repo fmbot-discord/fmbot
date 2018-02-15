@@ -396,6 +396,12 @@ namespace FMBot_Discord
                 [JsonProperty("fmsecret")]
                 public string FMSecret { get; private set; }
 
+                [JsonProperty("spotifykey")]
+                public string SpotifyKey { get; private set; }
+
+                [JsonProperty("spotifysecret")]
+                public string SpotifySecret { get; private set; }
+
                 [JsonProperty("prefix")]
                 public string CommandPrefix { get; private set; }
 
