@@ -3,6 +3,10 @@ using Discord.Commands;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Objects;
+using SpotifyAPI.Web; //Base Namespace
+using SpotifyAPI.Web.Auth; //All Authentication-related classes
+using SpotifyAPI.Web.Enums; //Enums
+using SpotifyAPI.Web.Models; //Models for the JSON-responses
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -1462,6 +1466,47 @@ namespace FMBot_Discord
             catch (Exception)
             {
                 await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+            }
+        }
+
+        [Command("fmspotify")]
+        public async Task fmspotifyAsync([Remainder]string query)
+        {
+            try
+            {
+                var cfgjson = await JsonCfg.GetJSONDataAsync();
+
+                //Create the auth object
+                var auth = new ClientCredentialsAuth()
+                {
+                    ClientId = cfgjson.SpotifyKey,
+                    ClientSecret = cfgjson.SpotifySecret,
+                    Scope = Scope.None,
+                };
+                //With this token object, we now can make calls
+                Token token = auth.DoAuth();
+
+                var _spotify = new SpotifyWebAPI()
+                {
+                    TokenType = token.TokenType,
+                    AccessToken = token.AccessToken,
+                    UseAuth = true
+                };
+
+                SearchItem item = _spotify.SearchItems(query, SearchType.Track);
+
+                if (item.Tracks.Items.Any())
+                {
+                    await ReplyAsync("https://open.spotify.com/track/" + item.Tracks.Items.FirstOrDefault().Id);
+                }
+                else
+                {
+                    await ReplyAsync("Sorry, no results.");
+                }
+            }
+            catch
+            {
+                await ReplyAsync("Command failed. The bot owner might not have set up their Spotify credentials correctly.");
             }
         }
 
