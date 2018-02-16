@@ -422,6 +422,12 @@ namespace FMBot_Discord
 
                 [JsonProperty("timerrepeat")]
                 public string TimerRepeat { get; private set; }
+
+                [JsonProperty("spotifykey")]
+                public string SpotifyKey { get; private set; }
+
+                [JsonProperty("spotifysecret")]
+                public string SpotifySecret { get; private set; }
             }
 
             public static async Task<ConfigJson> GetJSONDataAsync()

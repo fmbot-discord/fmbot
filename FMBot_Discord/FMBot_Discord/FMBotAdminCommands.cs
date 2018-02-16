@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
+using static FMBot_Discord.FMBotModules;
 using static FMBot_Discord.FMBotUtil;
 
 namespace FMBot_Discord
@@ -13,10 +14,12 @@ namespace FMBot_Discord
     public class FMBotAdminCommands : ModuleBase
     {
         private readonly CommandService _service;
+        private readonly TimerService _timer;
 
-        public FMBotAdminCommands(CommandService service)
+        public FMBotAdminCommands(CommandService service, TimerService timer)
         {
             _service = service;
+            _timer = timer;
         }
 
         [Command("announce"), Summary("Sends an announcement to the main server.")]
@@ -70,6 +73,26 @@ namespace FMBot_Discord
             catch (Exception)
             {
                 await ReplyAsync("The announcement channel has not been set.");
+            }
+        }
+
+        [Command("dbcheck"), Summary("Checks if an entry is in the database.")]
+        public async Task dbcheckAsync(IUser user = null)
+        {
+            var DiscordUser = Context.Message.Author;
+            if (FMBotAdminUtil.IsAdmin(DiscordUser))
+            {
+                var ChosenUser = user ?? Context.Message.Author;
+                string LastFMName = DBase.GetNameForID(ChosenUser.Id.ToString());
+                string LastFMMode = DBase.GetNameForModeInt(DBase.GetModeIntForID(ChosenUser.Id.ToString()));
+                if (!LastFMName.Equals("NULL"))
+                {
+                    await ReplyAsync("The user's Last.FM name is '" + LastFMName + "'. Their mode is set to '" + LastFMMode + "'.");
+                }
+                else
+                {
+                    await ReplyAsync("The user's Last.FM name has not been set.");
+                }
             }
         }
 
@@ -215,6 +238,100 @@ namespace FMBot_Discord
                 else
                 {
                     await ReplyAsync("The user's Last.FM name has not been set.");
+                }
+            }
+        }
+
+        [Command("fmavataroverride")]
+        [Alias("fmavatar", "fmavatarset", "fmevent", "fmeventstart")]
+        public async Task fmavataroverrideAsync(string albumname, string desc)
+        {
+            var DiscordUser = Context.Message.Author;
+            if (FMBotAdminUtil.IsOwner(DiscordUser))
+            {
+                try
+                {
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                    _timer.UseCustomAvatar(client, albumname, desc);
+                }
+                catch (Exception)
+                {
+                    await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+                }
+            }
+        }
+
+        [Command("fmrestarttimer")]
+        [Alias("fmstarttimer")]
+        public async Task fmrestarttimerAsync()
+        {
+            var DiscordUser = Context.Message.Author;
+            if (FMBotAdminUtil.IsOwner(DiscordUser))
+            {
+                try
+                {
+                    if (_timer.IsTimerActive() == false)
+                    {
+                        _timer.Restart();
+                        await ReplyAsync("Timer restarted");
+                    }
+                    else
+                    {
+                        await ReplyAsync("The timer is already active!");
+                    }
+                }
+                catch (Exception)
+                {
+                    await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+                }
+            }
+        }
+
+        [Command("fmstoptimer")]
+        public async Task fmstoptimerAsync()
+        {
+            var DiscordUser = Context.Message.Author;
+            if (FMBotAdminUtil.IsOwner(DiscordUser))
+            {
+                try
+                {
+                    if (_timer.IsTimerActive() == true)
+                    {
+                        _timer.Stop();
+                        await ReplyAsync("Timer stopped");
+                    }
+                    else
+                    {
+                        await ReplyAsync("The timer has already stopped!");
+                    }
+                }
+                catch (Exception)
+                {
+                    await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+                }
+            }
+        }
+
+        [Command("fmtimerstatus")]
+        public async Task fmtimerstatusAsync()
+        {
+            var DiscordUser = Context.Message.Author;
+            if (FMBotAdminUtil.IsAdmin(DiscordUser))
+            {
+                try
+                {
+                    if (_timer.IsTimerActive() == true)
+                    {
+                        await ReplyAsync("Timer is active");
+                    }
+                    else
+                    {
+                        await ReplyAsync("Timer is inactive");
+                    }
+                }
+                catch (Exception)
+                {
+                    await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
                 }
             }
         }

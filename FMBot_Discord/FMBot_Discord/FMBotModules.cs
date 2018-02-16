@@ -152,6 +152,8 @@ namespace FMBot_Discord
 
             private const string LogSource = "Timer";
 
+            private bool timerEnabled = false;
+
             public TimerService(DiscordSocketClient client)
             {
                 var cfgjson = JsonCfg.GetJSONData();
@@ -273,6 +275,27 @@ namespace FMBot_Discord
                 null,
                 TimeSpan.FromSeconds(Convert.ToDouble(cfgjson.TimerInit)),  // 4) Time that message should fire after the timer is created
                 TimeSpan.FromMinutes(Convert.ToDouble(cfgjson.TimerRepeat))); // 5) Time after which message should repeat (use `Timeout.Infinite` for no repeat)
+
+                timerEnabled = true;
+            }
+
+            public void Stop() // 6) Example to make the timer stop running
+            {
+                if (IsTimerActive() == true)
+                {
+                    _timer.Change(Timeout.Infinite, Timeout.Infinite);
+                    timerEnabled = false;
+                }
+            }
+
+            public void Restart() // 7) Example to restart the timer
+            {
+                if (IsTimerActive() == false)
+                {
+                    var cfgjson = JsonCfg.GetJSONData();
+                    _timer.Change(TimeSpan.FromSeconds(Convert.ToDouble(cfgjson.TimerInit)), TimeSpan.FromMinutes(Convert.ToDouble(cfgjson.TimerRepeat)));
+                    timerEnabled = true;
+                }
             }
 
             private async void UseDefaultAvatar(DiscordSocketClient client)
@@ -285,9 +308,113 @@ namespace FMBot_Discord
                 fileStream.Close();
             }
 
+            public async void UseCustomAvatar(DiscordSocketClient client, string fmquery, string desc)
+            {
+                if (IsTimerActive() == true)
+                {
+                    Stop();
+                }
+
+                var cfgjson = await JsonCfg.GetJSONDataAsync();
+                var fmclient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+
+                try
+                {
+                    var albums = await fmclient.Album.SearchAsync(fmquery,1,2);
+                    LastAlbum currentAlbum = albums.Content.ElementAt(0);
+
+                    string nulltext = "";
+
+                    string ArtistName = string.IsNullOrWhiteSpace(currentAlbum.ArtistName) ? nulltext : currentAlbum.ArtistName;
+                    string AlbumName = string.IsNullOrWhiteSpace(currentAlbum.Name) ? nulltext : currentAlbum.Name;
+
+                    try
+                    {
+                        var AlbumInfo = await fmclient.Album.GetInfoAsync(ArtistName, AlbumName);
+                        var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
+                        var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
+                        string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
+
+                        try
+                        {
+                            trackString = ArtistName + " - " + AlbumName + Environment.NewLine + desc;
+                            Console.WriteLine("Changed avatar to: " + trackString);
+                        }
+                        catch (Exception)
+                        {
+                            try
+                            {
+                                trackString = desc;
+                                Console.WriteLine("Changed avatar to: " + trackString);
+                            }
+                            catch (Exception)
+                            {
+                                trackString = "Unable to get information for this album cover avatar.";
+                                Console.WriteLine("Unable to get information for this album cover avatar.");
+                            }
+                        }
+
+                        WebRequest request = WebRequest.Create(ThumbnailImage);
+                        WebResponse response = request.GetResponse();
+                        using (Stream output = File.Create(GlobalVars.BasePath + "newavatar.png"))
+                        using (Stream input = response.GetResponseStream())
+                        {
+                            input.CopyTo(output);
+                            if (File.Exists(GlobalVars.BasePath + "newavatar.png"))
+                            {
+                                File.SetAttributes(GlobalVars.BasePath + "newavatar.png", FileAttributes.Normal);
+                            }
+
+                            output.Close();
+                            input.Close();
+                        }
+
+                        if (File.Exists(GlobalVars.BasePath + "newavatar.png"))
+                        {
+                            var fileStream = new FileStream(GlobalVars.BasePath + "newavatar.png", FileMode.Open);
+                            await client.CurrentUser.ModifyAsync(u => u.Avatar = new Discord.Image(fileStream));
+                            fileStream.Close();
+                        }
+
+                        await Task.Delay(5000);
+
+                        try
+                        {
+                            ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
+                            ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.FeaturedChannel);
+
+                            SocketGuild guild = client.GetGuild(BroadcastServerID);
+                            SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
+
+                            var builder = new EmbedBuilder();
+                            var SelfUser = client.CurrentUser;
+                            builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
+                            builder.AddInlineField("Featured Album:", trackString);
+
+                            await channel.SendMessageAsync("", false, builder.Build());
+                        }
+                        catch (Exception)
+                        {
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+                catch (Exception)
+                {
+                    UseDefaultAvatar(client);
+                }
+            }
+
             public string GetTrackString()
             {
                 return trackString;
+            }
+
+            public bool IsTimerActive()
+            {
+                return timerEnabled;
             }
         }
     }
