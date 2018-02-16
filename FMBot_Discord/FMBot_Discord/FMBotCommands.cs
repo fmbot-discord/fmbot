@@ -1508,21 +1508,61 @@ namespace FMBot_Discord
             await ReplyAsync("Your Last.FM name has been set to '" + name + "' and your FMBot mode has been set to '" + LastFMMode + "'.");
         }
 
-        [Command("fmsetfriends"), Summary("Sets your friends' Last.FM names.")]
-        [Alias("fmfriendsset", "fmaddfriends", "fmfriendsadd")]
+        [Command("fmaddfriends"), Summary("Adds your friends' Last.FM names.")]
+        [Alias("fmfriendsset", "fmsetfriends", "fmfriendsadd")]
         public async Task fmfriendssetAsync([Summary("Friend names")] params string[] friends)
         {
             string SelfID = Context.Message.Author.Id.ToString();
 
-            int friendcount = DBase.AddFriendsEntry(SelfID, friends);
+            var cfgjson = await JsonCfg.GetJSONDataAsync();
+            var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
 
-            if (friendcount > 1 || friendcount < 1)
+            var friendList = new List<string>();
+            var friendNotFoundList = new List<string>();
+
+
+            foreach (var friend in friends)
             {
-                await ReplyAsync("Succesfully added " + friendcount + " friends.");
+                var user = await client.User.GetInfoAsync(friend);
+
+                if (user.Content != null)
+                {
+                    friendList.Add(user.Content.Name);
+                }
+                else
+                {
+                    friendNotFoundList.Add(friend);
+                }
             }
-            else
+
+            if (friendList.Any())
             {
-                await ReplyAsync("Succesfully added a friend.");
+                int friendcount = DBase.AddFriendsEntry(SelfID, friendList.ToArray());
+
+                if (friendcount > 1)
+                {
+                    await ReplyAsync("Succesfully added " + friendcount + " friends.");
+                }
+                else if(friendcount < 1)
+                {
+                    await ReplyAsync("Didn't add  " + friendcount + " friends. Maybe they are already on your friendlist.");
+                }
+                else
+                {
+                    await ReplyAsync("Succesfully added a friend.");
+                }
+            }
+
+            if (friendNotFoundList.Any())
+            {
+                if (friendNotFoundList.Count > 1)
+                {
+                    await ReplyAsync("Could not find " + friendNotFoundList.Count + " friends. Please ensure that you spelled their names correctly.");
+                }
+                else
+                {
+                    await ReplyAsync("Could not find 1 friend. Please ensure that you spelled the name correctly.");
+                }
             }
         }
 
@@ -1530,13 +1570,23 @@ namespace FMBot_Discord
         [Alias("fmfriendsremove")]
         public async Task fmfriendsremoveAsync([Summary("Friend names")] params string[] friends)
         {
+            if (!friends.Any())
+            {
+                await ReplyAsync("Please enter at least one friend to remove.");
+                return;
+            }
+
             string SelfID = Context.Message.Author.Id.ToString();
 
             int friendcount = DBase.RemoveFriendsEntry(SelfID, friends);
 
-            if (friendcount > 1 || friendcount < 1)
+            if (friendcount > 1)
             {
                 await ReplyAsync("Succesfully removed " + friendcount + " friends.");
+            }
+            else if(friendcount < 1)
+            {
+                await ReplyAsync("Couldn't remove " + friendcount + " friends. Please check if the user is on your friendslist.");
             }
             else
             {

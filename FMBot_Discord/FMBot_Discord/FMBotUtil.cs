@@ -355,16 +355,18 @@ namespace FMBot_Discord
                 }
 
                 string[] friends = File.ReadAllLines(GlobalVars.UsersFolder + id + "-friends.txt");
+                var friendsLower = friends.Select(s => s.ToLowerInvariant()).ToArray();
 
                 int listcount = friendlist.Count();
 
                 var list = new List<string>(friends);
-                
+
+
                 foreach (var friend in friendlist)
                 {
-                    if (friends.Contains(friend))
+                    if (friendsLower.Contains(friend.ToLower()))
                     {
-                        list.Remove(friend);
+                        list.RemoveAll(n => n.Equals(friend, StringComparison.OrdinalIgnoreCase));
                     }
                     else
                     {
