@@ -324,13 +324,13 @@ namespace FMBot_Discord
 
                 int listcount = friendlist.Count();
 
-                foreach (var friend in friends)
+                var list = new List<string>(friends);
+
+                foreach (var friend in friendlist)
                 {
                     if (!friends.Contains(friend))
                     {
-                        var list = new List<string>(friends);
                         list.Add(friend);
-                        friends = list.ToArray();
                     }
                     else
                     {
@@ -338,6 +338,9 @@ namespace FMBot_Discord
                         continue;
                     }
                 }
+
+                friends = list.ToArray();
+
 
                 File.WriteAllLines(GlobalVars.UsersFolder + id + "-friends.txt", friends);
                 File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);

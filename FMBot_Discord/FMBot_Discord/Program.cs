@@ -86,7 +86,7 @@ namespace FMBot_Discord
             await commands.AddModulesAsync(Assembly.GetEntryAssembly());
 
             client.MessageReceived += HandleCommand_MessageReceived;
-            client.MessageUpdated += HandleCommand_MessageEdited;
+            //client.MessageUpdated += HandleCommand_MessageEdited;
             client.CurrentUserUpdated += HandleCommand_CurrentUserUpdated;
         }
 
@@ -139,7 +139,8 @@ namespace FMBot_Discord
             // Create a number to track where the prefix ends and the command begins
             int argPos = 0;
             // Determine if the message is a command, based on if it starts with '!' or a mention prefix
-            if (!message.HasCharPrefix(Convert.ToChar(prefix), ref argPos)) return;
+            if (!message.HasCharPrefix(Convert.ToChar(prefix), ref argPos) || message.IsPinned) return;
+
 
             // Create a Command Context
             var context = new CommandContext(client, message);
