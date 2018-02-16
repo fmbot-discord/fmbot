@@ -247,7 +247,7 @@ namespace FMBot_Discord
         public async Task fmavataroverrideAsync(string albumname, string desc)
         {
             var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.IsOwner(DiscordUser))
+            if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
             {
                 try
                 {

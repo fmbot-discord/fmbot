@@ -252,8 +252,9 @@ namespace FMBot_Discord
                     return false;
                 }
 
-                Array.Resize(ref blacklist, blacklist.Length + 1);
-                blacklist[blacklist.Length - 1] = serverid;
+                var list = new List<string>(blacklist);
+                list.Add(serverid);
+                blacklist = list.ToArray();
 
                 File.WriteAllLines(GlobalVars.UsersFolder + id + "-blacklist.txt", blacklist);
                 File.SetAttributes(GlobalVars.UsersFolder + id + "-blacklist.txt", FileAttributes.Normal);
@@ -311,7 +312,7 @@ namespace FMBot_Discord
                 return File.Exists(GlobalVars.UsersFolder + id + "-friends.txt");
             }
 
-            public static int AddFriendsEntry(string id, string[] friendlist)
+            public static int AddFriendsEntry(string id, params string[] friendlist)
             {
                 if (!FriendsExists(id))
                 {
@@ -327,8 +328,9 @@ namespace FMBot_Discord
                 {
                     if (!friends.Contains(friend))
                     {
-                        Array.Resize(ref friends, friends.Length + 1);
-                        friends[friends.Length - 1] = friend;
+                        var list = new List<string>(friends);
+                        list.Add(friend);
+                        friends = list.ToArray();
                     }
                     else
                     {

@@ -421,74 +421,13 @@ namespace FMBot_Discord
                     string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? null : currentTrack.ArtistName;
                     string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? null : currentTrack.AlbumName;
 
-                    string videotitle = "";
-                    string videouploader = "";
-                    string videoduration = "";
-
                     try
                     {
                         string querystring = TrackName + " - " + ArtistName + " " + AlbumName;
                         var items = new VideoSearch();
                         var item = items.SearchQuery(querystring, 1).ElementAt(0);
 
-                        await Context.Channel.SendMessageAsync(item.Url);
-
-                        videotitle = item.Title;
-                        videouploader = item.Author;
-                        videoduration = item.Duration;
-
-                        EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                        eab.IconUrl = DiscordUser.GetAvatarUrl();
-                        if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
-                        {
-                            eab.Name = DiscordUser.Username;
-                        }
-                        else
-                        {
-                            eab.Name = DiscordUser.Nickname;
-                        }
-
-                        var builder = new EmbedBuilder();
-                        builder.WithAuthor(eab);
-                        string URI = "https://www.last.fm/user/" + LastFMName;
-                        builder.WithUrl(URI);
-                        if (FMBotAdminUtil.IsOwner(DiscordUser))
-                        {
-                            builder.WithTitle(LastFMName + ", FMBot Owner");
-                        }
-                        else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
-                        {
-                            builder.WithTitle(LastFMName + ", FMBot Super Admin");
-                        }
-                        else if (FMBotAdminUtil.IsAdmin(DiscordUser))
-                        {
-                            builder.WithTitle(LastFMName + ", FMBot Admin");
-                        }
-                        else
-                        {
-                            builder.WithTitle(LastFMName);
-                        }
-                        builder.WithDescription("Recently Played on YouTube");
-
-                        string nulltext = "[undefined]";
-
-                        string TrackName2 = string.IsNullOrWhiteSpace(TrackName) ? nulltext : TrackName;
-                        string ArtistName2 = string.IsNullOrWhiteSpace(ArtistName) ? nulltext : ArtistName;
-                        string AlbumName2 = string.IsNullOrWhiteSpace(AlbumName) ? nulltext : AlbumName;
-
-                        builder.AddField(TrackName2, ArtistName2 + " | " + AlbumName2);
-                        builder.AddField("Video: " + videotitle, "Uploaded by: " + videouploader + " | Duration: " + videoduration);
-
-                        EmbedFooterBuilder efb = new EmbedFooterBuilder();
-
-                        var userinfo = await client.User.GetInfoAsync(LastFMName);
-                        var playcount = userinfo.Content.Playcount;
-
-                        efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
-
-                        builder.WithFooter(efb);
-
-                        await Context.Channel.SendMessageAsync("", false, builder.Build());
+                        await ReplyAsync(item.Url);
                     }
                     catch (Exception)
                     {
@@ -525,10 +464,6 @@ namespace FMBot_Discord
                     string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? null : currentTrack.ArtistName;
                     string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? null : currentTrack.AlbumName;
 
-                    int trackpopularity = 0;
-                    bool trackexplicit = false;
-                    int trackduration = 0;
-
                     //Create the auth object
                     var auth = new ClientCredentialsAuth()
                     {
@@ -555,67 +490,7 @@ namespace FMBot_Discord
                         FullTrack track = item.Tracks.Items.FirstOrDefault();
                         SimpleArtist trackArtist = track.Artists.FirstOrDefault();
 
-                        await Context.Channel.SendMessageAsync(track.Uri);
-
-                        trackpopularity = track.Popularity;
-                        trackexplicit = track.Explicit;
-                        trackduration = track.DurationMs;
-
-                        EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                        eab.IconUrl = DiscordUser.GetAvatarUrl();
-                        if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
-                        {
-                            eab.Name = DiscordUser.Username;
-                        }
-                        else
-                        {
-                            eab.Name = DiscordUser.Nickname;
-                        }
-
-                        var builder = new EmbedBuilder();
-                        builder.WithAuthor(eab);
-                        string URI = "https://www.last.fm/user/" + LastFMName;
-                        builder.WithUrl(URI);
-                        if (FMBotAdminUtil.IsOwner(DiscordUser))
-                        {
-                            builder.WithTitle(LastFMName + ", FMBot Owner");
-                        }
-                        else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
-                        {
-                            builder.WithTitle(LastFMName + ", FMBot Super Admin");
-                        }
-                        else if (FMBotAdminUtil.IsAdmin(DiscordUser))
-                        {
-                            builder.WithTitle(LastFMName + ", FMBot Admin");
-                        }
-                        else
-                        {
-                            builder.WithTitle(LastFMName);
-                        }
-                        builder.WithDescription("Recently Played on Spotify");
-
-                        string nulltext = "[undefined]";
-
-                        string TrackName2 = string.IsNullOrWhiteSpace(TrackName) ? nulltext : TrackName;
-                        string ArtistName2 = string.IsNullOrWhiteSpace(ArtistName) ? nulltext : ArtistName;
-                        string AlbumName2 = string.IsNullOrWhiteSpace(AlbumName) ? nulltext : AlbumName;
-
-                        TimeSpan t = TimeSpan.FromMilliseconds(trackduration);
-                        string durationconv = string.Format("{1:D2}:{2:D2}", t.Minutes, t.Seconds);
-
-                        builder.AddField(TrackName2, ArtistName2 + " | " + AlbumName2);
-                        builder.AddField("Duration: " + durationconv, "Popularity: " + trackpopularity.ToString() + " | Explicit: " + trackexplicit.ToString());
-
-                        EmbedFooterBuilder efb = new EmbedFooterBuilder();
-
-                        var userinfo = await client.User.GetInfoAsync(LastFMName);
-                        var playcount = userinfo.Content.Playcount;
-
-                        efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
-
-                        builder.WithFooter(efb);
-
-                        await Context.Channel.SendMessageAsync("", false, builder.Build());
+                        await ReplyAsync("https://open.spotify.com/track/" + track.Id);
                     }
                     else
                     {
@@ -1634,12 +1509,12 @@ namespace FMBot_Discord
         }
 
         [Command("fmsetfriends"), Summary("Sets your friends' Last.FM names.")]
-        [Alias("fmfriendsset")]
+        [Alias("fmfriendsset", "fmaddfriends", "fmfriendsadd")]
         public async Task fmfriendssetAsync([Summary("Friend names")] params string[] friends)
         {
             string SelfID = Context.Message.Author.Id.ToString();
 
-            int friendcount = DBase.RemoveFriendsEntry(SelfID, friends);
+            int friendcount = DBase.AddFriendsEntry(SelfID, friends);
 
             if (friendcount > 1 || friendcount < 1)
             {
