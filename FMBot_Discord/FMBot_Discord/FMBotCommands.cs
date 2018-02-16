@@ -872,6 +872,8 @@ namespace FMBot_Discord
 
                             var builder = new EmbedBuilder();
                             builder.WithAuthor(eab);
+                            string URI = "https://www.last.fm/user/" + LastFMName;
+                            builder.WithUrl(URI);
 
                             if (FMBotAdminUtil.IsOwner(DiscordUser))
                             {
@@ -947,9 +949,9 @@ namespace FMBot_Discord
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                await ReplyAsync("Your friends could not be found. Please set your friends using fmsetfriends.");
+                await ReplyAsync("Your friends could not be found. Please set your friends using fmsetfriends. ex: " + e);
             }
         }
 
