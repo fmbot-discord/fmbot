@@ -10,7 +10,7 @@
 	"featuredchannel": "",
     "botowner": "",
     "timerinit": "15",
-    "timerrepeat": "120",
+    "timerrepeat": "60",
     "spotifykey": "",
     "spotifysecret": ""
 }
