@@ -14,7 +14,7 @@ namespace FMBot_Discord
             _service = service;
         }
 
-        [Command("fmblacklistadd"), Summary("Adds a user to a serverside blacklist")]
+        [Command("fmblacklistadd"), Summary("Adds a user to a serverside blacklist - Server Admins/Mods only")]
         public async Task fmblacklistaddAsync(SocketGuildUser user = null)
         {
             var DiscordUser = Context.Message.Author as SocketGuildUser;
@@ -68,7 +68,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmblacklistremove"), Summary("Removes a user from a serverside blacklist")]
+        [Command("fmblacklistremove"), Summary("Removes a user from a serverside blacklist - Server Admins/Mods only")]
         public async Task fmblacklistremoveAsync(SocketGuildUser user = null)
         {
             var DiscordUser = Context.Message.Author as SocketGuildUser;

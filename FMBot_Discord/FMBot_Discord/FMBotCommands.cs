@@ -31,7 +31,7 @@ namespace FMBot_Discord
             _timer = timer;
         }
 
-        [Command("fm")]
+        [Command("fm"), Summary("Displays what a user is listening to.")]
         public async Task fmAsync(IUser user = null)
         {
             try
@@ -398,7 +398,7 @@ namespace FMBot_Discord
         }
 
         [Command("fmyt")]
-        [Alias("fmyoutube")]
+        [Alias("fmyoutube"), Summary("Shares a link to a YouTube video based on what a user is listening to")]
         public async Task fmytAsync(IUser user = null)
         {
             var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
@@ -441,7 +441,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmspotify")]
+        [Command("fmspotify"), Summary("Shares a link to a Spotify track based on what a user is listening to")]
         public async Task fmspotifyAsync(IUser user = null)
         {
             var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
@@ -504,7 +504,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmchart")]
+        [Command("fmchart"), Summary("Generates a chart based on a user's parameters.")]
         public async Task fmchartAsync(string time = "weekly", string chartalbums = "9", string chartrows = "3", IUser user = null)
         {
             var loadingText = "Loading your FMBot chart...";
@@ -668,7 +668,7 @@ namespace FMBot_Discord
             await loadingmsg.DeleteAsync();
         }
 
-        [Command("fmartistchart")]
+        [Command("fmartistchart"), Summary("Generates an artist chart based on a user's parameters.")]
         public async Task fmartistchartAsync(string time = "weekly", string chartalbums = "9", string chartrows = "3", IUser user = null)
         {
             var loadingText = "Loading your FMBot artist chart...";
@@ -831,7 +831,7 @@ namespace FMBot_Discord
             await loadingmsg.DeleteAsync();
         }
 
-        [Command("fmfriends")]
+        [Command("fmfriends"), Summary("Displays a user's friends and what they are listening to.")]
         [Alias("fmrecentfriends", "fmfriendsrecent")]
         public async Task fmfriendsrecentAsync(IUser user = null)
         {
@@ -955,7 +955,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmrecent")]
+        [Command("fmrecent"), Summary("Displays a user's recent tracks.")]
         [Alias("fmrecenttracks")]
         public async Task fmrecentAsync(string list = "5", IUser user = null)
         {
@@ -1068,7 +1068,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmartists")]
+        [Command("fmartists"), Summary("Displays artists that a user listened to.")]
         public async Task fmartistsAsync(string list = "5", string time = "overall", IUser user = null)
         {
             try
@@ -1211,7 +1211,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmalbums")]
+        [Command("fmalbums"), Summary("Displays albums that a user listened to.")]
         public async Task fmalbumsAsync(string list = "5", string time = "overall", IUser user = null)
         {
             try
@@ -1355,7 +1355,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmstats")]
+        [Command("fmstats"), Summary("Displays user stats related to Last.FM and FMBot")]
         [Alias("fminfo")]
         public async Task fmstatsAsync(IUser user = null)
         {
@@ -1455,7 +1455,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmfeatured")]
+        [Command("fmfeatured"), Summary("Displays the featured avatar.")]
         [Alias("fmfeaturedavatar", "fmfeatureduser", "fmfeaturedalbum")]
         public async Task fmfeaturedAsync()
         {
@@ -1464,7 +1464,7 @@ namespace FMBot_Discord
                 var builder = new EmbedBuilder();
                 var SelfUser = Context.Client.CurrentUser;
                 builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
-                builder.AddInlineField("Featured Album:", _timer.GetTrackString());
+                builder.AddInlineField("Featured:", _timer.GetTrackString());
 
                 await Context.Channel.SendMessageAsync("", false, builder.Build());
             }
@@ -1474,7 +1474,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmset"), Summary("Sets your Last.FM name.")]
+        [Command("fmset"), Summary("Sets your Last.FM name and FM mode.")]
         [Alias("fmsetname", "fmsetmode")]
         public async Task fmsetAsync([Summary("Your Last.FM name")] string name, [Summary("The mode you want to use.")] string mode = "")
         {
@@ -1605,7 +1605,7 @@ namespace FMBot_Discord
             await ReplyAsync("Your FMBot settings have been successfully deleted.");
         }
 
-        [Command("fmhelp")]
+        [Command("fmhelp"), Summary("Displays this help box.")]
         public async Task fmhelpAsync()
         {
             var cfgjson = await JsonCfg.GetJSONDataAsync();

@@ -88,6 +88,8 @@ namespace FMBot_Discord
             client.MessageReceived += HandleCommand_MessageReceived;
             //client.MessageUpdated += HandleCommand_MessageEdited;
             client.CurrentUserUpdated += HandleCommand_CurrentUserUpdated;
+            //client.JoinedGuild += HandleCommand_UpdateGuild;
+            //client.LeftGuild += HandleCommand_UpdateGuild;
         }
 
         public async Task HandleCommand_MessageReceived(SocketMessage messageParam)
@@ -95,10 +97,12 @@ namespace FMBot_Discord
             await HandleCommand(messageParam);
         }
 
+        /*
         public async Task HandleCommand_MessageEdited(Cacheable<IMessage, ulong> before, SocketMessage after, ISocketMessageChannel channel)
         {
             await HandleCommand(after);
         }
+        */
 
         public Task HandleCommand_CurrentUserUpdated(SocketSelfUser before, SocketSelfUser after)
         {
@@ -130,6 +134,12 @@ namespace FMBot_Discord
             return Task.CompletedTask;
         }
 
+        /*
+        public async Task HandleCommand_UpdateGuild(IGuild guild)
+        {
+        }
+        */
+
         public async Task HandleCommand(SocketMessage messageParam)
         {
             // Don't process the command if it was a System Message
@@ -139,8 +149,7 @@ namespace FMBot_Discord
             // Create a number to track where the prefix ends and the command begins
             int argPos = 0;
             // Determine if the message is a command, based on if it starts with '!' or a mention prefix
-            if (!message.HasCharPrefix(Convert.ToChar(prefix), ref argPos)) return;
-
+            if (!message.HasCharPrefix(Convert.ToChar(prefix), ref argPos) || message.IsPinned) return;
 
             // Create a Command Context
             var context = new CommandContext(client, message);

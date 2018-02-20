@@ -22,7 +22,7 @@ namespace FMBot_Discord
             _timer = timer;
         }
 
-        [Command("announce"), Summary("Sends an announcement to the main server.")]
+        [Command("announce"), Summary("Sends an announcement to the main server. - Admin only")]
         [Alias("fmannounce", "fmnews", "news", "fmannouncement", "announcement")]
         public async Task announceAsync(string message, string ThumbnailURL = null)
         {
@@ -76,7 +76,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("dbcheck"), Summary("Checks if an entry is in the database.")]
+        [Command("dbcheck"), Summary("Checks if an entry is in the database. - Admin Only")]
         public async Task dbcheckAsync(IUser user = null)
         {
             var DiscordUser = Context.Message.Author;
@@ -96,7 +96,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmserverreboot")]
+        [Command("fmserverreboot"), Summary("Reboots the Vultr VPS server. - Owner only")]
         [Alias("fmreboot")]
         public async Task fmserverrebootAsync()
         {
@@ -139,7 +139,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmbotrestart")]
+        [Command("fmbotrestart"), Summary("Reboots the bot. - Super Admins only")]
         [Alias("fmrestart")]
         public async Task fmbotrestartAsync()
         {
@@ -152,7 +152,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmbotshutdown")]
+        [Command("fmbotshutdown"), Summary("Shuts down the bot. - Owner only")]
         [Alias("fmshutdown")]
         public async Task fmbotshutdownAsync()
         {
@@ -165,7 +165,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmservershutdown")]
+        [Command("fmservershutdown"), Summary("Shuts down the Vultr server. - Owner only")]
         [Alias("fmhardshutdown", "fmhalt", "fmserverhalt")]
         public async Task fmservershutdownAsync()
         {
@@ -208,7 +208,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmsetperms")]
+        [Command("fmsetperms"), Summary("Gives permissions to other users. - Owner only")]
         public async Task fmsetpermsAsync(IUser user = null, int permtype = 0)
         {
             var DiscordUser = Context.Message.Author;
@@ -242,9 +242,8 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmavataroverride")]
-        [Alias("fmavatar", "fmavatarset", "fmevent", "fmeventstart")]
-        public async Task fmavataroverrideAsync(string albumname, string desc)
+        [Command("fmalbumoverride"), Summary("Changes the avatar to be an album. - Super Admins only")]
+        public async Task fmalbumoverrideAsync(string albumname, string desc, int ievent = 0)
         {
             var DiscordUser = Context.Message.Author;
             if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
@@ -252,7 +251,17 @@ namespace FMBot_Discord
                 try
                 {
                     DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                    _timer.UseCustomAvatar(client, albumname, desc);
+
+                    if (ievent == 1)
+                    {
+                        _timer.UseCustomAvatar(client, albumname, desc, false, true);
+                        await ReplyAsync("Set avatar to '" + albumname + "' with description '" + desc + "'. This is an event and it cannot be stopped the without the Owner's assistance. To stop an event, please contact the owner of the bot or specify a different avatar without the event parameter.");
+                    }
+                    else
+                    {
+                        _timer.UseCustomAvatar(client, albumname, desc, false, false);
+                        await ReplyAsync("Set avatar to '" + albumname + "' with description '" + desc + "'. This is not an event.");
+                    }
                 }
                 catch (Exception)
                 {
@@ -261,12 +270,40 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmrestarttimer")]
-        [Alias("fmstarttimer")]
+        [Command("fmartistoverride"), Summary("Changes the avatar to be an artist. - Super Admins only")]
+        public async Task fmartistoverrideAsync(string artistname, string desc, int ievent = 0)
+        {
+            var DiscordUser = Context.Message.Author;
+            if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
+            {
+                try
+                {
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+
+                    if (ievent == 1)
+                    {
+                        _timer.UseCustomAvatar(client, artistname, desc, true, true);
+                        await ReplyAsync("Set avatar to '" + artistname + "' with description '" + desc + "'. This is an event and it cannot be stopped the without the Owner's assistance. To stop an event, please contact the owner of the bot or specify a different avatar without the event parameter.");
+                    }
+                    else
+                    {
+                        _timer.UseCustomAvatar(client, artistname, desc, true, false);
+                        await ReplyAsync("Set avatar to '" + artistname + "' with description '" + desc + "'. This is not an event.");
+                    }
+                }
+                catch (Exception)
+                {
+                    await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+                }
+            }
+        }
+
+        [Command("fmrestarttimer"), Summary("Restarts the internal bot avatar timer. - Super Admins only")]
+        [Alias("fmstarttimer", "fmtimerstart")]
         public async Task fmrestarttimerAsync()
         {
             var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.IsOwner(DiscordUser))
+            if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
             {
                 try
                 {
@@ -287,7 +324,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmstoptimer")]
+        [Command("fmstoptimer"), Summary("Stops the internal bot avatar timer. - Owner only")]
         public async Task fmstoptimerAsync()
         {
             var DiscordUser = Context.Message.Author;
@@ -312,7 +349,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmtimerstatus")]
+        [Command("fmtimerstatus"), Summary("Checks the status of the timer. - Admin only")]
         public async Task fmtimerstatusAsync()
         {
             var DiscordUser = Context.Message.Author;
