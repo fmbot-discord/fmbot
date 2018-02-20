@@ -1613,15 +1613,6 @@ namespace FMBot_Discord
             var SelfName = Context.Client.CurrentUser;
             string prefix = cfgjson.CommandPrefix;
 
-            var DiscordUser = Context.Message.Author;
-
-            EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-            eab.IconUrl = SelfName.GetAvatarUrl();
-            eab.Name = SelfName.Username;
-
-            var builder = new EmbedBuilder();
-            builder.WithAuthor(eab);
-
             foreach (var module in _service.Modules)
             {
                 string description = null;
@@ -1643,20 +1634,10 @@ namespace FMBot_Discord
 
                 if (!string.IsNullOrWhiteSpace(description))
                 {
-                    builder.AddField(x =>
-                    {
-                        x.Name = module.Name;
-                        x.Value = description;
-                        x.IsInline = false;
-                    });
+                    await Context.Channel.SendMessageAsync(module.Name + "\n" + description);
                 }
             }
-
-            builder.AddField("FMBot Modes for the fmset command:", "embedmini\nembedfull\ntextfull\ntextmini");
-
-            builder.AddField("FMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:", "weekly\nmonthly\nyearly\noverall");
-
-            await ReplyAsync("", false, builder.Build());
+            await Context.Channel.SendMessageAsync("FMBot Modes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nmonthly\nyearly\noverall");
         }
 
         [Command("fminvite"), Summary("Invites the bot to a server")]
