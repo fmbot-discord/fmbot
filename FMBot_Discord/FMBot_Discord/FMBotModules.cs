@@ -171,7 +171,7 @@ namespace FMBot_Discord
                             try
                             {
                                 Random random = new Random();
-                                int randavmode = random.Next(1, 5);
+                                int randavmode = random.Next(1, 7);
 
                                 try
                                 {
@@ -404,6 +404,22 @@ namespace FMBot_Discord
 
                                         ChangeToNewAvatar(client, cfgjson, ThumbnailImage);
                                     }
+                                    else if (randavmode == 6)
+                                    {
+                                        try
+                                        {
+                                            string randChartImage = GetRandFMChart();
+                                            ChangeToNewAvatar(client, cfgjson, randChartImage);
+                                        }
+                                        catch (Exception)
+                                        {
+                                            UseDefaultAvatar(client);
+                                        }
+                                    }
+                                    else if (randavmode == 7)
+                                    {
+                                        UseDefaultAvatar(client);
+                                    }
                                 }
                                 catch (Exception)
                                 {
@@ -494,8 +510,8 @@ namespace FMBot_Discord
 
             private async void UseDefaultAvatar(DiscordSocketClient client)
             {
-                trackString = "Unable to get information for this avatar.";
-                Console.WriteLine("Unable to get information for this avatar.");
+                trackString = "FMBot Default";
+                Console.WriteLine("FMBot Default");
                 var fileStream = new FileStream(GlobalVars.BasePath + "avatar.png", FileMode.Open);
                 var image = new Discord.Image(fileStream);
                 await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
