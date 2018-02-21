@@ -110,6 +110,14 @@ namespace FMBot_Discord
 
                 return "NULL";
             }
+            
+            public static string GetRandFMChart()
+            {
+                Random rand = new Random();
+                List<string> files = Directory.GetFiles(GlobalVars.UsersFolder).Where(F => F.ToLower().EndsWith(".jpg")).ToList();
+                string randomFile = files[rand.Next(0, files.Count)];
+                return randomFile;
+            }
 
             public static int GetModeIntForID(string id)
             {
