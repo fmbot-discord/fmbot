@@ -152,62 +152,6 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmbotshutdown"), Summary("Shuts down the bot. - Owner only")]
-        [Alias("fmshutdown")]
-        public async Task fmbotshutdownAsync()
-        {
-            var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.IsOwner(DiscordUser))
-            {
-                await ReplyAsync("Shutting down bot...");
-                await (Context.Client as DiscordSocketClient).SetStatusAsync(UserStatus.Invisible);
-                Environment.Exit(0);
-            }
-        }
-
-        [Command("fmservershutdown"), Summary("Shuts down the Vultr server. - Owner only")]
-        [Alias("fmhardshutdown", "fmhalt", "fmserverhalt")]
-        public async Task fmservershutdownAsync()
-        {
-            var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.IsOwner(DiscordUser))
-            {
-                var cfgjson = await JsonCfg.GetJSONDataAsync();
-
-                string Data = "SUBID=" + cfgjson.VultrSubID;
-                string Reponse = "";
-                StreamWriter Sw = null;
-                StreamReader Sr = null;
-                try
-                {
-                    await ReplyAsync("Shutting down server...");
-                    await (Context.Client as DiscordSocketClient).SetStatusAsync(UserStatus.Invisible);
-                    HttpWebRequest Req = (HttpWebRequest)WebRequest.Create("https://api.vultr.com/v1/server/halt");
-                    Req.Method = "POST";
-                    Req.ContentType = "application/x-www-form-urlencoded";
-                    Req.Headers.Add("API-Key: " + cfgjson.VultrKey);
-                    using (var sw = new StreamWriter(Req.GetRequestStream()))
-                    {
-                        sw.Write(Data);
-                    }
-                    Sr = new
-                    StreamReader(((HttpWebResponse)Req.GetResponse()).GetResponseStream());
-                    Reponse = Sr.ReadToEnd();
-                    Sr.Close();
-                }
-                catch (Exception ex)
-                {
-                    if (Sw != null)
-                        Sw.Close();
-                    if (Sr != null)
-                        Sr.Close();
-
-                    await ReplyAsync("Error rebooting server. Look in bot console.");
-                    Console.WriteLine("Vultr API Error: " + ex.Message);
-                }
-            }
-        }
-
         [Command("fmsetperms"), Summary("Gives permissions to other users. - Owner only")]
         public async Task fmsetpermsAsync(IUser user = null, int permtype = 0)
         {
