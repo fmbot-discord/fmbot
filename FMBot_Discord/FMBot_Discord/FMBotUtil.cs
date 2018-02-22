@@ -48,10 +48,10 @@ namespace FMBot_Discord
                     File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
                     File.Delete(GlobalVars.UsersFolder + id + "-friends.txt");
                 }
-                if (File.Exists(GlobalVars.UsersFolder + id + "-chart.jpg"))
+                if (File.Exists(GlobalVars.UsersFolder + id + "-chart.png"))
                 {
-                    File.SetAttributes(GlobalVars.UsersFolder + id + "-chart.jpg", FileAttributes.Normal);
-                    File.Delete(GlobalVars.UsersFolder + id + "-chart.jpg");
+                    File.SetAttributes(GlobalVars.UsersFolder + id + "-chart.png", FileAttributes.Normal);
+                    File.Delete(GlobalVars.UsersFolder + id + "-chart.png");
                 }
             }
 
@@ -111,12 +111,18 @@ namespace FMBot_Discord
                 return "NULL";
             }
             
-            public static string GetRandFMChart()
+            public static string GetFMChartForID(string id)
             {
-                Random rand = new Random();
-                List<string> files = Directory.GetFiles(GlobalVars.UsersFolder).Where(F => F.ToLower().EndsWith(".jpg")).ToList();
-                string randomFile = files[rand.Next(0, files.Count)];
-                return randomFile;
+                string filename = GlobalVars.UsersFolder + id + "-chart.png";
+
+                if (File.Exists(filename))
+                {
+                    return filename;
+                }
+                else
+                {
+                    return "NULL";
+                }
             }
 
             public static int GetModeIntForID(string id)

@@ -408,8 +408,23 @@ namespace FMBot_Discord
                                     {
                                         try
                                         {
-                                            string randChartImage = DBase.GetRandFMChart();
-                                            ChangeToNewAvatar(client, cfgjson, randChartImage);
+                                            ulong DiscordID = DBase.GetIDForName(LastFMName);
+                                            string randChartImage = DBase.GetFMChartForID(DiscordID.ToString());
+
+                                            if (randChartImage.Equals("NULL"))
+                                            {
+                                                UseDefaultAvatar(client);
+                                            }
+                                            else
+                                            {
+                                                SocketUser FeaturedUser = client.GetUser(DiscordID);
+                                                trackString = FeaturedUser.Username + " (" + LastFMName + ")'s chart.";
+                                                Console.WriteLine("Changed avatar to: "  + trackString);
+                                                var fileStream = new FileStream(randChartImage, FileMode.Open);
+                                                var image = new Discord.Image(fileStream);
+                                                await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
+                                                fileStream.Close();
+                                            }
                                         }
                                         catch (Exception)
                                         {
@@ -510,8 +525,8 @@ namespace FMBot_Discord
 
             private async void UseDefaultAvatar(DiscordSocketClient client)
             {
-                trackString = "FMBot Default";
-                Console.WriteLine("FMBot Default");
+                trackString = "FMBot Default Avatar";
+                Console.WriteLine("Changed avatar to: FMBot Default Avatar");
                 var fileStream = new FileStream(GlobalVars.BasePath + "avatar.png", FileMode.Open);
                 var image = new Discord.Image(fileStream);
                 await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
