@@ -408,7 +408,7 @@ namespace FMBot_Discord
                                     {
                                         try
                                         {
-                                            string randChartImage = GetRandFMChart();
+                                            string randChartImage = DBase.GetRandFMChart();
                                             ChangeToNewAvatar(client, cfgjson, randChartImage);
                                         }
                                         catch (Exception)
