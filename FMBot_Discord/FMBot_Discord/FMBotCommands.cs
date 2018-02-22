@@ -598,8 +598,8 @@ namespace FMBot_Discord
 
                         Bitmap stitchedImage = GlobalVars.Combine(BitmapList, true);
 
-                        stitchedImage.Save(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
-                        await Context.Channel.SendFileAsync(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.jpg");
+                        stitchedImage.Save(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png", System.Drawing.Imaging.ImageFormat.Png);
+                        await Context.Channel.SendFileAsync(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png");
                     }
 
                     EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
@@ -761,8 +761,8 @@ namespace FMBot_Discord
 
                         Bitmap stitchedImage = GlobalVars.Combine(BitmapList, true);
 
-                        stitchedImage.Save(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
-                        await Context.Channel.SendFileAsync(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.jpg");
+                        stitchedImage.Save(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png", System.Drawing.Imaging.ImageFormat.Png);
+                        await Context.Channel.SendFileAsync(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png");
                     }
 
                     EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
@@ -1670,6 +1670,12 @@ namespace FMBot_Discord
         public async Task serverAsync()
         {
             await ReplyAsync("Join the Discord server! https://discord.gg/srmpCaa");
+        }
+
+        [Command("fembot"), Summary("OwO What's this?")]
+        public async Task fembotAsync()
+        {
+            await ReplyAsync("👀");
         }
     }
 }
