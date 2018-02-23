@@ -172,6 +172,38 @@ namespace FMBot_Discord
                             {
                                 Random random = new Random();
                                 int randavmode = random.Next(1, 7);
+                                string randmodestring = "";
+
+                                if (randavmode == 1)
+                                {
+                                    randmodestring = "1 - Recent Listens";
+                                }
+                                else if (randavmode == 2)
+                                {
+                                    randmodestring = "2 - Weekly Artists";
+                                }
+                                else if (randavmode == 3)
+                                {
+                                    randmodestring = "3 - Overall Artists";
+                                }
+                                else if (randavmode == 4)
+                                {
+                                    randmodestring = "4 - Weekly Albums";
+                                }
+                                else if (randavmode == 5)
+                                {
+                                    randmodestring = "5 - Overall Albums";
+                                }
+                                else if (randavmode == 6)
+                                {
+                                    randmodestring = "6 - Chart";
+                                }
+                                else if (randavmode == 7)
+                                {
+                                    randmodestring = "7 - Default";
+                                }
+
+                                Console.WriteLine("Changed avatar to mode " + randmodestring);
 
                                 try
                                 {
@@ -523,7 +555,7 @@ namespace FMBot_Discord
                 }
             }
 
-            private async void UseDefaultAvatar(DiscordSocketClient client)
+            public async void UseDefaultAvatar(DiscordSocketClient client)
             {
                 trackString = "FMBot Default Avatar";
                 Console.WriteLine("Changed avatar to: FMBot Default Avatar");

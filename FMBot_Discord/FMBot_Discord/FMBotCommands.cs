@@ -950,9 +950,9 @@ namespace FMBot_Discord
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                await ReplyAsync("Your friends could not be found. Please set your friends using fmsetfriends. ex: " + e);
+                await ReplyAsync("Your friends could not be found. Please set your friends using fmsetfriends.");
             }
         }
 
@@ -1673,9 +1673,10 @@ namespace FMBot_Discord
         }
 
         [Command("fembot"), Summary("OwO What's this?")]
+        [Alias("femboy")]
         public async Task fembotAsync()
         {
-            await ReplyAsync("👀");
+            await ReplyAsync("👀\n👅");
         }
     }
 }

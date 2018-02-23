@@ -242,6 +242,25 @@ namespace FMBot_Discord
             }
         }
 
+        [Command("fmresetavatar"), Summary("Changes the avatar to be the default. - Super Admins only")]
+        public async Task fmresetavatar()
+        {
+            var DiscordUser = Context.Message.Author;
+            if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
+            {
+                try
+                {
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                    _timer.UseDefaultAvatar(client);
+                    await ReplyAsync("Set avatar to 'FMBot Default'");
+                }
+                catch (Exception)
+                {
+                    await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+                }
+            }
+        }
+
         [Command("fmrestarttimer"), Summary("Restarts the internal bot avatar timer. - Super Admins only")]
         [Alias("fmstarttimer", "fmtimerstart")]
         public async Task fmrestarttimerAsync()
