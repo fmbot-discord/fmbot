@@ -12,5 +12,6 @@
     "timerinit": "15",
     "timerrepeat": "60",
     "spotifykey": "",
-    "spotifysecret": ""
+    "spotifysecret": "",
+    "exceptionchannel": ""
 }

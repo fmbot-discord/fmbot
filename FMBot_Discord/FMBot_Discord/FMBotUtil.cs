@@ -1,5 +1,6 @@
 ﻿
 using Discord;
+using Discord.WebSocket;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -481,6 +482,9 @@ namespace FMBot_Discord
 
                 [JsonProperty("spotifysecret")]
                 public string SpotifySecret { get; private set; }
+
+                [JsonProperty("exceptionchannel")]
+                public string ExceptionChannel { get; private set; }
             }
 
             public static async Task<ConfigJson> GetJSONDataAsync()
@@ -511,6 +515,32 @@ namespace FMBot_Discord
                 // to our client's configuration
                 var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
                 return cfgjson;
+            }
+        }
+
+        public class ExceptionReporter
+        {
+            public static async void ReportException(DiscordSocketClient client, Exception e)
+            {
+                var cfgjson = await JsonCfg.GetJSONDataAsync();
+
+                try
+                {
+                    ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
+                    ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.ExceptionChannel);
+
+                    SocketGuild guild = client.GetGuild(BroadcastServerID);
+                    SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
+
+                    var builder = new EmbedBuilder();
+                    builder.AddInlineField("Exception:", e.Message + "\nSource:\n" + e.Source + "\nStack Trace:\n" + e.StackTrace);
+
+                    await channel.SendMessageAsync("", false, builder.Build());
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
             }
         }
 

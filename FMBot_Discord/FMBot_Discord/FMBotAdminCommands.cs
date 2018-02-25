@@ -67,8 +67,10 @@ namespace FMBot_Discord
                             builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
                         }
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
+                        DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                        ExceptionReporter.ReportException(client, e);
                     }
 
                     builder.AddField("Announcement", message);
@@ -76,8 +78,10 @@ namespace FMBot_Discord
                     await channel.SendMessageAsync("", false, builder.Build());
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(client, e);
                 await ReplyAsync("The announcement channel has not been set.");
             }
         }
@@ -138,6 +142,9 @@ namespace FMBot_Discord
                         Sw.Close();
                     if (Sr != null)
                         Sr.Close();
+
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                    ExceptionReporter.ReportException(client, ex);
 
                     await ReplyAsync("Error rebooting server. Look in bot console.");
                     Console.WriteLine("Vultr API Error: " + ex.Message);
@@ -213,8 +220,10 @@ namespace FMBot_Discord
                         await ReplyAsync("Set avatar to '" + albumname + "' with description '" + desc + "'. This is not an event.");
                     }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                    ExceptionReporter.ReportException(client, e);
                     await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
                 }
             }
@@ -241,8 +250,10 @@ namespace FMBot_Discord
                         await ReplyAsync("Set avatar to '" + artistname + "' with description '" + desc + "'. This is not an event.");
                     }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                    ExceptionReporter.ReportException(client, e);
                     await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
                 }
             }
@@ -260,8 +271,10 @@ namespace FMBot_Discord
                     _timer.UseDefaultAvatar(client);
                     await ReplyAsync("Set avatar to 'FMBot Default'");
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                    ExceptionReporter.ReportException(client, e);
                     await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
                 }
             }
@@ -276,18 +289,28 @@ namespace FMBot_Discord
             {
                 try
                 {
-                    if (_timer.IsTimerActive() == false)
+                    if (!FMBotAdminUtil.IsOwner(DiscordUser))
+                    {
+                        if (_timer.IsTimerActive() == false)
+                        {
+                            _timer.Restart();
+                            await ReplyAsync("Timer restarted");
+                        }
+                        else
+                        {
+                            await ReplyAsync("The timer is already active!");
+                        }
+                    }
+                    else
                     {
                         _timer.Restart();
                         await ReplyAsync("Timer restarted");
                     }
-                    else
-                    {
-                        await ReplyAsync("The timer is already active!");
-                    }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                    ExceptionReporter.ReportException(client, e);
                     await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
                 }
             }
@@ -301,18 +324,28 @@ namespace FMBot_Discord
             {
                 try
                 {
-                    if (_timer.IsTimerActive() == true)
+                    if (!FMBotAdminUtil.IsOwner(DiscordUser))
+                    {
+                        if (_timer.IsTimerActive() == true)
+                        {
+                            _timer.Stop();
+                            await ReplyAsync("Timer stopped");
+                        }
+                        else
+                        {
+                            await ReplyAsync("The timer has already stopped!");
+                        }
+                    }
+                    else
                     {
                         _timer.Stop();
                         await ReplyAsync("Timer stopped");
                     }
-                    else
-                    {
-                        await ReplyAsync("The timer has already stopped!");
-                    }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                    ExceptionReporter.ReportException(client, e);
                     await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
                 }
             }
@@ -335,8 +368,10 @@ namespace FMBot_Discord
                         await ReplyAsync("Timer is inactive");
                     }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                    ExceptionReporter.ReportException(client, e);
                     await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
                 }
             }

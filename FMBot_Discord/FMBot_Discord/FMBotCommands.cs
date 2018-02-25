@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Objects;
@@ -108,8 +109,10 @@ namespace FMBot_Discord
                                     builder.WithThumbnailUrl(ThumbnailImage);
                                 }
                             }
-                            catch (Exception)
+                            catch (Exception e)
                             {
+                                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                                ExceptionReporter.ReportException(disclient, e);
                             }
 
                             //builder.AddInlineField("Recent Track", TrackName);
@@ -187,8 +190,10 @@ namespace FMBot_Discord
                                         builder.WithThumbnailUrl(ThumbnailImage);
                                     }
                                 }
-                                catch (Exception)
+                                catch (Exception e)
                                 {
+                                    DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                                    ExceptionReporter.ReportException(disclient, e);
                                 }
 
                                 //builder.AddInlineField("Recent Track", TrackName);
@@ -265,8 +270,10 @@ namespace FMBot_Discord
                                         builder.WithThumbnailUrl(ThumbnailImage);
                                     }
                                 }
-                                catch (Exception)
+                                catch (Exception e)
                                 {
+                                    DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                                    ExceptionReporter.ReportException(disclient, e);
                                 }
 
                                 //builder.AddInlineField("Recent Track", TrackName);
@@ -386,14 +393,18 @@ namespace FMBot_Discord
                             }
                         }
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
+                        DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                        ExceptionReporter.ReportException(disclient, e);
                         await ReplyAsync("You have no scrobbles on your Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then use .fm again!");
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(disclient, e);
                 await ReplyAsync("Your Last.FM name cannot be found. Please use the fmset command.");
             }
         }
@@ -430,13 +441,17 @@ namespace FMBot_Discord
 
                         await ReplyAsync(item.Url);
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
+                        DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                        ExceptionReporter.ReportException(disclient, e);
                         await ReplyAsync("No results have been found for this track.");
                     }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                    ExceptionReporter.ReportException(disclient, e);
                     await ReplyAsync("You have no scrobbles on your Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then use .fmyt again!");
                 }
             }
@@ -579,15 +594,20 @@ namespace FMBot_Discord
                                 Bitmap cover = new Bitmap(responseStream);
                                 images.Add(cover);
                             }
-                            catch (Exception)
+                            catch (Exception e)
                             {
+                                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                                ExceptionReporter.ReportException(disclient, e);
+
                                 Bitmap cover = new Bitmap(GlobalVars.BasePath + "unknown.png");
                                 images.Add(cover);
                             }
                         }
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
+                        DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                        ExceptionReporter.ReportException(disclient, e);
                     }
                     finally
                     {
@@ -667,8 +687,11 @@ namespace FMBot_Discord
                     await Context.Channel.SendMessageAsync("", false, builder.Build());
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(disclient, e);
+
                 await ReplyAsync("Error: Cannot generate chart. You may not have scrobbled anything this time period or your Last.FM name cannot be found.");
             }
 
@@ -748,15 +771,20 @@ namespace FMBot_Discord
                                 Bitmap cover = new Bitmap(responseStream);
                                 images.Add(cover);
                             }
-                            catch (Exception)
+                            catch (Exception e)
                             {
+                                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                                ExceptionReporter.ReportException(disclient, e);
+
                                 Bitmap cover = new Bitmap(GlobalVars.BasePath + "unknown.png");
                                 images.Add(cover);
                             }
                         }
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
+                        DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                        ExceptionReporter.ReportException(disclient, e);
                     }
                     finally
                     {
@@ -836,8 +864,11 @@ namespace FMBot_Discord
                     await Context.Channel.SendMessageAsync("", false, builder.Build());
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(disclient, e);
+
                 await ReplyAsync("Error: Cannot generate chart. You may not have scrobbled anything this time period or your Last.FM name cannot be found.");
             }
 
@@ -941,9 +972,10 @@ namespace FMBot_Discord
                                     }
                                 }
                             }
-                            catch (Exception)
+                            catch (Exception e)
                             {
-
+                                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                                ExceptionReporter.ReportException(disclient, e);
                             }
 
                             if (LastFMFriends.Count() <= 8)
@@ -955,15 +987,21 @@ namespace FMBot_Discord
 
                             await Context.Channel.SendMessageAsync("", false, builder.Build());
                         }
-                        catch (Exception)
+                        catch (Exception e)
                         {
+                            DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                            ExceptionReporter.ReportException(disclient, e);
+
                             await ReplyAsync("Your friends have no scrobbles on their Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then use fmrecent again!");
                         }
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(disclient, e);
+
                 await ReplyAsync("Your friends could not be found. Please set your friends using fmsetfriends.");
             }
         }
@@ -1056,8 +1094,10 @@ namespace FMBot_Discord
                                     }
                                 }
                             }
-                            catch (Exception)
+                            catch (Exception e)
                             {
+                                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                                ExceptionReporter.ReportException(disclient, e);
                             }
 
                             int correctnum = (i + 1);
@@ -1075,14 +1115,20 @@ namespace FMBot_Discord
 
                         await Context.Channel.SendMessageAsync("", false, builder.Build());
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
+                        DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                        ExceptionReporter.ReportException(disclient, e);
+
                         await ReplyAsync("You have no scrobbles on your Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then use .fmrecent again!");
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(disclient, e);
+
                 await ReplyAsync("Your Last.FM name cannot be found. Please use the fmset command.");
             }
         }
@@ -1205,8 +1251,10 @@ namespace FMBot_Discord
                                     }
                                 }
                             }
-                            catch (Exception)
+                            catch (Exception e)
                             {
+                                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                                ExceptionReporter.ReportException(disclient, e);
                             }
 
                             int correctnum = (i + 1);
@@ -1224,14 +1272,20 @@ namespace FMBot_Discord
 
                         await Context.Channel.SendMessageAsync("", false, builder.Build());
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
+                        DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                        ExceptionReporter.ReportException(disclient, e);
+
                         await ReplyAsync("You have no scrobbles on your Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then use .fmartists again!");
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(disclient, e);
+
                 await ReplyAsync("Your Last.FM name cannot be found. Please use the fmset command.");
             }
         }
@@ -1355,8 +1409,10 @@ namespace FMBot_Discord
                                     }
                                 }
                             }
-                            catch (Exception)
+                            catch (Exception e)
                             {
+                                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                                ExceptionReporter.ReportException(disclient, e);
                             }
 
                             int correctnum = (i + 1);
@@ -1374,14 +1430,20 @@ namespace FMBot_Discord
 
                         await Context.Channel.SendMessageAsync("", false, builder.Build());
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
+                        DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                        ExceptionReporter.ReportException(disclient, e);
+
                         await ReplyAsync("You have no scrobbles on your Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then use .fmalbums again!");
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(disclient, e);
+
                 await ReplyAsync("Your Last.FM name cannot be found. Please use the fmset command.");
             }
         }
@@ -1450,8 +1512,10 @@ namespace FMBot_Discord
                             builder.WithThumbnailUrl(ThumbnailImage);
                         }
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
+                        DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                        ExceptionReporter.ReportException(disclient, e);
                     }
 
                     var playcount = userinfo.Content.Playcount;
@@ -1480,8 +1544,11 @@ namespace FMBot_Discord
                     await Context.Channel.SendMessageAsync("", false, builder.Build());
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(disclient, e);
+
                 await ReplyAsync("Your Last.FM name cannot be found. Please use the fmset command.");
             }
         }
@@ -1499,8 +1566,11 @@ namespace FMBot_Discord
 
                 await Context.Channel.SendMessageAsync("", false, builder.Build());
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(disclient, e);
+
                 await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
             }
         }

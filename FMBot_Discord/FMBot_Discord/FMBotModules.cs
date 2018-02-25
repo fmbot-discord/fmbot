@@ -244,8 +244,10 @@ namespace FMBot_Discord
                                                     trackString = ArtistName + " - " + AlbumName;
                                                     Console.WriteLine("Changed avatar to: " + trackString);
                                                 }
-                                                catch (Exception)
+                                                catch (Exception e)
                                                 {
+                                                    ExceptionReporter.ReportException(client, e);
+
                                                     trackString = "Unable to get information for this album cover avatar.";
                                                     Console.WriteLine("Unable to get information for this album cover avatar.");
                                                 }
@@ -289,8 +291,10 @@ namespace FMBot_Discord
                                                     trackString = ArtistName;
                                                     Console.WriteLine("Changed avatar to: " + trackString);
                                                 }
-                                                catch (Exception)
+                                                catch (Exception e)
                                                 {
+                                                    ExceptionReporter.ReportException(client, e);
+
                                                     trackString = "Unable to get information for this artist avatar.";
                                                     Console.WriteLine("Unable to get information for this artist avatar.");
                                                 }
@@ -334,8 +338,10 @@ namespace FMBot_Discord
                                                     trackString = ArtistName;
                                                     Console.WriteLine("Changed avatar to: " + trackString);
                                                 }
-                                                catch (Exception)
+                                                catch (Exception e)
                                                 {
+                                                    ExceptionReporter.ReportException(client, e);
+
                                                     trackString = "Unable to get information for this artist avatar.";
                                                     Console.WriteLine("Unable to get information for this artist avatar.");
                                                 }
@@ -380,8 +386,10 @@ namespace FMBot_Discord
                                                     trackString = ArtistName + " - " + AlbumName;
                                                     Console.WriteLine("Changed avatar to: " + trackString);
                                                 }
-                                                catch (Exception)
+                                                catch (Exception e)
                                                 {
+                                                    ExceptionReporter.ReportException(client, e);
+
                                                     trackString = "Unable to get information for this album cover avatar.";
                                                     Console.WriteLine("Unable to get information for this album cover avatar.");
                                                 }
@@ -426,8 +434,10 @@ namespace FMBot_Discord
                                                     trackString = ArtistName + " - " + AlbumName;
                                                     Console.WriteLine("Changed avatar to: " + trackString);
                                                 }
-                                                catch (Exception)
+                                                catch (Exception e)
                                                 {
+                                                    ExceptionReporter.ReportException(client, e);
+
                                                     trackString = "Unable to get information for this album cover avatar.";
                                                     Console.WriteLine("Unable to get information for this album cover avatar.");
                                                 }
@@ -463,8 +473,10 @@ namespace FMBot_Discord
                                                         trackString = FeaturedUser.Username + "'s chart.";
                                                         Console.WriteLine("Changed avatar to: " + trackString);
                                                     }
-                                                    catch (Exception)
+                                                    catch (Exception e)
                                                     {
+                                                        ExceptionReporter.ReportException(client, e);
+
                                                         trackString = "Anonymous' chart.";
                                                         Console.WriteLine("Changed avatar to: " + trackString);
                                                     }
@@ -475,11 +487,33 @@ namespace FMBot_Discord
                                                 await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
                                                 fileStream.Close();
 
-                                                PostOnMainServer(client, cfgjson);
+                                                await Task.Delay(5000);
+
+                                                try
+                                                {
+                                                    ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
+                                                    ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.FeaturedChannel);
+
+                                                    SocketGuild guild = client.GetGuild(BroadcastServerID);
+                                                    SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
+
+                                                    var builder = new EmbedBuilder();
+                                                    var SelfUser = client.CurrentUser;
+                                                    builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
+                                                    builder.AddInlineField("Featured:", trackString);
+
+                                                    await channel.SendMessageAsync("", false, builder.Build());
+                                                }
+                                                catch (Exception e)
+                                                {
+                                                    ExceptionReporter.ReportException(client, e);
+                                                }
                                             }
                                         }
-                                        catch (Exception)
+                                        catch (Exception e)
                                         {
+                                            ExceptionReporter.ReportException(client, e);
+
                                             UseDefaultAvatar(client);
                                         }
                                     }
@@ -488,18 +522,23 @@ namespace FMBot_Discord
                                         UseDefaultAvatar(client);
                                     }
                                 }
-                                catch (Exception)
+                                catch (Exception e)
                                 {
+                                    ExceptionReporter.ReportException(client, e);
                                 }
                             }
-                            catch (Exception)
+                            catch (Exception e)
                             {
+                                ExceptionReporter.ReportException(client, e);
+
                                 UseDefaultAvatar(client);
                             }
                         }
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
+                        ExceptionReporter.ReportException(client, e);
+
                         UseDefaultAvatar(client);
                     }
                 },
@@ -553,11 +592,6 @@ namespace FMBot_Discord
                     fileStream.Close();
                 }
 
-                PostOnMainServer(client, cfgjson);
-            }
-
-            public async void PostOnMainServer(DiscordSocketClient client, JsonCfg.ConfigJson cfgjson)
-            {
                 await Task.Delay(5000);
 
                 try
@@ -575,8 +609,9 @@ namespace FMBot_Discord
 
                     await channel.SendMessageAsync("", false, builder.Build());
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    ExceptionReporter.ReportException(client, e);
                 }
             }
 
@@ -634,8 +669,10 @@ namespace FMBot_Discord
                                     trackString = desc;
                                     Console.WriteLine("Changed avatar to: " + trackString);
                                 }
-                                catch (Exception)
+                                catch (Exception e)
                                 {
+                                    ExceptionReporter.ReportException(client, e);
+
                                     trackString = "Unable to get information for this artist avatar.";
                                     Console.WriteLine("Unable to get information for this artist avatar.");
                                 }
@@ -643,8 +680,9 @@ namespace FMBot_Discord
 
                             ChangeToNewAvatar(client, cfgjson, ThumbnailImage);
                         }
-                        catch (Exception)
+                        catch (Exception e)
                         {
+                            ExceptionReporter.ReportException(client, e);
                         }
                     }
                     else
@@ -676,8 +714,10 @@ namespace FMBot_Discord
                                     trackString = desc;
                                     Console.WriteLine("Changed avatar to: " + trackString);
                                 }
-                                catch (Exception)
+                                catch (Exception e)
                                 {
+                                    ExceptionReporter.ReportException(client, e);
+
                                     trackString = "Unable to get information for this album cover avatar.";
                                     Console.WriteLine("Unable to get information for this album cover avatar.");
                                 }
@@ -685,13 +725,16 @@ namespace FMBot_Discord
 
                             ChangeToNewAvatar(client, cfgjson, ThumbnailImage);
                         }
-                        catch (Exception)
+                        catch (Exception e)
                         {
+                            ExceptionReporter.ReportException(client, e);
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    ExceptionReporter.ReportException(client, e);
+
                     UseDefaultAvatar(client);
                 }
             }
