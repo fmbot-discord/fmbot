@@ -440,8 +440,7 @@ namespace FMBot_Discord
                                     {
                                         try
                                         {
-                                            ulong DiscordID = DBase.GetIDForName(LastFMName);
-                                            string randChartImage = DBase.GetFMChartForID(DiscordID.ToString());
+                                            string randChartImage = DBase.GetRandomFMChart();
 
                                             if (randChartImage.Equals("NULL"))
                                             {
@@ -449,13 +448,34 @@ namespace FMBot_Discord
                                             }
                                             else
                                             {
+                                                ulong DiscordID = DBase.GetIDFromChart(randChartImage);
                                                 SocketUser FeaturedUser = client.GetUser(DiscordID);
-                                                trackString = FeaturedUser.Username + " (" + LastFMName + ")'s chart.";
-                                                Console.WriteLine("Changed avatar to: "  + trackString);
+                                                try
+                                                {
+                                                    string featureduserfmname = DBase.GetNameForID(DiscordID.ToString());
+                                                    trackString = FeaturedUser.Username + " (" + featureduserfmname + ")'s chart.";
+                                                    Console.WriteLine("Changed avatar to: " + trackString);
+                                                }
+                                                catch (Exception)
+                                                {
+                                                    try
+                                                    {
+                                                        trackString = FeaturedUser.Username + "'s chart.";
+                                                        Console.WriteLine("Changed avatar to: " + trackString);
+                                                    }
+                                                    catch (Exception)
+                                                    {
+                                                        trackString = "Anonymous' chart.";
+                                                        Console.WriteLine("Changed avatar to: " + trackString);
+                                                    }
+                                                }
+
                                                 var fileStream = new FileStream(randChartImage, FileMode.Open);
                                                 var image = new Discord.Image(fileStream);
                                                 await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
                                                 fileStream.Close();
+
+                                                PostOnMainServer(client, cfgjson);
                                             }
                                         }
                                         catch (Exception)
@@ -533,6 +553,11 @@ namespace FMBot_Discord
                     fileStream.Close();
                 }
 
+                PostOnMainServer(client, cfgjson);
+            }
+
+            public async void PostOnMainServer(DiscordSocketClient client, JsonCfg.ConfigJson cfgjson)
+            {
                 await Task.Delay(5000);
 
                 try

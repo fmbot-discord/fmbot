@@ -110,7 +110,7 @@ namespace FMBot_Discord
 
                 return "NULL";
             }
-            
+
             public static string GetFMChartForID(string id)
             {
                 string filename = GlobalVars.UsersFolder + id + "-chart.png";
@@ -122,6 +122,37 @@ namespace FMBot_Discord
                 else
                 {
                     return "NULL";
+                }
+            }
+
+            public static string GetRandomFMChart()
+            {
+                Random rand = new Random();
+                List<string> files = Directory.GetFiles(GlobalVars.UsersFolder).Where(F => F.ToLower().EndsWith(".png")).ToList();
+                string randomFile = files[rand.Next(0, files.Count)];
+
+                if (File.Exists(randomFile))
+                {
+                    return randomFile;
+                }
+                else
+                {
+                    return "NULL";
+                }
+            }
+
+            public static ulong GetIDFromChart(string chartname)
+            {
+                if (!string.IsNullOrWhiteSpace(chartname))
+                {
+                    string fileName = Path.GetFileName(chartname);
+                    string IDString = fileName.Replace("-chart.png", "");
+                    ulong ID = Convert.ToUInt64(IDString);
+                    return ID;
+                }
+                else
+                {
+                    return 0;
                 }
             }
 

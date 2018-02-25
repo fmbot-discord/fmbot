@@ -28,6 +28,12 @@ namespace FMBot_Discord
         {
             var cfgjson = await JsonCfg.GetJSONDataAsync();
 
+            if (message == "help")
+            {
+                await ReplyAsync(cfgjson.CommandPrefix + "announce <message> [image url]");
+                return;
+            }
+
             var DiscordUser = (IGuildUser)Context.Message.Author;
             var SelfUser = Context.Client.CurrentUser;
             try

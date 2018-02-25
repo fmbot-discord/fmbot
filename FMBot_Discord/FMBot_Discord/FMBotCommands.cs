@@ -508,13 +508,19 @@ namespace FMBot_Discord
         [Command("fmchart"), Summary("Generates a chart based on a user's parameters.")]
         public async Task fmchartAsync(string time = "weekly", string chartalbums = "9", string chartrows = "3", IUser user = null)
         {
+            var cfgjson = await JsonCfg.GetJSONDataAsync();
+
+            if (time == "help")
+            {
+                await ReplyAsync(cfgjson.CommandPrefix + "fmchart [weekly/monthly/yearly/overall] [number of albums] [chart rows] [user]");
+                return;
+            }
+
             var loadingText = "Loading your FMBot chart...";
             var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
 
             try
             {
-                var cfgjson = await JsonCfg.GetJSONDataAsync();
-
                 var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
@@ -672,13 +678,19 @@ namespace FMBot_Discord
         [Command("fmartistchart"), Summary("Generates an artist chart based on a user's parameters.")]
         public async Task fmartistchartAsync(string time = "weekly", string chartalbums = "9", string chartrows = "3", IUser user = null)
         {
+            var cfgjson = await JsonCfg.GetJSONDataAsync();
+
+            if (time == "help")
+            {
+                await ReplyAsync(cfgjson.CommandPrefix + "fmartistchart [weekly/monthly/yearly/overall] [number of albums] [chart rows] [user]");
+                return;
+            }
+
             var loadingText = "Loading your FMBot artist chart...";
             var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
 
             try
             {
-                var cfgjson = await JsonCfg.GetJSONDataAsync();
-
                 var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
@@ -960,10 +972,16 @@ namespace FMBot_Discord
         [Alias("fmrecenttracks")]
         public async Task fmrecentAsync(string list = "5", IUser user = null)
         {
+            var cfgjson = await JsonCfg.GetJSONDataAsync();
+
+            if (list == "help")
+            {
+                await ReplyAsync(cfgjson.CommandPrefix + "fmrecent [number of items] [user]");
+                return;
+            }
+
             try
             {
-                var cfgjson = await JsonCfg.GetJSONDataAsync();
-
                 int num = int.Parse(list);
 
                 var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
@@ -1072,10 +1090,16 @@ namespace FMBot_Discord
         [Command("fmartists"), Summary("Displays artists that a user listened to.")]
         public async Task fmartistsAsync(string list = "5", string time = "overall", IUser user = null)
         {
+            var cfgjson = await JsonCfg.GetJSONDataAsync();
+
+            if (list == "help")
+            {
+                await ReplyAsync(cfgjson.CommandPrefix + "fmartists [number of items] [weekly/monthly/yearly/overall] [user]");
+                return;
+            }
+
             try
             {
-                var cfgjson = await JsonCfg.GetJSONDataAsync();
-
                 int num = int.Parse(list);
                 var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
@@ -1215,10 +1239,16 @@ namespace FMBot_Discord
         [Command("fmalbums"), Summary("Displays albums that a user listened to.")]
         public async Task fmalbumsAsync(string list = "5", string time = "overall", IUser user = null)
         {
+            var cfgjson = await JsonCfg.GetJSONDataAsync();
+
+            if (list == "help")
+            {
+                await ReplyAsync(cfgjson.CommandPrefix + "fmalbums [number of items] [weekly/monthly/yearly/overall] [user]");
+                return;
+            }
+
             try
             {
-                var cfgjson = await JsonCfg.GetJSONDataAsync();
-
                 int num = int.Parse(list);
                 var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
@@ -1479,6 +1509,13 @@ namespace FMBot_Discord
         [Alias("fmsetname", "fmsetmode")]
         public async Task fmsetAsync([Summary("Your Last.FM name")] string name, [Summary("The mode you want to use.")] string mode = "")
         {
+            if (name == "help")
+            {
+                var cfgjson = await JsonCfg.GetJSONDataAsync();
+                await ReplyAsync(cfgjson.CommandPrefix + "fmset [Last.FM Username] [embedmini/embedfull/textfull/textmini]");
+                return;
+            }
+
             string SelfID = Context.Message.Author.Id.ToString();
             if (DBase.EntryExists(SelfID))
             {
