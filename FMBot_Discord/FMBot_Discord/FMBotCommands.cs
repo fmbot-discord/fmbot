@@ -1742,10 +1742,13 @@ namespace FMBot_Discord
 
                 if (!string.IsNullOrWhiteSpace(description))
                 {
-                    await Context.Channel.SendMessageAsync(module.Name + "\n" + description);
+                    await Context.User.SendMessageAsync(module.Name + "\n" + description);
                 }
             }
-            await Context.Channel.SendMessageAsync("FMBot Modes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nmonthly\nyearly\noverall");
+
+            await Context.User.SendMessageAsync("FMBot Modes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nmonthly\nyearly\noverall");
+
+            await Context.Channel.SendMessageAsync("Check your DMs!");
         }
 
         [Command("fminvite"), Summary("Invites the bot to a server")]
