@@ -33,6 +33,9 @@ namespace FMBot_Discord
                 {
                     Directory.CreateDirectory(GlobalVars.UsersFolder);
                 }
+                
+                File.Create(GlobalVars.BasePath + "log.txt");
+                File.SetAttributes(GlobalVars.BasePath + "log.txt", FileAttributes.Normal);
 
                 Console.WriteLine("Initalizing Discord...");
                 client = new DiscordSocketClient(new DiscordSocketConfig
@@ -73,6 +76,12 @@ namespace FMBot_Discord
         private Task Log(LogMessage arg)
         {
             Console.WriteLine(arg);
+            
+            using(var tw = new StreamWriter(GlobalVars.BasePath + "log.txt", true))
+            {
+                tw.WriteLine("The next line!");
+                tw.Close();
+            }
 
             return Task.CompletedTask;
         }
