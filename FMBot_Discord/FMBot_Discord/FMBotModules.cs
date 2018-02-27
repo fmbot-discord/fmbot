@@ -110,11 +110,13 @@ namespace FMBot_Discord
                     if (task == timeout)
                     {
                         await CriticalAsync("Client reset timed out (task deadlocked?), killing process");
+                        ExceptionReporter.ReportException(client, "Client reset timed out (task deadlocked?), killing process");
                         FailFast();
                     }
                     else if (connect.IsFaulted)
                     {
                         await CriticalAsync("Client reset faulted, killing process", connect.Exception);
+                        ExceptionReporter.ReportException(client, "Client reset faulted, killing process\n" + connect.Exception);
                         FailFast();
                     }
                     else
