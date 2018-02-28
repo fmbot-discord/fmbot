@@ -577,13 +577,20 @@ namespace FMBot_Discord
             {
                 Console.WriteLine(arg);
 
-                using (var tw = new StreamWriter(BasePath + "log.txt", true))
-                {
-                    tw.WriteLine(arg);
-                    tw.Close();
-                }
+                var logger = NLog.LogManager.GetCurrentClassLogger();
 
-                File.SetAttributes(BasePath + "log.txt", FileAttributes.Normal);
+                if (arg.Severity == LogSeverity.Info)
+                {
+                    logger.Info(arg);
+                }
+                else if (arg.Severity == LogSeverity.Debug)
+                {
+                    logger.Debug(arg);
+                }
+                else if (arg.Severity == LogSeverity.Critical)
+                {
+                    logger.Error(arg);
+                }
 
                 return Task.CompletedTask;
             }
