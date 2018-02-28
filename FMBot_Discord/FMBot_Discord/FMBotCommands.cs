@@ -1781,12 +1781,5 @@ namespace FMBot_Discord
         {
             await ReplyAsync("Join the Discord server! https://discord.gg/srmpCaa");
         }
-
-        [Command("fembot"), Summary("OwO What's this?")]
-        [Alias("femboy")]
-        public async Task fembotAsync()
-        {
-            await ReplyAsync("👀\n👅");
-        }
     }
 }

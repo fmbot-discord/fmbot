@@ -146,8 +146,8 @@ namespace FMBot_Discord
                     DiscordSocketClient client = Context.Client as DiscordSocketClient;
                     ExceptionReporter.ReportException(client, ex);
 
-                    await ReplyAsync("Error rebooting server. Look in bot console.");
-                    Console.WriteLine("Vultr API Error: " + ex.Message);
+                    await ReplyAsync("Error rebooting server. Look in bot log.");
+                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "FMBotAdminCommands - fmserverreboot", "Vultr API Error", ex));
                 }
             }
         }

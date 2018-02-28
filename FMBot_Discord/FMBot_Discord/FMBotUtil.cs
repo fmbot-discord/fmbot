@@ -490,7 +490,7 @@ namespace FMBot_Discord
             public static async Task<ConfigJson> GetJSONDataAsync()
             {
                 // first, let's load our configuration file
-                Console.WriteLine("Loading Configuration");
+                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "JsonCfg", "Loading Configuration"));
                 var json = "";
                 using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
                 using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
@@ -505,7 +505,7 @@ namespace FMBot_Discord
             public static ConfigJson GetJSONData()
             {
                 // first, let's load our configuration file
-                Console.WriteLine("Loading Configuration");
+                GlobalVars.Log(new LogMessage(LogSeverity.Info, "JsonCfg", "Loading Configuration"));
                 var json = "";
                 using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
                 using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
@@ -539,7 +539,30 @@ namespace FMBot_Discord
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.Message);
+                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", ex.Message, ex));
+                }
+            }
+
+            public static async void ReportStringAsException(DiscordSocketClient client, string e)
+            {
+                var cfgjson = await JsonCfg.GetJSONDataAsync();
+
+                try
+                {
+                    ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
+                    ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.ExceptionChannel);
+
+                    SocketGuild guild = client.GetGuild(BroadcastServerID);
+                    SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
+
+                    var builder = new EmbedBuilder();
+                    builder.AddInlineField("Exception:", e);
+
+                    await channel.SendMessageAsync("", false, builder.Build());
+                }
+                catch (Exception ex)
+                {
+                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", ex.Message, ex));
                 }
             }
         }
@@ -549,6 +572,21 @@ namespace FMBot_Discord
             public static string ConfigFileName = "config.json";
             public static string BasePath = AppDomain.CurrentDomain.BaseDirectory;
             public static string UsersFolder = BasePath + "users/";
+
+            public static Task Log(LogMessage arg)
+            {
+                Console.WriteLine(arg);
+
+                using (var tw = new StreamWriter(BasePath + "log.txt", true))
+                {
+                    tw.WriteLine(arg);
+                    tw.Close();
+                }
+
+                File.SetAttributes(BasePath + "log.txt", FileAttributes.Normal);
+
+                return Task.CompletedTask;
+            }
 
             public static string GetLine(string filePath, int line)
             {

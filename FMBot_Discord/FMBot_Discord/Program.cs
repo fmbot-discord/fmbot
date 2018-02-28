@@ -4,6 +4,7 @@ using Discord.Net.Providers.WS4Net;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -37,7 +38,7 @@ namespace FMBot_Discord
                 File.Create(GlobalVars.BasePath + "log.txt");
                 File.SetAttributes(GlobalVars.BasePath + "log.txt", FileAttributes.Normal);
 
-                Console.WriteLine("Initalizing Discord...");
+                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Initalizing Discord..."));
                 client = new DiscordSocketClient(new DiscordSocketConfig
                 {
                     WebSocketProvider = WS4NetProvider.Instance,
@@ -48,18 +49,18 @@ namespace FMBot_Discord
 
                 prefix = cfgjson.CommandPrefix;
 
-                Console.WriteLine("Registering Commands and Modules...");
+                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Registering Commands and Modules..."));
                 commands = new CommandService();
 
                 string token = cfgjson.Token; // Remember to keep this private!
 
                 await InstallCommands();
 
-                Console.WriteLine("Logging In...");
+                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Logging In..."));
                 await client.LoginAsync(TokenType.Bot, token);
                 await client.StartAsync();
 
-                Console.WriteLine("Logged In.");
+                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Logged In."));
 
                 await client.SetGameAsync("🎶 Say " + prefix + "fmhelp to use 🎶");
                 await client.SetStatusAsync(UserStatus.DoNotDisturb);
@@ -69,19 +70,13 @@ namespace FMBot_Discord
             }
             catch (Exception e)
             {
-                Console.WriteLine("Failed to launch. Error: " + e);
+                await GlobalVars.Log(new LogMessage(LogSeverity.Critical, Process.GetCurrentProcess().ProcessName, "Failed to launch.", e));
             }
         }
         
         private Task Log(LogMessage arg)
         {
-            Console.WriteLine(arg);
-            
-            using(var tw = new StreamWriter(GlobalVars.BasePath + "log.txt", true))
-            {
-                tw.WriteLine("The next line!");
-                tw.Close();
-            }
+            GlobalVars.Log(arg);
 
             return Task.CompletedTask;
         }
@@ -95,10 +90,8 @@ namespace FMBot_Discord
             await commands.AddModulesAsync(Assembly.GetEntryAssembly());
 
             client.MessageReceived += HandleCommand_MessageReceived;
-            //client.MessageUpdated += HandleCommand_MessageEdited;
+            client.MessageUpdated += HandleCommand_MessageEdited;
             client.CurrentUserUpdated += HandleCommand_CurrentUserUpdated;
-            //client.JoinedGuild += HandleCommand_UpdateGuild;
-            //client.LeftGuild += HandleCommand_UpdateGuild;
         }
 
         public async Task HandleCommand_MessageReceived(SocketMessage messageParam)
@@ -106,12 +99,10 @@ namespace FMBot_Discord
             await HandleCommand(messageParam);
         }
 
-        /*
         public async Task HandleCommand_MessageEdited(Cacheable<IMessage, ulong> before, SocketMessage after, ISocketMessageChannel channel)
         {
             await HandleCommand(after);
         }
-        */
 
         public Task HandleCommand_CurrentUserUpdated(SocketSelfUser before, SocketSelfUser after)
         {
@@ -138,16 +129,10 @@ namespace FMBot_Discord
                 case UserStatus.Invisible: status_after = "Invisible/Offline"; break;
             }
 
-            Console.WriteLine("Status of bot changed from " + status_before + " to " + status_after);
+            GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Status of bot changed from " + status_before + " to " + status_after));
 
             return Task.CompletedTask;
         }
-
-        /*
-        public async Task HandleCommand_UpdateGuild(IGuild guild)
-        {
-        }
-        */
 
         public async Task HandleCommand(SocketMessage messageParam)
         {
@@ -179,7 +164,7 @@ namespace FMBot_Discord
             var result = await commands.ExecuteAsync(context, argPos, services);
             if (!result.IsSuccess)
             {
-                Console.WriteLine("Error - " + result.Error + ": " + result.ErrorReason);
+                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason));
             }
         }
     }

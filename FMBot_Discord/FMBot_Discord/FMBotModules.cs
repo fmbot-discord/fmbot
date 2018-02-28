@@ -43,15 +43,12 @@ namespace FMBot_Discord
 
             // --- Begin Configuration Section ---
             // How long should we wait on the client to reconnect before resetting?
-            private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(30);
+            private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(120);
 
             // Should we attempt to reset the client? Set this to false if your client is still locking up.
             private static readonly bool _attemptReset = true;
 
             // Change log levels if desired:
-            private static readonly LogSeverity _debug = LogSeverity.Debug;
-            private static readonly LogSeverity _info = LogSeverity.Info;
-            private static readonly LogSeverity _critical = LogSeverity.Critical;
 
             // --- End Configuration Section ---
 
@@ -73,10 +70,10 @@ namespace FMBot_Discord
             public Task ConnectedAsync()
             {
                 // Cancel all previous state checks and reset the CancelToken - client is back online
-                _ = DebugAsync("Client reconnected, resetting cancel tokens...");
+                _ = GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "Client reconnected, resetting cancel tokens..."));
                 _cts.Cancel();
                 _cts = new CancellationTokenSource();
-                _ = DebugAsync("Client reconnected, cancel tokens reset.");
+                _ = GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "Client reconnected, cancel tokens reset."));
 
                 return Task.CompletedTask;
             }
@@ -84,12 +81,12 @@ namespace FMBot_Discord
             public Task DisconnectedAsync(Exception _e)
             {
                 // Check the state after <timeout> to see if we reconnected
-                _ = InfoAsync("Client disconnected, starting timeout task...");
+                _ = GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "Client disconnected, starting timeout task..."));
                 _ = Task.Delay(_timeout, _cts.Token).ContinueWith(async _ =>
                 {
-                    await DebugAsync("Timeout expired, continuing to check client state...");
+                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "Timeout expired, continuing to check client state..."));
                     await CheckStateAsync();
-                    await DebugAsync("State came back okay");
+                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "State came back okay"));
                 });
 
                 return Task.CompletedTask;
@@ -101,7 +98,7 @@ namespace FMBot_Discord
                 if (_discord.ConnectionState == ConnectionState.Connected) return;
                 if (_attemptReset)
                 {
-                    await InfoAsync("Attempting to reset the client");
+                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "Attempting to reset the client"));
 
                     var timeout = Task.Delay(_timeout);
                     var connect = _discord.StartAsync();
@@ -109,37 +106,30 @@ namespace FMBot_Discord
 
                     if (task == timeout)
                     {
-                        await CriticalAsync("Client reset timed out (task deadlocked?), killing process");
-                        ExceptionReporter.ReportException(client, "Client reset timed out (task deadlocked?), killing process");
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Critical, "ReliabilityService", "Client reset timed out (task deadlocked?), killing process"));
+                        ExceptionReporter.ReportStringAsException(_discord, "Client reset timed out (task deadlocked?), killing process");
                         FailFast();
                     }
                     else if (connect.IsFaulted)
                     {
-                        await CriticalAsync("Client reset faulted, killing process", connect.Exception);
-                        ExceptionReporter.ReportException(client, "Client reset faulted, killing process\n" + connect.Exception);
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Critical, "ReliabilityService", "Client reset faulted, killing process", connect.Exception));
+                        ExceptionReporter.ReportStringAsException(_discord, "Client reset faulted, killing process\n" + connect.Exception);
                         FailFast();
                     }
                     else
                     {
-                        await InfoAsync("Client reset succesfully!");
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "Client reset succesfully!"));
                     }
                 }
 
-                await CriticalAsync("Client did not reconnect in time, killing process");
+                await GlobalVars.Log(new LogMessage(LogSeverity.Critical, "ReliabilityService", "Client did not reconnect in time, killing process"));
                 FailFast();
             }
 
             private void FailFast()
-                => Environment.Exit(1);
-
-            private const string LogSource = "Reliability";
-
-            public static Task DebugAsync(string message)
-                => _logger.Invoke(new LogMessage(_debug, LogSource, message));
-            public static Task InfoAsync(string message)
-                => _logger.Invoke(new LogMessage(_info, LogSource, message));
-            public static Task CriticalAsync(string message, Exception error = null)
-                => _logger.Invoke(new LogMessage(_critical, LogSource, message, error));
+            {
+                Environment.Exit(1);
+            }
         }
 
         public class TimerService
@@ -205,7 +195,7 @@ namespace FMBot_Discord
                                     randmodestring = "7 - Default";
                                 }
 
-                                Console.WriteLine("Changed avatar to mode " + randmodestring);
+                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to mode " + randmodestring));
 
                                 try
                                 {
@@ -230,28 +220,29 @@ namespace FMBot_Discord
                                             ulong DiscordID = DBase.GetIDForName(LastFMName);
                                             SocketUser FeaturedUser = client.GetUser(DiscordID);
                                             trackString = ArtistName + " - " + AlbumName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
-                                            Console.WriteLine("Changed avatar to: " + trackString);
+                                            await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                         }
                                         catch (Exception)
                                         {
                                             try
                                             {
                                                 trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                                                Console.WriteLine("Changed avatar to: " + trackString);
+                                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                             }
                                             catch (Exception)
                                             {
                                                 try
                                                 {
                                                     trackString = ArtistName + " - " + AlbumName;
-                                                    Console.WriteLine("Changed avatar to: " + trackString);
+                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                                 }
                                                 catch (Exception e)
                                                 {
                                                     ExceptionReporter.ReportException(client, e);
 
                                                     trackString = "Unable to get information for this album cover avatar.";
-                                                    Console.WriteLine("Unable to get information for this album cover avatar.");
+
+                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this album cover avatar.", e));
                                                 }
                                             }
                                         }
@@ -277,28 +268,28 @@ namespace FMBot_Discord
                                             ulong DiscordID = DBase.GetIDForName(LastFMName);
                                             SocketUser FeaturedUser = client.GetUser(DiscordID);
                                             trackString = ArtistName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
-                                            Console.WriteLine("Changed avatar to: " + trackString);
+                                            await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                         }
                                         catch (Exception)
                                         {
                                             try
                                             {
                                                 trackString = ArtistName + Environment.NewLine + LastFMName;
-                                                Console.WriteLine("Changed avatar to: " + trackString);
+                                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                             }
                                             catch (Exception)
                                             {
                                                 try
                                                 {
                                                     trackString = ArtistName;
-                                                    Console.WriteLine("Changed avatar to: " + trackString);
+                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                                 }
                                                 catch (Exception e)
                                                 {
                                                     ExceptionReporter.ReportException(client, e);
 
                                                     trackString = "Unable to get information for this artist avatar.";
-                                                    Console.WriteLine("Unable to get information for this artist avatar.");
+                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this artist avatar.", e));
                                                 }
                                             }
                                         }
@@ -324,28 +315,28 @@ namespace FMBot_Discord
                                             ulong DiscordID = DBase.GetIDForName(LastFMName);
                                             SocketUser FeaturedUser = client.GetUser(DiscordID);
                                             trackString = ArtistName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
-                                            Console.WriteLine("Changed avatar to: " + trackString);
+                                            await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                         }
                                         catch (Exception)
                                         {
                                             try
                                             {
                                                 trackString = ArtistName + Environment.NewLine + LastFMName;
-                                                Console.WriteLine("Changed avatar to: " + trackString);
+                                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                             }
                                             catch (Exception)
                                             {
                                                 try
                                                 {
                                                     trackString = ArtistName;
-                                                    Console.WriteLine("Changed avatar to: " + trackString);
+                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                                 }
                                                 catch (Exception e)
                                                 {
                                                     ExceptionReporter.ReportException(client, e);
 
                                                     trackString = "Unable to get information for this artist avatar.";
-                                                    Console.WriteLine("Unable to get information for this artist avatar.");
+                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this artist avatar.", e));
                                                 }
                                             }
                                         }
@@ -372,28 +363,28 @@ namespace FMBot_Discord
                                             ulong DiscordID = DBase.GetIDForName(LastFMName);
                                             SocketUser FeaturedUser = client.GetUser(DiscordID);
                                             trackString = ArtistName + " - " + AlbumName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
-                                            Console.WriteLine("Changed avatar to: " + trackString);
+                                            await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                         }
                                         catch (Exception)
                                         {
                                             try
                                             {
                                                 trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                                                Console.WriteLine("Changed avatar to: " + trackString);
+                                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                             }
                                             catch (Exception)
                                             {
                                                 try
                                                 {
                                                     trackString = ArtistName + " - " + AlbumName;
-                                                    Console.WriteLine("Changed avatar to: " + trackString);
+                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                                 }
                                                 catch (Exception e)
                                                 {
                                                     ExceptionReporter.ReportException(client, e);
 
                                                     trackString = "Unable to get information for this album cover avatar.";
-                                                    Console.WriteLine("Unable to get information for this album cover avatar.");
+                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this album cover avatar.", e));
                                                 }
                                             }
                                         }
@@ -420,28 +411,28 @@ namespace FMBot_Discord
                                             ulong DiscordID = DBase.GetIDForName(LastFMName);
                                             SocketUser FeaturedUser = client.GetUser(DiscordID);
                                             trackString = ArtistName + " - " + AlbumName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
-                                            Console.WriteLine("Changed avatar to: " + trackString);
+                                            await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                         }
                                         catch (Exception)
                                         {
                                             try
                                             {
                                                 trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                                                Console.WriteLine("Changed avatar to: " + trackString);
+                                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                             }
                                             catch (Exception)
                                             {
                                                 try
                                                 {
                                                     trackString = ArtistName + " - " + AlbumName;
-                                                    Console.WriteLine("Changed avatar to: " + trackString);
+                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                                 }
                                                 catch (Exception e)
                                                 {
                                                     ExceptionReporter.ReportException(client, e);
 
                                                     trackString = "Unable to get information for this album cover avatar.";
-                                                    Console.WriteLine("Unable to get information for this album cover avatar.");
+                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this album cover avatar.", e));
                                                 }
                                             }
                                         }
@@ -466,21 +457,21 @@ namespace FMBot_Discord
                                                 {
                                                     string featureduserfmname = DBase.GetNameForID(DiscordID.ToString());
                                                     trackString = FeaturedUser.Username + " (" + featureduserfmname + ")'s chart.";
-                                                    Console.WriteLine("Changed avatar to: " + trackString);
+                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                                 }
                                                 catch (Exception)
                                                 {
                                                     try
                                                     {
                                                         trackString = FeaturedUser.Username + "'s chart.";
-                                                        Console.WriteLine("Changed avatar to: " + trackString);
+                                                        await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                                     }
                                                     catch (Exception e)
                                                     {
                                                         ExceptionReporter.ReportException(client, e);
 
                                                         trackString = "Anonymous' chart.";
-                                                        Console.WriteLine("Changed avatar to: " + trackString);
+                                                        await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                                     }
                                                 }
 
@@ -620,7 +611,7 @@ namespace FMBot_Discord
             public async void UseDefaultAvatar(DiscordSocketClient client)
             {
                 trackString = "FMBot Default Avatar";
-                Console.WriteLine("Changed avatar to: FMBot Default Avatar");
+                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                 var fileStream = new FileStream(GlobalVars.BasePath + "avatar.png", FileMode.Open);
                 var image = new Discord.Image(fileStream);
                 await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
@@ -662,21 +653,21 @@ namespace FMBot_Discord
                             try
                             {
                                 trackString = ArtistName + Environment.NewLine + desc;
-                                Console.WriteLine("Changed avatar to: " + trackString);
+                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                             }
                             catch (Exception)
                             {
                                 try
                                 {
                                     trackString = desc;
-                                    Console.WriteLine("Changed avatar to: " + trackString);
+                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                 }
                                 catch (Exception e)
                                 {
                                     ExceptionReporter.ReportException(client, e);
 
                                     trackString = "Unable to get information for this artist avatar.";
-                                    Console.WriteLine("Unable to get information for this artist avatar.");
+                                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this album artist avatar.", e));
                                 }
                             }
 
@@ -707,21 +698,21 @@ namespace FMBot_Discord
                             try
                             {
                                 trackString = ArtistName + " - " + AlbumName + Environment.NewLine + desc;
-                                Console.WriteLine("Changed avatar to: " + trackString);
+                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                             }
                             catch (Exception)
                             {
                                 try
                                 {
                                     trackString = desc;
-                                    Console.WriteLine("Changed avatar to: " + trackString);
+                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                 }
                                 catch (Exception e)
                                 {
                                     ExceptionReporter.ReportException(client, e);
 
                                     trackString = "Unable to get information for this album cover avatar.";
-                                    Console.WriteLine("Unable to get information for this album cover avatar.");
+                                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this album cover avatar.", e));
                                 }
                             }
 
