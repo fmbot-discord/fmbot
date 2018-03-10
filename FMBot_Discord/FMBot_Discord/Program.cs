@@ -34,9 +34,6 @@ namespace FMBot_Discord
                 {
                     Directory.CreateDirectory(GlobalVars.UsersFolder);
                 }
-                
-                File.Create(GlobalVars.BasePath + "log.txt");
-                File.SetAttributes(GlobalVars.BasePath + "log.txt", FileAttributes.Normal);
 
                 await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Initalizing Discord..."));
                 client = new DiscordSocketClient(new DiscordSocketConfig

@@ -1622,56 +1622,75 @@ namespace FMBot_Discord
         [Alias("fmfriendsset", "fmsetfriends", "fmfriendsadd")]
         public async Task fmfriendssetAsync([Summary("Friend names")] params string[] friends)
         {
-            string SelfID = Context.Message.Author.Id.ToString();
-
-            var cfgjson = await JsonCfg.GetJSONDataAsync();
-            var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
-
-            var friendList = new List<string>();
-            var friendNotFoundList = new List<string>();
-
-
-            foreach (var friend in friends)
+            try
             {
-                var user = await client.User.GetInfoAsync(friend);
+                string SelfID = Context.Message.Author.Id.ToString();
 
-                if (user.Content != null)
+                var cfgjson = await JsonCfg.GetJSONDataAsync();
+                var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+
+                var friendList = new List<string>();
+                var friendNotFoundList = new List<string>();
+
+
+                foreach (var friend in friends)
                 {
-                    friendList.Add(user.Content.Name);
+                    var user = await client.User.GetInfoAsync(friend);
+
+                    if (user.Content != null)
+                    {
+                        friendList.Add(user.Content.Name);
+                    }
+                    else
+                    {
+                        friendNotFoundList.Add(friend);
+                    }
                 }
-                else
+
+                if (friendList.Any())
                 {
-                    friendNotFoundList.Add(friend);
+                    int friendcount = DBase.AddFriendsEntry(SelfID, friendList.ToArray());
+
+                    if (friendcount > 1)
+                    {
+                        await ReplyAsync("Succesfully added " + friendcount + " friends.");
+                    }
+                    else if (friendcount < 1)
+                    {
+                        await ReplyAsync("Didn't add  " + friendcount + " friends. Maybe they are already on your friendlist.");
+                    }
+                    else
+                    {
+                        await ReplyAsync("Succesfully added a friend.");
+                    }
+                }
+
+                if (friendNotFoundList.Any())
+                {
+                    if (friendNotFoundList.Count > 1)
+                    {
+                        await ReplyAsync("Could not find " + friendNotFoundList.Count + " friends. Please ensure that you spelled their names correctly.");
+                    }
+                    else
+                    {
+                        await ReplyAsync("Could not find 1 friend. Please ensure that you spelled the name correctly.");
+                    }
                 }
             }
-
-            if (friendList.Any())
+            catch (Exception e)
             {
-                int friendcount = DBase.AddFriendsEntry(SelfID, friendList.ToArray());
+                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(disclient, e);
+
+                int friendcount = friends.Count();
 
                 if (friendcount > 1)
                 {
-                    await ReplyAsync("Succesfully added " + friendcount + " friends.");
-                }
-                else if(friendcount < 1)
-                {
-                    await ReplyAsync("Didn't add  " + friendcount + " friends. Maybe they are already on your friendlist.");
+                    await ReplyAsync("Unable to add " + friendcount + " due to an internal error.");
                 }
                 else
                 {
-                    await ReplyAsync("Succesfully added a friend.");
-                }
-            }
-
-            if (friendNotFoundList.Any())
-            {
-                if (friendNotFoundList.Count > 1)
-                {
-                    await ReplyAsync("Could not find " + friendNotFoundList.Count + " friends. Please ensure that you spelled their names correctly.");
-                }
-                else
-                {
-                    await ReplyAsync("Could not find 1 friend. Please ensure that you spelled the name correctly.");
+                    await ReplyAsync("Unable to add a friend due to an internal error.");
                 }
             }
         }

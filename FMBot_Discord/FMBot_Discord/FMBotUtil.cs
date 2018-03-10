@@ -56,6 +56,37 @@ namespace FMBot_Discord
                 }
             }
 
+            public async static Task<IGuildUser> ConvertIDToGuildUser(IGuild guild, ulong id)
+            {
+                var users = await guild.GetUsersAsync();
+
+                foreach (var user in users)
+                {
+                    if (user.Id == id)
+                    {
+                        return user;
+                    }
+                }
+
+                return null;
+            }
+
+            public async static Task<IGuildUser> GetIGuildUserForFMName(IGuild guild, string name)
+            {
+                ulong FMNameID = GetIDForName(name);
+
+                IGuildUser user = await ConvertIDToGuildUser(guild, FMNameID);
+
+                if (user.Id == FMNameID)
+                {
+                    return user;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
             public static bool EntryExists(string id)
             {
                 return File.Exists(GlobalVars.UsersFolder + id + ".txt");
@@ -287,7 +318,7 @@ namespace FMBot_Discord
             {
                 if (!BlacklistExists(id))
                 {
-                    File.Create(GlobalVars.UsersFolder + id + "-blacklist.txt");
+                    File.Create(GlobalVars.UsersFolder + id + "-blacklist.txt").Dispose();
                     File.SetAttributes(GlobalVars.UsersFolder + id + "-blacklist.txt", FileAttributes.Normal);
                 }
 
@@ -362,7 +393,7 @@ namespace FMBot_Discord
             {
                 if (!FriendsExists(id))
                 {
-                    File.Create(GlobalVars.UsersFolder + id + "-friends.txt");
+                    File.Create(GlobalVars.UsersFolder + id + "-friends.txt").Dispose();
                     File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
                 }
 
