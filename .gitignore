@@ -18,5 +18,6 @@ ipch
 *.zip
 [Dd]ebug*/
 [Rr]elease*/
+[Bb]inary[Rr]elease*/
 # Config
 config.json
