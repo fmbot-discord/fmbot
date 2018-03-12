@@ -22,6 +22,7 @@ Please note that the following parts of the file are completely
 optional and are not required to be edited, however some commands
 and functions of the bot may not work:
 
+```
 "vultrkey"
 "vultrsubid"
 "baseserver"
@@ -30,6 +31,7 @@ and functions of the bot may not work:
 "spotifykey"
 "spotifysecret"
 "exceptionchannel"
+```
 
 Please also launch the bot from the "StartFMBot.bat" as it allows
 the bot to restart itself when there is an error.
