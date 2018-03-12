@@ -202,7 +202,6 @@
   <ItemGroup>
     <Compile Include="FMBotAdminCommands.cs" />
     <Compile Include="FMBotCommands.cs" />
-    <Compile Include="FMBotModCommands.cs" />
     <Compile Include="FMBotModules.cs" />
     <Compile Include="FMBotUtil.cs" />
     <Compile Include="Program.cs" />

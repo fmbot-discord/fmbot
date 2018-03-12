@@ -22,15 +22,15 @@ namespace FMBot_Discord
             _timer = timer;
         }
 
-        [Command("announce"), Summary("Sends an announcement to the main server. - Admin only")]
+        [Command("announce"), Summary("Sends an announcement to the main server. - FMBot Admin only")]
         [Alias("fmannounce", "fmnews", "news", "fmannouncement", "announcement")]
-        public async Task announceAsync(string message, string ThumbnailURL = null)
+        public async Task announceAsync(string message, string ThumbnailURL = null, ITextChannel channel = null)
         {
             var cfgjson = await JsonCfg.GetJSONDataAsync();
 
             if (message == "help")
             {
-                await ReplyAsync(cfgjson.CommandPrefix + "announce <message> [image url]");
+                await ReplyAsync(cfgjson.CommandPrefix + "announce <message in quotation marks> [image url] [channel id (only available for server mods/admins)]");
                 return;
             }
 
@@ -39,9 +39,27 @@ namespace FMBot_Discord
             try
             {
                 ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.AnnouncementChannel);
-                ITextChannel channel = await Context.Guild.GetTextChannelAsync(BroadcastChannelID);
-                if (FMBotAdminUtil.IsAdmin(DiscordUser))
+                ITextChannel customchannel = null;
+                if (channel == null)
                 {
+                    customchannel = await Context.Guild.GetTextChannelAsync(BroadcastChannelID);
+                }
+                else
+                {
+                    customchannel = await Context.Guild.GetTextChannelAsync(channel.Id);
+                }
+
+                if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 1) || DiscordUser.GuildPermissions.KickMembers)
+                {
+                    if (channel == null && !FMBotAdminUtil.HasCommandAccess(DiscordUser, 1))
+                    {
+                        await ReplyAsync("You do not have access to this function of the command.");
+                    }
+                    else if (channel != null && FMBotAdminUtil.HasCommandAccess(DiscordUser, 1) && !DiscordUser.GuildPermissions.KickMembers)
+                    {
+                        await ReplyAsync("You do not have access to this function of the command.");
+                    }
+
                     EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
                     if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
@@ -75,7 +93,7 @@ namespace FMBot_Discord
 
                     builder.AddField("Announcement", message);
 
-                    await channel.SendMessageAsync("", false, builder.Build());
+                    await customchannel.SendMessageAsync("", false, builder.Build());
                 }
             }
             catch (Exception e)
@@ -86,11 +104,11 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("dbcheck"), Summary("Checks if an entry is in the database. - Admin Only")]
+        [Command("dbcheck"), Summary("Checks if an entry is in the database. - FMBot Admin Only")]
         public async Task dbcheckAsync(IUser user = null)
         {
             var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.IsAdmin(DiscordUser))
+            if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 1))
             {
                 var ChosenUser = user ?? Context.Message.Author;
                 string LastFMName = DBase.GetNameForID(ChosenUser.Id.ToString());
@@ -106,12 +124,12 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmserverreboot"), Summary("Reboots the Vultr VPS server. - Owner only")]
+        [Command("fmserverreboot"), Summary("Reboots the Vultr VPS server. - FMBot Owner only")]
         [Alias("fmreboot")]
         public async Task fmserverrebootAsync()
         {
             var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.IsOwner(DiscordUser))
+            if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 3))
             {
                 var cfgjson = await JsonCfg.GetJSONDataAsync();
 
@@ -152,12 +170,12 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmbotrestart"), Summary("Reboots the bot. - Super Admins only")]
+        [Command("fmbotrestart"), Summary("Reboots the bot. - FMBot Super Admins only")]
         [Alias("fmrestart")]
         public async Task fmbotrestartAsync()
         {
             var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
+            if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 2))
             {
                 await ReplyAsync("Restarting bot...");
                 await (Context.Client as DiscordSocketClient).SetStatusAsync(UserStatus.Invisible);
@@ -169,7 +187,7 @@ namespace FMBot_Discord
         public async Task fmsetpermsAsync(IUser user = null, int permtype = 0)
         {
             var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.IsOwner(DiscordUser))
+            if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 3))
             {
                 var ChosenUser = user ?? Context.Message.Author;
                 string UserID = ChosenUser.Id.ToString();
@@ -199,11 +217,11 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmalbumoverride"), Summary("Changes the avatar to be an album. - Super Admins only")]
+        [Command("fmalbumoverride"), Summary("Changes the avatar to be an album. - FMBot Super Admins only")]
         public async Task fmalbumoverrideAsync(string albumname, string desc, int ievent = 0)
         {
             var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
+            if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 2))
             {
                 try
                 {
@@ -229,11 +247,11 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmartistoverride"), Summary("Changes the avatar to be an artist. - Super Admins only")]
+        [Command("fmartistoverride"), Summary("Changes the avatar to be an artist. - FMBot Super Admins only")]
         public async Task fmartistoverrideAsync(string artistname, string desc, int ievent = 0)
         {
             var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
+            if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 2))
             {
                 try
                 {
@@ -259,11 +277,11 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmresetavatar"), Summary("Changes the avatar to be the default. - Super Admins only")]
+        [Command("fmresetavatar"), Summary("Changes the avatar to be the default. - FMBot Super Admins only")]
         public async Task fmresetavatar()
         {
             var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
+            if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 2))
             {
                 try
                 {
@@ -280,12 +298,12 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmrestarttimer"), Summary("Restarts the internal bot avatar timer. - Super Admins only")]
+        [Command("fmrestarttimer"), Summary("Restarts the internal bot avatar timer. - FMBot Super Admins only")]
         [Alias("fmstarttimer", "fmtimerstart")]
         public async Task fmrestarttimerAsync()
         {
             var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
+            if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 2))
             {
                 try
                 {
@@ -316,11 +334,11 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmstoptimer"), Summary("Stops the internal bot avatar timer. - Owner only")]
+        [Command("fmstoptimer"), Summary("Stops the internal bot avatar timer. - FMBot Super Admins only")]
         public async Task fmstoptimerAsync()
         {
             var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.IsOwner(DiscordUser))
+            if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 2))
             {
                 try
                 {
@@ -351,11 +369,11 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmtimerstatus"), Summary("Checks the status of the timer. - Admin only")]
+        [Command("fmtimerstatus"), Summary("Checks the status of the timer. - FMBot Admins only")]
         public async Task fmtimerstatusAsync()
         {
             var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.IsAdmin(DiscordUser))
+            if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 1))
             {
                 try
                 {
@@ -373,6 +391,156 @@ namespace FMBot_Discord
                     DiscordSocketClient client = Context.Client as DiscordSocketClient;
                     ExceptionReporter.ReportException(client, e);
                     await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+                }
+            }
+        }
+
+        [Command("fmblacklistadd"), Summary("Adds a user to a serverside blacklist - FMBot Admins and Server Admins/Mods only")]
+        public async Task fmblacklistaddAsync(SocketGuildUser user = null)
+        {
+            try
+            {
+                var DiscordUser = Context.Message.Author as SocketGuildUser;
+
+                if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 1) || DiscordUser.GuildPermissions.BanMembers)
+                {
+                    if (user == null)
+                    {
+                        await ReplyAsync("Please specify what user you want to add to the blacklist.");
+                    }
+                    else if (user == Context.Message.Author)
+                    {
+                        await ReplyAsync("You cannot blacklist yourself!");
+                    }
+                    else if (user.Id == user.Guild.OwnerId)
+                    {
+                        await ReplyAsync("You cannot blacklist the owner!");
+                    }
+                    else if (FMBotAdminUtil.IsRankAbove(Context.Message.Author, user))
+                    {
+                        await ReplyAsync("You cannot blacklist someone who has a higher rank than you!");
+                    }
+
+                    string UserID = user.Id.ToString();
+                    string ServerID = user.Guild.Id.ToString();
+
+                    bool blacklistresult = DBase.AddToBlacklist(UserID, ServerID);
+
+                    if (blacklistresult == true)
+                    {
+                        if (string.IsNullOrWhiteSpace(user.Nickname))
+                        {
+                            await ReplyAsync("Added " + user.Username + " to the blacklist.");
+                        }
+                        else
+                        {
+                            await ReplyAsync("Added " + user.Nickname + " (" + user.Username + ") to the blacklist.");
+                        }
+                    }
+                    else
+                    {
+                        if (string.IsNullOrWhiteSpace(user.Nickname))
+                        {
+                            await ReplyAsync("You have already added " + user.Username + " to the blacklist or the blacklist does not exist for this user.");
+                        }
+                        else
+                        {
+                            await ReplyAsync("You have already added " + user.Nickname + " (" + user.Username + ") to the blacklist or the blacklist does not exist for this user.");
+                        }
+                    }
+                }
+                else
+                {
+                    await ReplyAsync("You must have the 'Ban Members' permission in order to use this command.");
+                }
+            }
+            catch (Exception e)
+            {
+                DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(client, e);
+
+                if (string.IsNullOrWhiteSpace(user.Nickname))
+                {
+                    await ReplyAsync("Unable to add " + user.Username + " to the blacklist due to an internal error.");
+                }
+                else
+                {
+                    await ReplyAsync("Unable to add " + user.Nickname + " (" + user.Username + ") to the blacklist due to an internal error.");
+                }
+            }
+        }
+
+        [Command("fmblacklistremove"), Summary("Removes a user from a serverside blacklist - Server Admins/Mods only")]
+        public async Task fmblacklistremoveAsync(SocketGuildUser user = null)
+        {
+            try
+            {
+                var DiscordUser = Context.Message.Author as SocketGuildUser;
+
+                if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 1) || DiscordUser.GuildPermissions.BanMembers)
+                {
+                    if (user == null)
+                    {
+                        await ReplyAsync("Please specify what user you want to remove from the blacklist.");
+                    }
+                    else if (user == Context.Message.Author)
+                    {
+                        await ReplyAsync("You cannot remove yourself!");
+                    }
+                    else if (user.Id == user.Guild.OwnerId)
+                    {
+                        await ReplyAsync("You cannot remove the owner from the blacklist!");
+                    }
+                    else if (FMBotAdminUtil.IsRankAbove(Context.Message.Author, user))
+                    {
+                        await ReplyAsync("You cannot blacklist someone who has a higher rank than you!");
+                    }
+
+                    string UserID = user.Id.ToString();
+                    string ServerID = user.Guild.Id.ToString();
+
+                    bool blacklistresult = DBase.RemoveFromBlacklist(UserID, ServerID);
+
+                    if (blacklistresult == true)
+                    {
+                        if (string.IsNullOrWhiteSpace(user.Nickname))
+                        {
+                            await ReplyAsync("Removed " + user.Username + " from the blacklist.");
+                        }
+                        else
+                        {
+                            await ReplyAsync("Removed " + user.Nickname + " (" + user.Username + ") from the blacklist.");
+                        }
+                    }
+                    else
+                    {
+                        if (string.IsNullOrWhiteSpace(user.Nickname))
+                        {
+                            await ReplyAsync("You have already removed " + user.Username + " from the blacklist.");
+                        }
+                        else
+                        {
+                            await ReplyAsync("You have already removed " + user.Nickname + " (" + user.Username + ") from the blacklist.");
+                        }
+                    }
+                }
+                else
+                {
+                    await ReplyAsync("You must have the 'Ban Members' permission in order to use this command.");
+                }
+            }
+            catch (Exception e)
+            {
+                DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(client, e);
+
+                if (string.IsNullOrWhiteSpace(user.Nickname))
+                {
+                    await ReplyAsync("Unable to remove " + user.Username + " from the blacklist due to an internal error.");
+                }
+                else
+                {
+                    await ReplyAsync("Unable to remove " + user.Nickname + " (" + user.Username + ") from the blacklist due to an internal error.");
                 }
             }
         }

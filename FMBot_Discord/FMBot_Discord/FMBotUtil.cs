@@ -733,7 +733,7 @@ namespace FMBot_Discord
         {
             public static bool IsAdmin(IUser user)
             {
-                if (IsSuperAdmin(user) || DBase.CheckAdmin(user.Id.ToString()))
+                if (DBase.CheckAdmin(user.Id.ToString()))
                 {
                     return true;
                 }
@@ -745,9 +745,7 @@ namespace FMBot_Discord
 
             public static bool IsSuperAdmin(IUser user)
             {
-                var cfgjson = JsonCfg.GetJSONData();
-
-                if (IsOwner(user) || DBase.CheckSuperAdmin(user.Id.ToString()))
+                if (DBase.CheckSuperAdmin(user.Id.ToString()))
                 {
                     return true;
                 }
@@ -762,6 +760,91 @@ namespace FMBot_Discord
                 var cfgjson = JsonCfg.GetJSONData();
 
                 if (user.Id.Equals(Convert.ToUInt64(cfgjson.BotOwner)))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            public static bool HasCommandAccess(IUser user, int mode)
+            {
+                if (mode == 1)
+                {
+                    if (IsAdmin(user))
+                    {
+                        return true;
+                    }
+                    else if (IsSuperAdmin(user))
+                    {
+                        return true;
+                    }
+                    else if (IsOwner(user))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                else if (mode == 2)
+                {
+                    if (IsSuperAdmin(user))
+                    {
+                        return true;
+                    }
+                    else if (IsOwner(user))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                else if (mode == 3)
+                {
+                    if (IsOwner(user))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            public static bool IsRankAbove(IUser user, IUser user2)
+            {
+                if (IsAdmin(user) && IsSuperAdmin(user2))
+                {
+                    return true;
+                }
+                else if (IsAdmin(user) && IsOwner(user2))
+                {
+                    return true;
+                }
+                else if (IsSuperAdmin(user) && IsOwner(user2))
+                {
+                    return true;
+                }
+                else if (IsAdmin(user) && IsAdmin(user2))
+                {
+                    return true;
+                }
+                else if (IsSuperAdmin(user) && IsSuperAdmin(user2))
+                {
+                    return true;
+                }
+                else if (IsOwner(user) && IsOwner(user2))
                 {
                     return true;
                 }
