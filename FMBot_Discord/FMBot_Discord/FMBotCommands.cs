@@ -33,7 +33,7 @@ namespace FMBot_Discord
         }
 
         [Command("fm"), Summary("Displays what a user is listening to.")]
-        [Alias("dm", "gm", "lastfm")]
+        [Alias("dm", "gm", "sm","am","hm","jm","km","lm", "lastfm")]
         public async Task fmAsync(IUser user = null)
         {
             try
@@ -409,8 +409,8 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmyt")]
-        [Alias("fmyoutube"), Summary("Shares a link to a YouTube video based on what a user is listening to")]
+        [Command("fmyt"), Summary("Shares a link to a YouTube video based on what a user is listening to")]
+        [Alias("fmyoutube")]
         public async Task fmytAsync(IUser user = null)
         {
             var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
@@ -497,7 +497,9 @@ namespace FMBot_Discord
                         UseAuth = true
                     };
 
-                    string querystring = TrackName + " - " + ArtistName + " " + AlbumName;
+                    string querystring = null;
+
+                    querystring = TrackName + " - " + ArtistName + " " + AlbumName;
 
                     SearchItem item = _spotify.SearchItems(querystring, SearchType.Track);
 
@@ -513,10 +515,70 @@ namespace FMBot_Discord
                         await ReplyAsync("No results have been found for this track.");
                     }
                 }
-                catch
+                catch(Exception e)
                 {
+                    DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                    ExceptionReporter.ReportException(disclient, e);
                     await ReplyAsync("You have no scrobbles on your Last.FM profile or the Spotify credentials may have not been set correctly. Try scrobbling a song with a Last.FM scrobbler and then use .fmspotify again!");
                 }
+            }
+        }
+
+        [Command("fmspotifysearch"), Summary("Shares a link to a Spotify track based on a user's search parameters")]
+        [Alias("fmspotifyfind")]
+        public async Task fmspotifysearchAsync(params string[] searchterms)
+        {
+            try
+            {
+                var cfgjson = await JsonCfg.GetJSONDataAsync();
+
+                //Create the auth object
+                var auth = new ClientCredentialsAuth()
+                {
+                    ClientId = cfgjson.SpotifyKey,
+                    ClientSecret = cfgjson.SpotifySecret,
+                    Scope = Scope.None,
+                };
+                //With this token object, we now can make calls
+                Token token = auth.DoAuth();
+
+                var _spotify = new SpotifyWebAPI()
+                {
+                    TokenType = token.TokenType,
+                    AccessToken = token.AccessToken,
+                    UseAuth = true
+                };
+
+                string querystring = null;
+
+                if (searchterms.Any())
+                {
+                    querystring = string.Join(" ", searchterms);
+
+                    SearchItem item = _spotify.SearchItems(querystring, SearchType.Track);
+
+                    if (item.Tracks.Items.Any())
+                    {
+                        FullTrack track = item.Tracks.Items.FirstOrDefault();
+                        SimpleArtist trackArtist = track.Artists.FirstOrDefault();
+
+                        await ReplyAsync("https://open.spotify.com/track/" + track.Id);
+                    }
+                    else
+                    {
+                        await ReplyAsync("No results have been found for this track.");
+                    }
+                }
+                else
+                {
+                    await ReplyAsync("Please specify what you want to search for.");
+                }
+            }
+            catch (Exception e)
+            {
+                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(disclient, e);
+                await ReplyAsync("You have no scrobbles on your Last.FM profile or the Spotify credentials may have not been set correctly. Try scrobbling a song with a Last.FM scrobbler and then use .fmspotify again!");
             }
         }
 

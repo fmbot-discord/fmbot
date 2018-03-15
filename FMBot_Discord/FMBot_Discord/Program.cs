@@ -137,13 +137,15 @@ namespace FMBot_Discord
             var message = messageParam as SocketUserMessage;
             if (message == null) return;
 
-            // Create a number to track where the prefix ends and the command begins
-            int argPos = 0;
-            // Determine if the message is a command, based on if it starts with '!' or a mention prefix
-            if (!message.HasCharPrefix(Convert.ToChar(prefix), ref argPos) || message.IsPinned) return;
-
             // Create a Command Context
             var context = new CommandContext(client, message);
+            var curUser = context.Client.CurrentUser as SocketUser;
+
+            // Create a number to track where the prefix ends and the command begins
+            int argPos = 0;
+
+            // Determine if the message is a command, based on if it starts with '!' or a mention prefix
+            if (!message.HasCharPrefix(Convert.ToChar(prefix), ref argPos) || message.IsPinned || (message.Author.IsBot && message.Author != curUser)) return;
 
             var DiscordCaller = message.Author as SocketGuildUser;
             string callerid = DiscordCaller.Id.ToString();
@@ -152,7 +154,7 @@ namespace FMBot_Discord
 
             if (isonblacklist == true)
             {
-                await context.Channel.SendMessageAsync("You have been blacklisted from the server. Please contact a server moderator or administrator if you have any questions regarding this decision.");
+                await context.Channel.SendMessageAsync("You have been blacklisted from the server. Please contact a server moderator, administrator or FMBot administrator if you have any questions regarding this decision.");
                 return;
             }
 
