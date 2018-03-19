@@ -29,16 +29,19 @@ namespace FMBot_Discord
         {
             var cfgjson = await JsonCfg.GetJSONDataAsync();
 
-            if (message == "help")
-            {
-                await ReplyAsync(cfgjson.CommandPrefix + "announce <message in quotation marks> [image url] [channel id (only available for server mods/admins)]");
-                return;
-            }
-
             var DiscordUser = (IGuildUser)Context.Message.Author;
             var SelfUser = Context.Client.CurrentUser;
             try
             {
+                if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 1) || DiscordUser.GuildPermissions.KickMembers)
+                {
+                    if (message == "help")
+                    {
+                        await ReplyAsync(cfgjson.CommandPrefix + "announce <message in quotation marks> [image url] [channel id (only available for server mods/admins)]");
+                        return;
+                    }
+                }
+
                 ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.AnnouncementChannel);
                 ITextChannel customchannel = null;
                 if (channel == null)
@@ -219,11 +222,20 @@ namespace FMBot_Discord
         }
 
         [Command("fmalbumoverride"), Summary("Changes the avatar to be an album. - FMBot Super Admins only")]
+        [Alias("fmsetalbum")]
         public async Task fmalbumoverrideAsync(string albumname, string desc, int ievent = 0)
         {
             var DiscordUser = Context.Message.Author;
             if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 2))
             {
+                var cfgjson = await JsonCfg.GetJSONDataAsync();
+
+                if (albumname == "help")
+                {
+                    await ReplyAsync(cfgjson.CommandPrefix + "fmalbumoverride <album name> <message in quotation marks> [event 0 or 1]");
+                    return;
+                }
+
                 try
                 {
                     DiscordSocketClient client = Context.Client as DiscordSocketClient;
@@ -249,11 +261,20 @@ namespace FMBot_Discord
         }
 
         [Command("fmartistoverride"), Summary("Changes the avatar to be an artist. - FMBot Super Admins only")]
+        [Alias("fmsetartist")]
         public async Task fmartistoverrideAsync(string artistname, string desc, int ievent = 0)
         {
             var DiscordUser = Context.Message.Author;
             if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 2))
             {
+                var cfgjson = await JsonCfg.GetJSONDataAsync();
+
+                if (artistname == "help")
+                {
+                    await ReplyAsync(cfgjson.CommandPrefix + "fmartistoverride <album name> <message in quotation marks> [event 0 or 1]");
+                    return;
+                }
+
                 try
                 {
                     DiscordSocketClient client = Context.Client as DiscordSocketClient;
@@ -300,7 +321,7 @@ namespace FMBot_Discord
         }
 
         [Command("fmrestarttimer"), Summary("Restarts the internal bot avatar timer. - FMBot Super Admins only")]
-        [Alias("fmstarttimer", "fmtimerstart")]
+        [Alias("fmstarttimer", "fmtimerstart", "fmtimerrestart")]
         public async Task fmrestarttimerAsync()
         {
             var DiscordUser = Context.Message.Author;
@@ -336,6 +357,7 @@ namespace FMBot_Discord
         }
 
         [Command("fmstoptimer"), Summary("Stops the internal bot avatar timer. - FMBot Super Admins only")]
+        [Alias("fmtimerstop")]
         public async Task fmstoptimerAsync()
         {
             var DiscordUser = Context.Message.Author;
