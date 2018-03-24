@@ -13,5 +13,8 @@
     "timerrepeat": "60",
     "spotifykey": "",
     "spotifysecret": "",
-    "exceptionchannel": ""
+    "exceptionchannel": "",
+    "cooldown": "10",
+    "nummessages": "5",
+    "inbetweentime":  "15"
 }

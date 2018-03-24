@@ -154,16 +154,23 @@ namespace FMBot_Discord
 
             if (isonblacklist == true)
             {
-                await context.Channel.SendMessageAsync("You have been blacklisted from the server. Please contact a server moderator, administrator or FMBot administrator if you have any questions regarding this decision.");
+                await context.Channel.SendMessageAsync("You have been blacklisted from " + callerserverid + ". Please contact a server moderator/administrator or a FMBot administrator if you have any questions regarding this decision.");
                 return;
             }
 
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully)
-            var result = await commands.ExecuteAsync(context, argPos, services);
-            if (!result.IsSuccess)
+            if (User.IncomingRequest(client, DiscordCaller.Id) != false)
             {
-                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason));
+                var result = await commands.ExecuteAsync(context, argPos, services);
+                if (!result.IsSuccess)
+                {
+                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason));
+                }
+                else
+                {
+                    GlobalVars.CommandExecutions += 1;
+                }
             }
         }
     }

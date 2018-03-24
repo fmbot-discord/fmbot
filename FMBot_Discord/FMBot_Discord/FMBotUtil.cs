@@ -4,6 +4,7 @@ using Discord.WebSocket;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -516,6 +517,15 @@ namespace FMBot_Discord
 
                 [JsonProperty("exceptionchannel")]
                 public string ExceptionChannel { get; private set; }
+
+                [JsonProperty("cooldown")]	
+                public string Cooldown { get; private set; }
+
+                [JsonProperty("nummessages")]
+                public string NumMessages { get; private set; }
+
+                [JsonProperty("inbetweentime")]
+                public string InBetweenTime { get; private set; }
             }
 
             public static async Task<ConfigJson> GetJSONDataAsync()
@@ -603,6 +613,20 @@ namespace FMBot_Discord
             public static string ConfigFileName = "config.json";
             public static string BasePath = AppDomain.CurrentDomain.BaseDirectory;
             public static string UsersFolder = BasePath + "users/";
+
+            public static int CommandExecutions = 0;
+
+            public static TimeSpan SystemUpTime
+            {
+                get
+                {
+                    using (var uptime = new PerformanceCounter("System", "System Up Time"))
+                    {
+                        uptime.NextValue();
+                        return TimeSpan.FromMilliseconds(uptime.NextValue());
+                    }
+                }
+            }
 
             public static Task Log(LogMessage arg)
             {
@@ -854,5 +878,119 @@ namespace FMBot_Discord
                 }
             }
         }
+
+        public class User
+        {
+            public ulong ID { get; set; }
+            public DateTime LastRequestAfterCooldownBegins { get; set; }
+            public DateTime LastRequestAfterMessageSent { get; set; }
+            public static List<User> Users = new List<User>(); // list of all users
+            public int messagesSent { get; set; }
+            public bool isInCooldown { get; set; }
+            public bool isWatchingMessages { get; set; }
+
+            public static bool IncomingRequest(DiscordSocketClient client, ulong DiscordID)//requesting user == username of the person messaging your bot
+            {
+                try
+                {
+                    var cfgjson = JsonCfg.GetJSONData();
+
+                    User TempUser = Users.FirstOrDefault(User => User.ID.Equals(DiscordID));
+                    if (TempUser != null)// check to see if you have handled a request in the past from this user.
+                    {
+                        TempUser.messagesSent += 1;
+
+                        if (TempUser.isWatchingMessages == false)
+                        {
+                            Users.Find(User => User.ID.Equals(DiscordID)).LastRequestAfterMessageSent = DateTime.Now;
+                            TempUser.isWatchingMessages = true;
+                        }
+
+                        if (TempUser.messagesSent >= Convert.ToInt32(cfgjson.NumMessages))
+                        {
+                            if (TempUser.isInCooldown == false)
+                            {
+                                Users.Find(User => User.ID.Equals(DiscordID)).LastRequestAfterCooldownBegins = DateTime.Now;
+                                TempUser.isInCooldown = true;
+                            }
+
+                            double curTime = (DateTime.Now - TempUser.LastRequestAfterCooldownBegins).TotalSeconds;
+
+                            if (curTime >= Convert.ToDouble(cfgjson.Cooldown)) // checks if more than 30 seconds have passed between the last requests send by the user
+                            {
+                                TempUser.messagesSent = 1;
+                                TempUser.isInCooldown = false;
+                                Users.Find(User => User.ID.Equals(DiscordID)).LastRequestAfterMessageSent = DateTime.Now;
+                                TempUser.isWatchingMessages = true;
+                                return true;
+                            }
+                            else // if less than 30 seconds has passed return false.
+                            {
+                                var user = client.GetUser(DiscordID);
+                                int curTimeEstimate = Convert.ToInt32(cfgjson.Cooldown) - (int)curTime;
+                                if (curTimeEstimate > 1)
+                                {
+                                    user.SendMessageAsync("Sorry, but you have been put under a " + cfgjson.Cooldown + " second coolddown. You have to wait " + curTimeEstimate + " seconds for this to expire.");
+                                }
+                                else
+                                {
+                                    user.SendMessageAsync("Sorry, but you have been put under a " + cfgjson.Cooldown + " second coolddown. You have to wait " + curTimeEstimate + " second for this to expire.");
+                                }
+                                return false;
+                            }
+                        }
+                        else if ((DateTime.Now - TempUser.LastRequestAfterMessageSent).TotalSeconds >= Convert.ToDouble(cfgjson.InBetweenTime))
+                        {
+                            return true;
+                        }
+                        else
+                        {
+                            return true;
+                        }
+                    }
+                    else // if no user is found, create a new user, and add it to the list
+                    {
+                        User NewUser = new User();
+                        NewUser.ID = DiscordID;
+                        NewUser.messagesSent = 1;
+                        NewUser.isInCooldown = false;
+                        NewUser.LastRequestAfterMessageSent = DateTime.Now;
+                        NewUser.isWatchingMessages = true;
+                        Users.Add(NewUser);
+                        return true;
+                    }
+                }
+                catch(Exception e)
+                {
+                    ExceptionReporter.ReportException(client, e);
+                    return true;
+                }
+            }
+        }
+    }
+}
+
+//extentions below
+
+public static class TimeSpanExtentions
+{
+    public static string ToReadableAgeString(this TimeSpan span)
+    {
+        return string.Format("{0:0}", span.Days / 365.25);
+    }
+
+    public static string ToReadableString(this TimeSpan span)
+    {
+        string formatted = string.Format("{0}{1}{2}{3}",
+            span.Duration().Days > 0 ? string.Format("{0:0} day{1}, ", span.Days, span.Days == 1 ? String.Empty : "s") : string.Empty,
+            span.Duration().Hours > 0 ? string.Format("{0:0} hour{1}, ", span.Hours, span.Hours == 1 ? String.Empty : "s") : string.Empty,
+            span.Duration().Minutes > 0 ? string.Format("{0:0} minute{1}, ", span.Minutes, span.Minutes == 1 ? String.Empty : "s") : string.Empty,
+            span.Duration().Seconds > 0 ? string.Format("{0:0} second{1}", span.Seconds, span.Seconds == 1 ? String.Empty : "s") : string.Empty);
+
+        if (formatted.EndsWith(", ")) formatted = formatted.Substring(0, formatted.Length - 2);
+
+        if (string.IsNullOrEmpty(formatted)) formatted = "0 seconds";
+
+        return formatted;
     }
 }

@@ -10,10 +10,12 @@ using SpotifyAPI.Web.Enums;
 using SpotifyAPI.Web.Models;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using YoutubeSearch;
 using static FMBot_Discord.FMBotModules;
@@ -1830,6 +1832,62 @@ namespace FMBot_Discord
             await Context.User.SendMessageAsync("FMBot Modes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nmonthly\nyearly\noverall");
 
             await Context.Channel.SendMessageAsync("Check your DMs!");
+        }
+
+        [Command("fmstatus"), Summary("Displays bot stats.")]
+        public async Task statusAsync()
+        {
+            var SelfUser = Context.Client.CurrentUser;
+
+            EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+            eab.IconUrl = SelfUser.GetAvatarUrl();
+            eab.Name = SelfUser.Username;
+
+            var builder = new EmbedBuilder();
+            builder.WithAuthor(eab);
+
+            builder.WithDescription("FMBot Statistics");
+
+            var startTime = (DateTime.Now - Process.GetCurrentProcess().StartTime);
+            string[] files = Directory.GetFiles(GlobalVars.UsersFolder, "*.txt");
+
+            string pattern = "[0-9]{18}\\.txt";
+
+            int filecount = 0;
+
+            foreach (string file in files)
+            {
+                if (Regex.IsMatch(file, pattern))
+                {
+                    filecount += 1;
+                }
+            }
+
+            var SocketClient = Context.Client as DiscordSocketClient;
+            var SelfGuilds = SocketClient.Guilds.Count();
+
+            var SocketSelf = Context.Client.CurrentUser as SocketSelfUser;
+
+            string status = "Online";
+
+            switch (SocketSelf.Status)
+            {
+                case UserStatus.Offline: status = "Offline"; break;
+                case UserStatus.Online: status = "Online"; break;
+                case UserStatus.Idle: status = "Idle"; break;
+                case UserStatus.AFK: status = "AFK"; break;
+                case UserStatus.DoNotDisturb: status = "Do Not Disturb"; break;
+                case UserStatus.Invisible: status = "Invisible/Offline"; break;
+            }
+
+            builder.AddInlineField("Bot Uptime: ", startTime.ToReadableString());
+            builder.AddInlineField("Server Uptime: ", GlobalVars.SystemUpTime.ToReadableString());
+            builder.AddInlineField("Number of users in the database: ", filecount);
+            builder.AddInlineField("Command executions since bot start: ", GlobalVars.CommandExecutions);
+            builder.AddInlineField("Number of servers the bot is on: ", SelfGuilds);
+            builder.AddInlineField("Bot status: ", status);
+
+            await Context.Channel.SendMessageAsync("", false, builder.Build());
         }
 
         [Command("fminvite"), Summary("Invites the bot to a server")]
