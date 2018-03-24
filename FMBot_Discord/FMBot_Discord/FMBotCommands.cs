@@ -1881,7 +1881,7 @@ namespace FMBot_Discord
             }
 
             builder.AddInlineField("Bot Uptime: ", startTime.ToReadableString());
-            builder.AddInlineField("Server Uptime: ", GlobalVars.SystemUpTime.ToReadableString());
+            builder.AddInlineField("Server Uptime: ", GlobalVars.SystemUpTime().ToReadableString());
             builder.AddInlineField("Number of users in the database: ", filecount);
             builder.AddInlineField("Command executions since bot start: ", GlobalVars.CommandExecutions);
             builder.AddInlineField("Number of servers the bot is on: ", SelfGuilds);

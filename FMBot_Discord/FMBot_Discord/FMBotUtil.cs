@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Management;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -616,16 +617,11 @@ namespace FMBot_Discord
 
             public static int CommandExecutions = 0;
 
-            public static TimeSpan SystemUpTime
+            public static TimeSpan SystemUpTime()
             {
-                get
-                {
-                    using (var uptime = new PerformanceCounter("System", "System Up Time"))
-                    {
-                        uptime.NextValue();
-                        return TimeSpan.FromMilliseconds(uptime.NextValue());
-                    }
-                }
+                var mo = new ManagementObject(@"\\.\root\cimv2:Win32_OperatingSystem=@");
+                var lastBootUp = ManagementDateTimeConverter.ToDateTime(mo["LastBootUpTime"].ToString());
+                return DateTime.Now.ToUniversalTime() - lastBootUp.ToUniversalTime();
             }
 
             public static Task Log(LogMessage arg)
