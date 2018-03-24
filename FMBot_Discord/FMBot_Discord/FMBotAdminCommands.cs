@@ -23,7 +23,7 @@ namespace FMBot_Discord
             _timer = timer;
         }
 
-        [Command("announce"), Summary("Sends an announcement to the main server. - FMBot Admin only")]
+        [Command("announce"), Summary("Sends an announcement to the main server or a channel. - FMBot Admins and Server Admins/Mods only")]
         [Alias("fmannounce", "fmnews", "news", "fmannouncement", "announcement")]
         public async Task announceAsync(string message, string ThumbnailURL = null, ITextChannel channel = null)
         {
@@ -128,7 +128,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmserverreboot"), Summary("Reboots the Vultr VPS server. - FMBot Owner only")]
+        [Command("fmserverreboot"), Summary("Reboots the Vultr VPS server. - FMBot Owners only")]
         [Alias("fmreboot")]
         public async Task fmserverrebootAsync()
         {
@@ -187,7 +187,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmsetperms"), Summary("Gives permissions to other users. - Owner only")]
+        [Command("fmsetperms"), Summary("Gives permissions to other users. - FMBot Owners only")]
         public async Task fmsetpermsAsync(IUser user = null, int permtype = 0)
         {
             var DiscordUser = Context.Message.Author;
@@ -199,18 +199,31 @@ namespace FMBot_Discord
                 int LastFMMode = DBase.GetModeIntForID(UserID);
                 if (!LastFMName.Equals("NULL"))
                 {
-                    DBase.WriteEntry(UserID, LastFMName, LastFMMode, permtype);
-
                     if (permtype == 1)
                     {
+                        DBase.WriteEntry(UserID, LastFMName, LastFMMode, permtype);
                         await ReplyAsync("The user now has Admin permissions");
                     }
                     else if (permtype == 2)
                     {
+                        DBase.WriteEntry(UserID, LastFMName, LastFMMode, permtype);
                         await ReplyAsync("The user now has Super Admin permissions");
+                    }
+                    else if (permtype == 3)
+                    {
+                        if (FMBotAdminUtil.IsSoleOwner(DiscordUser))
+                        {
+                            DBase.WriteEntry(UserID, LastFMName, LastFMMode, permtype);
+                            await ReplyAsync("The user now has Owner permissions");
+                        }
+                        else
+                        {
+                            await ReplyAsync("You cannot promote a user to Owner");
+                        }
                     }
                     else
                     {
+                        DBase.WriteEntry(UserID, LastFMName, LastFMMode, permtype);
                         await ReplyAsync("The user now has User permissions");
                     }
                 }

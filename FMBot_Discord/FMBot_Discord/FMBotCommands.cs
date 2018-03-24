@@ -15,6 +15,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using YoutubeSearch;
@@ -1880,12 +1881,19 @@ namespace FMBot_Discord
                 case UserStatus.Invisible: status = "Invisible/Offline"; break;
             }
 
+            string assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            string fileVersion = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion;
+
+            int fixedCmdGlobalCount = GlobalVars.CommandExecutions + 1;
+
             builder.AddInlineField("Bot Uptime: ", startTime.ToReadableString());
             builder.AddInlineField("Server Uptime: ", GlobalVars.SystemUpTime().ToReadableString());
             builder.AddInlineField("Number of users in the database: ", filecount);
-            builder.AddInlineField("Command executions since bot start: ", GlobalVars.CommandExecutions);
-            builder.AddInlineField("Number of servers the bot is on: ", SelfGuilds);
-            builder.AddInlineField("Bot status: ", status);
+            builder.AddInlineField("Command executions since bot start: ", fixedCmdGlobalCount);
+            builder.AddField("Number of servers the bot is on: ", SelfGuilds);
+            builder.AddField("Bot status: ", status);
+            builder.AddInlineField("Bot revision version: ", assemblyVersion);
+            builder.AddInlineField("Bot release version: ", fileVersion);
 
             await Context.Channel.SendMessageAsync("", false, builder.Build());
         }

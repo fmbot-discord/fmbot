@@ -21,6 +21,7 @@ namespace FMBot_Discord
         {
             public static string FMAdminString = "IsAdmin";
             public static string FMSuperAdminString = "IsSuperAdmin";
+            public static string FMOwnerString = "IsOwner";
 
             public static void WriteEntry(string id, string name, int fmval = 0, int IsAdmin = 0)
             {
@@ -279,6 +280,18 @@ namespace FMBot_Discord
                 }
             }
 
+            public static bool CheckOwner(string id)
+            {
+                if (File.ReadLines(GlobalVars.UsersFolder + id + ".txt").Any(line => line.Contains(FMOwnerString)))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
             public static string GetAdminStringFromID(string id)
             {
                 if (File.ReadLines(GlobalVars.UsersFolder + id + ".txt").Any(line => line.Contains(FMAdminString)))
@@ -288,6 +301,10 @@ namespace FMBot_Discord
                 else if (File.ReadLines(GlobalVars.UsersFolder + id + ".txt").Any(line => line.Contains(FMSuperAdminString)))
                 {
                     return FMSuperAdminString;
+                }
+                else if (File.ReadLines(GlobalVars.UsersFolder + id + ".txt").Any(line => line.Contains(FMOwnerString)))
+                {
+                    return FMOwnerString;
                 }
                 else
                 {
@@ -304,6 +321,10 @@ namespace FMBot_Discord
                 else if (File.ReadLines(GlobalVars.UsersFolder + id + ".txt").Any(line => line.Contains(FMSuperAdminString)))
                 {
                     return 2;
+                }
+                else if (File.ReadLines(GlobalVars.UsersFolder + id + ".txt").Any(line => line.Contains(FMOwnerString)))
+                {
+                    return 3;
                 }
                 else
                 {
@@ -779,6 +800,20 @@ namespace FMBot_Discord
             {
                 var cfgjson = JsonCfg.GetJSONData();
 
+                if (user.Id.Equals(Convert.ToUInt64(cfgjson.BotOwner)) || DBase.CheckOwner(user.Id.ToString()))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            public static bool IsSoleOwner(IUser user)
+            {
+                var cfgjson = JsonCfg.GetJSONData();
+
                 if (user.Id.Equals(Convert.ToUInt64(cfgjson.BotOwner)))
                 {
                     return true;
@@ -908,6 +943,7 @@ namespace FMBot_Discord
                             {
                                 Users.Find(User => User.ID.Equals(DiscordID)).LastRequestAfterCooldownBegins = DateTime.Now;
                                 TempUser.isInCooldown = true;
+                                TempUser.isWatchingMessages = false;
                             }
 
                             double curTime = (DateTime.Now - TempUser.LastRequestAfterCooldownBegins).TotalSeconds;
@@ -937,6 +973,9 @@ namespace FMBot_Discord
                         }
                         else if ((DateTime.Now - TempUser.LastRequestAfterMessageSent).TotalSeconds >= Convert.ToDouble(cfgjson.InBetweenTime))
                         {
+                            TempUser.messagesSent = 1;
+                            Users.Find(User => User.ID.Equals(DiscordID)).LastRequestAfterMessageSent = DateTime.Now;
+                            TempUser.isWatchingMessages = true;
                             return true;
                         }
                         else
