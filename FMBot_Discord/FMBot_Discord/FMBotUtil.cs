@@ -35,6 +35,10 @@ namespace FMBot_Discord
                 {
                     AdminString = FMSuperAdminString;
                 }
+                else if (IsAdmin == 3)
+                {
+                    AdminString = FMOwnerString;
+                }
 
                 File.WriteAllText(GlobalVars.UsersFolder + id + ".txt", name + Environment.NewLine + fmval.ToString() + Environment.NewLine + AdminString);
                 File.SetAttributes(GlobalVars.UsersFolder + id + ".txt", FileAttributes.Normal);
