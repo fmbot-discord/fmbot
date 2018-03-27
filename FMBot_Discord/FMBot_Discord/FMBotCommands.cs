@@ -1882,7 +1882,6 @@ namespace FMBot_Discord
             }
 
             string assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            string fileVersion = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion;
 
             int fixedCmdGlobalCount = GlobalVars.CommandExecutions + 1;
 
@@ -1892,8 +1891,7 @@ namespace FMBot_Discord
             builder.AddInlineField("Command executions since bot start: ", fixedCmdGlobalCount);
             builder.AddField("Number of servers the bot is on: ", SelfGuilds);
             builder.AddField("Bot status: ", status);
-            builder.AddInlineField("Bot revision version: ", assemblyVersion);
-            builder.AddInlineField("Bot release version: ", fileVersion);
+            builder.AddField("Bot version: ", assemblyVersion);
 
             await Context.Channel.SendMessageAsync("", false, builder.Build());
         }
