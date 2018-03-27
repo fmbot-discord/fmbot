@@ -178,7 +178,7 @@ namespace FMBot_Discord
             // rather an object stating if the command executed successfully)
             if (User.IncomingRequest(client, DiscordCaller.Id) != false)
             {
-                if (commandList.Contains(convertedMessage)
+                if (commandList.Contains(convertedMessage))
                 {
                     var result = await commands.ExecuteAsync(context, argPos, services);
                     if (!result.IsSuccess)
