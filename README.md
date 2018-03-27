@@ -2,7 +2,7 @@
 
 [![Build status](https://ci.appveyor.com/api/projects/status/7bl2caa1wcpp9yta?svg=true)](https://ci.appveyor.com/project/Bitl/fmbot-discord)
 
-![Logo](https://github.com/Bitl/FMBot_Discord/raw/master/avatar.png)
+![Logo](https://github.com/Bitl/FMBot_Discord/raw/master/BinaryFiles/avatar.png)
 
 Discord bot built with Discord.NET in C# mostly focused on LastFM functions.
 
