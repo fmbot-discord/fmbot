@@ -176,9 +176,9 @@ namespace FMBot_Discord
 
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully)
-            if (User.IncomingRequest(client, DiscordCaller.Id) != false)
+            if (commandList.Contains(convertedMessage))
             {
-                if (commandList.Contains(convertedMessage))
+                if (User.IncomingRequest(client, DiscordCaller.Id) != false)
                 {
                     var result = await commands.ExecuteAsync(context, argPos, services);
                     if (!result.IsSuccess)
@@ -190,10 +190,10 @@ namespace FMBot_Discord
                         GlobalVars.CommandExecutions += 1;
                     }
                 }
-                else
-                {
-                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, "Error: CommandList array does not contain " + convertedMessage));
-                }
+            }
+            else
+            {
+                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, "Error: CommandList array does not contain " + convertedMessage));
             }
         }
     }
