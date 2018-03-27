@@ -18,7 +18,17 @@ We also host the bot, [click here to add](https://discordapp.com/oauth2/authoriz
 
 This bot also supports the [Vultr VPS API](https://www.vultr.com/api/) and the [Spotify API](https://beta.developer.spotify.com/dashboard/applications), however you do not need to use this if you don't have to.
 
-Open the config.json file and enter the token in the 'token' field, and the keys and secrets in the other fields.
+Next, download the following files from the release:
+
+```
+BinaryFiles.zip
+BinaryRelease.zip
+config.json
+```
+
+Extract both BinaryRelease.zip and BinaryFiles.zip and put the files from the extracted BinaryFiles folder and the config.json into your BinaryRelease folder. 
+
+Open the config.json file with a text editor like [Notepad++](https://notepad-plus-plus.org/) and enter the token in the 'token' field, and the keys and secrets in the other fields.
 
 Please note that the following parts of the file are completely 
 optional and are not required to be edited, however some commands
