@@ -173,10 +173,10 @@ namespace FMBot_Discord
             }
             
             string convertedMessage = message.Content.Replace(prefix, "");
-
+            
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully)
-            if (commandList.Contains(convertedMessage))
+            if (commandList.Any(convertedMessage.Contains))
             {
                 if (User.IncomingRequest(client, DiscordCaller.Id) != false)
                 {
