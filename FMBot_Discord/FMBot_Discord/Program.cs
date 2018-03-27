@@ -8,6 +8,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
 using static FMBot_Discord.FMBotModules;
 using static FMBot_Discord.FMBotUtil;
 
@@ -20,6 +22,7 @@ namespace FMBot_Discord
         private IServiceProvider services;
         private readonly IServiceCollection map = new ServiceCollection();
         private string prefix;
+        private List<string> commandList = new List<string>();
 
         public static void Main(string[] args)
             => new Program().MainAsync().GetAwaiter().GetResult();
@@ -89,6 +92,17 @@ namespace FMBot_Discord
             client.MessageReceived += HandleCommand_MessageReceived;
             client.MessageUpdated += HandleCommand_MessageEdited;
             client.CurrentUserUpdated += HandleCommand_CurrentUserUpdated;
+            
+            foreach (var module in commands.Modules)
+            {
+                foreach (var cmd in module.Commands)
+                {
+                    foreach (var alias in cmd.Aliases)
+                    {
+                        commandList.Add(alias);
+                    }
+                }
+            }
         }
 
         public async Task HandleCommand_MessageReceived(SocketMessage messageParam)
@@ -157,19 +171,28 @@ namespace FMBot_Discord
                 await context.Channel.SendMessageAsync("You have been blacklisted from " + callerserverid + ". Please contact a server moderator/administrator or a FMBot administrator if you have any questions regarding this decision.");
                 return;
             }
+            
+            string convertedMessage = message.Content.Replace(prefix, "");
 
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully)
             if (User.IncomingRequest(client, DiscordCaller.Id) != false)
             {
-                var result = await commands.ExecuteAsync(context, argPos, services);
-                if (!result.IsSuccess)
+                if (commandList.Contains(convertedMessage)
                 {
-                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason));
+                    var result = await commands.ExecuteAsync(context, argPos, services);
+                    if (!result.IsSuccess)
+                    {
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason));
+                    }
+                    else
+                    {
+                        GlobalVars.CommandExecutions += 1;
+                    }
                 }
                 else
                 {
-                    GlobalVars.CommandExecutions += 1;
+                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, "Error: CommandList array does not contain " + convertedMessage));
                 }
             }
         }
