@@ -1,4 +1,4 @@
-﻿using Discord;
+using Discord;
 using Discord.Commands;
 using Discord.Net.Providers.WS4Net;
 using Discord.WebSocket;
@@ -174,8 +174,8 @@ namespace FMBot_Discord
             
             string convertedMessage = message.Content.Replace(prefix, "");
             var punctuation = convertedMessage.Where(Char.IsPunctuation).Distinct().ToArray();
-    		var words = convertedMessage.Split().Select(x => x.Trim(punctuation));
-			var containsmsg = convertedMessage.Contains(commandList.Any(), StringComparer.OrdinalIgnoreCase);
+            var words = convertedMessage.Split().Select(x => x.Trim(punctuation));
+	    var containsmsg = words.Contains(commandList.Any(), StringComparer.OrdinalIgnoreCase);
             
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully)
