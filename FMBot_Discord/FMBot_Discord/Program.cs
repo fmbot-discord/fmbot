@@ -31,7 +31,8 @@ namespace FMBot_Discord
         {
             try
             {
-		await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Loading Bot..."));  
+		string assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+		await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "FMBot v" + assemblyVersion + " loading..."));  
 		
                 var cfgjson = await JsonCfg.GetJSONDataAsync();
 
@@ -52,7 +53,10 @@ namespace FMBot_Discord
                 prefix = cfgjson.CommandPrefix;
 
                 await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Registering Commands and Modules..."));
-                commands = new CommandService();
+                commands = new new CommandService(new CommandServiceConfig()
+                {
+                     CaseSensitiveCommands = false
+		});
 
                 string token = cfgjson.Token; // Remember to keep this private!
 
