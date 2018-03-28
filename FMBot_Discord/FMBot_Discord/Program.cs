@@ -175,11 +175,11 @@ namespace FMBot_Discord
             string convertedMessage = message.Content.Replace(prefix, "");
             var words = convertedMessage.Split(' ');
 	    List<string> wordlist = words.OfType<string>().ToList();
-	    bool wordlist = commandList.Intersect(wordlist).Any();
+	    bool wordinlist = commandList.Intersect(wordlist).Any();
             
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully)
-            if (containsmsg == true)
+            if (wordinlist == true)
             {
                 if (User.IncomingRequest(client, DiscordCaller.Id) != false)
                 {
