@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
+using System.Globalization;
 using static FMBot_Discord.FMBotModules;
 using static FMBot_Discord.FMBotUtil;
 
@@ -98,6 +99,8 @@ namespace FMBot_Discord
             client.MessageReceived += HandleCommand_MessageReceived;
             client.MessageUpdated += HandleCommand_MessageEdited;
             client.CurrentUserUpdated += HandleCommand_CurrentUserUpdated;
+		
+	    TextInfo ti = CultureInfo.CurrentCulture.TextInfo;
             
             foreach (var module in commands.Modules)
             {
@@ -106,6 +109,8 @@ namespace FMBot_Discord
                     foreach (var alias in cmd.Aliases)
                     {
                         commandList.Add(alias);
+			commandList.Add(alias.ToUpper());
+			commandList.Add(ti.ToTitleCase(alias));
                     }
                 }
             }
