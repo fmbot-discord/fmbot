@@ -172,21 +172,31 @@ namespace FMBot_Discord
                 return;
             }
             
-            //string convertedMessage = message.Content.Replace(prefix, "");
+            string convertedMessage = message.Content.Replace(prefix, "");
+            var punctuation = convertedMessage.Where(Char.IsPunctuation).Distinct().ToArray();
+    		var words = convertedMessage.Split().Select(x => x.Trim(punctuation));
+			var containsmsg = convertedMessage.Contains(commandList.Any(), StringComparer.OrdinalIgnoreCase);
             
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully)
-            if (User.IncomingRequest(client, DiscordCaller.Id) != false)
+            if (containsmsg == true)
             {
-               var result = await commands.ExecuteAsync(context, argPos, services);
-               if (!result.IsSuccess)
-               {
-                   await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason));
-               }
-               else
-               {
-                   GlobalVars.CommandExecutions += 1;
-               }
+                if (User.IncomingRequest(client, DiscordCaller.Id) != false)
+                {
+                    var result = await commands.ExecuteAsync(context, argPos, services);
+                    if (!result.IsSuccess)
+                    {
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason));
+                    }
+                    else
+                    {
+                        GlobalVars.CommandExecutions += 1;
+                    }
+                }
+            }
+            else
+            {
+                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, "Error: CommandList array does not contain " + convertedMessage));
             }
         }
     }
