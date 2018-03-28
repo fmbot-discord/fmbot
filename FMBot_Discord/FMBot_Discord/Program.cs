@@ -53,7 +53,7 @@ namespace FMBot_Discord
                 prefix = cfgjson.CommandPrefix;
 
                 await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Registering Commands and Modules..."));
-                commands = new new CommandService(new CommandServiceConfig()
+                commands = new CommandService(new CommandServiceConfig()
                 {
                      CaseSensitiveCommands = false
 		});
