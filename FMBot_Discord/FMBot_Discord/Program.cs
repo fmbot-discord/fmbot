@@ -175,7 +175,7 @@ namespace FMBot_Discord
             string convertedMessage = message.Content.Replace(prefix, "");
             var punctuation = convertedMessage.Where(Char.IsPunctuation).Distinct().ToArray();
             var words = convertedMessage.Split().Select(x => x.Trim(punctuation));
-	    var containsmsg = convertedMessage.Contains(commandList.Any(), StringComparer.OrdinalIgnoreCase);
+	    var containsmsg = convertedMessage.Contains(commandList.Any());
             
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully)
