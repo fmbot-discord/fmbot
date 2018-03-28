@@ -10,7 +10,10 @@ Feel free to join the Discord server here: https://discord.gg/srmpCaa
 
 We also host the bot, [click here to add](https://discordapp.com/oauth2/authorize?client_id=356268235697553409&scope=bot&permissions=0)
 
-### Getting started
+<h1>Download Binaries</h1>
+Get them from the [GitHub Releases](https://github.com/Bitl/FMBot_Discord/releases) page or the [AppVeyor Artifacts](https://ci.appveyor.com/project/Bitl/fmbot-discord/build/artifacts) page.
+
+<h1>Getting started</h1>
 
 [Create a discord bot here.](https://discordapp.com/developers/applications/me)
 
