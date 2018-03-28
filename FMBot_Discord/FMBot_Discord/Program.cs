@@ -31,6 +31,8 @@ namespace FMBot_Discord
         {
             try
             {
+		await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Loading Bot..."));  
+		
                 var cfgjson = await JsonCfg.GetJSONDataAsync();
 
                 if (!Directory.Exists(GlobalVars.UsersFolder))
