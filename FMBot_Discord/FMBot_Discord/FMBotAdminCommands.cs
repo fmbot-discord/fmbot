@@ -584,18 +584,17 @@ namespace FMBot_Discord
         [Command("fmserverlist"), Summary("Displays a list showing information related to every server the bot has joined. - FMBot Admins only")]
         public async Task fmserverlistAsync()
         {
+            var DiscordUser = Context.Message.Author;
+            
             if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 1))
             {
                 var SelfUser = Context.Client as DiscordSocketClient;
-                string description = null;
 
                 foreach (var guild in SelfUser.Guilds)
                 {
-                    description += $"{guild.Name} Users: {guild.Users.Count()} Owner: {guild.Owner.ToString()}\n";
-
                     if (!string.IsNullOrWhiteSpace(description))
                     {
-                        await Context.User.SendMessageAsync(module.Name + "\n" + description);
+                        await Context.User.SendMessageAsync($"{guild.Name} Users: {guild.Users.Count()} Owner: {guild.Owner.ToString()}\n");
                     }
                 }
 
