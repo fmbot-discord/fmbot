@@ -506,7 +506,7 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmblacklistremove"), Summary("Removes a user from a serverside blacklist - Server Admins/Mods only")]
+        [Command("fmblacklistremove"), Summary("Removes a user from a serverside blacklist - FMBot Admins and Server Admins/Mods only")]
         public async Task fmblacklistremoveAsync(SocketGuildUser user = null)
         {
             try
@@ -579,6 +579,25 @@ namespace FMBot_Discord
                     await ReplyAsync("Unable to remove " + user.Nickname + " (" + user.Username + ") from the blacklist due to an internal error.");
                 }
             }
+        }
+        
+        [Command("fmserverlist"), Summary("Displays a list showing information related to every server the bot has joined.")]
+        public async Task fmserverlistAsync()
+        {
+            var SelfUser = Context.Client as DiscordSocketClient;
+            string description = null;
+
+            foreach (var guild in SelfUser.Guilds)
+            {
+                description += $"{guild.Name} Users: {guild.Users.Count()} Owner: {guild.Owner.ToString()}\n";
+
+                if (!string.IsNullOrWhiteSpace(description))
+                {
+                    await Context.User.SendMessageAsync(module.Name + "\n" + description);
+                }
+            }
+
+            await Context.Channel.SendMessageAsync("Check your DMs!");
         }
     }
 }
