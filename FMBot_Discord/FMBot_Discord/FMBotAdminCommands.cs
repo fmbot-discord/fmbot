@@ -592,10 +592,7 @@ namespace FMBot_Discord
 
                 foreach (var guild in SelfUser.Guilds)
                 {
-                    if (!string.IsNullOrWhiteSpace(description))
-                    {
-                        await Context.User.SendMessageAsync($"{guild.Name} Users: {guild.Users.Count()} Owner: {guild.Owner.ToString()}\n");
-                    }
+                    await Context.User.SendMessageAsync($"{guild.Name} Users: {guild.Users.Count()} Owner: {guild.Owner.ToString()}\n");
                 }
 
                 await Context.Channel.SendMessageAsync("Check your DMs!");
