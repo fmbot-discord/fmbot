@@ -1797,7 +1797,7 @@ namespace FMBot_Discord
             await ReplyAsync("Your FMBot settings have been successfully deleted.");
         }
 
-        [Command("fmhelp"), Summary("Displays this help box.")]
+        [Command("fmhelp"), Summary("Displays this list.")]
         public async Task fmhelpAsync()
         {
             var cfgjson = await JsonCfg.GetJSONDataAsync();
