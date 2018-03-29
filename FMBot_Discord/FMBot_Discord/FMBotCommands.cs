@@ -1801,8 +1801,7 @@ namespace FMBot_Discord
         public async Task fmhelpAsync()
         {
             var cfgjson = await JsonCfg.GetJSONDataAsync();
-
-            var SelfName = Context.Client.CurrentUser;
+            
             string prefix = cfgjson.CommandPrefix;
 
             foreach (var module in _service.Modules)
