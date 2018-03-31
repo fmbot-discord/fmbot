@@ -732,6 +732,36 @@ namespace FMBot_Discord
                 }
             }
 
+            public async void UseCustomAvatarFromLink(DiscordSocketClient client, string link, string desc)
+            {
+                var cfgjson = await JsonCfg.GetJSONDataAsync();
+
+                try
+                {
+                    try
+                    {
+                        trackString = desc;
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
+                    }
+                    catch (Exception e)
+                    {
+                        ExceptionReporter.ReportException(client, e);
+
+                        trackString = "Unable to get information for this artist avatar.";
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this album artist avatar.", e));
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(link))
+                    {
+                        ChangeToNewAvatar(client, cfgjson, link);
+                    }
+                }
+                catch (Exception e)
+                {
+                    ExceptionReporter.ReportException(client, e);
+                }
+            }
+
             public string GetTrackString()
             {
                 return trackString;

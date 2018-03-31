@@ -312,6 +312,67 @@ namespace FMBot_Discord
             }
         }
 
+        [Command("fmavataroverride"), Summary("Changes the avatar to be a image from a link. - FMBot Super Admins only")]
+        [Alias("fmsetavatar")]
+        public async Task fmavataroverrideAsync(string link, string desc = "Custom FMBot Avatar", int ievent = 0)
+        {
+            var DiscordUser = Context.Message.Author;
+            if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 2))
+            {
+                var cfgjson = await JsonCfg.GetJSONDataAsync();
+
+                if (link == "help")
+                {
+                    await ReplyAsync(cfgjson.CommandPrefix + "fmavataroverride <image link> [message in quotation marks] [event 0 or 1]");
+                    return;
+                }
+
+                try
+                {
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+
+                    if (ievent == 1)
+                    {
+                        _timer.UseCustomAvatarFromLink(client, link, desc);
+                        await ReplyAsync("Set avatar to '" + link + "' with description '" + desc + "'. This is an event and it cannot be stopped the without the Owner's assistance. To stop an event, please contact the owner of the bot or specify a different avatar without the event parameter.");
+                    }
+                    else
+                    {
+                        _timer.UseCustomAvatarFromLink(client, link, desc);
+                        await ReplyAsync("Set avatar to '" + link + "' with description '" + desc + "'. This is not an event.");
+                    }
+                }
+                catch (Exception e)
+                {
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                    ExceptionReporter.ReportException(client, e);
+                    await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+                }
+            }
+        }
+
+        [Command("fmnameoverride"), Summary("Changes the bot's name. - FMBot Owners only")]
+        [Alias("fmsetbotname")]
+        public async Task fmnameoverrideAsync(string name = "FMBot")
+        {
+            var DiscordUser = Context.Message.Author;
+            if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 3))
+            {
+                try
+                {
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                    await client.CurrentUser.ModifyAsync(u => u.Username = name);
+                    await ReplyAsync("Set name to '" + name + "'");
+                }
+                catch (Exception e)
+                {
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                    ExceptionReporter.ReportException(client, e);
+                    await ReplyAsync("Unable to set the name of the bot due to an internal error.");
+                }
+            }
+        }
+
         [Command("fmresetavatar"), Summary("Changes the avatar to be the default. - FMBot Super Admins only")]
         public async Task fmresetavatar()
         {
