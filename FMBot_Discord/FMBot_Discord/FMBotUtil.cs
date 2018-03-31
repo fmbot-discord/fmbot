@@ -1036,11 +1036,11 @@ public static class TimeSpanExtentions
 
 public static class StringExtentions
 {
-    public static IEnumerable<string> SplitByLength(this string str)
+    public static IEnumerable<string> SplitByMessageLength(this string str)
     {
-        for (int index = 0; index < str.Length; index += GlobalVars.MessageLength)
+        for (int index = 0; index < str.Length; index += FMBotUtil.GlobalVars.MessageLength)
         {
-            yield return str.Substring(index, Math.Min(GlobalVars.MessageLength, str.Length - index));
+            yield return str.Substring(index, Math.Min(FMBotUtil.GlobalVars.MessageLength, str.Length - index));
         }
     }
 }
