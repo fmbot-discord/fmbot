@@ -1038,9 +1038,11 @@ public static class StringExtentions
 {
     public static IEnumerable<string> SplitByMessageLength(this string str)
     {
-        for (int index = 0; index < str.Length; index += FMBotUtil.GlobalVars.MessageLength)
+        int MessageLength = 2000;
+
+        for (int index = 0; index < str.Length; index += MessageLength)
         {
-            yield return str.Substring(index, Math.Min(FMBotUtil.GlobalVars.MessageLength, str.Length - index));
+            yield return str.Substring(index, Math.Min(MessageLength, str.Length - index));
         }
     }
 }
