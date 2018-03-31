@@ -639,7 +639,7 @@ namespace FMBot_Discord
             public static string ConfigFileName = "config.json";
             public static string BasePath = AppDomain.CurrentDomain.BaseDirectory;
             public static string UsersFolder = BasePath + "users/";
-
+            public static int MessageLength = 2000;
             public static int CommandExecutions = 0;
 
             public static TimeSpan SystemUpTime()
@@ -1036,11 +1036,11 @@ public static class TimeSpanExtentions
 
 public static class StringExtentions
 {
-    public static IEnumerable<string> SplitByLength(this string str, int maxLength)
+    public static IEnumerable<string> SplitByLength(this string str)
     {
-        for (int index = 0; index < str.Length; index += maxLength)
+        for (int index = 0; index < str.Length; index += GlobalVars.MessageLength)
         {
-            yield return str.Substring(index, Math.Min(maxLength, str.Length - index));
+            yield return str.Substring(index, Math.Min(GlobalVars.MessageLength, str.Length - index));
         }
     }
 }
