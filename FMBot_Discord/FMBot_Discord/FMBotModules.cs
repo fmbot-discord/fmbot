@@ -665,9 +665,9 @@ namespace FMBot_Discord
                                 catch (Exception e)
                                 {
                                     ExceptionReporter.ReportException(client, e);
-
+                                    UseDefaultAvatar(client);
                                     trackString = "Unable to get information for this artist avatar.";
-                                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this album artist avatar.", e));
+                                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this avatar.", e));
                                 }
                             }
 
@@ -710,7 +710,7 @@ namespace FMBot_Discord
                                 catch (Exception e)
                                 {
                                     ExceptionReporter.ReportException(client, e);
-
+                                    UseDefaultAvatar(client);
                                     trackString = "Unable to get information for this album cover avatar.";
                                     await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this album cover avatar.", e));
                                 }
@@ -732,8 +732,17 @@ namespace FMBot_Discord
                 }
             }
 
-            public async void UseCustomAvatarFromLink(DiscordSocketClient client, string link, string desc)
+            public async void UseCustomAvatarFromLink(DiscordSocketClient client, string link, string desc, bool important)
             {
+                if (important == true && IsTimerActive() == true)
+                {
+                    Stop();
+                }
+                else if (important == false && IsTimerActive() == false)
+                {
+                    Restart();
+                }
+
                 var cfgjson = await JsonCfg.GetJSONDataAsync();
 
                 try
@@ -746,9 +755,9 @@ namespace FMBot_Discord
                     catch (Exception e)
                     {
                         ExceptionReporter.ReportException(client, e);
-
-                        trackString = "Unable to get information for this artist avatar.";
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this album artist avatar.", e));
+                        UseDefaultAvatar(client);
+                        trackString = "Unable to get information for this avatar.";
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this avatar.", e));
                     }
 
                     if (!string.IsNullOrWhiteSpace(link))

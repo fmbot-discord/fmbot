@@ -333,12 +333,12 @@ namespace FMBot_Discord
 
                     if (ievent == 1)
                     {
-                        _timer.UseCustomAvatarFromLink(client, link, desc);
+                        _timer.UseCustomAvatarFromLink(client, link, desc, true);
                         await ReplyAsync("Set avatar to '" + link + "' with description '" + desc + "'. This is an event and it cannot be stopped the without the Owner's assistance. To stop an event, please contact the owner of the bot or specify a different avatar without the event parameter.");
                     }
                     else
                     {
-                        _timer.UseCustomAvatarFromLink(client, link, desc);
+                        _timer.UseCustomAvatarFromLink(client, link, desc, false);
                         await ReplyAsync("Set avatar to '" + link + "' with description '" + desc + "'. This is not an event.");
                     }
                 }
