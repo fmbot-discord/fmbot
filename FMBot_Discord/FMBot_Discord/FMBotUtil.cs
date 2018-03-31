@@ -772,14 +772,6 @@ namespace FMBot_Discord
 
                 return list;
             }
-            
-            public static IEnumerable<string> SplitByLength(this string str, int maxLength)
-            {
-                for (int index = 0; index < str.Length; index += maxLength)
-                {
-                    yield return str.Substring(index, Math.Min(maxLength, str.Length - index));
-                }
-            }
         }
 
         public class FMBotAdminUtil
@@ -1039,5 +1031,16 @@ public static class TimeSpanExtentions
         if (string.IsNullOrEmpty(formatted)) formatted = "0 seconds";
 
         return formatted;
+    }
+}
+
+public static class StringExtentions
+{
+    public static IEnumerable<string> SplitByLength(this string str, int maxLength)
+    {
+        for (int index = 0; index < str.Length; index += maxLength)
+        {
+            yield return str.Substring(index, Math.Min(maxLength, str.Length - index));
+        }
     }
 }
