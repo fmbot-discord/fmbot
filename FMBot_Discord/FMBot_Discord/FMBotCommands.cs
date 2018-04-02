@@ -129,7 +129,7 @@ namespace FMBot_Discord
                             var userinfo = await client.User.GetInfoAsync(LastFMName);
                             var playcount = userinfo.Content.Playcount;
 
-                            efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+                            efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString("0");
 
                             builder.WithFooter(efb);
 
@@ -213,7 +213,7 @@ namespace FMBot_Discord
                                 var userinfo = await client.User.GetInfoAsync(LastFMName);
                                 var playcount = userinfo.Content.Playcount;
 
-                                efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+                                efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString("0");
 
                                 builder.WithFooter(efb);
 
@@ -290,7 +290,7 @@ namespace FMBot_Discord
                                 var userinfo = await client.User.GetInfoAsync(LastFMName);
                                 var playcount = userinfo.Content.Playcount;
 
-                                efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+                                efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString("0");
 
                                 builder.WithFooter(efb);
 
@@ -316,19 +316,19 @@ namespace FMBot_Discord
 
                                 if (FMBotAdminUtil.IsOwner(DiscordUser))
                                 {
-                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Owner\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString());
+                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Owner\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                                 }
                                 else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
                                 {
-                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Super Admin\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString());
+                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Super Admin\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                                 }
                                 else if (FMBotAdminUtil.IsAdmin(DiscordUser))
                                 {
-                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Admin\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString());
+                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Admin\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                                 }
                                 else
                                 {
-                                    await Context.Channel.SendMessageAsync("**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString());
+                                    await Context.Channel.SendMessageAsync("**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                                 }
                             }
                             catch (Exception)
@@ -348,19 +348,19 @@ namespace FMBot_Discord
 
                                 if (FMBotAdminUtil.IsOwner(DiscordUser))
                                 {
-                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Owner\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString());
+                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Owner\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                                 }
                                 else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
                                 {
-                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Super Admin\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString());
+                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Super Admin\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                                 }
                                 else if (FMBotAdminUtil.IsAdmin(DiscordUser))
                                 {
-                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Admin\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString());
+                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Admin\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                                 }
                                 else
                                 {
-                                    await Context.Channel.SendMessageAsync("**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString());
+                                    await Context.Channel.SendMessageAsync("**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                                 }
                             }
                         }
@@ -381,19 +381,19 @@ namespace FMBot_Discord
 
                             if (FMBotAdminUtil.IsOwner(DiscordUser))
                             {
-                                await Context.Channel.SendMessageAsync(SelfUser.Username + " Owner\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString());
+                                await Context.Channel.SendMessageAsync(SelfUser.Username + " Owner\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                             }
                             else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
                             {
-                                await Context.Channel.SendMessageAsync(SelfUser.Username + " Super Admin\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString());
+                                await Context.Channel.SendMessageAsync(SelfUser.Username + " Super Admin\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                             }
                             else if (FMBotAdminUtil.IsAdmin(DiscordUser))
                             {
-                                await Context.Channel.SendMessageAsync(SelfUser.Username + " Admin\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString());
+                                await Context.Channel.SendMessageAsync(SelfUser.Username + " Admin\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                             }
                             else
                             {
-                                await Context.Channel.SendMessageAsync("**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString());
+                                await Context.Channel.SendMessageAsync("**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                             }
                         }
                     }
@@ -748,7 +748,7 @@ namespace FMBot_Discord
                     var userinfo = await client.User.GetInfoAsync(LastFMName);
                     EmbedFooterBuilder efb = new EmbedFooterBuilder();
                     var playcount = userinfo.Content.Playcount;
-                    efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+                    efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString("0");
 
                     builder.WithFooter(efb);
 
@@ -927,7 +927,7 @@ namespace FMBot_Discord
                     var userinfo = await client.User.GetInfoAsync(LastFMName);
                     EmbedFooterBuilder efb = new EmbedFooterBuilder();
                     var playcount = userinfo.Content.Playcount;
-                    efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+                    efb.Text = LastFMName + "'s Total Tracks: " + .ToString("0");
 
                     builder.WithFooter(efb);
 
@@ -1052,7 +1052,7 @@ namespace FMBot_Discord
                             if (LastFMFriends.Count() <= 8)
                             {
                                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                                efb.Text = amountOfScrobbles + playcount.ToString();
+                                efb.Text = amountOfScrobbles + playcount.ToString("0");
                                 builder.WithFooter(efb);
                             }
 
@@ -1181,7 +1181,7 @@ namespace FMBot_Discord
                         var userinfo = await client.User.GetInfoAsync(LastFMName);
                         var playcount = userinfo.Content.Playcount;
 
-                        efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+                        efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString("0");
 
                         builder.WithFooter(efb);
 
@@ -1339,7 +1339,7 @@ namespace FMBot_Discord
                         var userinfo = await client.User.GetInfoAsync(LastFMName);
                         var playcount = userinfo.Content.Playcount;
 
-                        efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+                        efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString("0");
 
                         builder.WithFooter(efb);
 
@@ -1498,7 +1498,7 @@ namespace FMBot_Discord
                         var userinfo = await client.User.GetInfoAsync(LastFMName);
                         var playcount = userinfo.Content.Playcount;
 
-                        efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
+                        efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString("0");
 
                         builder.WithFooter(efb);
 
@@ -1603,18 +1603,12 @@ namespace FMBot_Discord
                     builder.AddInlineField("Last.FM Name: ", LastFMName);
                     builder.AddInlineField(SelfUser.Username + " Mode: ", LastFMMode);
                     builder.AddInlineField("User Type: ", usertype.ToString());
-                    builder.AddInlineField("Total Tracks: ", playcount.ToString());
+                    builder.AddInlineField("Total Tracks: ", playcount.ToString("0"));
                     builder.AddInlineField("Total Playlists: ", playlists.ToString());
                     builder.AddInlineField("Has Premium? ", premium.ToString());
                     builder.AddInlineField("Is " + SelfUser.Username + " Admin? ", FMBotAdminUtil.IsAdmin(DiscordUser).ToString());
                     builder.AddInlineField("Is " + SelfUser.Username + " Super Admin? ", FMBotAdminUtil.IsSuperAdmin(DiscordUser).ToString());
                     builder.AddInlineField("Is " + SelfUser.Username + " Owner? ", FMBotAdminUtil.IsOwner(DiscordUser).ToString());
-
-                    EmbedFooterBuilder efb = new EmbedFooterBuilder();
-
-                    efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString();
-
-                    builder.WithFooter(efb);
 
                     await Context.Channel.SendMessageAsync("", false, builder.Build());
                 }
