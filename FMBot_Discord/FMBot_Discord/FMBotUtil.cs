@@ -940,6 +940,14 @@ namespace FMBot_Discord
                             Users.Find(User => User.ID.Equals(DiscordID)).LastRequestAfterMessageSent = DateTime.Now;
                             TempUser.isWatchingMessages = true;
                         }
+                        
+                        if ((DateTime.Now - TempUser.LastRequestAfterMessageSent).TotalSeconds >= Convert.ToDouble(cfgjson.InBetweenTime))
+                        {
+                            TempUser.messagesSent = 1;
+                            Users.Find(User => User.ID.Equals(DiscordID)).LastRequestAfterMessageSent = DateTime.Now;
+                            TempUser.isWatchingMessages = true;
+                            return true;
+                        }
 
                         if (TempUser.messagesSent >= Convert.ToInt32(cfgjson.NumMessages))
                         {
@@ -974,13 +982,6 @@ namespace FMBot_Discord
                                 }
                                 return false;
                             }
-                        }
-                        else if ((DateTime.Now - TempUser.LastRequestAfterMessageSent).TotalSeconds >= Convert.ToDouble(cfgjson.InBetweenTime))
-                        {
-                            TempUser.messagesSent = 1;
-                            Users.Find(User => User.ID.Equals(DiscordID)).LastRequestAfterMessageSent = DateTime.Now;
-                            TempUser.isWatchingMessages = true;
-                            return true;
                         }
                         else
                         {
