@@ -927,7 +927,7 @@ namespace FMBot_Discord
                     var userinfo = await client.User.GetInfoAsync(LastFMName);
                     EmbedFooterBuilder efb = new EmbedFooterBuilder();
                     var playcount = userinfo.Content.Playcount;
-                    efb.Text = LastFMName + "'s Total Tracks: " + .ToString("0");
+                    efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString("0");
 
                     builder.WithFooter(efb);
 
