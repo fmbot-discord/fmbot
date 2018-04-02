@@ -188,11 +188,11 @@ namespace FMBot_Discord
                                 }
                                 else if (randavmode == 6)
                                 {
-                                    randmodestring = "6 - Chart";
+                                    randmodestring = "6 - User Chart";
                                 }
                                 else if (randavmode == 7)
                                 {
-                                    randmodestring = "7 - Default";
+                                    randmodestring = "7 - Default Avatar";
                                 }
 
                                 await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to mode " + randmodestring));
@@ -239,15 +239,21 @@ namespace FMBot_Discord
                                                 catch (Exception e)
                                                 {
                                                     ExceptionReporter.ReportException(client, e);
-
+                                                    UseDefaultAvatar(client);
                                                     trackString = "Unable to get information for this album cover avatar.";
-
                                                     await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this album cover avatar.", e));
                                                 }
                                             }
                                         }
 
-                                        ChangeToNewAvatar(client, cfgjson, ThumbnailImage);
+                                        try
+                                        {
+                                            ChangeToNewAvatar(client, cfgjson, ThumbnailImage);
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            ExceptionReporter.ReportException(client, e);
+                                        }
                                     }
                                     else if (randavmode == 2)
                                     {
@@ -287,14 +293,21 @@ namespace FMBot_Discord
                                                 catch (Exception e)
                                                 {
                                                     ExceptionReporter.ReportException(client, e);
-
+                                                    UseDefaultAvatar(client);
                                                     trackString = "Unable to get information for this artist avatar.";
                                                     await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this artist avatar.", e));
                                                 }
                                             }
                                         }
 
-                                        ChangeToNewAvatar(client, cfgjson, ThumbnailImage);
+                                        try
+                                        {
+                                            ChangeToNewAvatar(client, cfgjson, ThumbnailImage);
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            ExceptionReporter.ReportException(client, e);
+                                        }
                                     }
                                     else if (randavmode == 3)
                                     {
@@ -334,14 +347,21 @@ namespace FMBot_Discord
                                                 catch (Exception e)
                                                 {
                                                     ExceptionReporter.ReportException(client, e);
-
+                                                    UseDefaultAvatar(client);
                                                     trackString = "Unable to get information for this artist avatar.";
                                                     await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this artist avatar.", e));
                                                 }
                                             }
                                         }
 
-                                        ChangeToNewAvatar(client, cfgjson, ThumbnailImage);
+                                        try
+                                        {
+                                            ChangeToNewAvatar(client, cfgjson, ThumbnailImage);
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            ExceptionReporter.ReportException(client, e);
+                                        }
                                     }
                                     else if (randavmode == 4)
                                     {
@@ -382,14 +402,21 @@ namespace FMBot_Discord
                                                 catch (Exception e)
                                                 {
                                                     ExceptionReporter.ReportException(client, e);
-
+                                                    UseDefaultAvatar(client);
                                                     trackString = "Unable to get information for this album cover avatar.";
                                                     await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this album cover avatar.", e));
                                                 }
                                             }
                                         }
 
-                                        ChangeToNewAvatar(client, cfgjson, ThumbnailImage);
+                                        try
+                                        {
+                                            ChangeToNewAvatar(client, cfgjson, ThumbnailImage);
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            ExceptionReporter.ReportException(client, e);
+                                        }
                                     }
                                     else if (randavmode == 5)
                                     {
@@ -430,14 +457,21 @@ namespace FMBot_Discord
                                                 catch (Exception e)
                                                 {
                                                     ExceptionReporter.ReportException(client, e);
-
+                                                    UseDefaultAvatar(client);
                                                     trackString = "Unable to get information for this album cover avatar.";
                                                     await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this album cover avatar.", e));
                                                 }
                                             }
                                         }
-
-                                        ChangeToNewAvatar(client, cfgjson, ThumbnailImage);
+                                        
+                                        try
+                                        {
+                                            ChangeToNewAvatar(client, cfgjson, ThumbnailImage);
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            ExceptionReporter.ReportException(client, e);
+                                        }
                                     }
                                     else if (randavmode == 6)
                                     {
@@ -466,36 +500,51 @@ namespace FMBot_Discord
                                                         trackString = FeaturedUser.Username + "'s chart.";
                                                         await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                                     }
+                                                    catch (Exception)
+                                                    {
+                                                        try
+                                                        {
+                                                            trackString = "Anonymous' chart.";
+                                                            await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
+                                                        }
+                                                        catch (Exception e)
+                                                        {
+                                                            ExceptionReporter.ReportException(client, e);
+                                                            UseDefaultAvatar(client);
+                                                            trackString = "Unable to get information for this chart avatar.";
+                                                            await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this chart avatar.", e));
+                                                        }
+                                                    }
+                                                }
+                                                
+                                                try
+                                                {
+                                                    var fileStream = new FileStream(randChartImage, FileMode.Open);
+                                                    var image = new Discord.Image(fileStream);
+                                                    await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
+                                                    fileStream.Close();
+
+                                                    await Task.Delay(5000);
+                                                    
+                                                    try
+                                                    {
+                                                        ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
+                                                        ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.FeaturedChannel);
+
+                                                        SocketGuild guild = client.GetGuild(BroadcastServerID);
+                                                        SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
+
+                                                        var builder = new EmbedBuilder();
+                                                        var SelfUser = client.CurrentUser;
+                                                        builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
+                                                        builder.AddInlineField("Featured:", trackString);
+
+                                                        await channel.SendMessageAsync("", false, builder.Build());
+                                                    }
                                                     catch (Exception e)
                                                     {
                                                         ExceptionReporter.ReportException(client, e);
-
-                                                        trackString = "Anonymous' chart.";
-                                                        await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                                     }
-                                                }
-
-                                                var fileStream = new FileStream(randChartImage, FileMode.Open);
-                                                var image = new Discord.Image(fileStream);
-                                                await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
-                                                fileStream.Close();
-
-                                                await Task.Delay(5000);
-
-                                                try
-                                                {
-                                                    ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
-                                                    ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.FeaturedChannel);
-
-                                                    SocketGuild guild = client.GetGuild(BroadcastServerID);
-                                                    SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
-
-                                                    var builder = new EmbedBuilder();
-                                                    var SelfUser = client.CurrentUser;
-                                                    builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
-                                                    builder.AddInlineField("Featured:", trackString);
-
-                                                    await channel.SendMessageAsync("", false, builder.Build());
                                                 }
                                                 catch (Exception e)
                                                 {
@@ -506,8 +555,9 @@ namespace FMBot_Discord
                                         catch (Exception e)
                                         {
                                             ExceptionReporter.ReportException(client, e);
-
                                             UseDefaultAvatar(client);
+                                            trackString = "Unable to get information for this chart avatar.";
+                                            await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this chart avatar.", e));
                                         }
                                     }
                                     else if (randavmode == 7)
@@ -523,16 +573,18 @@ namespace FMBot_Discord
                             catch (Exception e)
                             {
                                 ExceptionReporter.ReportException(client, e);
-
                                 UseDefaultAvatar(client);
+                                trackString = "Unable to get information for this avatar.";
+                                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this avatar.", e));
                             }
                         }
                     }
                     catch (Exception e)
                     {
                         ExceptionReporter.ReportException(client, e);
-
                         UseDefaultAvatar(client);
+                        trackString = "Unable to get information for this avatar.";
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this avatar.", e));
                     }
                 },
                 null,
