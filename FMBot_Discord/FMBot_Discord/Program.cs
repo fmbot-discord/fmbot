@@ -7,7 +7,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
@@ -72,8 +71,7 @@ namespace FMBot_Discord
 
                 await client.SetGameAsync("🎶 Say " + prefix + "fmhelp to use 🎶");
                 await client.SetStatusAsync(UserStatus.DoNotDisturb);
-		    
-		Application.ThreadException += new Threading.ThreadExceptionHandler(CatchFatalException);
+		System.AppDomain.CurrentDomain.UnhandledException += CatchFatalException;
 
                 // Block this task until the program is closed.
                 await Task.Delay(-1);
@@ -214,7 +212,7 @@ namespace FMBot_Discord
             }
         }
 	    
-	private static void CatchFatalException(object sender, ThreadExceptionEventArgs t)
+	private static void CatchFatalException(object sender, UnhandledExceptionEventArgs t)
 	{
     	   Environment.Exit(1);
 	}
