@@ -31,7 +31,7 @@ namespace FMBot_Discord
         public async Task MainAsync()
         {
             try
-            {
+            {  
 		string assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 		await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "FMBot v" + assemblyVersion + " loading..."));  
 		
@@ -71,6 +71,8 @@ namespace FMBot_Discord
 
                 await client.SetGameAsync("🎶 Say " + prefix + "fmhelp to use 🎶");
                 await client.SetStatusAsync(UserStatus.DoNotDisturb);
+		    
+		Application.ThreadException += new Threading.ThreadExceptionHandler(CatchFatalException);
 
                 // Block this task until the program is closed.
                 await Task.Delay(-1);
@@ -210,5 +212,10 @@ namespace FMBot_Discord
                 await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, "Error: CommandList array does not contain " + convertedMessage));
             }
         }
+	    
+	private static void CatchFatalException(object sender, ThreadExceptionEventArgs t)
+	{
+    	   Environment.Exit(1);
+	}
     }
 }
