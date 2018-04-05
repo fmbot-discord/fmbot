@@ -36,7 +36,7 @@ namespace FMBot_Discord
         }
 
         [Command("fm"), Summary("Displays what a user is listening to.")]
-        [Alias("dm", "gm", "sm","am","hm","jm","km","lm", "lastfm")]
+        [Alias("qm", "wm", "em", "rm", "tm", "ym", "um", "im", "om", "pm", "dm", "gm", "sm","am","hm","jm","km","lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm")]
         public async Task fmAsync(IUser user = null)
         {
             try
