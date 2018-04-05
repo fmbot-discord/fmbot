@@ -51,4 +51,4 @@ and functions of the bot may not work:
 Please also launch the bot from the "StartFMBot.bat" as it allows
 the bot to restart itself when there is an error.
 
-If you want to update the bot in the future, just download the new "BinaryRelease.zip" and override the old files with the new ones.
+If you want to update the bot in the future, just download the new "BinaryRelease.zip" and/or the new "BinaryFiles.zip" and override the old files with the new ones.
