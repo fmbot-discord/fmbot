@@ -1062,7 +1062,7 @@ public static class BitmapExtentions
         }
     }
     
-    public static System.Drawing.Color MostDifferent (Color original) 
+    public static System.Drawing.Color MostDifferent (System.Drawing.Color original) 
     {
         byte r = MostDifferent(original.R);
         byte g = MostDifferent(original.G);
