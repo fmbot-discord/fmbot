@@ -1062,15 +1062,15 @@ public static class BitmapExtentions
         }
     }
     
-    public static Color MostDifferent (Color original) 
+    public static System.Drawing.Color MostDifferent (Color original) 
     {
         byte r = MostDifferent(original.R);
         byte g = MostDifferent(original.G);
         byte b = MostDifferent(original.B);
-        return Color.FromArgb(r,g,b);
+        return System.Drawing.Color.FromArgb(r,g,b);
     }
     
-    public static unsafe Color AverageColor (Bitmap bmp, Rectangle r) 
+    public static unsafe System.Drawing.Color AverageColor (Bitmap bmp, Rectangle r) 
     {
         BitmapData bmd = bmp.LockBits (r, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
         int s = bmd.Stride;
@@ -1099,7 +1099,7 @@ public static class BitmapExtentions
         cg = (cg + d2) / div;
         cb = (cb + d2) / div;
         bmp.UnlockBits (bmd);
-        return Color.FromArgb (cr, cg, cb);
+        return System.Drawing.Color.FromArgb (cr, cg, cb);
     }
     
     public static void DrawColorString (this Graphics g, Bitmap bmp, string text, Font font, PointF point) 
@@ -1107,7 +1107,7 @@ public static class BitmapExtentions
         SizeF sf = g.MeasureString (text, font);
         Rectangle r = new Rectangle (Point.Truncate (point), Size.Ceiling (sf));
         r.Intersect (new Rectangle(0,0,bmp.Width,bmp.Height));
-        Color brsh = MostDifferent (AverageColor (bmp, r));
+        System.Drawing.Color brsh = MostDifferent (AverageColor (bmp, r));
         g.DrawString (text, font, new SolidBrush (brsh), point);
     }
 }
