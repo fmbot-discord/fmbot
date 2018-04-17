@@ -12,12 +12,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows.Media;
 using YoutubeSearch;
 using static FMBot_Discord.FMBotModules;
 using static FMBot_Discord.FMBotUtil;
@@ -660,7 +662,11 @@ namespace FMBot_Discord
                                 WebResponse response = request.GetResponse();
                                 Stream responseStream = response.GetResponseStream();
                                 Bitmap cover = new Bitmap(responseStream);
-                                images.Add(cover);
+                                Graphics convertedCover = Graphics.FromImage(cover);
+                                convertedCover.DrawColorString (cover, ArtistName, new Font ("Arial", 8.0f), new PointF (10.0f, 10.0f));
+                                convertedCover.DrawColorString (cover, AlbumName, new Font ("Arial", 8.0f), new PointF (10.0f, 50.0f));
+                                
+                                images.Add(convertedCover);
                             }
                             catch (Exception e)
                             {
@@ -668,7 +674,11 @@ namespace FMBot_Discord
                                 ExceptionReporter.ReportException(disclient, e);
 
                                 Bitmap cover = new Bitmap(GlobalVars.BasePath + "unknown.png");
-                                images.Add(cover);
+                                Graphics convertedCover = Graphics.FromImage(cover);
+                                convertedCover.DrawColorString (cover, ArtistName, new Font ("Arial", 8.0f), new PointF (10.0f, 10.0f));
+                                convertedCover.DrawColorString (cover, AlbumName, new Font ("Arial", 8.0f), new PointF (10.0f, 50.0f));
+                                
+                                images.Add(convertedCover);
                             }
                         }
                     }
@@ -839,7 +849,10 @@ namespace FMBot_Discord
                                 WebResponse response = request.GetResponse();
                                 Stream responseStream = response.GetResponseStream();
                                 Bitmap cover = new Bitmap(responseStream);
-                                images.Add(cover);
+                                Graphics convertedCover = Graphics.FromImage(cover);
+                                convertedCover.DrawColorString (cover, ArtistName, new Font ("Arial", 8.0f), new PointF (10.0f, 10.0f));
+                                
+                                images.Add(convertedCover);
                             }
                             catch (Exception e)
                             {
@@ -847,7 +860,10 @@ namespace FMBot_Discord
                                 ExceptionReporter.ReportException(disclient, e);
 
                                 Bitmap cover = new Bitmap(GlobalVars.BasePath + "unknown.png");
-                                images.Add(cover);
+                                Graphics convertedCover = Graphics.FromImage(cover);
+                                convertedCover.DrawColorString (cover, ArtistName, new Font ("Arial", 8.0f), new PointF (10.0f, 10.0f));
+                                
+                                images.Add(convertedCover);
                             }
                         }
                     }
