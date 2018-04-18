@@ -589,19 +589,28 @@ namespace FMBot_Discord
         }
 
         [Command("fmchart"), Summary("Generates a chart based on a user's parameters.")]
-        public async Task fmchartAsync(string time = "weekly", string chartalbums = "9", string chartrows = "3", IUser user = null)
+        public async Task fmchartAsync(string time = "weekly", string chartsize = "3x3", IUser user = null)
         {
             var cfgjson = await JsonCfg.GetJSONDataAsync();
 
             if (time == "help")
             {
-                await ReplyAsync(cfgjson.CommandPrefix + "fmchart [weekly/monthly/yearly/overall] [number of albums] [chart rows] [user]");
+                await ReplyAsync(cfgjson.CommandPrefix + "fmchart [weekly/monthly/yearly/overall] [3x3/5x5/8x8/10x10] [user]");
                 return;
             }
 
             var SelfUser = Context.Client.CurrentUser;
 
-            var loadingText = "Loading your " + SelfUser.Username + " chart...";
+            var loadingText = "";
+            if (chartsize.Equals("8x8") || chartsize.Equals("10x10"))
+            {
+                loadingtext = "Loading your " + SelfUser.Username + " chart... (may take a while due to the size of your chart)";
+            }
+            else
+            {
+                loadingtext = "Loading your " + SelfUser.Username + " chart...";
+            }
+            
             var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
 
             try
@@ -615,6 +624,31 @@ namespace FMBot_Discord
                 else
                 {
                     var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+                    
+                    string chartalbums = ""
+                    string chartrows = ""
+                    
+                    if (chartsize.Equals("3x3"))
+                    {
+                        chartalbums = "9"
+                        chartrows = "3"
+                    }
+                    else if (chartsize.Equals("5x5"))
+                    {
+                        chartalbums = "25"
+                        chartrows = "5"
+                    }
+                    else if (chartsize.Equals("8x8"))
+                    {
+                        chartalbums = "64"
+                        chartrows = "8"
+                    }
+                    else if (chartsize.Equals("10x10"))
+                    {
+                        chartalbums = "100"
+                        chartrows = "10"
+                    }
+                    
                     int max = int.Parse(chartalbums);
                     int rows = int.Parse(chartrows);
 
@@ -777,19 +811,28 @@ namespace FMBot_Discord
         }
 
         [Command("fmartistchart"), Summary("Generates an artist chart based on a user's parameters.")]
-        public async Task fmartistchartAsync(string time = "weekly", string chartalbums = "9", string chartrows = "3", IUser user = null)
+        public async Task fmartistchartAsync(string time = "weekly", string chartsize = "3x3", IUser user = null)
         {
             var cfgjson = await JsonCfg.GetJSONDataAsync();
 
             if (time == "help")
             {
-                await ReplyAsync(cfgjson.CommandPrefix + "fmartistchart [weekly/monthly/yearly/overall] [number of albums] [chart rows] [user]");
+                await ReplyAsync(cfgjson.CommandPrefix + "fmartistchart [weekly/monthly/yearly/overall] [3x3/5x5/8x8/10x10] [user]");
                 return;
             }
 
             var SelfUser = Context.Client.CurrentUser;
 
-            var loadingText = "Loading your " + SelfUser.Username + " artist chart...";
+            var loadingText = "";
+            if (chartsize.Equals("8x8") || chartsize.Equals("10x10"))
+            {
+                loadingtext = "Loading your " + SelfUser.Username + " chart... (may take a while due to the size of your chart)";
+            }
+            else
+            {
+                loadingtext = "Loading your " + SelfUser.Username + " chart...";
+            }
+            
             var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
 
             try
@@ -803,6 +846,31 @@ namespace FMBot_Discord
                 else
                 {
                     var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+                    
+                    string chartalbums = ""
+                    string chartrows = ""
+                    
+                    if (chartsize.Equals("3x3"))
+                    {
+                        chartalbums = "9"
+                        chartrows = "3"
+                    }
+                    else if (chartsize.Equals("5x5"))
+                    {
+                        chartalbums = "25"
+                        chartrows = "5"
+                    }
+                    else if (chartsize.Equals("8x8"))
+                    {
+                        chartalbums = "64"
+                        chartrows = "8"
+                    }
+                    else if (chartsize.Equals("10x10"))
+                    {
+                        chartalbums = "100"
+                        chartrows = "10"
+                    }
+                    
                     int max = int.Parse(chartalbums);
                     int rows = int.Parse(chartrows);
 
@@ -1853,7 +1921,7 @@ namespace FMBot_Discord
                 }
             }
 
-            await Context.User.SendMessageAsync(SelfUser.Username + " Modes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nmonthly\nyearly\noverall");
+            await Context.User.SendMessageAsync(SelfUser.Username + " Be sure to use 'help' after a command name to see the parameters.\nModes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nmonthly\nyearly\noverall\nAvailable FMChart sizes:\n3x3\n5x5\n8x8");
 
             await Context.Channel.SendMessageAsync("Check your DMs!");
         }
