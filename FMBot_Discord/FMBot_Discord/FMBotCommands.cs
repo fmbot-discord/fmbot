@@ -625,28 +625,28 @@ namespace FMBot_Discord
                 {
                     var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
                     
-                    string chartalbums = ""
-                    string chartrows = ""
+                    string chartalbums = "";
+                    string chartrows = "";
                     
                     if (chartsize.Equals("3x3"))
                     {
-                        chartalbums = "9"
-                        chartrows = "3"
+                        chartalbums = "9";
+                        chartrows = "3";
                     }
                     else if (chartsize.Equals("5x5"))
                     {
-                        chartalbums = "25"
-                        chartrows = "5"
+                        chartalbums = "25";
+                        chartrows = "5";
                     }
                     else if (chartsize.Equals("8x8"))
                     {
-                        chartalbums = "64"
-                        chartrows = "8"
+                        chartalbums = "64";
+                        chartrows = "8";
                     }
                     else if (chartsize.Equals("10x10"))
                     {
-                        chartalbums = "100"
-                        chartrows = "10"
+                        chartalbums = "100";
+                        chartrows = "10";
                     }
                     
                     int max = int.Parse(chartalbums);
@@ -847,28 +847,28 @@ namespace FMBot_Discord
                 {
                     var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
                     
-                    string chartalbums = ""
-                    string chartrows = ""
+                    string chartalbums = "";
+                    string chartrows = "";
                     
                     if (chartsize.Equals("3x3"))
                     {
-                        chartalbums = "9"
-                        chartrows = "3"
+                        chartalbums = "9";
+                        chartrows = "3";
                     }
                     else if (chartsize.Equals("5x5"))
                     {
-                        chartalbums = "25"
-                        chartrows = "5"
+                        chartalbums = "25";
+                        chartrows = "5";
                     }
                     else if (chartsize.Equals("8x8"))
                     {
-                        chartalbums = "64"
-                        chartrows = "8"
+                        chartalbums = "64";
+                        chartrows = "8";
                     }
                     else if (chartsize.Equals("10x10"))
                     {
-                        chartalbums = "100"
-                        chartrows = "10"
+                        chartalbums = "100";
+                        chartrows = "10";
                     }
                     
                     int max = int.Parse(chartalbums);
