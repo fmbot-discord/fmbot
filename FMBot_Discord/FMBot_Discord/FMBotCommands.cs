@@ -602,13 +602,14 @@ namespace FMBot_Discord
             var SelfUser = Context.Client.CurrentUser;
 
             var loadingText = "";
+            
             if (chartsize.Equals("8x8") || chartsize.Equals("10x10"))
             {
-                loadingtext = "Loading your " + SelfUser.Username + " chart... (may take a while due to the size of your chart)";
+                loadingText = "Loading your " + SelfUser.Username + " chart... (may take a while due to the size of your chart)";
             }
             else
             {
-                loadingtext = "Loading your " + SelfUser.Username + " chart...";
+                loadingText = "Loading your " + SelfUser.Username + " chart...";
             }
             
             var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
@@ -824,13 +825,14 @@ namespace FMBot_Discord
             var SelfUser = Context.Client.CurrentUser;
 
             var loadingText = "";
+            
             if (chartsize.Equals("8x8") || chartsize.Equals("10x10"))
             {
-                loadingtext = "Loading your " + SelfUser.Username + " chart... (may take a while due to the size of your chart)";
+                loadingText = "Loading your " + SelfUser.Username + " chart... (may take a while due to the size of your chart)";
             }
             else
             {
-                loadingtext = "Loading your " + SelfUser.Username + " chart...";
+                loadingText = "Loading your " + SelfUser.Username + " chart...";
             }
             
             var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
