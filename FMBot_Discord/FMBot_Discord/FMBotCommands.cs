@@ -828,11 +828,11 @@ namespace FMBot_Discord
             
             if (chartsize.Equals("8x8") || chartsize.Equals("10x10"))
             {
-                loadingText = "Loading your " + SelfUser.Username + " chart... (may take a while due to the size of your chart)";
+                loadingText = "Loading your " + SelfUser.Username + " artist chart... (may take a while due to the size of your chart)";
             }
             else
             {
-                loadingText = "Loading your " + SelfUser.Username + " chart...";
+                loadingText = "Loading your " + SelfUser.Username + " artist chart...";
             }
             
             var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
@@ -920,7 +920,7 @@ namespace FMBot_Discord
                                 Stream responseStream = response.GetResponseStream();
                                 Bitmap cover = new Bitmap(responseStream);
                                 Graphics text = Graphics.FromImage(cover);
-                                text.DrawColorString(cover, ArtistName, new Font("Arial", 12.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
+                                text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
 
                                 images.Add(cover);
                             }
@@ -931,7 +931,7 @@ namespace FMBot_Discord
 
                                 Bitmap cover = new Bitmap(GlobalVars.BasePath + "unknown.png");
                                 Graphics text = Graphics.FromImage(cover);
-                                text.DrawColorString(cover, ArtistName, new Font("Arial", 12.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
+                                text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
 
                                 images.Add(cover);
                             }
