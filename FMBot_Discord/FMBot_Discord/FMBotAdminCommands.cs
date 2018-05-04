@@ -128,52 +128,6 @@ namespace FMBot_Discord
             }
         }
 
-        [Command("fmserverreboot"), Summary("Reboots the Vultr VPS server. - FMBot Owners only")]
-        [Alias("fmreboot")]
-        public async Task fmserverrebootAsync()
-        {
-            var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 3))
-            {
-                var cfgjson = await JsonCfg.GetJSONDataAsync();
-
-                string Data = "SUBID=" + cfgjson.VultrSubID;
-                string Reponse = "";
-                StreamWriter Sw = null;
-                StreamReader Sr = null;
-                try
-                {
-                    await ReplyAsync("Rebooting server...");
-                    await (Context.Client as DiscordSocketClient).SetStatusAsync(UserStatus.Invisible);
-                    HttpWebRequest Req = (HttpWebRequest)WebRequest.Create("https://api.vultr.com/v1/server/reboot");
-                    Req.Method = "POST";
-                    Req.ContentType = "application/x-www-form-urlencoded";
-                    Req.Headers.Add("API-Key: " + cfgjson.VultrKey);
-                    using (var sw = new StreamWriter(Req.GetRequestStream()))
-                    {
-                        sw.Write(Data);
-                    }
-                    Sr = new
-                    StreamReader(((HttpWebResponse)Req.GetResponse()).GetResponseStream());
-                    Reponse = Sr.ReadToEnd();
-                    Sr.Close();
-                }
-                catch (Exception ex)
-                {
-                    if (Sw != null)
-                        Sw.Close();
-                    if (Sr != null)
-                        Sr.Close();
-
-                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                    ExceptionReporter.ReportException(client, ex);
-
-                    await ReplyAsync("Error rebooting server. Look in bot log.");
-                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "FMBotAdminCommands - fmserverreboot", "Vultr API Error", ex));
-                }
-            }
-        }
-
         [Command("fmbotrestart"), Summary("Reboots the bot. - FMBot Super Admins only")]
         [Alias("fmrestart")]
         public async Task fmbotrestartAsync()
