@@ -512,12 +512,6 @@ namespace FMBot_Discord
                 [JsonProperty("prefix")]
                 public string CommandPrefix { get; private set; }
 
-                [JsonProperty("vultrkey")]
-                public string VultrKey { get; private set; }
-
-                [JsonProperty("vultrsubid")]
-                public string VultrSubID { get; private set; }
-
                 [JsonProperty("baseserver")]
                 public string BaseServer { get; private set; }
 
