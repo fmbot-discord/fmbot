@@ -2,7 +2,7 @@
 
 [![Build status](https://ci.appveyor.com/api/projects/status/7bl2caa1wcpp9yta?svg=true)](https://ci.appveyor.com/project/Bitl/fmbot-discord)
 
-![Logo](https://github.com/Bitl/FMBot_Discord/raw/1.1.3/BinaryFiles/avatar.png)
+![Logo](https://github.com/Bitl/FMBot_Discord/raw/1.1.4/BinaryFiles/avatar.png)
 
 Discord bot built with Discord.NET in C# mostly focused on LastFM functions.
 
@@ -19,7 +19,7 @@ Get them from https://github.com/Bitl/FMBot_Discord/releases (Stable) or https:/
 
 [And an LastFM API account.](https://www.last.fm/api/account/create) 
 
-This bot also supports the [Vultr VPS API](https://www.vultr.com/api/) and the [Spotify API](https://beta.developer.spotify.com/dashboard/applications), however you do not need to use this if you don't have to.
+This bot also supports the [Spotify API](https://beta.developer.spotify.com/dashboard/applications), however you do not need to use this if you don't have to.
 
 Next, download the following files from the release:
 
