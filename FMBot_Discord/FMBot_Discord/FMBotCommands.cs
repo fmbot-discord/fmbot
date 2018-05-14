@@ -1923,7 +1923,7 @@ namespace FMBot_Discord
                 }
             }
 
-            await Context.User.SendMessageAsync(SelfUser.Username + " Be sure to use 'help' after a command name to see the parameters.\nModes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nmonthly\nyearly\noverall\nAvailable FMChart sizes:\n3x3\n5x5\n8x8");
+            await Context.User.SendMessageAsync(SelfUser.Username + "Info\nBe sure to use 'help' after a command name to see the parameters.\nModes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nmonthly\nyearly\noverall\nAvailable FMChart sizes:\n3x3\n5x5\n8x8\n10x10");
 
             await Context.Channel.SendMessageAsync("Check your DMs!");
         }
