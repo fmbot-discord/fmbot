@@ -15,6 +15,7 @@ namespace FMBot_Discord
 {
     public class FMBotModules
     {
+        #region Reliability Service
         public class ReliabilityService
         {
             /*
@@ -131,6 +132,10 @@ namespace FMBot_Discord
                 Environment.Exit(1);
             }
         }
+
+        #endregion
+
+        #region Timer Service
 
         public class TimerService
         {
@@ -833,5 +838,7 @@ namespace FMBot_Discord
                 return timerEnabled;
             }
         }
+
+        #endregion
     }
 }

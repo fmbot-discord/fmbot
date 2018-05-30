@@ -4,22 +4,24 @@ using Discord.WebSocket;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Management;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace FMBot_Discord
 {
     public class FMBotUtil
     {
+        #region Database Functions
+
         public class DBase
         {
+            #region User Settings
+
             public static string FMAdminString = "IsAdmin";
             public static string FMSuperAdminString = "IsSuperAdmin";
             public static string FMOwnerString = "IsOwner";
@@ -213,54 +215,6 @@ namespace FMBot_Discord
                 return 4;
             }
 
-            public static int GetIntForModeName(string mode)
-            {
-                if (mode.Equals("embedmini"))
-                {
-                    return 0;
-                }
-                else if (mode.Equals("embedfull"))
-                {
-                    return 1;
-                }
-                else if (mode.Equals("textfull"))
-                {
-                    return 2;
-                }
-                else if (mode.Equals("textmini"))
-                {
-                    return 3;
-                }
-                else
-                {
-                    return 4;
-                }
-            }
-
-            public static string GetNameForModeInt(int mode)
-            {
-                if (mode == 0)
-                {
-                    return "embedmini";
-                }
-                else if (mode == 1)
-                {
-                    return "embedfull";
-                }
-                else if (mode == 2)
-                {
-                    return "textfull";
-                }
-                else if (mode == 3)
-                {
-                    return "textmini";
-                }
-                else
-                {
-                    return "NULL";
-                }
-            }
-
             public static bool CheckAdmin(string id)
             {
                 if (File.ReadLines(GlobalVars.UsersFolder + id + ".txt").Any(line => line.Contains(FMAdminString)))
@@ -337,6 +291,50 @@ namespace FMBot_Discord
                 }
             }
 
+            #endregion
+
+            #region Server Settings
+
+            public static void WriteServerEntry(string id, int globalFMMode = 4)
+            {
+                File.WriteAllText(GlobalVars.ServersFolder + id + ".txt", globalFMMode.ToString());
+                File.SetAttributes(GlobalVars.ServersFolder + id + ".txt", FileAttributes.Normal);
+            }
+
+            public static void RemoveServerEntry(string id)
+            {
+                if (File.Exists(GlobalVars.ServersFolder + id + ".txt"))
+                {
+                    File.SetAttributes(GlobalVars.ServersFolder + id + ".txt", FileAttributes.Normal);
+                    File.Delete(GlobalVars.ServersFolder + id + ".txt");
+                }
+            }
+
+            public static int GetModeIntForServerID(string id)
+            {
+                string line;
+
+                using (StreamReader file = new StreamReader(GlobalVars.ServersFolder + id + ".txt"))
+                {
+                    while ((line = file.ReadLine()) != null)
+                    {
+                        file.Close();
+                        return Convert.ToInt32(line);
+                    }
+                }
+
+                return 4;
+            }
+
+            public static bool ServerEntryExists(string id)
+            {
+                return File.Exists(GlobalVars.ServersFolder + id + ".txt");
+            }
+
+            #endregion
+
+            #region Blacklist Settings
+
             public static bool BlacklistExists(string id)
             {
                 return File.Exists(GlobalVars.UsersFolder + id + "-blacklist.txt");
@@ -411,6 +409,10 @@ namespace FMBot_Discord
                     return false;
                 }
             }
+
+            #endregion
+
+            #region Friend List Settings
 
             public static bool FriendsExists(string id)
             {
@@ -493,7 +495,73 @@ namespace FMBot_Discord
                 string[] lines = File.ReadAllLines(GlobalVars.UsersFolder + id + "-friends.txt");
                 return lines;
             }
+
+            #endregion
+
+            #region Global Settings
+
+            public static int GetIntForModeName(string mode)
+            {
+                if (mode.Equals("embedmini"))
+                {
+                    return 0;
+                }
+                else if (mode.Equals("embedfull"))
+                {
+                    return 1;
+                }
+                else if (mode.Equals("textfull"))
+                {
+                    return 2;
+                }
+                else if (mode.Equals("textmini"))
+                {
+                    return 3;
+                }
+                else if (mode.Equals("userdefined"))
+                {
+                    return 4;
+                }
+                else
+                {
+                    return 4;
+                }
+            }
+
+            public static string GetNameForModeInt(int mode, bool isservercmd = false)
+            {
+                if (mode == 0)
+                {
+                    return "embedmini";
+                }
+                else if (mode == 1)
+                {
+                    return "embedfull";
+                }
+                else if (mode == 2)
+                {
+                    return "textfull";
+                }
+                else if (mode == 3)
+                {
+                    return "textmini";
+                }
+                else if ((mode > 3 || mode < 0) && isservercmd == true)
+                {
+                    return "userdefined";
+                }
+                else
+                {
+                    return "NULL";
+                }
+            }
+
+            #endregion
         }
+
+        #endregion
+
+        #region Configuration Data
 
         public class JsonCfg
         {
@@ -580,6 +648,10 @@ namespace FMBot_Discord
             }
         }
 
+        #endregion
+
+        #region Exception Reporter
+
         public class ExceptionReporter
         {
             public static async void ReportException(DiscordSocketClient client, Exception e)
@@ -629,11 +701,16 @@ namespace FMBot_Discord
             }
         }
 
+        #endregion
+
+        #region Global Variables
+
         public class GlobalVars
         {
             public static string ConfigFileName = "config.json";
             public static string BasePath = AppDomain.CurrentDomain.BaseDirectory;
             public static string UsersFolder = BasePath + "users/";
+            public static string ServersFolder = BasePath + "servers/";
             public static int MessageLength = 2000;
             public static int CommandExecutions = 0;
 
@@ -768,6 +845,10 @@ namespace FMBot_Discord
                 return list;
             }
         }
+
+        #endregion
+
+        #region FMBot Staff Functions
 
         public class FMBotAdminUtil
         {
@@ -909,6 +990,10 @@ namespace FMBot_Discord
             }
         }
 
+        #endregion
+
+        #region User Classification
+
         public class User
         {
             public ulong ID { get; set; }
@@ -1002,10 +1087,13 @@ namespace FMBot_Discord
                 }
             }
         }
+        #endregion
     }
 }
 
 //extentions below
+
+#region Class Extentions
 
 public static class TimeSpanExtentions
 {
@@ -1106,3 +1194,5 @@ public static class BitmapExtentions
         g.DrawString (text, font, new SolidBrush (brsh), point);
     }
 }
+
+#endregion

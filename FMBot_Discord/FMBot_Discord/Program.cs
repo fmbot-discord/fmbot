@@ -18,6 +18,8 @@ namespace FMBot_Discord
 {
     class Program
     {
+        #region FMBot Init
+
         private CommandService commands;
         private DiscordSocketClient client;
         private IServiceProvider services;
@@ -32,14 +34,19 @@ namespace FMBot_Discord
         {
             try
             {  
-		string assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-		await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "FMBot v" + assemblyVersion + " loading..."));  
+		        string assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+		        await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "FMBot v" + assemblyVersion + " loading..."));  
 		
                 var cfgjson = await JsonCfg.GetJSONDataAsync();
 
                 if (!Directory.Exists(GlobalVars.UsersFolder))
                 {
                     Directory.CreateDirectory(GlobalVars.UsersFolder);
+                }
+
+                if (!Directory.Exists(GlobalVars.ServersFolder))
+                {
+                    Directory.CreateDirectory(GlobalVars.ServersFolder);
                 }
 
                 await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Initalizing Discord..."));
@@ -50,6 +57,9 @@ namespace FMBot_Discord
                 });
 
                 client.Log += Log;
+                client.JoinedGuild += JoinedGuild;
+                client.GuildAvailable += JoinedGuild;
+                client.LeftGuild += LeftGuild;
 
                 prefix = cfgjson.CommandPrefix;
 
@@ -57,7 +67,7 @@ namespace FMBot_Discord
                 commands = new CommandService(new CommandServiceConfig()
                 {
                      CaseSensitiveCommands = false
-		});
+		        });
 
                 string token = cfgjson.Token; // Remember to keep this private!
 
@@ -71,7 +81,7 @@ namespace FMBot_Discord
 
                 await client.SetGameAsync("🎶 Say " + prefix + "fmhelp to use 🎶");
                 await client.SetStatusAsync(UserStatus.DoNotDisturb);
-		System.AppDomain.CurrentDomain.UnhandledException += CatchFatalException;
+		        System.AppDomain.CurrentDomain.UnhandledException += CatchFatalException;
 
                 // Block this task until the program is closed.
                 await Task.Delay(-1);
@@ -81,12 +91,37 @@ namespace FMBot_Discord
                 await GlobalVars.Log(new LogMessage(LogSeverity.Critical, Process.GetCurrentProcess().ProcessName, "Failed to launch.", e));
             }
         }
-        
+
+        #endregion
+
+        #region Program Events
+
         private Task Log(LogMessage arg)
         {
             GlobalVars.Log(arg);
 
             return Task.CompletedTask;
+        }
+
+        public async Task LeftGuild(SocketGuild arg)
+        {
+            await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Left guild " + arg.Name));
+
+            DBase.RemoveServerEntry(arg.Id.ToString());
+
+            await Task.CompletedTask;
+        }
+
+        public async Task JoinedGuild(SocketGuild arg)
+        {
+            await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Joined guild " + arg.Name));
+
+            if (!DBase.ServerEntryExists(arg.Id.ToString()))
+            {
+                DBase.WriteServerEntry(arg.Id.ToString());
+            }
+
+            await Task.CompletedTask;
         }
 
         public async Task InstallCommands()
@@ -101,7 +136,7 @@ namespace FMBot_Discord
             client.MessageUpdated += HandleCommand_MessageEdited;
             client.CurrentUserUpdated += HandleCommand_CurrentUserUpdated;
 		
-	    TextInfo ti = CultureInfo.CurrentCulture.TextInfo;
+	        TextInfo ti = CultureInfo.CurrentCulture.TextInfo;
             
             foreach (var module in commands.Modules)
             {
@@ -110,8 +145,8 @@ namespace FMBot_Discord
                     foreach (var alias in cmd.Aliases)
                     {
                         commandList.Add(alias);
-			commandList.Add(alias.ToUpper());
-			commandList.Add(ti.ToTitleCase(alias));
+			            commandList.Add(alias.ToUpper());
+			            commandList.Add(ti.ToTitleCase(alias));
                     }
                 }
             }
@@ -186,8 +221,8 @@ namespace FMBot_Discord
             
             string convertedMessage = message.Content.Replace(prefix, "");
             var words = convertedMessage.Split(' ');
-	    List<string> wordlist = words.OfType<string>().ToList();
-	    bool wordinlist = commandList.Intersect(wordlist).Any();
+	        List<string> wordlist = words.OfType<string>().ToList();
+	        bool wordinlist = commandList.Intersect(wordlist).Any();
             
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully)
@@ -212,9 +247,11 @@ namespace FMBot_Discord
             }
         }
 	    
-	private static void CatchFatalException(object sender, UnhandledExceptionEventArgs t)
-	{
+	    private static void CatchFatalException(object sender, UnhandledExceptionEventArgs t)
+	    {
     	   Environment.Exit(1);
-	}
+	    }
+
+        #endregion
     }
 }

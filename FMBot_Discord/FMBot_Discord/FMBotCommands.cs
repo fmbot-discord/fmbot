@@ -12,14 +12,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Windows.Media;
 using YoutubeSearch;
 using static FMBot_Discord.FMBotModules;
 using static FMBot_Discord.FMBotUtil;
@@ -37,6 +35,8 @@ namespace FMBot_Discord
             _timer = timer;
         }
 
+        #region Last.FM Commands
+
         [Command("fm"), Summary("Displays what a user is listening to.")]
         [Alias("qm", "wm", "em", "rm", "tm", "ym", "um", "im", "om", "pm", "dm", "gm", "sm","am","hm","jm","km","lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm")]
         public async Task fmAsync(IUser user = null)
@@ -45,7 +45,19 @@ namespace FMBot_Discord
             {
                 var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
                 var SelfUser = Context.Client.CurrentUser;
-                int LastFMMode = DBase.GetModeIntForID(DiscordUser.Id.ToString());
+
+                int GlobalServerMode = DBase.GetModeIntForServerID(DiscordUser.GuildId.ToString());
+                int LastFMMode = 4;
+
+                if (GlobalServerMode > 3 || GlobalServerMode < 0)
+                {
+                    LastFMMode = DBase.GetModeIntForID(DiscordUser.Id.ToString());
+                }
+                else
+                {
+                    LastFMMode = DBase.GetModeIntForServerID(DiscordUser.GuildId.ToString());
+                }
+                 
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
                 {
@@ -61,6 +73,7 @@ namespace FMBot_Discord
                         var tracks = await client.User.GetRecentScrobbles(LastFMName, null, 1, 2);
                         LastTrack currentTrack = tracks.Content.ElementAt(0);
                         LastTrack lastTrack = tracks.Content.ElementAt(1);
+
                         if (LastFMMode == 0)
                         {
                             EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
@@ -1708,6 +1721,10 @@ namespace FMBot_Discord
             }
         }
 
+        #endregion
+
+        #region FMBot Commands
+
         [Command("fmfeatured"), Summary("Displays the featured avatar.")]
         [Alias("fmfeaturedavatar", "fmfeatureduser", "fmfeaturedalbum")]
         public async Task fmfeaturedAsync()
@@ -1750,7 +1767,7 @@ namespace FMBot_Discord
                 if (!string.IsNullOrWhiteSpace(mode))
                 {
                     modeint = DBase.GetIntForModeName(mode);
-                    if (modeint == 4)
+                    if (modeint > 3 || modeint < 0)
                     {
                         await ReplyAsync("Invalid mode. Please use 'embedmini', 'embedfull', 'textfull', or 'textmini'.");
                         return;
@@ -1924,7 +1941,7 @@ namespace FMBot_Discord
                 }
             }
 
-            await Context.User.SendMessageAsync(SelfUser.Username + " Info\n\nBe sure to use 'help' after a command name to see the parameters.\n\nModes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\n\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nmonthly\nyearly\noverall\n\nAvailable FMChart sizes:\n3x3\n5x5\n8x8\n10x10");
+            await Context.User.SendMessageAsync(SelfUser.Username + " Info\n\nBe sure to use 'help' after a command name to see the parameters.\n\nModes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nuserdefined (fmserverset only)\n\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nmonthly\nyearly\noverall\n\nAvailable FMChart sizes:\n3x3\n5x5\n8x8\n10x10");
 
             await Context.Channel.SendMessageAsync("Check your DMs!");
         }
@@ -2020,5 +2037,7 @@ namespace FMBot_Discord
         {
             await ReplyAsync("Join the Discord server! https://discord.gg/srmpCaa");
         }
+
+        #endregion
     }
 }
