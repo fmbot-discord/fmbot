@@ -549,24 +549,28 @@ namespace FMBot_Discord
                     if (user == null)
                     {
                         await ReplyAsync("Please specify what user you want to add to the blacklist.");
+                        return;
                     }
                     else if (user == Context.Message.Author)
                     {
                         await ReplyAsync("You cannot blacklist yourself!");
+                        return;
                     }
                     else if (user.Id == user.Guild.OwnerId)
                     {
                         await ReplyAsync("You cannot blacklist the owner!");
+                        return;
                     }
                     else if (FMBotAdminUtil.IsRankAbove(Context.Message.Author, user))
                     {
                         await ReplyAsync("You cannot blacklist someone who has a higher rank than you!");
+                        return;
                     }
 
                     string UserID = user.Id.ToString();
                     string ServerID = user.Guild.Id.ToString();
 
-                    bool blacklistresult = DBase.AddToBlacklist(UserID, ServerID);
+                    bool blacklistresult = DBase.AddToBlacklist(ServerID, UserID);
 
                     if (blacklistresult == true)
                     {
@@ -624,24 +628,28 @@ namespace FMBot_Discord
                     if (user == null)
                     {
                         await ReplyAsync("Please specify what user you want to remove from the blacklist.");
+                        return;
                     }
                     else if (user == Context.Message.Author)
                     {
                         await ReplyAsync("You cannot remove yourself!");
+                        return;
                     }
                     else if (user.Id == user.Guild.OwnerId)
                     {
                         await ReplyAsync("You cannot remove the owner from the blacklist!");
+                        return;
                     }
                     else if (FMBotAdminUtil.IsRankAbove(Context.Message.Author, user))
                     {
                         await ReplyAsync("You cannot blacklist someone who has a higher rank than you!");
+                        return;
                     }
 
                     string UserID = user.Id.ToString();
                     string ServerID = user.Guild.Id.ToString();
 
-                    bool blacklistresult = DBase.RemoveFromBlacklist(UserID, ServerID);
+                    bool blacklistresult = DBase.RemoveFromBlacklist(ServerID, UserID);
 
                     if (blacklistresult == true)
                     {

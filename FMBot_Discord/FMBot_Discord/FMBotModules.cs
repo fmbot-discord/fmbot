@@ -246,7 +246,6 @@ namespace FMBot_Discord
                                                     ExceptionReporter.ReportException(client, e);
                                                     UseDefaultAvatar(client);
                                                     trackString = "Unable to get information for this album cover avatar.";
-                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this album cover avatar.", e));
                                                 }
                                             }
                                         }
@@ -300,7 +299,6 @@ namespace FMBot_Discord
                                                     ExceptionReporter.ReportException(client, e);
                                                     UseDefaultAvatar(client);
                                                     trackString = "Unable to get information for this artist avatar.";
-                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this artist avatar.", e));
                                                 }
                                             }
                                         }
@@ -354,7 +352,6 @@ namespace FMBot_Discord
                                                     ExceptionReporter.ReportException(client, e);
                                                     UseDefaultAvatar(client);
                                                     trackString = "Unable to get information for this artist avatar.";
-                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this artist avatar.", e));
                                                 }
                                             }
                                         }
@@ -409,7 +406,6 @@ namespace FMBot_Discord
                                                     ExceptionReporter.ReportException(client, e);
                                                     UseDefaultAvatar(client);
                                                     trackString = "Unable to get information for this album cover avatar.";
-                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this album cover avatar.", e));
                                                 }
                                             }
                                         }
@@ -464,7 +460,6 @@ namespace FMBot_Discord
                                                     ExceptionReporter.ReportException(client, e);
                                                     UseDefaultAvatar(client);
                                                     trackString = "Unable to get information for this album cover avatar.";
-                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this album cover avatar.", e));
                                                 }
                                             }
                                         }
@@ -517,7 +512,6 @@ namespace FMBot_Discord
                                                             ExceptionReporter.ReportException(client, e);
                                                             UseDefaultAvatar(client);
                                                             trackString = "Unable to get information for this chart avatar.";
-                                                            await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this chart avatar.", e));
                                                         }
                                                     }
                                                 }
@@ -562,7 +556,6 @@ namespace FMBot_Discord
                                             ExceptionReporter.ReportException(client, e);
                                             UseDefaultAvatar(client);
                                             trackString = "Unable to get information for this chart avatar.";
-                                            await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this chart avatar.", e));
                                         }
                                     }
                                     else if (randavmode == 7)
@@ -580,7 +573,6 @@ namespace FMBot_Discord
                                 ExceptionReporter.ReportException(client, e);
                                 UseDefaultAvatar(client);
                                 trackString = "Unable to get information for this avatar.";
-                                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this avatar.", e));
                             }
                         }
                     }
@@ -589,7 +581,6 @@ namespace FMBot_Discord
                         ExceptionReporter.ReportException(client, e);
                         UseDefaultAvatar(client);
                         trackString = "Unable to get information for this avatar.";
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this avatar.", e));
                     }
                 },
                 null,
@@ -724,7 +715,6 @@ namespace FMBot_Discord
                                     ExceptionReporter.ReportException(client, e);
                                     UseDefaultAvatar(client);
                                     trackString = "Unable to get information for this artist avatar.";
-                                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this avatar.", e));
                                 }
                             }
 
@@ -769,7 +759,6 @@ namespace FMBot_Discord
                                     ExceptionReporter.ReportException(client, e);
                                     UseDefaultAvatar(client);
                                     trackString = "Unable to get information for this album cover avatar.";
-                                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this album cover avatar.", e));
                                 }
                             }
 
@@ -814,7 +803,6 @@ namespace FMBot_Discord
                         ExceptionReporter.ReportException(client, e);
                         UseDefaultAvatar(client);
                         trackString = "Unable to get information for this avatar.";
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "TimerService", "Unable to get information for this avatar.", e));
                     }
 
                     if (!string.IsNullOrWhiteSpace(link))

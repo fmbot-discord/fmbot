@@ -13,6 +13,8 @@ using System.Linq;
 using System.Globalization;
 using static FMBot_Discord.FMBotModules;
 using static FMBot_Discord.FMBotUtil;
+using IF.Lastfm.Core.Api;
+using IF.Lastfm.Core.Objects;
 
 namespace FMBot_Discord
 {
@@ -48,6 +50,9 @@ namespace FMBot_Discord
                 {
                     Directory.CreateDirectory(GlobalVars.ServersFolder);
                 }
+
+                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Initalizing Last.FM..."));
+                await TestLastFMAPI();
 
                 await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Initalizing Discord..."));
                 client = new DiscordSocketClient(new DiscordSocketConfig
@@ -211,7 +216,7 @@ namespace FMBot_Discord
             var DiscordCaller = message.Author as SocketGuildUser;
             string callerid = DiscordCaller.Id.ToString();
             string callerserverid = DiscordCaller.Guild.Id.ToString();
-            bool isonblacklist = DBase.IsUserOnBlacklist(callerid, callerserverid);
+            bool isonblacklist = DBase.IsUserOnBlacklist(callerserverid, callerid);
 
             if (isonblacklist == true)
             {
@@ -249,8 +254,29 @@ namespace FMBot_Discord
 	    
 	    private static void CatchFatalException(object sender, UnhandledExceptionEventArgs t)
 	    {
-    	   Environment.Exit(1);
+    	    Environment.Exit(1);
 	    }
+
+        public async Task TestLastFMAPI()
+        {
+            var cfgjson = await JsonCfg.GetJSONDataAsync();
+            var fmclient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+
+            string LastFMName = DBase.GetRandFMName();
+            if (!LastFMName.Equals("NULL"))
+            {
+                var tracks = await fmclient.User.GetRecentScrobbles(LastFMName, null, 1, 2);
+                if (tracks.Any())
+                {
+                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Last.FM API is online"));
+                }
+                else
+                {
+                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, "Last.FM API is offline, rebooting..."));
+                    Environment.Exit(1);
+                }
+            }
+        }
 
         #endregion
     }

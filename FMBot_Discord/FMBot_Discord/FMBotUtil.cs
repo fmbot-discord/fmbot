@@ -335,53 +335,53 @@ namespace FMBot_Discord
 
             #region Blacklist Settings
 
-            public static bool BlacklistExists(string id)
+            public static bool BlacklistExists(string serverid)
             {
-                return File.Exists(GlobalVars.UsersFolder + id + "-blacklist.txt");
+                return File.Exists(GlobalVars.ServersFolder + serverid + "-blacklist.txt");
             }
 
-            public static bool AddToBlacklist(string id, string serverid)
+            public static bool AddToBlacklist(string serverid, string id)
             {
-                if (!BlacklistExists(id))
+                if (!BlacklistExists(serverid))
                 {
-                    File.Create(GlobalVars.UsersFolder + id + "-blacklist.txt").Dispose();
-                    File.SetAttributes(GlobalVars.UsersFolder + id + "-blacklist.txt", FileAttributes.Normal);
+                    File.Create(GlobalVars.ServersFolder + serverid + "-blacklist.txt").Dispose();
+                    File.SetAttributes(GlobalVars.ServersFolder + serverid + "-blacklist.txt", FileAttributes.Normal);
                 }
 
-                string[] blacklist = File.ReadAllLines(GlobalVars.UsersFolder + id + "-blacklist.txt");
+                string[] blacklist = File.ReadAllLines(GlobalVars.ServersFolder + serverid + "-blacklist.txt");
 
-                if (blacklist.Contains(serverid))
+                if (blacklist.Contains(id))
                 {
                     return false;
                 }
 
                 var list = new List<string>(blacklist);
-                list.Add(serverid);
+                list.Add(id);
                 blacklist = list.ToArray();
 
-                File.WriteAllLines(GlobalVars.UsersFolder + id + "-blacklist.txt", blacklist);
-                File.SetAttributes(GlobalVars.UsersFolder + id + "-blacklist.txt", FileAttributes.Normal);
+                File.WriteAllLines(GlobalVars.ServersFolder + serverid + "-blacklist.txt", blacklist);
+                File.SetAttributes(GlobalVars.ServersFolder + serverid + "-blacklist.txt", FileAttributes.Normal);
 
                 return true;
             }
 
-            public static bool RemoveFromBlacklist(string id, string serverid)
+            public static bool RemoveFromBlacklist(string serverid, string id)
             {
-                if (!BlacklistExists(id))
+                if (!BlacklistExists(serverid))
                 {
                     return false;
                 }
 
-                string[] blacklist = File.ReadAllLines(GlobalVars.UsersFolder + id + "-blacklist.txt");
+                string[] blacklist = File.ReadAllLines(GlobalVars.ServersFolder + serverid + "-blacklist.txt");
 
-                if (blacklist.Contains(serverid))
+                if (blacklist.Contains(id))
                 {
                     var list = new List<string>(blacklist);
-                    list.Remove(serverid);
+                    list.Remove(id);
                     blacklist = list.ToArray();
 
-                    File.WriteAllLines(GlobalVars.UsersFolder + id + "-blacklist.txt", blacklist);
-                    File.SetAttributes(GlobalVars.UsersFolder + id + "-blacklist.txt", FileAttributes.Normal);
+                    File.WriteAllLines(GlobalVars.ServersFolder + serverid + "-blacklist.txt", blacklist);
+                    File.SetAttributes(GlobalVars.ServersFolder + serverid + "-blacklist.txt", FileAttributes.Normal);
 
                     return true;
                 }
@@ -391,16 +391,16 @@ namespace FMBot_Discord
                 }
             }
 
-            public static bool IsUserOnBlacklist(string id, string serverid)
+            public static bool IsUserOnBlacklist(string serverid, string id)
             {
-                if (!BlacklistExists(id))
+                if (!BlacklistExists(serverid))
                 {
                     return false;
                 }
 
-                string[] blacklist = File.ReadAllLines(GlobalVars.UsersFolder + id + "-blacklist.txt");
+                string[] blacklist = File.ReadAllLines(GlobalVars.ServersFolder + serverid + "-blacklist.txt");
 
-                if (blacklist.Contains(serverid))
+                if (blacklist.Contains(id))
                 {
                     return true;
                 }
@@ -671,10 +671,25 @@ namespace FMBot_Discord
 
                     await channel.SendMessageAsync("", false, builder.Build());
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", ex.Message, ex));
+                    try
+                    {
+                        ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
+                        ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.ExceptionChannel);
+
+                        SocketGuild guild = client.GetGuild(BroadcastServerID);
+                        SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
+
+                        await channel.SendMessageAsync("Exception: " + e.Message + "\n\nSource:\n" + e.Source + "\n\nStack Trace:\n" + e.StackTrace);
+                    }
+                    catch (Exception)
+                    {
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it."));
+                    }
                 }
+
+                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", e.Message, e), true);
             }
 
             public static async void ReportStringAsException(DiscordSocketClient client, string e)
@@ -694,10 +709,25 @@ namespace FMBot_Discord
 
                     await channel.SendMessageAsync("", false, builder.Build());
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", ex.Message, ex));
+                    try
+                    {
+                        ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
+                        ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.ExceptionChannel);
+
+                        SocketGuild guild = client.GetGuild(BroadcastServerID);
+                        SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
+
+                        await channel.SendMessageAsync("Exception: " + e);
+                    }
+                    catch (Exception)
+                    {
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it."));
+                    }
                 }
+
+                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", e), true);
             }
         }
 
@@ -721,9 +751,12 @@ namespace FMBot_Discord
                 return DateTime.Now.ToUniversalTime() - lastBootUp.ToUniversalTime();
             }
 
-            public static Task Log(LogMessage arg)
+            public static Task Log(LogMessage arg, bool nowrite = false)
             {
-                Console.WriteLine(arg);
+                if (nowrite == false)
+                {
+                    Console.WriteLine(arg);
+                }
 
                 var logger = NLog.LogManager.GetCurrentClassLogger();
 
