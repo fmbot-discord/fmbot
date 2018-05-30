@@ -614,17 +614,7 @@ namespace FMBot_Discord
 
             var SelfUser = Context.Client.CurrentUser;
 
-            var loadingText = "";
-            
-            if (chartsize.Equals("8x8") || chartsize.Equals("10x10"))
-            {
-                loadingText = "Loading your " + SelfUser.Username + " chart... (may take a while due to the size of your chart)";
-            }
-            else
-            {
-                loadingText = "Loading your " + SelfUser.Username + " chart...";
-            }
-            
+            var loadingText = "Loading your " + chartsize + " " + SelfUser.Username + " chart... (may take a while depending on the size of your chart)";
             var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
 
             try
@@ -646,6 +636,11 @@ namespace FMBot_Discord
                     {
                         chartalbums = "9";
                         chartrows = "3";
+                    }
+					else if (chartsize.Equals("4x4"))
+                    {
+                        chartalbums = "16";
+                        chartrows = "4";
                     }
                     else if (chartsize.Equals("5x5"))
                     {
@@ -837,17 +832,7 @@ namespace FMBot_Discord
 
             var SelfUser = Context.Client.CurrentUser;
 
-            var loadingText = "";
-            
-            if (chartsize.Equals("8x8") || chartsize.Equals("10x10"))
-            {
-                loadingText = "Loading your " + SelfUser.Username + " artist chart... (may take a while due to the size of your chart)";
-            }
-            else
-            {
-                loadingText = "Loading your " + SelfUser.Username + " artist chart...";
-            }
-            
+            var loadingText = "Loading your " + chartsize + " " + SelfUser.Username + " artist chart... (may take a while depending on the size of your chart)";
             var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
 
             try
@@ -869,6 +854,11 @@ namespace FMBot_Discord
                     {
                         chartalbums = "9";
                         chartrows = "3";
+                    }
+					else if (chartsize.Equals("4x4"))
+                    {
+                        chartalbums = "16";
+                        chartrows = "4";
                     }
                     else if (chartsize.Equals("5x5"))
                     {
@@ -1941,7 +1931,7 @@ namespace FMBot_Discord
                 }
             }
 
-            await Context.User.SendMessageAsync(SelfUser.Username + " Info\n\nBe sure to use 'help' after a command name to see the parameters.\n\nModes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nuserdefined (fmserverset only)\n\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nmonthly\nyearly\noverall\n\nAvailable FMChart sizes:\n3x3\n5x5\n8x8\n10x10");
+            await Context.User.SendMessageAsync(SelfUser.Username + " Info\n\nBe sure to use 'help' after a command name to see the parameters.\n\nModes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nuserdefined (fmserverset only)\n\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nmonthly\nyearly\noverall\n\nAvailable FMChart sizes:\n3x3\n4x4\n5x5\n8x8\n10x10");
 
             await Context.Channel.SendMessageAsync("Check your DMs!");
         }
