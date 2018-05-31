@@ -608,7 +608,7 @@ namespace FMBot_Discord
 
             if (time == "help")
             {
-                await ReplyAsync(cfgjson.CommandPrefix + "fmchart [weekly/monthly/yearly/overall] [3x3/5x5/8x8/10x10] [user]");
+                await ReplyAsync(cfgjson.CommandPrefix + "fmchart [weekly/monthly/yearly/overall] [3x3/4x4/5x5/8x8/10x10] [user]");
                 return;
             }
 
@@ -667,19 +667,19 @@ namespace FMBot_Discord
                     {
                         LastStatsTimeSpan timespan = LastStatsTimeSpan.Week;
 
-                        if (time.Equals("weekly"))
+                        if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                         {
                             timespan = LastStatsTimeSpan.Week;
                         }
-                        else if (time.Equals("monthly"))
+                        else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
                         {
                             timespan = LastStatsTimeSpan.Month;
                         }
-                        else if (time.Equals("yearly"))
+                        else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
                         {
                             timespan = LastStatsTimeSpan.Year;
                         }
-                        else if (time.Equals("overall"))
+                        else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
                         {
                             timespan = LastStatsTimeSpan.Overall;
                         }
@@ -781,21 +781,25 @@ namespace FMBot_Discord
                         builder.WithTitle(LastFMName);
                     }
 
-                    if (time.Equals("weekly"))
+                    if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                     {
                         builder.WithDescription("Last.FM Weekly Chart for " + LastFMName);
                     }
-                    else if (time.Equals("monthly"))
+                    else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
                     {
                         builder.WithDescription("Last.FM Monthly Chart for " + LastFMName);
                     }
-                    else if (time.Equals("yearly"))
+                    else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
                     {
                         builder.WithDescription("Last.FM Yearly Chart for " + LastFMName);
                     }
-                    else if (time.Equals("overall"))
+                    else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
                     {
                         builder.WithDescription("Last.FM Overall Chart for " + LastFMName);
+                    }
+					else
+                    {
+                        builder.WithDescription("Last.FM Chart for " + LastFMName);
                     }
 
                     var userinfo = await client.User.GetInfoAsync(LastFMName);
@@ -826,7 +830,7 @@ namespace FMBot_Discord
 
             if (time == "help")
             {
-                await ReplyAsync(cfgjson.CommandPrefix + "fmartistchart [weekly/monthly/yearly/overall] [3x3/5x5/8x8/10x10] [user]");
+                await ReplyAsync(cfgjson.CommandPrefix + "fmartistchart [weekly/monthly/yearly/overall] [3x3/4x4/5x5/8x8/10x10] [user]");
                 return;
             }
 
@@ -885,19 +889,19 @@ namespace FMBot_Discord
                     {
                         LastStatsTimeSpan timespan = LastStatsTimeSpan.Week;
 
-                        if (time.Equals("weekly"))
+                        if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                         {
                             timespan = LastStatsTimeSpan.Week;
                         }
-                        else if (time.Equals("monthly"))
+                        else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
                         {
                             timespan = LastStatsTimeSpan.Month;
                         }
-                        else if (time.Equals("yearly"))
+                        else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
                         {
                             timespan = LastStatsTimeSpan.Year;
                         }
-                        else if (time.Equals("overall"))
+                        else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
                         {
                             timespan = LastStatsTimeSpan.Overall;
                         }
@@ -995,22 +999,26 @@ namespace FMBot_Discord
                     {
                         builder.WithTitle(LastFMName);
                     }
-
-                    if (time.Equals("weekly"))
+					
+                    if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                     {
                         builder.WithDescription("Last.FM Weekly Artist Chart for " + LastFMName);
                     }
-                    else if (time.Equals("monthly"))
+                    else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
                     {
                         builder.WithDescription("Last.FM Monthly Artist Chart for " + LastFMName);
                     }
-                    else if (time.Equals("yearly"))
+                    else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
                     {
                         builder.WithDescription("Last.FM Yearly Artist Chart for " + LastFMName);
                     }
-                    else if (time.Equals("overall"))
+                    else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
                     {
                         builder.WithDescription("Last.FM Overall Artist Chart for " + LastFMName);
+                    }
+					else
+                    {
+                        builder.WithDescription("Last.FM Artist Chart for " + LastFMName);
                     }
 
                     var userinfo = await client.User.GetInfoAsync(LastFMName);
