@@ -1330,19 +1330,19 @@ namespace FMBot_Discord
                     {
                         LastStatsTimeSpan timespan = LastStatsTimeSpan.Overall;
 
-                        if (time.Equals("weekly"))
+                        if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                         {
                             timespan = LastStatsTimeSpan.Week;
                         }
-                        else if (time.Equals("monthly"))
+                        else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
                         {
                             timespan = LastStatsTimeSpan.Month;
                         }
-                        else if (time.Equals("yearly"))
+                        else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
                         {
                             timespan = LastStatsTimeSpan.Year;
                         }
-                        else if (time.Equals("overall"))
+                        else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
                         {
                             timespan = LastStatsTimeSpan.Overall;
                         }
@@ -1381,19 +1381,19 @@ namespace FMBot_Discord
                             builder.WithTitle(LastFMName);
                         }
 
-                        if (time.Equals("weekly"))
+                        if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                         {
                             builder.WithDescription("Top " + num + " Weekly Artist List");
                         }
-                        else if (time.Equals("monthly"))
+                        else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
                         {
                             builder.WithDescription("Top " + num + " Monthly Artist List");
                         }
-                        else if (time.Equals("yearly"))
+                        else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
                         {
                             builder.WithDescription("Top " + num + " Yearly Artist List");
                         }
-                        else if (time.Equals("overall"))
+                        else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
                         {
                             builder.WithDescription("Top " + num + " Overall Artist List");
                         }
@@ -1488,19 +1488,19 @@ namespace FMBot_Discord
                     {
                         LastStatsTimeSpan timespan = LastStatsTimeSpan.Overall;
 
-                        if (time.Equals("weekly"))
+                        if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                         {
                             timespan = LastStatsTimeSpan.Week;
                         }
-                        else if (time.Equals("monthly"))
+                        else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
                         {
                             timespan = LastStatsTimeSpan.Month;
                         }
-                        else if (time.Equals("yearly"))
+                        else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
                         {
                             timespan = LastStatsTimeSpan.Year;
                         }
-                        else if (time.Equals("overall"))
+                        else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
                         {
                             timespan = LastStatsTimeSpan.Overall;
                         }
@@ -1539,19 +1539,19 @@ namespace FMBot_Discord
                             builder.WithTitle(LastFMName);
                         }
 
-                        if (time.Equals("weekly"))
+                        if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                         {
                             builder.WithDescription("Top " + num + " Weekly Album List");
                         }
-                        else if (time.Equals("monthly"))
+                        else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
                         {
                             builder.WithDescription("Top " + num + " Monthly Album List");
                         }
-                        else if (time.Equals("yearly"))
+                        else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
                         {
                             builder.WithDescription("Top " + num + " Yearly Album List");
                         }
-                        else if (time.Equals("overall"))
+                        else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
                         {
                             builder.WithDescription("Top " + num + " Overall Album List");
                         }
@@ -1939,7 +1939,7 @@ namespace FMBot_Discord
                 }
             }
 
-            await Context.User.SendMessageAsync(SelfUser.Username + " Info\n\nBe sure to use 'help' after a command name to see the parameters.\n\nModes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nuserdefined (fmserverset only)\n\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nmonthly\nyearly\noverall\n\nAvailable FMChart sizes:\n3x3\n4x4\n5x5\n8x8\n10x10");
+            await Context.User.SendMessageAsync(SelfUser.Username + " Info\n\nBe sure to use 'help' after a command name to see the parameters.\n\nModes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nuserdefined (fmserverset only)\n\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nweek\nw\nmonthly\nmonth\nm\nyearly\nyear\ny\noverall\nalltime\no\nat\n\nAvailable FMChart sizes:\n3x3\n4x4\n5x5\n8x8\n10x10");
 
             await Context.Channel.SendMessageAsync("Check your DMs!");
         }
