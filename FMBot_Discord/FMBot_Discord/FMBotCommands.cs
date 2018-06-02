@@ -1747,7 +1747,7 @@ namespace FMBot_Discord
 
         [Command("fmset"), Summary("Sets your Last.FM name and FM mode.")]
         [Alias("fmsetname", "fmsetmode")]
-        public async Task fmsetAsync([Summary("Your Last.FM name")] string name, [Summary("The mode you want to use.")] string mode = "")
+        public async Task fmsetAsync([Summary("Your Last.FM name")] string name, [Summary("The mode you want to use.")] string mode = "embedmini")
         {
             if (name == "help")
             {
@@ -1782,7 +1782,7 @@ namespace FMBot_Discord
             }
             else
             {
-                int modeint = DBase.GetIntForModeName("embedmini");
+                int modeint = DBase.GetIntForModeName(mode);
                 DBase.WriteEntry(SelfID, name, modeint);
             }
             string LastFMMode = DBase.GetNameForModeInt(DBase.GetModeIntForID(SelfID));
