@@ -1043,7 +1043,7 @@ namespace FMBot_Discord
             public DiscordSocketClient disclient;
             public int mode;
 
-            public async void ChartGenerate()
+            public async Task ChartGenerate()
             {
                 try
                 {

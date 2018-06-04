@@ -14,7 +14,6 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.ComponentModel;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -22,6 +21,7 @@ using System.Threading;
 using YoutubeSearch;
 using static FMBot_Discord.FMBotModules;
 using static FMBot_Discord.FMBotUtil;
+using System.Globalization;
 
 namespace FMBot_Discord
 {
@@ -603,7 +603,9 @@ namespace FMBot_Discord
 
             var SelfUser = Context.Client.CurrentUser;
 
-            var loadingText = "Loading your " + chartsize + " " + SelfUser.Username + " chart... (may take a while depending on the size of your chart)";
+            CultureInfo cultureInfo = Thread.CurrentThread.CurrentCulture;
+            TextInfo textInfo = cultureInfo.TextInfo;
+            var loadingText = "Loading your " + textInfo.ToTitleCase(time) + " " + chartsize + " " + SelfUser.Username + " chart... (may take a while depending on the size of your chart)";
             var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
 
             try
@@ -682,7 +684,7 @@ namespace FMBot_Discord
                     chart.DiscordUser = DiscordUser;
                     chart.disclient = Context.Client as DiscordSocketClient;
                     chart.mode = 0;
-                    await Task.Run(() => chart.ChartGenerate());
+                    await chart.ChartGenerate();
 
                     await Context.Channel.SendFileAsync(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png");
 
@@ -773,7 +775,9 @@ namespace FMBot_Discord
 
             var SelfUser = Context.Client.CurrentUser;
 
-            var loadingText = "Loading your " + chartsize + " " + SelfUser.Username + " artist chart... (may take a while depending on the size of your chart)";
+            CultureInfo cultureInfo = Thread.CurrentThread.CurrentCulture;
+            TextInfo textInfo = cultureInfo.TextInfo;
+            var loadingText = "Loading your " + textInfo.ToTitleCase(time) + " " + chartsize + " " + SelfUser.Username + " artist chart... (may take a while depending on the size of your chart)";
             var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
 
             try
@@ -852,7 +856,7 @@ namespace FMBot_Discord
                     chart.DiscordUser = DiscordUser;
                     chart.disclient = Context.Client as DiscordSocketClient;
                     chart.mode = 1;
-                    await Task.Run(() => chart.ChartGenerate());
+                    await chart.ChartGenerate();
 
                     await Context.Channel.SendFileAsync(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png");
 
