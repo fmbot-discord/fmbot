@@ -611,7 +611,7 @@ namespace FMBot_Discord
             }
             else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
 			{
-                loadingText = "Loading your Montly " + chartsize + " " + SelfUser.Username + " chart... (may take a while depending on the size of your chart)";
+                loadingText = "Loading your Monthly " + chartsize + " " + SelfUser.Username + " chart... (may take a while depending on the size of your chart)";
             }
             else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
             {
@@ -803,7 +803,7 @@ namespace FMBot_Discord
             }
             else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
 			{
-                loadingText = "Loading your Montly " + chartsize + " " + SelfUser.Username + " artist chart... (may take a while depending on the size of your chart)";
+                loadingText = "Loading your Monthly " + chartsize + " " + SelfUser.Username + " artist chart... (may take a while depending on the size of your chart)";
             }
             else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
             {
