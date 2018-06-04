@@ -603,9 +603,29 @@ namespace FMBot_Discord
 
             var SelfUser = Context.Client.CurrentUser;
 
-            CultureInfo cultureInfo = Thread.CurrentThread.CurrentCulture;
-            TextInfo textInfo = cultureInfo.TextInfo;
-            var loadingText = "Loading your " + textInfo.ToTitleCase(time) + " " + chartsize + " " + SelfUser.Username + " chart... (may take a while depending on the size of your chart)";
+            var loadingText = "";
+			
+			if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
+            {
+                loadingText = "Loading your Weekly " + chartsize + " " + SelfUser.Username + " chart... (may take a while depending on the size of your chart)";
+            }
+            else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
+			{
+                loadingText = "Loading your Montly " + chartsize + " " + SelfUser.Username + " chart... (may take a while depending on the size of your chart)";
+            }
+            else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
+            {
+                loadingText = "Loading your Yearly " + chartsize + " " + SelfUser.Username + " chart... (may take a while depending on the size of your chart)";
+            }
+            else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
+            {
+                loadingText = "Loading your Overall " + chartsize + " " + SelfUser.Username + " chart... (may take a while depending on the size of your chart)";
+            }
+			else
+            {
+                loadingText = "Loading your " + chartsize + " " + SelfUser.Username + " chart... (may take a while depending on the size of your chart)";
+            }
+			
             var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
 
             try
@@ -722,23 +742,23 @@ namespace FMBot_Discord
 
                     if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                     {
-                        builder.WithDescription("Last.FM Weekly Chart for " + LastFMName);
+                        builder.WithDescription("Last.FM " + chartsize + " Weekly Chart for " + LastFMName);
                     }
                     else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
                     {
-                        builder.WithDescription("Last.FM Monthly Chart for " + LastFMName);
+                        builder.WithDescription("Last.FM " + chartsize + " Monthly Chart for " + LastFMName);
                     }
                     else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
                     {
-                        builder.WithDescription("Last.FM Yearly Chart for " + LastFMName);
+                        builder.WithDescription("Last.FM " + chartsize + " Yearly Chart for " + LastFMName);
                     }
                     else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
                     {
-                        builder.WithDescription("Last.FM Overall Chart for " + LastFMName);
+                        builder.WithDescription("Last.FM " + chartsize + " Overall Chart for " + LastFMName);
                     }
                     else
                     {
-                        builder.WithDescription("Last.FM Chart for " + LastFMName);
+                        builder.WithDescription("Last.FM " + chartsize + " Chart for " + LastFMName);
                     }
 
                     var userinfo = await client.User.GetInfoAsync(LastFMName);
@@ -775,9 +795,29 @@ namespace FMBot_Discord
 
             var SelfUser = Context.Client.CurrentUser;
 
-            CultureInfo cultureInfo = Thread.CurrentThread.CurrentCulture;
-            TextInfo textInfo = cultureInfo.TextInfo;
-            var loadingText = "Loading your " + textInfo.ToTitleCase(time) + " " + chartsize + " " + SelfUser.Username + " artist chart... (may take a while depending on the size of your chart)";
+            var loadingText = "";
+			
+			if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
+            {
+                loadingText = "Loading your Weekly " + chartsize + " " + SelfUser.Username + " artist chart... (may take a while depending on the size of your chart)";
+            }
+            else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
+			{
+                loadingText = "Loading your Montly " + chartsize + " " + SelfUser.Username + " artist chart... (may take a while depending on the size of your chart)";
+            }
+            else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
+            {
+                loadingText = "Loading your Yearly " + chartsize + " " + SelfUser.Username + " artist chart... (may take a while depending on the size of your chart)";
+            }
+            else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
+            {
+                loadingText = "Loading your Overall " + chartsize + " " + SelfUser.Username + " artist chart... (may take a while depending on the size of your chart)";
+            }
+			else
+            {
+                loadingText = "Loading your " + chartsize + " " + SelfUser.Username + " artist chart... (may take a while depending on the size of your chart)";
+            }
+			
             var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
 
             try
@@ -894,23 +934,23 @@ namespace FMBot_Discord
 					
                     if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                     {
-                        builder.WithDescription("Last.FM Weekly Artist Chart for " + LastFMName);
+                        builder.WithDescription("Last.FM " + chartsize + " Weekly Artist Chart for " + LastFMName);
                     }
                     else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
                     {
-                        builder.WithDescription("Last.FM Monthly Artist Chart for " + LastFMName);
+                        builder.WithDescription("Last.FM " + chartsize + " Monthly Artist Chart for " + LastFMName);
                     }
                     else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
                     {
-                        builder.WithDescription("Last.FM Yearly Artist Chart for " + LastFMName);
+                        builder.WithDescription("Last.FM " + chartsize + " Yearly Artist Chart for " + LastFMName);
                     }
                     else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
                     {
-                        builder.WithDescription("Last.FM Overall Artist Chart for " + LastFMName);
+                        builder.WithDescription("Last.FM " + chartsize + " Overall Artist Chart for " + LastFMName);
                     }
 					else
                     {
-                        builder.WithDescription("Last.FM Artist Chart for " + LastFMName);
+                        builder.WithDescription("Last.FM " + chartsize + " Artist Chart for " + LastFMName);
                     }
 
                     var userinfo = await client.User.GetInfoAsync(LastFMName);
