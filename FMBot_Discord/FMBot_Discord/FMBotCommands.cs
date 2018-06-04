@@ -14,10 +14,11 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Net;
+using System.ComponentModel;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Threading;
 using YoutubeSearch;
 using static FMBot_Discord.FMBotModules;
 using static FMBot_Discord.FMBotUtil;
@@ -108,7 +109,7 @@ namespace FMBot_Discord
                             {
                                 builder.WithTitle(LastFMName);
                             }
-                            builder.WithDescription("Recently Played");
+                            builder.WithDescription("Now Playing");
 
                             string nulltext = "[undefined]";
 
@@ -133,11 +134,7 @@ namespace FMBot_Discord
                                 DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                                 ExceptionReporter.ReportException(disclient, e);
                             }
-
-                            //builder.AddInlineField("Recent Track", TrackName);
-                            //builder.AddInlineField(AlbumName, ArtistName);
-
-                            builder.AddField("Recent Track: " + TrackName, ArtistName + " | " + AlbumName);
+                            builder.AddField("Current: " + TrackName, ArtistName + " | " + AlbumName);
 
                             EmbedFooterBuilder efb = new EmbedFooterBuilder();
 
@@ -185,7 +182,7 @@ namespace FMBot_Discord
                                 {
                                     builder.WithTitle(LastFMName);
                                 }
-                                builder.WithDescription("Recently Played");
+                                builder.WithDescription("Now Playing");
 
                                 string nulltext = "[undefined]";
 
@@ -215,13 +212,8 @@ namespace FMBot_Discord
                                     ExceptionReporter.ReportException(disclient, e);
                                 }
 
-                                //builder.AddInlineField("Recent Track", TrackName);
-                                //builder.AddInlineField(AlbumName, ArtistName);
-                                //builder.AddInlineField("Previous Track", LastTrackName);
-                                //builder.AddInlineField(LastAlbumName, LastArtistName);
-
-                                builder.AddField("Recent Track: " + TrackName, ArtistName + " | " + AlbumName);
-                                builder.AddField("Previous Track: " + LastTrackName, LastArtistName + " | " + LastAlbumName);
+                                builder.AddField("Current: " + TrackName, ArtistName + " | " + AlbumName);
+                                builder.AddField("Previous: " + LastTrackName, LastArtistName + " | " + LastAlbumName);
 
                                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
 
@@ -269,7 +261,7 @@ namespace FMBot_Discord
                                     builder.WithTitle(LastFMName);
                                 }
 
-                                builder.WithDescription("Recently Played");
+                                builder.WithDescription("Now Playing");
 
                                 string nulltext = "[undefined]";
 
@@ -295,10 +287,7 @@ namespace FMBot_Discord
                                     ExceptionReporter.ReportException(disclient, e);
                                 }
 
-                                //builder.AddInlineField("Recent Track", TrackName);
-                                //builder.AddInlineField(AlbumName, ArtistName);
-
-                                builder.AddField("Recent Track: " + TrackName, ArtistName + " | " + AlbumName);
+                                builder.AddField("Current: " + TrackName, ArtistName + " | " + AlbumName);
 
                                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
 
@@ -331,19 +320,19 @@ namespace FMBot_Discord
 
                                 if (FMBotAdminUtil.IsOwner(DiscordUser))
                                 {
-                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Owner\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
+                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Owner\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                                 }
                                 else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
                                 {
-                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Super Admin\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
+                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Super Admin\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                                 }
                                 else if (FMBotAdminUtil.IsAdmin(DiscordUser))
                                 {
-                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Admin\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
+                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Admin\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                                 }
                                 else
                                 {
-                                    await Context.Channel.SendMessageAsync("**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
+                                    await Context.Channel.SendMessageAsync("**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                                 }
                             }
                             catch (Exception)
@@ -363,19 +352,19 @@ namespace FMBot_Discord
 
                                 if (FMBotAdminUtil.IsOwner(DiscordUser))
                                 {
-                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Owner\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
+                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Owner\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                                 }
                                 else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
                                 {
-                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Super Admin\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
+                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Super Admin\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                                 }
                                 else if (FMBotAdminUtil.IsAdmin(DiscordUser))
                                 {
-                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Admin\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
+                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Admin\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                                 }
                                 else
                                 {
-                                    await Context.Channel.SendMessageAsync("**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
+                                    await Context.Channel.SendMessageAsync("**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                                 }
                             }
                         }
@@ -396,19 +385,19 @@ namespace FMBot_Discord
 
                             if (FMBotAdminUtil.IsOwner(DiscordUser))
                             {
-                                await Context.Channel.SendMessageAsync(SelfUser.Username + " Owner\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
+                                await Context.Channel.SendMessageAsync(SelfUser.Username + " Owner\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                             }
                             else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
                             {
-                                await Context.Channel.SendMessageAsync(SelfUser.Username + " Super Admin\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
+                                await Context.Channel.SendMessageAsync(SelfUser.Username + " Super Admin\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                             }
                             else if (FMBotAdminUtil.IsAdmin(DiscordUser))
                             {
-                                await Context.Channel.SendMessageAsync(SelfUser.Username + " Admin\n**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
+                                await Context.Channel.SendMessageAsync(SelfUser.Username + " Admin\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                             }
                             else
                             {
-                                await Context.Channel.SendMessageAsync("**Recent** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
+                                await Context.Channel.SendMessageAsync("**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                             }
                         }
                     }
@@ -608,7 +597,7 @@ namespace FMBot_Discord
 
             if (time == "help")
             {
-                await ReplyAsync(cfgjson.CommandPrefix + "fmchart [weekly/monthly/yearly/overall] [3x3/4x4/5x5/8x8/10x10] [user]");
+                await ReplyAsync(cfgjson.CommandPrefix + "fmchart [weekly/monthly/yearly/overall] [3x3-10x10] [user]");
                 return;
             }
 
@@ -647,15 +636,35 @@ namespace FMBot_Discord
                         chartalbums = "25";
                         chartrows = "5";
                     }
+                    else if (chartsize.Equals("6x6"))
+                    {
+                        chartalbums = "36";
+                        chartrows = "6";
+                    }
+                    else if (chartsize.Equals("7x7"))
+                    {
+                        chartalbums = "49";
+                        chartrows = "7";
+                    }
                     else if (chartsize.Equals("8x8"))
                     {
                         chartalbums = "64";
                         chartrows = "8";
                     }
+                    else if (chartsize.Equals("9x9"))
+                    {
+                        chartalbums = "81";
+                        chartrows = "9";
+                    }
                     else if (chartsize.Equals("10x10"))
                     {
                         chartalbums = "100";
                         chartrows = "10";
+                    }
+                    else
+                    {
+                        await ReplyAsync("Your chart's size isn't valid. Sizes supported: 3x3-10x10");
+                        return;
                     }
                     
                     int max = int.Parse(chartalbums);
@@ -663,91 +672,19 @@ namespace FMBot_Discord
 
                     List<Bitmap> images = new List<Bitmap>();
 
-                    try
-                    {
-                        LastStatsTimeSpan timespan = LastStatsTimeSpan.Week;
+                    FMBotChart chart = new FMBotChart();
+                    chart.time = time;
+                    chart.client = client;
+                    chart.LastFMName = LastFMName;
+                    chart.max = max;
+                    chart.rows = rows;
+                    chart.images = images;
+                    chart.DiscordUser = DiscordUser;
+                    chart.disclient = Context.Client as DiscordSocketClient;
+                    chart.mode = 0;
+                    await Task.Run(() => chart.ChartGenerate());
 
-                        if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
-                        {
-                            timespan = LastStatsTimeSpan.Week;
-                        }
-                        else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
-                        {
-                            timespan = LastStatsTimeSpan.Month;
-                        }
-                        else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
-                        {
-                            timespan = LastStatsTimeSpan.Year;
-                        }
-                        else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
-                        {
-                            timespan = LastStatsTimeSpan.Overall;
-                        }
-
-                        var tracks = await client.User.GetTopAlbums(LastFMName, timespan, 1, max);
-
-                        string nulltext = "[undefined]";
-                        for (int al = 0; al < max; ++al)
-                        {
-                            LastAlbum track = tracks.Content.ElementAt(al);
-
-                            string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
-                            string AlbumName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.Name;
-
-                            try
-                            {
-                                var AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
-                                var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
-                                var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
-                                string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
-
-                                WebRequest request = WebRequest.Create(ThumbnailImage);
-                                WebResponse response = request.GetResponse();
-                                Stream responseStream = response.GetResponseStream();
-                                Bitmap cover = new Bitmap(responseStream);
-                                Graphics text = Graphics.FromImage(cover);
-                                text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF (2.0f, 2.0f));
-                                text.DrawColorString(cover, AlbumName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF (2.0f, 12.0f));
-
-                                images.Add(cover);
-                            }
-                            catch (Exception e)
-                            {
-                                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                                ExceptionReporter.ReportException(disclient, e);
-
-                                Bitmap cover = new Bitmap(GlobalVars.BasePath + "unknown.png");
-                                Graphics text = Graphics.FromImage(cover);
-                                text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
-                                text.DrawColorString(cover, AlbumName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 12.0f));
-
-                                images.Add(cover);
-                            }
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                        ExceptionReporter.ReportException(disclient, e);
-                    }
-                    finally
-                    {
-                        List<List<Bitmap>> ImageLists = GlobalVars.splitBitmapList(images, rows);
-
-                        List<Bitmap> BitmapList = new List<Bitmap>();
-
-                        foreach (List<Bitmap> list in ImageLists.ToArray())
-                        {
-                            //combine them into one image
-                            Bitmap stitchedRow = GlobalVars.Combine(list);
-                            BitmapList.Add(stitchedRow);
-                        }
-
-                        Bitmap stitchedImage = GlobalVars.Combine(BitmapList, true);
-
-                        stitchedImage.Save(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png", System.Drawing.Imaging.ImageFormat.Png);
-                        await Context.Channel.SendFileAsync(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png");
-                    }
+                    await Context.Channel.SendFileAsync(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png");
 
                     EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
@@ -797,7 +734,7 @@ namespace FMBot_Discord
                     {
                         builder.WithDescription("Last.FM Overall Chart for " + LastFMName);
                     }
-					else
+                    else
                     {
                         builder.WithDescription("Last.FM Chart for " + LastFMName);
                     }
@@ -830,7 +767,7 @@ namespace FMBot_Discord
 
             if (time == "help")
             {
-                await ReplyAsync(cfgjson.CommandPrefix + "fmartistchart [weekly/monthly/yearly/overall] [3x3/4x4/5x5/8x8/10x10] [user]");
+                await ReplyAsync(cfgjson.CommandPrefix + "fmartistchart [weekly/monthly/yearly/overall] [3x3-10x10] [user]");
                 return;
             }
 
@@ -853,13 +790,13 @@ namespace FMBot_Discord
                     
                     string chartalbums = "";
                     string chartrows = "";
-                    
+
                     if (chartsize.Equals("3x3"))
                     {
                         chartalbums = "9";
                         chartrows = "3";
                     }
-					else if (chartsize.Equals("4x4"))
+                    else if (chartsize.Equals("4x4"))
                     {
                         chartalbums = "16";
                         chartrows = "4";
@@ -869,104 +806,55 @@ namespace FMBot_Discord
                         chartalbums = "25";
                         chartrows = "5";
                     }
+                    else if (chartsize.Equals("6x6"))
+                    {
+                        chartalbums = "36";
+                        chartrows = "6";
+                    }
+                    else if (chartsize.Equals("7x7"))
+                    {
+                        chartalbums = "49";
+                        chartrows = "7";
+                    }
                     else if (chartsize.Equals("8x8"))
                     {
                         chartalbums = "64";
                         chartrows = "8";
+                    }
+                    else if (chartsize.Equals("9x9"))
+                    {
+                        chartalbums = "81";
+                        chartrows = "9";
                     }
                     else if (chartsize.Equals("10x10"))
                     {
                         chartalbums = "100";
                         chartrows = "10";
                     }
-                    
+                    else
+                    {
+                        await ReplyAsync("Your artist chart's size isn't valid. Sizes supported: 3x3-10x10");
+                        return;
+                    }
+
                     int max = int.Parse(chartalbums);
                     int rows = int.Parse(chartrows);
 
                     List<Bitmap> images = new List<Bitmap>();
 
-                    try
-                    {
-                        LastStatsTimeSpan timespan = LastStatsTimeSpan.Week;
+                    FMBotChart chart = new FMBotChart();
+                    chart.time = time;
+                    chart.client = client;
+                    chart.LastFMName = LastFMName;
+                    chart.max = max;
+                    chart.rows = rows;
+                    chart.images = images;
+                    chart.DiscordUser = DiscordUser;
+                    chart.disclient = Context.Client as DiscordSocketClient;
+                    chart.mode = 1;
+                    await Task.Run(() => chart.ChartGenerate());
 
-                        if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
-                        {
-                            timespan = LastStatsTimeSpan.Week;
-                        }
-                        else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
-                        {
-                            timespan = LastStatsTimeSpan.Month;
-                        }
-                        else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
-                        {
-                            timespan = LastStatsTimeSpan.Year;
-                        }
-                        else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
-                        {
-                            timespan = LastStatsTimeSpan.Overall;
-                        }
-
-                        var artists = await client.User.GetTopArtists(LastFMName, timespan, 1, max);
-
-                        string nulltext = "[undefined]";
-                        for (int al = 0; al < max; ++al)
-                        {
-                            LastArtist artist = artists.Content.ElementAt(al);
-
-                            string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? nulltext : artist.Name;
-
-                            try
-                            {
-                                var ArtistInfo = await client.Artist.GetInfoAsync(ArtistName);
-                                var ArtistImages = (ArtistInfo.Content.MainImage != null) ? ArtistInfo.Content.MainImage : null;
-                                var ArtistThumbnail = (ArtistImages != null) ? ArtistImages.Large.AbsoluteUri : null;
-                                string ThumbnailImage = (ArtistThumbnail != null) ? ArtistThumbnail.ToString() : null;
-
-                                WebRequest request = WebRequest.Create(ThumbnailImage);
-                                WebResponse response = request.GetResponse();
-                                Stream responseStream = response.GetResponseStream();
-                                Bitmap cover = new Bitmap(responseStream);
-                                Graphics text = Graphics.FromImage(cover);
-                                text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
-
-                                images.Add(cover);
-                            }
-                            catch (Exception e)
-                            {
-                                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                                ExceptionReporter.ReportException(disclient, e);
-
-                                Bitmap cover = new Bitmap(GlobalVars.BasePath + "unknown.png");
-                                Graphics text = Graphics.FromImage(cover);
-                                text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
-
-                                images.Add(cover);
-                            }
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                        ExceptionReporter.ReportException(disclient, e);
-                    }
-                    finally
-                    {
-                        List<List<Bitmap>> ImageLists = GlobalVars.splitBitmapList(images, rows);
-
-                        List<Bitmap> BitmapList = new List<Bitmap>();
-
-                        foreach (List<Bitmap> list in ImageLists.ToArray())
-                        {
-                            //combine them into one image
-                            Bitmap stitchedRow = GlobalVars.Combine(list);
-                            BitmapList.Add(stitchedRow);
-                        }
-
-                        Bitmap stitchedImage = GlobalVars.Combine(BitmapList, true);
-
-                        stitchedImage.Save(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png", System.Drawing.Imaging.ImageFormat.Png);
-                        await Context.Channel.SendFileAsync(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png");
-                    }
+                    await Context.Channel.SendFileAsync(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png");
 
                     EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
@@ -1701,7 +1589,6 @@ namespace FMBot_Discord
                     builder.AddInlineField(SelfUser.Username + " Mode: ", LastFMMode);
                     builder.AddInlineField("User Type: ", usertype.ToString());
                     builder.AddInlineField("Total Tracks: ", playcount.ToString("0"));
-                    builder.AddInlineField("Total Playlists: ", playlists.ToString());
                     builder.AddInlineField("Has Premium? ", premium.ToString());
                     builder.AddInlineField("Is " + SelfUser.Username + " Admin? ", FMBotAdminUtil.IsAdmin(DiscordUser).ToString());
                     builder.AddInlineField("Is " + SelfUser.Username + " Super Admin? ", FMBotAdminUtil.IsSuperAdmin(DiscordUser).ToString());
@@ -1939,7 +1826,7 @@ namespace FMBot_Discord
                 }
             }
 
-            await Context.User.SendMessageAsync(SelfUser.Username + " Info\n\nBe sure to use 'help' after a command name to see the parameters.\n\nModes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nuserdefined (fmserverset only)\n\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nweek\nw\nmonthly\nmonth\nm\nyearly\nyear\ny\noverall\nalltime\no\nat\n\nAvailable FMChart sizes:\n3x3\n4x4\n5x5\n8x8\n10x10");
+            await Context.User.SendMessageAsync(SelfUser.Username + " Info\n\nBe sure to use 'help' after a command name to see the parameters.\n\nChart sizes range from 3x3 to 10x10.\n\nModes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nuserdefined (fmserverset only)\n\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nweek\nw\nmonthly\nmonth\nm\nyearly\nyear\ny\noverall\nalltime\no\nat");
 
             await Context.Channel.SendMessageAsync("Check your DMs!");
         }

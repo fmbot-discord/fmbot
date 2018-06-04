@@ -1,6 +1,9 @@
 ﻿
 using Discord;
 using Discord.WebSocket;
+using IF.Lastfm.Core.Api;
+using IF.Lastfm.Core.Api.Enums;
+using IF.Lastfm.Core.Objects;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -9,6 +12,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Management;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -1019,6 +1023,150 @@ namespace FMBot_Discord
                 else
                 {
                     return false;
+                }
+            }
+        }
+
+        #endregion
+
+        #region FMBot Chart Classification
+
+        public class FMBotChart
+        {
+            public string time;
+            public LastfmClient client;
+            public string LastFMName;
+            public int max;
+            public int rows;
+            public List<Bitmap> images;
+            public IGuildUser DiscordUser;
+            public DiscordSocketClient disclient;
+            public int mode;
+
+            public async void ChartGenerate()
+            {
+                try
+                {
+                    LastStatsTimeSpan timespan = LastStatsTimeSpan.Week;
+
+                    if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
+                    {
+                        timespan = LastStatsTimeSpan.Week;
+                    }
+                    else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
+                    {
+                        timespan = LastStatsTimeSpan.Month;
+                    }
+                    else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
+                    {
+                        timespan = LastStatsTimeSpan.Year;
+                    }
+                    else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
+                    {
+                        timespan = LastStatsTimeSpan.Overall;
+                    }
+
+                    string nulltext = "[undefined]";
+
+                    if (mode == 0)
+                    {
+                        var tracks = await client.User.GetTopAlbums(LastFMName, timespan, 1, max);
+
+                        for (int al = 0; al < max; ++al)
+                        {
+                            LastAlbum track = tracks.Content.ElementAt(al);
+
+                            string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
+                            string AlbumName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.Name;
+
+                            try
+                            {
+                                var AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
+                                var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
+                                var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
+                                string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
+
+                                WebRequest request = WebRequest.Create(ThumbnailImage);
+                                WebResponse response = request.GetResponse();
+                                Stream responseStream = response.GetResponseStream();
+                                Bitmap cover = new Bitmap(responseStream);
+                                Graphics text = Graphics.FromImage(cover);
+                                text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
+                                text.DrawColorString(cover, AlbumName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 12.0f));
+
+                                images.Add(cover);
+                            }
+                            catch (Exception e)
+                            {
+                                ExceptionReporter.ReportException(disclient, e);
+
+                                Bitmap cover = new Bitmap(GlobalVars.BasePath + "unknown.png");
+                                Graphics text = Graphics.FromImage(cover);
+                                text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
+                                text.DrawColorString(cover, AlbumName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 12.0f));
+
+                                images.Add(cover);
+                            }
+                        }
+                    }
+                    else if (mode == 1)
+                    {
+                        var artists = await client.User.GetTopArtists(LastFMName, timespan, 1, max);
+                        for (int al = 0; al < max; ++al)
+                        {
+                            LastArtist artist = artists.Content.ElementAt(al);
+
+                            string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? nulltext : artist.Name;
+
+                            try
+                            {
+                                var ArtistInfo = await client.Artist.GetInfoAsync(ArtistName);
+                                var ArtistImages = (ArtistInfo.Content.MainImage != null) ? ArtistInfo.Content.MainImage : null;
+                                var ArtistThumbnail = (ArtistImages != null) ? ArtistImages.Large.AbsoluteUri : null;
+                                string ThumbnailImage = (ArtistThumbnail != null) ? ArtistThumbnail.ToString() : null;
+
+                                WebRequest request = WebRequest.Create(ThumbnailImage);
+                                WebResponse response = request.GetResponse();
+                                Stream responseStream = response.GetResponseStream();
+                                Bitmap cover = new Bitmap(responseStream);
+                                Graphics text = Graphics.FromImage(cover);
+                                text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
+
+                                images.Add(cover);
+                            }
+                            catch (Exception e)
+                            {
+                                ExceptionReporter.ReportException(disclient, e);
+
+                                Bitmap cover = new Bitmap(GlobalVars.BasePath + "unknown.png");
+                                Graphics text = Graphics.FromImage(cover);
+                                text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
+
+                                images.Add(cover);
+                            }
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    ExceptionReporter.ReportException(disclient, e);
+                }
+                finally
+                {
+                    List<List<Bitmap>> ImageLists = GlobalVars.splitBitmapList(images, rows);
+
+                    List<Bitmap> BitmapList = new List<Bitmap>();
+
+                    foreach (List<Bitmap> list in ImageLists.ToArray())
+                    {
+                        //combine them into one image
+                        Bitmap stitchedRow = GlobalVars.Combine(list);
+                        BitmapList.Add(stitchedRow);
+                    }
+
+                    Bitmap stitchedImage = GlobalVars.Combine(BitmapList, true);
+
+                    stitchedImage.Save(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png", System.Drawing.Imaging.ImageFormat.Png);
                 }
             }
         }
