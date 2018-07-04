@@ -92,23 +92,7 @@ namespace FMBot_Discord
                             builder.WithAuthor(eab);
                             string URI = "https://www.last.fm/user/" + LastFMName;
                             builder.WithUrl(URI);
-
-                            if (FMBotAdminUtil.IsOwner(DiscordUser))
-                            {
-                                builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Owner");
-                            }
-                            else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
-                            {
-                                builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Super Admin");
-                            }
-                            else if (FMBotAdminUtil.IsAdmin(DiscordUser))
-                            {
-                                builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Admin");
-                            }
-                            else
-                            {
-                                builder.WithTitle(LastFMName);
-                            }
+                            GlobalVars.SetUserTitleEmbed(builder, DiscordUser, LastFMName, SelfUser);
                             builder.WithDescription("Now Playing");
 
                             string nulltext = "[undefined]";
@@ -166,22 +150,7 @@ namespace FMBot_Discord
                                 builder.WithAuthor(eab);
                                 string URI = "https://www.last.fm/user/" + LastFMName;
                                 builder.WithUrl(URI);
-                                if (FMBotAdminUtil.IsOwner(DiscordUser))
-                                {
-                                    builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Owner");
-                                }
-                                else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
-                                {
-                                    builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Super Admin");
-                                }
-                                else if (FMBotAdminUtil.IsAdmin(DiscordUser))
-                                {
-                                    builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Admin");
-                                }
-                                else
-                                {
-                                    builder.WithTitle(LastFMName);
-                                }
+                                GlobalVars.SetUserTitleEmbed(builder, DiscordUser, LastFMName, SelfUser);
                                 builder.WithDescription("Now Playing");
 
                                 string nulltext = "[undefined]";
@@ -243,24 +212,7 @@ namespace FMBot_Discord
                                 builder.WithAuthor(eab);
                                 string URI = "https://www.last.fm/user/" + LastFMName;
                                 builder.WithUrl(URI);
-
-                                if (FMBotAdminUtil.IsOwner(DiscordUser))
-                                {
-                                    builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Owner");
-                                }
-                                else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
-                                {
-                                    builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Super Admin");
-                                }
-                                else if (FMBotAdminUtil.IsAdmin(DiscordUser))
-                                {
-                                    builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Admin");
-                                }
-                                else
-                                {
-                                    builder.WithTitle(LastFMName);
-                                }
-
+                                GlobalVars.SetUserTitleEmbed(builder, DiscordUser, LastFMName, SelfUser);
                                 builder.WithDescription("Now Playing");
 
                                 string nulltext = "[undefined]";
@@ -318,22 +270,7 @@ namespace FMBot_Discord
                                 var userinfo = await client.User.GetInfoAsync(LastFMName);
                                 var playcount = userinfo.Content.Playcount;
 
-                                if (FMBotAdminUtil.IsOwner(DiscordUser))
-                                {
-                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Owner\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
-                                }
-                                else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
-                                {
-                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Super Admin\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
-                                }
-                                else if (FMBotAdminUtil.IsAdmin(DiscordUser))
-                                {
-                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Admin\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
-                                }
-                                else
-                                {
-                                    await Context.Channel.SendMessageAsync("**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
-                                }
+                                await Context.Channel.SendMessageAsync(GlobalVars.SetUserTitleText(DiscordUser, SelfUser) + "**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                             }
                             catch (Exception)
                             {
@@ -350,22 +287,7 @@ namespace FMBot_Discord
                                 var userinfo = await client.User.GetInfoAsync(LastFMName);
                                 var playcount = userinfo.Content.Playcount;
 
-                                if (FMBotAdminUtil.IsOwner(DiscordUser))
-                                {
-                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Owner\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
-                                }
-                                else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
-                                {
-                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Super Admin\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
-                                }
-                                else if (FMBotAdminUtil.IsAdmin(DiscordUser))
-                                {
-                                    await Context.Channel.SendMessageAsync(SelfUser.Username + " Admin\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
-                                }
-                                else
-                                {
-                                    await Context.Channel.SendMessageAsync("**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
-                                }
+                                await Context.Channel.SendMessageAsync(GlobalVars.SetUserTitleText(DiscordUser, SelfUser) + "**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                             }
                         }
                         else if (LastFMMode == 3)
@@ -383,22 +305,7 @@ namespace FMBot_Discord
                             var userinfo = await client.User.GetInfoAsync(LastFMName);
                             var playcount = userinfo.Content.Playcount;
 
-                            if (FMBotAdminUtil.IsOwner(DiscordUser))
-                            {
-                                await Context.Channel.SendMessageAsync(SelfUser.Username + " Owner\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
-                            }
-                            else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
-                            {
-                                await Context.Channel.SendMessageAsync(SelfUser.Username + " Super Admin\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
-                            }
-                            else if (FMBotAdminUtil.IsAdmin(DiscordUser))
-                            {
-                                await Context.Channel.SendMessageAsync(SelfUser.Username + " Admin\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
-                            }
-                            else
-                            {
-                                await Context.Channel.SendMessageAsync("**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
-                            }
+                            await Context.Channel.SendMessageAsync(GlobalVars.SetUserTitleText(DiscordUser, SelfUser) + "**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + LastFMName + ">\n" + LastFMName + "'s Total Tracks: " + playcount.ToString("0"));
                         }
                     }
                     catch (Exception e)
@@ -723,22 +630,7 @@ namespace FMBot_Discord
                     builder.WithAuthor(eab);
                     string URI = "https://www.last.fm/user/" + LastFMName;
                     builder.WithUrl(URI);
-                    if (FMBotAdminUtil.IsOwner(DiscordUser))
-                    {
-                        builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Owner");
-                    }
-                    else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
-                    {
-                        builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Super Admin");
-                    }
-                    else if (FMBotAdminUtil.IsAdmin(DiscordUser))
-                    {
-                        builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Admin");
-                    }
-                    else
-                    {
-                        builder.WithTitle(LastFMName);
-                    }
+                    GlobalVars.SetUserTitleEmbed(builder, DiscordUser, LastFMName, SelfUser);
 
                     if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                     {
@@ -768,6 +660,7 @@ namespace FMBot_Discord
 
                     builder.WithFooter(efb);
 
+                    await loadingmsg.DeleteAsync();
                     await Context.Channel.SendMessageAsync("", false, builder.Build());
                 }
             }
@@ -776,10 +669,9 @@ namespace FMBot_Discord
                 DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                 ExceptionReporter.ReportException(disclient, e);
 
+                await loadingmsg.DeleteAsync();
                 await ReplyAsync("Error: Cannot generate chart. You may not have scrobbled anything this time period or your Last.FM name cannot be found.");
             }
-
-            await loadingmsg.DeleteAsync();
         }
 
         [Command("fmartistchart"), Summary("Generates an artist chart based on a user's parameters.")]
@@ -915,23 +807,8 @@ namespace FMBot_Discord
                     builder.WithAuthor(eab);
                     string URI = "https://www.last.fm/user/" + LastFMName;
                     builder.WithUrl(URI);
-                    if (FMBotAdminUtil.IsOwner(DiscordUser))
-                    {
-                        builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Owner");
-                    }
-                    else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
-                    {
-                        builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Super Admin");
-                    }
-                    else if (FMBotAdminUtil.IsAdmin(DiscordUser))
-                    {
-                        builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Admin");
-                    }
-                    else
-                    {
-                        builder.WithTitle(LastFMName);
-                    }
-					
+                    GlobalVars.SetUserTitleEmbed(builder, DiscordUser, LastFMName, SelfUser);
+
                     if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                     {
                         builder.WithDescription("Last.FM " + chartsize + " Weekly Artist Chart for " + LastFMName);
@@ -960,6 +837,7 @@ namespace FMBot_Discord
 
                     builder.WithFooter(efb);
 
+                    await loadingmsg.DeleteAsync();
                     await Context.Channel.SendMessageAsync("", false, builder.Build());
                 }
             }
@@ -968,10 +846,9 @@ namespace FMBot_Discord
                 DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                 ExceptionReporter.ReportException(disclient, e);
 
+                await loadingmsg.DeleteAsync();
                 await ReplyAsync("Error: Cannot generate chart. You may not have scrobbled anything this time period or your Last.FM name cannot be found.");
             }
-
-            await loadingmsg.DeleteAsync();
         }
 
         [Command("fmfriends"), Summary("Displays a user's friends and what they are listening to.")]
@@ -1018,23 +895,7 @@ namespace FMBot_Discord
                             builder.WithAuthor(eab);
                             string URI = "https://www.last.fm/user/" + LastFMName;
                             builder.WithUrl(URI);
-
-                            if (FMBotAdminUtil.IsOwner(DiscordUser))
-                            {
-                                builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Owner");
-                            }
-                            else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
-                            {
-                                builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Super Admin");
-                            }
-                            else if (FMBotAdminUtil.IsAdmin(DiscordUser))
-                            {
-                                builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Admin");
-                            }
-                            else
-                            {
-                                builder.WithTitle(LastFMName);
-                            }
+                            GlobalVars.SetUserTitleEmbed(builder, DiscordUser, LastFMName, SelfUser);
 
                             var amountOfScrobbles = "Amount of scrobbles of all your friends together: ";
 
@@ -1151,22 +1012,7 @@ namespace FMBot_Discord
                         builder.WithAuthor(eab);
                         string URI = "https://www.last.fm/user/" + LastFMName;
                         builder.WithUrl(URI);
-                        if (FMBotAdminUtil.IsOwner(DiscordUser))
-                        {
-                            builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Owner");
-                        }
-                        else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
-                        {
-                            builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Super Admin");
-                        }
-                        else if (FMBotAdminUtil.IsAdmin(DiscordUser))
-                        {
-                            builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Admin");
-                        }
-                        else
-                        {
-                            builder.WithTitle(LastFMName);
-                        }
+                        GlobalVars.SetUserTitleEmbed(builder, DiscordUser, LastFMName, SelfUser);
 
                         builder.WithDescription("Top " + num + " Recent Track List");
 
@@ -1296,22 +1142,7 @@ namespace FMBot_Discord
                         builder.WithAuthor(eab);
                         string URI = "https://www.last.fm/user/" + LastFMName;
                         builder.WithUrl(URI);
-                        if (FMBotAdminUtil.IsOwner(DiscordUser))
-                        {
-                            builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Owner");
-                        }
-                        else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
-                        {
-                            builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Super Admin");
-                        }
-                        else if (FMBotAdminUtil.IsAdmin(DiscordUser))
-                        {
-                            builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Admin");
-                        }
-                        else
-                        {
-                            builder.WithTitle(LastFMName);
-                        }
+                        GlobalVars.SetUserTitleEmbed(builder, DiscordUser, LastFMName, SelfUser);
 
                         if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                         {
@@ -1454,22 +1285,7 @@ namespace FMBot_Discord
                         builder.WithAuthor(eab);
                         string URI = "https://www.last.fm/user/" + LastFMName;
                         builder.WithUrl(URI);
-                        if (FMBotAdminUtil.IsOwner(DiscordUser))
-                        {
-                            builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Owner");
-                        }
-                        else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
-                        {
-                            builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Super Admin");
-                        }
-                        else if (FMBotAdminUtil.IsAdmin(DiscordUser))
-                        {
-                            builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Admin");
-                        }
-                        else
-                        {
-                            builder.WithTitle(LastFMName);
-                        }
+                        GlobalVars.SetUserTitleEmbed(builder, DiscordUser, LastFMName, SelfUser);
 
                         if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                         {
@@ -1585,22 +1401,7 @@ namespace FMBot_Discord
                     builder.WithAuthor(eab);
                     string URI = "https://www.last.fm/user/" + LastFMName;
                     builder.WithUrl(URI);
-                    if (FMBotAdminUtil.IsOwner(DiscordUser))
-                    {
-                        builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Owner");
-                    }
-                    else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
-                    {
-                        builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Super Admin");
-                    }
-                    else if (FMBotAdminUtil.IsAdmin(DiscordUser))
-                    {
-                        builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Admin");
-                    }
-                    else
-                    {
-                        builder.WithTitle(LastFMName);
-                    }
+                    GlobalVars.SetUserTitleEmbed(builder, DiscordUser, LastFMName, SelfUser);
                     builder.WithDescription("Last.FM Statistics for " + LastFMName);
 
                     var userinfo = await client.User.GetInfoAsync(LastFMName);
@@ -1633,7 +1434,7 @@ namespace FMBot_Discord
                     builder.AddInlineField(SelfUser.Username + " Mode: ", LastFMMode);
                     builder.AddInlineField("User Type: ", usertype.ToString());
                     builder.AddInlineField("Total Tracks: ", playcount.ToString("0"));
-                    builder.AddInlineField("Has Premium? ", premium.ToString());
+                    builder.AddInlineField("Has Last.FM Premium? ", premium.ToString());
                     builder.AddInlineField("Is " + SelfUser.Username + " Admin? ", FMBotAdminUtil.IsAdmin(DiscordUser).ToString());
                     builder.AddInlineField("Is " + SelfUser.Username + " Super Admin? ", FMBotAdminUtil.IsSuperAdmin(DiscordUser).ToString());
                     builder.AddInlineField("Is " + SelfUser.Username + " Owner? ", FMBotAdminUtil.IsOwner(DiscordUser).ToString());

@@ -214,16 +214,6 @@ namespace FMBot_Discord
             if (!message.HasCharPrefix(Convert.ToChar(prefix), ref argPos) || message.IsPinned || (message.Author.IsBot && message.Author != curUser)) return;
 
             var DiscordCaller = message.Author as SocketGuildUser;
-            string callerid = DiscordCaller.Id.ToString();
-            string callerserverid = DiscordCaller.Guild.Id.ToString();
-            bool isonblacklist = DBase.IsUserOnBlacklist(callerserverid, callerid);
-
-            if (isonblacklist == true)
-            {
-                await context.Channel.SendMessageAsync("You have been blacklisted from " + callerserverid + ". Please contact a server moderator/administrator or a FMBot administrator if you have any questions regarding this decision.");
-                return;
-            }
-            
             string convertedMessage = message.Content.Replace(prefix, "");
             var words = convertedMessage.Split(' ');
 	        List<string> wordlist = words.OfType<string>().ToList();
@@ -233,6 +223,16 @@ namespace FMBot_Discord
             // rather an object stating if the command executed successfully)
             if (wordinlist == true)
             {
+                var guild = DiscordCaller.Guild;
+                string callerserverid = guild.Id.ToString();
+                bool isonblacklist = DBase.IsUserOnBlacklist(callerserverid, DiscordCaller.Id.ToString());
+
+                if (isonblacklist == true)
+                {
+                    await context.Channel.SendMessageAsync("You have been blacklisted from " + guild.Name + ". Please contact a server moderator/administrator or a FMBot administrator if you have any questions regarding this decision.");
+                    return;
+                }
+
                 if (User.IncomingRequest(client, DiscordCaller.Id) != false)
                 {
                     var result = await commands.ExecuteAsync(context, argPos, services);
@@ -245,10 +245,6 @@ namespace FMBot_Discord
                         GlobalVars.CommandExecutions += 1;
                     }
                 }
-            }
-            else
-            {
-                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, "Error: CommandList array does not contain " + convertedMessage));
             }
         }
 	    

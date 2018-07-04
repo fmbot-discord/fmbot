@@ -223,12 +223,14 @@ namespace FMBot_Discord
                                         try
                                         {
                                             ulong DiscordID = DBase.GetIDForName(LastFMName);
+                                            GlobalVars.FeaturedUserID = DiscordID.ToString();
                                             SocketUser FeaturedUser = client.GetUser(DiscordID);
                                             trackString = ArtistName + " - " + AlbumName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
                                             await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                         }
                                         catch (Exception)
                                         {
+                                            GlobalVars.FeaturedUserID = "";
                                             try
                                             {
                                                 trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
@@ -276,12 +278,14 @@ namespace FMBot_Discord
                                         try
                                         {
                                             ulong DiscordID = DBase.GetIDForName(LastFMName);
+                                            GlobalVars.FeaturedUserID = DiscordID.ToString();
                                             SocketUser FeaturedUser = client.GetUser(DiscordID);
                                             trackString = ArtistName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
                                             await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                         }
                                         catch (Exception)
                                         {
+                                            GlobalVars.FeaturedUserID = "";
                                             try
                                             {
                                                 trackString = ArtistName + Environment.NewLine + LastFMName;
@@ -329,12 +333,14 @@ namespace FMBot_Discord
                                         try
                                         {
                                             ulong DiscordID = DBase.GetIDForName(LastFMName);
+                                            GlobalVars.FeaturedUserID = DiscordID.ToString();
                                             SocketUser FeaturedUser = client.GetUser(DiscordID);
                                             trackString = ArtistName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
                                             await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                         }
                                         catch (Exception)
                                         {
+                                            GlobalVars.FeaturedUserID = "";
                                             try
                                             {
                                                 trackString = ArtistName + Environment.NewLine + LastFMName;
@@ -383,12 +389,14 @@ namespace FMBot_Discord
                                         try
                                         {
                                             ulong DiscordID = DBase.GetIDForName(LastFMName);
+                                            GlobalVars.FeaturedUserID = DiscordID.ToString();
                                             SocketUser FeaturedUser = client.GetUser(DiscordID);
                                             trackString = ArtistName + " - " + AlbumName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
                                             await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                         }
                                         catch (Exception)
                                         {
+                                            GlobalVars.FeaturedUserID = "";
                                             try
                                             {
                                                 trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
@@ -437,12 +445,14 @@ namespace FMBot_Discord
                                         try
                                         {
                                             ulong DiscordID = DBase.GetIDForName(LastFMName);
+                                            GlobalVars.FeaturedUserID = DiscordID.ToString();
                                             SocketUser FeaturedUser = client.GetUser(DiscordID);
                                             trackString = ArtistName + " - " + AlbumName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
                                             await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                                         }
                                         catch (Exception)
                                         {
+                                            GlobalVars.FeaturedUserID = "";
                                             try
                                             {
                                                 trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
@@ -486,6 +496,7 @@ namespace FMBot_Discord
                                             else
                                             {
                                                 ulong DiscordID = DBase.GetIDFromChart(randChartImage);
+                                                GlobalVars.FeaturedUserID = DiscordID.ToString();
                                                 SocketUser FeaturedUser = client.GetUser(DiscordID);
                                                 try
                                                 {
@@ -502,6 +513,7 @@ namespace FMBot_Discord
                                                     }
                                                     catch (Exception)
                                                     {
+                                                        GlobalVars.FeaturedUserID = "";
                                                         try
                                                         {
                                                             trackString = "Anonymous' chart.";
@@ -553,6 +565,7 @@ namespace FMBot_Discord
                                         }
                                         catch (Exception e)
                                         {
+                                            GlobalVars.FeaturedUserID = "";
                                             ExceptionReporter.ReportException(client, e);
                                             UseDefaultAvatar(client);
                                             trackString = "Unable to get information for this chart avatar.";
@@ -677,6 +690,8 @@ namespace FMBot_Discord
                     Restart();
                 }
 
+                GlobalVars.FeaturedUserID = "";
+
                 var cfgjson = await JsonCfg.GetJSONDataAsync();
                 var fmclient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
 
@@ -788,6 +803,8 @@ namespace FMBot_Discord
                 {
                     Restart();
                 }
+
+                GlobalVars.FeaturedUserID = "";
 
                 var cfgjson = await JsonCfg.GetJSONDataAsync();
 

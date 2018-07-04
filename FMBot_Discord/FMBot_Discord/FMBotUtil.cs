@@ -745,6 +745,7 @@ namespace FMBot_Discord
             public static string BasePath = AppDomain.CurrentDomain.BaseDirectory;
             public static string UsersFolder = BasePath + "users/";
             public static string ServersFolder = BasePath + "servers/";
+            public static string FeaturedUserID = "";
             public static int MessageLength = 2000;
             public static int CommandExecutions = 0;
 
@@ -880,6 +881,138 @@ namespace FMBot_Discord
                 }
 
                 return list;
+            }
+
+            public static void SetUserTitleEmbed(EmbedBuilder builder, IUser DiscordUser, string LastFMName, ISelfUser SelfUser)
+            {
+                if (!string.IsNullOrWhiteSpace(FeaturedUserID))
+                {
+                    if (DiscordUser.Id == Convert.ToUInt64(FeaturedUserID))
+                    {
+                        if (FMBotAdminUtil.IsOwner(DiscordUser))
+                        {
+                            builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Owner, Featured User");
+                        }
+                        else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
+                        {
+                            builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Super Admin, Featured User");
+                        }
+                        else if (FMBotAdminUtil.IsAdmin(DiscordUser))
+                        {
+                            builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Admin, Featured User");
+                        }
+                        else
+                        {
+                            builder.WithTitle(LastFMName + ", Featured User");
+                        }
+                    }
+                    else
+                    {
+                        if (FMBotAdminUtil.IsOwner(DiscordUser))
+                        {
+                            builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Owner");
+                        }
+                        else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
+                        {
+                            builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Super Admin");
+                        }
+                        else if (FMBotAdminUtil.IsAdmin(DiscordUser))
+                        {
+                            builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Admin");
+                        }
+                        else
+                        {
+                            builder.WithTitle(LastFMName);
+                        }
+                    }
+                }
+                else
+                {
+                    if (FMBotAdminUtil.IsOwner(DiscordUser))
+                    {
+                        builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Owner");
+                    }
+                    else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
+                    {
+                        builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Super Admin");
+                    }
+                    else if (FMBotAdminUtil.IsAdmin(DiscordUser))
+                    {
+                        builder.WithTitle(LastFMName + ", " + SelfUser.Username + " Admin");
+                    }
+                    else
+                    {
+                        builder.WithTitle(LastFMName);
+                    }
+                }
+            }
+
+            public static string SetUserTitleText(IUser DiscordUser, ISelfUser SelfUser)
+            {
+                string outputString = "";
+
+                if (!string.IsNullOrWhiteSpace(FeaturedUserID))
+                {
+                    if (DiscordUser.Id == Convert.ToUInt64(FeaturedUserID))
+                    {
+                        if (FMBotAdminUtil.IsOwner(DiscordUser))
+                        {
+                            outputString = SelfUser.Username + " Owner, Featured User\n";
+                        }
+                        else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
+                        {
+                            outputString = SelfUser.Username + " Super Admin, Featured User\n";
+                        }
+                        else if (FMBotAdminUtil.IsAdmin(DiscordUser))
+                        {
+                            outputString = SelfUser.Username + " Admin, Featured User\n";
+                        }
+                        else
+                        {
+                            outputString = "Featured User\n";
+                        }
+                    }
+                    else
+                    {
+                        if (FMBotAdminUtil.IsOwner(DiscordUser))
+                        {
+                            outputString = SelfUser.Username + " Owner\n";
+                        }
+                        else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
+                        {
+                            outputString = SelfUser.Username + " Super Admin\n";
+                        }
+                        else if (FMBotAdminUtil.IsAdmin(DiscordUser))
+                        {
+                            outputString = SelfUser.Username + " Admin\n";
+                        }
+                        else
+                        {
+                            outputString = "";
+                        }
+                    }
+                }
+                else
+                {
+                    if (FMBotAdminUtil.IsOwner(DiscordUser))
+                    {
+                        outputString = SelfUser.Username + " Owner\n";
+                    }
+                    else if (FMBotAdminUtil.IsSuperAdmin(DiscordUser))
+                    {
+                        outputString = SelfUser.Username + " Super Admin\n";
+                    }
+                    else if (FMBotAdminUtil.IsAdmin(DiscordUser))
+                    {
+                        outputString = SelfUser.Username + " Admin\n";
+                    }
+                    else
+                    {
+                        outputString = "";
+                    }
+                }
+
+                return outputString;
             }
         }
 
