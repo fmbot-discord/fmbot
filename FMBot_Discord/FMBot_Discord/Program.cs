@@ -289,22 +289,30 @@ namespace FMBot_Discord
 
         public async Task TestLastFMAPI()
         {
-            var cfgjson = await JsonCfg.GetJSONDataAsync();
-            var fmclient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
-
-            string LastFMName = DBase.GetRandFMName();
-            if (!LastFMName.Equals("NULL"))
+            try
             {
-                var tracks = await fmclient.User.GetRecentScrobbles(LastFMName, null, 1, 2);
-                if (tracks.Any())
+                var cfgjson = await JsonCfg.GetJSONDataAsync();
+                var fmclient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+
+                string LastFMName = DBase.GetRandFMName();
+                if (!LastFMName.Equals("NULL"))
                 {
-                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Last.FM API is online"));
+                    var tracks = await fmclient.User.GetRecentScrobbles(LastFMName, null, 1, 2);
+                    if (tracks.Any())
+                    {
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Last.FM API is online"));
+                    }
+                    else
+                    {
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, "Last.FM API is offline, rebooting..."));
+                        Environment.Exit(1);
+                    }
                 }
-                else
-                {
-                    await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, "Last.FM API is offline, rebooting..."));
-                    Environment.Exit(1);
-                }
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, "Bypassing API requirement..."));
+                //continue if we don't have anything
             }
         }
 
