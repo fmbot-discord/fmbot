@@ -3,6 +3,7 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using static FMBot_Discord.FMBotModules;
@@ -388,6 +389,59 @@ namespace FMBot_Discord
                 }
 
                 await Context.Channel.SendMessageAsync("Check your DMs!");
+            }
+        }
+
+        [Command("fmdeletechartcache"), Summary("Deletes all chart images. - FMBot Owners only")]
+        [Alias("fmdeletecharts")]
+        public async Task fmdeletechartsAsync()
+        {
+            var DiscordUser = Context.Message.Author;
+            if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 3))
+            {
+                try
+                {
+                    DBase.DeleteAllCharts();
+                    await ReplyAsync("Deleted all chart images.");
+                }
+                catch (Exception e)
+                {
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                    ExceptionReporter.ReportException(client, e);
+                    await ReplyAsync("Unable to delete all chart images due to an internal error.");
+                }
+            }
+        }
+
+        [Command("fmremovereadonly"), Summary("Removes read only on all directories. - FMBot Owners only")]
+        [Alias("fmreadonlyfix")]
+        public async Task fmremovereadonlyAsync()
+        {
+            var DiscordUser = Context.Message.Author;
+            if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 3))
+            {
+                try
+                {
+                    if (Directory.Exists(GlobalVars.UsersFolder))
+                    {
+                        var users = new DirectoryInfo(GlobalVars.UsersFolder);
+                        GlobalVars.ClearReadOnly(users);
+                    }
+
+                    if (Directory.Exists(GlobalVars.ServersFolder))
+                    {
+                        var servers = new DirectoryInfo(GlobalVars.ServersFolder);
+                        GlobalVars.ClearReadOnly(servers);
+                    }
+
+                    await ReplyAsync("Removed read only on all directories.");
+                }
+                catch (Exception e)
+                {
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                    ExceptionReporter.ReportException(client, e);
+                    await ReplyAsync("Unable to remove read only on all directories due to an internal error.");
+                }
             }
         }
 

@@ -45,10 +45,20 @@ namespace FMBot_Discord
                 {
                     Directory.CreateDirectory(GlobalVars.UsersFolder);
                 }
+                else
+                {
+                    var users = new DirectoryInfo(GlobalVars.UsersFolder);
+                    GlobalVars.ClearReadOnly(users);
+                }
 
                 if (!Directory.Exists(GlobalVars.ServersFolder))
                 {
                     Directory.CreateDirectory(GlobalVars.ServersFolder);
+                }
+                else
+                {
+                    var servers = new DirectoryInfo(GlobalVars.ServersFolder);
+                    GlobalVars.ClearReadOnly(servers);
                 }
 
                 await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Initalizing Last.FM..."));
@@ -159,11 +169,35 @@ namespace FMBot_Discord
 
         public async Task HandleCommand_MessageReceived(SocketMessage messageParam)
         {
+            if (Directory.Exists(GlobalVars.UsersFolder))
+            {
+                var users = new DirectoryInfo(GlobalVars.UsersFolder);
+                GlobalVars.ClearReadOnly(users);
+            }
+
+            if (Directory.Exists(GlobalVars.ServersFolder))
+            {
+                var servers = new DirectoryInfo(GlobalVars.ServersFolder);
+                GlobalVars.ClearReadOnly(servers);
+            }
+
             await HandleCommand(messageParam);
         }
 
         public async Task HandleCommand_MessageEdited(Cacheable<IMessage, ulong> before, SocketMessage after, ISocketMessageChannel channel)
         {
+            if (Directory.Exists(GlobalVars.UsersFolder))
+            {
+                var users = new DirectoryInfo(GlobalVars.UsersFolder);
+                GlobalVars.ClearReadOnly(users);
+            }
+
+            if (Directory.Exists(GlobalVars.ServersFolder))
+            {
+                var servers = new DirectoryInfo(GlobalVars.ServersFolder);
+                GlobalVars.ClearReadOnly(servers);
+            }
+
             await HandleCommand(after);
         }
 

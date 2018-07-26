@@ -202,6 +202,14 @@ namespace FMBot_Discord
                 }
             }
 
+            public static void DeleteAllCharts()
+            {
+                foreach (string file in Directory.GetFiles(GlobalVars.UsersFolder, "*.png"))
+                {
+                    File.Delete(file);
+                }
+            }
+
             public static int GetModeIntForID(string id)
             {
                 string line;
@@ -1014,6 +1022,22 @@ namespace FMBot_Discord
 
                 return outputString;
             }
+
+            public static void ClearReadOnly(DirectoryInfo parentDirectory)
+            {
+                if (parentDirectory != null)
+                {
+                    parentDirectory.Attributes = FileAttributes.Normal;
+                    foreach (FileInfo fi in parentDirectory.GetFiles())
+                    {
+                        fi.Attributes = FileAttributes.Normal;
+                    }
+                    foreach (DirectoryInfo di in parentDirectory.GetDirectories())
+                    {
+                        ClearReadOnly(di);
+                    }
+                }
+            }
         }
 
         #endregion
@@ -1299,7 +1323,20 @@ namespace FMBot_Discord
 
                     Bitmap stitchedImage = GlobalVars.Combine(BitmapList, true);
 
-                    stitchedImage.Save(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png", System.Drawing.Imaging.ImageFormat.Png);
+                    foreach(Bitmap image in BitmapList.ToArray())
+                    {
+                        image.Dispose();
+                    }
+
+                    using (MemoryStream memory = new MemoryStream())
+                    {
+                        using (FileStream fs = new FileStream(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png", FileMode.Create, FileAccess.ReadWrite))
+                        {
+                            stitchedImage.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
+                            byte[] bytes = memory.ToArray();
+                            fs.Write(bytes, 0, bytes.Length);
+                        }
+                    }
                 }
             }
         }
