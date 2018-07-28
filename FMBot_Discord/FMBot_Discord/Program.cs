@@ -14,7 +14,6 @@ using System.Globalization;
 using static FMBot_Discord.FMBotModules;
 using static FMBot_Discord.FMBotUtil;
 using IF.Lastfm.Core.Api;
-using IF.Lastfm.Core.Objects;
 
 namespace FMBot_Discord
 {

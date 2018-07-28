@@ -12,21 +12,20 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Threading;
 using YoutubeSearch;
 using static FMBot_Discord.FMBotModules;
 using static FMBot_Discord.FMBotUtil;
-using System.Globalization;
 
 namespace FMBot_Discord
 {
     public class FMBotCommands : ModuleBase
     {
+        #region Constructor
+
         private readonly CommandService _service;
         private readonly TimerService _timer;
 
@@ -35,6 +34,8 @@ namespace FMBot_Discord
             _service = service;
             _timer = timer;
         }
+
+        #endregion
 
         #region Last.FM Commands
 
@@ -498,39 +499,50 @@ namespace FMBot_Discord
         }
 
         [Command("fmchart"), Summary("Generates a chart based on a user's parameters.")]
-        public async Task fmchartAsync(string time = "weekly", string chartsize = "3x3", IUser user = null)
+        public async Task fmchartAsync(string time = "weekly", string chartsize = "3x3", string titlesetting = "titles", IUser user = null)
         {
             var cfgjson = await JsonCfg.GetJSONDataAsync();
 
             if (time == "help")
             {
-                await ReplyAsync(cfgjson.CommandPrefix + "fmchart [weekly/monthly/yearly/overall] [3x3-10x10] [user]");
+                await ReplyAsync(cfgjson.CommandPrefix + "fmchart [weekly/monthly/yearly/overall] [3x3-10x10] [notitles/titles] [user]");
                 return;
             }
 
             var SelfUser = Context.Client.CurrentUser;
 
             var loadingText = "";
-			
-			if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
+
+            var titletext = "(With Titles)";
+
+            if (titlesetting == "titles")
             {
-                loadingText = "Loading your Weekly " + chartsize + " " + SelfUser.Username + " chart... (may take a while depending on the size of your chart)";
+                titletext = "(With Titles)";
+            }
+            else if (titlesetting == "notitles")
+            {
+                titletext = "(Without Titles)";
+            }
+
+            if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
+            {
+                loadingText = "Loading your Weekly " + chartsize + " " + SelfUser.Username + " chart " + titletext + "... (may take a while depending on the size of your chart)";
             }
             else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
 			{
-                loadingText = "Loading your Monthly " + chartsize + " " + SelfUser.Username + " chart... (may take a while depending on the size of your chart)";
+                loadingText = "Loading your Monthly " + chartsize + " " + SelfUser.Username + " chart " + titletext + "... (may take a while depending on the size of your chart)";
             }
             else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
             {
-                loadingText = "Loading your Yearly " + chartsize + " " + SelfUser.Username + " chart... (may take a while depending on the size of your chart)";
+                loadingText = "Loading your Yearly " + chartsize + " " + SelfUser.Username + " chart " + titletext + "... (may take a while depending on the size of your chart)";
             }
             else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
             {
-                loadingText = "Loading your Overall " + chartsize + " " + SelfUser.Username + " chart... (may take a while depending on the size of your chart)";
+                loadingText = "Loading your Overall " + chartsize + " " + SelfUser.Username + " chart " + titletext + "... (may take a while depending on the size of your chart)";
             }
 			else
             {
-                loadingText = "Loading your " + chartsize + " " + SelfUser.Username + " chart... (may take a while depending on the size of your chart)";
+                loadingText = "Loading your " + chartsize + " " + SelfUser.Username + " chart " + titletext + "... (may take a while depending on the size of your chart)";
             }
 			
             var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
@@ -601,6 +613,17 @@ namespace FMBot_Discord
 
                     List<Bitmap> images = new List<Bitmap>();
 
+                    bool TitleBool = true;
+
+                    if (titlesetting == "titles")
+                    {
+                        TitleBool = true;
+                    }
+                    else if (titlesetting == "notitles")
+                    {
+                        TitleBool = false;
+                    }
+
                     FMBotChart chart = new FMBotChart();
                     chart.time = time;
                     chart.client = client;
@@ -611,6 +634,7 @@ namespace FMBot_Discord
                     chart.DiscordUser = DiscordUser;
                     chart.disclient = Context.Client as DiscordSocketClient;
                     chart.mode = 0;
+                    chart.titles = TitleBool;
                     await chart.ChartGenerate();
 
                     await Context.Channel.SendFileAsync(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png");
@@ -675,39 +699,50 @@ namespace FMBot_Discord
         }
 
         [Command("fmartistchart"), Summary("Generates an artist chart based on a user's parameters.")]
-        public async Task fmartistchartAsync(string time = "weekly", string chartsize = "3x3", IUser user = null)
+        public async Task fmartistchartAsync(string time = "weekly", string chartsize = "3x3", string titlesetting = "titles", IUser user = null)
         {
             var cfgjson = await JsonCfg.GetJSONDataAsync();
 
             if (time == "help")
             {
-                await ReplyAsync(cfgjson.CommandPrefix + "fmartistchart [weekly/monthly/yearly/overall] [3x3-10x10] [user]");
+                await ReplyAsync(cfgjson.CommandPrefix + "fmartistchart [weekly/monthly/yearly/overall] [3x3-10x10] [notitles/titles] [user]");
                 return;
             }
 
             var SelfUser = Context.Client.CurrentUser;
 
             var loadingText = "";
-			
-			if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
+
+            var titletext = "(With Titles)";
+
+            if (titlesetting == "titles")
             {
-                loadingText = "Loading your Weekly " + chartsize + " " + SelfUser.Username + " artist chart... (may take a while depending on the size of your chart)";
+                titletext = "(With Titles)";
+            }
+            else if (titlesetting == "notitles")
+            {
+                titletext = "(Without Titles)";
+            }
+
+            if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
+            {
+                loadingText = "Loading your Weekly " + chartsize + " " + SelfUser.Username + " artist chart " + titletext + "... (may take a while depending on the size of your chart)";
             }
             else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
 			{
-                loadingText = "Loading your Monthly " + chartsize + " " + SelfUser.Username + " artist chart... (may take a while depending on the size of your chart)";
+                loadingText = "Loading your Monthly " + chartsize + " " + SelfUser.Username + " artist chart " + titletext + "... (may take a while depending on the size of your chart)";
             }
             else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
             {
-                loadingText = "Loading your Yearly " + chartsize + " " + SelfUser.Username + " artist chart... (may take a while depending on the size of your chart)";
+                loadingText = "Loading your Yearly " + chartsize + " " + SelfUser.Username + " artist chart " + titletext + "... (may take a while depending on the size of your chart)";
             }
             else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
             {
-                loadingText = "Loading your Overall " + chartsize + " " + SelfUser.Username + " artist chart... (may take a while depending on the size of your chart)";
+                loadingText = "Loading your Overall " + chartsize + " " + SelfUser.Username + " artist chart " + titletext + "... (may take a while depending on the size of your chart)";
             }
 			else
             {
-                loadingText = "Loading your " + chartsize + " " + SelfUser.Username + " artist chart... (may take a while depending on the size of your chart)";
+                loadingText = "Loading your " + chartsize + " " + SelfUser.Username + " artist chart " + titletext + "... (may take a while depending on the size of your chart)";
             }
 			
             var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
@@ -778,6 +813,17 @@ namespace FMBot_Discord
 
                     List<Bitmap> images = new List<Bitmap>();
 
+                    bool TitleBool = true;
+
+                    if (titlesetting == "titles")
+                    {
+                        TitleBool = true;
+                    }
+                    else if (titlesetting == "notitles")
+                    {
+                        TitleBool = false;
+                    }
+
                     FMBotChart chart = new FMBotChart();
                     chart.time = time;
                     chart.client = client;
@@ -788,6 +834,7 @@ namespace FMBot_Discord
                     chart.DiscordUser = DiscordUser;
                     chart.disclient = Context.Client as DiscordSocketClient;
                     chart.mode = 1;
+                    chart.titles = TitleBool;
                     await chart.ChartGenerate();
 
                     await Context.Channel.SendFileAsync(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png");
@@ -1484,7 +1531,7 @@ namespace FMBot_Discord
             if (name == "help")
             {
                 var cfgjson = await JsonCfg.GetJSONDataAsync();
-                await ReplyAsync(cfgjson.CommandPrefix + "fmset [Last.FM Username] [embedmini/embedfull/textfull/textmini]");
+                await ReplyAsync(cfgjson.CommandPrefix + "fmset <Last.FM Username> [embedmini/embedfull/textfull/textmini]");
                 return;
             }
 
@@ -1507,10 +1554,7 @@ namespace FMBot_Discord
                 {
                     modeint = DBase.GetModeIntForID(SelfID);
                 }
-
-                int admin = DBase.GetAdminIntFromID(SelfID);
-
-                DBase.WriteEntry(SelfID, name, modeint, admin);
+                DBase.WriteEntry(SelfID, name, modeint);
             }
             else
             {
@@ -1671,7 +1715,7 @@ namespace FMBot_Discord
                 }
             }
 
-            await Context.User.SendMessageAsync(SelfUser.Username + " Info\n\nBe sure to use 'help' after a command name to see the parameters.\n\nChart sizes range from 3x3 to 10x10.\n\nModes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nuserdefined (fmserverset only)\n\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nweek\nw\nmonthly\nmonth\nm\nyearly\nyear\ny\noverall\nalltime\no\nat");
+            await Context.User.SendMessageAsync(SelfUser.Username + " Info\n\nBe sure to use 'help' after a command name to see the parameters.\n\nChart sizes range from 3x3 to 10x10.\n\nModes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nuserdefined (fmserverset only)\n\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nweek\nw\nmonthly\nmonth\nm\nyearly\nyear\ny\noverall\nalltime\no\nat\n\nFMBot Title options for FMChart:\ntitles\nnotitles");
 
             await Context.Channel.SendMessageAsync("Check your DMs!");
         }
@@ -1691,15 +1735,15 @@ namespace FMBot_Discord
             builder.WithDescription(SelfUser.Username + " Statistics");
 
             var startTime = (DateTime.Now - Process.GetCurrentProcess().StartTime);
-            string[] files = Directory.GetFiles(GlobalVars.UsersFolder, "*.txt");
-
+            var files = FastDirectoryEnumerator.EnumerateFiles(GlobalVars.UsersFolder, "*.txt");
+            
             string pattern = "[0-9]{18}\\.txt";
 
             int filecount = 0;
 
-            foreach (string file in files)
+            foreach (FileData file in files)
             {
-                if (Regex.IsMatch(file, pattern))
+                if (Regex.IsMatch(file.Name, pattern))
                 {
                     filecount += 1;
                 }

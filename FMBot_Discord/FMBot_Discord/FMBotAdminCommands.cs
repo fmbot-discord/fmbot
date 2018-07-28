@@ -1,5 +1,4 @@
-﻿
-using Discord;
+﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using System;
@@ -13,6 +12,8 @@ namespace FMBot_Discord
 {
     public class FMBotAdminCommands : ModuleBase
     {
+        #region Constructor
+
         private readonly CommandService _service;
         private readonly TimerService _timer;
 
@@ -22,10 +23,11 @@ namespace FMBot_Discord
             _timer = timer;
         }
 
+        #endregion
+
         #region FMBot Staff Only Commands
 
-        [Command("dbcheck"), Summary("Checks if an entry is in the database. - FMBot Admin Only")]
-        [Alias("fmdbcheck")]
+        [Command("fmdbcheck"), Summary("Checks if an entry is in the database. - FMBot Admin Only")]
         public async Task dbcheckAsync(IUser user = null)
         {
             var DiscordUser = Context.Message.Author;
@@ -66,41 +68,32 @@ namespace FMBot_Discord
             {
                 var ChosenUser = user ?? Context.Message.Author;
                 string UserID = ChosenUser.Id.ToString();
-                string LastFMName = DBase.GetNameForID(UserID);
-                int LastFMMode = DBase.GetModeIntForID(UserID);
-                if (!LastFMName.Equals("NULL"))
+                if (permtype == 1)
                 {
-                    if (permtype == 1)
+                    DBase.WriteAdminEntry(UserID, permtype);
+                    await ReplyAsync("The user now has Admin permissions");
+                }
+                else if (permtype == 2)
+                {
+                    DBase.WriteAdminEntry(UserID, permtype);
+                    await ReplyAsync("The user now has Super Admin permissions");
+                }
+                else if (permtype == 3)
+                {
+                    if (FMBotAdminUtil.IsSoleOwner(DiscordUser))
                     {
-                        DBase.WriteEntry(UserID, LastFMName, LastFMMode, permtype);
-                        await ReplyAsync("The user now has Admin permissions");
-                    }
-                    else if (permtype == 2)
-                    {
-                        DBase.WriteEntry(UserID, LastFMName, LastFMMode, permtype);
-                        await ReplyAsync("The user now has Super Admin permissions");
-                    }
-                    else if (permtype == 3)
-                    {
-                        if (FMBotAdminUtil.IsSoleOwner(DiscordUser))
-                        {
-                            DBase.WriteEntry(UserID, LastFMName, LastFMMode, permtype);
-                            await ReplyAsync("The user now has Owner permissions");
-                        }
-                        else
-                        {
-                            await ReplyAsync("You cannot promote a user to Owner");
-                        }
+                        DBase.WriteAdminEntry(UserID, permtype);
+                        await ReplyAsync("The user now has Owner permissions");
                     }
                     else
                     {
-                        DBase.WriteEntry(UserID, LastFMName, LastFMMode, permtype);
-                        await ReplyAsync("The user now has User permissions");
+                        await ReplyAsync("You cannot promote a user to Owner");
                     }
                 }
                 else
                 {
-                    await ReplyAsync("The user's Last.FM name has not been set.");
+                    DBase.RemoveAdminEntry(UserID);
+                    await ReplyAsync("The user now has User permissions");
                 }
             }
         }
@@ -451,7 +444,7 @@ namespace FMBot_Discord
 
         [Command("fmserverset"), Summary("Sets the global FMBot settings for the server. - Server Staff only")]
         [Alias("fmserversetmode")]
-        public async Task fmserversetAsync([Summary("The mode you want to use.")] string mode = "")
+        public async Task fmserversetAsync([Summary("The mode you want to use.")] string mode = "userdefined")
         {
             var ServerUser = (IGuildUser)Context.Message.Author;
 
