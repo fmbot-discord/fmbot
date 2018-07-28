@@ -255,9 +255,16 @@ namespace FMBot_Discord
 
             public static bool CheckAdmin(string id)
             {
-                if (File.ReadLines(GlobalVars.UsersFolder + id + "-adminsettings.txt").Any(line => line.Contains(FMAdminString)))
+                if (AdminEntryExists(id))
                 {
-                    return true;
+                    if (File.ReadLines(GlobalVars.UsersFolder + id + "-adminsettings.txt").Any(line => line.Contains(FMAdminString)))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
                 else
                 {
@@ -267,9 +274,16 @@ namespace FMBot_Discord
 
             public static bool CheckSuperAdmin(string id)
             {
-                if (File.ReadLines(GlobalVars.UsersFolder + id + "-adminsettings.txt").Any(line => line.Contains(FMSuperAdminString)))
+                if (AdminEntryExists(id))
                 {
-                    return true;
+                    if (File.ReadLines(GlobalVars.UsersFolder + id + "-adminsettings.txt").Any(line => line.Contains(FMSuperAdminString)))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
                 else
                 {
@@ -279,9 +293,16 @@ namespace FMBot_Discord
 
             public static bool CheckOwner(string id)
             {
-                if (File.ReadLines(GlobalVars.UsersFolder + id + "-adminsettings.txt").Any(line => line.Contains(FMOwnerString)))
+                if (AdminEntryExists(id))
                 {
-                    return true;
+                    if (File.ReadLines(GlobalVars.UsersFolder + id + "-adminsettings.txt").Any(line => line.Contains(FMOwnerString)))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
                 else
                 {
