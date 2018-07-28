@@ -235,13 +235,13 @@ namespace FMBot_Discord
                     AdminString = FMOwnerString;
                 }
 
-                File.WriteAllText(GlobalVars.UsersFolder + id + "-adminsettings.txt", IsAdmin.ToString());
+                File.WriteAllText(GlobalVars.UsersFolder + id + "-adminsettings.txt", AdminString);
                 File.SetAttributes(GlobalVars.UsersFolder + id + "-adminsettings.txt", FileAttributes.Normal);
             }
 
             public static void RemoveAdminEntry(string id)
             {
-                if (File.Exists(GlobalVars.UsersFolder + id + "-adminsettings.txt"))
+                if (AdminEntryExists(id))
                 {
                     File.SetAttributes(GlobalVars.UsersFolder + id + "-adminsettings.txt", FileAttributes.Normal);
                     File.Delete(GlobalVars.UsersFolder + id + "-adminsettings.txt");
@@ -255,7 +255,7 @@ namespace FMBot_Discord
 
             public static bool CheckAdmin(string id)
             {
-                if (File.Exists(GlobalVars.UsersFolder + id + "-adminsettings.txt"))
+                if (AdminEntryExists(id))
                 {
                     if (File.ReadLines(GlobalVars.UsersFolder + id + "-adminsettings.txt").Any(line => line.Contains(FMAdminString)))
                     {
@@ -274,7 +274,7 @@ namespace FMBot_Discord
 
             public static bool CheckSuperAdmin(string id)
             {
-                if (File.Exists(GlobalVars.UsersFolder + id + "-adminsettings.txt"))
+                if (AdminEntryExists(id))
                 {
                     if (File.ReadLines(GlobalVars.UsersFolder + id + "-adminsettings.txt").Any(line => line.Contains(FMSuperAdminString)))
                     {
@@ -293,7 +293,7 @@ namespace FMBot_Discord
 
             public static bool CheckOwner(string id)
             {
-                if (File.Exists(GlobalVars.UsersFolder + id + "-adminsettings.txt"))
+                if (AdminEntryExists(id))
                 {
                     if (File.ReadLines(GlobalVars.UsersFolder + id + "-adminsettings.txt").Any(line => line.Contains(FMOwnerString)))
                     {
