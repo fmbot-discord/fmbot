@@ -40,26 +40,36 @@ namespace FMBot_Discord
         #region Last.FM Commands
 
         [Command("fm"), Summary("Displays what a user is listening to.")]
-        [Alias("qm", "wm", "em", "rm", "tm", "ym", "um", "im", "om", "pm", "dm", "gm", "sm","am","hm","jm","km","lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm")]
+        [Alias("qm", "wm", "em", "rm", "tm", "ym", "um", "im", "om", "pm", "dm", "gm", "sm", "am", "hm", "jm", "km", "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm")]
         public async Task fmAsync(IUser user = null)
         {
             try
             {
-                var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
+                var DiscordUser = GlobalVars.CheckIfDM(user, Context);
                 var SelfUser = Context.Client.CurrentUser;
 
-                int GlobalServerMode = DBase.GetModeIntForServerID(DiscordUser.GuildId.ToString());
                 int LastFMMode = 4;
 
-                if (GlobalServerMode > 3 || GlobalServerMode < 0)
+                if (GlobalVars.GetDMBool())
                 {
                     LastFMMode = DBase.GetModeIntForID(DiscordUser.Id.ToString());
                 }
                 else
                 {
-                    LastFMMode = DBase.GetModeIntForServerID(DiscordUser.GuildId.ToString());
+                    IGuildUser GuildUser = (IGuildUser)DiscordUser;
+                    int GlobalServerMode = DBase.GetModeIntForServerID(GuildUser.GuildId.ToString());
+
+                    if (GlobalServerMode > 3 || GlobalServerMode < 0)
+                    {
+                        LastFMMode = DBase.GetModeIntForID(GuildUser.Id.ToString());
+                    }
+                    else
+                    {
+                        LastFMMode = DBase.GetModeIntForServerID(GuildUser.GuildId.ToString());
+                    }
                 }
-                 
+
+
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
                 {
@@ -80,14 +90,7 @@ namespace FMBot_Discord
                         {
                             EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                             eab.IconUrl = DiscordUser.GetAvatarUrl();
-                            if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
-                            {
-                                eab.Name = DiscordUser.Username;
-                            }
-                            else
-                            {
-                                eab.Name = DiscordUser.Nickname;
-                            }
+                            eab.Name = GlobalVars.GetNameString(DiscordUser, Context);
 
                             var builder = new EmbedBuilder();
                             builder.WithAuthor(eab);
@@ -138,14 +141,7 @@ namespace FMBot_Discord
                             {
                                 EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                                 eab.IconUrl = DiscordUser.GetAvatarUrl();
-                                if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
-                                {
-                                    eab.Name = DiscordUser.Username;
-                                }
-                                else
-                                {
-                                    eab.Name = DiscordUser.Nickname;
-                                }
+                                eab.Name = GlobalVars.GetNameString(DiscordUser, Context);
 
                                 var builder = new EmbedBuilder();
                                 builder.WithAuthor(eab);
@@ -200,14 +196,7 @@ namespace FMBot_Discord
                             {
                                 EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                                 eab.IconUrl = DiscordUser.GetAvatarUrl();
-                                if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
-                                {
-                                    eab.Name = DiscordUser.Username;
-                                }
-                                else
-                                {
-                                    eab.Name = DiscordUser.Nickname;
-                                }
+                                eab.Name = GlobalVars.GetNameString(DiscordUser, Context);
 
                                 var builder = new EmbedBuilder();
                                 builder.WithAuthor(eab);
@@ -313,7 +302,7 @@ namespace FMBot_Discord
                     {
                         DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                         ExceptionReporter.ReportException(disclient, e);
-                        await ReplyAsync("You have no scrobbles on your Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then use .fm again!");
+                        await ReplyAsync("An error has accured, or you have no scrobbles on your Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then use .fm again!");
                     }
                 }
             }
@@ -329,7 +318,7 @@ namespace FMBot_Discord
         [Alias("fmyoutube")]
         public async Task fmytAsync(IUser user = null)
         {
-            var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
+            var DiscordUser = GlobalVars.CheckIfDM(user, Context);
             string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
             {
@@ -376,7 +365,7 @@ namespace FMBot_Discord
         [Command("fmspotify"), Summary("Shares a link to a Spotify track based on what a user is listening to")]
         public async Task fmspotifyAsync(IUser user = null)
         {
-            var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
+            var DiscordUser = GlobalVars.CheckIfDM(user, Context);
             string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
             {
@@ -431,7 +420,7 @@ namespace FMBot_Discord
                         await ReplyAsync("No results have been found for this track.");
                     }
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                     ExceptionReporter.ReportException(disclient, e);
@@ -529,7 +518,7 @@ namespace FMBot_Discord
                 loadingText = "Loading your Weekly " + chartsize + " " + SelfUser.Username + " chart " + titletext + "... (may take a while depending on the size of your chart)";
             }
             else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
-			{
+            {
                 loadingText = "Loading your Monthly " + chartsize + " " + SelfUser.Username + " chart " + titletext + "... (may take a while depending on the size of your chart)";
             }
             else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
@@ -540,16 +529,16 @@ namespace FMBot_Discord
             {
                 loadingText = "Loading your Overall " + chartsize + " " + SelfUser.Username + " chart " + titletext + "... (may take a while depending on the size of your chart)";
             }
-			else
+            else
             {
                 loadingText = "Loading your " + chartsize + " " + SelfUser.Username + " chart " + titletext + "... (may take a while depending on the size of your chart)";
             }
-			
+
             var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
 
             try
             {
-                var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
+                var DiscordUser = GlobalVars.CheckIfDM(user, Context);
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
                 {
@@ -558,16 +547,16 @@ namespace FMBot_Discord
                 else
                 {
                     var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
-                    
+
                     string chartalbums = "";
                     string chartrows = "";
-                    
+
                     if (chartsize.Equals("3x3"))
                     {
                         chartalbums = "9";
                         chartrows = "3";
                     }
-					else if (chartsize.Equals("4x4"))
+                    else if (chartsize.Equals("4x4"))
                     {
                         chartalbums = "16";
                         chartrows = "4";
@@ -607,7 +596,7 @@ namespace FMBot_Discord
                         await ReplyAsync("Your chart's size isn't valid. Sizes supported: 3x3-10x10");
                         return;
                     }
-                    
+
                     int max = int.Parse(chartalbums);
                     int rows = int.Parse(chartrows);
 
@@ -641,14 +630,7 @@ namespace FMBot_Discord
 
                     EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
-                    if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
-                    {
-                        eab.Name = DiscordUser.Username;
-                    }
-                    else
-                    {
-                        eab.Name = DiscordUser.Nickname;
-                    }
+                    eab.Name = GlobalVars.GetNameString(DiscordUser, Context);
 
                     var builder = new EmbedBuilder();
                     builder.WithAuthor(eab);
@@ -729,7 +711,7 @@ namespace FMBot_Discord
                 loadingText = "Loading your Weekly " + chartsize + " " + SelfUser.Username + " artist chart " + titletext + "... (may take a while depending on the size of your chart)";
             }
             else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
-			{
+            {
                 loadingText = "Loading your Monthly " + chartsize + " " + SelfUser.Username + " artist chart " + titletext + "... (may take a while depending on the size of your chart)";
             }
             else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
@@ -740,16 +722,16 @@ namespace FMBot_Discord
             {
                 loadingText = "Loading your Overall " + chartsize + " " + SelfUser.Username + " artist chart " + titletext + "... (may take a while depending on the size of your chart)";
             }
-			else
+            else
             {
                 loadingText = "Loading your " + chartsize + " " + SelfUser.Username + " artist chart " + titletext + "... (may take a while depending on the size of your chart)";
             }
-			
+
             var loadingmsg = await Context.Channel.SendMessageAsync(loadingText);
 
             try
             {
-                var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
+                var DiscordUser = GlobalVars.CheckIfDM(user, Context);
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
                 {
@@ -758,7 +740,7 @@ namespace FMBot_Discord
                 else
                 {
                     var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
-                    
+
                     string chartalbums = "";
                     string chartrows = "";
 
@@ -841,14 +823,7 @@ namespace FMBot_Discord
 
                     EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
-                    if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
-                    {
-                        eab.Name = DiscordUser.Username;
-                    }
-                    else
-                    {
-                        eab.Name = DiscordUser.Nickname;
-                    }
+                    eab.Name = GlobalVars.GetNameString(DiscordUser, Context);
 
                     var builder = new EmbedBuilder();
                     builder.WithAuthor(eab);
@@ -872,7 +847,7 @@ namespace FMBot_Discord
                     {
                         builder.WithDescription("Last.FM " + chartsize + " Overall Artist Chart for " + LastFMName);
                     }
-					else
+                    else
                     {
                         builder.WithDescription("Last.FM " + chartsize + " Artist Chart for " + LastFMName);
                     }
@@ -906,7 +881,7 @@ namespace FMBot_Discord
             {
                 var cfgjson = await JsonCfg.GetJSONDataAsync();
 
-                var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
+                var DiscordUser = GlobalVars.CheckIfDM(user, Context);
                 var SelfUser = Context.Client.CurrentUser;
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
@@ -929,14 +904,7 @@ namespace FMBot_Discord
 
                             eab.IconUrl = DiscordUser.GetAvatarUrl();
 
-                            if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
-                            {
-                                eab.Name = DiscordUser.Username;
-                            }
-                            else
-                            {
-                                eab.Name = DiscordUser.Nickname;
-                            }
+                            eab.Name = GlobalVars.GetNameString(DiscordUser, Context);
 
                             var builder = new EmbedBuilder();
                             builder.WithAuthor(eab);
@@ -1030,7 +998,7 @@ namespace FMBot_Discord
             {
                 int num = int.Parse(list);
 
-                var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
+                var DiscordUser = GlobalVars.CheckIfDM(user, Context);
                 var SelfUser = Context.Client.CurrentUser;
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
@@ -1046,14 +1014,7 @@ namespace FMBot_Discord
 
                         EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                         eab.IconUrl = DiscordUser.GetAvatarUrl();
-                        if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
-                        {
-                            eab.Name = DiscordUser.Username;
-                        }
-                        else
-                        {
-                            eab.Name = DiscordUser.Nickname;
-                        }
+                        eab.Name = GlobalVars.GetNameString(DiscordUser, Context);
 
                         var builder = new EmbedBuilder();
                         builder.WithAuthor(eab);
@@ -1141,7 +1102,7 @@ namespace FMBot_Discord
             try
             {
                 int num = int.Parse(list);
-                var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
+                var DiscordUser = GlobalVars.CheckIfDM(user, Context);
                 var SelfUser = Context.Client.CurrentUser;
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
@@ -1176,14 +1137,7 @@ namespace FMBot_Discord
 
                         EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                         eab.IconUrl = DiscordUser.GetAvatarUrl();
-                        if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
-                        {
-                            eab.Name = DiscordUser.Username;
-                        }
-                        else
-                        {
-                            eab.Name = DiscordUser.Nickname;
-                        }
+                        eab.Name = GlobalVars.GetNameString(DiscordUser, Context);
 
                         var builder = new EmbedBuilder();
                         builder.WithAuthor(eab);
@@ -1284,7 +1238,7 @@ namespace FMBot_Discord
             try
             {
                 int num = int.Parse(list);
-                var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
+                var DiscordUser = GlobalVars.CheckIfDM(user, Context);
                 var SelfUser = Context.Client.CurrentUser;
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
@@ -1319,14 +1273,7 @@ namespace FMBot_Discord
 
                         EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                         eab.IconUrl = DiscordUser.GetAvatarUrl();
-                        if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
-                        {
-                            eab.Name = DiscordUser.Username;
-                        }
-                        else
-                        {
-                            eab.Name = DiscordUser.Nickname;
-                        }
+                        eab.Name = GlobalVars.GetNameString(DiscordUser, Context);
 
                         var builder = new EmbedBuilder();
                         builder.WithAuthor(eab);
@@ -1422,7 +1369,7 @@ namespace FMBot_Discord
             {
                 var cfgjson = await JsonCfg.GetJSONDataAsync();
 
-                var DiscordUser = (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
+                var DiscordUser = GlobalVars.CheckIfDM(user, Context);
                 var SelfUser = Context.Client.CurrentUser;
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
@@ -1435,14 +1382,7 @@ namespace FMBot_Discord
 
                     EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
-                    if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
-                    {
-                        eab.Name = DiscordUser.Username;
-                    }
-                    else
-                    {
-                        eab.Name = DiscordUser.Nickname;
-                    }
+                    eab.Name = GlobalVars.GetNameString(DiscordUser, Context);
 
                     var builder = new EmbedBuilder();
                     builder.WithAuthor(eab);
@@ -1660,7 +1600,7 @@ namespace FMBot_Discord
             {
                 await ReplyAsync("Succesfully removed " + friendcount + " friends.");
             }
-            else if(friendcount < 1)
+            else if (friendcount < 1)
             {
                 await ReplyAsync("Couldn't remove " + friendcount + " friends. Please check if the user is on your friendslist.");
             }
@@ -1681,11 +1621,11 @@ namespace FMBot_Discord
         }
 
         [Command("fmhelp"), Summary("Displays this list.")]
-		[Alias("fmbot")]
+        [Alias("fmbot")]
         public async Task fmhelpAsync()
         {
             var cfgjson = await JsonCfg.GetJSONDataAsync();
-            
+
             string prefix = cfgjson.CommandPrefix;
 
             var SelfUser = Context.Client.CurrentUser;
@@ -1717,7 +1657,11 @@ namespace FMBot_Discord
 
             await Context.User.SendMessageAsync(SelfUser.Username + " Info\n\nBe sure to use 'help' after a command name to see the parameters.\n\nChart sizes range from 3x3 to 10x10.\n\nModes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nuserdefined (fmserverset only)\n\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nweek\nw\nmonthly\nmonth\nm\nyearly\nyear\ny\noverall\nalltime\no\nat\n\nFMBot Title options for FMChart:\ntitles\nnotitles");
 
-            await Context.Channel.SendMessageAsync("Check your DMs!");
+            if (!GlobalVars.GetDMBool())
+            {
+                await Context.Channel.SendMessageAsync("Check your DMs!");
+            }
+
         }
 
         [Command("fmstatus"), Summary("Displays bot stats.")]
@@ -1736,7 +1680,7 @@ namespace FMBot_Discord
 
             var startTime = (DateTime.Now - Process.GetCurrentProcess().StartTime);
             var files = FastDirectoryEnumerator.EnumerateFiles(GlobalVars.UsersFolder, "*.txt");
-            
+
             string pattern = "[0-9]{18}\\.txt";
 
             int filecount = 0;

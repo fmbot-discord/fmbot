@@ -256,17 +256,34 @@ namespace FMBot_Discord
             // rather an object stating if the command executed successfully)
             if (wordinlist == true)
             {
-                var guild = DiscordCaller.Guild;
-                string callerserverid = guild.Id.ToString();
-                bool isonblacklist = DBase.IsUserOnBlacklist(callerserverid, DiscordCaller.Id.ToString());
-
-                if (isonblacklist == true)
+                if (DiscordCaller != null)
                 {
-                    await context.Channel.SendMessageAsync("You have been blacklisted from " + guild.Name + ". Please contact a server moderator/administrator or a FMBot administrator if you have any questions regarding this decision.");
-                    return;
-                }
 
-                if (User.IncomingRequest(client, DiscordCaller.Id) != false)
+
+                    var guild = DiscordCaller.Guild;
+                    string callerserverid = guild.Id.ToString();
+                    bool isonblacklist = DBase.IsUserOnBlacklist(callerserverid, DiscordCaller.Id.ToString());
+
+                    if (isonblacklist == true)
+                    {
+                        await context.Channel.SendMessageAsync("You have been blacklisted from " + guild.Name + ". Please contact a server moderator/administrator or a FMBot administrator if you have any questions regarding this decision.");
+                        return;
+                    }
+
+                    if (User.IncomingRequest(client, DiscordCaller.Id) != false)
+                    {
+                        var result = await commands.ExecuteAsync(context, argPos, services);
+                        if (!result.IsSuccess)
+                        {
+                            await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason));
+                        }
+                        else
+                        {
+                            GlobalVars.CommandExecutions += 1;
+                        }
+                    }
+                }
+                else
                 {
                     var result = await commands.ExecuteAsync(context, argPos, services);
                     if (!result.IsSuccess)

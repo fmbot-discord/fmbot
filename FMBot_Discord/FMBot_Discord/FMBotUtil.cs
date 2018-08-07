@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
@@ -803,6 +804,7 @@ namespace FMBot_Discord
             public static string FeaturedUserID = "";
             public static int MessageLength = 2000;
             public static int CommandExecutions = 0;
+            private static bool IsUserInDM = false;
 
             public static TimeSpan SystemUpTime()
             {
@@ -987,6 +989,63 @@ namespace FMBot_Discord
                     else
                     {
                         builder.WithTitle(LastFMName);
+                    }
+                }
+            }
+
+            public static async void CheckIfDMBool(ICommandContext Context)
+            {
+                IDMChannel dm = await Context.User.GetOrCreateDMChannelAsync();
+
+                if (dm == null)
+                    IsUserInDM = false;
+
+                if (Context.Channel.Name == dm.Name)
+                {
+                    IsUserInDM = true;
+                }
+                else
+                {
+                    IsUserInDM = false;
+                }
+            }
+
+            public static bool GetDMBool()
+            {
+                return IsUserInDM;
+            }
+
+            public static IUser CheckIfDM(IUser user, ICommandContext Context)
+            {
+                CheckIfDMBool(Context);
+
+                if (IsUserInDM)
+                {
+                    return user ?? Context.Message.Author;
+                }
+                else
+                {
+                    return (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
+                }
+            }
+
+            public static string GetNameString(IUser DiscordUser, ICommandContext Context)
+            {
+                if (IsUserInDM)
+                {
+                    return DiscordUser.Username;
+                }
+                else
+                {
+                    IGuildUser GuildUser = (IGuildUser)DiscordUser;
+
+                    if (string.IsNullOrWhiteSpace(GuildUser.Nickname))
+                    {
+                        return GuildUser.Username;
+                    }
+                    else
+                    {
+                        return GuildUser.Nickname;
                     }
                 }
             }
@@ -1232,7 +1291,7 @@ namespace FMBot_Discord
             public int max;
             public int rows;
             public List<Bitmap> images;
-            public IGuildUser DiscordUser;
+            public IUser DiscordUser;
             public DiscordSocketClient disclient;
             public int mode;
             public bool titles;
