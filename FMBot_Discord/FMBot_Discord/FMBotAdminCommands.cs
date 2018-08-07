@@ -438,6 +438,36 @@ namespace FMBot_Discord
             }
         }
 
+        [Command("fmstoragecheck"), Summary("Checks how much storage is left on the server. - FMBot Owners only")]
+        [Alias("fmcheckstorage")]
+        public async Task fmstoragecheckAsync()
+        {
+            var DiscordUser = Context.Message.Author;
+            if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 3))
+            {
+                try
+                {
+                    DriveInfo[] drives = DriveInfo.GetDrives();
+
+                    var builder = new EmbedBuilder();
+                    builder.WithDescription("Server drive info");
+
+                    foreach (DriveInfo drive in drives.Where(w => w.IsReady))
+                    {
+                        builder.AddField(drive.Name + " - " + drive.VolumeLabel + ":", ((drive.AvailableFreeSpace / 1024f) / 1024f) + "mb free of "  + ((drive.TotalSize / 1024f) / 1024f) + "mb");
+                    }
+
+                    await Context.Channel.SendMessageAsync("", false, builder.Build());
+                }
+                catch (Exception e)
+                {
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                    ExceptionReporter.ReportException(client, e);
+                    await ReplyAsync("Something went wrong.");
+                }
+            }
+        }
+
         #endregion
 
         #region Server Staff Only Commands
