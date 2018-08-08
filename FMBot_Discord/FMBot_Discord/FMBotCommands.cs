@@ -73,12 +73,11 @@ namespace FMBot_Discord
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
                 {
-                    await ReplyAsync("Your Last.FM name was unable to be found. Please use fmset to set your name.");
+                    await ReplyAsync("Unable to show Last.FM info due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
                 }
                 else
                 {
                     var cfgjson = await JsonCfg.GetJSONDataAsync();
-
                     var client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
                     try
                     {
@@ -302,7 +301,7 @@ namespace FMBot_Discord
                     {
                         DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                         ExceptionReporter.ReportException(disclient, e);
-                        await ReplyAsync("An error has accured, or you have no scrobbles on your Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then use .fm again!");
+                        await ReplyAsync("Unable to show Last.FM info due to an internal error. Try scrobbling something then use the command again.");
                     }
                 }
             }
@@ -310,7 +309,7 @@ namespace FMBot_Discord
             {
                 DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                 ExceptionReporter.ReportException(disclient, e);
-                await ReplyAsync("Your Last.FM name cannot be found. Please use the fmset command.");
+                await ReplyAsync("Unable to show Last.FM info due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
 
@@ -322,7 +321,7 @@ namespace FMBot_Discord
             string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
             {
-                await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
+                await ReplyAsync("Unable to show Last.FM info via YouTube due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
             else
             {
@@ -357,7 +356,7 @@ namespace FMBot_Discord
                 {
                     DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                     ExceptionReporter.ReportException(disclient, e);
-                    await ReplyAsync("You have no scrobbles on your Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then use .fmyt again!");
+                    await ReplyAsync("Unable to show Last.FM info via YouTube due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
                 }
             }
         }
@@ -369,7 +368,7 @@ namespace FMBot_Discord
             string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
             if (LastFMName.Equals("NULL"))
             {
-                await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
+                await ReplyAsync("Unable to show Last.FM info via Spotify due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
             else
             {
@@ -424,7 +423,7 @@ namespace FMBot_Discord
                 {
                     DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                     ExceptionReporter.ReportException(disclient, e);
-                    await ReplyAsync("You have no scrobbles on your Last.FM profile or the Spotify credentials may have not been set correctly. Try scrobbling a song with a Last.FM scrobbler and then use .fmspotify again!");
+                    await ReplyAsync("Unable to show Last.FM info via Spotify due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
                 }
             }
         }
@@ -483,7 +482,7 @@ namespace FMBot_Discord
             {
                 DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                 ExceptionReporter.ReportException(disclient, e);
-                await ReplyAsync("You have no scrobbles on your Last.FM profile or the Spotify credentials may have not been set correctly. Try scrobbling a song with a Last.FM scrobbler and then use .fmspotify again!");
+                await ReplyAsync("Unable to search for music via Spotify due to an internal error.");
             }
         }
 
@@ -542,7 +541,7 @@ namespace FMBot_Discord
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
                 {
-                    await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
+                    await ReplyAsync("Unable to generate a FMChart due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
                 }
                 else
                 {
@@ -676,7 +675,7 @@ namespace FMBot_Discord
                 ExceptionReporter.ReportException(disclient, e);
 
                 await loadingmsg.DeleteAsync();
-                await ReplyAsync("Error: Cannot generate chart. You may not have scrobbled anything this time period or your Last.FM name cannot be found.");
+                await ReplyAsync("Unable to generate a FMChart due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
 
@@ -735,7 +734,7 @@ namespace FMBot_Discord
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
                 {
-                    await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
+                    await ReplyAsync("Unable to generate a FMChart due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
                 }
                 else
                 {
@@ -869,7 +868,7 @@ namespace FMBot_Discord
                 ExceptionReporter.ReportException(disclient, e);
 
                 await loadingmsg.DeleteAsync();
-                await ReplyAsync("Error: Cannot generate chart. You may not have scrobbled anything this time period or your Last.FM name cannot be found.");
+                await ReplyAsync("Unable to generate a FMChart due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
 
@@ -886,14 +885,14 @@ namespace FMBot_Discord
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
                 {
-                    await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
+                    await ReplyAsync("Unable to load your FMBot Friends due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
                 }
                 else
                 {
                     string[] LastFMFriends = DBase.GetFriendsForID(DiscordUser.Id.ToString());
                     if (LastFMFriends == null || !LastFMFriends.Any())
                     {
-                        await ReplyAsync("Your LastFM friends were unable to be found. Please use fmsetfriends.");
+                        await ReplyAsync("Your FMBot Friends were unable to be found. Please use fmsetfriends with your friends' names to set your friends.");
                     }
                     else
                     {
@@ -968,7 +967,7 @@ namespace FMBot_Discord
                             DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                             ExceptionReporter.ReportException(disclient, e);
 
-                            await ReplyAsync("Your friends have no scrobbles on their Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then use fmrecent again!");
+                            await ReplyAsync("Unable to load your FMBot Friends due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again. If nothing's fixed, see if your friends have done the same thing.");
                         }
                     }
                 }
@@ -978,7 +977,7 @@ namespace FMBot_Discord
                 DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                 ExceptionReporter.ReportException(disclient, e);
 
-                await ReplyAsync("Your friends could not be found. Please set your friends using fmsetfriends.");
+                await ReplyAsync("Your FMBot Friends were unable to be found. Please use fmsetfriends with your friends' names to set your friends.");
             }
         }
 
@@ -1003,7 +1002,7 @@ namespace FMBot_Discord
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
                 {
-                    await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
+                    await ReplyAsync("Unable to show your recent tracks on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
                 }
                 else
                 {
@@ -1075,7 +1074,7 @@ namespace FMBot_Discord
                         DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                         ExceptionReporter.ReportException(disclient, e);
 
-                        await ReplyAsync("You have no scrobbles on your Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then use .fmrecent again!");
+                        await ReplyAsync("Unable to show your recent tracks on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
                     }
                 }
             }
@@ -1084,7 +1083,7 @@ namespace FMBot_Discord
                 DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                 ExceptionReporter.ReportException(disclient, e);
 
-                await ReplyAsync("Your Last.FM name cannot be found. Please use the fmset command.");
+                await ReplyAsync("Unable to show your recent tracks on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
 
@@ -1107,7 +1106,7 @@ namespace FMBot_Discord
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
                 {
-                    await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
+                    await ReplyAsync("Unable to show your artists on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
                 }
                 else
                 {
@@ -1211,7 +1210,7 @@ namespace FMBot_Discord
                         DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                         ExceptionReporter.ReportException(disclient, e);
 
-                        await ReplyAsync("You have no scrobbles on your Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then use .fmartists again!");
+                        await ReplyAsync("Unable to show your artists on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
                     }
                 }
             }
@@ -1220,7 +1219,7 @@ namespace FMBot_Discord
                 DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                 ExceptionReporter.ReportException(disclient, e);
 
-                await ReplyAsync("Your Last.FM name cannot be found. Please use the fmset command.");
+                await ReplyAsync("Unable to show your artists on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
 
@@ -1243,7 +1242,7 @@ namespace FMBot_Discord
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
                 {
-                    await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
+                    await ReplyAsync("Unable to show your albums on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
                 }
                 else
                 {
@@ -1348,7 +1347,7 @@ namespace FMBot_Discord
                         DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                         ExceptionReporter.ReportException(disclient, e);
 
-                        await ReplyAsync("You have no scrobbles on your Last.FM profile. Try scrobbling a song with a Last.FM scrobbler and then use .fmalbums again!");
+                        await ReplyAsync("Unable to show your albums on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
                     }
                 }
             }
@@ -1357,7 +1356,7 @@ namespace FMBot_Discord
                 DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                 ExceptionReporter.ReportException(disclient, e);
 
-                await ReplyAsync("Your Last.FM name cannot be found. Please use the fmset command.");
+                await ReplyAsync("Unable to show your albums on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
 
@@ -1374,7 +1373,7 @@ namespace FMBot_Discord
                 string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
                 if (LastFMName.Equals("NULL"))
                 {
-                    await ReplyAsync("Your Last.FM name was unable to be found. Please use .fmset to set your name.");
+                    await ReplyAsync("Unable to show your stats on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
                 }
                 else
                 {
@@ -1434,7 +1433,7 @@ namespace FMBot_Discord
                 DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                 ExceptionReporter.ReportException(disclient, e);
 
-                await ReplyAsync("Your Last.FM name cannot be found. Please use the fmset command.");
+                await ReplyAsync("Unable to show your stats on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
 
@@ -1460,7 +1459,7 @@ namespace FMBot_Discord
                 DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                 ExceptionReporter.ReportException(disclient, e);
 
-                await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+                await ReplyAsync("Unable to show the featured avatar on FMBot due to an internal error. The timer service cannot be loaded. Please wait for the bot to fully load.");
             }
         }
 
@@ -1573,7 +1572,7 @@ namespace FMBot_Discord
 
                 if (friendcount > 1)
                 {
-                    await ReplyAsync("Unable to add " + friendcount + " due to an internal error.");
+                    await ReplyAsync("Unable to add " + friendcount + " friends due to an internal error.");
                 }
                 else
                 {
@@ -1592,21 +1591,40 @@ namespace FMBot_Discord
                 return;
             }
 
-            string SelfID = Context.Message.Author.Id.ToString();
+            try
+            {
+                string SelfID = Context.Message.Author.Id.ToString();
 
-            int friendcount = DBase.RemoveFriendsEntry(SelfID, friends);
+                int friendcount = DBase.RemoveFriendsEntry(SelfID, friends);
 
-            if (friendcount > 1)
-            {
-                await ReplyAsync("Succesfully removed " + friendcount + " friends.");
+                if (friendcount > 1)
+                {
+                    await ReplyAsync("Succesfully removed " + friendcount + " friends.");
+                }
+                else if (friendcount < 1)
+                {
+                    await ReplyAsync("Couldn't remove " + friendcount + " friends. Please check if the user is on your friendslist.");
+                }
+                else
+                {
+                    await ReplyAsync("Succesfully removed a friend.");
+                }
             }
-            else if (friendcount < 1)
+            catch (Exception e)
             {
-                await ReplyAsync("Couldn't remove " + friendcount + " friends. Please check if the user is on your friendslist.");
-            }
-            else
-            {
-                await ReplyAsync("Succesfully removed a friend.");
+                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(disclient, e);
+
+                int friendcount = friends.Count();
+
+                if (friendcount > 1)
+                {
+                    await ReplyAsync("Unable to remove " + friendcount + " friends due to an internal error. Did you add anyone?");
+                }
+                else
+                {
+                    await ReplyAsync("Unable to add a friend due to an internal error. Did you add anyone?");
+                }
             }
         }
 
@@ -1655,11 +1673,16 @@ namespace FMBot_Discord
                 }
             }
 
-            await Context.User.SendMessageAsync(SelfUser.Username + " Info\n\nBe sure to use 'help' after a command name to see the parameters.\n\nChart sizes range from 3x3 to 10x10.\n\nModes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nuserdefined (fmserverset only)\n\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nweek\nw\nmonthly\nmonth\nm\nyearly\nyear\ny\noverall\nalltime\no\nat\n\nFMBot Title options for FMChart:\ntitles\nnotitles");
+            string helpstring = SelfUser.Username + " Info\n\nBe sure to use 'help' after a command name to see the parameters.\n\nChart sizes range from 3x3 to 10x10.\n\nModes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nuserdefined (fmserverset only)\n\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nweek\nw\nmonthly\nmonth\nm\nyearly\nyear\ny\noverall\nalltime\no\nat\n\nFMBot Title options for FMChart:\ntitles\nnotitles";
 
             if (!GlobalVars.GetDMBool())
             {
                 await Context.Channel.SendMessageAsync("Check your DMs!");
+                await Context.User.SendMessageAsync(helpstring);
+            }
+            else
+            {
+                await Context.Channel.SendMessageAsync(helpstring);
             }
 
         }
@@ -1713,11 +1736,15 @@ namespace FMBot_Discord
             string assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
             int fixedCmdGlobalCount = GlobalVars.CommandExecutions + 1;
+            int fixedCmdGlobalCount_Servers = GlobalVars.CommandExecutions_Servers + 1;
+            int fixedCmdGlobalCount_DMs = GlobalVars.CommandExecutions_DMs + 1;
 
             builder.AddInlineField("Bot Uptime: ", startTime.ToReadableString());
             builder.AddInlineField("Server Uptime: ", GlobalVars.SystemUpTime().ToReadableString());
             builder.AddInlineField("Number of users in the database: ", filecount);
-            builder.AddInlineField("Command executions since bot start: ", fixedCmdGlobalCount);
+            builder.AddInlineField("Total number of command executions since bot start: ", fixedCmdGlobalCount);
+            builder.AddInlineField("Command executions in servers since bot start: ", fixedCmdGlobalCount_Servers);
+            builder.AddInlineField("Command executions in DMs since bot start: ", fixedCmdGlobalCount_DMs);
             builder.AddField("Number of servers the bot is on: ", SelfGuilds);
             builder.AddField("Bot status: ", status);
             builder.AddField("Bot version: ", assemblyVersion);
@@ -1744,10 +1771,16 @@ namespace FMBot_Discord
             await ReplyAsync("https://github.com/Bitl/FMBot_Discord");
         }
 
+        [Command("fmgitlab"), Summary("GitLab Page")]
+        public async Task gitlabAsync()
+        {
+            await ReplyAsync("https://gitlab.com/Bitl/FMBot_Discord");
+        }
+
         [Command("fmbugs"), Summary("Report bugs here!")]
         public async Task bugsAsync()
         {
-            await ReplyAsync("Report bugs here: https://github.com/Bitl/FMBot_Discord/issues");
+            await ReplyAsync("Report bugs here:\nGithub: https://github.com/Bitl/FMBot_Discord/issues \nGitLab: https://gitlab.com/Bitl/FMBot_Discord/issues");
         }
 
         [Command("fmserver"), Summary("Join the Discord server!")]

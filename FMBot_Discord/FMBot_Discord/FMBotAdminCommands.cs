@@ -439,7 +439,7 @@ namespace FMBot_Discord
         }
 
         [Command("fmstoragecheck"), Summary("Checks how much storage is left on the server. - FMBot Owners only")]
-        [Alias("fmcheckstorage")]
+        [Alias("fmcheckstorage", "fmstorage")]
         public async Task fmstoragecheckAsync()
         {
             var DiscordUser = Context.Message.Author;
@@ -450,7 +450,7 @@ namespace FMBot_Discord
                     DriveInfo[] drives = DriveInfo.GetDrives();
 
                     var builder = new EmbedBuilder();
-                    builder.WithDescription("Server drive info");
+                    builder.WithDescription("Server Drive Info");
 
                     foreach (DriveInfo drive in drives.Where(w => w.IsReady))
                     {
@@ -463,7 +463,7 @@ namespace FMBot_Discord
                 {
                     DiscordSocketClient client = Context.Client as DiscordSocketClient;
                     ExceptionReporter.ReportException(client, e);
-                    await ReplyAsync("Something went wrong.");
+                    await ReplyAsync("Unable to delete provide server drive info due to an internal error.");
                 }
             }
         }
@@ -526,91 +526,6 @@ namespace FMBot_Discord
         #endregion
 
         #region FMBot Staff and Server Staff Only Commands
-
-        [Command("announce"), Summary("Sends an announcement to the main server or a channel. - FMBot Admins and Server Staff only")]
-        [Alias("fmannounce", "fmnews", "news", "fmannouncement", "announcement")]
-        public async Task announceAsync(string message, string ThumbnailURL = null, ITextChannel channel = null)
-        {
-            var cfgjson = await JsonCfg.GetJSONDataAsync();
-
-            var DiscordUser = (IGuildUser)Context.Message.Author;
-            var SelfUser = Context.Client.CurrentUser;
-            try
-            {
-                if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 1) || DiscordUser.GuildPermissions.KickMembers)
-                {
-                    if (message == "help")
-                    {
-                        await ReplyAsync(cfgjson.CommandPrefix + "announce <message in quotation marks> [image url] [channel id (only available for server mods/admins)]");
-                        return;
-                    }
-                }
-
-                ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.AnnouncementChannel);
-                ITextChannel customchannel = null;
-                if (channel == null)
-                {
-                    customchannel = await Context.Guild.GetTextChannelAsync(BroadcastChannelID);
-                }
-                else
-                {
-                    customchannel = await Context.Guild.GetTextChannelAsync(channel.Id);
-                }
-
-                if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 1) || DiscordUser.GuildPermissions.KickMembers)
-                {
-                    if (channel == null && !FMBotAdminUtil.HasCommandAccess(DiscordUser, 1))
-                    {
-                        await ReplyAsync("You are not authorized to use this command. Only users with the 'Kick Members' permission can use this command.");
-                    }
-                    else if (channel != null && FMBotAdminUtil.HasCommandAccess(DiscordUser, 1) && !DiscordUser.GuildPermissions.KickMembers)
-                    {
-                        await ReplyAsync("You are not authorized to use this command.");
-                    }
-
-                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                    eab.IconUrl = DiscordUser.GetAvatarUrl();
-                    if (string.IsNullOrWhiteSpace(DiscordUser.Nickname))
-                    {
-                        eab.Name = DiscordUser.Username;
-                    }
-                    else
-                    {
-                        eab.Name = DiscordUser.Nickname + " (" + DiscordUser.Username + ")";
-                    }
-
-                    var builder = new EmbedBuilder();
-                    builder.WithAuthor(eab);
-
-                    try
-                    {
-                        if (!string.IsNullOrWhiteSpace(ThumbnailURL))
-                        {
-                            builder.WithThumbnailUrl(ThumbnailURL);
-                        }
-                        else
-                        {
-                            builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                        ExceptionReporter.ReportException(client, e);
-                    }
-
-                    builder.AddField("Announcement", message);
-
-                    await customchannel.SendMessageAsync("", false, builder.Build());
-                }
-            }
-            catch (Exception e)
-            {
-                DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(client, e);
-                await ReplyAsync("The announcement channel has not been set.");
-            }
-        }
 
         [Command("fmblacklistadd"), Summary("Adds a user to a serverside blacklist - FMBot Admins and Server Staff only")]
         public async Task fmblacklistaddAsync(SocketGuildUser user = null)

@@ -804,6 +804,8 @@ namespace FMBot_Discord
             public static string FeaturedUserID = "";
             public static int MessageLength = 2000;
             public static int CommandExecutions = 0;
+            public static int CommandExecutions_Servers = 0;
+            public static int CommandExecutions_DMs = 0;
             private static bool IsUserInDM = false;
 
             public static TimeSpan SystemUpTime()

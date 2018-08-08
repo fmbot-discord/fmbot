@@ -95,7 +95,7 @@ namespace FMBot_Discord
 
                 await client.SetGameAsync("🎶 Say " + prefix + "fmhelp to use 🎶");
                 await client.SetStatusAsync(UserStatus.DoNotDisturb);
-		        System.AppDomain.CurrentDomain.UnhandledException += CatchFatalException;
+		        AppDomain.CurrentDomain.UnhandledException += CatchFatalException;
 
                 // Block this task until the program is closed.
                 await Task.Delay(-1);
@@ -243,23 +243,36 @@ namespace FMBot_Discord
             // Create a number to track where the prefix ends and the command begins
             int argPos = 0;
 
+            if (message.HasMentionPrefix(curUser, ref argPos) && context.Message.Content.Contains("dm me"))
+            {
+                string[] hellostrings = { "Hello!", "Hello World!", "Yo!", "OK!", "Hi!", "...", "Salutations!", "Hola!", "こんにちは！", "你好！", "Здравствуйте!", "Bonjour!", "Hallo!", "Ciao!", "Hej!", "여보세요!", "Koa!", "Aloha!", "مرحبا!" };
+
+                string replystring = hellostrings[new Random().Next(0, hellostrings.Length - 1)];
+
+                if (!GlobalVars.GetDMBool())
+                {
+                    await context.User.SendMessageAsync(replystring);
+                }
+
+                return;
+            }
+
             // Determine if the message is a command, based on if it starts with '!' or a mention prefix
             if (!message.HasCharPrefix(Convert.ToChar(prefix), ref argPos) || message.IsPinned || (message.Author.IsBot && message.Author != curUser)) return;
 
-            var DiscordCaller = message.Author as SocketGuildUser;
             string convertedMessage = message.Content.Replace(prefix, "");
             var words = convertedMessage.Split(' ');
 	        List<string> wordlist = words.OfType<string>().ToList();
 	        bool wordinlist = commandList.Intersect(wordlist).Any();
-            
+
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully)
             if (wordinlist == true)
             {
+                var DiscordCaller = message.Author as SocketGuildUser;
+
                 if (DiscordCaller != null)
                 {
-
-
                     var guild = DiscordCaller.Guild;
                     string callerserverid = guild.Id.ToString();
                     bool isonblacklist = DBase.IsUserOnBlacklist(callerserverid, DiscordCaller.Id.ToString());
@@ -280,19 +293,24 @@ namespace FMBot_Discord
                         else
                         {
                             GlobalVars.CommandExecutions += 1;
+                            GlobalVars.CommandExecutions_Servers += 1;
                         }
                     }
                 }
                 else
                 {
-                    var result = await commands.ExecuteAsync(context, argPos, services);
-                    if (!result.IsSuccess)
+                    if (User.IncomingRequest(client, message.Author.Id) != false)
                     {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason));
-                    }
-                    else
-                    {
-                        GlobalVars.CommandExecutions += 1;
+                        var result = await commands.ExecuteAsync(context, argPos, services);
+                        if (!result.IsSuccess)
+                        {
+                            await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason));
+                        }
+                        else
+                        {
+                            GlobalVars.CommandExecutions += 1;
+                            GlobalVars.CommandExecutions_DMs += 1;
+                        }
                     }
                 }
             }
