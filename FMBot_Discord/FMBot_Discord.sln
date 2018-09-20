@@ -1,9 +1,14 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.28107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FMBot_Discord", "FMBot_Discord\FMBot_Discord.csproj", "{D4B253A5-9653-4827-A3A8-5A20413028CD}"
+	ProjectSection(ProjectDependencies) = postProject
+		{769E7FD4-97EB-447C-92FB-11ED991EDAEF} = {769E7FD4-97EB-447C-92FB-11ED991EDAEF}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FMBot.Data", "FMBot.Data\FMBot.Data.csproj", "{769E7FD4-97EB-447C-92FB-11ED991EDAEF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,8 +20,15 @@ Global
 		{D4B253A5-9653-4827-A3A8-5A20413028CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4B253A5-9653-4827-A3A8-5A20413028CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4B253A5-9653-4827-A3A8-5A20413028CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{769E7FD4-97EB-447C-92FB-11ED991EDAEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{769E7FD4-97EB-447C-92FB-11ED991EDAEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{769E7FD4-97EB-447C-92FB-11ED991EDAEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{769E7FD4-97EB-447C-92FB-11ED991EDAEF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8048CCF2-244E-48E9-ABAC-87AB5DBEA77C}
 	EndGlobalSection
 EndGlobal
