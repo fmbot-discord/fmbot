@@ -168,7 +168,7 @@ namespace FMBot.Bot
                             try
                             {
                                 Random random = new Random();
-                                int randavmode = random.Next(1, 7);
+                                int randavmode = random.Next(1, 6);
                                 string randmodestring = "";
 
                                 if (randavmode == 1)
@@ -193,11 +193,7 @@ namespace FMBot.Bot
                                 }
                                 else if (randavmode == 6)
                                 {
-                                    randmodestring = "6 - User Chart";
-                                }
-                                else if (randavmode == 7)
-                                {
-                                    randmodestring = "7 - Default Avatar";
+                                    randmodestring = "6 - Default Avatar";
                                 }
 
                                 await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to mode " + randmodestring));
@@ -484,94 +480,6 @@ namespace FMBot.Bot
                                         }
                                     }
                                     else if (randavmode == 6)
-                                    {
-                                        try
-                                        {
-                                            string randChartImage = DBase.GetRandomFMChart();
-
-                                            if (randChartImage.Equals("NULL"))
-                                            {
-                                                UseDefaultAvatar(client);
-                                            }
-                                            else
-                                            {
-                                                ulong DiscordID = DBase.GetIDFromChart(randChartImage);
-                                                GlobalVars.FeaturedUserID = DiscordID.ToString();
-                                                SocketUser FeaturedUser = client.GetUser(DiscordID);
-                                                try
-                                                {
-                                                    string featureduserfmname = DBase.GetNameForID(DiscordID.ToString());
-                                                    trackString = FeaturedUser.Username + " (" + featureduserfmname + ")'s chart.";
-                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                                                }
-                                                catch (Exception)
-                                                {
-                                                    try
-                                                    {
-                                                        trackString = FeaturedUser.Username + "'s chart.";
-                                                        await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                                                    }
-                                                    catch (Exception)
-                                                    {
-                                                        GlobalVars.FeaturedUserID = "";
-                                                        try
-                                                        {
-                                                            trackString = "Anonymous' chart.";
-                                                            await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                                                        }
-                                                        catch (Exception e)
-                                                        {
-                                                            ExceptionReporter.ReportException(client, e);
-                                                            UseDefaultAvatar(client);
-                                                            trackString = "Unable to get information for this chart avatar.";
-                                                        }
-                                                    }
-                                                }
-                                                
-                                                try
-                                                {
-                                                    var fileStream = new FileStream(randChartImage, FileMode.Open);
-                                                    var image = new Discord.Image(fileStream);
-                                                    await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
-                                                    fileStream.Close();
-
-                                                    await Task.Delay(5000);
-                                                    
-                                                    try
-                                                    {
-                                                        ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
-                                                        ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.FeaturedChannel);
-
-                                                        SocketGuild guild = client.GetGuild(BroadcastServerID);
-                                                        SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
-
-                                                        var builder = new EmbedBuilder();
-                                                        var SelfUser = client.CurrentUser;
-                                                        builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
-                                                        builder.AddInlineField("Featured:", trackString);
-
-                                                        await channel.SendMessageAsync("", false, builder.Build());
-                                                    }
-                                                    catch (Exception e)
-                                                    {
-                                                        ExceptionReporter.ReportException(client, e);
-                                                    }
-                                                }
-                                                catch (Exception e)
-                                                {
-                                                    ExceptionReporter.ReportException(client, e);
-                                                }
-                                            }
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            GlobalVars.FeaturedUserID = "";
-                                            ExceptionReporter.ReportException(client, e);
-                                            UseDefaultAvatar(client);
-                                            trackString = "Unable to get information for this chart avatar.";
-                                        }
-                                    }
-                                    else if (randavmode == 7)
                                     {
                                         UseDefaultAvatar(client);
                                     }

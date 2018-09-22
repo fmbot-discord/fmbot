@@ -36,26 +36,26 @@ namespace FMBot.Bot
 
             public static void WriteEntry(string id, string name, int fmval = 0)
             {
-                File.WriteAllText(GlobalVars.UsersFolder + id + ".txt", name + Environment.NewLine + fmval.ToString());
-                File.SetAttributes(GlobalVars.UsersFolder + id + ".txt", FileAttributes.Normal);
+                File.WriteAllText(GlobalVars.CacheFolder + id + ".txt", name + Environment.NewLine + fmval.ToString());
+                File.SetAttributes(GlobalVars.CacheFolder + id + ".txt", FileAttributes.Normal);
             }
 
             public static void RemoveEntry(string id)
             {
                 if (EntryExists(id))
                 {
-                    File.SetAttributes(GlobalVars.UsersFolder + id + ".txt", FileAttributes.Normal);
-                    File.Delete(GlobalVars.UsersFolder + id + ".txt");
+                    File.SetAttributes(GlobalVars.CacheFolder + id + ".txt", FileAttributes.Normal);
+                    File.Delete(GlobalVars.CacheFolder + id + ".txt");
                 }
                 if (FriendsExists(id))
                 {
-                    File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
-                    File.Delete(GlobalVars.UsersFolder + id + "-friends.txt");
+                    File.SetAttributes(GlobalVars.CacheFolder + id + "-friends.txt", FileAttributes.Normal);
+                    File.Delete(GlobalVars.CacheFolder + id + "-friends.txt");
                 }
-                if (File.Exists(GlobalVars.UsersFolder + id + "-chart.png"))
+                if (File.Exists(GlobalVars.CacheFolder + id + "-chart.png"))
                 {
-                    File.SetAttributes(GlobalVars.UsersFolder + id + "-chart.png", FileAttributes.Normal);
-                    File.Delete(GlobalVars.UsersFolder + id + "-chart.png");
+                    File.SetAttributes(GlobalVars.CacheFolder + id + "-chart.png", FileAttributes.Normal);
+                    File.Delete(GlobalVars.CacheFolder + id + "-chart.png");
                 }
             }
 
@@ -92,14 +92,14 @@ namespace FMBot.Bot
 
             public static bool EntryExists(string id)
             {
-                return File.Exists(GlobalVars.UsersFolder + id + ".txt");
+                return File.Exists(GlobalVars.CacheFolder + id + ".txt");
             }
 
             public static string GetNameForID(string id)
             {
                 string line;
 
-                using (StreamReader file = new StreamReader(GlobalVars.UsersFolder + id + ".txt"))
+                using (StreamReader file = new StreamReader(GlobalVars.CacheFolder + id + ".txt"))
                 {
                     while ((line = file.ReadLine()) != null)
                     {
@@ -113,7 +113,7 @@ namespace FMBot.Bot
 
             public static ulong GetIDForName(string name)
             {
-                foreach (FileData file in FastDirectoryEnumerator.EnumerateFiles(GlobalVars.UsersFolder, "*.txt"))
+                foreach (FileData file in FastDirectoryEnumerator.EnumerateFiles(GlobalVars.CacheFolder, "*.txt"))
                 {
                     if (File.ReadAllText(file.Path).Contains(name))
                     {
@@ -129,7 +129,7 @@ namespace FMBot.Bot
             public static string GetRandFMName()
             {
                 Random rand = new Random();
-                List<FileData> files = FastDirectoryEnumerator.EnumerateFiles(GlobalVars.UsersFolder).Where(F => F.Name.ToLower().EndsWith(".txt")).ToList();
+                List<FileData> files = FastDirectoryEnumerator.EnumerateFiles(GlobalVars.CacheFolder).Where(F => F.Name.ToLower().EndsWith(".txt")).ToList();
                 FileData randomFile = files[rand.Next(0, files.Count)];
 
                 string line;
@@ -148,7 +148,7 @@ namespace FMBot.Bot
 
             public static string GetFMChartForID(string id)
             {
-                string filename = GlobalVars.UsersFolder + id + "-chart.png";
+                string filename = GlobalVars.CacheFolder + id + "-chart.png";
 
                 if (File.Exists(filename))
                 {
@@ -163,7 +163,7 @@ namespace FMBot.Bot
             public static string GetRandomFMChart()
             {
                 Random rand = new Random();
-                List<FileData> files = FastDirectoryEnumerator.EnumerateFiles(GlobalVars.UsersFolder).Where(F => F.Name.ToLower().EndsWith(".png")).ToList();
+                List<FileData> files = FastDirectoryEnumerator.EnumerateFiles(GlobalVars.CacheFolder).Where(F => F.Name.ToLower().EndsWith(".png")).ToList();
                 FileData randomFile = files[rand.Next(0, files.Count)];
 
                 if (File.Exists(randomFile.Path))
@@ -193,7 +193,7 @@ namespace FMBot.Bot
 
             public static void DeleteAllCharts()
             {
-                foreach (FileData file in FastDirectoryEnumerator.EnumerateFiles(GlobalVars.UsersFolder, "*.png"))
+                foreach (FileData file in FastDirectoryEnumerator.EnumerateFiles(GlobalVars.CacheFolder, "*.png"))
                 {
                     File.Delete(file.Path);
                 }
@@ -203,7 +203,7 @@ namespace FMBot.Bot
             {
                 string line;
 
-                using (StreamReader file = new StreamReader(GlobalVars.UsersFolder + id + ".txt"))
+                using (StreamReader file = new StreamReader(GlobalVars.CacheFolder + id + ".txt"))
                 {
                     while ((line = file.ReadLine()) != null)
                     {
@@ -236,29 +236,29 @@ namespace FMBot.Bot
                     AdminString = FMOwnerString;
                 }
 
-                File.WriteAllText(GlobalVars.UsersFolder + id + "-adminsettings.txt", AdminString);
-                File.SetAttributes(GlobalVars.UsersFolder + id + "-adminsettings.txt", FileAttributes.Normal);
+                File.WriteAllText(GlobalVars.CacheFolder + id + "-adminsettings.txt", AdminString);
+                File.SetAttributes(GlobalVars.CacheFolder + id + "-adminsettings.txt", FileAttributes.Normal);
             }
 
             public static void RemoveAdminEntry(string id)
             {
                 if (AdminEntryExists(id))
                 {
-                    File.SetAttributes(GlobalVars.UsersFolder + id + "-adminsettings.txt", FileAttributes.Normal);
-                    File.Delete(GlobalVars.UsersFolder + id + "-adminsettings.txt");
+                    File.SetAttributes(GlobalVars.CacheFolder + id + "-adminsettings.txt", FileAttributes.Normal);
+                    File.Delete(GlobalVars.CacheFolder + id + "-adminsettings.txt");
                 }
             }
 
             public static bool AdminEntryExists(string id)
             {
-                return File.Exists(GlobalVars.UsersFolder + id + "-adminsettings.txt");
+                return File.Exists(GlobalVars.CacheFolder + id + "-adminsettings.txt");
             }
 
             public static bool CheckAdmin(string id)
             {
                 if (AdminEntryExists(id))
                 {
-                    if (File.ReadLines(GlobalVars.UsersFolder + id + "-adminsettings.txt").Any(line => line.Contains(FMAdminString)))
+                    if (File.ReadLines(GlobalVars.CacheFolder + id + "-adminsettings.txt").Any(line => line.Contains(FMAdminString)))
                     {
                         return true;
                     }
@@ -277,7 +277,7 @@ namespace FMBot.Bot
             {
                 if (AdminEntryExists(id))
                 {
-                    if (File.ReadLines(GlobalVars.UsersFolder + id + "-adminsettings.txt").Any(line => line.Contains(FMSuperAdminString)))
+                    if (File.ReadLines(GlobalVars.CacheFolder + id + "-adminsettings.txt").Any(line => line.Contains(FMSuperAdminString)))
                     {
                         return true;
                     }
@@ -296,7 +296,7 @@ namespace FMBot.Bot
             {
                 if (AdminEntryExists(id))
                 {
-                    if (File.ReadLines(GlobalVars.UsersFolder + id + "-adminsettings.txt").Any(line => line.Contains(FMOwnerString)))
+                    if (File.ReadLines(GlobalVars.CacheFolder + id + "-adminsettings.txt").Any(line => line.Contains(FMOwnerString)))
                     {
                         return true;
                     }
@@ -476,18 +476,18 @@ namespace FMBot.Bot
 
             public static bool FriendsExists(string id)
             {
-                return File.Exists(GlobalVars.UsersFolder + id + "-friends.txt");
+                return File.Exists(GlobalVars.CacheFolder + id + "-friends.txt");
             }
 
             public static int AddFriendsEntry(string id, params string[] friendlist)
             {
                 if (!FriendsExists(id))
                 {
-                    File.Create(GlobalVars.UsersFolder + id + "-friends.txt").Dispose();
-                    File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
+                    File.Create(GlobalVars.CacheFolder + id + "-friends.txt").Dispose();
+                    File.SetAttributes(GlobalVars.CacheFolder + id + "-friends.txt", FileAttributes.Normal);
                 }
 
-                string[] friends = File.ReadAllLines(GlobalVars.UsersFolder + id + "-friends.txt");
+                string[] friends = File.ReadAllLines(GlobalVars.CacheFolder + id + "-friends.txt");
 
                 int listcount = friendlist.Count();
 
@@ -508,8 +508,8 @@ namespace FMBot.Bot
 
                 friends = list.ToArray();
                 
-                File.WriteAllLines(GlobalVars.UsersFolder + id + "-friends.txt", friends);
-                File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
+                File.WriteAllLines(GlobalVars.CacheFolder + id + "-friends.txt", friends);
+                File.SetAttributes(GlobalVars.CacheFolder + id + "-friends.txt", FileAttributes.Normal);
 
                 return listcount;
             }
@@ -521,7 +521,7 @@ namespace FMBot.Bot
                     return 0;
                 }
 
-                string[] friends = File.ReadAllLines(GlobalVars.UsersFolder + id + "-friends.txt");
+                string[] friends = File.ReadAllLines(GlobalVars.CacheFolder + id + "-friends.txt");
                 var friendsLower = friends.Select(s => s.ToLowerInvariant()).ToArray();
 
                 int listcount = friendlist.Count();
@@ -544,15 +544,15 @@ namespace FMBot.Bot
                 
                 friends = list.ToArray();
 
-                File.WriteAllLines(GlobalVars.UsersFolder + id + "-friends.txt", friends);
-                File.SetAttributes(GlobalVars.UsersFolder + id + "-friends.txt", FileAttributes.Normal);
+                File.WriteAllLines(GlobalVars.CacheFolder + id + "-friends.txt", friends);
+                File.SetAttributes(GlobalVars.CacheFolder + id + "-friends.txt", FileAttributes.Normal);
 
                 return listcount;
             }
 
             public static string[] GetFriendsForID(string id)
             {
-                string[] lines = File.ReadAllLines(GlobalVars.UsersFolder + id + "-friends.txt");
+                string[] lines = File.ReadAllLines(GlobalVars.CacheFolder + id + "-friends.txt");
                 return lines;
             }
 
@@ -799,7 +799,7 @@ namespace FMBot.Bot
         {
             public static string ConfigFileName = "config.json";
             public static string BasePath = AppDomain.CurrentDomain.BaseDirectory;
-            public static string UsersFolder = BasePath + "users/";
+            public static string CacheFolder = BasePath + "cache/";
             public static string ServersFolder = BasePath + "servers/";
             public static string FeaturedUserID = "";
             public static int MessageLength = 2000;
@@ -1440,7 +1440,7 @@ namespace FMBot.Bot
 
                     using (MemoryStream memory = new MemoryStream())
                     {
-                        using (FileStream fs = new FileStream(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png", FileMode.Create, FileAccess.ReadWrite))
+                        using (FileStream fs = new FileStream(GlobalVars.CacheFolder + DiscordUser.Id + "-chart.png", FileMode.Create, FileAccess.ReadWrite))
                         {
                             stitchedImage.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
                             byte[] bytes = memory.ToArray();

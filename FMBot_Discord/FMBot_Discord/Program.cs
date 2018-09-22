@@ -40,13 +40,13 @@ namespace FMBot.Bot
 		
                 var cfgjson = await JsonCfg.GetJSONDataAsync();
 
-                if (!Directory.Exists(GlobalVars.UsersFolder))
+                if (!Directory.Exists(GlobalVars.CacheFolder))
                 {
-                    Directory.CreateDirectory(GlobalVars.UsersFolder);
+                    Directory.CreateDirectory(GlobalVars.CacheFolder);
                 }
                 else
                 {
-                    var users = new DirectoryInfo(GlobalVars.UsersFolder);
+                    var users = new DirectoryInfo(GlobalVars.CacheFolder);
                     GlobalVars.ClearReadOnly(users);
                 }
 
@@ -168,9 +168,9 @@ namespace FMBot.Bot
 
         public async Task HandleCommand_MessageReceived(SocketMessage messageParam)
         {
-            if (Directory.Exists(GlobalVars.UsersFolder))
+            if (Directory.Exists(GlobalVars.CacheFolder))
             {
-                var users = new DirectoryInfo(GlobalVars.UsersFolder);
+                var users = new DirectoryInfo(GlobalVars.CacheFolder);
                 GlobalVars.ClearReadOnly(users);
             }
 
@@ -185,9 +185,9 @@ namespace FMBot.Bot
 
         public async Task HandleCommand_MessageEdited(Cacheable<IMessage, ulong> before, SocketMessage after, ISocketMessageChannel channel)
         {
-            if (Directory.Exists(GlobalVars.UsersFolder))
+            if (Directory.Exists(GlobalVars.CacheFolder))
             {
-                var users = new DirectoryInfo(GlobalVars.UsersFolder);
+                var users = new DirectoryInfo(GlobalVars.CacheFolder);
                 GlobalVars.ClearReadOnly(users);
             }
 

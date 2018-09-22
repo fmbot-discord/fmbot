@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -477,7 +478,7 @@ namespace FMBot.Bot
                     chart.titles = TitleBool;
                     await chart.ChartGenerate();
 
-                    await Context.Channel.SendFileAsync(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png");
+                    await Context.Channel.SendFileAsync(GlobalVars.CacheFolder + DiscordUser.Id + "-chart.png");
 
                     EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
@@ -519,6 +520,9 @@ namespace FMBot.Bot
 
                     await loadingmsg.DeleteAsync();
                     await Context.Channel.SendMessageAsync("", false, builder.Build());
+
+                    File.SetAttributes(GlobalVars.CacheFolder + DiscordUser.Id + "-chart.png", FileAttributes.Normal);
+                    File.Delete(GlobalVars.CacheFolder + DiscordUser.Id + "-chart.png");
                 }
             }
             catch (Exception e)
@@ -671,7 +675,7 @@ namespace FMBot.Bot
                     chart.titles = TitleBool;
                     await chart.ChartGenerate();
 
-                    await Context.Channel.SendFileAsync(GlobalVars.UsersFolder + DiscordUser.Id + "-chart.png");
+                    await Context.Channel.SendFileAsync(GlobalVars.CacheFolder + DiscordUser.Id + "-chart.png");
 
                     EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                     eab.IconUrl = DiscordUser.GetAvatarUrl();
@@ -1556,7 +1560,7 @@ namespace FMBot.Bot
             builder.WithDescription(SelfUser.Username + " Statistics");
 
             TimeSpan startTime = (DateTime.Now - Process.GetCurrentProcess().StartTime);
-            IEnumerable<FileData> files = FastDirectoryEnumerator.EnumerateFiles(GlobalVars.UsersFolder, "*.txt");
+            IEnumerable<FileData> files = FastDirectoryEnumerator.EnumerateFiles(GlobalVars.CacheFolder, "*.txt");
 
             string pattern = "[0-9]{18}\\.txt";
 

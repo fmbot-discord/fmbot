@@ -415,9 +415,9 @@ namespace FMBot.Bot
             {
                 try
                 {
-                    if (Directory.Exists(GlobalVars.UsersFolder))
+                    if (Directory.Exists(GlobalVars.CacheFolder))
                     {
-                        var users = new DirectoryInfo(GlobalVars.UsersFolder);
+                        var users = new DirectoryInfo(GlobalVars.CacheFolder);
                         GlobalVars.ClearReadOnly(users);
                     }
 
