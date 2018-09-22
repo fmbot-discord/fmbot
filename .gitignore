@@ -18,3 +18,4 @@ ipch
 *.zip
 [Dd]ebug*/
 [Rr]elease*/
+/FMBot_Discord/.vs/FMBot_Discord/v15/Server/sqlite3

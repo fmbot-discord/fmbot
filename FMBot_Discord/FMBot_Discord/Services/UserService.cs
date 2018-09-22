@@ -27,6 +27,7 @@ namespace FMBot.Services
             return user.Settings;
         }
 
+
         // Discord nickname/username
         public async Task<string> GetNameAsync(ICommandContext context)
         {
