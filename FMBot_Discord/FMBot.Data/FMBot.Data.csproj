@@ -88,6 +88,7 @@
   <ItemGroup>
     <Compile Include="Entities\ChartTimePeriod.cs" />
     <Compile Include="Entities\ChartType.cs" />
+    <Compile Include="Entities\Friend.cs" />
     <Compile Include="Entities\Guild.cs" />
     <Compile Include="Entities\User.cs" />
     <Compile Include="Entities\Settings.cs" />
@@ -96,6 +97,10 @@
     <Compile Include="Migrations\201809221049508_initial.cs" />
     <Compile Include="Migrations\201809221049508_initial.Designer.cs">
       <DependentUpon>201809221049508_initial.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201809221344435_update.cs" />
+    <Compile Include="Migrations\201809221344435_update.Designer.cs">
+      <DependentUpon>201809221344435_update.cs</DependentUpon>
     </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -107,6 +112,9 @@
   <ItemGroup>
     <EmbeddedResource Include="Migrations\201809221049508_initial.resx">
       <DependentUpon>201809221049508_initial.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201809221344435_update.resx">
+      <DependentUpon>201809221344435_update.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

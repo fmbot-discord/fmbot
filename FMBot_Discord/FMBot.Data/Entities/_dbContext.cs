@@ -52,6 +52,8 @@ namespace FMBot.Data.Entities
         public DbSet<User> Users { get; set; }
 
         public DbSet<Settings> Settings { get; set; }
+
+        public DbSet<Friend> Friends { get; set; }
         #endregion
     }
 }

@@ -1,7 +1,9 @@
 ﻿using Discord;
+using FMBot.Data.Entities;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
+using System.Linq;
 using System.Threading.Tasks;
 using static FMBot.Bot.FMBotUtil;
 
@@ -9,20 +11,19 @@ namespace FMBot.Services
 {
     class LastFMService
     {
-        UserService userService = new UserService();
-
         public static JsonCfg.ConfigJson cfgjson = JsonCfg.GetJSONData();
 
         public LastfmClient lastfmClient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
 
-        // Recent scrobbles for user
-        public async Task<PageResponse<LastTrack>> GetRecentScrobblesForUserAsync(IUser discordUser, int count = 2)
+
+        // Last scrobble
+        public async Task<LastTrack> GetLastScrobbleAsync(string lastFMUserName)
         {
-            Data.Entities.Settings userSettings = await userService.GetUserSettingsAsync(discordUser);
+            PageResponse<LastTrack> tracks = await lastfmClient.User.GetRecentScrobbles(lastFMUserName, null, 1, 1);
 
-            PageResponse<LastTrack> tracks = await lastfmClient.User.GetRecentScrobbles(userSettings.UserNameLastFM, null, 1, count);
+            LastTrack track = tracks.Content.ElementAt(0);
 
-            return tracks;
+            return track;
         }
 
         // Recent scrobbles
@@ -32,18 +33,6 @@ namespace FMBot.Services
 
             return tracks;
         }
-
-
-        // User for user
-        public async Task<LastResponse<LastUser>> GetUserInfoForUserAsync(IUser discordUser)
-        {
-            Data.Entities.Settings userSettings = await userService.GetUserSettingsAsync(discordUser);
-
-            LastResponse<LastUser> userInfo = await lastfmClient.User.GetInfoAsync(userSettings.UserNameLastFM);
-
-            return userInfo;
-        }
-
 
         // User
         public async Task<LastResponse<LastUser>> GetUserInfoAsync(string lastFMUserName)
