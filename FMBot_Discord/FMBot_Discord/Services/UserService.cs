@@ -56,16 +56,45 @@ namespace FMBot.Services
             return user.UserType;
         }
 
+        // Featured
+        public async Task<bool?> GetFeaturedAsync(IUser discordUser)
+        {
+            string discordUserID = discordUser.Id.ToString();
+
+            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+            return user.Featured;
+        }
+
+        // Server Blacklisting
+        public async Task<bool?> GetBlacklistedAsync(IUser discordUser)
+        {
+            string discordUserID = discordUser.Id.ToString();
+
+            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+            return user.Blacklisted;
+        }
 
         // UserTitle
         public async Task<string> GetUserTitleAsync(ICommandContext context)
         {
             string name = await GetNameAsync(context);
             UserType rank = await GetRankAsync(context.User);
+            bool? featured = await GetFeaturedAsync(context.User);
+            string featuredUser = (featured == true) ? ", Featured User" : "";
 
-            // TODO, add 'featured user'
-
-            return name + " " + rank.ToString();
+            return name + " " + rank.ToString() + featuredUser;
         }
 
         // Set LastFM Name

@@ -34,6 +34,8 @@ namespace FMBot.Bot.Services
             db.Friends.Add(friend);
 
             db.SaveChanges();
+
+            await Task.CompletedTask;
         }
 
 
