@@ -214,10 +214,10 @@
     <Compile Include="FMBotCommands.cs" />
     <Compile Include="FMBotModules.cs" />
     <Compile Include="FMBotUtil.cs" />
-    <Compile Include="Models\AlbumModel.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\LastFMService.cs" />
+    <Compile Include="Services\SpotifyService.cs" />
     <Compile Include="Services\UserService.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -33,8 +33,12 @@ namespace FMBot.Bot
         private readonly TimerService _timer;
 
         private readonly FMBotDbContext db = new FMBotDbContext();
+
         private UserService userService = new UserService();
+
         private LastFMService lastFMService = new LastFMService();
+
+        private SpotifyService spotifyService = new SpotifyService();
 
         public FMBotCommands(CommandService service, TimerService timer)
         {
@@ -56,13 +60,13 @@ namespace FMBot.Bot
 
                 if (userSettings == null || userSettings.UserNameLastFM == null)
                 {
-                    await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset <username> <embedfull/embedmini/textfull/textmini>` command.");
+                    await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset [username] [embedfull/embedmini/textfull/textmini]` command.");
                     return;
                 }
 
                 try
                 {
-                    PageResponse<LastTrack> tracks = await lastFMService.getRecentScrobblesAsync(userSettings.UserNameLastFM);
+                    PageResponse<LastTrack> tracks = await lastFMService.GetRecentScrobblesAsync(userSettings.UserNameLastFM);
 
                     LastTrack currentTrack = tracks.Content.ElementAt(0);
                     LastTrack lastTrack = tracks.Content.ElementAt(1);
@@ -86,7 +90,7 @@ namespace FMBot.Bot
                         string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
                         string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nulltext : currentTrack.AlbumName;
 
-                        LastResponse<LastAlbum> AlbumInfo = await lastFMService.getAlbumInfoAsync(ArtistName, AlbumName);
+                        LastResponse<LastAlbum> AlbumInfo = await lastFMService.GetAlbumInfoAsync(ArtistName, AlbumName);
                         LastImageSet AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
                         string AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large != null ? AlbumImages.Large.AbsoluteUri : null : null;
                         string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
@@ -100,7 +104,7 @@ namespace FMBot.Bot
 
                         EmbedFooterBuilder efb = new EmbedFooterBuilder();
 
-                        LastResponse<LastUser> userinfo = await lastFMService.getUserInfoAsync(userSettings.UserNameLastFM);
+                        LastResponse<LastUser> userinfo = await lastFMService.GetUserInfoAsync(userSettings.UserNameLastFM);
                         int playcount = userinfo.Content.Playcount;
 
                         efb.Text = userSettings.UserNameLastFM + "'s Total Tracks: " + playcount.ToString("0");
@@ -131,7 +135,7 @@ namespace FMBot.Bot
                         string LastArtistName = string.IsNullOrWhiteSpace(lastTrack.ArtistName) ? nulltext : lastTrack.ArtistName;
                         string LastAlbumName = string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? nulltext : lastTrack.AlbumName;
 
-                        LastResponse<LastAlbum> AlbumInfo = await lastFMService.getAlbumInfoAsync(ArtistName, AlbumName);
+                        LastResponse<LastAlbum> AlbumInfo = await lastFMService.GetAlbumInfoAsync(ArtistName, AlbumName);
                         LastImageSet AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
                         string AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large != null ? AlbumImages.Large.AbsoluteUri : null : null;
                         string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
@@ -146,7 +150,7 @@ namespace FMBot.Bot
 
                         EmbedFooterBuilder efb = new EmbedFooterBuilder();
 
-                        LastResponse<LastUser> userinfo = await lastFMService.getUserInfoAsync(userSettings.UserNameLastFM);
+                        LastResponse<LastUser> userinfo = await lastFMService.GetUserInfoAsync(userSettings.UserNameLastFM);
                         int playcount = userinfo.Content.Playcount;
 
                         efb.Text = userSettings.UserNameLastFM + "'s Total Tracks: " + playcount.ToString("0");
@@ -165,7 +169,7 @@ namespace FMBot.Bot
                         string LastArtistName = string.IsNullOrWhiteSpace(lastTrack.ArtistName) ? nulltext : lastTrack.ArtistName;
                         string LastAlbumName = string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? nulltext : lastTrack.AlbumName;
 
-                        LastResponse<LastUser> userinfo = await lastFMService.getUserInfoAsync(userSettings.UserNameLastFM);
+                        LastResponse<LastUser> userinfo = await lastFMService.GetUserInfoAsync(userSettings.UserNameLastFM);
 
                         int playcount = userinfo.Content.Playcount;
 
@@ -181,7 +185,7 @@ namespace FMBot.Bot
                         string LastArtistName = string.IsNullOrWhiteSpace(lastTrack.ArtistName) ? nulltext : lastTrack.ArtistName;
                         string LastAlbumName = string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? nulltext : lastTrack.AlbumName;
 
-                        LastResponse<LastUser> userinfo = await lastFMService.getUserInfoAsync(userSettings.UserNameLastFM);
+                        LastResponse<LastUser> userinfo = await lastFMService.GetUserInfoAsync(userSettings.UserNameLastFM);
                         int playcount = userinfo.Content.Playcount;
 
                         await Context.Channel.SendMessageAsync(await userService.GetUserTitleAsync(Context) + "\n" + "**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + userSettings.UserNameLastFM + ">\n" + userSettings.UserNameLastFM + "'s Total Tracks: " + playcount.ToString("0"));
@@ -254,67 +258,46 @@ namespace FMBot.Bot
         [Command("fmspotify"), Summary("Shares a link to a Spotify track based on what a user is listening to")]
         public async Task fmspotifyAsync(IUser user = null)
         {
-            IUser DiscordUser = GlobalVars.CheckIfDM(user, Context);
-            string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
-            if (LastFMName.Equals("NULL"))
+            Settings userSettings = await userService.GetUserSettingsAsync(Context.User);
+
+            if (userSettings == null || userSettings.UserNameLastFM == null)
             {
-                await ReplyAsync("Unable to show Last.FM info via Spotify due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
+                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset <username> <embedfull/embedmini/textfull/textmini>` command.");
+                return;
             }
-            else
+
+            try
             {
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
-                LastfmClient client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+                PageResponse<LastTrack> tracks = await lastFMService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
+                LastTrack currentTrack = tracks.Content.ElementAt(0);
 
-                try
+                string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? null : currentTrack.Name;
+                string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? null : currentTrack.ArtistName;
+                string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? null : currentTrack.AlbumName;
+
+                string querystring = null;
+
+                querystring = TrackName + " - " + ArtistName + " " + AlbumName;
+
+                SearchItem item = await spotifyService.GetSearchResultAsync(querystring);
+
+                if (item.Tracks.Items.Any())
                 {
-                    PageResponse<LastTrack> tracks = await client.User.GetRecentScrobbles(LastFMName, null, 1, 2);
-                    LastTrack currentTrack = tracks.Content.ElementAt(0);
+                    FullTrack track = item.Tracks.Items.FirstOrDefault();
+                    SimpleArtist trackArtist = track.Artists.FirstOrDefault();
 
-                    string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? null : currentTrack.Name;
-                    string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? null : currentTrack.ArtistName;
-                    string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? null : currentTrack.AlbumName;
-
-                    //Create the auth object
-                    ClientCredentialsAuth auth = new ClientCredentialsAuth()
-                    {
-                        ClientId = cfgjson.SpotifyKey,
-                        ClientSecret = cfgjson.SpotifySecret,
-                        Scope = Scope.None,
-                    };
-                    //With this token object, we now can make calls
-                    Token token = auth.DoAuth();
-
-                    SpotifyWebAPI _spotify = new SpotifyWebAPI()
-                    {
-                        TokenType = token.TokenType,
-                        AccessToken = token.AccessToken,
-                        UseAuth = true
-                    };
-
-                    string querystring = null;
-
-                    querystring = TrackName + " - " + ArtistName + " " + AlbumName;
-
-                    SearchItem item = _spotify.SearchItems(querystring, SearchType.Track);
-
-                    if (item.Tracks.Items.Any())
-                    {
-                        FullTrack track = item.Tracks.Items.FirstOrDefault();
-                        SimpleArtist trackArtist = track.Artists.FirstOrDefault();
-
-                        await ReplyAsync("https://open.spotify.com/track/" + track.Id);
-                    }
-                    else
-                    {
-                        await ReplyAsync("No results have been found for this track.");
-                    }
+                    await ReplyAsync("https://open.spotify.com/track/" + track.Id);
                 }
-                catch (Exception e)
+                else
                 {
-                    DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                    ExceptionReporter.ReportException(disclient, e);
-                    await ReplyAsync("Unable to show Last.FM info via Spotify due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
+                    await ReplyAsync("No results have been found for this track.");
                 }
+            }
+            catch (Exception e)
+            {
+                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(disclient, e);
+                await ReplyAsync("Unable to show Last.FM info via Spotify due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
 
@@ -324,32 +307,13 @@ namespace FMBot.Bot
         {
             try
             {
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
-
-                //Create the auth object
-                ClientCredentialsAuth auth = new ClientCredentialsAuth()
-                {
-                    ClientId = cfgjson.SpotifyKey,
-                    ClientSecret = cfgjson.SpotifySecret,
-                    Scope = Scope.None,
-                };
-                //With this token object, we now can make calls
-                Token token = auth.DoAuth();
-
-                SpotifyWebAPI _spotify = new SpotifyWebAPI()
-                {
-                    TokenType = token.TokenType,
-                    AccessToken = token.AccessToken,
-                    UseAuth = true
-                };
-
                 string querystring = null;
 
                 if (searchterms.Any())
                 {
                     querystring = string.Join(" ", searchterms);
 
-                    SearchItem item = _spotify.SearchItems(querystring, SearchType.Track);
+                    SearchItem item = await spotifyService.GetSearchResultAsync(querystring);
 
                     if (item.Tracks.Items.Any())
                     {
@@ -384,6 +348,14 @@ namespace FMBot.Bot
             if (time == "help")
             {
                 await ReplyAsync(cfgjson.CommandPrefix + "fmchart [weekly/monthly/yearly/overall] [3x3-10x10] [notitles/titles] [user]");
+                return;
+            }
+
+            Settings userSettings = await userService.GetUserSettingsAsync(Context.User);
+
+            if (userSettings == null || userSettings.UserNameLastFM == null)
+            {
+                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset <username> <embedfull/embedmini/textfull/textmini>` command.");
                 return;
             }
 
@@ -439,6 +411,7 @@ namespace FMBot.Bot
 
                     string chartalbums = "";
                     string chartrows = "";
+
 
                     if (chartsize.Equals("3x3"))
                     {
@@ -525,7 +498,7 @@ namespace FMBot.Bot
                     builder.WithAuthor(eab);
                     string URI = "https://www.last.fm/user/" + LastFMName;
                     builder.WithUrl(URI);
-                    GlobalVars.SetUserTitleEmbed(builder, DiscordUser, LastFMName, SelfUser);
+                    builder.Title = await userService.GetUserTitleAsync(Context);
 
                     if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                     {
@@ -581,6 +554,7 @@ namespace FMBot.Bot
             }
 
             ISelfUser SelfUser = Context.Client.CurrentUser;
+
 
             string loadingText = "";
 
@@ -718,7 +692,7 @@ namespace FMBot.Bot
                     builder.WithAuthor(eab);
                     string URI = "https://www.last.fm/user/" + LastFMName;
                     builder.WithUrl(URI);
-                    GlobalVars.SetUserTitleEmbed(builder, DiscordUser, LastFMName, SelfUser);
+                    builder.Title = await userService.GetUserTitleAsync(Context);
 
                     if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                     {
@@ -799,7 +773,7 @@ namespace FMBot.Bot
                             builder.WithAuthor(eab);
                             string URI = "https://www.last.fm/user/" + LastFMName;
                             builder.WithUrl(URI);
-                            GlobalVars.SetUserTitleEmbed(builder, DiscordUser, LastFMName, SelfUser);
+                            builder.Title = await userService.GetUserTitleAsync(Context);
 
                             string amountOfScrobbles = "Amount of scrobbles of all your friends together: ";
 
@@ -909,7 +883,7 @@ namespace FMBot.Bot
                         builder.WithAuthor(eab);
                         string URI = "https://www.last.fm/user/" + LastFMName;
                         builder.WithUrl(URI);
-                        GlobalVars.SetUserTitleEmbed(builder, DiscordUser, LastFMName, SelfUser);
+                        builder.Title = await userService.GetUserTitleAsync(Context);
 
                         builder.WithDescription("Top " + num + " Recent Track List");
 
@@ -1032,7 +1006,7 @@ namespace FMBot.Bot
                         builder.WithAuthor(eab);
                         string URI = "https://www.last.fm/user/" + LastFMName;
                         builder.WithUrl(URI);
-                        GlobalVars.SetUserTitleEmbed(builder, DiscordUser, LastFMName, SelfUser);
+                        builder.Title = await userService.GetUserTitleAsync(Context);
 
                         if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                         {
@@ -1168,7 +1142,7 @@ namespace FMBot.Bot
                         builder.WithAuthor(eab);
                         string URI = "https://www.last.fm/user/" + LastFMName;
                         builder.WithUrl(URI);
-                        GlobalVars.SetUserTitleEmbed(builder, DiscordUser, LastFMName, SelfUser);
+                        builder.Title = await userService.GetUserTitleAsync(Context);
 
                         if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                         {
@@ -1277,7 +1251,7 @@ namespace FMBot.Bot
                     builder.WithAuthor(eab);
                     string URI = "https://www.last.fm/user/" + LastFMName;
                     builder.WithUrl(URI);
-                    GlobalVars.SetUserTitleEmbed(builder, DiscordUser, LastFMName, SelfUser);
+                    builder.Title = await userService.GetUserTitleAsync(Context);
                     builder.WithDescription("Last.FM Statistics for " + LastFMName);
 
                     LastResponse<LastUser> userinfo = await client.User.GetInfoAsync(LastFMName);
