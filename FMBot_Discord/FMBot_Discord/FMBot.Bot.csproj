@@ -71,12 +71,14 @@
     </Reference>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+      <Private>True</Private>
     </Reference>
-    <Reference Include="IF.Lastfm.Core, Version=1.0.1.307, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Inflatable.Lastfm.1.0.1.307\lib\netstandard1.1\IF.Lastfm.Core.dll</HintPath>
+    <Reference Include="IF.Lastfm.Core, Version=1.1.0.339, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Inflatable.Lastfm.1.1.0.339\lib\netstandard1.1\IF.Lastfm.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Extensions.DependencyInjection, Version=1.1.1.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
@@ -109,10 +111,6 @@
     </Reference>
     <Reference Include="NuGet.Core, Version=1.6.21205.9031, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NuGet.Core.1.6.0\lib\net40-Client\NuGet.Core.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Octokit, Version=0.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Octokit.0.1.0\lib\net45\Octokit.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="PresentationCore" />
