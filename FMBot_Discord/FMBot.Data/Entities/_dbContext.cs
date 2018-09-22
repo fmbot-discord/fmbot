@@ -1,22 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.Entity;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Data.Entity;
 
 namespace FMBot.Data.Entities
 {
     public class FMBotDbContext : DbContext
     {
-        public FMBotDbContext ()
+        #region Constructor
+        public FMBotDbContext()
             : base("FMBotDbConnection")
         {
         }
+        #endregion
 
-        public static FMBotDbContext  Create()
+        #region DB Creation
+
+        public static FMBotDbContext Create()
         {
-            return new FMBotDbContext ();
+            return new FMBotDbContext();
         }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
@@ -53,5 +52,6 @@ namespace FMBot.Data.Entities
         public DbSet<User> Users { get; set; }
 
         public DbSet<Settings> Settings { get; set; }
+        #endregion
     }
 }
