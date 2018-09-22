@@ -12,10 +12,12 @@ namespace FMBot.Data.Entities
         [Key]
         public int GuildID { get; set; }
 
-        public int DiscordGuildID { get; set; }
+        public string DiscordGuildID { get; set; }
 
         public string Name { get; set; }
 
         public ICollection<User> Users { get; set; }
+
+        public virtual Settings Settings { get; set; }
     }
 }

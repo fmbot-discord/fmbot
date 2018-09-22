@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28107.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FMBot_Discord", "FMBot_Discord\FMBot_Discord.csproj", "{D4B253A5-9653-4827-A3A8-5A20413028CD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FMBot.Bot", "FMBot_Discord\FMBot.Bot.csproj", "{D4B253A5-9653-4827-A3A8-5A20413028CD}"
 	ProjectSection(ProjectDependencies) = postProject
 		{769E7FD4-97EB-447C-92FB-11ED991EDAEF} = {769E7FD4-97EB-447C-92FB-11ED991EDAEF}
 	EndProjectSection

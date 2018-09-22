@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 
 namespace FMBot.Data.Entities
 {
-    public enum ChartType
+    public enum UserType
     {
-        embedmini = 0,
+        User = 0,
 
-        embedfull = 1,
+        Admin = 1,
 
-        textfull = 2,
+        SuperAdmin = 2,
 
-        textmini = 3
+        Owner = 3
     }
 }

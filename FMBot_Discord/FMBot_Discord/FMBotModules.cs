@@ -9,9 +9,9 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using static FMBot_Discord.FMBotUtil;
+using static FMBot.Bot.FMBotUtil;
 
-namespace FMBot_Discord
+namespace FMBot.Bot
 {
     public class FMBotModules
     {

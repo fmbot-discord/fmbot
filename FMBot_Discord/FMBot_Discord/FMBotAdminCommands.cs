@@ -5,10 +5,10 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using static FMBot_Discord.FMBotModules;
-using static FMBot_Discord.FMBotUtil;
+using static FMBot.Bot.FMBotModules;
+using static FMBot.Bot.FMBotUtil;
 
-namespace FMBot_Discord
+namespace FMBot.Bot
 {
     public class FMBotAdminCommands : ModuleBase
     {

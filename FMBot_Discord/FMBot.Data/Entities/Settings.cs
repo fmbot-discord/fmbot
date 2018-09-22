@@ -8,10 +8,16 @@ using System.Threading.Tasks;
 
 namespace FMBot.Data.Entities
 {
-    public class UserSetting
+    public class Settings
     {
-        [Key, ForeignKey("User")]
+        [Key]
+        public int SettingID { get; set; }
+
+        [ForeignKey("User")]
         public int UserID { get; set; }
+
+        [ForeignKey("Guild")]
+        public int GuildID { get; set; }
 
         public string UserNameLastFM { get; set; }
 
@@ -21,6 +27,8 @@ namespace FMBot.Data.Entities
 
         public bool TitlesEnabled { get; set; }
 
-        public User User { get; set; }
+        public virtual User User { get; set; }
+
+        public virtual Guild Guild { get; set; }
     }
 }

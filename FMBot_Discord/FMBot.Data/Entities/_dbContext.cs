@@ -35,6 +35,15 @@ namespace FMBot.Data.Entities
                     cs.MapRightKey("UserID");
                     cs.ToTable("GuildUsers");
                 });
+
+            modelBuilder.Entity<Settings>()
+                .HasOptional(s => s.User)
+                .WithRequired(ad => ad.Settings);
+
+
+            modelBuilder.Entity<Settings>()
+                .HasOptional(s => s.Guild)
+                .WithRequired(ad => ad.Settings);
         }
 
 
@@ -43,6 +52,6 @@ namespace FMBot.Data.Entities
 
         public DbSet<User> Users { get; set; }
 
-        public DbSet<UserSetting> UserSettings { get; set; }
+        public DbSet<Settings> Settings { get; set; }
     }
 }

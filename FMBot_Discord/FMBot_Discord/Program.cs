@@ -11,11 +11,11 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using System.Globalization;
-using static FMBot_Discord.FMBotModules;
-using static FMBot_Discord.FMBotUtil;
+using static FMBot.Bot.FMBotModules;
+using static FMBot.Bot.FMBotUtil;
 using IF.Lastfm.Core.Api;
 
-namespace FMBot_Discord
+namespace FMBot.Bot
 {
     class Program
     {

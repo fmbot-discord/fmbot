@@ -20,7 +20,7 @@ using System.Security.Permissions;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FMBot_Discord
+namespace FMBot.Bot
 {
     public class FMBotUtil
     {
