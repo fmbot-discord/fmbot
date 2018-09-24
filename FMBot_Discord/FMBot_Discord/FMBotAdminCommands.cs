@@ -385,27 +385,6 @@ namespace FMBot.Bot
             }
         }
 
-        [Command("fmdeletechartcache"), Summary("Deletes all chart images. - FMBot Owners only")]
-        [Alias("fmdeletecharts")]
-        public async Task fmdeletechartsAsync()
-        {
-            var DiscordUser = Context.Message.Author;
-            if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 3))
-            {
-                try
-                {
-                    DBase.DeleteAllCharts();
-                    await ReplyAsync("Deleted all chart images.");
-                }
-                catch (Exception e)
-                {
-                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                    ExceptionReporter.ReportException(client, e);
-                    await ReplyAsync("Unable to delete all chart images due to an internal error.");
-                }
-            }
-        }
-
         [Command("fmremovereadonly"), Summary("Removes read only on all directories. - FMBot Owners only")]
         [Alias("fmreadonlyfix")]
         public async Task fmremovereadonlyAsync()

@@ -718,6 +718,9 @@ namespace FMBot.Bot
 
                     await loadingmsg.DeleteAsync();
                     await Context.Channel.SendMessageAsync("", false, builder.Build());
+
+                    File.SetAttributes(GlobalVars.CacheFolder + DiscordUser.Id + "-chart.png", FileAttributes.Normal);
+                    File.Delete(GlobalVars.CacheFolder + DiscordUser.Id + "-chart.png");
                 }
             }
             catch (Exception e)
