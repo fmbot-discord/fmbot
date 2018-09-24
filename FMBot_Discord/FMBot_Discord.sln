@@ -10,6 +10,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FMBot.Bot", "FMBot_Discord\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FMBot.Data", "FMBot.Data\FMBot.Data.csproj", "{769E7FD4-97EB-447C-92FB-11ED991EDAEF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FMBot.DbMigration", "FMBot.DbMigration\FMBot.DbMigration.csproj", "{49E3B52B-8020-4714-8FE4-8C8BE223525F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{769E7FD4-97EB-447C-92FB-11ED991EDAEF} = {769E7FD4-97EB-447C-92FB-11ED991EDAEF}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,6 +29,10 @@ Global
 		{769E7FD4-97EB-447C-92FB-11ED991EDAEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{769E7FD4-97EB-447C-92FB-11ED991EDAEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{769E7FD4-97EB-447C-92FB-11ED991EDAEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{49E3B52B-8020-4714-8FE4-8C8BE223525F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{49E3B52B-8020-4714-8FE4-8C8BE223525F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{49E3B52B-8020-4714-8FE4-8C8BE223525F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{49E3B52B-8020-4714-8FE4-8C8BE223525F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
