@@ -7,15 +7,20 @@ namespace FMBot.DbMigration
 {
     class Program
     {
-        // Change this to whatever your folder is
-        public static string Folder = "C:/Users/BitL/Desktop/db/users";
         public static FMBotDbContext db = new FMBotDbContext();
 
         static void Main(string[] args)
         {
-            Console.WriteLine("hi");
+            if (args.Length == 0)
+            {
+                Console.WriteLine("No arguments defined. Please input the folder path you wish to migrate.");
+                Console.ReadKey();
+                return;
+            }
 
-            DirectoryInfo d = new DirectoryInfo(Folder);//Assuming Test is your Folder
+            Console.WriteLine("Migrating...");
+
+            DirectoryInfo d = new DirectoryInfo(args[0]);//Assuming Test is your Folder
             FileInfo[] Files = d.GetFiles("*.txt"); //Getting Text files
 
             var users = db.Users.ToList();
@@ -37,19 +42,14 @@ namespace FMBot.DbMigration
 
                         db.Users.Add(User);
 
-                        Console.WriteLine("added user " + User.UserNameLastFM);
+                        Console.WriteLine("Added user " + User.UserNameLastFM);
                     }
                     else
                     {
-                        Console.WriteLine("skipped user " + line1 + " (already exists)");
+                        Console.WriteLine("Skipped user " + line1 + " (already exists)");
                     }
                 }
                 catch { }
-
-
-
-                
-
             }
 
             db.SaveChanges();

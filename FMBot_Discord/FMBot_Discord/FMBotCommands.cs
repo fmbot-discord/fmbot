@@ -407,7 +407,6 @@ namespace FMBot.Bot
 
                 List<Bitmap> images = new List<Bitmap>();
 
-
                 LastFMService.FMBotChart chart = new LastFMService.FMBotChart
                 {
                     time = time,
@@ -427,7 +426,6 @@ namespace FMBot.Bot
 
                 EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
                 eab.IconUrl = Context.User.GetAvatarUrl();
-
 
                 EmbedBuilder builder = new EmbedBuilder();
                 builder.WithAuthor(eab);
@@ -480,7 +478,7 @@ namespace FMBot.Bot
             }
         }
 
-        [Command("fmartistchart"), Summary("Generates an artist chart based on a user's parameters.")]
+        [Command("fmartistchart"), Summary("Generates a artist chart based on a user's parameters.")]
         public async Task fmartistchartAsync(string time = "weekly", string chartsize = "3x3", string titlesetting = "titles", IUser user = null)
         {
             JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
@@ -491,145 +489,131 @@ namespace FMBot.Bot
                 return;
             }
 
-            ISelfUser SelfUser = Context.Client.CurrentUser;
+            Data.Entities.User userSettings = await userService.GetUserSettingsAsync(Context.User);
+
+            if (userSettings == null || userSettings.UserNameLastFM == null)
+            {
+                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset <username> <embedfull/embedmini/textfull/textmini>` command.");
+                return;
+            }
 
             try
             {
-                IUser DiscordUser = GlobalVars.CheckIfDM(user, Context);
-                string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
-                if (LastFMName.Equals("NULL"))
+                string chartalbums = "";
+                string chartrows = "";
+
+                if (chartsize.Equals("3x3"))
                 {
-                    await ReplyAsync("Unable to generate a FMChart due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
+                    chartalbums = "9";
+                    chartrows = "3";
+                }
+                else if (chartsize.Equals("4x4"))
+                {
+                    chartalbums = "16";
+                    chartrows = "4";
+                }
+                else if (chartsize.Equals("5x5"))
+                {
+                    chartalbums = "25";
+                    chartrows = "5";
+                }
+                else if (chartsize.Equals("6x6"))
+                {
+                    chartalbums = "36";
+                    chartrows = "6";
+                }
+                else if (chartsize.Equals("7x7"))
+                {
+                    chartalbums = "49";
+                    chartrows = "7";
+                }
+                else if (chartsize.Equals("8x8"))
+                {
+                    chartalbums = "64";
+                    chartrows = "8";
+                }
+                else if (chartsize.Equals("9x9"))
+                {
+                    chartalbums = "81";
+                    chartrows = "9";
+                }
+                else if (chartsize.Equals("10x10"))
+                {
+                    chartalbums = "100";
+                    chartrows = "10";
                 }
                 else
                 {
-                    LastfmClient client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
-
-                    string chartalbums = "";
-                    string chartrows = "";
-
-                    if (chartsize.Equals("3x3"))
-                    {
-                        chartalbums = "9";
-                        chartrows = "3";
-                    }
-                    else if (chartsize.Equals("4x4"))
-                    {
-                        chartalbums = "16";
-                        chartrows = "4";
-                    }
-                    else if (chartsize.Equals("5x5"))
-                    {
-                        chartalbums = "25";
-                        chartrows = "5";
-                    }
-                    else if (chartsize.Equals("6x6"))
-                    {
-                        chartalbums = "36";
-                        chartrows = "6";
-                    }
-                    else if (chartsize.Equals("7x7"))
-                    {
-                        chartalbums = "49";
-                        chartrows = "7";
-                    }
-                    else if (chartsize.Equals("8x8"))
-                    {
-                        chartalbums = "64";
-                        chartrows = "8";
-                    }
-                    else if (chartsize.Equals("9x9"))
-                    {
-                        chartalbums = "81";
-                        chartrows = "9";
-                    }
-                    else if (chartsize.Equals("10x10"))
-                    {
-                        chartalbums = "100";
-                        chartrows = "10";
-                    }
-                    else
-                    {
-                        await ReplyAsync("Your artist chart's size isn't valid. Sizes supported: 3x3-10x10");
-                        return;
-                    }
-
-                    int max = int.Parse(chartalbums);
-                    int rows = int.Parse(chartrows);
-
-                    List<Bitmap> images = new List<Bitmap>();
-
-                    bool TitleBool = true;
-
-                    if (titlesetting == "titles")
-                    {
-                        TitleBool = true;
-                    }
-                    else if (titlesetting == "notitles")
-                    {
-                        TitleBool = false;
-                    }
-
-                    LastFMService.FMBotChart chart = new LastFMService.FMBotChart
-                    {
-                        time = time,
-                        LastFMName = LastFMName,
-                        max = max,
-                        rows = rows,
-                        images = images,
-                        DiscordUser = DiscordUser,
-                        disclient = Context.Client as DiscordSocketClient,
-                        mode = 1,
-                        titles = TitleBool
-                    };
-
-                    await lastFMService.GenerateChartAsync(chart);
-
-                    await Context.Channel.SendFileAsync(GlobalVars.CacheFolder + DiscordUser.Id + "-chart.png");
-
-                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                    eab.IconUrl = DiscordUser.GetAvatarUrl();
-                    eab.Name = GlobalVars.GetNameString(DiscordUser, Context);
-
-                    EmbedBuilder builder = new EmbedBuilder();
-                    builder.WithAuthor(eab);
-                    string URI = "https://www.last.fm/user/" + LastFMName;
-                    builder.WithUrl(URI);
-                    builder.Title = await userService.GetUserTitleAsync(Context);
-
-                    if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
-                    {
-                        builder.WithDescription("Last.FM " + chartsize + " Weekly Artist Chart for " + LastFMName);
-                    }
-                    else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
-                    {
-                        builder.WithDescription("Last.FM " + chartsize + " Monthly Artist Chart for " + LastFMName);
-                    }
-                    else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
-                    {
-                        builder.WithDescription("Last.FM " + chartsize + " Yearly Artist Chart for " + LastFMName);
-                    }
-                    else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
-                    {
-                        builder.WithDescription("Last.FM " + chartsize + " Overall Artist Chart for " + LastFMName);
-                    }
-                    else
-                    {
-                        builder.WithDescription("Last.FM " + chartsize + " Artist Chart for " + LastFMName);
-                    }
-
-                    LastResponse<LastUser> userinfo = await client.User.GetInfoAsync(LastFMName);
-                    EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                    int playcount = userinfo.Content.Playcount;
-                    efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString("0");
-
-                    builder.WithFooter(efb);
-
-                    await Context.Channel.SendMessageAsync("", false, builder.Build());
-
-                    File.SetAttributes(GlobalVars.CacheFolder + DiscordUser.Id + "-chart.png", FileAttributes.Normal);
-                    File.Delete(GlobalVars.CacheFolder + DiscordUser.Id + "-chart.png");
+                    await ReplyAsync("Your chart's size isn't valid. Sizes supported: 3x3-10x10");
+                    return;
                 }
+
+                int max = int.Parse(chartalbums);
+                int rows = int.Parse(chartrows);
+
+                List<Bitmap> images = new List<Bitmap>();
+
+                LastFMService.FMBotChart chart = new LastFMService.FMBotChart
+                {
+                    time = time,
+                    LastFMName = userSettings.UserNameLastFM,
+                    max = max,
+                    rows = rows,
+                    images = images,
+                    DiscordUser = Context.User,
+                    disclient = Context.Client as DiscordSocketClient,
+                    mode = 1,
+                    titles = userSettings.TitlesEnabled.HasValue ? userSettings.TitlesEnabled.Value : true,
+                };
+
+                await lastFMService.GenerateChartAsync(chart);
+
+                await Context.Channel.SendFileAsync(GlobalVars.CacheFolder + Context.User.Id + "-chart.png");
+
+                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                eab.IconUrl = Context.User.GetAvatarUrl();
+
+                EmbedBuilder builder = new EmbedBuilder();
+                builder.WithAuthor(eab);
+                string URI = "https://www.last.fm/user/" + userSettings.UserNameLastFM;
+                builder.WithUrl(URI);
+                builder.Title = await userService.GetUserTitleAsync(Context);
+
+                if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
+                {
+                    builder.WithDescription("Last.FM " + chartsize + " Weekly Chart for " + userSettings.UserNameLastFM);
+                }
+                else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
+                {
+                    builder.WithDescription("Last.FM " + chartsize + " Monthly Chart for " + userSettings.UserNameLastFM);
+                }
+                else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
+                {
+                    builder.WithDescription("Last.FM " + chartsize + " Yearly Chart for " + userSettings.UserNameLastFM);
+                }
+                else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
+                {
+                    builder.WithDescription("Last.FM " + chartsize + " Overall Chart for " + userSettings.UserNameLastFM);
+                }
+                else
+                {
+                    builder.WithDescription("Last.FM " + chartsize + " Chart for " + userSettings.UserNameLastFM);
+                }
+
+                LastResponse<LastUser> userinfo = await lastFMService.GetUserInfoAsync(userSettings.UserNameLastFM);
+
+                EmbedFooterBuilder efb = new EmbedFooterBuilder();
+
+                int playcount = userinfo.Content.Playcount;
+
+                efb.Text = userSettings.UserNameLastFM + "'s Total Tracks: " + playcount.ToString("0");
+
+                builder.WithFooter(efb);
+
+                await Context.Channel.SendMessageAsync("", false, builder.Build());
+
+                File.SetAttributes(GlobalVars.CacheFolder + Context.User.Id + "-chart.png", FileAttributes.Normal);
+                File.Delete(GlobalVars.CacheFolder + Context.User.Id + "-chart.png");
             }
             catch (Exception e)
             {

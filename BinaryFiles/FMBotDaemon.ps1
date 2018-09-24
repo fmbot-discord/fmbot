@@ -1,7 +1,7 @@
 $loop = 1;
 while ($loop)
 {
-    $process = Start-Process "FMBot_Discord.exe" -Wait -NoNewWindow -PassThru
+    $process = Start-Process "FMBot.Bot.exe" -Wait -NoNewWindow -PassThru
     switch ($process.ExitCode)
     {
         0 {"Exiting."; $loop = 0;}
