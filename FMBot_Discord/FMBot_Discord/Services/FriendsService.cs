@@ -11,8 +11,6 @@ namespace FMBot.Services
         private FMBotDbContext db = new FMBotDbContext();
 
 
-        
-
         public async Task AddLastFMFriendAsync(string discordUserID, string lastfmusername)
         {
             User user = db.Users.FirstOrDefault(f => f.DiscordUserID == discordUserID);

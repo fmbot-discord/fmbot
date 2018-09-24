@@ -1,7 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Objects;
 using Microsoft.Win32.SafeHandles;
@@ -61,9 +60,9 @@ namespace FMBot.Bot
 
             public async static Task<IGuildUser> ConvertIDToGuildUser(IGuild guild, ulong id)
             {
-                var users = await guild.GetUsersAsync();
+                IReadOnlyCollection<IGuildUser> users = await guild.GetUsersAsync();
 
-                foreach (var user in users)
+                foreach (IGuildUser user in users)
                 {
                     if (user.Id == id)
                     {
@@ -415,7 +414,7 @@ namespace FMBot.Bot
                     return false;
                 }
 
-                var list = new List<string>(blacklist);
+                List<string> list = new List<string>(blacklist);
                 list.Add(id);
                 blacklist = list.ToArray();
 
@@ -436,7 +435,7 @@ namespace FMBot.Bot
 
                 if (blacklist.Contains(id))
                 {
-                    var list = new List<string>(blacklist);
+                    List<string> list = new List<string>(blacklist);
                     list.Remove(id);
                     blacklist = list.ToArray();
 
@@ -491,9 +490,9 @@ namespace FMBot.Bot
 
                 int listcount = friendlist.Count();
 
-                var list = new List<string>(friends);
+                List<string> list = new List<string>(friends);
 
-                foreach (var friend in friendlist)
+                foreach (string friend in friendlist)
                 {
                     if (!friends.Contains(friend))
                     {
@@ -507,7 +506,7 @@ namespace FMBot.Bot
                 }
 
                 friends = list.ToArray();
-                
+
                 File.WriteAllLines(GlobalVars.CacheFolder + id + "-friends.txt", friends);
                 File.SetAttributes(GlobalVars.CacheFolder + id + "-friends.txt", FileAttributes.Normal);
 
@@ -522,14 +521,14 @@ namespace FMBot.Bot
                 }
 
                 string[] friends = File.ReadAllLines(GlobalVars.CacheFolder + id + "-friends.txt");
-                var friendsLower = friends.Select(s => s.ToLowerInvariant()).ToArray();
+                string[] friendsLower = friends.Select(s => s.ToLowerInvariant()).ToArray();
 
                 int listcount = friendlist.Count();
 
-                var list = new List<string>(friends);
+                List<string> list = new List<string>(friends);
 
 
-                foreach (var friend in friendlist)
+                foreach (string friend in friendlist)
                 {
                     if (friendsLower.Contains(friend.ToLower()))
                     {
@@ -541,7 +540,7 @@ namespace FMBot.Bot
                         continue;
                     }
                 }
-                
+
                 friends = list.ToArray();
 
                 File.WriteAllLines(GlobalVars.CacheFolder + id + "-friends.txt", friends);
@@ -667,7 +666,7 @@ namespace FMBot.Bot
                 [JsonProperty("exceptionchannel")]
                 public string ExceptionChannel { get; private set; }
 
-                [JsonProperty("cooldown")]	
+                [JsonProperty("cooldown")]
                 public string Cooldown { get; private set; }
 
                 [JsonProperty("nummessages")]
@@ -681,14 +680,16 @@ namespace FMBot.Bot
             {
                 // first, let's load our configuration file
                 await GlobalVars.Log(new LogMessage(LogSeverity.Info, "JsonCfg", "Loading Configuration"));
-                var json = "";
-                using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                string json = "";
+                using (FileStream fs = File.OpenRead(GlobalVars.ConfigFileName))
+                using (StreamReader sr = new StreamReader(fs, new UTF8Encoding(false)))
+                {
                     json = await sr.ReadToEndAsync();
+                }
 
                 // next, let's load the values from that file
                 // to our client's configuration
-                var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+                ConfigJson cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
                 return cfgjson;
             }
 
@@ -696,14 +697,16 @@ namespace FMBot.Bot
             {
                 // first, let's load our configuration file
                 GlobalVars.Log(new LogMessage(LogSeverity.Info, "JsonCfg", "Loading Configuration"));
-                var json = "";
-                using (var fs = File.OpenRead(GlobalVars.ConfigFileName))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                string json = "";
+                using (FileStream fs = File.OpenRead(GlobalVars.ConfigFileName))
+                using (StreamReader sr = new StreamReader(fs, new UTF8Encoding(false)))
+                {
                     json = sr.ReadToEnd();
+                }
 
                 // next, let's load the values from that file
                 // to our client's configuration
-                var cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
+                ConfigJson cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
                 return cfgjson;
             }
         }
@@ -716,7 +719,7 @@ namespace FMBot.Bot
         {
             public static async void ReportException(DiscordSocketClient client, Exception e)
             {
-                var cfgjson = await JsonCfg.GetJSONDataAsync();
+                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
 
                 try
                 {
@@ -726,7 +729,7 @@ namespace FMBot.Bot
                     SocketGuild guild = client.GetGuild(BroadcastServerID);
                     SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
 
-                    var builder = new EmbedBuilder();
+                    EmbedBuilder builder = new EmbedBuilder();
                     builder.AddInlineField("Exception:", e.Message + "\nSource:\n" + e.Source + "\nStack Trace:\n" + e.StackTrace);
 
                     await channel.SendMessageAsync("", false, builder.Build());
@@ -754,7 +757,7 @@ namespace FMBot.Bot
 
             public static async void ReportStringAsException(DiscordSocketClient client, string e)
             {
-                var cfgjson = await JsonCfg.GetJSONDataAsync();
+                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
 
                 try
                 {
@@ -764,7 +767,7 @@ namespace FMBot.Bot
                     SocketGuild guild = client.GetGuild(BroadcastServerID);
                     SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
 
-                    var builder = new EmbedBuilder();
+                    EmbedBuilder builder = new EmbedBuilder();
                     builder.AddInlineField("Exception:", e);
 
                     await channel.SendMessageAsync("", false, builder.Build());
@@ -810,8 +813,8 @@ namespace FMBot.Bot
 
             public static TimeSpan SystemUpTime()
             {
-                var mo = new ManagementObject(@"\\.\root\cimv2:Win32_OperatingSystem=@");
-                var lastBootUp = ManagementDateTimeConverter.ToDateTime(mo["LastBootUpTime"].ToString());
+                ManagementObject mo = new ManagementObject(@"\\.\root\cimv2:Win32_OperatingSystem=@");
+                DateTime lastBootUp = ManagementDateTimeConverter.ToDateTime(mo["LastBootUpTime"].ToString());
                 return DateTime.Now.ToUniversalTime() - lastBootUp.ToUniversalTime();
             }
 
@@ -822,7 +825,7 @@ namespace FMBot.Bot
                     Console.WriteLine(arg);
                 }
 
-                var logger = NLog.LogManager.GetCurrentClassLogger();
+                NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
                 logger.Info(arg);
 
@@ -831,10 +834,13 @@ namespace FMBot.Bot
 
             public static string GetLine(string filePath, int line)
             {
-                using (var sr = new StreamReader(filePath))
+                using (StreamReader sr = new StreamReader(filePath))
                 {
                     for (int i = 1; i < line; i++)
+                    {
                         sr.ReadLine();
+                    }
+
                     return sr.ReadLine();
                 }
             }
@@ -905,7 +911,9 @@ namespace FMBot.Bot
                 catch (Exception ex)
                 {
                     if (finalImage != null)
+                    {
                         finalImage.Dispose();
+                    }
 
                     throw ex;
                 }
@@ -921,7 +929,7 @@ namespace FMBot.Bot
 
             public static List<List<Bitmap>> splitBitmapList(List<Bitmap> locations, int nSize)
             {
-                var list = new List<List<Bitmap>>();
+                List<List<Bitmap>> list = new List<List<Bitmap>>();
 
                 for (int i = 0; i < locations.Count; i += nSize)
                 {
@@ -1000,7 +1008,9 @@ namespace FMBot.Bot
                 IDMChannel dm = await Context.User.GetOrCreateDMChannelAsync();
 
                 if (dm == null)
+                {
                     IsUserInDM = false;
+                }
 
                 if (Context.Channel.Name == dm.Name)
                 {
@@ -1169,7 +1179,7 @@ namespace FMBot.Bot
 
             public static bool IsOwner(IUser user)
             {
-                var cfgjson = JsonCfg.GetJSONData();
+                JsonCfg.ConfigJson cfgjson = JsonCfg.GetJSONData();
 
                 if (IsSoleOwner(user) || DBase.CheckOwner(user.Id.ToString()))
                 {
@@ -1183,7 +1193,7 @@ namespace FMBot.Bot
 
             public static bool IsSoleOwner(IUser user)
             {
-                var cfgjson = JsonCfg.GetJSONData();
+                JsonCfg.ConfigJson cfgjson = JsonCfg.GetJSONData();
 
                 if (user.Id.Equals(Convert.ToUInt64(cfgjson.BotOwner)))
                 {
@@ -1283,175 +1293,6 @@ namespace FMBot.Bot
 
         #endregion
 
-        #region FMBot Chart Classification
-
-        public class FMBotChart
-        {
-            public string time;
-            public LastfmClient client;
-            public string LastFMName;
-            public int max;
-            public int rows;
-            public List<Bitmap> images;
-            public IUser DiscordUser;
-            public DiscordSocketClient disclient;
-            public int mode;
-            public bool titles;
-
-            public async Task ChartGenerate()
-            {
-                try
-                {
-                    LastStatsTimeSpan timespan = LastStatsTimeSpan.Week;
-
-                    if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
-                    {
-                        timespan = LastStatsTimeSpan.Week;
-                    }
-                    else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
-                    {
-                        timespan = LastStatsTimeSpan.Month;
-                    }
-                    else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
-                    {
-                        timespan = LastStatsTimeSpan.Year;
-                    }
-                    else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
-                    {
-                        timespan = LastStatsTimeSpan.Overall;
-                    }
-
-                    string nulltext = "[undefined]";
-
-                    if (mode == 0)
-                    {
-                        var tracks = await client.User.GetTopAlbums(LastFMName, timespan, 1, max);
-
-                        for (int al = 0; al < max; ++al)
-                        {
-                            LastAlbum track = tracks.Content.ElementAt(al);
-
-                            string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
-                            string AlbumName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.Name;
-
-                            try
-                            {
-                                var AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
-                                var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
-                                var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
-                                string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
-
-                                WebRequest request = WebRequest.Create(ThumbnailImage);
-                                WebResponse response = request.GetResponse();
-                                Stream responseStream = response.GetResponseStream();
-                                Bitmap cover = new Bitmap(responseStream);
-                                if (titles)
-                                {
-                                    Graphics text = Graphics.FromImage(cover);
-                                    text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
-                                    text.DrawColorString(cover, AlbumName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 12.0f));
-                                }
-
-                                images.Add(cover);
-                            }
-                            catch (Exception e)
-                            {
-                                ExceptionReporter.ReportException(disclient, e);
-
-                                Bitmap cover = new Bitmap(GlobalVars.BasePath + "unknown.png");
-                                if (titles)
-                                {
-                                    Graphics text = Graphics.FromImage(cover);
-                                    text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
-                                    text.DrawColorString(cover, AlbumName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 12.0f));
-                                }
-
-                                images.Add(cover);
-                            }
-                        }
-                    }
-                    else if (mode == 1)
-                    {
-                        var artists = await client.User.GetTopArtists(LastFMName, timespan, 1, max);
-                        for (int al = 0; al < max; ++al)
-                        {
-                            LastArtist artist = artists.Content.ElementAt(al);
-
-                            string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? nulltext : artist.Name;
-
-                            try
-                            {
-                                var ArtistInfo = await client.Artist.GetInfoAsync(ArtistName);
-                                var ArtistImages = (ArtistInfo.Content.MainImage != null) ? ArtistInfo.Content.MainImage : null;
-                                var ArtistThumbnail = (ArtistImages != null) ? ArtistImages.Large.AbsoluteUri : null;
-                                string ThumbnailImage = (ArtistThumbnail != null) ? ArtistThumbnail.ToString() : null;
-
-                                WebRequest request = WebRequest.Create(ThumbnailImage);
-                                WebResponse response = request.GetResponse();
-                                Stream responseStream = response.GetResponseStream();
-                                Bitmap cover = new Bitmap(responseStream);
-                                if (titles)
-                                {
-                                    Graphics text = Graphics.FromImage(cover);
-                                    text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
-                                }
-
-                                images.Add(cover);
-                            }
-                            catch (Exception e)
-                            {
-                                ExceptionReporter.ReportException(disclient, e);
-
-                                Bitmap cover = new Bitmap(GlobalVars.BasePath + "unknown.png");
-                                if (titles)
-                                {
-                                    Graphics text = Graphics.FromImage(cover);
-                                    text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
-                                }
-
-                                images.Add(cover);
-                            }
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    ExceptionReporter.ReportException(disclient, e);
-                }
-                finally
-                {
-                    List<List<Bitmap>> ImageLists = GlobalVars.splitBitmapList(images, rows);
-
-                    List<Bitmap> BitmapList = new List<Bitmap>();
-
-                    foreach (List<Bitmap> list in ImageLists.ToArray())
-                    {
-                        //combine them into one image
-                        Bitmap stitchedRow = GlobalVars.Combine(list);
-                        BitmapList.Add(stitchedRow);
-                    }
-
-                    Bitmap stitchedImage = GlobalVars.Combine(BitmapList, true);
-
-                    foreach(Bitmap image in BitmapList.ToArray())
-                    {
-                        image.Dispose();
-                    }
-
-                    using (MemoryStream memory = new MemoryStream())
-                    {
-                        using (FileStream fs = new FileStream(GlobalVars.CacheFolder + DiscordUser.Id + "-chart.png", FileMode.Create, FileAccess.ReadWrite))
-                        {
-                            stitchedImage.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
-                            byte[] bytes = memory.ToArray();
-                            fs.Write(bytes, 0, bytes.Length);
-                        }
-                    }
-                }
-            }
-        }
-
-        #endregion
 
         #region User Classification
 
@@ -1469,7 +1310,7 @@ namespace FMBot.Bot
             {
                 try
                 {
-                    var cfgjson = JsonCfg.GetJSONData();
+                    JsonCfg.ConfigJson cfgjson = JsonCfg.GetJSONData();
 
                     User TempUser = Users.FirstOrDefault(User => User.ID.Equals(DiscordID));
                     if (TempUser != null)// check to see if you have handled a request in the past from this user.
@@ -1481,7 +1322,7 @@ namespace FMBot.Bot
                             Users.Find(User => User.ID.Equals(DiscordID)).LastRequestAfterMessageSent = DateTime.Now;
                             TempUser.isWatchingMessages = true;
                         }
-                        
+
                         if ((DateTime.Now - TempUser.LastRequestAfterMessageSent).TotalSeconds >= Convert.ToDouble(cfgjson.InBetweenTime))
                         {
                             TempUser.messagesSent = 1;
@@ -1511,7 +1352,7 @@ namespace FMBot.Bot
                             }
                             else // if less than 30 seconds has passed return false.
                             {
-                                var user = client.GetUser(DiscordID);
+                                SocketUser user = client.GetUser(DiscordID);
                                 int curTimeEstimate = Convert.ToInt32(cfgjson.Cooldown) - (int)curTime;
                                 if (curTimeEstimate > 1)
                                 {
@@ -1541,7 +1382,7 @@ namespace FMBot.Bot
                         return true;
                     }
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     ExceptionReporter.ReportException(client, e);
                     return true;
@@ -1563,10 +1404,7 @@ namespace FMBot.Bot
             /// </summary>
             public readonly FileAttributes Attributes;
 
-            public DateTime CreationTime
-            {
-                get { return this.CreationTimeUtc.ToLocalTime(); }
-            }
+            public DateTime CreationTime => this.CreationTimeUtc.ToLocalTime();
 
             /// <summary>
             /// File creation time in UTC
@@ -1576,10 +1414,7 @@ namespace FMBot.Bot
             /// <summary>
             /// Gets the last access time in local time.
             /// </summary>
-            public DateTime LastAccesTime
-            {
-                get { return this.LastAccessTimeUtc.ToLocalTime(); }
-            }
+            public DateTime LastAccesTime => this.LastAccessTimeUtc.ToLocalTime();
 
             /// <summary>
             /// File last access time in UTC
@@ -1589,10 +1424,7 @@ namespace FMBot.Bot
             /// <summary>
             /// Gets the last access time in local time.
             /// </summary>
-            public DateTime LastWriteTime
-            {
-                get { return this.LastWriteTimeUtc.ToLocalTime(); }
-            }
+            public DateTime LastWriteTime => this.LastWriteTimeUtc.ToLocalTime();
 
             /// <summary>
             /// File last write time in UTC
@@ -1931,8 +1763,8 @@ namespace FMBot.Bot
                 }
 
                 private string m_path;
-                private string m_filter;
-                private SearchOption m_searchOption;
+                private readonly string m_filter;
+                private readonly SearchOption m_searchOption;
                 private Stack<SearchContext> m_contextStack;
                 private SearchContext m_currentContext;
 
@@ -1970,10 +1802,7 @@ namespace FMBot.Bot
                 /// <returns>
                 /// The element in the collection at the current position of the enumerator.
                 /// </returns>
-                public FileData Current
-                {
-                    get { return new FileData(m_path, m_win_find_data); }
-                }
+                public FileData Current => new FileData(m_path, m_win_find_data);
 
                 #endregion
 
@@ -2002,10 +1831,7 @@ namespace FMBot.Bot
                 /// <returns>
                 /// The element in the collection at the current position of the enumerator.
                 /// </returns>
-                object System.Collections.IEnumerator.Current
-                {
-                    get { return new FileData(m_path, m_win_find_data); }
-                }
+                object System.Collections.IEnumerator.Current => new FileData(m_path, m_win_find_data);
 
                 /// <summary>
                 /// Advances the enumerator to the next element of the collection.
@@ -2043,7 +1869,7 @@ namespace FMBot.Bot
                     //If the call to FindNextFile or FindFirstFile succeeded...
                     if (retval)
                     {
-                        if (((FileAttributes)m_win_find_data.dwFileAttributes & FileAttributes.Directory) == FileAttributes.Directory)
+                        if ((m_win_find_data.dwFileAttributes & FileAttributes.Directory) == FileAttributes.Directory)
                         {
                             //Ignore folders for now.   We call MoveNext recursively here to 
                             // move to the next item that FindNextFile will return.
@@ -2126,14 +1952,20 @@ public static class TimeSpanExtentions
     public static string ToReadableString(this TimeSpan span)
     {
         string formatted = string.Format("{0}{1}{2}{3}",
-            span.Duration().Days > 0 ? string.Format("{0:0} day{1}, ", span.Days, span.Days == 1 ? String.Empty : "s") : string.Empty,
-            span.Duration().Hours > 0 ? string.Format("{0:0} hour{1}, ", span.Hours, span.Hours == 1 ? String.Empty : "s") : string.Empty,
-            span.Duration().Minutes > 0 ? string.Format("{0:0} minute{1}, ", span.Minutes, span.Minutes == 1 ? String.Empty : "s") : string.Empty,
-            span.Duration().Seconds > 0 ? string.Format("{0:0} second{1}", span.Seconds, span.Seconds == 1 ? String.Empty : "s") : string.Empty);
+            span.Duration().Days > 0 ? string.Format("{0:0} day{1}, ", span.Days, span.Days == 1 ? string.Empty : "s") : string.Empty,
+            span.Duration().Hours > 0 ? string.Format("{0:0} hour{1}, ", span.Hours, span.Hours == 1 ? string.Empty : "s") : string.Empty,
+            span.Duration().Minutes > 0 ? string.Format("{0:0} minute{1}, ", span.Minutes, span.Minutes == 1 ? string.Empty : "s") : string.Empty,
+            span.Duration().Seconds > 0 ? string.Format("{0:0} second{1}", span.Seconds, span.Seconds == 1 ? string.Empty : "s") : string.Empty);
 
-        if (formatted.EndsWith(", ")) formatted = formatted.Substring(0, formatted.Length - 2);
+        if (formatted.EndsWith(", "))
+        {
+            formatted = formatted.Substring(0, formatted.Length - 2);
+        }
 
-        if (string.IsNullOrEmpty(formatted)) formatted = "0 seconds";
+        if (string.IsNullOrEmpty(formatted))
+        {
+            formatted = "0 seconds";
+        }
 
         return formatted;
     }
@@ -2154,29 +1986,29 @@ public static class StringExtentions
 
 public static class BitmapExtentions
 {
-    public static byte MostDifferent (byte original) 
+    public static byte MostDifferent(byte original)
     {
-        if(original < 0x80) 
+        if (original < 0x80)
         {
             return 0xff;
-        } 
-        else 
+        }
+        else
         {
             return 0x00;
         }
     }
-    
-    public static System.Drawing.Color MostDifferent (System.Drawing.Color original) 
+
+    public static System.Drawing.Color MostDifferent(System.Drawing.Color original)
     {
         byte r = MostDifferent(original.R);
         byte g = MostDifferent(original.G);
         byte b = MostDifferent(original.B);
-        return System.Drawing.Color.FromArgb(r,g,b);
+        return System.Drawing.Color.FromArgb(r, g, b);
     }
-    
-    public static unsafe System.Drawing.Color AverageColor (Bitmap bmp, Rectangle r) 
+
+    public static unsafe System.Drawing.Color AverageColor(Bitmap bmp, Rectangle r)
     {
-        BitmapData bmd = bmp.LockBits (r, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+        BitmapData bmd = bmp.LockBits(r, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
         int s = bmd.Stride;
         int cr = 0;
         int cg = 0;
@@ -2184,10 +2016,10 @@ public static class BitmapExtentions
         int* clr = (int*)(void*)bmd.Scan0;
         int tmp;
         int* row = clr;
-        for (int i = 0; i < r.Height; i++) 
+        for (int i = 0; i < r.Height; i++)
         {
             int* col = row;
-            for (int j = 0; j < r.Width; j++) 
+            for (int j = 0; j < r.Width; j++)
             {
                 tmp = *col;
                 cr += (tmp >> 0x10) & 0xff;
@@ -2195,24 +2027,24 @@ public static class BitmapExtentions
                 cb += tmp & 0xff;
                 col++;
             }
-            row += s>>0x02;
+            row += s >> 0x02;
         }
         int div = r.Width * r.Height;
         int d2 = div >> 0x01;
         cr = (cr + d2) / div;
         cg = (cg + d2) / div;
         cb = (cb + d2) / div;
-        bmp.UnlockBits (bmd);
-        return System.Drawing.Color.FromArgb (cr, cg, cb);
+        bmp.UnlockBits(bmd);
+        return System.Drawing.Color.FromArgb(cr, cg, cb);
     }
-    
-    public static void DrawColorString (this Graphics g, Bitmap bmp, string text, Font font, PointF point) 
+
+    public static void DrawColorString(this Graphics g, Bitmap bmp, string text, Font font, PointF point)
     {
-        SizeF sf = g.MeasureString (text, font);
-        Rectangle r = new Rectangle (Point.Truncate (point), Size.Ceiling (sf));
-        r.Intersect (new Rectangle(0,0,bmp.Width,bmp.Height));
-        System.Drawing.Color brsh = MostDifferent (AverageColor (bmp, r));
-        g.DrawString (text, font, new SolidBrush (brsh), point);
+        SizeF sf = g.MeasureString(text, font);
+        Rectangle r = new Rectangle(Point.Truncate(point), Size.Ceiling(sf));
+        r.Intersect(new Rectangle(0, 0, bmp.Width, bmp.Height));
+        System.Drawing.Color brsh = MostDifferent(AverageColor(bmp, r));
+        g.DrawString(text, font, new SolidBrush(brsh), point);
     }
 }
 

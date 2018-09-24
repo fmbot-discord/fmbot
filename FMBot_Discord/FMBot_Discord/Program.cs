@@ -180,6 +180,8 @@ namespace FMBot.Bot
                 GlobalVars.ClearReadOnly(servers);
             }
 
+
+
             await HandleCommand(messageParam);
         }
 
@@ -269,6 +271,8 @@ namespace FMBot.Bot
             // rather an object stating if the command executed successfully)
             if (wordinlist == true)
             {
+                Task typing = context.Channel.TriggerTypingAsync();
+
                 var DiscordCaller = message.Author as SocketGuildUser;
 
                 if (DiscordCaller != null)
