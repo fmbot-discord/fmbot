@@ -583,7 +583,7 @@ namespace FMBot.Bot
                 await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
                 var fileStream = new FileStream(GlobalVars.BasePath + "avatar.png", FileMode.Open);
                 var image = new Discord.Image(fileStream);
-                await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
+                //await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
                 fileStream.Close();
             }
 

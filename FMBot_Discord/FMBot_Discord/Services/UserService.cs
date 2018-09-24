@@ -1,7 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
 using FMBot.Data.Entities;
-using System;
 using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,7 +12,7 @@ namespace FMBot.Services
         private FMBotDbContext db = new FMBotDbContext();
 
         // User settings
-        public async Task<Settings> GetUserSettingsAsync(IUser discordUser)
+        public async Task<User> GetUserSettingsAsync(IUser discordUser)
         {
             string discordUserID = discordUser.Id.ToString();
 
@@ -24,7 +23,7 @@ namespace FMBot.Services
                 return null;
             }
 
-            return user.Settings;
+            return user;
         }
 
 
@@ -109,29 +108,24 @@ namespace FMBot.Services
                 User newUser = new User
                 {
                     DiscordUserID = discordUserID,
-                    UserType = UserType.User
-                };
-
-                Settings newUserSetting = new Settings
-                {
-                    User = newUser,
+                    UserType = UserType.User,
                     UserNameLastFM = lastFMName,
                     TitlesEnabled = true,
                     ChartTimePeriod = ChartTimePeriod.Monthly,
                     ChartType = chartType,
+
                 };
 
                 db.Users.Add(newUser);
-                db.Settings.Add(newUserSetting);
 
                 db.SaveChanges();
             }
             else
             {
-                user.Settings.UserNameLastFM = lastFMName;
-                user.Settings.ChartType = chartType;
+                user.UserNameLastFM = lastFMName;
+                user.ChartType = chartType;
 
-                db.Entry(user.Settings).State = EntityState.Modified;
+                db.Entry(user).State = EntityState.Modified;
 
                 db.SaveChanges();
             }

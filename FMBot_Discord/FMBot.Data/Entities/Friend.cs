@@ -10,7 +10,11 @@ namespace FMBot.Data.Entities
 {
     public class Friend
     {
-        [Key, ForeignKey("User")]
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int FriendID { get; set; }
+
+        [ForeignKey("User")]
         public int UserID { get; set; }
 
         public string LastFMUserName { get; set; }

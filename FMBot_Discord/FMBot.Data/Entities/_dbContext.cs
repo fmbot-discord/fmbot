@@ -6,7 +6,7 @@ namespace FMBot.Data.Entities
     {
         #region Constructor
         public FMBotDbContext()
-            : base("FMBotDbConnection")
+            : base("FMBotDb")
         {
         }
         #endregion
@@ -34,15 +34,6 @@ namespace FMBot.Data.Entities
                     cs.MapRightKey("UserID");
                     cs.ToTable("GuildUsers");
                 });
-
-            modelBuilder.Entity<Settings>()
-                .HasOptional(s => s.User)
-                .WithRequired(ad => ad.Settings);
-
-
-            modelBuilder.Entity<Settings>()
-                .HasOptional(s => s.Guild)
-                .WithRequired(ad => ad.Settings);
         }
 
 
@@ -50,8 +41,6 @@ namespace FMBot.Data.Entities
         public DbSet<Guild> Guilds { get; set; }
 
         public DbSet<User> Users { get; set; }
-
-        public DbSet<Settings> Settings { get; set; }
 
         public DbSet<Friend> Friends { get; set; }
         #endregion

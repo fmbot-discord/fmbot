@@ -91,16 +91,15 @@
     <Compile Include="Entities\Friend.cs" />
     <Compile Include="Entities\Guild.cs" />
     <Compile Include="Entities\User.cs" />
-    <Compile Include="Entities\Settings.cs" />
     <Compile Include="Entities\UserType.cs" />
     <Compile Include="Entities\_dbContext.cs" />
-    <Compile Include="Migrations\201809221049508_initial.cs" />
-    <Compile Include="Migrations\201809221049508_initial.Designer.cs">
-      <DependentUpon>201809221049508_initial.cs</DependentUpon>
+    <Compile Include="Migrations\201809241548027_initial.cs" />
+    <Compile Include="Migrations\201809241548027_initial.Designer.cs">
+      <DependentUpon>201809241548027_initial.cs</DependentUpon>
     </Compile>
-    <Compile Include="Migrations\201809221344435_update.cs" />
-    <Compile Include="Migrations\201809221344435_update.Designer.cs">
-      <DependentUpon>201809221344435_update.cs</DependentUpon>
+    <Compile Include="Migrations\201809241604371_update.cs" />
+    <Compile Include="Migrations\201809241604371_update.Designer.cs">
+      <DependentUpon>201809241604371_update.cs</DependentUpon>
     </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -110,11 +109,11 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Migrations\201809221049508_initial.resx">
-      <DependentUpon>201809221049508_initial.cs</DependentUpon>
+    <EmbeddedResource Include="Migrations\201809241548027_initial.resx">
+      <DependentUpon>201809241548027_initial.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\201809221344435_update.resx">
-      <DependentUpon>201809221344435_update.cs</DependentUpon>
+    <EmbeddedResource Include="Migrations\201809241604371_update.resx">
+      <DependentUpon>201809241604371_update.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -32,6 +32,7 @@ namespace FMBot.Bot
 
         private UserService userService = new UserService();
         private GuildService guildService = new GuildService();
+        private FriendsService friendsService = new FriendsService();
 
         private LastFMService lastFMService = new LastFMService();
         private SpotifyService spotifyService = new SpotifyService();
@@ -51,7 +52,7 @@ namespace FMBot.Bot
         [Alias("qm", "wm", "em", "rm", "tm", "ym", "um", "im", "om", "pm", "dm", "gm", "sm", "am", "hm", "jm", "km", "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm")]
         public async Task fmAsync(IUser user = null)
         {
-            Settings userSettings = await userService.GetUserSettingsAsync(Context.User);
+            Data.Entities.User userSettings = await userService.GetUserSettingsAsync(Context.User);
 
             if (userSettings == null || userSettings.UserNameLastFM == null)
             {
@@ -204,7 +205,7 @@ namespace FMBot.Bot
         [Alias("fmyoutube")]
         public async Task fmytAsync(IUser user = null)
         {
-            Settings userSettings = await userService.GetUserSettingsAsync(Context.User);
+            Data.Entities.User userSettings = await userService.GetUserSettingsAsync(Context.User);
 
             if (userSettings == null || userSettings.UserNameLastFM == null)
             {
@@ -248,7 +249,7 @@ namespace FMBot.Bot
         [Command("fmspotify"), Summary("Shares a link to a Spotify track based on what a user is listening to")]
         public async Task fmspotifyAsync(IUser user = null)
         {
-            Settings userSettings = await userService.GetUserSettingsAsync(Context.User);
+            Data.Entities.User userSettings = await userService.GetUserSettingsAsync(Context.User);
 
             if (userSettings == null || userSettings.UserNameLastFM == null)
             {
@@ -341,7 +342,7 @@ namespace FMBot.Bot
                 return;
             }
 
-            Settings userSettings = await userService.GetUserSettingsAsync(Context.User);
+            Data.Entities.User userSettings = await userService.GetUserSettingsAsync(Context.User);
 
             if (userSettings == null || userSettings.UserNameLastFM == null)
             {
@@ -1349,7 +1350,7 @@ namespace FMBot.Bot
         }
 
         [Command("fmaddfriends"), Summary("Adds your friends' Last.FM names.")]
-        [Alias("fmfriendsset", "fmsetfriends", "fmfriendsadd")]
+        [Alias("fmfriendsset", "fmsetfriends", "fmfriendsadd", "fmaddfriend")]
         public async Task fmfriendssetAsync([Summary("Friend names")] params string[] friends)
         {
             try
@@ -1362,51 +1363,60 @@ namespace FMBot.Bot
                 List<string> friendList = new List<string>();
                 List<string> friendNotFoundList = new List<string>();
 
+                int friendcount = 0;
 
                 foreach (string friend in friends)
                 {
                     if (!guildService.CheckIfDM(Context))
                     {
-                        var user = guildService.FindUserFromGuildAsync(Context, friend);
+                        IGuildUser friendUser = await guildService.FindUserFromGuildAsync(Context, friend);
 
-                        if (user != null)
+                        if (friendUser != null)
                         {
-                            Settings userSettings = await userService.GetUserSettingsAsync((IUser)user);
+                            Data.Entities.User friendUserSettings = await userService.GetUserSettingsAsync(friendUser);
 
-                            if (userSettings == null || userSettings.UserNameLastFM == null)
+                            if (friendUserSettings == null || friendUserSettings.UserNameLastFM == null)
                             {
-
+                                if (await lastFMService.LastFMUserExistsAsync(friend))
+                                {
+                                    await friendsService.AddLastFMFriendAsync(Context.User.Id.ToString(), friend);
+                                    friendcount++;
+                                }
+                                else
+                                {
+                                    friendNotFoundList.Add(friend);
+                                }
+                            }
+                            else
+                            {
+                                await friendsService.AddDiscordFriendAsync(Context.User.Id.ToString(), friendUser.Id.ToString());
+                                friendcount++;
                             }
                         }
-                    }
-                    
-
-                    if (await lastFMService.LastFMUserExistsAsync(friend))
-                    {
-                        //friendList.Add(user.Content.Name);
+                        else
+                        {
+                            await friendsService.AddLastFMFriendAsync(Context.User.Id.ToString(), friend);
+                            friendcount++;
+                        }
                     }
                     else
                     {
-                        friendNotFoundList.Add(friend);
+                        await friendsService.AddLastFMFriendAsync(Context.User.Id.ToString(), friend);
+                        friendcount++;
                     }
                 }
 
-                if (friendList.Any())
+                if (friendcount > 1)
                 {
-                    int friendcount = DBase.AddFriendsEntry(SelfID, friendList.ToArray());
-
-                    if (friendcount > 1)
-                    {
-                        await ReplyAsync("Succesfully added " + friendcount + " friends.");
-                    }
-                    else if (friendcount < 1)
-                    {
-                        await ReplyAsync("Didn't add  " + friendcount + " friends. Maybe they are already on your friendlist.");
-                    }
-                    else
-                    {
-                        await ReplyAsync("Succesfully added a friend.");
-                    }
+                    await ReplyAsync("Succesfully added " + friendcount + " friends.");
+                }
+                else if (friendcount < 1)
+                {
+                    await ReplyAsync("Didn't add  " + friendcount + " friends. Maybe they are already on your friendlist.");
+                }
+                else
+                {
+                    await ReplyAsync("Succesfully added a friend.");
                 }
 
                 if (friendNotFoundList.Any())

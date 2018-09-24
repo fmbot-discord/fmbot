@@ -31,11 +31,12 @@ namespace FMBot.Services
         // Get user from guild with searchvalue
         public async Task<IGuildUser> FindUserFromGuildAsync(ICommandContext context, string searchValue)
         {
-            var users = await context.Guild.GetUsersAsync();
+            IReadOnlyCollection<IGuildUser> users = await context.Guild.GetUsersAsync();
 
             if (searchValue.Length > 3)
             {
-                var filteredUsers = users.Where(f => f.Id.ToString().Contains(searchValue) || f.Nickname == searchValue || f.Username == searchValue);
+                string id = searchValue.Trim(new char[] { '@', '!', '<', '>' });
+                var filteredUsers = users.Where(f => f.Id.ToString() == id || f.Nickname == searchValue || f.Username == searchValue);
 
                 var user = filteredUsers.FirstOrDefault();
 
