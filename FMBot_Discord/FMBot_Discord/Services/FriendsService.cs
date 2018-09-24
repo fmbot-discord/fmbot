@@ -1,6 +1,7 @@
 ﻿using Discord;
 using FMBot.Data.Entities;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -10,6 +11,16 @@ namespace FMBot.Services
     {
         private FMBotDbContext db = new FMBotDbContext();
 
+        public async Task<List<Friend>> GetFMFriendsAsync(IUser discordUser)
+        {
+            var id = discordUser.Id.ToString();
+
+            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == id);
+
+            List<Friend> friends = await db.Friends.Where(w => w.UserID == user.UserID).ToListAsync();
+
+            return friends;
+        }
 
         public async Task AddLastFMFriendAsync(string discordUserID, string lastfmusername)
         {

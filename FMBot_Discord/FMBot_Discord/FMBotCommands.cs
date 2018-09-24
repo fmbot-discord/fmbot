@@ -644,108 +644,87 @@ namespace FMBot.Bot
         [Alias("fmrecentfriends", "fmfriendsrecent")]
         public async Task fmfriendsrecentAsync(IUser user = null)
         {
+            Data.Entities.User userSettings = await userService.GetUserSettingsAsync(Context.User);
+
+            if (userSettings == null || userSettings.UserNameLastFM == null)
+            {
+                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset [username] [embedfull/embedmini/textfull/textmini]` command.");
+                return;
+            }
+
             try
             {
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
+                List<Friend> friends = await friendsService.GetFMFriendsAsync(Context.User);
 
-                IUser DiscordUser = GlobalVars.CheckIfDM(user, Context);
-                ISelfUser SelfUser = Context.Client.CurrentUser;
-                string LastFMName = DBase.GetNameForID(DiscordUser.Id.ToString());
-                if (LastFMName.Equals("NULL"))
+                if (friends == null || !friends.Any())
                 {
-                    await ReplyAsync("Unable to load your FMBot Friends due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
+                    await ReplyAsync("Your FMBot Friends were unable to be found. Please use fmsetfriends with your friends' names to set your friends.");
+                    return;
+                }
+
+                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+
+                eab.IconUrl = Context.User.GetAvatarUrl();
+
+                EmbedBuilder builder = new EmbedBuilder();
+                builder.WithAuthor(eab);
+                string URI = "https://www.last.fm/user/" + userSettings.UserNameLastFM;
+                builder.WithUrl(URI);
+                builder.Title = await userService.GetUserTitleAsync(Context);
+
+                string amountOfScrobbles = "Amount of scrobbles of all your friends together: ";
+
+                if (friends.Count() > 1)
+                {
+                    builder.WithDescription("Songs from " + friends.Count() + " friends");
                 }
                 else
                 {
-                    string[] LastFMFriends = DBase.GetFriendsForID(DiscordUser.Id.ToString());
-                    if (LastFMFriends == null || !LastFMFriends.Any())
+                    builder.WithDescription("Songs from your friend");
+                    amountOfScrobbles = "Amount of scrobbles from your friend: ";
+                }
+
+                string nulltext = "[undefined]";
+                int indexval = (friends.Count() - 1);
+                int playcount = 0;
+
+                foreach (var friend in friends)
+                {
+                    var friendusername = friend.FriendUser != null ? friend.FriendUser.UserNameLastFM : friend.LastFMUserName;
+
+
+                    PageResponse<LastTrack> tracks = await lastFMService.GetRecentScrobblesAsync(friendusername, 1);
+
+                    string TrackName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().Name) ? nulltext : tracks.FirstOrDefault().Name;
+                    string ArtistName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().ArtistName) ? nulltext : tracks.FirstOrDefault().ArtistName;
+                    string AlbumName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().AlbumName) ? nulltext : tracks.FirstOrDefault().AlbumName;
+
+                    builder.AddField(friendusername + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
+
+                    if (friends.Count() <= 8)
                     {
-                        await ReplyAsync("Your FMBot Friends were unable to be found. Please use fmsetfriends with your friends' names to set your friends.");
-                    }
-                    else
-                    {
-                        LastfmClient client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
-                        try
-                        {
-                            EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-
-                            eab.IconUrl = DiscordUser.GetAvatarUrl();
-
-                            eab.Name = GlobalVars.GetNameString(DiscordUser, Context);
-
-                            EmbedBuilder builder = new EmbedBuilder();
-                            builder.WithAuthor(eab);
-                            string URI = "https://www.last.fm/user/" + LastFMName;
-                            builder.WithUrl(URI);
-                            builder.Title = await userService.GetUserTitleAsync(Context);
-
-                            string amountOfScrobbles = "Amount of scrobbles of all your friends together: ";
-
-                            if (LastFMFriends.Count() > 1)
-                            {
-                                builder.WithDescription("Songs from " + LastFMFriends.Count() + " friends");
-                            }
-                            else
-                            {
-                                builder.WithDescription("Songs from your friend");
-                                amountOfScrobbles = "Amount of scrobbles from your friend: ";
-                            }
-
-                            string nulltext = "[undefined]";
-                            int indexval = (LastFMFriends.Count() - 1);
-                            int playcount = 0;
-
-                            try
-                            {
-                                foreach (string friend in LastFMFriends)
-                                {
-                                    PageResponse<LastTrack> tracks = await client.User.GetRecentScrobbles(friend, null, 1, 1);
-
-                                    string TrackName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().Name) ? nulltext : tracks.FirstOrDefault().Name;
-                                    string ArtistName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().ArtistName) ? nulltext : tracks.FirstOrDefault().ArtistName;
-                                    string AlbumName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().AlbumName) ? nulltext : tracks.FirstOrDefault().AlbumName;
-
-                                    builder.AddField(friend.ToString() + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
-
-                                    // count how many scrobbles everyone has together (if the bot is too slow, consider removing this?)
-                                    if (LastFMFriends.Count() <= 8)
-                                    {
-                                        LastResponse<LastUser> userinfo = await client.User.GetInfoAsync(friend);
-                                        playcount = playcount + userinfo.Content.Playcount;
-                                    }
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                                ExceptionReporter.ReportException(disclient, e);
-                            }
-
-                            if (LastFMFriends.Count() <= 8)
-                            {
-                                EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                                efb.Text = amountOfScrobbles + playcount.ToString("0");
-                                builder.WithFooter(efb);
-                            }
-
-                            await Context.Channel.SendMessageAsync("", false, builder.Build());
-                        }
-                        catch (Exception e)
-                        {
-                            DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                            ExceptionReporter.ReportException(disclient, e);
-
-                            await ReplyAsync("Unable to load your FMBot Friends due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again. If nothing's fixed, see if your friends have done the same thing.");
-                        }
+                        LastResponse<LastUser> userinfo = await lastFMService.GetUserInfoAsync(friendusername);
+                        playcount = playcount + userinfo.Content.Playcount;
                     }
                 }
+
+                if (friends.Count() <= 8)
+                {
+                    EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                    efb.Text = amountOfScrobbles + playcount.ToString("0");
+                    builder.WithFooter(efb);
+                }
+
+                await Context.Channel.SendMessageAsync("", false, builder.Build());
+
+
             }
             catch (Exception e)
             {
                 DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                 ExceptionReporter.ReportException(disclient, e);
 
-                await ReplyAsync("Your FMBot Friends were unable to be found. Please use fmsetfriends with your friends' names to set your friends.");
+                await ReplyAsync("Unable to show friends due to an internal error.");
             }
         }
 
@@ -1268,38 +1247,47 @@ namespace FMBot.Bot
                 string SelfID = Context.Message.Author.Id.ToString();
 
                 JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
-                LastfmClient client = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
 
                 List<string> friendList = new List<string>();
                 List<string> friendNotFoundList = new List<string>();
 
                 int friendcount = 0;
 
+                List<Friend> existingFriends = await friendsService.GetFMFriendsAsync(Context.User);
+
                 foreach (string friend in friends)
                 {
-                    if (!guildService.CheckIfDM(Context))
+                    if (!existingFriends.Select(s => s.LastFMUserName).Contains(friend))
                     {
-                        IGuildUser friendUser = await guildService.FindUserFromGuildAsync(Context, friend);
-
-                        if (friendUser != null)
+                        if (!guildService.CheckIfDM(Context))
                         {
-                            Data.Entities.User friendUserSettings = await userService.GetUserSettingsAsync(friendUser);
+                            IGuildUser friendUser = await guildService.FindUserFromGuildAsync(Context, friend);
 
-                            if (friendUserSettings == null || friendUserSettings.UserNameLastFM == null)
+                            if (friendUser != null)
                             {
-                                if (await lastFMService.LastFMUserExistsAsync(friend))
+                                Data.Entities.User friendUserSettings = await userService.GetUserSettingsAsync(friendUser);
+
+                                if (friendUserSettings == null || friendUserSettings.UserNameLastFM == null)
                                 {
-                                    await friendsService.AddLastFMFriendAsync(Context.User.Id.ToString(), friend);
-                                    friendcount++;
+                                    if (await lastFMService.LastFMUserExistsAsync(friend))
+                                    {
+                                        await friendsService.AddLastFMFriendAsync(Context.User.Id.ToString(), friend);
+                                        friendcount++;
+                                    }
+                                    else
+                                    {
+                                        friendNotFoundList.Add(friend);
+                                    }
                                 }
                                 else
                                 {
-                                    friendNotFoundList.Add(friend);
+                                    await friendsService.AddDiscordFriendAsync(Context.User.Id.ToString(), friendUser.Id.ToString());
+                                    friendcount++;
                                 }
                             }
                             else
                             {
-                                await friendsService.AddDiscordFriendAsync(Context.User.Id.ToString(), friendUser.Id.ToString());
+                                await friendsService.AddLastFMFriendAsync(Context.User.Id.ToString(), friend);
                                 friendcount++;
                             }
                         }
@@ -1308,11 +1296,6 @@ namespace FMBot.Bot
                             await friendsService.AddLastFMFriendAsync(Context.User.Id.ToString(), friend);
                             friendcount++;
                         }
-                    }
-                    else
-                    {
-                        await friendsService.AddLastFMFriendAsync(Context.User.Id.ToString(), friend);
-                        friendcount++;
                     }
                 }
 
