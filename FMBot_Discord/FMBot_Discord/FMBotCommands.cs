@@ -56,7 +56,7 @@ namespace FMBot.Bot
 
             if (userSettings == null || userSettings.UserNameLastFM == null)
             {
-                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset [username] [embedfull/embedmini/textfull/textmini]` command.");
+                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
                 return;
             }
 
@@ -142,7 +142,7 @@ namespace FMBot.Bot
                     LastResponse<LastUser> userinfo = await lastFMService.GetUserInfoAsync(lastFMUserName);
                     int playcount = userinfo.Content.Playcount;
 
-                    efb.Text = lastFMUserName + "'s Total Tracks: " + playcount.ToString("0");
+                    efb.Text = lastFMUserName + "'s Total Tracks: " + playcount.ToString("N0");
 
                     builder.WithFooter(efb);
 
@@ -194,7 +194,7 @@ namespace FMBot.Bot
                     LastResponse<LastUser> userinfo = await lastFMService.GetUserInfoAsync(lastFMUserName);
                     int playcount = userinfo.Content.Playcount;
 
-                    efb.Text = lastFMUserName + "'s Total Tracks: " + playcount.ToString("0");
+                    efb.Text = lastFMUserName + "'s Total Tracks: " + playcount.ToString("N0");
 
                     builder.WithFooter(efb);
 
@@ -214,7 +214,7 @@ namespace FMBot.Bot
 
                     int playcount = userinfo.Content.Playcount;
 
-                    await Context.Channel.SendMessageAsync(await userService.GetUserTitleAsync(Context) + "\n" + "**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + userSettings.UserNameLastFM + ">\n" + userSettings.UserNameLastFM + "'s Total Tracks: " + playcount.ToString("0"));
+                    await Context.Channel.SendMessageAsync(await userService.GetUserTitleAsync(Context) + "\n" + "**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + userSettings.UserNameLastFM + ">\n" + userSettings.UserNameLastFM + "'s Total Tracks: " + playcount.ToString("N0"));
                 }
                 else if (userSettings.ChartType == ChartType.textmini)
                 {
@@ -229,7 +229,7 @@ namespace FMBot.Bot
                     LastResponse<LastUser> userinfo = await lastFMService.GetUserInfoAsync(lastFMUserName);
                     int playcount = userinfo.Content.Playcount;
 
-                    await Context.Channel.SendMessageAsync(await userService.GetUserTitleAsync(Context) + "\n" + "**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + userSettings.UserNameLastFM + ">\n" + userSettings.UserNameLastFM + "'s Total Tracks: " + playcount.ToString("0"));
+                    await Context.Channel.SendMessageAsync(await userService.GetUserTitleAsync(Context) + "\n" + "**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + userSettings.UserNameLastFM + ">\n" + userSettings.UserNameLastFM + "'s Total Tracks: " + playcount.ToString("N0"));
                 }
             }
             catch (Exception e)
@@ -248,7 +248,7 @@ namespace FMBot.Bot
 
             if (userSettings == null || userSettings.UserNameLastFM == null)
             {
-                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset [username] [embedfull/embedmini/textfull/textmini]` command.");
+                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
                 return;
             }
 
@@ -292,7 +292,7 @@ namespace FMBot.Bot
 
             if (userSettings == null || userSettings.UserNameLastFM == null)
             {
-                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset [username] [embedfull/embedmini/textfull/textmini]` command.");
+                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
                 return;
             }
 
@@ -375,7 +375,7 @@ namespace FMBot.Bot
         {
             if (time == "help")
             {
-                await ReplyAsync("fmchart [weekly/monthly/yearly/overall] [3x3-10x10] [notitles/titles] [user]");
+                await ReplyAsync("fmchart 'weekly/monthly/yearly/overall' '3x3-10x10' 'notitles/titles' 'user'");
                 return;
             }
 
@@ -383,7 +383,7 @@ namespace FMBot.Bot
 
             if (userSettings == null || userSettings.UserNameLastFM == null)
             {
-                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset <username> <embedfull/embedmini/textfull/textmini>` command.");
+                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
                 return;
             }
 
@@ -529,7 +529,7 @@ namespace FMBot.Bot
 
             if (userSettings == null || userSettings.UserNameLastFM == null)
             {
-                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset <username> <embedfull/embedmini/textfull/textmini>` command.");
+                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
                 return;
             }
 
@@ -668,7 +668,7 @@ namespace FMBot.Bot
 
             if (userSettings == null || userSettings.UserNameLastFM == null)
             {
-                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset [username] [embedfull/embedmini/textfull/textmini]` command.");
+                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
                 return;
             }
 
@@ -1222,7 +1222,7 @@ namespace FMBot.Bot
             if (lastFMUserName == "help")
             {
                 JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
-                await ReplyAsync(cfgjson.CommandPrefix + "fmset <Last.FM Username> [embedmini/embedfull/textfull/textmini]");
+                await ReplyAsync(cfgjson.CommandPrefix + "fmset 'Last.FM Username' 'embedmini/embedfull/textmini/textfull'");
                 return;
             }
 
