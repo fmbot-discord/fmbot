@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using FMBot.Services;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Objects;
@@ -15,6 +16,8 @@ namespace FMBot.Bot
 {
     public class FMBotModules
     {
+
+
         #region Reliability Service
         public class ReliabilityService
         {
@@ -152,6 +155,8 @@ namespace FMBot.Bot
 
             private bool timerEnabled = false;
 
+            UserService userService = new UserService();
+
             public TimerService(DiscordSocketClient client)
             {
                 var cfgjson = JsonCfg.GetJSONData();
@@ -160,8 +165,8 @@ namespace FMBot.Bot
                 {
                     try
                     {
-                        string LastFMName = DBase.GetRandFMName();
-                        if (!LastFMName.Equals("NULL"))
+                        string LastFMName = await userService.GetRandomLastFMUserAsync();
+                        if (LastFMName != null)
                         {
                             var fmclient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
 
@@ -196,7 +201,7 @@ namespace FMBot.Bot
                                     randmodestring = "6 - Default Avatar";
                                 }
 
-                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to mode " + randmodestring));
+                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changing avatar to mode " + randmodestring));
 
                                 try
                                 {

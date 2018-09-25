@@ -70,6 +70,18 @@ namespace FMBot.Services
             return album;
         }
 
+
+        // Album images
+        public async Task<LastImageSet> GetAlbumImagesAsync(string artistName, string albumName)
+        {
+            LastResponse<LastAlbum> album = await lastfmClient.Album.GetInfoAsync(artistName, albumName);
+
+            LastImageSet images = album.Content != null ? album.Content.Images != null ? album.Content.Images : null : null;
+
+            return images;
+        }
+
+
         // Top albums
         public async Task<PageResponse<LastAlbum>> GetTopAlbumsAsync(string lastFMUserName, LastStatsTimeSpan timespan, int count = 2)
         {
@@ -82,7 +94,7 @@ namespace FMBot.Services
         // Artist info
         public async Task<LastResponse<LastArtist>> GetArtistInfoAsync(string artistName)
         {
-            var artist = await lastfmClient.Artist.GetInfoAsync(artistName);
+            LastResponse<LastArtist> artist = await lastfmClient.Artist.GetInfoAsync(artistName);
 
             return artist;
         }
@@ -132,7 +144,7 @@ namespace FMBot.Services
 
                 if (chart.mode == 0)
                 {
-                    var albums= await GetTopAlbumsAsync(chart.LastFMName, timespan, chart.max);
+                    PageResponse<LastAlbum> albums = await GetTopAlbumsAsync(chart.LastFMName, timespan, chart.max);
 
                     for (int al = 0; al < chart.max; ++al)
                     {
@@ -141,73 +153,77 @@ namespace FMBot.Services
                         string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
                         string AlbumName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.Name;
 
-                        try
-                        {
-                            var AlbumInfo = await GetAlbumInfoAsync(ArtistName, AlbumName);
-                            var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
-                            var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large != null ? AlbumImages.Large.AbsoluteUri : null : null;
-                            string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
+                        LastResponse<LastAlbum> AlbumInfo = await GetAlbumInfoAsync(ArtistName, AlbumName);
 
-                            WebRequest request = WebRequest.Create(ThumbnailImage);
-                            WebResponse response = request.GetResponse();
-                            Stream responseStream = response.GetResponseStream();
-                            Bitmap cover = new Bitmap(responseStream);
-                            if (chart.titles)
+                        Uri thumbnailUrl = AlbumInfo.Content != null ? AlbumInfo.Content.Images != null ? AlbumInfo.Content.Images.Large != null ? AlbumInfo.Content.Images.Large : null : null : null;
+
+                        Bitmap cover;
+
+                        if (thumbnailUrl != null)
+                        {
+                            WebRequest request = WebRequest.Create(thumbnailUrl);
+                            using (WebResponse response = request.GetResponse())
                             {
-                                Graphics text = Graphics.FromImage(cover);
-                                text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
-                                text.DrawColorString(cover, AlbumName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 12.0f));
+                                using (Stream responseStream = response.GetResponseStream())
+                                {
+                                    cover = new Bitmap(responseStream);
+                                }
                             }
-
-                            chart.images.Add(cover);
                         }
-                        catch (Exception e)
+                        else
                         {
-                            ExceptionReporter.ReportException(chart.disclient, e);
+                            cover = new Bitmap(GlobalVars.BasePath + "unknown.png");
                         }
+
+                        if (chart.titles)
+                        {
+                            Graphics text = Graphics.FromImage(cover);
+                            text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
+                            text.DrawColorString(cover, AlbumName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 12.0f));
+                        }
+
+                        chart.images.Add(cover);
                     }
                 }
                 else if (chart.mode == 1)
                 {
-                    var artists = await GetTopArtistsAsync(chart.LastFMName, timespan, chart.max);
+                    PageResponse<LastArtist> artists = await GetTopArtistsAsync(chart.LastFMName, timespan, chart.max);
                     for (int al = 0; al < chart.max; ++al)
                     {
                         LastArtist artist = artists.Content.ElementAt(al);
 
                         string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? nulltext : artist.Name;
 
-                        try
+                        LastResponse<LastArtist> ArtistInfo = await GetArtistInfoAsync(ArtistName);
+
+                        Uri thumbnailUrl = ArtistInfo.Content != null ? ArtistInfo.Content.MainImage != null ? ArtistInfo.Content.MainImage.Large != null ? ArtistInfo.Content.MainImage.Large : null : null : null;
+
+                        Bitmap cover;
+
+                        if (thumbnailUrl != null)
                         {
-                            var ArtistInfo = await GetArtistInfoAsync(ArtistName);
-                            var ArtistImages = (ArtistInfo.Content.MainImage != null) ? ArtistInfo.Content.MainImage : null;
-                            var ArtistThumbnail = (ArtistImages != null) ? ArtistImages.Large.AbsoluteUri : null;
-                            string ThumbnailImage = (ArtistThumbnail != null) ? ArtistThumbnail.ToString() : null;
-
-                            WebRequest request = WebRequest.Create(ThumbnailImage);
-                            WebResponse response = request.GetResponse();
-                            Stream responseStream = response.GetResponseStream();
-                            Bitmap cover = new Bitmap(responseStream);
-                            if (chart.titles)
+                            WebRequest request = WebRequest.Create(thumbnailUrl);
+                            using (WebResponse response = request.GetResponse())
                             {
-                                Graphics text = Graphics.FromImage(cover);
-                                text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
+                                using (Stream responseStream = response.GetResponseStream())
+                                {
+                                    cover = new Bitmap(responseStream);
+                                }
                             }
-
-                            chart.images.Add(cover);
                         }
-                        catch (Exception e)
+                        else
                         {
-                            ExceptionReporter.ReportException(chart.disclient, e);
-
-                            Bitmap cover = new Bitmap(GlobalVars.BasePath + "unknown.png");
-                            if (chart.titles)
-                            {
-                                Graphics text = Graphics.FromImage(cover);
-                                text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
-                            }
-
-                            chart.images.Add(cover);
+                            cover = new Bitmap(GlobalVars.BasePath + "unknown.png");
                         }
+
+                        if (chart.titles)
+                        {
+                            Graphics text = Graphics.FromImage(cover);
+                            text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
+                        }
+
+                        chart.images.Add(cover);
+
                     }
                 }
             }

@@ -1,6 +1,8 @@
 ﻿using Discord;
 using Discord.Commands;
 using FMBot.Data.Entities;
+using System;
+using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
@@ -70,6 +72,33 @@ namespace FMBot.Services
             return user.Featured;
         }
 
+
+
+        // Random user
+        public async Task<string> GetRandomLastFMUserAsync()
+        {
+            User featuredUser = await db.Users.FirstOrDefaultAsync(f => f.Featured == true);
+            if (featuredUser != null)
+            {
+                featuredUser.Featured = false;
+
+                db.Entry(featuredUser).State = EntityState.Modified;
+            }
+
+            List<User> users = db.Users.Where(w => w.Blacklisted != true).ToList();
+
+            Random rand = new Random();
+            User user = users[rand.Next(users.Count())];
+
+            user.Featured = true;
+
+            db.Entry(user).State = EntityState.Modified;
+            db.SaveChanges();
+
+            return user.UserNameLastFM;
+        }
+
+
         // Server Blacklisting
         public async Task<bool?> GetBlacklistedAsync(IUser discordUser)
         {
@@ -91,9 +120,19 @@ namespace FMBot.Services
             string name = await GetNameAsync(context);
             UserType rank = await GetRankAsync(context.User);
             bool? featured = await GetFeaturedAsync(context.User);
-            string featuredUser = (featured == true) ? ", Featured User" : "";
 
-            return name + " " + rank.ToString() + featuredUser;
+            string title = name;
+
+            if (featured == true)
+            {
+                title = name + ", Featured User";
+            }
+            if (rank != UserType.User)
+            {
+                title = title + " - " + rank.ToString();
+            }
+
+            return title;
         }
 
         // Set LastFM Name
