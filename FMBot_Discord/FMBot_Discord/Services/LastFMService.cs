@@ -57,9 +57,17 @@ namespace FMBot.Services
         // User
         public async Task<LastResponse<LastUser>> GetUserInfoAsync(string lastFMUserName)
         {
-            LastResponse<LastUser> userInfo = await lastfmClient.User.GetInfoAsync(lastFMUserName);
+            try
+            {
+                LastResponse<LastUser> userInfo = await lastfmClient.User.GetInfoAsync(lastFMUserName);
 
-            return userInfo;
+                return userInfo;
+            }
+            catch (Exception e)
+            {
+                ExceptionReporter.ReportException(null, e);
+            }
+            return null;
         }
 
         // Album info
@@ -76,7 +84,7 @@ namespace FMBot.Services
         {
             LastResponse<LastAlbum> album = await lastfmClient.Album.GetInfoAsync(artistName, albumName);
 
-            LastImageSet images = album.Content != null ? album.Content.Images != null ? album.Content.Images : null : null;
+            LastImageSet images = album != null ? album.Content != null ? album.Content.Images != null ? album.Content.Images : null : null : null;
 
             return images;
         }
@@ -97,6 +105,17 @@ namespace FMBot.Services
             LastResponse<LastArtist> artist = await lastfmClient.Artist.GetInfoAsync(artistName);
 
             return artist;
+        }
+
+
+        // Artist info
+        public async Task<LastImageSet> GetArtistImageAsync(string artistName)
+        {
+            LastResponse<LastArtist> artist = await lastfmClient.Artist.GetInfoAsync(artistName);
+
+            LastImageSet image = artist != null ? artist.Content != null ? artist.Content.MainImage : null : null;
+
+            return image;
         }
 
 
@@ -153,15 +172,13 @@ namespace FMBot.Services
                         string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
                         string AlbumName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.Name;
 
-                        LastResponse<LastAlbum> AlbumInfo = await GetAlbumInfoAsync(ArtistName, AlbumName);
-
-                        Uri thumbnailUrl = AlbumInfo.Content != null ? AlbumInfo.Content.Images != null ? AlbumInfo.Content.Images.Large != null ? AlbumInfo.Content.Images.Large : null : null : null;
+                        var albumImages = await GetAlbumImagesAsync(ArtistName, AlbumName);
 
                         Bitmap cover;
 
-                        if (thumbnailUrl != null)
+                        if (albumImages != null && albumImages.Large != null)
                         {
-                            WebRequest request = WebRequest.Create(thumbnailUrl);
+                            WebRequest request = WebRequest.Create(albumImages.Large.AbsoluteUri.ToString());
                             using (WebResponse response = request.GetResponse())
                             {
                                 using (Stream responseStream = response.GetResponseStream())
@@ -194,15 +211,13 @@ namespace FMBot.Services
 
                         string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? nulltext : artist.Name;
 
-                        LastResponse<LastArtist> ArtistInfo = await GetArtistInfoAsync(ArtistName);
-
-                        Uri thumbnailUrl = ArtistInfo.Content != null ? ArtistInfo.Content.MainImage != null ? ArtistInfo.Content.MainImage.Large != null ? ArtistInfo.Content.MainImage.Large : null : null : null;
+                        var artistImage = await GetArtistImageAsync(ArtistName);
 
                         Bitmap cover;
 
-                        if (thumbnailUrl != null)
+                        if (artistImage != null && artistImage.Large != null)
                         {
-                            WebRequest request = WebRequest.Create(thumbnailUrl);
+                            WebRequest request = WebRequest.Create(artistImage.Large.AbsoluteUri.ToString());
                             using (WebResponse response = request.GetResponse())
                             {
                                 using (Stream responseStream = response.GetResponseStream())

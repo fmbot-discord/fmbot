@@ -72,6 +72,19 @@ namespace FMBot.Services
             return user.Featured;
         }
 
+        // Featured
+        public async Task<User> GetFeaturedUserAsync()
+        {
+            User user = await db.Users.FirstOrDefaultAsync(f => f.Featured == true);
+
+            if (user == null)
+            {
+                return null;
+            }
+
+            return user;
+        }
+
 
 
         // Random user

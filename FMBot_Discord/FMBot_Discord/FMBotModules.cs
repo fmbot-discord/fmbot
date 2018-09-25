@@ -3,6 +3,7 @@ using Discord.WebSocket;
 using FMBot.Services;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
+using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
 using System;
 using System.IO;
@@ -99,14 +100,18 @@ namespace FMBot.Bot
             private async Task CheckStateAsync()
             {
                 // Client reconnected, no need to reset
-                if (_discord.ConnectionState == ConnectionState.Connected) return;
+                if (_discord.ConnectionState == ConnectionState.Connected)
+                {
+                    return;
+                }
+
                 if (_attemptReset)
                 {
                     await GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "Attempting to reset the client"));
 
-                    var timeout = Task.Delay(_timeout);
-                    var connect = _discord.StartAsync();
-                    var task = await Task.WhenAny(timeout, connect);
+                    Task timeout = Task.Delay(_timeout);
+                    Task connect = _discord.StartAsync();
+                    Task task = await Task.WhenAny(timeout, connect);
 
                     if (task == timeout)
                     {
@@ -157,356 +162,156 @@ namespace FMBot.Bot
 
             UserService userService = new UserService();
 
+            LastFMService lastFMService = new LastFMService();
+
             public TimerService(DiscordSocketClient client)
             {
-                var cfgjson = JsonCfg.GetJSONData();
+                JsonCfg.ConfigJson cfgjson = JsonCfg.GetJSONData();
 
                 _timer = new Timer(async _ =>
                 {
-                    try
+
+                    string LastFMName = await userService.GetRandomLastFMUserAsync();
+                    if (LastFMName != null)
                     {
-                        string LastFMName = await userService.GetRandomLastFMUserAsync();
-                        if (LastFMName != null)
+                        Random random = new Random();
+                        int randavmode = random.Next(1, 6);
+                        string randmodestring = "";
+
+                        if (randavmode == 1)
                         {
-                            var fmclient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+                            randmodestring = "1 - Recent Listens";
+                        }
+                        else if (randavmode == 2)
+                        {
+                            randmodestring = "2 - Weekly Artists";
+                        }
+                        else if (randavmode == 3)
+                        {
+                            randmodestring = "3 - Overall Artists";
+                        }
+                        else if (randavmode == 4)
+                        {
+                            randmodestring = "4 - Weekly Albums";
+                        }
+                        else if (randavmode == 5)
+                        {
+                            randmodestring = "5 - Overall Albums";
+                        }
+                        else if (randavmode == 6)
+                        {
+                            randmodestring = "6 - Default Avatar";
+                        }
 
-                            try
+
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changing avatar to mode " + randmodestring));
+
+                        string nulltext = "";
+
+                        try
+                        {
+                            if (randavmode == 1)
                             {
-                                Random random = new Random();
-                                int randavmode = random.Next(1, 6);
-                                string randmodestring = "";
+                                PageResponse<LastTrack> tracks = await lastFMService.GetRecentScrobblesAsync(LastFMName);
+                                LastTrack currentTrack = tracks.Content.ElementAt(0);
 
-                                if (randavmode == 1)
+                                string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
+                                string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
+                                string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nulltext : currentTrack.AlbumName;
+
+                                LastImageSet AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName);
+
+                                trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
+                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
+
+                                if (AlbumImages != null && AlbumImages.Large != null)
                                 {
-                                    randmodestring = "1 - Recent Listens";
-                                }
-                                else if (randavmode == 2)
-                                {
-                                    randmodestring = "2 - Weekly Artists";
-                                }
-                                else if (randavmode == 3)
-                                {
-                                    randmodestring = "3 - Overall Artists";
-                                }
-                                else if (randavmode == 4)
-                                {
-                                    randmodestring = "4 - Weekly Albums";
-                                }
-                                else if (randavmode == 5)
-                                {
-                                    randmodestring = "5 - Overall Albums";
-                                }
-                                else if (randavmode == 6)
-                                {
-                                    randmodestring = "6 - Default Avatar";
+                                    ChangeToNewAvatar(client, cfgjson, AlbumImages.Large.AbsoluteUri.ToString());
                                 }
 
-                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changing avatar to mode " + randmodestring));
+                            }
+                            else if (randavmode == 2)
+                            {
+                                PageResponse<LastArtist> artists = await lastFMService.GetTopArtistsAsync(LastFMName, LastStatsTimeSpan.Week, 1);
+                                LastArtist currentArtist = artists.Content.ElementAt(random.Next(artists.Count()));
 
-                                try
+                                string ArtistName = string.IsNullOrWhiteSpace(currentArtist.Name) ? nulltext : currentArtist.Name;
+
+                                LastImageSet artistImage = await lastFMService.GetArtistImageAsync(ArtistName);
+
+                                trackString = ArtistName + Environment.NewLine + LastFMName;
+                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
+
+                                if (artistImage != null && artistImage.Large != null)
                                 {
-                                    if (randavmode == 1)
-                                    {
-                                        var tracks = await fmclient.User.GetRecentScrobbles(LastFMName, null, 1, 2);
-                                        LastTrack currentTrack = tracks.Content.ElementAt(0);
-
-                                        string nulltext = "";
-
-                                        string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
-                                        string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
-                                        string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nulltext : currentTrack.AlbumName;
-
-                                        var AlbumInfo = await fmclient.Album.GetInfoAsync(ArtistName, AlbumName);
-                                        var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
-                                        var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
-                                        string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
-
-                                        try
-                                        {
-                                            ulong DiscordID = DBase.GetIDForName(LastFMName);
-                                            GlobalVars.FeaturedUserID = DiscordID.ToString();
-                                            SocketUser FeaturedUser = client.GetUser(DiscordID);
-                                            trackString = ArtistName + " - " + AlbumName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
-                                            await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                                        }
-                                        catch (Exception)
-                                        {
-                                            GlobalVars.FeaturedUserID = "";
-                                            try
-                                            {
-                                                trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                                            }
-                                            catch (Exception)
-                                            {
-                                                try
-                                                {
-                                                    trackString = ArtistName + " - " + AlbumName;
-                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                                                }
-                                                catch (Exception e)
-                                                {
-                                                    ExceptionReporter.ReportException(client, e);
-                                                    UseDefaultAvatar(client);
-                                                    trackString = "Unable to get information for this album cover avatar.";
-                                                }
-                                            }
-                                        }
-
-                                        try
-                                        {
-                                            ChangeToNewAvatar(client, cfgjson, ThumbnailImage);
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            ExceptionReporter.ReportException(client, e);
-                                        }
-                                    }
-                                    else if (randavmode == 2)
-                                    {
-                                        var artists = await fmclient.User.GetTopArtists(LastFMName, LastStatsTimeSpan.Week, 1);
-                                        LastArtist currentArtist = artists.Content.ElementAt(random.Next(artists.Count()));
-
-                                        string nulltext = "";
-
-                                        string ArtistName = string.IsNullOrWhiteSpace(currentArtist.Name) ? nulltext : currentArtist.Name;
-
-                                        var ArtistInfo = await fmclient.Artist.GetInfoAsync(ArtistName);
-                                        var ArtistImages = (ArtistInfo.Content.MainImage != null) ? ArtistInfo.Content.MainImage : null;
-                                        var ArtistThumbnail = (ArtistImages != null) ? ArtistImages.Large.AbsoluteUri : null;
-                                        string ThumbnailImage = (ArtistThumbnail != null) ? ArtistThumbnail.ToString() : null;
-
-                                        try
-                                        {
-                                            ulong DiscordID = DBase.GetIDForName(LastFMName);
-                                            GlobalVars.FeaturedUserID = DiscordID.ToString();
-                                            SocketUser FeaturedUser = client.GetUser(DiscordID);
-                                            trackString = ArtistName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
-                                            await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                                        }
-                                        catch (Exception)
-                                        {
-                                            GlobalVars.FeaturedUserID = "";
-                                            try
-                                            {
-                                                trackString = ArtistName + Environment.NewLine + LastFMName;
-                                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                                            }
-                                            catch (Exception)
-                                            {
-                                                try
-                                                {
-                                                    trackString = ArtistName;
-                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                                                }
-                                                catch (Exception e)
-                                                {
-                                                    ExceptionReporter.ReportException(client, e);
-                                                    UseDefaultAvatar(client);
-                                                    trackString = "Unable to get information for this artist avatar.";
-                                                }
-                                            }
-                                        }
-
-                                        try
-                                        {
-                                            ChangeToNewAvatar(client, cfgjson, ThumbnailImage);
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            ExceptionReporter.ReportException(client, e);
-                                        }
-                                    }
-                                    else if (randavmode == 3)
-                                    {
-                                        var artists = await fmclient.User.GetTopArtists(LastFMName, LastStatsTimeSpan.Overall, 1);
-                                        LastArtist currentArtist = artists.Content.ElementAt(random.Next(artists.Count()));
-
-                                        string nulltext = "";
-
-                                        string ArtistName = string.IsNullOrWhiteSpace(currentArtist.Name) ? nulltext : currentArtist.Name;
-
-                                        var ArtistInfo = await fmclient.Artist.GetInfoAsync(ArtistName);
-                                        var ArtistImages = (ArtistInfo.Content.MainImage != null) ? ArtistInfo.Content.MainImage : null;
-                                        var ArtistThumbnail = (ArtistImages != null) ? ArtistImages.Large.AbsoluteUri : null;
-                                        string ThumbnailImage = (ArtistThumbnail != null) ? ArtistThumbnail.ToString() : null;
-
-                                        try
-                                        {
-                                            ulong DiscordID = DBase.GetIDForName(LastFMName);
-                                            GlobalVars.FeaturedUserID = DiscordID.ToString();
-                                            SocketUser FeaturedUser = client.GetUser(DiscordID);
-                                            trackString = ArtistName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
-                                            await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                                        }
-                                        catch (Exception)
-                                        {
-                                            GlobalVars.FeaturedUserID = "";
-                                            try
-                                            {
-                                                trackString = ArtistName + Environment.NewLine + LastFMName;
-                                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                                            }
-                                            catch (Exception)
-                                            {
-                                                try
-                                                {
-                                                    trackString = ArtistName;
-                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                                                }
-                                                catch (Exception e)
-                                                {
-                                                    ExceptionReporter.ReportException(client, e);
-                                                    UseDefaultAvatar(client);
-                                                    trackString = "Unable to get information for this artist avatar.";
-                                                }
-                                            }
-                                        }
-
-                                        try
-                                        {
-                                            ChangeToNewAvatar(client, cfgjson, ThumbnailImage);
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            ExceptionReporter.ReportException(client, e);
-                                        }
-                                    }
-                                    else if (randavmode == 4)
-                                    {
-                                        var albums = await fmclient.User.GetTopAlbums(LastFMName, LastStatsTimeSpan.Week, 1);
-                                        LastAlbum currentAlbum = albums.Content.ElementAt(random.Next(albums.Count()));
-
-                                        string nulltext = "";
-
-                                        string ArtistName = string.IsNullOrWhiteSpace(currentAlbum.ArtistName) ? nulltext : currentAlbum.ArtistName;
-                                        string AlbumName = string.IsNullOrWhiteSpace(currentAlbum.Name) ? nulltext : currentAlbum.Name;
-
-                                        var AlbumInfo = await fmclient.Album.GetInfoAsync(ArtistName, AlbumName);
-                                        var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
-                                        var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
-                                        string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
-
-                                        try
-                                        {
-                                            ulong DiscordID = DBase.GetIDForName(LastFMName);
-                                            GlobalVars.FeaturedUserID = DiscordID.ToString();
-                                            SocketUser FeaturedUser = client.GetUser(DiscordID);
-                                            trackString = ArtistName + " - " + AlbumName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
-                                            await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                                        }
-                                        catch (Exception)
-                                        {
-                                            GlobalVars.FeaturedUserID = "";
-                                            try
-                                            {
-                                                trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                                            }
-                                            catch (Exception)
-                                            {
-                                                try
-                                                {
-                                                    trackString = ArtistName + " - " + AlbumName;
-                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                                                }
-                                                catch (Exception e)
-                                                {
-                                                    ExceptionReporter.ReportException(client, e);
-                                                    UseDefaultAvatar(client);
-                                                    trackString = "Unable to get information for this album cover avatar.";
-                                                }
-                                            }
-                                        }
-
-                                        try
-                                        {
-                                            ChangeToNewAvatar(client, cfgjson, ThumbnailImage);
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            ExceptionReporter.ReportException(client, e);
-                                        }
-                                    }
-                                    else if (randavmode == 5)
-                                    {
-                                        var albums = await fmclient.User.GetTopAlbums(LastFMName, LastStatsTimeSpan.Overall, 1);
-                                        LastAlbum currentAlbum = albums.Content.ElementAt(random.Next(albums.Count()));
-
-                                        string nulltext = "";
-
-                                        string ArtistName = string.IsNullOrWhiteSpace(currentAlbum.ArtistName) ? nulltext : currentAlbum.ArtistName;
-                                        string AlbumName = string.IsNullOrWhiteSpace(currentAlbum.Name) ? nulltext : currentAlbum.Name;
-
-                                        var AlbumInfo = await fmclient.Album.GetInfoAsync(ArtistName, AlbumName);
-                                        var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
-                                        var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
-                                        string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
-
-                                        try
-                                        {
-                                            ulong DiscordID = DBase.GetIDForName(LastFMName);
-                                            GlobalVars.FeaturedUserID = DiscordID.ToString();
-                                            SocketUser FeaturedUser = client.GetUser(DiscordID);
-                                            trackString = ArtistName + " - " + AlbumName + Environment.NewLine + FeaturedUser.Username + " (" + LastFMName + ")";
-                                            await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                                        }
-                                        catch (Exception)
-                                        {
-                                            GlobalVars.FeaturedUserID = "";
-                                            try
-                                            {
-                                                trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                                            }
-                                            catch (Exception)
-                                            {
-                                                try
-                                                {
-                                                    trackString = ArtistName + " - " + AlbumName;
-                                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                                                }
-                                                catch (Exception e)
-                                                {
-                                                    ExceptionReporter.ReportException(client, e);
-                                                    UseDefaultAvatar(client);
-                                                    trackString = "Unable to get information for this album cover avatar.";
-                                                }
-                                            }
-                                        }
-                                        
-                                        try
-                                        {
-                                            ChangeToNewAvatar(client, cfgjson, ThumbnailImage);
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            ExceptionReporter.ReportException(client, e);
-                                        }
-                                    }
-                                    else if (randavmode == 6)
-                                    {
-                                        UseDefaultAvatar(client);
-                                    }
+                                    ChangeToNewAvatar(client, cfgjson, artistImage.Large.AbsoluteUri.ToString());
                                 }
-                                catch (Exception e)
+
+                            }
+                            else if (randavmode == 3)
+                            {
+                                PageResponse<LastArtist> artists = await lastFMService.GetTopArtistsAsync(LastFMName, LastStatsTimeSpan.Overall, 1);
+                                LastArtist currentArtist = artists.Content.ElementAt(random.Next(artists.Count()));
+
+                                string ArtistName = string.IsNullOrWhiteSpace(currentArtist.Name) ? nulltext : currentArtist.Name;
+
+                                LastImageSet artistImage = await lastFMService.GetArtistImageAsync(ArtistName);
+
+                                trackString = ArtistName + Environment.NewLine + LastFMName;
+                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
+
+                                if (artistImage != null && artistImage.Large != null)
                                 {
-                                    ExceptionReporter.ReportException(client, e);
+                                    ChangeToNewAvatar(client, cfgjson, artistImage.Large.AbsoluteUri.ToString());
                                 }
                             }
-                            catch (Exception e)
+                            else if (randavmode == 4)
                             {
-                                ExceptionReporter.ReportException(client, e);
+                                PageResponse<LastAlbum> albums = await lastFMService.GetTopAlbumsAsync(LastFMName, LastStatsTimeSpan.Week, 1);
+                                LastAlbum currentAlbum = albums.Content.ElementAt(random.Next(albums.Count()));
+
+                                string ArtistName = string.IsNullOrWhiteSpace(currentAlbum.ArtistName) ? nulltext : currentAlbum.ArtistName;
+                                string AlbumName = string.IsNullOrWhiteSpace(currentAlbum.Name) ? nulltext : currentAlbum.Name;
+
+                                LastImageSet AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName);
+
+                                trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
+
+                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
+
+                                if (AlbumImages != null && AlbumImages.Large != null)
+                                {
+                                    ChangeToNewAvatar(client, cfgjson, AlbumImages.Large.AbsoluteUri.ToString());
+                                }
+                            }
+                            else if (randavmode == 5)
+                            {
+                                PageResponse<LastAlbum> albums = await lastFMService.GetTopAlbumsAsync(LastFMName, LastStatsTimeSpan.Overall, 1);
+                                LastAlbum currentAlbum = albums.Content.ElementAt(random.Next(albums.Count()));
+
+                                string ArtistName = string.IsNullOrWhiteSpace(currentAlbum.ArtistName) ? nulltext : currentAlbum.ArtistName;
+                                string AlbumName = string.IsNullOrWhiteSpace(currentAlbum.Name) ? nulltext : currentAlbum.Name;
+
+                                LastImageSet AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName);
+
+                                trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
+                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
+
+                                if (AlbumImages != null && AlbumImages.Large != null)
+                                {
+                                    ChangeToNewAvatar(client, cfgjson, AlbumImages.Large.AbsoluteUri.ToString());
+                                }
+                            }
+                            else if (randavmode == 6)
+                            {
                                 UseDefaultAvatar(client);
-                                trackString = "Unable to get information for this avatar.";
                             }
                         }
-                    }
-                    catch (Exception e)
-                    {
-                        ExceptionReporter.ReportException(client, e);
-                        UseDefaultAvatar(client);
-                        trackString = "Unable to get information for this avatar.";
+                        catch (Exception e)
+                        {
+                            ExceptionReporter.ReportException(client, e);
+                        }
+
                     }
                 },
                 null,
@@ -529,7 +334,7 @@ namespace FMBot.Bot
             {
                 if (IsTimerActive() == false)
                 {
-                    var cfgjson = JsonCfg.GetJSONData();
+                    JsonCfg.ConfigJson cfgjson = JsonCfg.GetJSONData();
                     _timer.Change(TimeSpan.FromSeconds(Convert.ToDouble(cfgjson.TimerInit)), TimeSpan.FromMinutes(Convert.ToDouble(cfgjson.TimerRepeat)));
                     timerEnabled = true;
                 }
@@ -537,40 +342,41 @@ namespace FMBot.Bot
 
             public async void ChangeToNewAvatar(DiscordSocketClient client, JsonCfg.ConfigJson cfgjson, string thumbnail)
             {
-                WebRequest request = WebRequest.Create(thumbnail);
-                WebResponse response = request.GetResponse();
-                using (Stream output = File.Create(GlobalVars.BasePath + "newavatar.png"))
-                using (Stream input = response.GetResponseStream())
-                {
-                    input.CopyTo(output);
-                    if (File.Exists(GlobalVars.BasePath + "newavatar.png"))
-                    {
-                        File.SetAttributes(GlobalVars.BasePath + "newavatar.png", FileAttributes.Normal);
-                    }
-
-                    output.Close();
-                    input.Close();
-                }
-
-                if (File.Exists(GlobalVars.BasePath + "newavatar.png"))
-                {
-                    var fileStream = new FileStream(GlobalVars.BasePath + "newavatar.png", FileMode.Open);
-                    await client.CurrentUser.ModifyAsync(u => u.Avatar = new Discord.Image(fileStream));
-                    fileStream.Close();
-                }
-
-                await Task.Delay(5000);
-
                 try
                 {
+                    WebRequest request = WebRequest.Create(thumbnail);
+                    WebResponse response = request.GetResponse();
+                    using (Stream output = File.Create(GlobalVars.BasePath + "newavatar.png"))
+                    using (Stream input = response.GetResponseStream())
+                    {
+                        input.CopyTo(output);
+                        if (File.Exists(GlobalVars.BasePath + "newavatar.png"))
+                        {
+                            File.SetAttributes(GlobalVars.BasePath + "newavatar.png", FileAttributes.Normal);
+                        }
+
+                        output.Close();
+                        input.Close();
+                    }
+
+                    if (File.Exists(GlobalVars.BasePath + "newavatar.png"))
+                    {
+                        FileStream fileStream = new FileStream(GlobalVars.BasePath + "newavatar.png", FileMode.Open);
+                        await client.CurrentUser.ModifyAsync(u => u.Avatar = new Discord.Image(fileStream));
+                        fileStream.Close();
+                    }
+
+                    await Task.Delay(5000);
+
+
                     ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
                     ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.FeaturedChannel);
 
                     SocketGuild guild = client.GetGuild(BroadcastServerID);
                     SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
 
-                    var builder = new EmbedBuilder();
-                    var SelfUser = client.CurrentUser;
+                    EmbedBuilder builder = new EmbedBuilder();
+                    SocketSelfUser SelfUser = client.CurrentUser;
                     builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
                     builder.AddInlineField("Featured:", trackString);
 
@@ -584,12 +390,19 @@ namespace FMBot.Bot
 
             public async void UseDefaultAvatar(DiscordSocketClient client)
             {
-                trackString = "FMBot Default Avatar";
-                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                var fileStream = new FileStream(GlobalVars.BasePath + "avatar.png", FileMode.Open);
-                var image = new Discord.Image(fileStream);
-                //await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
-                fileStream.Close();
+                try
+                {
+                    trackString = "FMBot Default Avatar";
+                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
+                    FileStream fileStream = new FileStream(GlobalVars.BasePath + "avatar.png", FileMode.Open);
+                    Image image = new Discord.Image(fileStream);
+                    await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
+                    fileStream.Close();
+                }
+                catch (Exception e)
+                {
+                    ExceptionReporter.ReportException(client, e);
+                }
             }
 
             public async void UseCustomAvatar(DiscordSocketClient client, string fmquery, string desc, bool artistonly, bool important)
@@ -605,14 +418,14 @@ namespace FMBot.Bot
 
                 GlobalVars.FeaturedUserID = "";
 
-                var cfgjson = await JsonCfg.GetJSONDataAsync();
-                var fmclient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
+                LastfmClient fmclient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
 
                 try
                 {
                     if (artistonly == true)
                     {
-                        var artists = await fmclient.Artist.SearchAsync(fmquery, 1, 2);
+                        IF.Lastfm.Core.Api.Helpers.PageResponse<LastArtist> artists = await fmclient.Artist.SearchAsync(fmquery, 1, 2);
                         LastArtist currentArtist = artists.Content.ElementAt(0);
 
                         string nulltext = "";
@@ -621,9 +434,9 @@ namespace FMBot.Bot
                         {
                             string ArtistName = string.IsNullOrWhiteSpace(currentArtist.Name) ? nulltext : currentArtist.Name;
 
-                            var ArtistInfo = await fmclient.Artist.GetInfoAsync(ArtistName);
-                            var ArtistImages = (ArtistInfo.Content.MainImage != null) ? ArtistInfo.Content.MainImage : null;
-                            var ArtistThumbnail = (ArtistImages != null) ? ArtistImages.Large.AbsoluteUri : null;
+                            IF.Lastfm.Core.Api.Helpers.LastResponse<LastArtist> ArtistInfo = await fmclient.Artist.GetInfoAsync(ArtistName);
+                            LastImageSet ArtistImages = (ArtistInfo.Content.MainImage != null) ? ArtistInfo.Content.MainImage : null;
+                            string ArtistThumbnail = (ArtistImages != null) ? ArtistImages.Large.AbsoluteUri : null;
                             string ThumbnailImage = (ArtistThumbnail != null) ? ArtistThumbnail.ToString() : null;
 
                             try
@@ -655,7 +468,7 @@ namespace FMBot.Bot
                     }
                     else
                     {
-                        var albums = await fmclient.Album.SearchAsync(fmquery, 1, 2);
+                        IF.Lastfm.Core.Api.Helpers.PageResponse<LastAlbum> albums = await fmclient.Album.SearchAsync(fmquery, 1, 2);
                         LastAlbum currentAlbum = albums.Content.ElementAt(0);
 
                         string nulltext = "";
@@ -665,9 +478,9 @@ namespace FMBot.Bot
 
                         try
                         {
-                            var AlbumInfo = await fmclient.Album.GetInfoAsync(ArtistName, AlbumName);
-                            var AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
-                            var AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
+                            IF.Lastfm.Core.Api.Helpers.LastResponse<LastAlbum> AlbumInfo = await fmclient.Album.GetInfoAsync(ArtistName, AlbumName);
+                            LastImageSet AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
+                            string AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
                             string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
 
                             try
@@ -719,7 +532,7 @@ namespace FMBot.Bot
 
                 GlobalVars.FeaturedUserID = "";
 
-                var cfgjson = await JsonCfg.GetJSONDataAsync();
+                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
 
                 try
                 {

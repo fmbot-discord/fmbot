@@ -717,7 +717,7 @@ namespace FMBot.Bot
 
         public class ExceptionReporter
         {
-            public static async void ReportException(DiscordSocketClient client, Exception e)
+            public static async void ReportException(DiscordSocketClient client = null, Exception e = null)
             {
                 JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
 
@@ -1354,13 +1354,9 @@ namespace FMBot.Bot
                             {
                                 SocketUser user = client.GetUser(DiscordID);
                                 int curTimeEstimate = Convert.ToInt32(cfgjson.Cooldown) - (int)curTime;
-                                if (curTimeEstimate > 1)
+                                if (curTimeEstimate > 9)
                                 {
                                     user.SendMessageAsync("Sorry, but you have been put under a " + cfgjson.Cooldown + " second coolddown. You have to wait " + curTimeEstimate + " seconds for this to expire.");
-                                }
-                                else
-                                {
-                                    user.SendMessageAsync("Sorry, but you have been put under a " + cfgjson.Cooldown + " second coolddown. You have to wait " + curTimeEstimate + " second for this to expire.");
                                 }
                                 return false;
                             }

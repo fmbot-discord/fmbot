@@ -95,7 +95,7 @@ namespace FMBot.Bot
 
                 if (tracks == null || tracks.Count() == 0)
                 {
-                    await ReplyAsync("No scrobbles found on your LastFM profile. (" + userSettings.UserNameLastFM + ")");
+                    await ReplyAsync("No scrobbles found on this profile. (" + lastFMUserName + ")");
                     return;
                 }
 
