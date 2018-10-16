@@ -756,80 +756,78 @@ namespace FMBot.Bot
 
             if (list == "help")
             {
-                await ReplyAsync(cfgjson.CommandPrefix + "fmrecent [number of items] [user]");
+                await ReplyAsync(cfgjson.CommandPrefix + "fmrecent 'number of items' 'user'");
                 return;
             }
 
             try
             {
 
-                //int num = int.Parse(list);
+                int num = int.Parse(list);
 
 
-                //else
-                //{
 
-                //        PageResponse<LastTrack> tracks = await lastFMService.GetRecentScrobblesAsync(LastFMName, null, 1, num);
+                    PageResponse<LastTrack> tracks = await lastFMService.GetRecentScrobblesAsync(LastFMName, null, 1, num);
 
-                //        EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                //        eab.IconUrl = DiscordUser.GetAvatarUrl();
-                //        eab.Name = GlobalVars.GetNameString(DiscordUser, Context);
+                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
+                    eab.IconUrl = DiscordUser.GetAvatarUrl();
+                    eab.Name = GlobalVars.GetNameString(DiscordUser, Context);
 
-                //        EmbedBuilder builder = new EmbedBuilder();
-                //        builder.WithAuthor(eab);
-                //        string URI = "https://www.last.fm/user/" + LastFMName;
-                //        builder.WithUrl(URI);
-                //        builder.Title = await userService.GetUserTitleAsync(Context);
+                    EmbedBuilder builder = new EmbedBuilder();
+                    builder.WithAuthor(eab);
+                    string URI = "https://www.last.fm/user/" + LastFMName;
+                    builder.WithUrl(URI);
+                    builder.Title = await userService.GetUserTitleAsync(Context);
 
-                //        builder.WithDescription("Top " + num + " Recent Track List");
+                    builder.WithDescription("Top " + num + " Recent Track List");
 
-                //        string nulltext = "[undefined]";
-                //        int indexval = (num - 1);
-                //        for (int i = 0; i <= indexval; i++)
-                //        {
-                //            LastTrack track = tracks.Content.ElementAt(i);
+                    string nulltext = "[undefined]";
+                    int indexval = (num - 1);
+                    for (int i = 0; i <= indexval; i++)
+                    {
+                        LastTrack track = tracks.Content.ElementAt(i);
 
-                //            string TrackName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.Name;
-                //            string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
-                //            string AlbumName = string.IsNullOrWhiteSpace(track.AlbumName) ? nulltext : track.AlbumName;
+                        string TrackName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.Name;
+                        string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
+                        string AlbumName = string.IsNullOrWhiteSpace(track.AlbumName) ? nulltext : track.AlbumName;
 
-                //            try
-                //            {
-                //                if (i == 0)
-                //                {
-                //                    LastResponse<LastAlbum> AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
-                //                    LastImageSet AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
-                //                    string AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
-                //                    string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
+                        try
+                        {
+                            if (i == 0)
+                            {
+                                LastResponse<LastAlbum> AlbumInfo = await client.Album.GetInfoAsync(ArtistName, AlbumName);
+                                LastImageSet AlbumImages = (AlbumInfo.Content.Images != null) ? AlbumInfo.Content.Images : null;
+                                string AlbumThumbnail = (AlbumImages != null) ? AlbumImages.Large.AbsoluteUri : null;
+                                string ThumbnailImage = (AlbumThumbnail != null) ? AlbumThumbnail.ToString() : null;
 
-                //                    if (!string.IsNullOrWhiteSpace(ThumbnailImage))
-                //                    {
-                //                        builder.WithThumbnailUrl(ThumbnailImage);
-                //                    }
-                //                }
-                //            }
-                //            catch (Exception e)
-                //            {
-                //                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                //                ExceptionReporter.ReportException(disclient, e);
-                //            }
+                                if (!string.IsNullOrWhiteSpace(ThumbnailImage))
+                                {
+                                    builder.WithThumbnailUrl(ThumbnailImage);
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                            ExceptionReporter.ReportException(disclient, e);
+                        }
 
-                //            int correctnum = (i + 1);
-                //            builder.AddField("Track #" + correctnum.ToString() + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
-                //        }
+                        int correctnum = (i + 1);
+                        builder.AddField("Track #" + correctnum.ToString() + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
+                    }
 
-                //        EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                    EmbedFooterBuilder efb = new EmbedFooterBuilder();
 
-                //        LastResponse<LastUser> userinfo = await client.User.GetInfoAsync(LastFMName);
-                //        int playcount = userinfo.Content.Playcount;
+                    LastResponse<LastUser> userinfo = await client.User.GetInfoAsync(LastFMName);
+                    int playcount = userinfo.Content.Playcount;
 
-                //        efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString("0");
+                    efb.Text = LastFMName + "'s Total Tracks: " + playcount.ToString("0");
 
-                //        builder.WithFooter(efb);
+                    builder.WithFooter(efb);
 
-                //        await Context.Channel.SendMessageAsync("", false, builder.Build());
+                    await Context.Channel.SendMessageAsync("", false, builder.Build());
 
-            }
+                
             catch (Exception e)
             {
                 DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
