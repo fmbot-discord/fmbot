@@ -371,11 +371,11 @@ namespace FMBot.Bot
         }
 
         [Command("fmchart"), Summary("Generates a chart based on a user's parameters.")]
-        public async Task fmchartAsync(string time = "weekly", string chartsize = "3x3", string titlesetting = "titles", IUser user = null)
+        public async Task fmchartAsync(string chartsize = "3x3", string time = "weekly", string titlesetting = "titles", IUser user = null)
         {
             if (time == "help")
             {
-                await ReplyAsync("fmchart 'weekly/monthly/yearly/overall' '3x3-10x10' 'notitles/titles' 'user'");
+                await ReplyAsync("fmchart '3x3-10x10' 'weekly/monthly/yearly/overall' 'notitles/titles' 'user'");
                 return;
             }
 
@@ -469,6 +469,7 @@ namespace FMBot.Bot
                 builder.WithUrl(URI);
                 builder.Title = await userService.GetUserTitleAsync(Context);
 
+                // @TODO: clean up
                 if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                 {
                     builder.WithDescription("Last.FM " + chartsize + " Weekly Chart for " + userSettings.UserNameLastFM);
