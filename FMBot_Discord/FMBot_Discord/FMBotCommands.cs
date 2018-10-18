@@ -517,7 +517,7 @@ namespace FMBot.Bot
         }
 
         [Command("fmartistchart"), Summary("Generates an artist chart based on a user's parameters.")]
-        public async Task fmchartAsync(string chartsize = "3x3", string time = "weekly", string titlesetting = "titles", IUser user = null)
+        public async Task fmartistchartAsync(string chartsize = "3x3", string time = "weekly", string titlesetting = "titles", IUser user = null)
         {
             if (chartsize == "help")
             {
