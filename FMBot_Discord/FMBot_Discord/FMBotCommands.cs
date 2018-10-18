@@ -374,7 +374,7 @@ namespace FMBot.Bot
         [Command("fmchart"), Summary("Generates a chart based on a user's parameters.")]
         public async Task fmchartAsync(string chartsize = "3x3", string time = "weekly", string titlesetting = "titles", IUser user = null)
         {
-            if (time == "help")
+            if (chartsize == "help")
             {
                 await ReplyAsync("fmchart '3x3-10x10' 'weekly/monthly/yearly/overall' 'notitles/titles' 'user'");
                 return;
@@ -516,14 +516,12 @@ namespace FMBot.Bot
             }
         }
 
-        [Command("fmartistchart"), Summary("Generates a artist chart based on a user's parameters.")]
-        public async Task fmartistchartAsync(string time = "weekly", string chartsize = "3x3", string titlesetting = "titles", IUser user = null)
+        [Command("fmartistchart"), Summary("Generates an artist chart based on a user's parameters.")]
+        public async Task fmchartAsync(string chartsize = "3x3", string time = "weekly", string titlesetting = "titles", IUser user = null)
         {
-            JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
-
-            if (time == "help")
+            if (chartsize == "help")
             {
-                await ReplyAsync(cfgjson.CommandPrefix + "fmartistchart [weekly/monthly/yearly/overall] [3x3-10x10] [notitles/titles] [user]");
+                await ReplyAsync(cfgjson.CommandPrefix + "fmartistchart [3x3-10x10] [weekly/monthly/yearly/overall] [notitles/titles] [user]");
                 return;
             }
 
@@ -617,6 +615,7 @@ namespace FMBot.Bot
                 builder.WithUrl(URI);
                 builder.Title = await userService.GetUserTitleAsync(Context);
 
+                // @TODO: clean up
                 if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                 {
                     builder.WithDescription("Last.FM " + chartsize + " Weekly Chart for " + userSettings.UserNameLastFM);
@@ -1557,19 +1556,19 @@ namespace FMBot.Bot
         [Command("fmgithub"), Summary("GitHub Page")]
         public async Task githubAsync()
         {
-            await ReplyAsync("https://github.com/Bitl/FMBot.Bot");
+            await ReplyAsync("https://github.com/Bitl/FMBot_Discord");
         }
 
         [Command("fmgitlab"), Summary("GitLab Page")]
         public async Task gitlabAsync()
         {
-            await ReplyAsync("https://gitlab.com/Bitl/FMBot.Bot");
+            await ReplyAsync("https://gitlab.com/Bitl/FMBot_Discord");
         }
 
         [Command("fmbugs"), Summary("Report bugs here!")]
         public async Task bugsAsync()
         {
-            await ReplyAsync("Report bugs here:\nGithub: https://github.com/Bitl/FMBot.Bot/issues \nGitLab: https://gitlab.com/Bitl/FMBot.Bot/issues");
+            await ReplyAsync("Report bugs here:\nGithub: https://github.com/Bitl/FMBot_Discord/issues \nGitLab: https://gitlab.com/Bitl/FMBot_Discord/issues");
         }
 
         [Command("fmserver"), Summary("Join the Discord server!")]
