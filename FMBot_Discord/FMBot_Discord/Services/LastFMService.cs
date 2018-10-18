@@ -52,7 +52,22 @@ namespace FMBot.Services
 
             return tracks;
         }
+        
+        // Get top artists
+        public async Task<PageResponse<LastArtist>> GetTopArtistsAsync(string lastFMUserName, LastStatsTimeSpan timespan, int count = 2)
+        {
+            PageResponse<LastArtist> artists = await lastfmClient.User.GetTopArtists(lastFMUserName, timepan, 1, count);
 
+            return artists;
+        }
+        
+        // Get top albums
+        public async Task<PageResponse<LastAlbum>> GetTopAlbumsAsync(string lastFMUserName, LastStatsTimeSpan timespan, int count = 2)
+        {
+            PageResponse<LastAlbum> albums = await lastfmClient.User.GetTopAlbums(lastFMUserName, timepan, 1, count);
+
+            return albums;
+        }
 
         // User
         public async Task<LastResponse<LastUser>> GetUserInfoAsync(string lastFMUserName)
