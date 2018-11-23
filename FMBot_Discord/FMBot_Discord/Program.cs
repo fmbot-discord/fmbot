@@ -332,7 +332,7 @@ namespace FMBot.Bot
                 var cfgjson = await JsonCfg.GetJSONDataAsync();
                 var fmclient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
 
-                string LastFMName = DBase.GetRandFMName();
+                string LastFMName = "lastfmsupport";
                 if (!LastFMName.Equals("NULL"))
                 {
                     var tracks = await fmclient.User.GetRecentScrobbles(LastFMName, null, 1, 2);
