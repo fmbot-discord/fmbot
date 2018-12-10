@@ -123,7 +123,11 @@ namespace FMBot.Bot
                     {
                         builder.Title = lastFMUserName + " stats";
                     }
-                    builder.WithDescription("Now Playing");
+
+                    if (currentTrack.IsNowPlaying == true)
+                    {
+                        builder.WithDescription("Now Playing");
+                    }
 
                     string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
                     string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
@@ -136,7 +140,7 @@ namespace FMBot.Bot
                         builder.WithThumbnailUrl(AlbumImages.Medium.ToString());
                     }
 
-                    builder.AddField("Current: " + TrackName, ArtistName + " | " + AlbumName);
+                    builder.AddField((currentTrack.IsNowPlaying == true ? "Current: " : "Last track: ") + TrackName, ArtistName + " | " + AlbumName);
 
                     EmbedFooterBuilder efb = new EmbedFooterBuilder();
 
@@ -170,7 +174,10 @@ namespace FMBot.Bot
                         builder.Title = lastFMUserName + " stats";
                     }
 
-                    builder.WithDescription("Now Playing");
+                    if (currentTrack.IsNowPlaying == true)
+                    {
+                        builder.WithDescription("Now Playing");
+                    }
 
                     string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
                     string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
@@ -187,7 +194,7 @@ namespace FMBot.Bot
                         builder.WithThumbnailUrl(AlbumImages.Medium.ToString());
                     }
 
-                    builder.AddField("Current: " + TrackName, ArtistName + " | " + AlbumName);
+                    builder.AddField((currentTrack.IsNowPlaying == true ? "Current: " : "Last track: ") + TrackName, ArtistName + " | " + AlbumName);
                     builder.AddField("Previous: " + LastTrackName, LastArtistName + " | " + LastAlbumName);
 
                     EmbedFooterBuilder efb = new EmbedFooterBuilder();
@@ -1490,22 +1497,11 @@ namespace FMBot.Bot
             builder.WithDescription(SelfUser.Username + " Statistics");
 
             TimeSpan startTime = (DateTime.Now - Process.GetCurrentProcess().StartTime);
-            IEnumerable<FileData> files = FastDirectoryEnumerator.EnumerateFiles(GlobalVars.CacheFolder, "*.txt");
-
-            string pattern = "[0-9]{18}\\.txt";
-
-            int filecount = 0;
-
-            foreach (FileData file in files)
-            {
-                if (Regex.IsMatch(file.Name, pattern))
-                {
-                    filecount += 1;
-                }
-            }
 
             DiscordSocketClient SocketClient = Context.Client as DiscordSocketClient;
             int SelfGuilds = SocketClient.Guilds.Count();
+
+            int userCount = await userService.GetUserCountAsync();
 
             SocketSelfUser SocketSelf = Context.Client.CurrentUser as SocketSelfUser;
 
@@ -1529,7 +1525,7 @@ namespace FMBot.Bot
 
             builder.AddInlineField("Bot Uptime: ", startTime.ToReadableString());
             builder.AddInlineField("Server Uptime: ", GlobalVars.SystemUpTime().ToReadableString());
-            builder.AddInlineField("Number of users in the database: ", filecount);
+            builder.AddInlineField("Number of users in the database: ", userCount.ToString());
             builder.AddInlineField("Total number of command executions since bot start: ", fixedCmdGlobalCount);
             builder.AddInlineField("Command executions in servers since bot start: ", fixedCmdGlobalCount_Servers);
             builder.AddInlineField("Command executions in DMs since bot start: ", fixedCmdGlobalCount_DMs);

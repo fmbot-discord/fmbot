@@ -182,5 +182,11 @@ namespace FMBot.Services
                 db.SaveChanges();
             }
         }
+
+        // Usercount
+        public async Task<int> GetUserCountAsync()
+        {
+            return db.Users.Count();
+        }
     }
 }
