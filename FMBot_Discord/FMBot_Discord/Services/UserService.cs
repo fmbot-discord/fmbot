@@ -183,6 +183,18 @@ namespace FMBot.Services
             }
         }
 
+        // Remove user
+        public async Task DeleteUser(IUser discordUser)
+        {
+            string discordUserID = discordUser.Id.ToString();
+
+            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
+
+            db.Users.Remove(user);
+
+            db.SaveChanges();
+        }
+
         // Usercount
         public async Task<int> GetUserCountAsync()
         {

@@ -33,30 +33,6 @@ namespace FMBot.Bot
             public static string FMSuperAdminString = "IsSuperAdmin";
             public static string FMOwnerString = "IsOwner";
 
-            public static void WriteEntry(string id, string name, int fmval = 0)
-            {
-                File.WriteAllText(GlobalVars.CacheFolder + id + ".txt", name + Environment.NewLine + fmval.ToString());
-                File.SetAttributes(GlobalVars.CacheFolder + id + ".txt", FileAttributes.Normal);
-            }
-
-            public static void RemoveEntry(string id)
-            {
-                if (EntryExists(id))
-                {
-                    File.SetAttributes(GlobalVars.CacheFolder + id + ".txt", FileAttributes.Normal);
-                    File.Delete(GlobalVars.CacheFolder + id + ".txt");
-                }
-                if (FriendsExists(id))
-                {
-                    File.SetAttributes(GlobalVars.CacheFolder + id + "-friends.txt", FileAttributes.Normal);
-                    File.Delete(GlobalVars.CacheFolder + id + "-friends.txt");
-                }
-                if (File.Exists(GlobalVars.CacheFolder + id + "-chart.png"))
-                {
-                    File.SetAttributes(GlobalVars.CacheFolder + id + "-chart.png", FileAttributes.Normal);
-                    File.Delete(GlobalVars.CacheFolder + id + "-chart.png");
-                }
-            }
 
             public async static Task<IGuildUser> ConvertIDToGuildUser(IGuild guild, ulong id)
             {
@@ -73,107 +49,7 @@ namespace FMBot.Bot
                 return null;
             }
 
-            public async static Task<IGuildUser> GetIGuildUserForFMName(IGuild guild, string name)
-            {
-                ulong FMNameID = GetIDForName(name);
 
-                IGuildUser user = await ConvertIDToGuildUser(guild, FMNameID);
-
-                if (user.Id == FMNameID)
-                {
-                    return user;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-
-            public static bool EntryExists(string id)
-            {
-                return File.Exists(GlobalVars.CacheFolder + id + ".txt");
-            }
-
-            public static string GetNameForID(string id)
-            {
-                string line;
-
-                using (StreamReader file = new StreamReader(GlobalVars.CacheFolder + id + ".txt"))
-                {
-                    while ((line = file.ReadLine()) != null)
-                    {
-                        file.Close();
-                        return line;
-                    }
-                }
-
-                return "NULL";
-            }
-
-            public static ulong GetIDForName(string name)
-            {
-                foreach (FileData file in FastDirectoryEnumerator.EnumerateFiles(GlobalVars.CacheFolder, "*.txt"))
-                {
-                    if (File.ReadAllText(file.Path).Contains(name))
-                    {
-                        string nameConvert = Path.GetFileNameWithoutExtension(file.Path);
-                        ulong DiscordID = Convert.ToUInt64(nameConvert);
-                        return DiscordID;
-                    }
-                }
-
-                return 0;
-            }
-
-            public static string GetRandFMName()
-            {
-                Random rand = new Random();
-                List<FileData> files = FastDirectoryEnumerator.EnumerateFiles(GlobalVars.CacheFolder).Where(F => F.Name.ToLower().EndsWith(".txt")).ToList();
-                FileData randomFile = files[rand.Next(0, files.Count)];
-
-                string line;
-
-                using (StreamReader file = new StreamReader(randomFile.Path))
-                {
-                    while ((line = file.ReadLine()) != null)
-                    {
-                        file.Close();
-                        return line;
-                    }
-                }
-
-                return "NULL";
-            }
-
-            public static string GetFMChartForID(string id)
-            {
-                string filename = GlobalVars.CacheFolder + id + "-chart.png";
-
-                if (File.Exists(filename))
-                {
-                    return filename;
-                }
-                else
-                {
-                    return "NULL";
-                }
-            }
-
-            public static string GetRandomFMChart()
-            {
-                Random rand = new Random();
-                List<FileData> files = FastDirectoryEnumerator.EnumerateFiles(GlobalVars.CacheFolder).Where(F => F.Name.ToLower().EndsWith(".png")).ToList();
-                FileData randomFile = files[rand.Next(0, files.Count)];
-
-                if (File.Exists(randomFile.Path))
-                {
-                    return randomFile.Path;
-                }
-                else
-                {
-                    return "NULL";
-                }
-            }
 
             public static ulong GetIDFromChart(string chartname)
             {
@@ -198,22 +74,6 @@ namespace FMBot.Bot
                 }
             }
 
-            public static int GetModeIntForID(string id)
-            {
-                string line;
-
-                using (StreamReader file = new StreamReader(GlobalVars.CacheFolder + id + ".txt"))
-                {
-                    while ((line = file.ReadLine()) != null)
-                    {
-                        string nextline = file.ReadLine();
-                        file.Close();
-                        return Convert.ToInt32(nextline);
-                    }
-                }
-
-                return 4;
-            }
             #endregion
 
             #region Admin Settings

@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using FMBot.Services;
 using System;
 using System.IO;
 using System.Linq;
@@ -16,6 +17,8 @@ namespace FMBot.Bot
 
         private readonly CommandService _service;
         private readonly TimerService _timer;
+
+        private UserService userService = new UserService();
 
         public FMBotAdminCommands(CommandService service, TimerService timer)
         {
@@ -33,17 +36,16 @@ namespace FMBot.Bot
             var DiscordUser = Context.Message.Author;
             if (FMBotAdminUtil.HasCommandAccess(DiscordUser, 1))
             {
-                var ChosenUser = user ?? Context.Message.Author;
-                string LastFMName = DBase.GetNameForID(ChosenUser.Id.ToString());
-                string LastFMMode = DBase.GetNameForModeInt(DBase.GetModeIntForID(ChosenUser.Id.ToString()));
-                if (!LastFMName.Equals("NULL"))
-                {
-                    await ReplyAsync("The user's Last.FM name is '" + LastFMName + "'. Their mode is set to '" + LastFMMode + "'.");
-                }
-                else
+                var chosenUser = user ?? Context.Message.Author;
+                Data.Entities.User userSettings = await userService.GetUserSettingsAsync(chosenUser);
+
+                if (userSettings == null || userSettings.UserNameLastFM == null)
                 {
                     await ReplyAsync("The user's Last.FM name has not been set.");
+                    return;
                 }
+
+                await ReplyAsync("The user's Last.FM name is '" + userSettings.UserNameLastFM + "'. Their mode is set to '" + userSettings.ChartType + "'.");
             }
         }
 
@@ -433,7 +435,7 @@ namespace FMBot.Bot
 
                     foreach (DriveInfo drive in drives.Where(w => w.IsReady))
                     {
-                        builder.AddField(drive.Name + " - " + drive.VolumeLabel + ":", ((drive.AvailableFreeSpace / 1024f) / 1024f) + "mb free of "  + ((drive.TotalSize / 1024f) / 1024f) + "mb");
+                        builder.AddField(drive.Name + " - " + drive.VolumeLabel + ":", ((drive.AvailableFreeSpace / 1024f) / 1024f) + "mb free of " + ((drive.TotalSize / 1024f) / 1024f) + "mb");
                     }
 
                     await Context.Channel.SendMessageAsync("", false, builder.Build());
