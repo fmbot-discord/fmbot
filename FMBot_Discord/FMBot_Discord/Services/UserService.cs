@@ -198,7 +198,7 @@ namespace FMBot.Services
         // Usercount
         public async Task<int> GetUserCountAsync()
         {
-            return db.Users.Count();
+            return await db.Users.CountAsync();
         }
     }
 }

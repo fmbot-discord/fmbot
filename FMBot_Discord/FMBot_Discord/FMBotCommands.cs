@@ -328,7 +328,7 @@ namespace FMBot.Bot
                 }
                 else
                 {
-                    await ReplyAsync("No results have been found for this track.");
+                    await ReplyAsync("No results have been found for this track. Querystring: " + querystring);
                 }
             }
             catch (Exception e)

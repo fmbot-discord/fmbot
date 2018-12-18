@@ -14,6 +14,7 @@ using System.Globalization;
 using static FMBot.Bot.FMBotModules;
 using static FMBot.Bot.FMBotUtil;
 using IF.Lastfm.Core.Api;
+using FMBot.Services;
 
 namespace FMBot.Bot
 {
@@ -27,6 +28,8 @@ namespace FMBot.Bot
         private readonly IServiceCollection map = new ServiceCollection();
         private string prefix;
         private List<string> commandList = new List<string>();
+
+        private GuildService guildService = new GuildService();
 
         public static void Main(string[] args)
             => new Program().MainAsync().GetAwaiter().GetResult();
@@ -130,9 +133,9 @@ namespace FMBot.Bot
         {
             await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Joined guild " + arg.Name));
 
-            if (!DBase.ServerEntryExists(arg.Id.ToString()))
+            if (!await guildService.GuildExistsAsync(arg))
             {
-                DBase.WriteServerEntry(arg.Id.ToString());
+                await guildService.AddGuildAsync(arg);
             }
 
             await Task.CompletedTask;

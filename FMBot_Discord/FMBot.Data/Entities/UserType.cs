@@ -6,8 +6,6 @@
 
         Admin = 1,
 
-        SuperAdmin = 2,
-
-        Owner = 3
+        Owner = 2
     }
 }

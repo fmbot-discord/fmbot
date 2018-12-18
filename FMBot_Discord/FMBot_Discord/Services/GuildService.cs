@@ -1,7 +1,9 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using FMBot.Data.Entities;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -47,6 +49,25 @@ namespace FMBot.Services
             }
 
             return null;
+        }
+
+        public async Task AddGuildAsync(SocketGuild guild)
+        {
+            db.Guilds.Add(new Guild
+            {
+                DiscordGuildID = guild.Id.ToString(),
+                ChartTimePeriod = ChartTimePeriod.Monthly,
+                ChartType = ChartType.embedmini,
+                Name = guild.Name,
+                TitlesEnabled = true,
+            });
+
+            await db.SaveChangesAsync();
+        }
+
+        public async Task<bool> GuildExistsAsync(SocketGuild guild)
+        {
+            return await db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guild.Id.ToString()) != null;
         }
     }
 }
