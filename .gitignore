@@ -19,3 +19,5 @@ ipch
 [Dd]ebug*/
 [Rr]elease*/
 /FMBot_Discord/.vs/FMBot_Discord/v15/Server/sqlite3
+/FMBot_Discord/FMBot_Discord/bin
+/FMBot_Discord/packages
