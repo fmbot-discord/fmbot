@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -29,6 +30,9 @@ namespace FMBot.Data.Entities
         public ChartTimePeriod ChartTimePeriod { get; set; }
 
         public UserType UserType { get; set; }
+
+
+        public DateTime? LastGeneratedChartDateTimeUtc { get; set; }
 
 
         public ICollection<Guild> Guilds { get; set; }

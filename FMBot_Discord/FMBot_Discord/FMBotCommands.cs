@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using YoutubeSearch;
 using static FMBot.Bot.FMBotModules;
 using static FMBot.Bot.FMBotUtil;
+using static FMBot.Bot.Models.LastFMModels;
 
 namespace FMBot.Bot
 {
@@ -388,11 +389,16 @@ namespace FMBot.Bot
                 return;
             }
 
-            Data.Entities.User userSettings = await userService.GetUserSettingsAsync(Context.User);
+            User userSettings = await userService.GetUserSettingsAsync(Context.User);
 
             if (userSettings == null || userSettings.UserNameLastFM == null)
             {
                 await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
+                return;
+            }
+            if (userSettings.LastGeneratedChartDateTimeUtc > DateTime.UtcNow.AddMinutes(2))
+            {
+                await ReplyAsync("Sorry, but you can only generate a chart once every 2 minutes due to performance reasons. (Note: This might be temporary)");
                 return;
             }
 
@@ -423,23 +429,31 @@ namespace FMBot.Bot
                 }
                 else if (chartsize.Equals("7x7"))
                 {
-                    chartalbums = "49";
-                    chartrows = "7";
+                    //chartalbums = "49";
+                    //chartrows = "7";
+                    await ReplyAsync("Sorry, charts above 6x6 have been temporarily disabled due to performance issues.");
+                    return;
                 }
                 else if (chartsize.Equals("8x8"))
                 {
-                    chartalbums = "64";
-                    chartrows = "8";
+                    //chartalbums = "64";
+                    //chartrows = "8";
+                    await ReplyAsync("Sorry, charts above 6x6 have been temporarily disabled due to performance issues.");
+                    return;
                 }
                 else if (chartsize.Equals("9x9"))
                 {
-                    chartalbums = "81";
-                    chartrows = "9";
+                    //chartalbums = "81";
+                    //chartrows = "9";
+                    await ReplyAsync("Sorry, charts above 6x6 have been temporarily disabled due to performance issues.");
+                    return;
                 }
                 else if (chartsize.Equals("10x10"))
                 {
-                    chartalbums = "100";
-                    chartrows = "10";
+                    //chartalbums = "100";
+                    //chartrows = "10";
+                    await ReplyAsync("Sorry, charts above 6x6 have been temporarily disabled due to performance issues.");
+                    return;
                 }
                 else
                 {
@@ -452,7 +466,7 @@ namespace FMBot.Bot
 
                 List<Bitmap> images = new List<Bitmap>();
 
-                LastFMService.FMBotChart chart = new LastFMService.FMBotChart
+                FMBotChart chart = new FMBotChart
                 {
                     time = time,
                     LastFMName = userSettings.UserNameLastFM,
@@ -464,6 +478,8 @@ namespace FMBot.Bot
                     mode = 0,
                     titles = userSettings.TitlesEnabled.HasValue ? userSettings.TitlesEnabled.Value : true,
                 };
+
+                userService.ResetChartTimer(userSettings);
 
                 await lastFMService.GenerateChartAsync(chart);
 
@@ -533,11 +549,16 @@ namespace FMBot.Bot
                 return;
             }
 
-            Data.Entities.User userSettings = await userService.GetUserSettingsAsync(Context.User);
+            User userSettings = await userService.GetUserSettingsAsync(Context.User);
 
             if (userSettings == null || userSettings.UserNameLastFM == null)
             {
                 await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
+                return;
+            }
+            if (userSettings.LastGeneratedChartDateTimeUtc > DateTime.UtcNow.AddMinutes(2))
+            {
+                await ReplyAsync("Sorry, but you can only generate a chart once every 2 minutes due to performance reasons. (Note: This might be temporary)");
                 return;
             }
 
@@ -568,23 +589,31 @@ namespace FMBot.Bot
                 }
                 else if (chartsize.Equals("7x7"))
                 {
-                    chartalbums = "49";
-                    chartrows = "7";
+                    //chartalbums = "49";
+                    //chartrows = "7";
+                    await ReplyAsync("Sorry, charts above 6x6 have been temporarily disabled due to performance issues.");
+                    return;
                 }
                 else if (chartsize.Equals("8x8"))
                 {
-                    chartalbums = "64";
-                    chartrows = "8";
+                    //chartalbums = "64";
+                    //chartrows = "8";
+                    await ReplyAsync("Sorry, charts above 6x6 have been temporarily disabled due to performance issues.");
+                    return;
                 }
                 else if (chartsize.Equals("9x9"))
                 {
-                    chartalbums = "81";
-                    chartrows = "9";
+                    //chartalbums = "81";
+                    //chartrows = "9";
+                    await ReplyAsync("Sorry, charts above 6x6 have been temporarily disabled due to performance issues.");
+                    return;
                 }
                 else if (chartsize.Equals("10x10"))
                 {
-                    chartalbums = "100";
-                    chartrows = "10";
+                    //chartalbums = "100";
+                    //chartrows = "10";
+                    await ReplyAsync("Sorry, charts above 6x6 have been temporarily disabled due to performance issues.");
+                    return;
                 }
                 else
                 {
@@ -597,7 +626,7 @@ namespace FMBot.Bot
 
                 List<Bitmap> images = new List<Bitmap>();
 
-                LastFMService.FMBotChart chart = new LastFMService.FMBotChart
+                FMBotChart chart = new FMBotChart
                 {
                     time = time,
                     LastFMName = userSettings.UserNameLastFM,
@@ -609,6 +638,8 @@ namespace FMBot.Bot
                     mode = 1,
                     titles = userSettings.TitlesEnabled.HasValue ? userSettings.TitlesEnabled.Value : true,
                 };
+
+                userService.ResetChartTimer(userSettings);
 
                 await lastFMService.GenerateChartAsync(chart);
 

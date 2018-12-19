@@ -221,6 +221,7 @@
     <Compile Include="FMBotUtil.cs" />
     <Compile Include="Models\AdminModels.cs" />
     <Compile Include="Models\FastFileEnumaratorModel.cs" />
+    <Compile Include="Models\LastFMModels.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\AdminService.cs" />

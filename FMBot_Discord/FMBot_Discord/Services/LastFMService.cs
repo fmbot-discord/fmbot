@@ -13,6 +13,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using static FMBot.Bot.FMBotUtil;
+using static FMBot.Bot.Models.LastFMModels;
 
 namespace FMBot.Services
 {
@@ -21,19 +22,6 @@ namespace FMBot.Services
         public static JsonCfg.ConfigJson cfgjson = JsonCfg.GetJSONData();
 
         public LastfmClient lastfmClient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
-
-        public class FMBotChart
-        {
-            public string time;
-            public string LastFMName;
-            public int max;
-            public int rows;
-            public List<Bitmap> images;
-            public IUser DiscordUser;
-            public DiscordSocketClient disclient;
-            public int mode;
-            public bool titles;
-        }
 
 
         // Last scrobble
@@ -176,9 +164,13 @@ namespace FMBot.Services
 
                         Bitmap cover;
 
-                        if (albumImages != null && albumImages.Large != null)
+                        if (albumImages != null && albumImages.Medium != null)
                         {
-                            WebRequest request = WebRequest.Create(albumImages.Large.AbsoluteUri.ToString());
+                            string url = null;
+
+                            url = albumImages.Large.AbsoluteUri.ToString();
+
+                            WebRequest request = WebRequest.Create(url);
                             using (WebResponse response = request.GetResponse())
                             {
                                 using (Stream responseStream = response.GetResponseStream())
@@ -217,7 +209,11 @@ namespace FMBot.Services
 
                         if (artistImage != null && artistImage.Large != null)
                         {
-                            WebRequest request = WebRequest.Create(artistImage.Large.AbsoluteUri.ToString());
+                            string url = null;
+
+                            url = artistImage.Large.AbsoluteUri.ToString();
+
+                            WebRequest request = WebRequest.Create(url);
                             using (WebResponse response = request.GetResponse())
                             {
                                 using (Stream responseStream = response.GetResponseStream())

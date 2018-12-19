@@ -11,7 +11,7 @@ namespace FMBot.Services
 {
     public class UserService
     {
-        private FMBotDbContext db = new FMBotDbContext();
+        private readonly FMBotDbContext db = new FMBotDbContext();
 
         // User settings
         public async Task<User> GetUserSettingsAsync(IUser discordUser)
@@ -182,6 +182,16 @@ namespace FMBot.Services
 
                 db.SaveChanges();
             }
+        }
+
+        // Set LastFM Name
+        public void ResetChartTimer(User user)
+        {
+            user.LastGeneratedChartDateTimeUtc = DateTime.UtcNow;
+
+            db.Entry(user).State = EntityState.Modified;
+
+            db.SaveChanges();
         }
 
         // Remove user
