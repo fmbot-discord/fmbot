@@ -159,10 +159,8 @@ namespace FMBot.Bot
             private const string LogSource = "Timer";
 
             private bool timerEnabled = false;
-
-            UserService userService = new UserService();
-
-            LastFMService lastFMService = new LastFMService();
+            private readonly UserService userService = new UserService();
+            private readonly LastFMService lastFMService = new LastFMService();
 
             public TimerService(DiscordSocketClient client)
             {
@@ -362,7 +360,7 @@ namespace FMBot.Bot
                     if (File.Exists(GlobalVars.BasePath + "newavatar.png"))
                     {
                         FileStream fileStream = new FileStream(GlobalVars.BasePath + "newavatar.png", FileMode.Open);
-                        await client.CurrentUser.ModifyAsync(u => u.Avatar = new Discord.Image(fileStream));
+                        await client.CurrentUser.ModifyAsync(u => u.Avatar = new Image(fileStream));
                         fileStream.Close();
                     }
 

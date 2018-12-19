@@ -29,6 +29,7 @@ namespace FMBot.Services
         }
 
 
+
         // Discord nickname/username
         public async Task<string> GetNameAsync(ICommandContext context)
         {
@@ -113,7 +114,7 @@ namespace FMBot.Services
 
 
         // Server Blacklisting
-        public async Task<bool?> GetBlacklistedAsync(IUser discordUser)
+        public async Task<bool> GetBlacklistedAsync(IUser discordUser)
         {
             string discordUserID = discordUser.Id.ToString();
 
@@ -124,7 +125,7 @@ namespace FMBot.Services
                 return false;
             }
 
-            return user.Blacklisted;
+            return user.Blacklisted ?? false;
         }
 
         // UserTitle

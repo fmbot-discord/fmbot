@@ -1,17 +1,16 @@
 ﻿using Discord;
 using FMBot.Data.Entities;
-using System;
-using System.Collections.Generic;
 using System.Data.Entity;
-using System.Linq;
-using System.Text;
+using System.IO;
 using System.Threading.Tasks;
+using static FMBot.Bot.FMBotUtil;
+using static FMBot.Bot.Models.FastFileEnumaratorModel;
 
 namespace FMBot.Services
 {
-    class AdminService
+    internal class AdminService
     {
-        private FMBotDbContext db = new FMBotDbContext();
+        private readonly FMBotDbContext db = new FMBotDbContext();
 
         public async Task<bool> HasCommandAccessAsync(IUser discordUser, UserType userType)
         {
@@ -75,6 +74,54 @@ namespace FMBot.Services
 
             return true;
         }
+
+
+        public async Task<bool> AddUserToBlacklistAsync(string discordUserID)
+        {
+            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+            user.Blacklisted = true;
+
+            db.Entry(user).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            return true;
+        }
+
+
+        public async Task<bool> RemoveUserFromBlacklistAsync(string discordUserID)
+        {
+            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+            user.Blacklisted = true;
+
+            db.Entry(user).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            return true;
+        }
+
+
+        public static void DeleteAllCharts()
+        {
+            foreach (FileData file in FastDirectoryEnumerator.EnumerateFiles(GlobalVars.CacheFolder, "*.png"))
+            {
+                File.Delete(file.Path);
+            }
+        }
+
 
         public string FormatBytes(long bytes)
         {

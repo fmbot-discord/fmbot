@@ -4,8 +4,10 @@ using Discord.WebSocket;
 using FMBot.Data.Entities;
 using System.Collections.Generic;
 using System.Data.Entity;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Services
 {
@@ -38,9 +40,9 @@ namespace FMBot.Services
             if (searchValue.Length > 3)
             {
                 string id = searchValue.Trim(new char[] { '@', '!', '<', '>' });
-                var filteredUsers = users.Where(f => f.Id.ToString() == id || f.Nickname == searchValue || f.Username == searchValue);
+                IEnumerable<IGuildUser> filteredUsers = users.Where(f => f.Id.ToString() == id || f.Nickname == searchValue || f.Username == searchValue);
 
-                var user = filteredUsers.FirstOrDefault();
+                IGuildUser user = filteredUsers.FirstOrDefault();
 
                 if (user != null)
                 {
@@ -51,18 +53,53 @@ namespace FMBot.Services
             return null;
         }
 
+        public async Task ChangeGuildSettingAsync(IGuild guild, ChartTimePeriod chartTimePeriod, ChartType chartType)
+        {
+            string guildId = guild.Id.ToString();
+            Guild existingGuild = await db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guildId);
+
+            if (existingGuild == null)
+            {
+                Guild newGuild = new Guild
+                {
+                    DiscordGuildID = guildId,
+                    ChartTimePeriod = chartTimePeriod,
+                    ChartType = chartType,
+                    Name = guild.Name,
+                    TitlesEnabled = true,
+                };
+
+                db.Guilds.Add(newGuild);
+
+                await db.SaveChangesAsync();
+
+                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Guild added to database."));
+            }
+
+
+
+            // IGuildUser ServerUser = (IGuildUser)Context.Message.Author;
+        }
+
+
         public async Task AddGuildAsync(SocketGuild guild)
         {
-            db.Guilds.Add(new Guild
+            string guildId = guild.Id.ToString();
+
+            Guild newGuild = new Guild
             {
-                DiscordGuildID = guild.Id.ToString(),
+                DiscordGuildID = guildId,
                 ChartTimePeriod = ChartTimePeriod.Monthly,
                 ChartType = ChartType.embedmini,
                 Name = guild.Name,
                 TitlesEnabled = true,
-            });
+            };
+
+            db.Guilds.Add(newGuild);
 
             await db.SaveChangesAsync();
+
+            await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Guild added to database."));
         }
 
         public async Task<bool> GuildExistsAsync(SocketGuild guild)

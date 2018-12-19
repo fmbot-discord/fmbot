@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using FMBot.Bot.Extensions;
 using FMBot.Data.Entities;
 using FMBot.Services;
 using IF.Lastfm.Core.Api;

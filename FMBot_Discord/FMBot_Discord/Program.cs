@@ -2,23 +2,23 @@ using Discord;
 using Discord.Commands;
 using Discord.Net.Providers.WS4Net;
 using Discord.WebSocket;
+using FMBot.Services;
+using IF.Lastfm.Core.Api;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Linq;
-using System.Globalization;
 using static FMBot.Bot.FMBotModules;
 using static FMBot.Bot.FMBotUtil;
-using IF.Lastfm.Core.Api;
-using FMBot.Services;
 
 namespace FMBot.Bot
 {
-    class Program
+    internal class Program
     {
         #region FMBot Init
 
@@ -27,21 +27,25 @@ namespace FMBot.Bot
         private IServiceProvider services;
         private readonly IServiceCollection map = new ServiceCollection();
         private string prefix;
-        private List<string> commandList = new List<string>();
+        private readonly List<string> commandList = new List<string>();
 
-        private GuildService guildService = new GuildService();
+        private readonly GuildService guildService = new GuildService();
+
+        private readonly UserService userService = new UserService();
 
         public static void Main(string[] args)
-            => new Program().MainAsync().GetAwaiter().GetResult();
+        {
+            new Program().MainAsync().GetAwaiter().GetResult();
+        }
 
         public async Task MainAsync()
         {
             try
-            {  
-		        string assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-		        await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "FMBot v" + assemblyVersion + " loading..."));  
-		
-                var cfgjson = await JsonCfg.GetJSONDataAsync();
+            {
+                string assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "FMBot v" + assemblyVersion + " loading..."));
+
+                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
 
                 if (!Directory.Exists(GlobalVars.CacheFolder))
                 {
@@ -49,18 +53,8 @@ namespace FMBot.Bot
                 }
                 else
                 {
-                    var users = new DirectoryInfo(GlobalVars.CacheFolder);
+                    DirectoryInfo users = new DirectoryInfo(GlobalVars.CacheFolder);
                     GlobalVars.ClearReadOnly(users);
-                }
-
-                if (!Directory.Exists(GlobalVars.ServersFolder))
-                {
-                    Directory.CreateDirectory(GlobalVars.ServersFolder);
-                }
-                else
-                {
-                    var servers = new DirectoryInfo(GlobalVars.ServersFolder);
-                    GlobalVars.ClearReadOnly(servers);
                 }
 
                 await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Initalizing Last.FM..."));
@@ -83,8 +77,8 @@ namespace FMBot.Bot
                 await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Registering Commands and Modules..."));
                 commands = new CommandService(new CommandServiceConfig()
                 {
-                     CaseSensitiveCommands = false
-		        });
+                    CaseSensitiveCommands = false
+                });
 
                 string token = cfgjson.Token; // Remember to keep this private!
 
@@ -98,7 +92,7 @@ namespace FMBot.Bot
 
                 await client.SetGameAsync("🎶 Say " + prefix + "fmhelp to use 🎶");
                 await client.SetStatusAsync(UserStatus.DoNotDisturb);
-		        AppDomain.CurrentDomain.UnhandledException += CatchFatalException;
+                AppDomain.CurrentDomain.UnhandledException += CatchFatalException;
 
                 // Block this task until the program is closed.
                 await Task.Delay(-1);
@@ -124,7 +118,7 @@ namespace FMBot.Bot
         {
             await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Left guild " + arg.Name));
 
-            DBase.RemoveServerEntry(arg.Id.ToString());
+            //DBase.RemoveServerEntry(arg.Id.ToString());
 
             await Task.CompletedTask;
         }
@@ -152,18 +146,18 @@ namespace FMBot.Bot
             client.MessageReceived += HandleCommand_MessageReceived;
             client.MessageUpdated += HandleCommand_MessageEdited;
             client.CurrentUserUpdated += HandleCommand_CurrentUserUpdated;
-		
-	        TextInfo ti = CultureInfo.CurrentCulture.TextInfo;
-            
-            foreach (var module in commands.Modules)
+
+            TextInfo ti = CultureInfo.CurrentCulture.TextInfo;
+
+            foreach (ModuleInfo module in commands.Modules)
             {
-                foreach (var cmd in module.Commands)
+                foreach (CommandInfo cmd in module.Commands)
                 {
-                    foreach (var alias in cmd.Aliases)
+                    foreach (string alias in cmd.Aliases)
                     {
                         commandList.Add(alias);
-			            commandList.Add(alias.ToUpper());
-			            commandList.Add(ti.ToTitleCase(alias));
+                        commandList.Add(alias.ToUpper());
+                        commandList.Add(ti.ToTitleCase(alias));
                     }
                 }
             }
@@ -173,17 +167,9 @@ namespace FMBot.Bot
         {
             if (Directory.Exists(GlobalVars.CacheFolder))
             {
-                var users = new DirectoryInfo(GlobalVars.CacheFolder);
+                DirectoryInfo users = new DirectoryInfo(GlobalVars.CacheFolder);
                 GlobalVars.ClearReadOnly(users);
             }
-
-            if (Directory.Exists(GlobalVars.ServersFolder))
-            {
-                var servers = new DirectoryInfo(GlobalVars.ServersFolder);
-                GlobalVars.ClearReadOnly(servers);
-            }
-
-
 
             await HandleCommand(messageParam);
         }
@@ -192,14 +178,8 @@ namespace FMBot.Bot
         {
             if (Directory.Exists(GlobalVars.CacheFolder))
             {
-                var users = new DirectoryInfo(GlobalVars.CacheFolder);
+                DirectoryInfo users = new DirectoryInfo(GlobalVars.CacheFolder);
                 GlobalVars.ClearReadOnly(users);
-            }
-
-            if (Directory.Exists(GlobalVars.ServersFolder))
-            {
-                var servers = new DirectoryInfo(GlobalVars.ServersFolder);
-                GlobalVars.ClearReadOnly(servers);
             }
 
             await HandleCommand(after);
@@ -238,12 +218,15 @@ namespace FMBot.Bot
         public async Task HandleCommand(SocketMessage messageParam)
         {
             // Don't process the command if it was a System Message
-            var message = messageParam as SocketUserMessage;
-            if (message == null) return;
+            SocketUserMessage message = messageParam as SocketUserMessage;
+            if (message == null)
+            {
+                return;
+            }
 
             // Create a Command Context
-            var context = new CommandContext(client, message);
-            var curUser = context.Client.CurrentUser as SocketUser;
+            CommandContext context = new CommandContext(client, message);
+            SocketUser curUser = context.Client.CurrentUser as SocketUser;
 
             // Create a number to track where the prefix ends and the command begins
             int argPos = 0;
@@ -263,12 +246,15 @@ namespace FMBot.Bot
             }
 
             // Determine if the message is a command, based on if it starts with '!' or a mention prefix
-            if (!message.HasCharPrefix(Convert.ToChar(prefix), ref argPos) || message.IsPinned || (message.Author.IsBot && message.Author != curUser)) return;
+            if (!message.HasCharPrefix(Convert.ToChar(prefix), ref argPos) || message.IsPinned || (message.Author.IsBot && message.Author != curUser))
+            {
+                return;
+            }
 
             string convertedMessage = message.Content.Replace(prefix, "");
-            var words = convertedMessage.Split(' ');
-	        List<string> wordlist = words.OfType<string>().ToList();
-	        bool wordinlist = commandList.Intersect(wordlist).Any();
+            string[] words = convertedMessage.Split(' ');
+            List<string> wordlist = words.OfType<string>().ToList();
+            bool wordinlist = commandList.Intersect(wordlist).Any();
 
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully)
@@ -276,23 +262,23 @@ namespace FMBot.Bot
             {
                 Task typing = context.Channel.TriggerTypingAsync();
 
-                var DiscordCaller = message.Author as SocketGuildUser;
+                SocketGuildUser DiscordCaller = message.Author as SocketGuildUser;
 
                 if (DiscordCaller != null)
                 {
-                    var guild = DiscordCaller.Guild;
+                    SocketGuild guild = DiscordCaller.Guild;
                     string callerserverid = guild.Id.ToString();
-                    bool isonblacklist = DBase.IsUserOnBlacklist(callerserverid, DiscordCaller.Id.ToString());
+                    bool isonblacklist = await userService.GetBlacklistedAsync(message.Author);
 
                     if (isonblacklist == true)
                     {
-                        await context.Channel.SendMessageAsync("You have been blacklisted from " + guild.Name + ". Please contact a server moderator/administrator or a FMBot administrator if you have any questions regarding this decision.");
+                        await context.Channel.SendMessageAsync("You have been blacklisted from fmbot. Please contact an FMBot administrator if you have any questions regarding this decision.");
                         return;
                     }
 
-                    if (User.IncomingRequest(client, DiscordCaller.Id) != false)
+                    if (CooldownUser.IncomingRequest(client, DiscordCaller.Id) != false)
                     {
-                        var result = await commands.ExecuteAsync(context, argPos, services);
+                        IResult result = await commands.ExecuteAsync(context, argPos, services);
                         if (!result.IsSuccess)
                         {
                             await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason));
@@ -306,9 +292,9 @@ namespace FMBot.Bot
                 }
                 else
                 {
-                    if (User.IncomingRequest(client, message.Author.Id) != false)
+                    if (CooldownUser.IncomingRequest(client, message.Author.Id) != false)
                     {
-                        var result = await commands.ExecuteAsync(context, argPos, services);
+                        IResult result = await commands.ExecuteAsync(context, argPos, services);
                         if (!result.IsSuccess)
                         {
                             await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason));
@@ -322,23 +308,23 @@ namespace FMBot.Bot
                 }
             }
         }
-	    
-	    private static void CatchFatalException(object sender, UnhandledExceptionEventArgs t)
-	    {
-    	    Environment.Exit(1);
-	    }
+
+        private static void CatchFatalException(object sender, UnhandledExceptionEventArgs t)
+        {
+            Environment.Exit(1);
+        }
 
         public async Task TestLastFMAPI()
         {
             try
             {
-                var cfgjson = await JsonCfg.GetJSONDataAsync();
-                var fmclient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
+                LastfmClient fmclient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
 
                 string LastFMName = "lastfmsupport";
                 if (!LastFMName.Equals("NULL"))
                 {
-                    var tracks = await fmclient.User.GetRecentScrobbles(LastFMName, null, 1, 2);
+                    IF.Lastfm.Core.Api.Helpers.PageResponse<IF.Lastfm.Core.Objects.LastTrack> tracks = await fmclient.User.GetRecentScrobbles(LastFMName, null, 1, 2);
                     if (tracks.Any())
                     {
                         await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Last.FM API is online"));

@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using FMBot.Bot.Extensions;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
