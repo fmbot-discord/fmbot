@@ -396,7 +396,7 @@ namespace FMBot.Bot
                 await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
                 return;
             }
-            if (userSettings.LastGeneratedChartDateTimeUtc > DateTime.UtcNow.AddMinutes(2))
+            if (userSettings.LastGeneratedChartDateTimeUtc > DateTime.UtcNow.AddMinutes(-2))
             {
                 await ReplyAsync("Sorry, but you can only generate a chart once every 2 minutes due to performance reasons. (Note: This might be temporary)");
                 return;
@@ -556,7 +556,7 @@ namespace FMBot.Bot
                 await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
                 return;
             }
-            if (userSettings.LastGeneratedChartDateTimeUtc > DateTime.UtcNow.AddMinutes(2))
+            if (userSettings.LastGeneratedChartDateTimeUtc > DateTime.UtcNow.AddMinutes(-2))
             {
                 await ReplyAsync("Sorry, but you can only generate a chart once every 2 minutes due to performance reasons. (Note: This might be temporary)");
                 return;
