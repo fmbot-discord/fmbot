@@ -1,56 +1,41 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using FMBot.Bot.Extensions;
 using FMBot.Data.Entities;
 using FMBot.Services;
-using IF.Lastfm.Core.Api;
-using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
-using SpotifyAPI.Web.Models;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Text.RegularExpressions;
+using System.Text;
 using System.Threading.Tasks;
-using YoutubeSearch;
 using static FMBot.Bot.FMBotModules;
 using static FMBot.Bot.FMBotUtil;
 using static FMBot.Bot.Models.LastFMModels;
 
-namespace FMBot.Bot
+namespace FMBot.Bot.Commands
 {
-    public class FMBotCommands : ModuleBase
+    public class LastFMCommands : ModuleBase
     {
-        #region Constructor
-
-        private readonly CommandService _service;
         private readonly TimerService _timer;
 
+
         private UserService userService = new UserService();
+
         private GuildService guildService = new GuildService();
+
         private FriendsService friendsService = new FriendsService();
 
         private LastFMService lastFMService = new LastFMService();
-        private SpotifyService spotifyService = new SpotifyService();
-        private YoutubeService youtubeService = new YoutubeService();
 
-        private readonly JsonCfg.ConfigJson cfgjson = JsonCfg.GetJSONData();
-
-        public FMBotCommands(CommandService service, TimerService timer)
+        public LastFMCommands(TimerService timer)
         {
-            _service = service;
             _timer = timer;
         }
 
-        #endregion
-
-        #region Last.FM Commands
 
         [Command("fm"), Summary("Displays what a user is listening to.")]
         [Alias("qm", "wm", "em", "rm", "tm", "ym", "um", "im", "om", "pm", "dm", "gm", "sm", "am", "hm", "jm", "km", "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm")]
@@ -63,6 +48,14 @@ namespace FMBot.Bot
                 await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
                 return;
             }
+            if (user == "help")
+            {
+                await ReplyAsync(
+                    "Usage: `.fm 'lastfm username/discord user'` \n" +
+                    "You can set your default user and your display mode through the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
+                return;
+            }
+
 
             try
             {
@@ -250,135 +243,7 @@ namespace FMBot.Bot
             }
         }
 
-        [Command("fmyt"), Summary("Shares a link to a YouTube video based on what a user is listening to")]
-        [Alias("fmyoutube")]
-        public async Task fmytAsync(IUser user = null)
-        {
-            Data.Entities.User userSettings = await userService.GetUserSettingsAsync(Context.User);
-
-            if (userSettings == null || userSettings.UserNameLastFM == null)
-            {
-                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
-                return;
-            }
-
-            try
-            {
-                LastTrack track = await lastFMService.GetLastScrobbleAsync(userSettings.UserNameLastFM);
-
-                if (track == null)
-                {
-                    await ReplyAsync("No scrobbles found on your LastFM profile. (" + userSettings.UserNameLastFM + ")");
-                    return;
-                }
-
-                try
-                {
-                    string querystring = track.Name + " - " + track.ArtistName + " " + track.AlbumName;
-
-                    VideoInformation youtubeResult = youtubeService.GetSearchResult(querystring);
-
-                    await ReplyAsync(youtubeResult.Url);
-                }
-                catch (Exception e)
-                {
-                    DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                    ExceptionReporter.ReportException(disclient, e);
-                    await ReplyAsync("No results have been found for this track.");
-                }
-            }
-            catch (Exception e)
-            {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
-                await ReplyAsync("Unable to show Last.FM info via YouTube due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
-            }
-        }
-
-        [Command("fmspotify"), Summary("Shares a link to a Spotify track based on what a user is listening to")]
-        public async Task fmspotifyAsync(IUser user = null)
-        {
-            Data.Entities.User userSettings = await userService.GetUserSettingsAsync(Context.User);
-
-            if (userSettings == null || userSettings.UserNameLastFM == null)
-            {
-                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
-                return;
-            }
-
-            try
-            {
-                PageResponse<LastTrack> tracks = await lastFMService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
-                LastTrack currentTrack = tracks.Content.ElementAt(0);
-
-                string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? null : currentTrack.Name;
-                string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? null : currentTrack.ArtistName;
-                string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? null : currentTrack.AlbumName;
-
-                string querystring = null;
-
-                querystring = TrackName + " - " + ArtistName + " " + AlbumName;
-
-                SearchItem item = await spotifyService.GetSearchResultAsync(querystring);
-
-                if (item.Tracks != null && item.Tracks.Items != null && item.Tracks.Items.Any())
-                {
-                    FullTrack track = item.Tracks.Items.FirstOrDefault();
-                    SimpleArtist trackArtist = track.Artists.FirstOrDefault();
-
-                    await ReplyAsync("https://open.spotify.com/track/" + track.Id);
-                }
-                else
-                {
-                    await ReplyAsync("No results have been found for this track. Querystring: " + querystring);
-                }
-            }
-            catch (Exception e)
-            {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
-                await ReplyAsync("Unable to show Last.FM info via Spotify due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
-            }
-        }
-
-        [Command("fmspotifysearch"), Summary("Shares a link to a Spotify track based on a user's search parameters")]
-        [Alias("fmspotifyfind")]
-        public async Task fmspotifysearchAsync(params string[] searchterms)
-        {
-            try
-            {
-                string querystring = null;
-
-                if (searchterms.Any())
-                {
-                    querystring = string.Join(" ", searchterms);
-
-                    SearchItem item = await spotifyService.GetSearchResultAsync(querystring);
-
-                    if (item.Tracks.Items.Any())
-                    {
-                        FullTrack track = item.Tracks.Items.FirstOrDefault();
-                        SimpleArtist trackArtist = track.Artists.FirstOrDefault();
-
-                        await ReplyAsync("https://open.spotify.com/track/" + track.Id);
-                    }
-                    else
-                    {
-                        await ReplyAsync("No results have been found for this track.");
-                    }
-                }
-                else
-                {
-                    await ReplyAsync("Please specify what you want to search for.");
-                }
-            }
-            catch (Exception e)
-            {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
-                await ReplyAsync("Unable to search for music via Spotify due to an internal error.");
-            }
-        }
+       
 
         [Command("fmchart"), Summary("Generates a chart based on a user's parameters.")]
         public async Task fmchartAsync(string chartsize = "3x3", string time = "weekly", string titlesetting = "titles", IUser user = null)
@@ -545,7 +410,7 @@ namespace FMBot.Bot
         {
             if (chartsize == "help")
             {
-                await ReplyAsync(cfgjson.CommandPrefix + "fmartistchart [3x3-10x10] [weekly/monthly/yearly/overall] [notitles/titles] [user]");
+                await ReplyAsync(".fmartistchart [3x3-10x10] [weekly/monthly/yearly/overall] [notitles/titles] [user]");
                 return;
             }
 
@@ -700,93 +565,7 @@ namespace FMBot.Bot
             }
         }
 
-        [Command("fmfriends"), Summary("Displays a user's friends and what they are listening to.")]
-        [Alias("fmrecentfriends", "fmfriendsrecent")]
-        public async Task fmfriendsrecentAsync(IUser user = null)
-        {
-            Data.Entities.User userSettings = await userService.GetUserSettingsAsync(Context.User);
-
-            if (userSettings == null || userSettings.UserNameLastFM == null)
-            {
-                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
-                return;
-            }
-
-            try
-            {
-                List<Friend> friends = await friendsService.GetFMFriendsAsync(Context.User);
-
-                if (friends == null || !friends.Any())
-                {
-                    await ReplyAsync("Your FMBot Friends were unable to be found. Please use fmsetfriends with your friends' names to set your friends.");
-                    return;
-                }
-
-                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-
-                eab.IconUrl = Context.User.GetAvatarUrl();
-
-                EmbedBuilder builder = new EmbedBuilder();
-                builder.WithAuthor(eab);
-                string URI = "https://www.last.fm/user/" + userSettings.UserNameLastFM;
-                builder.WithUrl(URI);
-                builder.Title = await userService.GetUserTitleAsync(Context);
-
-                string amountOfScrobbles = "Amount of scrobbles of all your friends together: ";
-
-                if (friends.Count() > 1)
-                {
-                    builder.WithDescription("Songs from " + friends.Count() + " friends");
-                }
-                else
-                {
-                    builder.WithDescription("Songs from your friend");
-                    amountOfScrobbles = "Amount of scrobbles from your friend: ";
-                }
-
-                string nulltext = "[undefined]";
-                int indexval = (friends.Count() - 1);
-                int playcount = 0;
-
-                foreach (Friend friend in friends)
-                {
-                    string friendusername = friend.FriendUser != null ? friend.FriendUser.UserNameLastFM : friend.LastFMUserName;
-
-
-                    PageResponse<LastTrack> tracks = await lastFMService.GetRecentScrobblesAsync(friendusername, 1);
-
-                    string TrackName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().Name) ? nulltext : tracks.FirstOrDefault().Name;
-                    string ArtistName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().ArtistName) ? nulltext : tracks.FirstOrDefault().ArtistName;
-                    string AlbumName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().AlbumName) ? nulltext : tracks.FirstOrDefault().AlbumName;
-
-                    builder.AddField(friendusername + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
-
-                    if (friends.Count() <= 8)
-                    {
-                        LastResponse<LastUser> userinfo = await lastFMService.GetUserInfoAsync(friendusername);
-                        playcount = playcount + userinfo.Content.Playcount;
-                    }
-                }
-
-                if (friends.Count() <= 8)
-                {
-                    EmbedFooterBuilder efb = new EmbedFooterBuilder();
-                    efb.Text = amountOfScrobbles + playcount.ToString("0");
-                    builder.WithFooter(efb);
-                }
-
-                await Context.Channel.SendMessageAsync("", false, builder.Build());
-
-
-            }
-            catch (Exception e)
-            {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
-
-                await ReplyAsync("Unable to show friends due to an internal error.");
-            }
-        }
+        
 
         [Command("fmrecent"), Summary("Displays a user's recent tracks.")]
         [Alias("fmrecenttracks")]
@@ -796,7 +575,7 @@ namespace FMBot.Bot
 
             if (user == "help")
             {
-                await ReplyAsync(cfgjson.CommandPrefix + "fmrecent 'user' 'number of items (max 10)'");
+                await ReplyAsync(".fmrecent 'user' 'number of items (max 10)'");
                 return;
             }
 
@@ -993,10 +772,6 @@ namespace FMBot.Bot
             }
         }
 
-        #endregion
-
-        #region FMBot Commands
-
         [Command("fmfeatured"), Summary("Displays the featured avatar.")]
         [Alias("fmfeaturedavatar", "fmfeatureduser", "fmfeaturedalbum")]
         public async Task fmfeaturedAsync()
@@ -1047,156 +822,7 @@ namespace FMBot.Bot
             await ReplyAsync("Your Last.FM name has been set to '" + lastFMUserName + "' and your mode has been set to '" + chartType + "'.");
         }
 
-        [Command("fmaddfriends"), Summary("Adds your friends' Last.FM names.")]
-        [Alias("fmfriendsset", "fmsetfriends", "fmfriendsadd", "fmaddfriend")]
-        public async Task fmfriendssetAsync([Summary("Friend names")] params string[] friends)
-        {
-            try
-            {
-                string SelfID = Context.Message.Author.Id.ToString();
 
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
-
-                List<string> friendList = new List<string>();
-                List<string> friendNotFoundList = new List<string>();
-
-                int friendcount = 0;
-
-                List<Friend> existingFriends = await friendsService.GetFMFriendsAsync(Context.User);
-
-                foreach (string friend in friends)
-                {
-                    if (!existingFriends.Select(s => s.LastFMUserName).Contains(friend))
-                    {
-                        if (!guildService.CheckIfDM(Context))
-                        {
-                            IGuildUser friendUser = await guildService.FindUserFromGuildAsync(Context, friend);
-
-                            if (friendUser != null)
-                            {
-                                Data.Entities.User friendUserSettings = await userService.GetUserSettingsAsync(friendUser);
-
-                                if (friendUserSettings == null || friendUserSettings.UserNameLastFM == null)
-                                {
-                                    if (await lastFMService.LastFMUserExistsAsync(friend))
-                                    {
-                                        await friendsService.AddLastFMFriendAsync(Context.User.Id.ToString(), friend);
-                                        friendcount++;
-                                    }
-                                    else
-                                    {
-                                        friendNotFoundList.Add(friend);
-                                    }
-                                }
-                                else
-                                {
-                                    await friendsService.AddDiscordFriendAsync(Context.User.Id.ToString(), friendUser.Id.ToString());
-                                    friendcount++;
-                                }
-                            }
-                            else
-                            {
-                                await friendsService.AddLastFMFriendAsync(Context.User.Id.ToString(), friend);
-                                friendcount++;
-                            }
-                        }
-                        else
-                        {
-                            await friendsService.AddLastFMFriendAsync(Context.User.Id.ToString(), friend);
-                            friendcount++;
-                        }
-                    }
-                }
-
-                if (friendcount > 1)
-                {
-                    await ReplyAsync("Succesfully added " + friendcount + " friends.");
-                }
-                else if (friendcount < 1)
-                {
-                    await ReplyAsync("Didn't add  " + friendcount + " friends. Maybe they are already on your friendlist.");
-                }
-                else
-                {
-                    await ReplyAsync("Succesfully added a friend.");
-                }
-
-                if (friendNotFoundList.Any())
-                {
-                    if (friendNotFoundList.Count > 1)
-                    {
-                        await ReplyAsync("Could not find " + friendNotFoundList.Count + " friends. Please ensure that you spelled their names correctly.");
-                    }
-                    else
-                    {
-                        await ReplyAsync("Could not find 1 friend. Please ensure that you spelled the name correctly.");
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
-
-                int friendcount = friends.Count();
-
-                if (friendcount > 1)
-                {
-                    await ReplyAsync("Unable to add " + friendcount + " friends due to an internal error.");
-                }
-                else
-                {
-                    await ReplyAsync("Unable to add a friend due to an internal error.");
-                }
-            }
-        }
-
-        [Command("fmremovefriends"), Summary("Remove your friends' Last.FM names.")]
-        [Alias("fmfriendsremove")]
-        public async Task fmfriendsremoveAsync([Summary("Friend names")] params string[] friends)
-        {
-            if (!friends.Any())
-            {
-                await ReplyAsync("Please enter at least one friend to remove.");
-                return;
-            }
-
-            try
-            {
-                string SelfID = Context.Message.Author.Id.ToString();
-
-                int friendcount = DBase.RemoveFriendsEntry(SelfID, friends);
-
-                if (friendcount > 1)
-                {
-                    await ReplyAsync("Succesfully removed " + friendcount + " friends.");
-                }
-                else if (friendcount < 1)
-                {
-                    await ReplyAsync("Couldn't remove " + friendcount + " friends. Please check if the user is on your friendslist.");
-                }
-                else
-                {
-                    await ReplyAsync("Succesfully removed a friend.");
-                }
-            }
-            catch (Exception e)
-            {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
-
-                int friendcount = friends.Count();
-
-                if (friendcount > 1)
-                {
-                    await ReplyAsync("Unable to remove " + friendcount + " friends due to an internal error. Did you add anyone?");
-                }
-                else
-                {
-                    await ReplyAsync("Unable to add a friend due to an internal error. Did you add anyone?");
-                }
-            }
-        }
 
         [Command("fmremove"), Summary("Deletes your FMBot data.")]
         [Alias("fmdelete", "fmremovedata", "fmdeletedata")]
@@ -1207,146 +833,5 @@ namespace FMBot.Bot
             await ReplyAsync("Your settings and data have been successfully deleted.");
         }
 
-        [Command("fmhelp"), Summary("Displays this list.")]
-        [Alias("fmbot")]
-        public async Task fmhelpAsync()
-        {
-            JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
-
-            string prefix = cfgjson.CommandPrefix;
-
-            ISelfUser SelfUser = Context.Client.CurrentUser;
-
-            foreach (ModuleInfo module in _service.Modules)
-            {
-                string description = null;
-                foreach (CommandInfo cmd in module.Commands)
-                {
-                    PreconditionResult result = await cmd.CheckPreconditionsAsync(Context);
-                    if (result.IsSuccess)
-                    {
-                        if (!string.IsNullOrWhiteSpace(cmd.Summary))
-                        {
-                            description += $"{prefix}{cmd.Aliases.First()} - {cmd.Summary}\n";
-                        }
-                        else
-                        {
-                            description += $"{prefix}{cmd.Aliases.First()}\n";
-                        }
-                    }
-                }
-
-                if (!string.IsNullOrWhiteSpace(description))
-                {
-                    await Context.User.SendMessageAsync(module.Name + "\n" + description);
-                }
-            }
-
-            string helpstring = SelfUser.Username + " Info\n\nBe sure to use 'help' after a command name to see the parameters.\n\nChart sizes range from 3x3 to 10x10.\n\nModes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nuserdefined (fmserverset only)\n\nFMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nweek\nw\nmonthly\nmonth\nm\nyearly\nyear\ny\noverall\nalltime\no\nat\n\nFMBot Title options for FMChart:\ntitles\nnotitles";
-
-            if (!GlobalVars.GetDMBool())
-            {
-                await Context.Channel.SendMessageAsync("Check your DMs!");
-                await Context.User.SendMessageAsync(helpstring);
-            }
-            else
-            {
-                await Context.Channel.SendMessageAsync(helpstring);
-            }
-
-        }
-
-        [Command("fmstatus"), Summary("Displays bot stats.")]
-        public async Task statusAsync()
-        {
-            ISelfUser SelfUser = Context.Client.CurrentUser;
-
-            EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-            eab.IconUrl = SelfUser.GetAvatarUrl();
-            eab.Name = SelfUser.Username;
-
-            EmbedBuilder builder = new EmbedBuilder();
-            builder.WithAuthor(eab);
-
-            builder.WithDescription(SelfUser.Username + " Statistics");
-
-            TimeSpan startTime = (DateTime.Now - Process.GetCurrentProcess().StartTime);
-
-            DiscordSocketClient SocketClient = Context.Client as DiscordSocketClient;
-            int SelfGuilds = SocketClient.Guilds.Count();
-
-            int userCount = await userService.GetUserCountAsync();
-
-            SocketSelfUser SocketSelf = Context.Client.CurrentUser as SocketSelfUser;
-
-            string status = "Online";
-
-            switch (SocketSelf.Status)
-            {
-                case UserStatus.Offline: status = "Offline"; break;
-                case UserStatus.Online: status = "Online"; break;
-                case UserStatus.Idle: status = "Idle"; break;
-                case UserStatus.AFK: status = "AFK"; break;
-                case UserStatus.DoNotDisturb: status = "Do Not Disturb"; break;
-                case UserStatus.Invisible: status = "Invisible/Offline"; break;
-            }
-
-            string assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-
-            int fixedCmdGlobalCount = GlobalVars.CommandExecutions + 1;
-            int fixedCmdGlobalCount_Servers = GlobalVars.CommandExecutions_Servers + 1;
-            int fixedCmdGlobalCount_DMs = GlobalVars.CommandExecutions_DMs + 1;
-
-            builder.AddInlineField("Bot Uptime: ", startTime.ToReadableString());
-            builder.AddInlineField("Server Uptime: ", GlobalVars.SystemUpTime().ToReadableString());
-            builder.AddInlineField("Number of users in the database: ", userCount.ToString());
-            builder.AddInlineField("Total number of command executions since bot start: ", fixedCmdGlobalCount);
-            builder.AddInlineField("Command executions in servers since bot start: ", fixedCmdGlobalCount_Servers);
-            builder.AddInlineField("Command executions in DMs since bot start: ", fixedCmdGlobalCount_DMs);
-            builder.AddField("Number of servers the bot is on: ", SelfGuilds);
-            builder.AddField("Bot status: ", status);
-            builder.AddField("Bot version: ", assemblyVersion);
-
-            await Context.Channel.SendMessageAsync("", false, builder.Build());
-        }
-
-        [Command("fminvite"), Summary("Invites the bot to a server")]
-        public async Task inviteAsync()
-        {
-            string SelfID = Context.Client.CurrentUser.Id.ToString();
-            await ReplyAsync("https://discordapp.com/oauth2/authorize?client_id=" + SelfID + "&scope=bot&permissions=0");
-        }
-
-        [Command("fmdonate"), Summary("Please donate if you like this bot!")]
-        public async Task donateAsync()
-        {
-            await ReplyAsync("If you like the bot and you would like to support its development, feel free to support the developer at: https://www.paypal.me/Bitl");
-        }
-
-        [Command("fmgithub"), Summary("GitHub Page")]
-        public async Task githubAsync()
-        {
-            await ReplyAsync("https://github.com/Bitl/FMBot_Discord");
-        }
-
-        [Command("fmgitlab"), Summary("GitLab Page")]
-        public async Task gitlabAsync()
-        {
-            await ReplyAsync("https://gitlab.com/Bitl/FMBot_Discord");
-        }
-
-        [Command("fmbugs"), Summary("Report bugs here!")]
-        public async Task bugsAsync()
-        {
-            await ReplyAsync("Report bugs here:\nGithub: https://github.com/Bitl/FMBot_Discord/issues \nGitLab: https://gitlab.com/Bitl/FMBot_Discord/issues");
-        }
-
-        [Command("fmserver"), Summary("Join the Discord server!")]
-        public async Task serverAsync()
-        {
-            await ReplyAsync("Join the Discord server! https://discord.gg/srmpCaa");
-        }
-
-        #endregion
     }
 }

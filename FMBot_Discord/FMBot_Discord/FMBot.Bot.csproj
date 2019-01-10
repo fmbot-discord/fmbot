@@ -211,12 +211,16 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Commands\FriendsCommands.cs" />
     <Compile Include="Commands\GuildCommands.cs" />
+    <Compile Include="Commands\LastFMCommands.cs" />
+    <Compile Include="Commands\SpotifyCommands.cs" />
+    <Compile Include="Commands\StaticCommands.cs" />
+    <Compile Include="Commands\YoutubeCommands.cs" />
     <Compile Include="Extensions\BitmapExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Extensions\TimeSpanExtensions.cs" />
     <Compile Include="FMBotAdminCommands.cs" />
-    <Compile Include="FMBotCommands.cs" />
     <Compile Include="FMBotModules.cs" />
     <Compile Include="FMBotUtil.cs" />
     <Compile Include="Models\AdminModels.cs" />

@@ -104,7 +104,7 @@ namespace FMBot.Services
                 return false;
             }
 
-            user.Blacklisted = true;
+            user.Blacklisted = false;
 
             db.Entry(user).State = EntityState.Modified;
 

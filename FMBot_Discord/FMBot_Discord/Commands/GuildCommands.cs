@@ -11,7 +11,7 @@ using static FMBot.Bot.FMBotModules;
 
 namespace FMBot.Bot.Commands
 {
-    public class FMBotGuildCommands : ModuleBase
+    public class GuildCommands : ModuleBase
     {
         private readonly CommandService _service;
         private readonly TimerService _timer;
@@ -20,7 +20,7 @@ namespace FMBot.Bot.Commands
 
         private readonly GuildService guildService = new GuildService();
 
-        public FMBotGuildCommands(CommandService service, TimerService timer)
+        public GuildCommands(CommandService service, TimerService timer)
         {
             _service = service;
             _timer = timer;
