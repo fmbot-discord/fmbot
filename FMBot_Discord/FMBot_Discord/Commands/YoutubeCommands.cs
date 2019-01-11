@@ -21,8 +21,8 @@ namespace FMBot.Bot.Commands
 
         private YoutubeService youtubeService = new YoutubeService();
 
-        [Command("fmyt"), Summary("Shares a link to a YouTube video based on what a user is listening to")]
-        [Alias("fmyoutube")]
+        [Command("fmyoutube"), Summary("Shares a link to a YouTube video based on what a user is listening to")]
+        [Alias("fmyt")]
         public async Task fmytAsync(IUser user = null)
         {
             Data.Entities.User userSettings = await userService.GetUserSettingsAsync(Context.User);

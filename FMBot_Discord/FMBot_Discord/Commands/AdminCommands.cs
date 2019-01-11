@@ -1,46 +1,40 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using FMBot.Bot.Extensions;
 using FMBot.Data.Entities;
 using FMBot.Services;
 using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using static FMBot.Bot.FMBotModules;
 using static FMBot.Bot.FMBotUtil;
 
-namespace FMBot.Bot
+namespace FMBot.Bot.Commands
 {
-    public class FMBotAdminCommands : ModuleBase
+    [Summary("FMBot Admins Only")]
+    public class AdminCommands : ModuleBase
     {
-        #region Constructor
-
-        private readonly CommandService _service;
         private readonly TimerService _timer;
 
         private readonly UserService userService = new UserService();
 
         private readonly AdminService adminService = new AdminService();
 
-        public FMBotAdminCommands(CommandService service, TimerService timer)
+        public AdminCommands(TimerService timer)
         {
-            _service = service;
             _timer = timer;
         }
 
-        #endregion
 
-        #region FMBot Staff Only Commands
-
-        [Command("fmdbcheck"), Summary("Checks if an entry is in the database. - FMBot Admin Only")]
+        [Command("fmdbcheck"), Summary("Checks if an entry is in the database.")]
         public async Task dbcheckAsync(IUser user = null)
         {
             if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
             {
                 IUser chosenUser = user ?? Context.Message.Author;
-                Data.Entities.User userSettings = await userService.GetUserSettingsAsync(chosenUser);
+                User userSettings = await userService.GetUserSettingsAsync(chosenUser);
 
                 if (userSettings == null || userSettings.UserNameLastFM == null)
                 {
@@ -56,7 +50,7 @@ namespace FMBot.Bot
             }
         }
 
-        [Command("fmbotrestart"), Summary("Reboots the bot. - FMBot Admins only")]
+        [Command("fmbotrestart"), Summary("Reboots the bot.")]
         [Alias("fmrestart")]
         public async Task fmbotrestartAsync()
         {
@@ -72,41 +66,8 @@ namespace FMBot.Bot
             }
         }
 
-        [Command("fmsetusertype"), Summary("Gives permissions to other users. - FMBot Owners only")]
-        [Alias("fmsetperms")]
-        public async Task fmsetusertypeAsync(string userId = null, string userType = null)
-        {
-            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
-            {
-                if (userId == null || userType == null)
-                {
-                    await ReplyAsync("Please format your command like this: `.fmsetusertype 'discord id' 'User/Admin/Owner'`");
-                    return;
-                }
 
-                if (!Enum.TryParse(userType, out UserType userTypeEnum))
-                {
-                    await ReplyAsync("Invalid usertype. Please use 'User', 'Admin', or 'Owner'.");
-                    return;
-                }
-
-                if (await adminService.SetUserTypeAsync(userId, userTypeEnum))
-                {
-                    await ReplyAsync("You got it. User perms changed.");
-                }
-                else
-                {
-                    await ReplyAsync("Setting user failed. Are you sure the user exists?");
-                }
-
-            }
-            else
-            {
-                await ReplyAsync("Error: Insufficient rights. Only FMBot owners can change your usertype.");
-            }
-        }
-
-        [Command("fmalbumoverride"), Summary("Changes the avatar to be an album. - FMBot Admins only")]
+        [Command("fmalbumoverride"), Summary("Changes the avatar to be an album.")]
         [Alias("fmsetalbum")]
         public async Task fmalbumoverrideAsync(string albumname, string desc = "Custom FMBot Album Avatar", int ievent = 0)
         {
@@ -144,7 +105,7 @@ namespace FMBot.Bot
             }
         }
 
-        [Command("fmartistoverride"), Summary("Changes the avatar to be an artist. - FMBot Admins only")]
+        [Command("fmartistoverride"), Summary("Changes the avatar to be an artist.")]
         [Alias("fmsetartist")]
         public async Task fmartistoverrideAsync(string artistname, string desc = "Custom FMBot Artist Avatar", int ievent = 0)
         {
@@ -183,7 +144,7 @@ namespace FMBot.Bot
             }
         }
 
-        [Command("fmavataroverride"), Summary("Changes the avatar to be a image from a link. - FMBot Admins only")]
+        [Command("fmavataroverride"), Summary("Changes the avatar to be a image from a link.")]
         [Alias("fmsetavatar")]
         public async Task fmavataroverrideAsync(string link, string desc = "Custom FMBot Avatar", int ievent = 0)
         {
@@ -221,28 +182,9 @@ namespace FMBot.Bot
             }
         }
 
-        [Command("fmnameoverride"), Summary("Changes the bot's name. - FMBot Owners only")]
-        [Alias("fmsetbotname")]
-        public async Task fmnameoverrideAsync(string name = ".fmbot")
-        {
-            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
-            {
-                try
-                {
-                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                    await client.CurrentUser.ModifyAsync(u => u.Username = name);
-                    await ReplyAsync("Set name to '" + name + "'");
-                }
-                catch (Exception e)
-                {
-                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                    ExceptionReporter.ReportException(client, e);
-                    await ReplyAsync("Unable to set the name of the bot due to an internal error.");
-                }
-            }
-        }
+        
 
-        [Command("fmresetavatar"), Summary("Changes the avatar to be the default. - FMBot Admins only")]
+        [Command("fmresetavatar"), Summary("Changes the avatar to be the default.")]
         public async Task fmresetavatar()
         {
             if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
@@ -262,7 +204,7 @@ namespace FMBot.Bot
             }
         }
 
-        [Command("fmrestarttimer"), Summary("Restarts the internal bot avatar timer. - FMBot Admins only")]
+        [Command("fmrestarttimer"), Summary("Restarts the internal bot avatar timer.")]
         [Alias("fmstarttimer", "fmtimerstart", "fmtimerrestart")]
         public async Task fmrestarttimerAsync()
         {
@@ -282,7 +224,7 @@ namespace FMBot.Bot
             }
         }
 
-        [Command("fmstoptimer"), Summary("Stops the internal bot avatar timer. - FMBot Admins only")]
+        [Command("fmstoptimer"), Summary("Stops the internal bot avatar timer.")]
         [Alias("fmtimerstop")]
         public async Task fmstoptimerAsync()
         {
@@ -303,7 +245,7 @@ namespace FMBot.Bot
             }
         }
 
-        [Command("fmtimerstatus"), Summary("Checks the status of the timer. - FMBot Admins only")]
+        [Command("fmtimerstatus"), Summary("Checks the status of the timer.")]
         public async Task fmtimerstatusAsync()
         {
             if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
@@ -328,93 +270,9 @@ namespace FMBot.Bot
             }
         }
 
-        [Command("fmserverlist"), Summary("Displays a list showing information related to every server the bot has joined. - FMBot Owners only")]
-        public async Task fmserverlistAsync()
-        {
-            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
-            {
-                DiscordSocketClient SelfUser = Context.Client as DiscordSocketClient;
-
-                string desc = null;
-
-                foreach (SocketGuild guild in SelfUser.Guilds)
-                {
-                    desc += $"{guild.Name} - Users: {guild.Users.Count()}, Owner: {guild.Owner.ToString()}\n";
-                }
-
-                if (!string.IsNullOrWhiteSpace(desc))
-                {
-                    string[] descChunks = desc.SplitByMessageLength().ToArray();
-                    foreach (string chunk in descChunks)
-                    {
-                        await Context.User.SendMessageAsync(chunk);
-                    }
-                }
-
-                await Context.Channel.SendMessageAsync("Check your DMs!");
-            }
-        }
-
-        [Command("fmremovereadonly"), Summary("Removes read only on all directories. - FMBot Owners only")]
-        [Alias("fmreadonlyfix")]
-        public async Task fmremovereadonlyAsync()
-        {
-            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
-            {
-                try
-                {
-                    if (Directory.Exists(GlobalVars.CacheFolder))
-                    {
-                        DirectoryInfo users = new DirectoryInfo(GlobalVars.CacheFolder);
-                        GlobalVars.ClearReadOnly(users);
-                    }
 
 
-                    await ReplyAsync("Removed read only on all directories.");
-                }
-                catch (Exception e)
-                {
-                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                    ExceptionReporter.ReportException(client, e);
-                    await ReplyAsync("Unable to remove read only on all directories due to an internal error.");
-                }
-            }
-        }
-
-        [Command("fmstoragecheck"), Summary("Checks how much storage is left on the server. - FMBot Owners only")]
-        [Alias("fmcheckstorage", "fmstorage")]
-        public async Task fmstoragecheckAsync()
-        {
-            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
-            {
-                try
-                {
-                    DriveInfo[] drives = DriveInfo.GetDrives();
-
-                    EmbedBuilder builder = new EmbedBuilder();
-                    builder.WithDescription("Server Drive Info");
-
-                    foreach (DriveInfo drive in drives.Where(w => w.IsReady))
-                    {
-                        builder.AddField(drive.Name + " - " + drive.VolumeLabel + ":", adminService.FormatBytes(drive.AvailableFreeSpace) + " free of " + adminService.FormatBytes(drive.TotalSize));
-                    }
-
-                    await Context.Channel.SendMessageAsync("", false, builder.Build());
-                }
-                catch (Exception e)
-                {
-                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                    ExceptionReporter.ReportException(client, e);
-                    await ReplyAsync("Unable to delete server drive info due to an internal error.");
-                }
-            }
-        }
-
-        #endregion
-
-        #region FMBot Staff and Server Staff Only Commands
-
-        [Command("fmblacklistadd"), Summary("Adds a user to a serverside blacklist - FMBot Admins and Server Staff only")]
+        [Command("fmglobalblacklistadd"), Summary("Adds a user to the global FMBot blacklist.")]
         public async Task fmblacklistaddAsync(SocketGuildUser user = null)
         {
             try
@@ -431,7 +289,7 @@ namespace FMBot.Bot
                         await ReplyAsync("You cannot blacklist yourself!");
                         return;
                     }
-                   
+
 
                     string UserID = user.Id.ToString();
 
@@ -460,7 +318,7 @@ namespace FMBot.Bot
             }
         }
 
-        [Command("fmblacklistremove"), Summary("Removes a user from a serverside blacklist - FMBot Admins and Server Staff only")]
+        [Command("fmglobalblacklistremove"), Summary("Removes a user from the global FMBot blacklist.")]
         public async Task fmblacklistremoveAsync(SocketGuildUser user = null)
         {
             try
@@ -500,6 +358,5 @@ namespace FMBot.Bot
             }
         }
 
-        #endregion
     }
 }

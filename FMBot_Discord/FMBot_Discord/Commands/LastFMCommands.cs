@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using static FMBot.Bot.FMBotModules;
 using static FMBot.Bot.FMBotUtil;
@@ -22,14 +21,13 @@ namespace FMBot.Bot.Commands
     {
         private readonly TimerService _timer;
 
+        private readonly UserService userService = new UserService();
 
-        private UserService userService = new UserService();
+        private readonly GuildService guildService = new GuildService();
 
-        private GuildService guildService = new GuildService();
+        private readonly FriendsService friendsService = new FriendsService();
 
-        private FriendsService friendsService = new FriendsService();
-
-        private LastFMService lastFMService = new LastFMService();
+        private readonly LastFMService lastFMService = new LastFMService();
 
         public LastFMCommands(TimerService timer)
         {
@@ -102,11 +100,16 @@ namespace FMBot.Bot.Commands
 
                 if (userSettings.ChartType == ChartType.embedmini)
                 {
-                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                    eab.IconUrl = Context.User.GetAvatarUrl();
-                    eab.Name = lastFMUserName;
+                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder
+                    {
+                        IconUrl = Context.User.GetAvatarUrl(),
+                        Name = lastFMUserName
+                    };
 
-                    EmbedBuilder builder = new EmbedBuilder();
+                    EmbedBuilder builder = new EmbedBuilder
+                    {
+                        Color = new Discord.Color(186, 0, 0),
+                    };
                     builder.WithAuthor(eab);
                     builder.WithUrl("https://www.last.fm/user/" + lastFMUserName);
                     if (self)
@@ -151,9 +154,11 @@ namespace FMBot.Bot.Commands
                 else if (userSettings.ChartType == ChartType.embedfull)
                 {
 
-                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                    eab.IconUrl = Context.User.GetAvatarUrl();
-                    eab.Name = userSettings.UserNameLastFM;
+                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder
+                    {
+                        IconUrl = Context.User.GetAvatarUrl(),
+                        Name = userSettings.UserNameLastFM
+                    };
 
                     EmbedBuilder builder = new EmbedBuilder();
                     builder.WithAuthor(eab);
@@ -243,7 +248,7 @@ namespace FMBot.Bot.Commands
             }
         }
 
-       
+
 
         [Command("fmchart"), Summary("Generates a chart based on a user's parameters.")]
         public async Task fmchartAsync(string chartsize = "3x3", string time = "weekly", string titlesetting = null, IUser user = null)
@@ -350,8 +355,10 @@ namespace FMBot.Bot.Commands
 
                 await Context.Channel.SendFileAsync(GlobalVars.CacheFolder + Context.User.Id + "-chart.png");
 
-                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                eab.IconUrl = Context.User.GetAvatarUrl();
+                EmbedAuthorBuilder eab = new EmbedAuthorBuilder
+                {
+                    IconUrl = Context.User.GetAvatarUrl()
+                };
 
                 EmbedBuilder builder = new EmbedBuilder();
                 builder.WithAuthor(eab);
@@ -510,8 +517,10 @@ namespace FMBot.Bot.Commands
 
                 await Context.Channel.SendFileAsync(GlobalVars.CacheFolder + Context.User.Id + "-chart.png");
 
-                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                eab.IconUrl = Context.User.GetAvatarUrl();
+                EmbedAuthorBuilder eab = new EmbedAuthorBuilder
+                {
+                    IconUrl = Context.User.GetAvatarUrl()
+                };
 
                 EmbedBuilder builder = new EmbedBuilder();
                 builder.WithAuthor(eab);
@@ -565,7 +574,7 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        
+
 
         [Command("fmrecent"), Summary("Displays a user's recent tracks.")]
         [Alias("fmrecenttracks")]
@@ -698,14 +707,12 @@ namespace FMBot.Bot.Commands
             try
             {
                 string lastFMUserName = userSettings.UserNameLastFM;
-                bool self = true;
 
                 if (user != null)
                 {
                     if (await lastFMService.LastFMUserExistsAsync(user))
                     {
                         lastFMUserName = user;
-                        self = false;
                     }
                     else if (!guildService.CheckIfDM(Context))
                     {
@@ -718,15 +725,16 @@ namespace FMBot.Bot.Commands
                             if (guildUserLastFM != null && guildUserLastFM.UserNameLastFM != null)
                             {
                                 lastFMUserName = guildUserLastFM.UserNameLastFM;
-                                self = false;
                             }
                         }
                     }
                 }
 
-                EmbedAuthorBuilder eab = new EmbedAuthorBuilder();
-                eab.IconUrl = Context.User.GetAvatarUrl();
-                eab.Name = lastFMUserName;
+                EmbedAuthorBuilder eab = new EmbedAuthorBuilder
+                {
+                    IconUrl = Context.User.GetAvatarUrl(),
+                    Name = lastFMUserName
+                };
 
                 EmbedBuilder builder = new EmbedBuilder();
                 builder.WithAuthor(eab);
@@ -811,7 +819,7 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            if (!Enum.TryParse(chartType, out ChartType chartTypeEnum))
+            if (!Enum.TryParse(chartType, ignoreCase: true, out ChartType chartTypeEnum))
             {
                 await ReplyAsync("Invalid mode. Please use 'embedmini', 'embedfull', 'textfull', or 'textmini'.");
                 return;

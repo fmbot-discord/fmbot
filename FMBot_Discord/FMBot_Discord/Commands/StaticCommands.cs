@@ -8,25 +8,41 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using static FMBot.Bot.FMBotModules;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot
 {
     public class StaticCommands : ModuleBase
     {
-        private readonly CommandService commandService = new CommandService();
+        private readonly CommandService _service;
 
         private readonly UserService userService = new UserService();
 
         private readonly GuildService guildService = new GuildService();
 
+        public StaticCommands(CommandService service)
+        {
+            _service = service;
+        }
+
 
         [Command("fminvite"), Summary("Invites the bot to a server")]
+        [Alias("fmserver")]
         public async Task inviteAsync()
         {
+            EmbedBuilder builder = new EmbedBuilder();
+
             string SelfID = Context.Client.CurrentUser.Id.ToString();
-            await ReplyAsync("https://discordapp.com/oauth2/authorize?client_id=" + SelfID + "&scope=bot&permissions=0");
+
+
+            builder.AddInlineField("Invite the bot to your own server with the link below:",
+                "https://discordapp.com/oauth2/authorize?client_id=" + SelfID + "&scope=bot&permissions=0");
+
+            builder.AddInlineField("Join the FMBot server for support and updates:",
+                "https://discord.gg/srmpCaa");
+
+
+            await Context.Channel.SendMessageAsync("", false, builder.Build());
         }
 
         [Command("fmdonate"), Summary("Please donate if you like this bot!")]
@@ -51,12 +67,6 @@ namespace FMBot.Bot
         public async Task bugsAsync()
         {
             await ReplyAsync("Report bugs here:\nGithub: https://github.com/Bitl/FMBot_Discord/issues \nGitLab: https://gitlab.com/Bitl/FMBot_Discord/issues");
-        }
-
-        [Command("fmserver"), Summary("Join the Discord server!")]
-        public async Task serverAsync()
-        {
-            await ReplyAsync("Join the Discord server! https://discord.gg/srmpCaa");
         }
 
         [Command("fmstatus"), Summary("Displays bot stats.")]
@@ -167,9 +177,13 @@ namespace FMBot.Bot
 
             ISelfUser SelfUser = Context.Client.CurrentUser;
 
-            foreach (ModuleInfo module in commandService.Modules)
+            string description = null;
+            int length = 0;
+
+            EmbedBuilder builder = new EmbedBuilder();
+
+            foreach (ModuleInfo module in _service.Modules.OrderByDescending(o => o.Commands.Count()))
             {
-                string description = null;
                 foreach (CommandInfo cmd in module.Commands)
                 {
                     PreconditionResult result = await cmd.CheckPreconditionsAsync(Context);
@@ -186,25 +200,64 @@ namespace FMBot.Bot
                     }
                 }
 
-                if (!string.IsNullOrWhiteSpace(description))
+
+                if (description.Length < 1024)
                 {
-                    await Context.User.SendMessageAsync(module.Name + "\n" + description);
+                    builder.AddInlineField
+                        (module.Name + (module.Summary != null ? " - " + module.Summary : ""),
+                        description != null ? description : "");
+                }
+
+
+                length += description.Length;
+                description = null;
+
+                if (length > 1990)
+                {
+                    await Context.User.SendMessageAsync("", false, builder.Build());
+
+                    builder = new EmbedBuilder();
+                    length = 0;
                 }
             }
 
-            string helpstring = SelfUser.Username + " Info\n\nBe sure to use 'help' after a command name to see the parameters.\n\n" +
-                "Chart sizes range from 3x3 to 10x10.\n\nModes for the fmset command:\nembedmini\nembedfull\ntextfull\ntextmini\nuserdefined (fmserverset only)\n\n" +
-                "FMBot Time Periods for the fmchart, fmartistchart, fmartists, and fmalbums commands:\nweekly\nweek\nw\nmonthly\nmonth\nm\nyearly\nyear\ny\noverall\nalltime\no\nat\n\n" +
-                "FMBot Title options for FMChart:\ntitles\nnotitles";
+
+            builder = new EmbedBuilder
+            {
+                Title = "Additional information",
+            };
+
+            builder.AddInlineField("Quick tips",
+                "- Be sure to use 'help' after a command name to see the parameters. \n" +
+                "- Chart sizes range from 3x3 to 10x10 \n" +
+                "- Most commands have no required parameters");
+
+
+            builder.AddInlineField("Setting your username",
+                "Use `" + prefix + "fmset 'username' 'embedfull/embedmini/textfull/textmini'` to set your global LastFM username. " +
+                "The last parameter means the mode that your embed will be");
+
+
+            builder.AddInlineField("Making album charts",
+                "`" + prefix + "fmchart '3x3-10x10' 'weekly/monthly/yearly/overall' 'notitles/titles' 'user'`");
+
+
+            builder.AddInlineField("Making artist charts",
+                "`" + prefix + "fmartistchart '3x3-10x10' 'weekly/monthly/yearly/overall' 'notitles/titles' 'user'`");
+
+
+            builder.AddInlineField("Setting the default server settings",
+                "Please note that server defaults are a planned feature. \n" +
+                "Only users with the 'Ban Members' permission or admins can use this command. \n" +
+                "`" + prefix + "fmserverset 'embedfull/embedmini/textfull/textmini' 'Weekly/Monthly/Yearly/AllTime'`");
+
+            builder.WithFooter("Still need help? Join the FMBot Discord Server: https://discord.gg/srmpCaa");
+
+            await Context.User.SendMessageAsync("", false, builder.Build());
 
             if (!guildService.CheckIfDM(Context))
             {
                 await Context.Channel.SendMessageAsync("Check your DMs!");
-                await Context.User.SendMessageAsync(helpstring);
-            }
-            else
-            {
-                await Context.Channel.SendMessageAsync(helpstring);
             }
 
         }

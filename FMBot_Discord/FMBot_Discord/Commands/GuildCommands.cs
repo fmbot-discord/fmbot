@@ -11,6 +11,7 @@ using static FMBot.Bot.FMBotModules;
 
 namespace FMBot.Bot.Commands
 {
+    [Summary("Server Staff Only")]
     public class GuildCommands : ModuleBase
     {
         private readonly CommandService _service;
@@ -29,7 +30,7 @@ namespace FMBot.Bot.Commands
 
         #region Server Staff Only Commands
 
-        [Command("fmserverset"), Summary("Sets the global FMBot settings for the server. - Server Staff only")]
+        [Command("fmserverset"), Summary("Sets the global FMBot settings for the server.")]
         [Alias("fmserversetmode")]
         public async Task fmserversetAsync([Summary("The default mode you want to use.")] string chartType = "embedmini", [Summary("The default timeperiod you want to use.")] string chartTimePeriod = "monthly")
         {
@@ -47,7 +48,7 @@ namespace FMBot.Bot.Commands
             }
             if (chartType == "help")
             {
-                await ReplyAsync("Sets the global default for you server. `.fmserverset 'embedfull/embedmini/textfull/textmini' 'Weekly/Monthly/Yearly/AllTime'` command.");
+                await ReplyAsync("Sets the global default for your server. `.fmserverset 'embedfull/embedmini/textfull/textmini' 'Weekly/Monthly/Yearly/AllTime'` command.");
                 return;
             }
 
