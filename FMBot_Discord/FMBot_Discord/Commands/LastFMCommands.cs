@@ -246,7 +246,7 @@ namespace FMBot.Bot.Commands
        
 
         [Command("fmchart"), Summary("Generates a chart based on a user's parameters.")]
-        public async Task fmchartAsync(string chartsize = "3x3", string time = "weekly", string titlesetting = "titles", IUser user = null)
+        public async Task fmchartAsync(string chartsize = "3x3", string time = "weekly", string titlesetting = null, IUser user = null)
         {
             if (chartsize == "help")
             {
@@ -261,7 +261,7 @@ namespace FMBot.Bot.Commands
                 await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
                 return;
             }
-            if (userSettings.LastGeneratedChartDateTimeUtc > DateTime.UtcNow.AddMinutes(-2))
+            if (userSettings.LastGeneratedChartDateTimeUtc > DateTime.UtcNow.AddMinutes(-2) && userSettings.UserType == UserType.User)
             {
                 await ReplyAsync("Sorry, but you can only generate a chart once every 2 minutes due to performance reasons. (Note: This might be temporary)");
                 return;
@@ -341,7 +341,7 @@ namespace FMBot.Bot.Commands
                     DiscordUser = Context.User,
                     disclient = Context.Client as DiscordSocketClient,
                     mode = 0,
-                    titles = userSettings.TitlesEnabled.HasValue ? userSettings.TitlesEnabled.Value : true,
+                    titles = titlesetting == null ? userSettings.TitlesEnabled.HasValue ? userSettings.TitlesEnabled.Value : true : titlesetting == "titles",
                 };
 
                 userService.ResetChartTimer(userSettings);
@@ -421,7 +421,7 @@ namespace FMBot.Bot.Commands
                 await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
                 return;
             }
-            if (userSettings.LastGeneratedChartDateTimeUtc > DateTime.UtcNow.AddMinutes(-2))
+            if (userSettings.LastGeneratedChartDateTimeUtc > DateTime.UtcNow.AddMinutes(-2) && userSettings.UserType == UserType.User)
             {
                 await ReplyAsync("Sorry, but you can only generate a chart once every 2 minutes due to performance reasons. (Note: This might be temporary)");
                 return;
@@ -501,7 +501,7 @@ namespace FMBot.Bot.Commands
                     DiscordUser = Context.User,
                     disclient = Context.Client as DiscordSocketClient,
                     mode = 1,
-                    titles = userSettings.TitlesEnabled.HasValue ? userSettings.TitlesEnabled.Value : true,
+                    titles = titlesetting == null ? userSettings.TitlesEnabled.HasValue ? userSettings.TitlesEnabled.Value : true : titlesetting == "titles",
                 };
 
                 userService.ResetChartTimer(userSettings);
