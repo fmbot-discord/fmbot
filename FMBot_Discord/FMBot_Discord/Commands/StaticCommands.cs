@@ -162,7 +162,7 @@ namespace FMBot.Bot
             builder.AddField(prefix + "fmfriends",
                 "Get a list of the songs your friends played");
 
-            builder.WithFooter("To get an extensive list of all possible commands, please use .fmfullhelp (note: broken right now)");
+            builder.WithFooter("Please use `" + prefix + "fmfullhelp` to get a list of all possible commands.");
 
             await Context.Channel.SendMessageAsync("", false, builder.Build());
         }
