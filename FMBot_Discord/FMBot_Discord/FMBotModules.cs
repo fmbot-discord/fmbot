@@ -57,22 +57,22 @@ namespace FMBot.Bot
 
             // --- End Configuration Section ---
 
-            private readonly DiscordSocketClient _discord;
+            private readonly DiscordShardedClient _discord;
             private static Func<LogMessage, Task> _logger;
 
             private CancellationTokenSource _cts;
 
-            public ReliabilityService(DiscordSocketClient discord, Func<LogMessage, Task> logger = null)
+            public ReliabilityService(DiscordShardedClient discord, Func<LogMessage, Task> logger = null)
             {
                 _cts = new CancellationTokenSource();
                 _discord = discord;
                 _logger = logger ?? (_ => Task.CompletedTask);
 
-                _discord.Connected += ConnectedAsync;
-                _discord.Disconnected += DisconnectedAsync;
+                _discord.ShardConnected += ConnectedAsync;
+                _discord.ShardDisconnected += DisconnectedAsync;
             }
 
-            public Task ConnectedAsync()
+            public Task ConnectedAsync(DiscordSocketClient client)
             {
                 // Cancel all previous state checks and reset the CancelToken - client is back online
                 _ = GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "Client reconnected, resetting cancel tokens..."));
@@ -83,24 +83,24 @@ namespace FMBot.Bot
                 return Task.CompletedTask;
             }
 
-            public Task DisconnectedAsync(Exception _e)
+            public Task DisconnectedAsync(Exception _e, DiscordSocketClient client)
             {
                 // Check the state after <timeout> to see if we reconnected
                 _ = GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "Client disconnected, starting timeout task..."));
                 _ = Task.Delay(_timeout, _cts.Token).ContinueWith(async _ =>
                 {
                     await GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "Timeout expired, continuing to check client state..."));
-                    await CheckStateAsync();
+                    await CheckStateAsync(client);
                     await GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "State came back okay"));
                 });
 
                 return Task.CompletedTask;
             }
 
-            private async Task CheckStateAsync()
+            private async Task CheckStateAsync(DiscordSocketClient client)
             {
                 // Client reconnected, no need to reset
-                if (_discord.ConnectionState == ConnectionState.Connected)
+                if (client.ConnectionState == ConnectionState.Connected)
                 {
                     return;
                 }
@@ -162,7 +162,7 @@ namespace FMBot.Bot
             private readonly UserService userService = new UserService();
             private readonly LastFMService lastFMService = new LastFMService();
 
-            public TimerService(DiscordSocketClient client)
+            public TimerService(DiscordShardedClient client)
             {
                 JsonCfg.ConfigJson cfgjson = JsonCfg.GetJSONData();
 
@@ -307,7 +307,7 @@ namespace FMBot.Bot
                         }
                         catch (Exception e)
                         {
-                            ExceptionReporter.ReportException(client, e);
+                            ExceptionReporter.ReportShardedException(client, e);
                         }
 
                     }
@@ -338,7 +338,7 @@ namespace FMBot.Bot
                 }
             }
 
-            public async void ChangeToNewAvatar(DiscordSocketClient client, JsonCfg.ConfigJson cfgjson, string thumbnail)
+            public async void ChangeToNewAvatar(DiscordShardedClient client, JsonCfg.ConfigJson cfgjson, string thumbnail)
             {
                 try
                 {
@@ -376,17 +376,17 @@ namespace FMBot.Bot
                     EmbedBuilder builder = new EmbedBuilder();
                     SocketSelfUser SelfUser = client.CurrentUser;
                     builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
-                    builder.AddInlineField("Featured:", trackString);
+                    builder.AddField("Featured:", trackString);
 
                     await channel.SendMessageAsync("", false, builder.Build());
                 }
                 catch (Exception e)
                 {
-                    ExceptionReporter.ReportException(client, e);
+                    ExceptionReporter.ReportShardedException(client, e);
                 }
             }
 
-            public async void UseDefaultAvatar(DiscordSocketClient client)
+            public async void UseDefaultAvatar(DiscordShardedClient client)
             {
                 try
                 {
@@ -399,11 +399,11 @@ namespace FMBot.Bot
                 }
                 catch (Exception e)
                 {
-                    ExceptionReporter.ReportException(client, e);
+                    ExceptionReporter.ReportShardedException(client, e);
                 }
             }
 
-            public async void UseCustomAvatar(DiscordSocketClient client, string fmquery, string desc, bool artistonly, bool important)
+            public async void UseCustomAvatar(DiscordShardedClient client, string fmquery, string desc, bool artistonly, bool important)
             {
                 if (important == true && IsTimerActive() == true)
                 {
@@ -451,7 +451,7 @@ namespace FMBot.Bot
                                 }
                                 catch (Exception e)
                                 {
-                                    ExceptionReporter.ReportException(client, e);
+                                    ExceptionReporter.ReportShardedException(client, e);
                                     UseDefaultAvatar(client);
                                     trackString = "Unable to get information for this artist avatar.";
                                 }
@@ -461,7 +461,7 @@ namespace FMBot.Bot
                         }
                         catch (Exception e)
                         {
-                            ExceptionReporter.ReportException(client, e);
+                            ExceptionReporter.ReportShardedException(client, e);
                         }
                     }
                     else
@@ -495,7 +495,7 @@ namespace FMBot.Bot
                                 }
                                 catch (Exception e)
                                 {
-                                    ExceptionReporter.ReportException(client, e);
+                                    ExceptionReporter.ReportShardedException(client, e);
                                     UseDefaultAvatar(client);
                                     trackString = "Unable to get information for this album cover avatar.";
                                 }
@@ -505,19 +505,19 @@ namespace FMBot.Bot
                         }
                         catch (Exception e)
                         {
-                            ExceptionReporter.ReportException(client, e);
+                            ExceptionReporter.ReportShardedException(client, e);
                         }
                     }
                 }
                 catch (Exception e)
                 {
-                    ExceptionReporter.ReportException(client, e);
+                    ExceptionReporter.ReportShardedException(client, e);
 
                     UseDefaultAvatar(client);
                 }
             }
 
-            public async void UseCustomAvatarFromLink(DiscordSocketClient client, string link, string desc, bool important)
+            public async void UseCustomAvatarFromLink(DiscordShardedClient client, string link, string desc, bool important)
             {
                 if (important == true && IsTimerActive() == true)
                 {
@@ -534,17 +534,8 @@ namespace FMBot.Bot
 
                 try
                 {
-                    try
-                    {
-                        trackString = desc;
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
-                    }
-                    catch (Exception e)
-                    {
-                        ExceptionReporter.ReportException(client, e);
-                        UseDefaultAvatar(client);
-                        trackString = "Unable to get information for this avatar.";
-                    }
+                    trackString = desc;
+                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString));
 
                     if (!string.IsNullOrWhiteSpace(link))
                     {
@@ -553,7 +544,7 @@ namespace FMBot.Bot
                 }
                 catch (Exception e)
                 {
-                    ExceptionReporter.ReportException(client, e);
+                    ExceptionReporter.ReportShardedException(client, e);
                 }
             }
 

@@ -35,10 +35,10 @@ namespace FMBot.Bot
             string SelfID = Context.Client.CurrentUser.Id.ToString();
 
 
-            builder.AddInlineField("Invite the bot to your own server with the link below:",
+            builder.AddField("Invite the bot to your own server with the link below:",
                 "https://discordapp.com/oauth2/authorize?client_id=" + SelfID + "&scope=bot&permissions=0");
 
-            builder.AddInlineField("Join the FMBot server for support and updates:",
+            builder.AddField("Join the FMBot server for support and updates:",
                 "https://discord.gg/srmpCaa");
 
 
@@ -82,15 +82,11 @@ namespace FMBot.Bot
 
             EmbedBuilder builder = new EmbedBuilder();
             builder.WithAuthor(eab);
-
             builder.WithDescription(SelfUser.Username + " Statistics");
 
             TimeSpan startTime = (DateTime.Now - Process.GetCurrentProcess().StartTime);
 
-            DiscordSocketClient SocketClient = Context.Client as DiscordSocketClient;
-            int SelfGuilds = SocketClient.Guilds.Count();
-
-            int userCount = await userService.GetUserCountAsync();
+            DiscordShardedClient client = Context.Client as DiscordShardedClient;
 
             SocketSelfUser SocketSelf = Context.Client.CurrentUser as SocketSelfUser;
 
@@ -112,14 +108,16 @@ namespace FMBot.Bot
             int fixedCmdGlobalCount_Servers = GlobalVars.CommandExecutions_Servers + 1;
             int fixedCmdGlobalCount_DMs = GlobalVars.CommandExecutions_DMs + 1;
 
-            builder.AddInlineField("Bot Uptime: ", startTime.ToReadableString());
-            builder.AddInlineField("Server Uptime: ", GlobalVars.SystemUpTime().ToReadableString());
-            builder.AddInlineField("Number of users in the database: ", userCount.ToString());
-            builder.AddInlineField("Total number of command executions since bot start: ", fixedCmdGlobalCount);
-            builder.AddInlineField("Command executions in servers since bot start: ", fixedCmdGlobalCount_Servers);
-            builder.AddInlineField("Command executions in DMs since bot start: ", fixedCmdGlobalCount_DMs);
-            builder.AddField("Number of servers the bot is on: ", SelfGuilds);
+            builder.AddField("Bot Uptime: ", startTime.ToReadableString());
+            builder.AddField("Server Uptime: ", GlobalVars.SystemUpTime().ToReadableString());
+            builder.AddField("Usercount: ", (await userService.GetUserCountAsync()).ToString());
+            builder.AddField("Commands used since bot start: ", fixedCmdGlobalCount);
+            builder.AddField("Commands in servers: ", fixedCmdGlobalCount_Servers);
+            builder.AddField("Commands in DMs ", fixedCmdGlobalCount_DMs);
+            builder.AddField("Servercount: ", client.Guilds.Count());
             builder.AddField("Bot status: ", status);
+            builder.AddField("Latency: ", client.Latency + "ms");
+            builder.AddField("Shards: ", client.Shards.Count());
             builder.AddField("Bot version: ", assemblyVersion);
 
             await Context.Channel.SendMessageAsync("", false, builder.Build());
@@ -203,7 +201,7 @@ namespace FMBot.Bot
 
                 if (description.Length < 1024)
                 {
-                    builder.AddInlineField
+                    builder.AddField
                         (module.Name + (module.Summary != null ? " - " + module.Summary : ""),
                         description != null ? description : "");
                 }
@@ -227,26 +225,26 @@ namespace FMBot.Bot
                 Title = "Additional information",
             };
 
-            builder.AddInlineField("Quick tips",
+            builder.AddField("Quick tips",
                 "- Be sure to use 'help' after a command name to see the parameters. \n" +
                 "- Chart sizes range from 3x3 to 10x10 \n" +
                 "- Most commands have no required parameters");
 
 
-            builder.AddInlineField("Setting your username",
+            builder.AddField("Setting your username",
                 "Use `" + prefix + "fmset 'username' 'embedfull/embedmini/textfull/textmini'` to set your global LastFM username. " +
                 "The last parameter means the mode that your embed will be");
 
 
-            builder.AddInlineField("Making album charts",
+            builder.AddField("Making album charts",
                 "`" + prefix + "fmchart '3x3-10x10' 'weekly/monthly/yearly/overall' 'notitles/titles' 'user'`");
 
 
-            builder.AddInlineField("Making artist charts",
+            builder.AddField("Making artist charts",
                 "`" + prefix + "fmartistchart '3x3-10x10' 'weekly/monthly/yearly/overall' 'notitles/titles' 'user'`");
 
 
-            builder.AddInlineField("Setting the default server settings",
+            builder.AddField("Setting the default server settings",
                 "Please note that server defaults are a planned feature. \n" +
                 "Only users with the 'Ban Members' permission or admins can use this command. \n" +
                 "`" + prefix + "fmserverset 'embedfull/embedmini/textfull/textmini' 'Weekly/Monthly/Yearly/AllTime'`");

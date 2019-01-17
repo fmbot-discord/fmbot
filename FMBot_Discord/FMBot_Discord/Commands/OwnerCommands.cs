@@ -119,7 +119,7 @@ namespace FMBot.Bot.Commands
 
                 string desc = null;
 
-                foreach (SocketGuild guild in SelfUser.Guilds.OrderByDescending(o => o.MemberCount))
+                foreach (SocketGuild guild in SelfUser.Guilds.OrderByDescending(o => o.MemberCount).Take(100))
                 {
                     desc += $"{guild.Name} - Users: {guild.Users.Count()}, Owner: {guild.Owner.ToString()}\n";
                 }

@@ -67,142 +67,142 @@ namespace FMBot.Bot.Commands
         }
 
 
-        [Command("fmalbumoverride"), Summary("Changes the avatar to be an album.")]
-        [Alias("fmsetalbum")]
-        public async Task fmalbumoverrideAsync(string albumname, string desc = "Custom FMBot Album Avatar", int ievent = 0)
-        {
-            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
-            {
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
+        //[Command("fmalbumoverride"), Summary("Changes the avatar to be an album.")]
+        //[Alias("fmsetalbum")]
+        //public async Task fmalbumoverrideAsync(string albumname, string desc = "Custom FMBot Album Avatar", int ievent = 0)
+        //{
+        //    if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+        //    {
+        //        JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
 
-                if (albumname == "help")
-                {
-                    await ReplyAsync(cfgjson.CommandPrefix + "fmalbumoverride <album name> [message in quotation marks] [event 0 or 1]");
-                    return;
-                }
+        //        if (albumname == "help")
+        //        {
+        //            await ReplyAsync(cfgjson.CommandPrefix + "fmalbumoverride <album name> [message in quotation marks] [event 0 or 1]");
+        //            return;
+        //        }
 
-                try
-                {
-                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+        //        try
+        //        {
+        //            DiscordSocketClient client = Context.Client as DiscordSocketClient;
 
-                    if (ievent == 1)
-                    {
-                        _timer.UseCustomAvatar(client, albumname, desc, false, true);
-                        await ReplyAsync("Set avatar to '" + albumname + "' with description '" + desc + "'. This is an event and it cannot be stopped the without the Owner's assistance. To stop an event, please contact the owner of the bot or specify a different avatar without the event parameter.");
-                    }
-                    else
-                    {
-                        _timer.UseCustomAvatar(client, albumname, desc, false, false);
-                        await ReplyAsync("Set avatar to '" + albumname + "' with description '" + desc + "'. This is not an event.");
-                    }
-                }
-                catch (Exception e)
-                {
-                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                    ExceptionReporter.ReportException(client, e);
-                    await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
-                }
-            }
-        }
+        //            if (ievent == 1)
+        //            {
+        //                _timer.UseCustomAvatar(client, albumname, desc, false, true);
+        //                await ReplyAsync("Set avatar to '" + albumname + "' with description '" + desc + "'. This is an event and it cannot be stopped the without the Owner's assistance. To stop an event, please contact the owner of the bot or specify a different avatar without the event parameter.");
+        //            }
+        //            else
+        //            {
+        //                _timer.UseCustomAvatar(client, albumname, desc, false, false);
+        //                await ReplyAsync("Set avatar to '" + albumname + "' with description '" + desc + "'. This is not an event.");
+        //            }
+        //        }
+        //        catch (Exception e)
+        //        {
+        //            DiscordSocketClient client = Context.Client as DiscordSocketClient;
+        //            ExceptionReporter.ReportException(client, e);
+        //            await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+        //        }
+        //    }
+        //}
 
-        [Command("fmartistoverride"), Summary("Changes the avatar to be an artist.")]
-        [Alias("fmsetartist")]
-        public async Task fmartistoverrideAsync(string artistname, string desc = "Custom FMBot Artist Avatar", int ievent = 0)
-        {
-            IUser DiscordUser = Context.Message.Author;
-            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
-            {
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
+        //[Command("fmartistoverride"), Summary("Changes the avatar to be an artist.")]
+        //[Alias("fmsetartist")]
+        //public async Task fmartistoverrideAsync(string artistname, string desc = "Custom FMBot Artist Avatar", int ievent = 0)
+        //{
+        //    IUser DiscordUser = Context.Message.Author;
+        //    if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+        //    {
+        //        JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
 
-                if (artistname == "help")
-                {
-                    await ReplyAsync(cfgjson.CommandPrefix + "fmartistoverride <artist name> [message in quotation marks] [event 0 or 1]");
-                    return;
-                }
+        //        if (artistname == "help")
+        //        {
+        //            await ReplyAsync(cfgjson.CommandPrefix + "fmartistoverride <artist name> [message in quotation marks] [event 0 or 1]");
+        //            return;
+        //        }
 
-                try
-                {
-                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+        //        try
+        //        {
+        //            DiscordSocketClient client = Context.Client as DiscordSocketClient;
 
-                    if (ievent == 1)
-                    {
-                        _timer.UseCustomAvatar(client, artistname, desc, true, true);
-                        await ReplyAsync("Set avatar to '" + artistname + "' with description '" + desc + "'. This is an event and it cannot be stopped the without the Owner's assistance. To stop an event, please contact the owner of the bot or specify a different avatar without the event parameter.");
-                    }
-                    else
-                    {
-                        _timer.UseCustomAvatar(client, artistname, desc, true, false);
-                        await ReplyAsync("Set avatar to '" + artistname + "' with description '" + desc + "'. This is not an event.");
-                    }
-                }
-                catch (Exception e)
-                {
-                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                    ExceptionReporter.ReportException(client, e);
-                    await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
-                }
-            }
-        }
+        //            if (ievent == 1)
+        //            {
+        //                _timer.UseCustomAvatar(client, artistname, desc, true, true);
+        //                await ReplyAsync("Set avatar to '" + artistname + "' with description '" + desc + "'. This is an event and it cannot be stopped the without the Owner's assistance. To stop an event, please contact the owner of the bot or specify a different avatar without the event parameter.");
+        //            }
+        //            else
+        //            {
+        //                _timer.UseCustomAvatar(client, artistname, desc, true, false);
+        //                await ReplyAsync("Set avatar to '" + artistname + "' with description '" + desc + "'. This is not an event.");
+        //            }
+        //        }
+        //        catch (Exception e)
+        //        {
+        //            DiscordSocketClient client = Context.Client as DiscordSocketClient;
+        //            ExceptionReporter.ReportException(client, e);
+        //            await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+        //        }
+        //    }
+        //}
 
-        [Command("fmavataroverride"), Summary("Changes the avatar to be a image from a link.")]
-        [Alias("fmsetavatar")]
-        public async Task fmavataroverrideAsync(string link, string desc = "Custom FMBot Avatar", int ievent = 0)
-        {
-            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
-            {
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
+        //[Command("fmavataroverride"), Summary("Changes the avatar to be a image from a link.")]
+        //[Alias("fmsetavatar")]
+        //public async Task fmavataroverrideAsync(string link, string desc = "Custom FMBot Avatar", int ievent = 0)
+        //{
+        //    if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+        //    {
+        //        JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
 
-                if (link == "help")
-                {
-                    await ReplyAsync(cfgjson.CommandPrefix + "fmavataroverride <image link> [message in quotation marks] [event 0 or 1]");
-                    return;
-                }
+        //        if (link == "help")
+        //        {
+        //            await ReplyAsync(cfgjson.CommandPrefix + "fmavataroverride <image link> [message in quotation marks] [event 0 or 1]");
+        //            return;
+        //        }
 
-                try
-                {
-                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+        //        try
+        //        {
+        //            DiscordSocketClient client = Context.Client as DiscordSocketClient;
 
-                    if (ievent == 1)
-                    {
-                        _timer.UseCustomAvatarFromLink(client, link, desc, true);
-                        await ReplyAsync("Set avatar to '" + link + "' with description '" + desc + "'. This is an event and it cannot be stopped the without the Owner's assistance. To stop an event, please contact the owner of the bot or specify a different avatar without the event parameter.");
-                    }
-                    else
-                    {
-                        _timer.UseCustomAvatarFromLink(client, link, desc, false);
-                        await ReplyAsync("Set avatar to '" + link + "' with description '" + desc + "'. This is not an event.");
-                    }
-                }
-                catch (Exception e)
-                {
-                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                    ExceptionReporter.ReportException(client, e);
-                    await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
-                }
-            }
-        }
+        //            if (ievent == 1)
+        //            {
+        //                _timer.UseCustomAvatarFromLink(client, link, desc, true);
+        //                await ReplyAsync("Set avatar to '" + link + "' with description '" + desc + "'. This is an event and it cannot be stopped the without the Owner's assistance. To stop an event, please contact the owner of the bot or specify a different avatar without the event parameter.");
+        //            }
+        //            else
+        //            {
+        //                _timer.UseCustomAvatarFromLink(client, link, desc, false);
+        //                await ReplyAsync("Set avatar to '" + link + "' with description '" + desc + "'. This is not an event.");
+        //            }
+        //        }
+        //        catch (Exception e)
+        //        {
+        //            DiscordSocketClient client = Context.Client as DiscordSocketClient;
+        //            ExceptionReporter.ReportException(client, e);
+        //            await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+        //        }
+        //    }
+        //}
 
         
 
-        [Command("fmresetavatar"), Summary("Changes the avatar to be the default.")]
-        public async Task fmresetavatar()
-        {
-            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
-            {
-                try
-                {
-                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                    _timer.UseDefaultAvatar(client);
-                    await ReplyAsync("Set avatar to 'FMBot Default'");
-                }
-                catch (Exception e)
-                {
-                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                    ExceptionReporter.ReportException(client, e);
-                    await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
-                }
-            }
-        }
+        //[Command("fmresetavatar"), Summary("Changes the avatar to be the default.")]
+        //public async Task fmresetavatar()
+        //{
+        //    if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+        //    {
+        //        try
+        //        {
+        //            DiscordSocketClient client = Context.Client as DiscordSocketClient;
+        //            _timer.UseDefaultAvatar(client);
+        //            await ReplyAsync("Set avatar to 'FMBot Default'");
+        //        }
+        //        catch (Exception e)
+        //        {
+        //            DiscordSocketClient client = Context.Client as DiscordSocketClient;
+        //            ExceptionReporter.ReportException(client, e);
+        //            await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+        //        }
+        //    }
+        //}
 
         [Command("fmrestarttimer"), Summary("Restarts the internal bot avatar timer.")]
         [Alias("fmstarttimer", "fmtimerstart", "fmtimerrestart")]

@@ -761,12 +761,12 @@ namespace FMBot.Bot.Commands
                 bool premium = userinfo.Content.IsSubscriber;
 
 
-                builder.AddInlineField("Last.FM Name: ", lastFMUserName);
-                builder.AddInlineField("Chart Mode: ", userSettings.ChartType);
-                builder.AddInlineField("User Type: ", usertype.ToString());
-                builder.AddInlineField("Total Tracks: ", playcount.ToString("0"));
-                builder.AddInlineField("Has Last.FM Premium? ", premium.ToString());
-                builder.AddInlineField("Bot user type: ", userSettings.UserType);
+                builder.AddField("Last.FM Name: ", lastFMUserName);
+                builder.AddField("Chart Mode: ", userSettings.ChartType);
+                builder.AddField("User Type: ", usertype.ToString());
+                builder.AddField("Total Tracks: ", playcount.ToString("0"));
+                builder.AddField("Has Last.FM Premium? ", premium.ToString());
+                builder.AddField("Bot user type: ", userSettings.UserType);
 
                 await Context.Channel.SendMessageAsync("", false, builder.Build());
 
@@ -789,7 +789,7 @@ namespace FMBot.Bot.Commands
                 EmbedBuilder builder = new EmbedBuilder();
                 ISelfUser SelfUser = Context.Client.CurrentUser;
                 builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
-                builder.AddInlineField("Featured:", _timer.GetTrackString());
+                builder.AddField("Featured:", _timer.GetTrackString());
 
                 await Context.Channel.SendMessageAsync("", false, builder.Build());
             }

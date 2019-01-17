@@ -23,7 +23,7 @@ namespace FMBot.Bot
         #region FMBot Init
 
         private CommandService commands;
-        private DiscordSocketClient client;
+        private DiscordShardedClient client;
         private IServiceProvider services;
         private readonly IServiceCollection map = new ServiceCollection();
         private string prefix;
@@ -61,10 +61,11 @@ namespace FMBot.Bot
                 await TestLastFMAPI();
 
                 await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Initalizing Discord..."));
-                client = new DiscordSocketClient(new DiscordSocketConfig
+                client = new DiscordShardedClient(new DiscordSocketConfig
                 {
                     WebSocketProvider = WS4NetProvider.Instance,
-                    LogLevel = LogSeverity.Verbose
+                    LogLevel = LogSeverity.Verbose,
+
                 });
 
                 client.Log += Log;
@@ -141,7 +142,7 @@ namespace FMBot.Bot
             map.AddSingleton(new TimerService(client));
             services = map.BuildServiceProvider();
 
-            await commands.AddModulesAsync(Assembly.GetEntryAssembly());
+            await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
 
             client.MessageReceived += HandleCommand_MessageReceived;
             client.MessageUpdated += HandleCommand_MessageEdited;

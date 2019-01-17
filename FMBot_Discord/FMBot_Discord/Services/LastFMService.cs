@@ -1,6 +1,4 @@
-﻿using Discord;
-using Discord.WebSocket;
-using FMBot.Bot.Extensions;
+﻿using FMBot.Bot.Extensions;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
@@ -17,7 +15,7 @@ using static FMBot.Bot.Models.LastFMModels;
 
 namespace FMBot.Services
 {
-    class LastFMService
+    internal class LastFMService
     {
         public static JsonCfg.ConfigJson cfgjson = JsonCfg.GetJSONData();
 
@@ -160,22 +158,41 @@ namespace FMBot.Services
                         string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
                         string AlbumName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.Name;
 
-                        var albumImages = await GetAlbumImagesAsync(ArtistName, AlbumName);
+                        LastImageSet albumImages = await GetAlbumImagesAsync(ArtistName, AlbumName);
 
                         Bitmap cover;
 
                         if (albumImages != null && albumImages.Medium != null)
                         {
-                            string url = null;
+                            string url = albumImages.Large.AbsoluteUri.ToString();
+                            string path = Path.GetFileName(url);
 
-                            url = albumImages.Large.AbsoluteUri.ToString();
-
-                            WebRequest request = WebRequest.Create(url);
-                            using (WebResponse response = request.GetResponse())
+                            if (File.Exists(GlobalVars.CacheFolder + path))
                             {
-                                using (Stream responseStream = response.GetResponseStream())
+                                cover = new Bitmap(GlobalVars.CacheFolder + path);
+
+                            }
+                            else
+                            {
+                                WebRequest request = WebRequest.Create(url);
+                                using (WebResponse response = request.GetResponse())
                                 {
-                                    cover = new Bitmap(responseStream);
+                                    using (Stream responseStream = response.GetResponseStream())
+                                    {
+                                        Bitmap bitmap = new Bitmap(responseStream);
+
+                                        cover = bitmap;
+                                        using (MemoryStream memory = new MemoryStream())
+                                        {
+                                            using (FileStream fs = new FileStream(GlobalVars.CacheFolder + path, FileMode.Create, FileAccess.ReadWrite))
+                                            {
+                                                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
+                                                byte[] bytes = memory.ToArray();
+                                                fs.Write(bytes, 0, bytes.Length);
+                                            }
+                                        }
+
+                                    }
                                 }
                             }
                         }
@@ -203,7 +220,7 @@ namespace FMBot.Services
 
                         string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? nulltext : artist.Name;
 
-                        var artistImage = await GetArtistImageAsync(ArtistName);
+                        LastImageSet artistImage = await GetArtistImageAsync(ArtistName);
 
                         Bitmap cover;
 
@@ -213,12 +230,17 @@ namespace FMBot.Services
 
                             url = artistImage.Large.AbsoluteUri.ToString();
 
+
                             WebRequest request = WebRequest.Create(url);
                             using (WebResponse response = request.GetResponse())
                             {
                                 using (Stream responseStream = response.GetResponseStream())
                                 {
-                                    cover = new Bitmap(responseStream);
+                                    using (Bitmap bitmap = new Bitmap(responseStream))
+                                    {
+                                        cover = bitmap;
+
+                                    }
                                 }
                             }
                         }

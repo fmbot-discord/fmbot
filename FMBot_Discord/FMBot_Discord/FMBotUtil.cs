@@ -309,7 +309,7 @@ namespace FMBot.Bot
                     SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
 
                     EmbedBuilder builder = new EmbedBuilder();
-                    builder.AddInlineField("Exception:", e.Message + "\nSource:\n" + e.Source + "\nStack Trace:\n" + e.StackTrace);
+                    builder.AddField("Exception:", e.Message + "\nSource:\n" + e.Source + "\nStack Trace:\n" + e.StackTrace);
 
                     await channel.SendMessageAsync("", false, builder.Build());
                 }
@@ -334,7 +334,7 @@ namespace FMBot.Bot
                 await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", e.Message, e), true);
             }
 
-            public static async void ReportStringAsException(DiscordSocketClient client, string e)
+            public static async void ReportShardedException(DiscordShardedClient client = null, Exception e = null)
             {
                 JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
 
@@ -347,7 +347,45 @@ namespace FMBot.Bot
                     SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
 
                     EmbedBuilder builder = new EmbedBuilder();
-                    builder.AddInlineField("Exception:", e);
+                    builder.AddField("Exception:", e.Message + "\nSource:\n" + e.Source + "\nStack Trace:\n" + e.StackTrace);
+
+                    await channel.SendMessageAsync("", false, builder.Build());
+                }
+                catch (Exception)
+                {
+                    try
+                    {
+                        ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
+                        ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.ExceptionChannel);
+
+                        SocketGuild guild = client.GetGuild(BroadcastServerID);
+                        SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
+
+                        await channel.SendMessageAsync("Exception: " + e.Message + "\n\nSource:\n" + e.Source + "\n\nStack Trace:\n" + e.StackTrace);
+                    }
+                    catch (Exception)
+                    {
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it."));
+                    }
+                }
+
+                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", e.Message, e), true);
+            }
+
+            public static async void ReportStringAsException(DiscordShardedClient client, string e)
+            {
+                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
+
+                try
+                {
+                    ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
+                    ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.ExceptionChannel);
+
+                    SocketGuild guild = client.GetGuild(BroadcastServerID);
+                    SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
+
+                    EmbedBuilder builder = new EmbedBuilder();
+                    builder.AddField("Exception:", e);
 
                     await channel.SendMessageAsync("", false, builder.Build());
                 }
@@ -611,7 +649,7 @@ namespace FMBot.Bot
             public bool isInCooldown { get; set; }
             public bool isWatchingMessages { get; set; }
 
-            public static bool IncomingRequest(DiscordSocketClient client, ulong DiscordID)//requesting user == username of the person messaging your bot
+            public static bool IncomingRequest(DiscordShardedClient client, ulong DiscordID)//requesting user == username of the person messaging your bot
             {
                 try
                 {
@@ -685,7 +723,7 @@ namespace FMBot.Bot
                 }
                 catch (Exception e)
                 {
-                    ExceptionReporter.ReportException(client, e);
+                    //ExceptionReporter.ReportException(client, e);
                     return true;
                 }
             }
