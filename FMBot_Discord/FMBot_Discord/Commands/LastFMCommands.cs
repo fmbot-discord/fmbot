@@ -816,7 +816,7 @@ namespace FMBot.Bot.Commands
 
         [Command("fmset"), Summary("Sets your Last.FM name and FM mode.")]
         [Alias("fmsetname", "fmsetmode")]
-        public async Task fmsetAsync([Summary("Your Last.FM name")] string lastFMUserName, [Summary("The mode you want to use.")] string chartType = "embedmini")
+        public async Task fmsetAsync([Summary("Your Last.FM name")] string lastFMUserName, [Summary("The mode you want to use.")] string chartType = "embedfull")
         {
             if (lastFMUserName == "help")
             {
