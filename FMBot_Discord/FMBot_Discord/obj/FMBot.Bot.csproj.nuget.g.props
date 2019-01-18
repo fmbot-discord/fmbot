@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <RestoreSuccess Condition=" '$(RestoreSuccess)' == '' ">True</RestoreSuccess>
+    <RestoreTool Condition=" '$(RestoreTool)' == '' ">NuGet</RestoreTool>
+    <ProjectAssetsFile Condition=" '$(ProjectAssetsFile)' == '' ">D:\Programming\Discord\FMBOT\FMBot_Discord\FMBot_Discord\obj\project.assets.json</ProjectAssetsFile>
+    <NuGetPackageRoot Condition=" '$(NuGetPackageRoot)' == '' ">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
+    <NuGetPackageFolders Condition=" '$(NuGetPackageFolders)' == '' ">C:\Users\Thom\.nuget\packages\</NuGetPackageFolders>
+    <NuGetProjectStyle Condition=" '$(NuGetProjectStyle)' == '' ">PackageReference</NuGetProjectStyle>
+    <NuGetToolVersion Condition=" '$(NuGetToolVersion)' == '' ">5.0.0</NuGetToolVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+  </PropertyGroup>
+  <ImportGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <Import Project="$(NuGetPackageRoot)microsoft.net.compilers\2.6.1\build\Microsoft.Net.Compilers.props" Condition="Exists('$(NuGetPackageRoot)microsoft.net.compilers\2.6.1\build\Microsoft.Net.Compilers.props')" />
+  </ImportGroup>
+  <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <PkgMicrosoft_Net_Compilers Condition=" '$(PkgMicrosoft_Net_Compilers)' == '' ">C:\Users\Thom\.nuget\packages\microsoft.net.compilers\2.6.1</PkgMicrosoft_Net_Compilers>
+    <PkgEntityFramework Condition=" '$(PkgEntityFramework)' == '' ">C:\Users\Thom\.nuget\packages\entityframework\6.2.0</PkgEntityFramework>
+  </PropertyGroup>
+</Project>
