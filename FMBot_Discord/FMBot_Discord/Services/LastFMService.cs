@@ -5,6 +5,7 @@ using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -150,7 +151,6 @@ namespace FMBot.Services
                 if (chart.mode == 0)
                 {
                     PageResponse<LastAlbum> albums = await GetTopAlbumsAsync(chart.LastFMName, timespan, chart.max);
-
                     for (int al = 0; al < chart.max; ++al)
                     {
                         LastAlbum track = albums.Content.ElementAt(al);
@@ -175,7 +175,7 @@ namespace FMBot.Services
                             else
                             {
                                 WebRequest request = WebRequest.Create(url);
-                                using (WebResponse response = request.GetResponse())
+                                using (WebResponse response = await request.GetResponseAsync())
                                 {
                                     using (Stream responseStream = response.GetResponseStream())
                                     {
@@ -232,7 +232,7 @@ namespace FMBot.Services
 
 
                             WebRequest request = WebRequest.Create(url);
-                            using (WebResponse response = request.GetResponse())
+                            using (WebResponse response = await request.GetResponseAsync())
                             {
                                 using (Stream responseStream = response.GetResponseStream())
                                 {
@@ -277,21 +277,14 @@ namespace FMBot.Services
                     BitmapList.Add(stitchedRow);
                 }
 
-                Bitmap stitchedImage = GlobalVars.Combine(BitmapList, true);
+                lock (GlobalVars.charts.SyncRoot)
+                {
+                    GlobalVars.charts[GlobalVars.GetChartFileName(chart.DiscordUser.Id)] = GlobalVars.Combine(BitmapList, true);
+                }
 
                 foreach (Bitmap image in BitmapList.ToArray())
                 {
                     image.Dispose();
-                }
-
-                using (MemoryStream memory = new MemoryStream())
-                {
-                    using (FileStream fs = new FileStream(GlobalVars.CacheFolder + chart.DiscordUser.Id + "-chart.png", FileMode.Create, FileAccess.ReadWrite))
-                    {
-                        stitchedImage.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
-                        byte[] bytes = memory.ToArray();
-                        fs.Write(bytes, 0, bytes.Length);
-                    }
                 }
             }
         }

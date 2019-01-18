@@ -6,6 +6,7 @@ using IF.Lastfm.Core.Objects;
 using Microsoft.Win32.SafeHandles;
 using Newtonsoft.Json;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -425,7 +426,25 @@ namespace FMBot.Bot
             public static int CommandExecutions = 0;
             public static int CommandExecutions_Servers = 0;
             public static int CommandExecutions_DMs = 0;
+            public static Hashtable charts = new Hashtable();
+
             private static bool IsUserInDM = false;
+
+            public static string GetChartFileName(ulong id)
+            {
+                return GlobalVars.CacheFolder + id.ToString() + "-chart.png";
+            }
+
+            public static MemoryStream GetChartStream(ulong id)
+            {
+                MemoryStream dest = new MemoryStream();
+                string fileName = GlobalVars.GetChartFileName(id);
+                Bitmap chartBitmap = (Bitmap)(GlobalVars.charts[fileName]);
+                chartBitmap.Save(dest, System.Drawing.Imaging.ImageFormat.Png);
+                dest.Position = 0;
+
+                return dest;
+            }
 
             public static TimeSpan SystemUpTime()
             {
@@ -634,8 +653,6 @@ namespace FMBot.Bot
         }
 
         #endregion
-
-
 
         #region User Classification
 
