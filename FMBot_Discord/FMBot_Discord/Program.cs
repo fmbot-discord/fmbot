@@ -166,24 +166,12 @@ namespace FMBot.Bot
 
         public async Task HandleCommand_MessageReceived(SocketMessage messageParam)
         {
-            if (Directory.Exists(GlobalVars.CacheFolder))
-            {
-                DirectoryInfo users = new DirectoryInfo(GlobalVars.CacheFolder);
-                GlobalVars.ClearReadOnly(users);
-            }
-
-            await HandleCommand(messageParam);
+            HandleCommand(messageParam);
         }
 
         public async Task HandleCommand_MessageEdited(Cacheable<IMessage, ulong> before, SocketMessage after, ISocketMessageChannel channel)
         {
-            if (Directory.Exists(GlobalVars.CacheFolder))
-            {
-                DirectoryInfo users = new DirectoryInfo(GlobalVars.CacheFolder);
-                GlobalVars.ClearReadOnly(users);
-            }
-
-            await HandleCommand(after);
+            HandleCommand(after);
         }
 
         public Task HandleCommand_CurrentUserUpdated(SocketSelfUser before, SocketSelfUser after)

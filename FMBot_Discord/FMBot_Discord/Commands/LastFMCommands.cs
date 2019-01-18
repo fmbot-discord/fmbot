@@ -35,6 +35,24 @@ namespace FMBot.Bot.Commands
         }
 
 
+        private async Task SendChartMessage(FMBotChart chart)
+        {
+            await lastFMService.GenerateChartAsync(chart);
+
+            // Send chart memory stream, remove when finished
+
+            using (MemoryStream memory = GlobalVars.GetChartStream(chart.DiscordUser.Id))
+            {
+                await Context.Channel.SendFileAsync(memory, "chart.png");
+            }
+
+            lock (GlobalVars.charts.SyncRoot)
+            {
+                // @TODO: remove only once in a while to keep it cached
+                GlobalVars.charts.Remove(GlobalVars.GetChartFileName(chart.DiscordUser.Id));
+            }
+        }
+
         [Command("fm"), Summary("Displays what a user is listening to.")]
         [Alias("qm", "wm", "em", "rm", "tm", "ym", "um", "im", "om", "pm", "dm", "gm", "sm", "am", "hm", "jm", "km", "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm")]
         public async Task fmAsync(string user = null)
@@ -266,12 +284,14 @@ namespace FMBot.Bot.Commands
                 await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
                 return;
             }
-            if (userSettings.LastGeneratedChartDateTimeUtc > DateTime.UtcNow.AddMinutes(-2) && userSettings.UserType == UserType.User)
+            if (userSettings.LastGeneratedChartDateTimeUtc > DateTime.UtcNow.AddSeconds(-10) && userSettings.UserType == UserType.User)
             {
-                await ReplyAsync("Sorry, but you can only generate a chart once every 2 minutes due to performance reasons. (Note: This might be temporary)");
+                await ReplyAsync("You're requesting too frequently, please try again later");
                 return;
             }
 
+
+            // @TODO: change to intparse or the likes
             try
             {
                 string chartalbums = "";
@@ -331,6 +351,8 @@ namespace FMBot.Bot.Commands
                     return;
                 }
 
+                // Generating image
+
                 int max = int.Parse(chartalbums);
                 int rows = int.Parse(chartrows);
 
@@ -351,9 +373,10 @@ namespace FMBot.Bot.Commands
 
                 userService.ResetChartTimer(userSettings);
 
-                await lastFMService.GenerateChartAsync(chart);
 
-                await Context.Channel.SendFileAsync(GlobalVars.CacheFolder + Context.User.Id + "-chart.png");
+                await SendChartMessage(chart);
+
+                // Adding extra infobox
 
                 EmbedAuthorBuilder eab = new EmbedAuthorBuilder
                 {
@@ -399,9 +422,6 @@ namespace FMBot.Bot.Commands
                 builder.WithFooter(efb);
 
                 await Context.Channel.SendMessageAsync("", false, builder.Build());
-
-                File.SetAttributes(GlobalVars.CacheFolder + Context.User.Id + "-chart.png", FileAttributes.Normal);
-                File.Delete(GlobalVars.CacheFolder + Context.User.Id + "-chart.png");
             }
             catch (Exception e)
             {
@@ -428,12 +448,7 @@ namespace FMBot.Bot.Commands
                 await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
                 return;
             }
-            if (userSettings.LastGeneratedChartDateTimeUtc > DateTime.UtcNow.AddMinutes(-2) && userSettings.UserType == UserType.User)
-            {
-                await ReplyAsync("Sorry, but you can only generate a chart once every 2 minutes due to performance reasons. (Note: This might be temporary)");
-                return;
-            }
-
+            
             try
             {
                 string chartalbums = "";
@@ -515,7 +530,7 @@ namespace FMBot.Bot.Commands
 
                 await lastFMService.GenerateChartAsync(chart);
 
-                await Context.Channel.SendFileAsync(GlobalVars.CacheFolder + Context.User.Id + "-chart.png");
+                await SendChartMessage(chart);
 
                 EmbedAuthorBuilder eab = new EmbedAuthorBuilder
                 {
@@ -561,9 +576,6 @@ namespace FMBot.Bot.Commands
                 builder.WithFooter(efb);
 
                 await Context.Channel.SendMessageAsync("", false, builder.Build());
-
-                File.SetAttributes(GlobalVars.CacheFolder + Context.User.Id + "-chart.png", FileAttributes.Normal);
-                File.Delete(GlobalVars.CacheFolder + Context.User.Id + "-chart.png");
             }
             catch (Exception e)
             {

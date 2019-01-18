@@ -343,7 +343,7 @@ namespace FMBot.Bot
                 try
                 {
                     WebRequest request = WebRequest.Create(thumbnail);
-                    WebResponse response = request.GetResponse();
+                    WebResponse response = await request.GetResponseAsync();
                     using (Stream output = File.Create(GlobalVars.BasePath + "newavatar.png"))
                     using (Stream input = response.GetResponseStream())
                     {
