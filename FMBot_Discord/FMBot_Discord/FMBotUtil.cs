@@ -738,7 +738,7 @@ namespace FMBot.Bot
                         return true;
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     //ExceptionReporter.ReportException(client, e);
                     return true;
