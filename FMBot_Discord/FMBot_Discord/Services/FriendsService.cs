@@ -52,6 +52,18 @@ namespace FMBot.Services
         }
 
 
+        public async Task RemoveLastFMFriendAsync(string userID, string lastfmusername)
+        {
+            var friend = db.Friends.FirstOrDefault(f => f.UserID == userID && f.LastFMUserName == f.LastFMUserName);
+
+            db.Friends.Add(friend);
+
+            db.SaveChanges();
+
+            await Task.CompletedTask;
+        }
+
+
         public async Task AddDiscordFriendAsync(string discordUserID, string friendDiscordUserID)
         {
             User user = db.Users.FirstOrDefault(f => f.DiscordUserID == discordUserID);
@@ -87,5 +99,7 @@ namespace FMBot.Services
 
             await Task.CompletedTask;
         }
+
+
     }
 }
