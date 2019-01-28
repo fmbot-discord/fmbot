@@ -166,12 +166,12 @@ namespace FMBot.Bot
 
         public async Task HandleCommand_MessageReceived(SocketMessage messageParam)
         {
-            HandleCommand(messageParam);
+            await HandleCommand(messageParam);
         }
 
         public async Task HandleCommand_MessageEdited(Cacheable<IMessage, ulong> before, SocketMessage after, ISocketMessageChannel channel)
         {
-            HandleCommand(after);
+            await HandleCommand(after);
         }
 
         public Task HandleCommand_CurrentUserUpdated(SocketSelfUser before, SocketSelfUser after)
