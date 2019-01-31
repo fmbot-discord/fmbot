@@ -33,6 +33,10 @@ namespace FMBot.Bot
 
         private readonly UserService userService = new UserService();
 
+        public static List<DateTimeOffset> stackCooldownTimer = new List<DateTimeOffset>();
+
+        public static List<SocketGuildUser> stackCooldownTarget = new List<SocketGuildUser>();
+
         public static void Main(string[] args)
         {
             new Program().MainAsync().GetAwaiter().GetResult();
@@ -220,7 +224,7 @@ namespace FMBot.Bot
             // Create a number to track where the prefix ends and the command begins
             int argPos = 0;
 
-            if (message.HasMentionPrefix(curUser, ref argPos) && context.Message.Content.Contains("dm me"))
+            if (message.HasMentionPrefix(curUser, ref argPos) && (context.Message.Content.Contains("dm me") || context.Message.Content.Contains("help")))
             {
                 string[] hellostrings = { "Hello!", "Hello World!", "Yo!", "OK!", "Hi!", "...", "Salutations!", "Hola!", "こんにちは！", "你好！", "Здравствуйте!", "Bonjour!", "Hallo!", "Ciao!", "Hej!", "여보세요!", "Koa!", "Aloha!", "مرحبا!" };
 
@@ -228,6 +232,8 @@ namespace FMBot.Bot
 
                 if (!GlobalVars.GetDMBool())
                 {
+                    //StaticCommands staticCommands = new StaticCommands(services);
+                    //Task help = staticCommands.fmfullhelpAsync();
                     await context.User.SendMessageAsync(replystring);
                 }
 
@@ -265,34 +271,53 @@ namespace FMBot.Bot
                         return;
                     }
 
-                    if (CooldownUser.IncomingRequest(client, DiscordCaller.Id) != false)
+
+                    if (stackCooldownTarget.Contains(DiscordCaller))
                     {
-                        IResult result = await commands.ExecuteAsync(context, argPos, services);
-                        if (!result.IsSuccess)
+                        //If they have used this command before, take the time the user last did something, add 5 seconds, and see if it's greater than this very moment.
+                        if (stackCooldownTimer[stackCooldownTarget.IndexOf(DiscordCaller)].AddSeconds(5) >= DateTimeOffset.Now)
                         {
-                            await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason));
+                            //If enough time hasn't passed, reply letting them know how much longer they need to wait, and end the code.
+                            int secondsLeft = (int)(stackCooldownTimer[stackCooldownTarget.IndexOf(DiscordCaller)].AddSeconds(5) - DateTimeOffset.Now).TotalSeconds;
+                            await context.Channel.SendMessageAsync($"Please wait {secondsLeft} seconds before you use that command again!");
+                            return;
                         }
                         else
                         {
-                            GlobalVars.CommandExecutions += 1;
-                            GlobalVars.CommandExecutions_Servers += 1;
+                            //If enough time has passed, set the time for the user to right now.
+                            stackCooldownTimer[stackCooldownTarget.IndexOf(DiscordCaller)] = DateTimeOffset.Now;
                         }
+                    }
+                    else
+                    {
+                        //If they've never used this command before, add their username and when they just used this command.
+                        stackCooldownTarget.Add(DiscordCaller);
+                        stackCooldownTimer.Add(DateTimeOffset.Now);
+                    }
+
+                    IResult result = await commands.ExecuteAsync(context, argPos, services);
+
+                    if (!result.IsSuccess)
+                    {
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason));
+                    }
+                    else
+                    {
+                        GlobalVars.CommandExecutions += 1;
+                        GlobalVars.CommandExecutions_Servers += 1;
                     }
                 }
                 else
                 {
-                    if (CooldownUser.IncomingRequest(client, message.Author.Id) != false)
+                    IResult result = await commands.ExecuteAsync(context, argPos, services);
+                    if (!result.IsSuccess)
                     {
-                        IResult result = await commands.ExecuteAsync(context, argPos, services);
-                        if (!result.IsSuccess)
-                        {
-                            await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason));
-                        }
-                        else
-                        {
-                            GlobalVars.CommandExecutions += 1;
-                            GlobalVars.CommandExecutions_DMs += 1;
-                        }
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason));
+                    }
+                    else
+                    {
+                        GlobalVars.CommandExecutions += 1;
+                        GlobalVars.CommandExecutions_DMs += 1;
                     }
                 }
             }

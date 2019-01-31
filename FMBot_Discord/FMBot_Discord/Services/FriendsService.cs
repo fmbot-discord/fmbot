@@ -54,11 +54,11 @@ namespace FMBot.Services
 
         public async Task RemoveLastFMFriendAsync(string userID, string lastfmusername)
         {
-            var friend = db.Friends.FirstOrDefault(f => f.UserID == userID && f.LastFMUserName == f.LastFMUserName);
+            //var friend = db.Friends.FirstOrDefault(f => f.UserID== userID && f.LastFMUserName == f.LastFMUserName);
 
-            db.Friends.Add(friend);
+            //db.Friends.Add(friend);
 
-            db.SaveChanges();
+            //db.SaveChanges();
 
             await Task.CompletedTask;
         }
