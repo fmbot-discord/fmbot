@@ -17,13 +17,10 @@ namespace FMBot.Bot.Commands
 {
     public class SecretCommands : ModuleBase
     {
-        private readonly TimerService _timer;
-
         private readonly DerpibooruService derpiservice = new DerpibooruService();
 
-        public SecretCommands(TimerService timer)
+        public SecretCommands()
         {
-            _timer = timer;
         }
 
         [Command("fmimage"), Summary("???")]
