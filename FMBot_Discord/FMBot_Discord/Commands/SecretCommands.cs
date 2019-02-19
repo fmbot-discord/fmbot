@@ -28,6 +28,8 @@ namespace FMBot.Bot.Commands
         {
             try
             {
+				string FilteredQuery = query + " -explicit -nsfw"
+				
                 List<CoolItem> imagelist = await derpiservice.GetImages(query);
 
                 var random = new Random();
@@ -46,7 +48,7 @@ namespace FMBot.Bot.Commands
                 builder.WithUrl(itemEmbed.provider_url);
                 builder.WithDescription("Tags: " + string.Join(", ", itemEmbed.derpibooru_tags));
                 builder.WithTitle("An image");
-                builder.WithImageUrl(itemEmbed.thumbnail_url);
+                builder.WithImageUrl("https://" + itemEmbed.thumbnail_url);
 
                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
 
