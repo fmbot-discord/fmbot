@@ -43,6 +43,10 @@
     <ApplicationIcon>avatar.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Coolbooru, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Coolbooru.2.0.0\lib\net452\Coolbooru.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Discord.Net.Commands, Version=2.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Discord.Net.Commands.2.0.1\lib\net46\Discord.Net.Commands.dll</HintPath>
     </Reference>
@@ -208,6 +212,7 @@
     <Compile Include="Commands\AdminCommands.cs" />
     <Compile Include="Commands\FriendsCommands.cs" />
     <Compile Include="Commands\GuildCommands.cs" />
+    <Compile Include="Commands\SecretCommands.cs" />
     <Compile Include="Commands\LastFMCommands.cs" />
     <Compile Include="Commands\OwnerCommands.cs" />
     <Compile Include="Commands\SpotifyCommands.cs" />
@@ -226,6 +231,7 @@
     <Compile Include="Services\AdminService.cs" />
     <Compile Include="Services\FriendsService.cs" />
     <Compile Include="Services\GuildService.cs" />
+    <Compile Include="Services\DerpibooruService.cs" />
     <Compile Include="Services\LastFMService.cs" />
     <Compile Include="Services\SpotifyService.cs" />
     <Compile Include="Services\UserService.cs" />

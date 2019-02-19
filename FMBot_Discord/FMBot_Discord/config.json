@@ -6,13 +6,14 @@
 	"baseserver": "",
 	"announcementchannel": "",
 	"featuredchannel": "",
-    	"botowner": "",
-    	"timerinit": "15",
-    	"timerrepeat": "60",
-    	"spotifykey": "",
-    	"spotifysecret": "",
-    	"exceptionchannel": "",
-    	"cooldown": "10",
-    	"nummessages": "5",
-    	"inbetweentime":  "15"
+  "botowner": "",
+  "timerinit": "15",
+  "timerrepeat": "60",
+  "spotifykey": "",
+  "spotifysecret": "",
+  "exceptionchannel": "",
+  "cooldown": "10",
+  "nummessages": "5",
+  "inbetweentime": "15",
+  "derpikey":  ""
 }

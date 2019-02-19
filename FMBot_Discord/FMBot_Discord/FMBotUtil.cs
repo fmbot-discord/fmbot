@@ -254,6 +254,9 @@ namespace FMBot.Bot
 
                 [JsonProperty("inbetweentime")]
                 public string InBetweenTime { get; private set; }
+
+                [JsonProperty("derpikey")]
+                public string DerpiKey { get; private set; }
             }
 
             public static async Task<ConfigJson> GetJSONDataAsync()
