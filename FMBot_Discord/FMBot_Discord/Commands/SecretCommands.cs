@@ -28,7 +28,8 @@ namespace FMBot.Bot.Commands
         {
             try
             {
-				string FilteredQuery = query + " -explicit -nsfw"
+				//filter all nsfw results and only show safe images.
+				string FilteredQuery = query + ", safe, -explicit, -nsfw, -questionable, -suggestive, -breasts"
 				
                 List<CoolItem> imagelist = await derpiservice.GetImages(query);
 
