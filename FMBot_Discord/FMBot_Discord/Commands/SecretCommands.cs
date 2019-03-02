@@ -46,7 +46,7 @@ namespace FMBot.Bot.Commands
                 builder.WithUrl(itemEmbed.provider_url);
                 builder.WithDescription("Tags: " + string.Join(", ", itemEmbed.derpibooru_tags));
                 builder.WithTitle("An image");
-                builder.WithImageUrl(itemEmbed.thumbnail_url);
+                builder.WithImageUrl("https:" + itemEmbed.thumbnail_url.ToString());
 
                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
 
