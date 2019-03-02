@@ -1,22 +1,14 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using IF.Lastfm.Core.Api.Enums;
-using IF.Lastfm.Core.Objects;
-using Microsoft.Win32.SafeHandles;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Management;
-using System.Net;
-using System.Runtime.ConstrainedExecution;
-using System.Runtime.InteropServices;
-using System.Security.Permissions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -31,7 +23,7 @@ namespace FMBot.Bot
             #region User Settings
 
 
-            public async static Task<IGuildUser> ConvertIDToGuildUser(IGuild guild, ulong id)
+            public static async Task<IGuildUser> ConvertIDToGuildUser(IGuild guild, ulong id)
             {
                 IReadOnlyCollection<IGuildUser> users = await guild.GetUsersAsync().ConfigureAwait(false);
 

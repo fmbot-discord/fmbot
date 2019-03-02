@@ -179,7 +179,7 @@ namespace FMBot.Bot
 
             EmbedBuilder builder = new EmbedBuilder();
 
-            foreach (ModuleInfo module in _service.Modules.OrderByDescending(o => o.Commands.Count()))
+            foreach (ModuleInfo module in _service.Modules.OrderByDescending(o => o.Commands.Count()).Where(w => !w.Name.Contains("SecretCommands") && !w.Name.Contains("OwnerCommands") && !w.Name.Contains("AdminCommands") && !w.Name.Contains("GuildCommands")))
             {
                 foreach (CommandInfo cmd in module.Commands)
                 {
@@ -209,9 +209,9 @@ namespace FMBot.Bot
                 length += description.Length;
                 description = null;
 
-                if (length > 1990)
+                if (length < 1990)
                 {
-                    await Context.User.SendMessageAsync("", false, builder.Build());
+                    await Context.User.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
 
                     builder = new EmbedBuilder();
                     length = 0;
