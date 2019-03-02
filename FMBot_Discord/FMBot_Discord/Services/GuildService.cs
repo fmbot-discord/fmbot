@@ -19,7 +19,7 @@ namespace FMBot.Services
         // Message is in dm?
         public bool CheckIfDM(ICommandContext context)
         {
-            return (context.Guild == null);
+            return context.Guild == null;
         }
 
 
@@ -28,6 +28,16 @@ namespace FMBot.Services
         {
             return await context.Guild.GetUserAsync(id).ConfigureAwait(false);
         }
+
+
+        //public bool CheckSufficientPermissions(ICommandContext context)
+        //{
+        //    if (context.Client.)
+        //    {
+
+        //    }
+        //    return context.Guild == null;
+        //}
 
 
         // Get user from guild with searchvalue

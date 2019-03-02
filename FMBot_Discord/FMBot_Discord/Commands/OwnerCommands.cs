@@ -24,33 +24,33 @@ namespace FMBot.Bot.Commands
         [Alias("fmsetperms")]
         public async Task fmsetusertypeAsync(string userId = null, string userType = null)
         {
-            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
+            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Owner).ConfigureAwait(false))
             {
                 if (userId == null || userType == null)
                 {
-                    await ReplyAsync("Please format your command like this: `.fmsetusertype 'discord id' 'User/Admin/Owner'`");
+                    await ReplyAsync("Please format your command like this: `.fmsetusertype 'discord id' 'User/Admin/Owner'`").ConfigureAwait(false);
                     return;
                 }
 
                 if (!Enum.TryParse(userType, out UserType userTypeEnum))
                 {
-                    await ReplyAsync("Invalid usertype. Please use 'User', 'Admin', or 'Owner'.");
+                    await ReplyAsync("Invalid usertype. Please use 'User', 'Admin', or 'Owner'.").ConfigureAwait(false);
                     return;
                 }
 
-                if (await adminService.SetUserTypeAsync(userId, userTypeEnum))
+                if (await adminService.SetUserTypeAsync(userId, userTypeEnum).ConfigureAwait(false))
                 {
-                    await ReplyAsync("You got it. User perms changed.");
+                    await ReplyAsync("You got it. User perms changed.").ConfigureAwait(false);
                 }
                 else
                 {
-                    await ReplyAsync("Setting user failed. Are you sure the user exists?");
+                    await ReplyAsync("Setting user failed. Are you sure the user exists?").ConfigureAwait(false);
                 }
 
             }
             else
             {
-                await ReplyAsync("Error: Insufficient rights. Only FMBot owners can change your usertype.");
+                await ReplyAsync("Error: Insufficient rights. Only FMBot owners can change your usertype.").ConfigureAwait(false);
             }
         }
 
@@ -59,7 +59,7 @@ namespace FMBot.Bot.Commands
         [Alias("fmreadonlyfix")]
         public async Task fmremovereadonlyAsync()
         {
-            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
+            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Owner).ConfigureAwait(false))
             {
                 try
                 {
@@ -70,13 +70,13 @@ namespace FMBot.Bot.Commands
                     }
 
 
-                    await ReplyAsync("Removed read only on all directories.");
+                    await ReplyAsync("Removed read only on all directories.").ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
                     DiscordSocketClient client = Context.Client as DiscordSocketClient;
                     ExceptionReporter.ReportException(client, e);
-                    await ReplyAsync("Unable to remove read only on all directories due to an internal error.");
+                    await ReplyAsync("Unable to remove read only on all directories due to an internal error.").ConfigureAwait(false);
                 }
             }
         }

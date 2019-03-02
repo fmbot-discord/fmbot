@@ -207,6 +207,7 @@ namespace FMBot.Bot
             // this structure will hold data from config.json
             public struct ConfigJson
             {
+#pragma warning disable RCS1170 // Use read-only auto-implemented property.
                 [JsonProperty("token")]
                 public string Token { get; private set; }
 
@@ -257,6 +258,7 @@ namespace FMBot.Bot
 
                 [JsonProperty("derpikey")]
                 public string DerpiKey { get; private set; }
+#pragma warning restore RCS1170 // Use read-only auto-implemented property.
             }
 
             public static async Task<ConfigJson> GetJSONDataAsync()
@@ -649,5 +651,5 @@ namespace FMBot.Bot
         #endregion
 
 
-     }
+    }
 }

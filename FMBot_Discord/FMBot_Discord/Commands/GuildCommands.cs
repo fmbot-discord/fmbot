@@ -36,7 +36,7 @@ namespace FMBot.Bot.Commands
         {
             if (guildService.CheckIfDM(Context))
             {
-                await ReplyAsync("Command is not supported in DMs.");
+                await ReplyAsync("Command is not supported in DMs.").ConfigureAwait(false);
                 return;
             }
 

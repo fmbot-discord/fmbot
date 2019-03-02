@@ -36,7 +36,7 @@ namespace FMBot.Bot.Commands
                 var random = new Random();
                 int index = random.Next(imagelist.Count);
                 var item = imagelist[index];
-                var itemEmbed = await CoolStuff.Embed(int.Parse(item.id));
+                var itemEmbed = await CoolStuff.Embed(int.Parse(item.id)).ConfigureAwait(false);
 
                 EmbedBuilder builder = new EmbedBuilder();
 
@@ -49,7 +49,7 @@ namespace FMBot.Bot.Commands
                 builder.WithUrl(itemEmbed.provider_url);
                 builder.WithDescription("Tags: " + string.Join(", ", itemEmbed.derpibooru_tags));
                 builder.WithTitle("An image");
-                builder.WithImageUrl("https:" + itemEmbed.thumbnail_url.ToString());
+                builder.WithImageUrl("https:" + itemEmbed.thumbnail_url);
 
 
                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
@@ -58,7 +58,7 @@ namespace FMBot.Bot.Commands
 
                 builder.WithFooter(efb);
 
-                await Context.Channel.SendMessageAsync("", false, builder.Build());
+                await Context.Channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
 
             }
             catch (Exception e)
@@ -66,7 +66,7 @@ namespace FMBot.Bot.Commands
                 DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
                 ExceptionReporter.ReportException(disclient, e);
 
-                await ReplyAsync("oof");
+                await ReplyAsync("oof").ConfigureAwait(false);
             }
         }
     }

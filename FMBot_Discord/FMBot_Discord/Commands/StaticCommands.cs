@@ -34,39 +34,38 @@ namespace FMBot.Bot
 
             string SelfID = Context.Client.CurrentUser.Id.ToString();
 
-
             builder.AddField("Invite the bot to your own server with the link below:",
-                "https://discordapp.com/oauth2/authorize?client_id=" + SelfID + "&scope=bot&permissions=0");
+                "https://discordapp.com/oauth2/authorize?client_id=" + SelfID + "&scope=bot&permissions=50176");
 
             builder.AddField("Join the FMBot server for support and updates:",
                 "https://discord.gg/srmpCaa");
 
 
-            await Context.Channel.SendMessageAsync("", false, builder.Build());
+            await Context.Channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
         }
 
         [Command("fmdonate"), Summary("Please donate if you like this bot!")]
         public async Task donateAsync()
         {
-            await ReplyAsync("If you like the bot and you would like to support its development, feel free to support the developer at: https://www.paypal.me/Bitl");
+            await ReplyAsync("If you like the bot and you would like to support its development, feel free to support the developer at: https://www.paypal.me/Bitl").ConfigureAwait(false);
         }
 
         [Command("fmgithub"), Summary("GitHub Page")]
         public async Task githubAsync()
         {
-            await ReplyAsync("https://github.com/Bitl/FMBot_Discord");
+            await ReplyAsync("https://github.com/Bitl/FMBot_Discord").ConfigureAwait(false);
         }
 
         [Command("fmgitlab"), Summary("GitLab Page")]
         public async Task gitlabAsync()
         {
-            await ReplyAsync("https://gitlab.com/Bitl/FMBot_Discord");
+            await ReplyAsync("https://gitlab.com/Bitl/FMBot_Discord").ConfigureAwait(false);
         }
 
         [Command("fmbugs"), Summary("Report bugs here!")]
         public async Task bugsAsync()
         {
-            await ReplyAsync("Report bugs here:\nGithub: https://github.com/Bitl/FMBot_Discord/issues \nGitLab: https://gitlab.com/Bitl/FMBot_Discord/issues");
+            await ReplyAsync("Report bugs here:\nGithub: https://github.com/Bitl/FMBot_Discord/issues \nGitLab: https://gitlab.com/Bitl/FMBot_Discord/issues").ConfigureAwait(false);
         }
 
         [Command("fmstatus"), Summary("Displays bot stats.")]
@@ -120,7 +119,7 @@ namespace FMBot.Bot
             builder.AddField("Shards: ", client.Shards.Count());
             builder.AddField("Bot version: ", assemblyVersion);
 
-            await Context.Channel.SendMessageAsync("", false, builder.Build());
+            await Context.Channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
         }
 
 
@@ -162,7 +161,7 @@ namespace FMBot.Bot
 
             builder.WithFooter("Please use `" + prefix + "fmfullhelp` to get a list of all possible commands.");
 
-            await Context.Channel.SendMessageAsync("", false, builder.Build());
+            await Context.Channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
         }
 
 

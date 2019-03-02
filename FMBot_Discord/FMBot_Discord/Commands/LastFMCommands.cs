@@ -169,7 +169,6 @@ namespace FMBot.Bot.Commands
                 }
                 else if (userSettings.ChartType == ChartType.embedfull)
                 {
-
                     EmbedAuthorBuilder eab = new EmbedAuthorBuilder
                     {
                         IconUrl = Context.User.GetAvatarUrl(),
@@ -428,12 +427,17 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("fmartistchart"), Summary("Generates an artist chart based on a user's parameters.")]
+        [RequireBotPermission(ChannelPermission.AttachFiles)]
         public async Task fmartistchartAsync(string chartsize = "3x3", string time = "weekly", string titlesetting = "titles", IUser user = null)
         {
             if (chartsize == "help")
             {
                 await ReplyAsync(".fmartistchart [3x3-10x10] [weekly/monthly/yearly/overall] [notitles/titles] [user]").ConfigureAwait(false);
                 return;
+            }
+            if (GuildPermissions.)
+            {
+
             }
 
             User userSettings = await userService.GetUserSettingsAsync(Context.User).ConfigureAwait(false);
