@@ -18,14 +18,7 @@ namespace FMBot.Services
         {
             string discordUserID = discordUser.Id.ToString();
 
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
-
-            if (user == null)
-            {
-                return null;
-            }
-
-            return user;
+            return await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID).ConfigureAwait(false);
         }
 
 
@@ -38,7 +31,7 @@ namespace FMBot.Services
                 return context.User.Username;
             }
 
-            IGuildUser guildUser = await context.Guild.GetUserAsync(context.User.Id);
+            IGuildUser guildUser = await context.Guild.GetUserAsync(context.User.Id).ConfigureAwait(false);
 
             return guildUser.Nickname ?? context.User.Username;
         }
@@ -48,7 +41,7 @@ namespace FMBot.Services
         {
             string discordUserID = discordUser.Id.ToString();
 
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
+            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID).ConfigureAwait(false);
 
             if (user == null)
             {
@@ -63,7 +56,7 @@ namespace FMBot.Services
         {
             string discordUserID = discordUser.Id.ToString();
 
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
+            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID).ConfigureAwait(false);
 
             if (user == null)
             {
@@ -76,14 +69,7 @@ namespace FMBot.Services
         // Featured
         public async Task<User> GetFeaturedUserAsync()
         {
-            User user = await db.Users.FirstOrDefaultAsync(f => f.Featured == true);
-
-            if (user == null)
-            {
-                return null;
-            }
-
-            return user;
+            return await db.Users.FirstOrDefaultAsync(f => f.Featured == true).ConfigureAwait(false);
         }
 
 
@@ -91,7 +77,7 @@ namespace FMBot.Services
         // Random user
         public async Task<string> GetRandomLastFMUserAsync()
         {
-            User featuredUser = await db.Users.FirstOrDefaultAsync(f => f.Featured == true);
+            User featuredUser = await db.Users.FirstOrDefaultAsync(f => f.Featured == true).ConfigureAwait(false);
             if (featuredUser != null)
             {
                 featuredUser.Featured = false;
@@ -102,7 +88,7 @@ namespace FMBot.Services
             List<User> users = db.Users.Where(w => w.Blacklisted != true).ToList();
 
             Random rand = new Random();
-            User user = users[rand.Next(users.Count())];
+            User user = users[rand.Next(users.Count)];
 
             user.Featured = true;
 
@@ -118,7 +104,7 @@ namespace FMBot.Services
         {
             string discordUserID = discordUser.Id.ToString();
 
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
+            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID).ConfigureAwait(false);
 
             if (user == null)
             {
@@ -131,9 +117,9 @@ namespace FMBot.Services
         // UserTitle
         public async Task<string> GetUserTitleAsync(ICommandContext context)
         {
-            string name = await GetNameAsync(context);
-            UserType rank = await GetRankAsync(context.User);
-            bool? featured = await GetFeaturedAsync(context.User);
+            string name = await GetNameAsync(context).ConfigureAwait(false);
+            UserType rank = await GetRankAsync(context.User).ConfigureAwait(false);
+            bool? featured = await GetFeaturedAsync(context.User).ConfigureAwait(false);
 
             string title = name;
 
@@ -185,13 +171,13 @@ namespace FMBot.Services
         }
 
         // Set LastFM Name
-        public void ResetChartTimer(User user)
+        public async Task ResetChartTimerAsync(User user)
         {
             user.LastGeneratedChartDateTimeUtc = DateTime.UtcNow;
 
             db.Entry(user).State = EntityState.Modified;
 
-            db.SaveChanges();
+            await db.SaveChangesAsync().ConfigureAwait(false);
         }
 
         // Remove user
@@ -199,17 +185,17 @@ namespace FMBot.Services
         {
             string discordUserID = discordUser.Id.ToString();
 
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
+            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID).ConfigureAwait(false);
 
             db.Users.Remove(user);
 
-            db.SaveChanges();
+            await db.SaveChangesAsync().ConfigureAwait(false);
         }
 
         // Usercount
         public async Task<int> GetUserCountAsync()
         {
-            return await db.Users.CountAsync();
+            return await db.Users.CountAsync().ConfigureAwait(false);
         }
     }
 }

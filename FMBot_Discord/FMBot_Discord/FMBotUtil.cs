@@ -22,18 +22,18 @@ using System.Threading.Tasks;
 
 namespace FMBot.Bot
 {
-    public class FMBotUtil
+    public static class FMBotUtil
     {
         #region Database Functions
 
-        public class DBase
+        public static class DBase
         {
             #region User Settings
 
 
             public async static Task<IGuildUser> ConvertIDToGuildUser(IGuild guild, ulong id)
             {
-                IReadOnlyCollection<IGuildUser> users = await guild.GetUsersAsync();
+                IReadOnlyCollection<IGuildUser> users = await guild.GetUsersAsync().ConfigureAwait(false);
 
                 foreach (IGuildUser user in users)
                 {
@@ -68,7 +68,7 @@ namespace FMBot.Bot
 
                 string[] friends = File.ReadAllLines(GlobalVars.CacheFolder + id + "-friends.txt");
 
-                int listcount = friendlist.Count();
+                int listcount = friendlist.Length;
 
                 List<string> list = new List<string>(friends);
 
@@ -80,7 +80,7 @@ namespace FMBot.Bot
                     }
                     else
                     {
-                        listcount = listcount - 1;
+                        listcount--;
                         continue;
                     }
                 }
@@ -103,7 +103,7 @@ namespace FMBot.Bot
                 string[] friends = File.ReadAllLines(GlobalVars.CacheFolder + id + "-friends.txt");
                 string[] friendsLower = friends.Select(s => s.ToLowerInvariant()).ToArray();
 
-                int listcount = friendlist.Count();
+                int listcount = friendlist.Length;
 
                 List<string> list = new List<string>(friends);
 
@@ -116,7 +116,7 @@ namespace FMBot.Bot
                     }
                     else
                     {
-                        listcount = listcount - 1;
+                        listcount--;
                         continue;
                     }
                 }
@@ -185,7 +185,7 @@ namespace FMBot.Bot
                 {
                     return "textmini";
                 }
-                else if ((mode > 3 || mode < 0) && isservercmd == true)
+                else if ((mode > 3 || mode < 0) && isservercmd)
                 {
                     return "userdefined";
                 }
@@ -202,7 +202,7 @@ namespace FMBot.Bot
 
         #region Configuration Data
 
-        public class JsonCfg
+        public static class JsonCfg
         {
             // this structure will hold data from config.json
             public struct ConfigJson
@@ -262,18 +262,17 @@ namespace FMBot.Bot
             public static async Task<ConfigJson> GetJSONDataAsync()
             {
                 // first, let's load our configuration file
-                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "JsonCfg", "Loading Configuration"));
+                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "JsonCfg", "Loading Configuration")).ConfigureAwait(false);
                 string json = "";
                 using (FileStream fs = File.OpenRead(GlobalVars.ConfigFileName))
                 using (StreamReader sr = new StreamReader(fs, new UTF8Encoding(false)))
                 {
-                    json = await sr.ReadToEndAsync();
+                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
                 }
 
                 // next, let's load the values from that file
                 // to our client's configuration
-                ConfigJson cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
-                return cfgjson;
+                return JsonConvert.DeserializeObject<ConfigJson>(json);
             }
 
             public static ConfigJson GetJSONData()
@@ -289,8 +288,7 @@ namespace FMBot.Bot
 
                 // next, let's load the values from that file
                 // to our client's configuration
-                ConfigJson cfgjson = JsonConvert.DeserializeObject<ConfigJson>(json);
-                return cfgjson;
+                return JsonConvert.DeserializeObject<ConfigJson>(json);
             }
         }
 
@@ -298,11 +296,11 @@ namespace FMBot.Bot
 
         #region Exception Reporter
 
-        public class ExceptionReporter
+        public static class ExceptionReporter
         {
             public static async void ReportException(DiscordSocketClient client = null, Exception e = null)
             {
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
+                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
 
                 try
                 {
@@ -315,7 +313,7 @@ namespace FMBot.Bot
                     EmbedBuilder builder = new EmbedBuilder();
                     builder.AddField("Exception:", e.Message + "\nSource:\n" + e.Source + "\nStack Trace:\n" + e.StackTrace);
 
-                    await channel.SendMessageAsync("", false, builder.Build());
+                    await channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
                 }
                 catch (Exception)
                 {
@@ -327,20 +325,20 @@ namespace FMBot.Bot
                         SocketGuild guild = client.GetGuild(BroadcastServerID);
                         SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
 
-                        await channel.SendMessageAsync("Exception: " + e.Message + "\n\nSource:\n" + e.Source + "\n\nStack Trace:\n" + e.StackTrace);
+                        await channel.SendMessageAsync("Exception: " + e.Message + "\n\nSource:\n" + e.Source + "\n\nStack Trace:\n" + e.StackTrace).ConfigureAwait(false);
                     }
                     catch (Exception)
                     {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it."));
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it.")).ConfigureAwait(false);
                     }
                 }
 
-                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", e.Message, e), true);
+                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", e.Message, e), true).ConfigureAwait(false);
             }
 
             public static async void ReportShardedException(DiscordShardedClient client = null, Exception e = null)
             {
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
+                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
 
                 try
                 {
@@ -353,7 +351,7 @@ namespace FMBot.Bot
                     EmbedBuilder builder = new EmbedBuilder();
                     builder.AddField("Exception:", e.Message + "\nSource:\n" + e.Source + "\nStack Trace:\n" + e.StackTrace);
 
-                    await channel.SendMessageAsync("", false, builder.Build());
+                    await channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
                 }
                 catch (Exception)
                 {
@@ -365,20 +363,20 @@ namespace FMBot.Bot
                         SocketGuild guild = client.GetGuild(BroadcastServerID);
                         SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
 
-                        await channel.SendMessageAsync("Exception: " + e.Message + "\n\nSource:\n" + e.Source + "\n\nStack Trace:\n" + e.StackTrace);
+                        await channel.SendMessageAsync("Exception: " + e.Message + "\n\nSource:\n" + e.Source + "\n\nStack Trace:\n" + e.StackTrace).ConfigureAwait(false);
                     }
                     catch (Exception)
                     {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it."));
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it.")).ConfigureAwait(false);
                     }
                 }
 
-                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", e.Message, e), true);
+                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", e.Message, e), true).ConfigureAwait(false);
             }
 
             public static async void ReportStringAsException(DiscordShardedClient client, string e)
             {
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
+                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
 
                 try
                 {
@@ -391,7 +389,7 @@ namespace FMBot.Bot
                     EmbedBuilder builder = new EmbedBuilder();
                     builder.AddField("Exception:", e);
 
-                    await channel.SendMessageAsync("", false, builder.Build());
+                    await channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
                 }
                 catch (Exception)
                 {
@@ -403,15 +401,15 @@ namespace FMBot.Bot
                         SocketGuild guild = client.GetGuild(BroadcastServerID);
                         SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
 
-                        await channel.SendMessageAsync("Exception: " + e);
+                        await channel.SendMessageAsync("Exception: " + e).ConfigureAwait(false);
                     }
                     catch (Exception)
                     {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it."));
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it.")).ConfigureAwait(false);
                     }
                 }
 
-                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", e), true);
+                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", e), true).ConfigureAwait(false);
             }
         }
 
@@ -419,30 +417,30 @@ namespace FMBot.Bot
 
         #region Global Variables
 
-        public class GlobalVars
+        public static class GlobalVars
         {
             public static string ConfigFileName = "config.json";
             public static string BasePath = AppDomain.CurrentDomain.BaseDirectory;
             public static string CacheFolder = BasePath + "cache/";
             public static string FeaturedUserID = "";
             public static int MessageLength = 2000;
-            public static int CommandExecutions = 0;
-            public static int CommandExecutions_Servers = 0;
-            public static int CommandExecutions_DMs = 0;
+            public static int CommandExecutions;
+            public static int CommandExecutions_Servers;
+            public static int CommandExecutions_DMs;
             public static Hashtable charts = new Hashtable();
 
-            private static bool IsUserInDM = false;
+            private static bool IsUserInDM;
 
             public static string GetChartFileName(ulong id)
             {
-                return GlobalVars.CacheFolder + id.ToString() + "-chart.png";
+                return CacheFolder + id.ToString() + "-chart.png";
             }
 
-            public static MemoryStream GetChartStream(ulong id)
+            public static async Task<MemoryStream> GetChartStreamAsync(ulong id)
             {
                 MemoryStream dest = new MemoryStream();
-                string fileName = GlobalVars.GetChartFileName(id);
-                Bitmap chartBitmap = (Bitmap)(GlobalVars.charts[fileName]);
+                string fileName = GetChartFileName(id);
+                Bitmap chartBitmap = (Bitmap)(charts[fileName]);
                 chartBitmap.Save(dest, System.Drawing.Imaging.ImageFormat.Png);
                 dest.Position = 0;
 
@@ -458,7 +456,7 @@ namespace FMBot.Bot
 
             public static Task Log(LogMessage arg, bool nowrite = false)
             {
-                if (nowrite == false)
+                if (!nowrite)
                 {
                     Console.WriteLine(arg);
                 }
@@ -504,7 +502,7 @@ namespace FMBot.Bot
                         Bitmap bitmap = image;
 
                         //update the size of the final bitmap
-                        if (vertical == true)
+                        if (vertical)
                         {
                             width = bitmap.Width > width ? bitmap.Width : width;
                             height += bitmap.Height;
@@ -531,7 +529,7 @@ namespace FMBot.Bot
                         int offset = 0;
                         foreach (Bitmap image in images)
                         {
-                            if (vertical == true)
+                            if (vertical)
                             {
                                 g.DrawImage(image, new Rectangle(0, offset, image.Width, image.Height));
                                 offset += image.Height;
@@ -580,21 +578,14 @@ namespace FMBot.Bot
 
             public static async void CheckIfDMBool(ICommandContext Context)
             {
-                IDMChannel dm = await Context.User.GetOrCreateDMChannelAsync();
+                IDMChannel dm = await Context.User.GetOrCreateDMChannelAsync().ConfigureAwait(false);
 
                 if (dm == null)
                 {
                     IsUserInDM = false;
                 }
 
-                if (Context.Channel.Name == dm.Name)
-                {
-                    IsUserInDM = true;
-                }
-                else
-                {
-                    IsUserInDM = false;
-                }
+                IsUserInDM = Context.Channel.Name == dm.Name;
             }
 
             public static bool GetDMBool()

@@ -47,9 +47,9 @@ namespace FMBot.Bot
             try
             {
                 string assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "FMBot v" + assemblyVersion + " loading..."));
+                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "FMBot v" + assemblyVersion + " loading...")).ConfigureAwait(false);
 
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
+                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
 
                 if (!Directory.Exists(GlobalVars.CacheFolder))
                 {
@@ -61,15 +61,14 @@ namespace FMBot.Bot
                     GlobalVars.ClearReadOnly(users);
                 }
 
-                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Initalizing Last.FM..."));
-                await TestLastFMAPI();
+                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Initalizing Last.FM...")).ConfigureAwait(false);
+                await TestLastFMAPI().ConfigureAwait(false);
 
-                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Initalizing Discord..."));
+                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Initalizing Discord...")).ConfigureAwait(false);
                 client = new DiscordShardedClient(new DiscordSocketConfig
                 {
                     WebSocketProvider = WS4NetProvider.Instance,
                     LogLevel = LogSeverity.Verbose,
-
                 });
 
                 client.Log += Log;
@@ -79,7 +78,7 @@ namespace FMBot.Bot
 
                 prefix = cfgjson.CommandPrefix;
 
-                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Registering Commands and Modules..."));
+                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Registering Commands and Modules...")).ConfigureAwait(false);
                 commands = new CommandService(new CommandServiceConfig()
                 {
                     CaseSensitiveCommands = false
@@ -87,24 +86,24 @@ namespace FMBot.Bot
 
                 string token = cfgjson.Token; // Remember to keep this private!
 
-                await InstallCommands();
+                await InstallCommands().ConfigureAwait(false);
 
-                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Logging In..."));
-                await client.LoginAsync(TokenType.Bot, token);
-                await client.StartAsync();
+                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Logging In...")).ConfigureAwait(false);
+                await client.LoginAsync(TokenType.Bot, token).ConfigureAwait(false);
+                await client.StartAsync().ConfigureAwait(false);
 
-                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Logged In."));
+                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Logged In.")).ConfigureAwait(false);
 
-                await client.SetGameAsync("🎶 Say " + prefix + "fmhelp to use 🎶");
-                await client.SetStatusAsync(UserStatus.DoNotDisturb);
+                await client.SetGameAsync("🎶 Say " + prefix + "fmhelp to use 🎶").ConfigureAwait(false);
+                await client.SetStatusAsync(UserStatus.DoNotDisturb).ConfigureAwait(false);
                 AppDomain.CurrentDomain.UnhandledException += CatchFatalException;
 
                 // Block this task until the program is closed.
-                await Task.Delay(-1);
+                await Task.Delay(-1).ConfigureAwait(false);
             }
             catch (Exception e)
             {
-                await GlobalVars.Log(new LogMessage(LogSeverity.Critical, Process.GetCurrentProcess().ProcessName, "Failed to launch.", e));
+                await GlobalVars.Log(new LogMessage(LogSeverity.Critical, Process.GetCurrentProcess().ProcessName, "Failed to launch.", e)).ConfigureAwait(false);
             }
         }
 
@@ -121,7 +120,7 @@ namespace FMBot.Bot
 
         public async Task LeftGuild(SocketGuild arg)
         {
-            await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Left guild " + arg.Name));
+            await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Left guild " + arg.Name)).ConfigureAwait(false);
 
             //DBase.RemoveServerEntry(arg.Id.ToString());
 
@@ -130,11 +129,11 @@ namespace FMBot.Bot
 
         public async Task JoinedGuild(SocketGuild arg)
         {
-            await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Joined guild " + arg.Name));
+            await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Joined guild " + arg.Name)).ConfigureAwait(false);
 
-            if (!await guildService.GuildExistsAsync(arg))
+            if (!await guildService.GuildExistsAsync(arg).ConfigureAwait(false))
             {
-                await guildService.AddGuildAsync(arg);
+                await guildService.AddGuildAsync(arg).ConfigureAwait(false);
             }
 
             await Task.CompletedTask;
@@ -146,7 +145,7 @@ namespace FMBot.Bot
             map.AddSingleton(new TimerService(client));
             services = map.BuildServiceProvider();
 
-            await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
+            await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services).ConfigureAwait(false);
 
             client.MessageReceived += HandleCommand_MessageReceived;
             client.MessageUpdated += HandleCommand_MessageEdited;
@@ -170,12 +169,12 @@ namespace FMBot.Bot
 
         public async Task HandleCommand_MessageReceived(SocketMessage messageParam)
         {
-            await HandleCommand(messageParam);
+            await HandleCommand(messageParam).ConfigureAwait(false);
         }
 
         public async Task HandleCommand_MessageEdited(Cacheable<IMessage, ulong> before, SocketMessage after, ISocketMessageChannel channel)
         {
-            await HandleCommand(after);
+            await HandleCommand(after).ConfigureAwait(false);
         }
 
         public Task HandleCommand_CurrentUserUpdated(SocketSelfUser before, SocketSelfUser after)
@@ -211,8 +210,7 @@ namespace FMBot.Bot
         public async Task HandleCommand(SocketMessage messageParam)
         {
             // Don't process the command if it was a System Message
-            SocketUserMessage message = messageParam as SocketUserMessage;
-            if (message == null)
+            if (!(messageParam is SocketUserMessage message))
             {
                 return;
             }
@@ -234,7 +232,7 @@ namespace FMBot.Bot
                 {
                     //StaticCommands staticCommands = new StaticCommands(services);
                     //Task help = staticCommands.fmfullhelpAsync();
-                    await context.User.SendMessageAsync(replystring);
+                    await context.User.SendMessageAsync(replystring).ConfigureAwait(false);
                 }
 
                 return;
@@ -248,29 +246,26 @@ namespace FMBot.Bot
 
             string convertedMessage = message.Content.Replace(prefix, "");
             string[] words = convertedMessage.Split(' ');
-            List<string> wordlist = words.OfType<string>().ToList();
+            List<string> wordlist = words.Where(f => f != null).ToList();
             bool wordinlist = commandList.Intersect(wordlist).Any();
 
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully)
-            if (wordinlist == true)
+            if (wordinlist)
             {
-                Task typing = context.Channel.TriggerTypingAsync();
+                _ = context.Channel.TriggerTypingAsync();
 
-                SocketGuildUser DiscordCaller = message.Author as SocketGuildUser;
-
-                if (DiscordCaller != null)
+                if (message.Author is SocketGuildUser DiscordCaller)
                 {
                     SocketGuild guild = DiscordCaller.Guild;
-                    string callerserverid = guild.Id.ToString();
-                    bool isonblacklist = await userService.GetBlacklistedAsync(message.Author);
+                    _ = guild.Id.ToString();
+                    bool isonblacklist = await userService.GetBlacklistedAsync(message.Author).ConfigureAwait(false);
 
-                    if (isonblacklist == true)
+                    if (isonblacklist)
                     {
-                        await context.Channel.SendMessageAsync("You have been blacklisted from fmbot. Please contact an FMBot administrator if you have any questions regarding this decision.");
+                        await context.Channel.SendMessageAsync("You have been blacklisted from fmbot. Please contact an FMBot administrator if you have any questions regarding this decision.").ConfigureAwait(false);
                         return;
                     }
-
 
                     if (stackCooldownTarget.Contains(DiscordCaller))
                     {
@@ -279,7 +274,7 @@ namespace FMBot.Bot
                         {
                             //If enough time hasn't passed, reply letting them know how much longer they need to wait, and end the code.
                             int secondsLeft = (int)(stackCooldownTimer[stackCooldownTarget.IndexOf(DiscordCaller)].AddSeconds(5) - DateTimeOffset.Now).TotalSeconds;
-                            await context.Channel.SendMessageAsync($"Please wait {secondsLeft} seconds before you use that command again!");
+                            await context.Channel.SendMessageAsync($"Please wait {secondsLeft} seconds before you use that command again!").ConfigureAwait(false);
                             return;
                         }
                         else
@@ -295,29 +290,29 @@ namespace FMBot.Bot
                         stackCooldownTimer.Add(DateTimeOffset.Now);
                     }
 
-                    IResult result = await commands.ExecuteAsync(context, argPos, services);
+                    IResult result = await commands.ExecuteAsync(context, argPos, services).ConfigureAwait(false);
 
                     if (!result.IsSuccess)
                     {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason));
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason)).ConfigureAwait(false);
                     }
                     else
                     {
-                        GlobalVars.CommandExecutions += 1;
-                        GlobalVars.CommandExecutions_Servers += 1;
+                        GlobalVars.CommandExecutions++;
+                        GlobalVars.CommandExecutions_Servers++;
                     }
                 }
                 else
                 {
-                    IResult result = await commands.ExecuteAsync(context, argPos, services);
+                    IResult result = await commands.ExecuteAsync(context, argPos, services).ConfigureAwait(false);
                     if (!result.IsSuccess)
                     {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason));
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason)).ConfigureAwait(false);
                     }
                     else
                     {
-                        GlobalVars.CommandExecutions += 1;
-                        GlobalVars.CommandExecutions_DMs += 1;
+                        GlobalVars.CommandExecutions++;
+                        GlobalVars.CommandExecutions_DMs++;
                     }
                 }
             }
@@ -332,27 +327,27 @@ namespace FMBot.Bot
         {
             try
             {
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
+                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
                 LastfmClient fmclient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
 
-                string LastFMName = "lastfmsupport";
+                const string LastFMName = "lastfmsupport";
                 if (!LastFMName.Equals("NULL"))
                 {
-                    IF.Lastfm.Core.Api.Helpers.PageResponse<IF.Lastfm.Core.Objects.LastTrack> tracks = await fmclient.User.GetRecentScrobbles(LastFMName, null, 1, 2);
+                    IF.Lastfm.Core.Api.Helpers.PageResponse<IF.Lastfm.Core.Objects.LastTrack> tracks = await fmclient.User.GetRecentScrobbles(LastFMName, null, 1, 2).ConfigureAwait(false);
                     if (tracks.Any())
                     {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Last.FM API is online"));
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Last.FM API is online")).ConfigureAwait(false);
                     }
                     else
                     {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, "Last.FM API is offline, rebooting..."));
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, "Last.FM API is offline, rebooting...")).ConfigureAwait(false);
                         Environment.Exit(1);
                     }
                 }
             }
             catch (ArgumentOutOfRangeException)
             {
-                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, "Bypassing API requirement..."));
+                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, "Bypassing API requirement...")).ConfigureAwait(false);
                 //continue if we don't have anything
             }
         }

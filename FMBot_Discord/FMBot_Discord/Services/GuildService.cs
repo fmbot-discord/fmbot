@@ -26,16 +26,14 @@ namespace FMBot.Services
         // Get user from guild with ID
         public async Task<IGuildUser> FindUserFromGuildAsync(ICommandContext context, ulong id)
         {
-            IGuildUser guildUser = await context.Guild.GetUserAsync(id);
-
-            return guildUser;
+            return await context.Guild.GetUserAsync(id).ConfigureAwait(false);
         }
 
 
         // Get user from guild with searchvalue
         public async Task<IGuildUser> FindUserFromGuildAsync(ICommandContext context, string searchValue)
         {
-            IReadOnlyCollection<IGuildUser> users = await context.Guild.GetUsersAsync();
+            IReadOnlyCollection<IGuildUser> users = await context.Guild.GetUsersAsync().ConfigureAwait(false);
 
             if (searchValue.Length > 3)
             {
@@ -56,7 +54,7 @@ namespace FMBot.Services
         public async Task ChangeGuildSettingAsync(IGuild guild, ChartTimePeriod chartTimePeriod, ChartType chartType)
         {
             string guildId = guild.Id.ToString();
-            Guild existingGuild = await db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guildId);
+            Guild existingGuild = await db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guildId).ConfigureAwait(false);
 
             if (existingGuild == null)
             {
@@ -71,9 +69,9 @@ namespace FMBot.Services
 
                 db.Guilds.Add(newGuild);
 
-                await db.SaveChangesAsync();
+                await db.SaveChangesAsync().ConfigureAwait(false);
 
-                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Guild added to database."));
+                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Guild added to database.")).ConfigureAwait(false);
             }
 
 
@@ -97,14 +95,14 @@ namespace FMBot.Services
 
             db.Guilds.Add(newGuild);
 
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync().ConfigureAwait(false);
 
-            await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Guild added to database."));
+            await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Guild added to database.")).ConfigureAwait(false);
         }
 
         public async Task<bool> GuildExistsAsync(SocketGuild guild)
         {
-            return await db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guild.Id.ToString()) != null;
+            return await db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guild.Id.ToString()).ConfigureAwait(false) != null;
         }
     }
 }

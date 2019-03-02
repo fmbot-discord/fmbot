@@ -28,10 +28,10 @@ namespace FMBot.Bot.Commands
         {
             try
             {
-				//filter all nsfw results and only show safe images.
-				string FilteredQuery = query + ", safe, -explicit, -nsfw, -questionable, -suggestive, -breasts"
+                //filter all nsfw results and only show safe images.
+                string FilteredQuery = query + ", safe, -explicit, -nsfw, -questionable, -suggestive, -breasts";
 				
-                List<CoolItem> imagelist = await derpiservice.GetImages(query);
+                List<CoolItem> imagelist = await derpiservice.GetImages(FilteredQuery);
 
                 var random = new Random();
                 int index = random.Next(imagelist.Count);
@@ -50,6 +50,7 @@ namespace FMBot.Bot.Commands
                 builder.WithDescription("Tags: " + string.Join(", ", itemEmbed.derpibooru_tags));
                 builder.WithTitle("An image");
                 builder.WithImageUrl("https:" + itemEmbed.thumbnail_url.ToString());
+
 
                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
 

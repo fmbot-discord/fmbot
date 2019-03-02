@@ -26,19 +26,15 @@ namespace FMBot.Services
         // Last scrobble
         public async Task<LastTrack> GetLastScrobbleAsync(string lastFMUserName)
         {
-            PageResponse<LastTrack> tracks = await lastfmClient.User.GetRecentScrobbles(lastFMUserName, null, 1, 1);
+            PageResponse<LastTrack> tracks = await lastfmClient.User.GetRecentScrobbles(lastFMUserName, null, 1, 1).ConfigureAwait(false);
 
-            LastTrack track = tracks.Content.ElementAt(0);
-
-            return track;
+            return tracks.Content[0];
         }
 
         // Recent scrobbles
         public async Task<PageResponse<LastTrack>> GetRecentScrobblesAsync(string lastFMUserName, int count = 2)
         {
-            PageResponse<LastTrack> tracks = await lastfmClient.User.GetRecentScrobbles(lastFMUserName, null, 1, count);
-
-            return tracks;
+            return await lastfmClient.User.GetRecentScrobbles(lastFMUserName, null, 1, count).ConfigureAwait(false);
         }
 
         // User
@@ -46,9 +42,7 @@ namespace FMBot.Services
         {
             try
             {
-                LastResponse<LastUser> userInfo = await lastfmClient.User.GetInfoAsync(lastFMUserName);
-
-                return userInfo;
+                return await lastfmClient.User.GetInfoAsync(lastFMUserName).ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -60,64 +54,52 @@ namespace FMBot.Services
         // Album info
         public async Task<LastResponse<LastAlbum>> GetAlbumInfoAsync(string artistName, string albumName)
         {
-            LastResponse<LastAlbum> album = await lastfmClient.Album.GetInfoAsync(artistName, albumName);
-
-            return album;
+            return await lastfmClient.Album.GetInfoAsync(artistName, albumName).ConfigureAwait(false);
         }
 
 
         // Album images
         public async Task<LastImageSet> GetAlbumImagesAsync(string artistName, string albumName)
         {
-            LastResponse<LastAlbum> album = await lastfmClient.Album.GetInfoAsync(artistName, albumName);
+            LastResponse<LastAlbum> album = await lastfmClient.Album.GetInfoAsync(artistName, albumName).ConfigureAwait(false);
 
-            LastImageSet images = album != null ? album.Content != null ? album.Content.Images != null ? album.Content.Images : null : null : null;
-
-            return images;
+            return album?.Content?.Images;
         }
 
 
         // Top albums
         public async Task<PageResponse<LastAlbum>> GetTopAlbumsAsync(string lastFMUserName, LastStatsTimeSpan timespan, int count = 2)
         {
-            PageResponse<LastAlbum> albums = await lastfmClient.User.GetTopAlbums(lastFMUserName, timespan, 1, count);
-
-            return albums;
+            return await lastfmClient.User.GetTopAlbums(lastFMUserName, timespan, 1, count).ConfigureAwait(false);
         }
 
 
         // Artist info
         public async Task<LastResponse<LastArtist>> GetArtistInfoAsync(string artistName)
         {
-            LastResponse<LastArtist> artist = await lastfmClient.Artist.GetInfoAsync(artistName);
-
-            return artist;
+            return await lastfmClient.Artist.GetInfoAsync(artistName).ConfigureAwait(false);
         }
 
 
         // Artist info
         public async Task<LastImageSet> GetArtistImageAsync(string artistName)
         {
-            LastResponse<LastArtist> artist = await lastfmClient.Artist.GetInfoAsync(artistName);
+            LastResponse<LastArtist> artist = await lastfmClient.Artist.GetInfoAsync(artistName).ConfigureAwait(false);
 
-            LastImageSet image = artist != null ? artist.Content != null ? artist.Content.MainImage : null : null;
-
-            return image;
+            return artist?.Content?.MainImage;
         }
 
 
         // Top artists
         public async Task<PageResponse<LastArtist>> GetTopArtistsAsync(string lastFMUserName, LastStatsTimeSpan timespan, int count = 2)
         {
-            PageResponse<LastArtist> artists = await lastfmClient.User.GetTopArtists(lastFMUserName, timespan, 1, count);
-
-            return artists;
+            return await lastfmClient.User.GetTopArtists(lastFMUserName, timespan, 1, count).ConfigureAwait(false);
         }
 
         // Check if lastfm user exists
         public async Task<bool> LastFMUserExistsAsync(string lastFMUserName)
         {
-            LastResponse<LastUser> lastFMUser = await lastfmClient.User.GetInfoAsync(lastFMUserName);
+            LastResponse<LastUser> lastFMUser = await lastfmClient.User.GetInfoAsync(lastFMUserName).ConfigureAwait(false);
 
             return lastFMUser.Success;
         }
@@ -146,25 +128,25 @@ namespace FMBot.Services
                     timespan = LastStatsTimeSpan.Overall;
                 }
 
-                string nulltext = "[undefined]";
+                const string nulltext = "[undefined]";
 
                 if (chart.mode == 0)
                 {
-                    PageResponse<LastAlbum> albums = await GetTopAlbumsAsync(chart.LastFMName, timespan, chart.max);
+                    PageResponse<LastAlbum> albums = await GetTopAlbumsAsync(chart.LastFMName, timespan, chart.max).ConfigureAwait(false);
                     for (int al = 0; al < chart.max; ++al)
                     {
-                        LastAlbum track = albums.Content.ElementAt(al);
+                        LastAlbum track = albums.Content[al];
 
                         string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
                         string AlbumName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.Name;
 
-                        LastImageSet albumImages = await GetAlbumImagesAsync(ArtistName, AlbumName);
+                        LastImageSet albumImages = await GetAlbumImagesAsync(ArtistName, AlbumName).ConfigureAwait(false);
 
                         Bitmap cover;
 
-                        if (albumImages != null && albumImages.Medium != null)
+                        if (albumImages?.Medium != null)
                         {
-                            string url = albumImages.Large.AbsoluteUri.ToString();
+                            string url = albumImages.Large.AbsoluteUri;
                             string path = Path.GetFileName(url);
 
                             if (File.Exists(GlobalVars.CacheFolder + path))
@@ -175,7 +157,7 @@ namespace FMBot.Services
                             else
                             {
                                 WebRequest request = WebRequest.Create(url);
-                                using (WebResponse response = await request.GetResponseAsync())
+                                using (WebResponse response = await request.GetResponseAsync().ConfigureAwait(false))
                                 {
                                     using (Stream responseStream = response.GetResponseStream())
                                     {
@@ -213,32 +195,46 @@ namespace FMBot.Services
                 }
                 else if (chart.mode == 1)
                 {
-                    PageResponse<LastArtist> artists = await GetTopArtistsAsync(chart.LastFMName, timespan, chart.max);
+                    PageResponse<LastArtist> artists = await GetTopArtistsAsync(chart.LastFMName, timespan, chart.max).ConfigureAwait(false);
                     for (int al = 0; al < chart.max; ++al)
                     {
-                        LastArtist artist = artists.Content.ElementAt(al);
+                        LastArtist artist = artists.Content[al];
 
                         string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? nulltext : artist.Name;
 
-                        LastImageSet artistImage = await GetArtistImageAsync(ArtistName);
+                        LastImageSet artistImage = await GetArtistImageAsync(ArtistName).ConfigureAwait(false);
 
                         Bitmap cover;
 
-                        if (artistImage != null && artistImage.Large != null)
+                        if (artistImage?.Large != null)
                         {
-                            string url = null;
+                            string url = artistImage.Large.AbsoluteUri;
+                            string path = Path.GetFileName(url);
 
-                            url = artistImage.Large.AbsoluteUri.ToString();
-
-
-                            WebRequest request = WebRequest.Create(url);
-                            using (WebResponse response = await request.GetResponseAsync())
+                            if (File.Exists(GlobalVars.CacheFolder + path))
                             {
-                                using (Stream responseStream = response.GetResponseStream())
+                                cover = new Bitmap(GlobalVars.CacheFolder + path);
+
+                            }
+                            else
+                            {
+                                WebRequest request = WebRequest.Create(url);
+                                using (WebResponse response = await request.GetResponseAsync().ConfigureAwait(false))
                                 {
-                                    using (Bitmap bitmap = new Bitmap(responseStream))
+                                    using (Stream responseStream = response.GetResponseStream())
                                     {
+                                        Bitmap bitmap = new Bitmap(responseStream);
+
                                         cover = bitmap;
+                                        using (MemoryStream memory = new MemoryStream())
+                                        {
+                                            using (FileStream fs = new FileStream(GlobalVars.CacheFolder + path, FileMode.Create, FileAccess.ReadWrite))
+                                            {
+                                                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
+                                                byte[] bytes = memory.ToArray();
+                                                fs.Write(bytes, 0, bytes.Length);
+                                            }
+                                        }
 
                                     }
                                 }
