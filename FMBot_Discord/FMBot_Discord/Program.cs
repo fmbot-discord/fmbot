@@ -323,19 +323,8 @@ namespace FMBot.Bot
             Environment.Exit(1);
         }
 
-        public override async Task<PreconditionResult> CheckPermissions(ICommandContext context, CommandInfo command, IServiceProvider services)
-        {
-            // Get the guild user instance of the user..
-            if (!(await context.Channel.GetUserAsync(context.User.Id) is IGuildUser guildUser))
-                return PreconditionResult.FromError("Internal error; failed to lookup user instance.");
 
-            // Get the guild user permissions..
-            var permissions = guildUser.GetPermissions(context.Channel as IGuildChannel);
-
-            // Use the permissions info here..
-        }
-
-            public async Task TestLastFMAPI()
+        public async Task TestLastFMAPI()
         {
             try
             {

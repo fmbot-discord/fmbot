@@ -435,10 +435,6 @@ namespace FMBot.Bot.Commands
                 await ReplyAsync(".fmartistchart [3x3-10x10] [weekly/monthly/yearly/overall] [notitles/titles] [user]").ConfigureAwait(false);
                 return;
             }
-            if (GuildPermissions.)
-            {
-
-            }
 
             User userSettings = await userService.GetUserSettingsAsync(Context.User).ConfigureAwait(false);
 
