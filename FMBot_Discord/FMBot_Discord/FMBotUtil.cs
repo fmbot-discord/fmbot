@@ -434,7 +434,7 @@ namespace FMBot.Bot
             {
                 MemoryStream dest = new MemoryStream();
                 string fileName = GetChartFileName(id);
-                Bitmap chartBitmap = (Bitmap)(charts[fileName]);
+                Bitmap chartBitmap = (Bitmap)charts[fileName];
                 chartBitmap.Save(dest, System.Drawing.Imaging.ImageFormat.Png);
                 dest.Position = 0;
 
@@ -545,7 +545,7 @@ namespace FMBot.Bot
                         finalImage.Dispose();
                     }
 
-                    throw ex;
+                    throw;
                 }
                 finally
                 {

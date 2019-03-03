@@ -112,7 +112,7 @@ namespace FMBot.Bot.Commands
                 LastTrack currentTrack = tracks.Content[0];
                 LastTrack lastTrack = tracks.Content[1];
 
-                string nulltext = "[undefined]";
+                const string nulltext = "[undefined]";
 
                 if (userSettings.ChartType == ChartType.embedmini)
                 {
@@ -156,14 +156,14 @@ namespace FMBot.Bot.Commands
 
                     builder.AddField((currentTrack.IsNowPlaying == true ? "Current: " : "Last track: ") + TrackName, ArtistName + " | " + AlbumName);
 
-                    EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                    EmbedFooterBuilder embedFooter = new EmbedFooterBuilder();
 
                     LastResponse<LastUser> userinfo = await lastFMService.GetUserInfoAsync(lastFMUserName).ConfigureAwait(false);
                     int playcount = userinfo.Content.Playcount;
 
-                    efb.Text = lastFMUserName + "'s Total Tracks: " + playcount.ToString("N0");
+                    embedFooter.Text = lastFMUserName + "'s total scrobbles: " + playcount.ToString("N0");
 
-                    builder.WithFooter(efb);
+                    builder.WithFooter(embedFooter);
 
                     await Context.Channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
                 }
@@ -175,7 +175,10 @@ namespace FMBot.Bot.Commands
                         Name = userSettings.UserNameLastFM
                     };
 
-                    EmbedBuilder builder = new EmbedBuilder();
+                    EmbedBuilder builder = new EmbedBuilder
+                    {
+                        Color = new Discord.Color(186, 0, 0),
+                    };
                     builder.WithAuthor(eab);
                     builder.WithUrl("https://www.last.fm/user/" + lastFMUserName);
 
@@ -212,14 +215,14 @@ namespace FMBot.Bot.Commands
                     builder.AddField((currentTrack.IsNowPlaying == true ? "Current: " : "Last track: ") + TrackName, ArtistName + " | " + AlbumName);
                     builder.AddField("Previous: " + LastTrackName, LastArtistName + " | " + LastAlbumName);
 
-                    EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                    EmbedFooterBuilder embedFooter = new EmbedFooterBuilder();
 
                     LastResponse<LastUser> userinfo = await lastFMService.GetUserInfoAsync(lastFMUserName).ConfigureAwait(false);
                     int playcount = userinfo.Content.Playcount;
 
-                    efb.Text = lastFMUserName + "'s Total Tracks: " + playcount.ToString("N0");
+                    embedFooter.Text = lastFMUserName + "'s total scrobbles: " + playcount.ToString("N0");
 
-                    builder.WithFooter(efb);
+                    builder.WithFooter(embedFooter);
 
                     await Context.Channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
                 }
@@ -237,7 +240,25 @@ namespace FMBot.Bot.Commands
 
                     int playcount = userinfo.Content.Playcount;
 
-                    await Context.Channel.SendMessageAsync(await userService.GetUserTitleAsync(Context).ConfigureAwait(false) + "\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "**Previous** - " + LastArtistName + " - " + LastTrackName + " [" + LastAlbumName + "]" + "\n" + "<https://www.last.fm/user/" + userSettings.UserNameLastFM + ">\n" + userSettings.UserNameLastFM + "'s Total Tracks: " + playcount.ToString("N0")).ConfigureAwait(false);
+                    await Context.Channel.SendMessageAsync(await userService.GetUserTitleAsync(Context).ConfigureAwait(false)
+                                                           + "\n**Current** - "
+                                                           + ArtistName
+                                                           + " - "
+                                                           + TrackName
+                                                           + " ["
+                                                           + AlbumName
+                                                           + "]\n**Previous** - "
+                                                           + LastArtistName
+                                                           + " - "
+                                                           + LastTrackName
+                                                           + " ["
+                                                           + LastAlbumName
+                                                           + "]\n<https://www.last.fm/user/"
+                                                           + userSettings.UserNameLastFM
+                                                           + ">\n"
+                                                           + userSettings.UserNameLastFM
+                                                           + "'s total scrobbles: "
+                                                           + playcount.ToString("N0")).ConfigureAwait(false);
                 }
                 else if (userSettings.ChartType == ChartType.textmini)
                 {
@@ -252,7 +273,19 @@ namespace FMBot.Bot.Commands
                     LastResponse<LastUser> userinfo = await lastFMService.GetUserInfoAsync(lastFMUserName).ConfigureAwait(false);
                     int playcount = userinfo.Content.Playcount;
 
-                    await Context.Channel.SendMessageAsync(await userService.GetUserTitleAsync(Context).ConfigureAwait(false) + "\n**Current** - " + ArtistName + " - " + TrackName + " [" + AlbumName + "]" + "\n" + "<https://www.last.fm/user/" + userSettings.UserNameLastFM + ">\n" + userSettings.UserNameLastFM + "'s Total Tracks: " + playcount.ToString("N0")).ConfigureAwait(false);
+                    await Context.Channel.SendMessageAsync(await userService.GetUserTitleAsync(Context).ConfigureAwait(false)
+                                                           + "\n**Current** - "
+                                                           + ArtistName
+                                                           + " - "
+                                                           + TrackName
+                                                           + " ["
+                                                           + AlbumName
+                                                           + "]\n<https://www.last.fm/user/"
+                                                           + userSettings.UserNameLastFM
+                                                           + ">\n"
+                                                           + userSettings.UserNameLastFM
+                                                           + "'s total scrobbles: "
+                                                           + playcount.ToString("N0")).ConfigureAwait(false);
                 }
             }
             catch (Exception e)
@@ -647,7 +680,7 @@ namespace FMBot.Bot.Commands
 
                 builder.WithDescription("Top " + num + " Recent Track List");
 
-                string nulltext = "[undefined]";
+                const string nulltext = "[undefined]";
                 int indexval = (num - 1);
                 for (int i = 0; i <= indexval; i++)
                 {

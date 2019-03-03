@@ -22,7 +22,6 @@ namespace FMBot.Services
 
         public LastfmClient lastfmClient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
 
-
         // Last scrobble
         public async Task<LastTrack> GetLastScrobbleAsync(string lastFMUserName)
         {
@@ -57,7 +56,6 @@ namespace FMBot.Services
             return await lastfmClient.Album.GetInfoAsync(artistName, albumName).ConfigureAwait(false);
         }
 
-
         // Album images
         public async Task<LastImageSet> GetAlbumImagesAsync(string artistName, string albumName)
         {
@@ -66,20 +64,17 @@ namespace FMBot.Services
             return album?.Content?.Images;
         }
 
-
         // Top albums
         public async Task<PageResponse<LastAlbum>> GetTopAlbumsAsync(string lastFMUserName, LastStatsTimeSpan timespan, int count = 2)
         {
             return await lastfmClient.User.GetTopAlbums(lastFMUserName, timespan, 1, count).ConfigureAwait(false);
         }
 
-
         // Artist info
         public async Task<LastResponse<LastArtist>> GetArtistInfoAsync(string artistName)
         {
             return await lastfmClient.Artist.GetInfoAsync(artistName).ConfigureAwait(false);
         }
-
 
         // Artist info
         public async Task<LastImageSet> GetArtistImageAsync(string artistName)
@@ -88,7 +83,6 @@ namespace FMBot.Services
 
             return artist?.Content?.MainImage;
         }
-
 
         // Top artists
         public async Task<PageResponse<LastArtist>> GetTopArtistsAsync(string lastFMUserName, LastStatsTimeSpan timespan, int count = 2)
@@ -103,7 +97,6 @@ namespace FMBot.Services
 
             return lastFMUser.Success;
         }
-
 
         public async Task GenerateChartAsync(FMBotChart chart)
         {
