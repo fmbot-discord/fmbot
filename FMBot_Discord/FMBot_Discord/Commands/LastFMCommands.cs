@@ -444,7 +444,7 @@ namespace FMBot.Bot.Commands
 
                 int playcount = userinfo.Content.Playcount;
 
-                efb.Text = userSettings.UserNameLastFM + "'s Total Tracks: " + playcount.ToString("0");
+                efb.Text = userSettings.UserNameLastFM + "'s total scrobbles: " + playcount.ToString("0");
 
                 builder.WithFooter(efb);
 
@@ -597,7 +597,7 @@ namespace FMBot.Bot.Commands
 
                 int playcount = userinfo.Content.Playcount;
 
-                efb.Text = userSettings.UserNameLastFM + "'s Total Tracks: " + playcount.ToString("0");
+                efb.Text = userSettings.UserNameLastFM + "'s total scrobbles: " + playcount.ToString("0");
 
                 builder.WithFooter(efb);
 
@@ -712,7 +712,7 @@ namespace FMBot.Bot.Commands
                 LastResponse<LastUser> userinfo = await lastFMService.GetUserInfoAsync(lastFMUserName).ConfigureAwait(false);
                 int playcount = userinfo.Content.Playcount;
 
-                efb.Text = lastFMUserName + "'s Total Tracks: " + playcount.ToString("0");
+                efb.Text = lastFMUserName + "'s total scrobbles: " + playcount.ToString("0");
 
                 builder.WithFooter(efb);
 
@@ -802,7 +802,7 @@ namespace FMBot.Bot.Commands
                 builder.AddField("Last.FM Name: ", lastFMUserName);
                 builder.AddField("Chart Mode: ", userSettings.ChartType);
                 builder.AddField("User Type: ", usertype);
-                builder.AddField("Total Tracks: ", playcount.ToString("0"));
+                builder.AddField("Total scrobbles: ", playcount.ToString("0"));
                 builder.AddField("Has Last.FM Premium? ", premium.ToString());
                 builder.AddField("Bot user type: ", userSettings.UserType);
 
