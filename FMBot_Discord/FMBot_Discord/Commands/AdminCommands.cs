@@ -50,6 +50,7 @@ namespace FMBot.Bot.Commands
             }
         }
 
+
         [Command("fmbotrestart"), Summary("Reboots the bot.")]
         [Alias("fmrestart")]
         public async Task fmbotrestartAsync()
