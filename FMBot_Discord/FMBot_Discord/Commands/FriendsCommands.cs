@@ -316,7 +316,7 @@ namespace FMBot.Bot.Commands
 
             try
             {
-                await friendsService.RemoveAllLastFMFriendAsync(userSettings.UserID).ConfigureAwait(false);
+                await friendsService.RemoveAllLastFMFriendsAsync(userSettings.UserID).ConfigureAwait(false);
 
                 await ReplyAsync("Removed all your friends.").ConfigureAwait(false);
             }

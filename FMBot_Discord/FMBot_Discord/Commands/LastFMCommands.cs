@@ -28,6 +28,8 @@ namespace FMBot.Bot.Commands
 
         private readonly LastFMService lastFMService = new LastFMService();
 
+        private readonly FriendsService friendsService = new FriendsService();
+
         public LastFMCommands(TimerService timer)
         {
             _timer = timer;
@@ -945,10 +947,18 @@ namespace FMBot.Bot.Commands
         [Alias("fmdelete", "fmremovedata", "fmdeletedata")]
         public async Task fmremoveAsync()
         {
-            await userService.DeleteUser(Context.Client.CurrentUser).ConfigureAwait(false);
+            User userSettings = await userService.GetUserSettingsAsync(Context.User).ConfigureAwait(false);
 
-            await ReplyAsync("Your settings and data have been successfully deleted.").ConfigureAwait(false);
+            if (userSettings == null)
+            {
+                await ReplyAsync("Sorry, but we don't have any data from you in our database.").ConfigureAwait(false);
+                return;
+            }
+
+            await friendsService.RemoveAllLastFMFriendsAsync(userSettings.UserID).ConfigureAwait(false);
+            await userService.DeleteUser(userSettings.UserID).ConfigureAwait(false);
+
+            await ReplyAsync("Your settings, friends and any other data have been successfully deleted.").ConfigureAwait(false);
         }
-
     }
 }

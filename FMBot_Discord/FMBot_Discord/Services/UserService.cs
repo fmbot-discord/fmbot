@@ -181,11 +181,9 @@ namespace FMBot.Services
         }
 
         // Remove user
-        public async Task DeleteUser(IUser discordUser)
+        public async Task DeleteUser(int userID)
         {
-            string discordUserID = discordUser.Id.ToString();
-
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID).ConfigureAwait(false);
+            User user = await db.Users.FirstOrDefaultAsync(f => f.UserID == userID).ConfigureAwait(false);
 
             db.Users.Remove(user);
 
