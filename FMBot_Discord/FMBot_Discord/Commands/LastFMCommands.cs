@@ -119,6 +119,16 @@ namespace FMBot.Bot.Commands
 
                 if (userSettings.ChartType == ChartType.embedmini)
                 {
+                    if (!guildService.CheckIfDM(Context))
+                    {
+                        GuildPermissions perms = await guildService.CheckSufficientPermissionsAsync(Context).ConfigureAwait(false);
+                        if (!perms.EmbedLinks)
+                        {
+                            await ReplyAsync("Insufficient permissions, I need to the 'embed links' permission to show you your scrobbles.").ConfigureAwait(false);
+                            return;
+                        }
+                    }
+
                     EmbedAuthorBuilder eab = new EmbedAuthorBuilder
                     {
                         IconUrl = Context.User.GetAvatarUrl(),
@@ -172,6 +182,16 @@ namespace FMBot.Bot.Commands
                 }
                 else if (userSettings.ChartType == ChartType.embedfull)
                 {
+                    if (!guildService.CheckIfDM(Context))
+                    {
+                        GuildPermissions perms = await guildService.CheckSufficientPermissionsAsync(Context).ConfigureAwait(false);
+                        if (!perms.EmbedLinks)
+                        {
+                            await ReplyAsync("Insufficient permissions, I need to the 'Embed links' permission to show you your scrobbles.").ConfigureAwait(false);
+                            return;
+                        }
+                    }
+
                     EmbedAuthorBuilder eab = new EmbedAuthorBuilder
                     {
                         IconUrl = Context.User.GetAvatarUrl(),
@@ -379,7 +399,7 @@ namespace FMBot.Bot.Commands
                 };
 
                 builder.WithUrl("https://www.last.fm/user/" + lastFMUserName + "/artists");
-                builder.Title = lastFMUserName + " top "+ num + " artists (" + timePeriod + ")";
+                builder.Title = lastFMUserName + " top " + num + " artists (" + timePeriod + ")";
 
                 const string nulltext = "[undefined]";
                 int indexval = (num - 1);
@@ -432,6 +452,16 @@ namespace FMBot.Bot.Commands
             {
                 await ReplyAsync("You're requesting too frequently, please try again later").ConfigureAwait(false);
                 return;
+            }
+
+            if (!guildService.CheckIfDM(Context))
+            {
+                GuildPermissions perms = await guildService.CheckSufficientPermissionsAsync(Context).ConfigureAwait(false);
+                if (!perms.AttachFiles)
+                {
+                    await ReplyAsync("I'm missing the 'Attach files' permission in this server, so I can't post a chart.").ConfigureAwait(false);
+                    return;
+                }
             }
 
 
@@ -501,7 +531,10 @@ namespace FMBot.Bot.Commands
                     IconUrl = Context.User.GetAvatarUrl()
                 };
 
-                EmbedBuilder builder = new EmbedBuilder();
+                EmbedBuilder builder = new EmbedBuilder
+                {
+                    Color = new Discord.Color(186, 0, 0)
+                };
                 builder.WithAuthor(eab);
                 string URI = "https://www.last.fm/user/" + userSettings.UserNameLastFM;
                 builder.WithUrl(URI);
@@ -736,7 +769,10 @@ namespace FMBot.Bot.Commands
 
                 PageResponse<LastTrack> tracks = await lastFMService.GetRecentScrobblesAsync(lastFMUserName, num).ConfigureAwait(false);
 
-                EmbedBuilder builder = new EmbedBuilder();
+                EmbedBuilder builder = new EmbedBuilder
+                {
+                    Color = new Discord.Color(186, 0, 0)
+                };
 
                 if (self)
                 {
@@ -746,7 +782,6 @@ namespace FMBot.Bot.Commands
                         Name = lastFMUserName
                     });
                 }
-
 
                 builder.WithUrl("https://www.last.fm/user/" + lastFMUserName);
                 builder.Title = await userService.GetUserTitleAsync(Context).ConfigureAwait(false);
@@ -847,7 +882,11 @@ namespace FMBot.Bot.Commands
                     Name = lastFMUserName
                 };
 
-                EmbedBuilder builder = new EmbedBuilder();
+                EmbedBuilder builder = new EmbedBuilder
+                {
+                    Color = new Discord.Color(186, 0, 0)
+                };
+
                 builder.WithAuthor(eab);
                 builder.WithUrl("https://www.last.fm/user/" + lastFMUserName);
 
@@ -897,7 +936,11 @@ namespace FMBot.Bot.Commands
         {
             try
             {
-                EmbedBuilder builder = new EmbedBuilder();
+                EmbedBuilder builder = new EmbedBuilder
+                {
+                    Color = new Discord.Color(186, 0, 0)
+                };
+
                 ISelfUser SelfUser = Context.Client.CurrentUser;
                 builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
                 builder.AddField("Featured:", _timer.GetTrackString());
@@ -924,21 +967,31 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            if (!await lastFMService.LastFMUserExistsAsync(lastFMUserName).ConfigureAwait(false))
+            if (!await lastFMService.LastFMUserExistsAsync(lastFMUserName.Replace("'", "")).ConfigureAwait(false))
             {
                 await ReplyAsync("LastFM user could not be found. Please check if the name you entered is correct.").ConfigureAwait(false);
                 return;
             }
 
-            if (!Enum.TryParse(chartType, ignoreCase: true, out ChartType chartTypeEnum))
+            if (!Enum.TryParse(chartType.Replace("'", ""), ignoreCase: true, out ChartType chartTypeEnum))
             {
                 await ReplyAsync("Invalid mode. Please use 'embedmini', 'embedfull', 'textfull', or 'textmini'.").ConfigureAwait(false);
                 return;
             }
 
-            userService.SetLastFM(Context.User, lastFMUserName, chartTypeEnum);
+            userService.SetLastFM(Context.User, lastFMUserName.Replace("'", ""), chartTypeEnum);
 
-            await ReplyAsync("Your Last.FM name has been set to '" + lastFMUserName + "' and your mode has been set to '" + chartType + "'.").ConfigureAwait(false);
+            await ReplyAsync("Your Last.FM name has been set to '" + lastFMUserName.Replace("'", "") + "' and your mode has been set to '" + chartType + "'.").ConfigureAwait(false);
+
+            if (!guildService.CheckIfDM(Context))
+            {
+                GuildPermissions perms = await guildService.CheckSufficientPermissionsAsync(Context).ConfigureAwait(false);
+                if (!perms.EmbedLinks || !perms.AttachFiles)
+                {
+                    await ReplyAsync("Please note that the bot also needs the 'Attach files' and 'Embed links' permissions for most commands. One or both of these permissions are currently missing.").ConfigureAwait(false);
+                    return;
+                }
+            }
         }
 
 

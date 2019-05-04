@@ -30,14 +30,11 @@ namespace FMBot.Services
         }
 
 
-        //public bool CheckSufficientPermissions(ICommandContext context)
-        //{
-        //    if (context.Client.)
-        //    {
-
-        //    }
-        //    return context.Guild == null;
-        //}
+        public async Task<GuildPermissions> CheckSufficientPermissionsAsync(ICommandContext context)
+        {
+            IGuildUser user = await context.Guild.GetUserAsync(context.Client.CurrentUser.Id).ConfigureAwait(false);
+            return user.GuildPermissions;
+        }
 
 
         // Get user from guild with searchvalue
