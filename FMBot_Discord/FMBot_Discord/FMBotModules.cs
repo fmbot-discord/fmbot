@@ -171,7 +171,7 @@ namespace FMBot.Bot
                     if (LastFMName != null)
                     {
                         Random random = new Random();
-                        int randavmode = random.Next(1, 6);
+                        int randavmode = random.Next(1, 4);
                         string randmodestring = "";
 
                         if (randavmode == 1)
@@ -180,23 +180,15 @@ namespace FMBot.Bot
                         }
                         else if (randavmode == 2)
                         {
-                            randmodestring = "2 - Weekly Artists";
+                            randmodestring = "2 - Weekly Albums";
                         }
                         else if (randavmode == 3)
                         {
-                            randmodestring = "3 - Overall Artists";
+                            randmodestring = "3 - Overall Albums";
                         }
                         else if (randavmode == 4)
                         {
-                            randmodestring = "4 - Weekly Albums";
-                        }
-                        else if (randavmode == 5)
-                        {
-                            randmodestring = "5 - Overall Albums";
-                        }
-                        else if (randavmode == 6)
-                        {
-                            randmodestring = "6 - Default Avatar";
+                            randmodestring = "4 - Default Avatar";
                         }
 
 
@@ -228,41 +220,6 @@ namespace FMBot.Bot
                             }
                             else if (randavmode == 2)
                             {
-                                PageResponse<LastArtist> artists = await lastFMService.GetTopArtistsAsync(LastFMName, LastStatsTimeSpan.Week, 1).ConfigureAwait(false);
-                                LastArtist currentArtist = artists.Content[random.Next(artists.Count())];
-
-                                string ArtistName = string.IsNullOrWhiteSpace(currentArtist.Name) ? nulltext : currentArtist.Name;
-
-                                LastImageSet artistImage = await lastFMService.GetArtistImageAsync(ArtistName).ConfigureAwait(false);
-
-                                trackString = ArtistName + Environment.NewLine + LastFMName;
-                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
-
-                                if (artistImage?.Large != null)
-                                {
-                                    ChangeToNewAvatar(client, cfgjson, artistImage.Large.AbsoluteUri);
-                                }
-
-                            }
-                            else if (randavmode == 3)
-                            {
-                                PageResponse<LastArtist> artists = await lastFMService.GetTopArtistsAsync(LastFMName, LastStatsTimeSpan.Overall, 1).ConfigureAwait(false);
-                                LastArtist currentArtist = artists.Content[random.Next(artists.Count())];
-
-                                string ArtistName = string.IsNullOrWhiteSpace(currentArtist.Name) ? nulltext : currentArtist.Name;
-
-                                LastImageSet artistImage = await lastFMService.GetArtistImageAsync(ArtistName).ConfigureAwait(false);
-
-                                trackString = ArtistName + Environment.NewLine + LastFMName;
-                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
-
-                                if (artistImage?.Large != null)
-                                {
-                                    ChangeToNewAvatar(client, cfgjson, artistImage.Large.AbsoluteUri);
-                                }
-                            }
-                            else if (randavmode == 4)
-                            {
                                 PageResponse<LastAlbum> albums = await lastFMService.GetTopAlbumsAsync(LastFMName, LastStatsTimeSpan.Week, 1).ConfigureAwait(false);
                                 LastAlbum currentAlbum = albums.Content[random.Next(albums.Count())];
 
@@ -280,7 +237,7 @@ namespace FMBot.Bot
                                     ChangeToNewAvatar(client, cfgjson, AlbumImages.Large.AbsoluteUri);
                                 }
                             }
-                            else if (randavmode == 5)
+                            else if (randavmode == 3)
                             {
                                 PageResponse<LastAlbum> albums = await lastFMService.GetTopAlbumsAsync(LastFMName, LastStatsTimeSpan.Overall, 1).ConfigureAwait(false);
                                 LastAlbum currentAlbum = albums.Content[random.Next(albums.Count())];
@@ -298,7 +255,7 @@ namespace FMBot.Bot
                                     ChangeToNewAvatar(client, cfgjson, AlbumImages.Large.AbsoluteUri);
                                 }
                             }
-                            else if (randavmode == 6)
+                            else if (randavmode == 4)
                             {
                                 UseDefaultAvatar(client);
                             }
