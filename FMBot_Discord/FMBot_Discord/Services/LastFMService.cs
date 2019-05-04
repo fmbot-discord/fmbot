@@ -1,4 +1,5 @@
 ﻿using FMBot.Bot.Extensions;
+using FMBot.Data.Entities;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
@@ -81,7 +82,9 @@ namespace FMBot.Services
         {
             LastResponse<LastArtist> artist = await lastfmClient.Artist.GetInfoAsync(artistName).ConfigureAwait(false);
 
-            return artist?.Content?.MainImage;
+            var artist2 = await lastfmClient.Artist.GetInfoByMbidAsync(artist.Content.Mbid).ConfigureAwait(false);
+
+            return artist2?.Content?.MainImage;
         }
 
         // Top artists
@@ -96,6 +99,23 @@ namespace FMBot.Services
             LastResponse<LastUser> lastFMUser = await lastfmClient.User.GetInfoAsync(lastFMUserName).ConfigureAwait(false);
 
             return lastFMUser.Success;
+        }
+
+        public LastStatsTimeSpan GetLastStatsTimeSpan(ChartTimePeriod timePeriod)
+        {
+            switch (timePeriod)
+            {
+                case ChartTimePeriod.Weekly:
+                    return LastStatsTimeSpan.Week;
+                case ChartTimePeriod.Monthly:
+                    return LastStatsTimeSpan.Month;
+                case ChartTimePeriod.Yearly:
+                    return LastStatsTimeSpan.Year;
+                case ChartTimePeriod.AllTime:
+                    return LastStatsTimeSpan.Overall;
+                default:
+                    return LastStatsTimeSpan.Week;
+            }
         }
 
         public async Task GenerateChartAsync(FMBotChart chart)

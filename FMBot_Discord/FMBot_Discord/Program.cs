@@ -269,11 +269,11 @@ namespace FMBot.Bot
 
                     if (stackCooldownTarget.Contains(DiscordCaller))
                     {
-                        //If they have used this command before, take the time the user last did something, add 5 seconds, and see if it's greater than this very moment.
-                        if (stackCooldownTimer[stackCooldownTarget.IndexOf(DiscordCaller)].AddSeconds(5) >= DateTimeOffset.Now)
+                        //If they have used this command before, take the time the user last did something, add 3 seconds, and see if it's greater than this very moment.
+                        if (stackCooldownTimer[stackCooldownTarget.IndexOf(DiscordCaller)].AddSeconds(3) >= DateTimeOffset.Now)
                         {
                             //If enough time hasn't passed, reply letting them know how much longer they need to wait, and end the code.
-                            int secondsLeft = (int)(stackCooldownTimer[stackCooldownTarget.IndexOf(DiscordCaller)].AddSeconds(5) - DateTimeOffset.Now).TotalSeconds;
+                            int secondsLeft = (int)(stackCooldownTimer[stackCooldownTarget.IndexOf(DiscordCaller)].AddSeconds(3) - DateTimeOffset.Now).TotalSeconds;
                             await context.Channel.SendMessageAsync($"Please wait {secondsLeft} seconds before you use that command again!").ConfigureAwait(false);
                             return;
                         }
