@@ -299,9 +299,9 @@ namespace FMBot.Bot.Commands
 
 
 
-        [Command("fmartists"), Summary("Displays top 6 artists.")]
+        [Command("fmartists"), Summary("Displays top artists.")]
         [Alias("fmartist", "fmartistlist", "fmartistslist")]
-        public async Task fmArtistsAsync(string time = "weekly", string user = null)
+        public async Task fmArtistsAsync(string time = "weekly", int num = 6, string user = null)
         {
             User userSettings = await userService.GetUserSettingsAsync(Context.User).ConfigureAwait(false);
 
@@ -313,7 +313,7 @@ namespace FMBot.Bot.Commands
             if (time == "help")
             {
                 await ReplyAsync(
-                    "Usage: `.fmartists 'weekly/monthly/yearly/alltime'` \n" +
+                    "Usage: `.fmartists 'weekly/monthly/yearly/alltime' 'number of artists (max 10)'` \n" +
                     "You can set your default user and your display mode through the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.").ConfigureAwait(false);
                 return;
             }
@@ -324,8 +324,12 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
+            if (num > 10)
+            {
+                num = 10;
+            }
+
             LastStatsTimeSpan timeSpan = lastFMService.GetLastStatsTimeSpan(timePeriod);
-            int num = 6;
 
             try
             {
@@ -373,7 +377,7 @@ namespace FMBot.Bot.Commands
                 };
 
                 builder.WithUrl("https://www.last.fm/user/" + lastFMUserName + "/artists");
-                builder.Title = lastFMUserName + " top 6 artists (" + timePeriod + ")";
+                builder.Title = lastFMUserName + " top "+ num + " artists (" + timePeriod + ")";
 
                 const string nulltext = "[undefined]";
                 int indexval = (num - 1);
@@ -384,7 +388,7 @@ namespace FMBot.Bot.Commands
                     string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? nulltext : artist.Name;
 
                     int correctnum = (i + 1);
-                    builder.AddField(artist.Name, artist.PlayCount.Value.ToString("N0") + " scrobbles");
+                    builder.AddField("#" + correctnum + ": " + artist.Name, artist.PlayCount.Value.ToString("N0") + " scrobbles");
                 }
 
                 EmbedFooterBuilder embedFooter = new EmbedFooterBuilder();
@@ -550,7 +554,7 @@ namespace FMBot.Bot.Commands
         {
             await ReplyAsync("Sorry, but LastFM has removed API access to artist images. See this for more information: https://getsatisfaction.com/lastfm/topics/api-announcement-dac8oefw5vrxq \n" +
                 "We're looking into alternative image sources, but for now this command has been disabled. \n" +
-                "There is now a new command you can use to see your top artists: `.fmartists 'weekly/monthly/yearly/alltime'`").ConfigureAwait(false);
+                "There is now a new command you can use to see your top artists: `.fmartists 'weekly/monthly/yearly/alltime' 'number of artists (max 10)'`").ConfigureAwait(false);
             return;
 
             if (chartsize == "help")
