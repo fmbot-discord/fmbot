@@ -422,7 +422,10 @@ namespace FMBot.Bot
                 {"Death Grips", "No Love Deep Web"},
                 {"ミドリ(Midori)", "あらためまして、はじめまして、ミドリです。(aratamemashite hajimemashite midori desu)"},
                 {"Midori", "ratamemashite hajimemashite midori desu"},
-                {"ミドリ", "あらためまして、はじめまして、ミドリです"}
+                {"ミドリ", "あらためまして、はじめまして、ミドリです"},
+                {"Xiu Xiu", "A Promise"},
+                {"Carcass","Reek of Putrefaction"},
+                {"Cattle Decapitation", "Human Jerky"}
             };
             public static string ConfigFileName = "config.json";
             public static string BasePath = AppDomain.CurrentDomain.BaseDirectory;
