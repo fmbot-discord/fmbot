@@ -996,8 +996,6 @@ namespace FMBot.Bot.Commands
             }
         }
 
-
-
         [Command("fmremove"), Summary("Deletes your FMBot data.")]
         [Alias("fmdelete", "fmremovedata", "fmdeletedata")]
         public async Task fmremoveAsync()
@@ -1014,6 +1012,40 @@ namespace FMBot.Bot.Commands
             await userService.DeleteUser(userSettings.UserID).ConfigureAwait(false);
 
             await ReplyAsync("Your settings, friends and any other data have been successfully deleted.").ConfigureAwait(false);
+        }
+
+        [Command("fmsuggest"), Summary("Suggest features you want to see in the bot, or report inappropriate images.")]
+        [Alias("fmreport", "fmsuggestion","fmsuggestions")]
+        public async Task fmsuggest(string suggestion)
+        {
+            JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
+
+            if (string.IsNullOrWhiteSpace(suggestion))
+            {
+                await ReplyAsync(cfgjson.CommandPrefix + "fmsuggest 'suggestion'").ConfigureAwait(false);
+                return;
+            }
+
+            DiscordSocketClient client = Context.Client as DiscordSocketClient;
+
+            ulong BroadcastServerID = Convert.ToUInt64(cfgjson.SuggestionsChannel);
+            ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.FeaturedChannel);
+
+            SocketGuild guild = client.GetGuild(BroadcastServerID);
+            SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
+
+            EmbedBuilder builder = new EmbedBuilder();
+            EmbedAuthorBuilder eab = new EmbedAuthorBuilder
+            {
+                IconUrl = Context.User.GetAvatarUrl(),
+                Name = Context.User.Username
+            };
+            builder.WithAuthor(eab);
+            builder.AddField(Context.User.Username + "'s suggestion:", suggestion);
+
+            await channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
+
+            await ReplyAsync("Your ssuggestion has been sent to the .fmbot server!").ConfigureAwait(false);
         }
     }
 }

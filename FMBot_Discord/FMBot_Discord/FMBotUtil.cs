@@ -251,6 +251,9 @@ namespace FMBot.Bot
 
                 [JsonProperty("derpikey")]
                 public string DerpiKey { get; private set; }
+
+                [JsonProperty("suggestionschannel")]
+                public string SuggestionsChannel { get; private set; }
 #pragma warning restore RCS1170 // Use read-only auto-implemented property.
             }
 
