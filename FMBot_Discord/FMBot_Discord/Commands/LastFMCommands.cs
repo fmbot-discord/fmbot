@@ -1028,8 +1028,8 @@ namespace FMBot.Bot.Commands
 
             DiscordSocketClient client = Context.Client as DiscordSocketClient;
 
-            ulong BroadcastServerID = Convert.ToUInt64(cfgjson.SuggestionsChannel);
-            ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.FeaturedChannel);
+            ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
+            ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.SuggestionsChannel);
 
             SocketGuild guild = client.GetGuild(BroadcastServerID);
             SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
