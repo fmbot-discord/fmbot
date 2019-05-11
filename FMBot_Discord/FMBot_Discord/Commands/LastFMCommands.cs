@@ -1022,13 +1022,15 @@ namespace FMBot.Bot.Commands
             {
                 JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
 
+                /*
                 if (string.IsNullOrWhiteSpace(suggestion))
                 {
-                    await ReplyAsync(cfgjson.CommandPrefix + "fmsuggest 'suggestion'").ConfigureAwait(false);
+                    await ReplyAsync(cfgjson.CommandPrefix + "fmsuggest 'text in quotes'").ConfigureAwait(false);
                     return;
                 }
                 else
                 {
+                */
                     DiscordSocketClient client = Context.Client as DiscordSocketClient;
 
                     ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
@@ -1050,7 +1052,7 @@ namespace FMBot.Bot.Commands
                     await channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
 
                     await ReplyAsync("Your suggestion has been sent to the .fmbot server!").ConfigureAwait(false);
-                }
+                //}
             }
             catch (Exception e)
             {
