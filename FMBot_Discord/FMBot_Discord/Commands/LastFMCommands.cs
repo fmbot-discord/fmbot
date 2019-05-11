@@ -1015,37 +1015,45 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("fmsuggest"), Summary("Suggest features you want to see in the bot, or report inappropriate images.")]
-        [Alias("fmreport", "fmsuggestion","fmsuggestions")]
+        [Alias("fmreport", "fmsuggestion", "fmsuggestions")]
         public async Task fmsuggest(string suggestion)
         {
-            JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
-
-            if (string.IsNullOrWhiteSpace(suggestion))
+            try
             {
-                await ReplyAsync(cfgjson.CommandPrefix + "fmsuggest 'suggestion'").ConfigureAwait(false);
-                return;
+                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
+
+                if (string.IsNullOrWhiteSpace(suggestion))
+                {
+                    await ReplyAsync(cfgjson.CommandPrefix + "fmsuggest 'suggestion'").ConfigureAwait(false);
+                    return;
+                }
+
+                DiscordSocketClient client = Context.Client as DiscordSocketClient;
+
+                ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
+                ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.SuggestionsChannel);
+
+                SocketGuild guild = client.GetGuild(BroadcastServerID);
+                SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
+
+                EmbedBuilder builder = new EmbedBuilder();
+                EmbedAuthorBuilder eab = new EmbedAuthorBuilder
+                {
+                    IconUrl = Context.User.GetAvatarUrl(),
+                    Name = Context.User.Username
+                };
+                builder.WithAuthor(eab);
+                builder.AddField(Context.User.Username + "'s suggestion:", suggestion);
+
+                await channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
+
+                await ReplyAsync("Your suggestion has been sent to the .fmbot server!").ConfigureAwait(false);
             }
-
-            DiscordSocketClient client = Context.Client as DiscordSocketClient;
-
-            ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
-            ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.SuggestionsChannel);
-
-            SocketGuild guild = client.GetGuild(BroadcastServerID);
-            SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
-
-            EmbedBuilder builder = new EmbedBuilder();
-            EmbedAuthorBuilder eab = new EmbedAuthorBuilder
+            catch (Exception e)
             {
-                IconUrl = Context.User.GetAvatarUrl(),
-                Name = Context.User.Username
-            };
-            builder.WithAuthor(eab);
-            builder.AddField(Context.User.Username + "'s suggestion:", suggestion);
-
-            await channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
-
-            await ReplyAsync("Your ssuggestion has been sent to the .fmbot server!").ConfigureAwait(false);
+                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(disclient, e);
+            }
         }
     }
 }
