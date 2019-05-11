@@ -224,14 +224,14 @@ namespace FMBot.Bot
                                 else
                                 {
                                     AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName).ConfigureAwait(false);
-                                }
 
-                                trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
+                                    trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
+                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
 
-                                if (AlbumImages?.Large != null)
-                                {
-                                    ChangeToNewAvatar(client, cfgjson, AlbumImages.Large.AbsoluteUri);
+                                    if (AlbumImages?.Large != null)
+                                    {
+                                        ChangeToNewAvatar(client, cfgjson, AlbumImages.Large.AbsoluteUri);
+                                    }
                                 }
 
                             }
@@ -261,15 +261,14 @@ namespace FMBot.Bot
                                 else
                                 {
                                     AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName).ConfigureAwait(false);
-                                }
 
-                                trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
+                                    trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
+                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
 
-                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
-
-                                if (AlbumImages?.Large != null)
-                                {
-                                    ChangeToNewAvatar(client, cfgjson, AlbumImages.Large.AbsoluteUri);
+                                    if (AlbumImages?.Large != null)
+                                    {
+                                        ChangeToNewAvatar(client, cfgjson, AlbumImages.Large.AbsoluteUri);
+                                    }
                                 }
                             }
                             else if (randavmode == 3)
@@ -288,7 +287,6 @@ namespace FMBot.Bot
                                     try
                                     {
                                         UseLocalAvatar(client, cfgjson, AlbumName, ArtistName, LastFMName);
-                                        return;
                                     }
                                     catch (Exception)
                                     {
@@ -298,14 +296,14 @@ namespace FMBot.Bot
                                 else
                                 {
                                     AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName).ConfigureAwait(false);
-                                }
 
-                                trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
+                                    trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
+                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
 
-                                if (AlbumImages?.Large != null)
-                                {
-                                    ChangeToNewAvatar(client, cfgjson, AlbumImages.Large.AbsoluteUri);
+                                    if (AlbumImages?.Large != null)
+                                    {
+                                        ChangeToNewAvatar(client, cfgjson, AlbumImages.Large.AbsoluteUri);
+                                    }
                                 }
                             }
                             else if (randavmode == 4)
