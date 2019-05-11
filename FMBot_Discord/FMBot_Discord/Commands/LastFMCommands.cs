@@ -1016,7 +1016,7 @@ namespace FMBot.Bot.Commands
 
         [Command("fmsuggest"), Summary("Suggest features you want to see in the bot, or report inappropriate images.")]
         [Alias("fmreport", "fmsuggestion", "fmsuggestions")]
-        public async Task fmsuggest(string suggestion)
+        public async Task fmsuggest(string suggestion = null)
         {
             try
             {
