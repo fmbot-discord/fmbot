@@ -1027,27 +1027,30 @@ namespace FMBot.Bot.Commands
                     await ReplyAsync(cfgjson.CommandPrefix + "fmsuggest 'suggestion'").ConfigureAwait(false);
                     return;
                 }
-
-                DiscordSocketClient client = Context.Client as DiscordSocketClient;
-
-                ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
-                ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.SuggestionsChannel);
-
-                SocketGuild guild = client.GetGuild(BroadcastServerID);
-                SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
-
-                EmbedBuilder builder = new EmbedBuilder();
-                EmbedAuthorBuilder eab = new EmbedAuthorBuilder
+                else
                 {
-                    IconUrl = Context.User.GetAvatarUrl(),
-                    Name = Context.User.Username
-                };
-                builder.WithAuthor(eab);
-                builder.AddField(Context.User.Username + "'s suggestion:", suggestion);
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
 
-                await channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
+                    ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
+                    ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.SuggestionsChannel);
 
-                await ReplyAsync("Your suggestion has been sent to the .fmbot server!").ConfigureAwait(false);
+                    SocketGuild guild = client.GetGuild(BroadcastServerID);
+                    SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
+
+                    EmbedBuilder builder = new EmbedBuilder();
+                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder
+                    {
+                        IconUrl = Context.User.GetAvatarUrl(),
+                        Name = Context.User.Username
+                    };
+                    builder.WithAuthor(eab);
+                    builder.WithTitle(Context.User.Username + "'s suggestion:");
+                    builder.WithDescription(suggestion);
+
+                    await channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
+
+                    await ReplyAsync("Your suggestion has been sent to the .fmbot server!").ConfigureAwait(false);
+                }
             }
             catch (Exception e)
             {

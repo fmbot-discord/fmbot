@@ -24,7 +24,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("fmimage"), Summary("???")]
-        public async Task fmimageAsync(string query)
+        public async Task fmimageAsync(string query=null)
         {
             try
             {
