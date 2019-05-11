@@ -416,7 +416,11 @@ namespace FMBot.Bot
         {
             public static Dictionary<string, string> CensoredAlbums = new Dictionary<string, string>()
             {
-                {"Death Grips", "No Love Deep Web"}
+                {"Death Grips", "No Love Deep Web"},
+                {"ミドリ(Midori)", "あらためまして、はじめまして、ミドリです。(aratamemashite hajimemashite midori desu)"},
+                {"Midori", "ratamemashite hajimemashite midori desu"},
+                {"ミドリ", "あらためまして、はじめまして、ミドリです。"},
+                {"ミドリ", "あらためまして、はじめまして、ミドリです"},
             };
             public static string ConfigFileName = "config.json";
             public static string BasePath = AppDomain.CurrentDomain.BaseDirectory;
