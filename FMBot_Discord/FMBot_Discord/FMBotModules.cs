@@ -415,7 +415,7 @@ namespace FMBot.Bot
                 {
                     trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
                     await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
-                    FileStream fileStream = new FileStream(GlobalVars.BasePath + AlbumName + ".png", FileMode.Open);
+                    FileStream fileStream = new FileStream(GlobalVars.CoversFolder + ArtistName + " - " + AlbumName + ".png", FileMode.Open);
                     Image image = new Image(fileStream);
                     await client.CurrentUser.ModifyAsync(u => u.Avatar = image).ConfigureAwait(false);
                     fileStream.Close();
