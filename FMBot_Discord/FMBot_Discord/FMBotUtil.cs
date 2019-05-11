@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 
 namespace FMBot.Bot
 {
+    
     public static class FMBotUtil
     {
         #region Database Functions
@@ -413,6 +414,10 @@ namespace FMBot.Bot
 
         public static class GlobalVars
         {
+            public static Dictionary<string, string> CensoredAlbums = new Dictionary<string, string>()
+            {
+                {"Death Grips", "No Love Deep Web"}
+            };
             public static string ConfigFileName = "config.json";
             public static string BasePath = AppDomain.CurrentDomain.BaseDirectory;
             public static string CacheFolder = BasePath + "cache/";
@@ -641,7 +646,5 @@ namespace FMBot.Bot
         }
 
         #endregion
-
-
     }
 }

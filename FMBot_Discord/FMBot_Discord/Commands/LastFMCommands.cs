@@ -410,7 +410,7 @@ namespace FMBot.Bot.Commands
                     string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? nulltext : artist.Name;
 
                     int correctnum = (i + 1);
-                    builder.AddField("#" + correctnum + ": " + artist.Name, artist.PlayCount.Value.ToString("N0") + " scrobbles");
+                    builder.AddField("#" + correctnum + ": " + artist.Name, artist.PlayCount.Value.ToString("N0") + " times scrobbled");
                 }
 
                 EmbedFooterBuilder embedFooter = new EmbedFooterBuilder();
@@ -592,6 +592,7 @@ namespace FMBot.Bot.Commands
                 "There is now a new command you can use to see your top artists: `.fmartists 'weekly/monthly/yearly/alltime' 'number of artists (max 10)'`").ConfigureAwait(false);
             return;
 
+            /*
             if (chartsize == "help")
             {
                 await ReplyAsync(".fmartistchart [3x3-10x10] [weekly/monthly/yearly/overall] [notitles/titles] [user]").ConfigureAwait(false);
@@ -716,6 +717,7 @@ namespace FMBot.Bot.Commands
 
                 await ReplyAsync("Unable to generate a FMChart due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.").ConfigureAwait(false);
             }
+            */
         }
 
 
