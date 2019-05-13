@@ -398,7 +398,7 @@ namespace FMBot.Bot.Commands
                     Color = new Discord.Color(186, 0, 0),
                 };
 
-                builder.WithUrl("https://www.last.fm/user/" + lastFMUserName + "/artists");
+                builder.WithUrl("https://www.last.fm/user/" + lastFMUserName + "/library/artists");
                 builder.Title = lastFMUserName + " top " + num + " artists (" + timePeriod + ")";
 
                 const string nulltext = "[undefined]";
