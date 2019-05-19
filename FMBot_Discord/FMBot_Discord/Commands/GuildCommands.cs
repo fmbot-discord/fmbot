@@ -99,6 +99,13 @@ namespace FMBot.Bot.Commands
             foreach (KeyValuePair<string, string> fmbotUser in serverUsers)
             {
                 reply += fmbotUser.Key + " - " + fmbotUser.Value + "\n";
+
+                if (reply.Length > 1950)
+                {
+                    await ReplyAsync(reply).ConfigureAwait(false);
+                    reply = "";
+                }
+
             }
 
             await ReplyAsync(reply).ConfigureAwait(false);
