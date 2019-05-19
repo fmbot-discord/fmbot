@@ -16,7 +16,7 @@ namespace FMBot.Bot.Commands
         private readonly CommandService _service;
         private readonly TimerService _timer;
 
-        private readonly UserService userService = new UserService();
+        private readonly AdminService adminService = new AdminService();
 
         private readonly GuildService guildService = new GuildService();
 
@@ -40,9 +40,9 @@ namespace FMBot.Bot.Commands
             }
 
             IGuildUser serverUser = (IGuildUser)Context.Message.Author;
-            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator)
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator && !await adminService.HasCommandAccessAsync(Context.User, UserType.Admin).ConfigureAwait(false))
             {
-                await ReplyAsync("You are not authorized to use this command. Only users with the 'Ban Members' permission or admins can use this command.");
+                await ReplyAsync("You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
                 return;
             }
             if (chartType == "help")
@@ -82,9 +82,9 @@ namespace FMBot.Bot.Commands
             }
 
             IGuildUser serverUser = (IGuildUser)Context.Message.Author;
-            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator)
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator && !await adminService.HasCommandAccessAsync(Context.User, UserType.Admin).ConfigureAwait(false))
             {
-                await ReplyAsync("You are not authorized to use this command. Only users with the 'Ban Members' permission or admins can use this command.");
+                await ReplyAsync("You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.").ConfigureAwait(false);
                 return;
             }
 

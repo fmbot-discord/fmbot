@@ -31,7 +31,7 @@ namespace FMBot.Bot.Commands
         [Command("fmdbcheck"), Summary("Checks if an entry is in the database.")]
         public async Task dbcheckAsync(IUser user = null)
         {
-            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin).ConfigureAwait(false))
             {
                 IUser chosenUser = user ?? Context.Message.Author;
                 User userSettings = await userService.GetUserSettingsAsync(chosenUser);
