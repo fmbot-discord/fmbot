@@ -6,6 +6,7 @@ using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -17,8 +18,6 @@ namespace FMBot.Bot
 {
     public static class FMBotModules
     {
-
-
         #region Reliability Service
         public class ReliabilityService
         {
@@ -207,14 +206,32 @@ namespace FMBot.Bot
                                 string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
                                 string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nulltext : currentTrack.AlbumName;
 
-                                LastImageSet AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName).ConfigureAwait(false);
+                                LastImageSet AlbumImages = null;
 
-                                trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
-
-                                if (AlbumImages?.Large != null)
+                                if (GlobalVars.CensoredAlbums.Contains(new KeyValuePair<string, string>(ArtistName, AlbumName)))
                                 {
-                                    ChangeToNewAvatar(client, cfgjson, AlbumImages.Large.AbsoluteUri);
+                                    // use the censored cover.
+                                    try
+                                    {
+                                        UseLocalAvatar(client, cfgjson, AlbumName, ArtistName, LastFMName);
+                                        return;
+                                    }
+                                    catch (Exception)
+                                    {
+                                        UseDefaultAvatar(client);
+                                    }
+                                }
+                                else
+                                {
+                                    AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName).ConfigureAwait(false);
+
+                                    trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
+                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
+
+                                    if (AlbumImages?.Large != null)
+                                    {
+                                        ChangeToNewAvatar(client, cfgjson, AlbumImages.Large.AbsoluteUri);
+                                    }
                                 }
 
                             }
@@ -226,15 +243,32 @@ namespace FMBot.Bot
                                 string ArtistName = string.IsNullOrWhiteSpace(currentAlbum.ArtistName) ? nulltext : currentAlbum.ArtistName;
                                 string AlbumName = string.IsNullOrWhiteSpace(currentAlbum.Name) ? nulltext : currentAlbum.Name;
 
-                                LastImageSet AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName).ConfigureAwait(false);
+                                LastImageSet AlbumImages = null;
 
-                                trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-
-                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
-
-                                if (AlbumImages?.Large != null)
+                                if (GlobalVars.CensoredAlbums.Contains(new KeyValuePair<string, string>(ArtistName, AlbumName)))
                                 {
-                                    ChangeToNewAvatar(client, cfgjson, AlbumImages.Large.AbsoluteUri);
+                                    // use the censored cover.
+                                    try
+                                    {
+                                        UseLocalAvatar(client, cfgjson, AlbumName, ArtistName, LastFMName);
+                                        return;
+                                    }
+                                    catch (Exception)
+                                    {
+                                        UseDefaultAvatar(client);
+                                    }
+                                }
+                                else
+                                {
+                                    AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName).ConfigureAwait(false);
+
+                                    trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
+                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
+
+                                    if (AlbumImages?.Large != null)
+                                    {
+                                        ChangeToNewAvatar(client, cfgjson, AlbumImages.Large.AbsoluteUri);
+                                    }
                                 }
                             }
                             else if (randavmode == 3)
@@ -245,14 +279,31 @@ namespace FMBot.Bot
                                 string ArtistName = string.IsNullOrWhiteSpace(currentAlbum.ArtistName) ? nulltext : currentAlbum.ArtistName;
                                 string AlbumName = string.IsNullOrWhiteSpace(currentAlbum.Name) ? nulltext : currentAlbum.Name;
 
-                                LastImageSet AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName).ConfigureAwait(false);
+                                LastImageSet AlbumImages = null;
 
-                                trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
-
-                                if (AlbumImages?.Large != null)
+                                if (GlobalVars.CensoredAlbums.Contains(new KeyValuePair<string, string>(ArtistName, AlbumName)))
                                 {
-                                    ChangeToNewAvatar(client, cfgjson, AlbumImages.Large.AbsoluteUri);
+                                    // use the censored cover.
+                                    try
+                                    {
+                                        UseLocalAvatar(client, cfgjson, AlbumName, ArtistName, LastFMName);
+                                    }
+                                    catch (Exception)
+                                    {
+                                        UseDefaultAvatar(client);
+                                    }
+                                }
+                                else
+                                {
+                                    AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName).ConfigureAwait(false);
+
+                                    trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
+                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
+
+                                    if (AlbumImages?.Large != null)
+                                    {
+                                        ChangeToNewAvatar(client, cfgjson, AlbumImages.Large.AbsoluteUri);
+                                    }
                                 }
                             }
                             else if (randavmode == 4)
@@ -351,6 +402,39 @@ namespace FMBot.Bot
                     Image image = new Image(fileStream);
                     await client.CurrentUser.ModifyAsync(u => u.Avatar = image).ConfigureAwait(false);
                     fileStream.Close();
+                }
+                catch (Exception e)
+                {
+                    ExceptionReporter.ReportShardedException(client, e);
+                }
+            }
+
+            public async void UseLocalAvatar(DiscordShardedClient client, JsonCfg.ConfigJson cfgjson, string AlbumName, string ArtistName, string LastFMName)
+            {
+                try
+                {
+                    trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
+                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
+                    //FileStream fileStream = new FileStream(GlobalVars.CoversFolder + ArtistName + " - " + AlbumName + ".png", FileMode.Open);
+                    FileStream fileStream = new FileStream(GlobalVars.BasePath + "censored.png", FileMode.Open);
+                    Image image = new Image(fileStream);
+                    await client.CurrentUser.ModifyAsync(u => u.Avatar = image).ConfigureAwait(false);
+                    fileStream.Close();
+
+                    await Task.Delay(5000).ConfigureAwait(false);
+
+                    ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
+                    ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.FeaturedChannel);
+
+                    SocketGuild guild = client.GetGuild(BroadcastServerID);
+                    SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
+
+                    EmbedBuilder builder = new EmbedBuilder();
+                    SocketSelfUser SelfUser = client.CurrentUser;
+                    builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
+                    builder.AddField("Featured:", trackString);
+
+                    await channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {

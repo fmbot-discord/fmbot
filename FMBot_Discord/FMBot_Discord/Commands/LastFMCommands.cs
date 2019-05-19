@@ -398,7 +398,7 @@ namespace FMBot.Bot.Commands
                     Color = new Discord.Color(186, 0, 0),
                 };
 
-                builder.WithUrl("https://www.last.fm/user/" + lastFMUserName + "/artists");
+                builder.WithUrl("https://www.last.fm/user/" + lastFMUserName + "/library/artists");
                 builder.Title = lastFMUserName + " top " + num + " artists (" + timePeriod + ")";
 
                 const string nulltext = "[undefined]";
@@ -410,7 +410,7 @@ namespace FMBot.Bot.Commands
                     string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? nulltext : artist.Name;
 
                     int correctnum = (i + 1);
-                    builder.AddField("#" + correctnum + ": " + artist.Name, artist.PlayCount.Value.ToString("N0") + " scrobbles");
+                    builder.AddField("#" + correctnum + ": " + artist.Name, artist.PlayCount.Value.ToString("N0") + " times scrobbled");
                 }
 
                 EmbedFooterBuilder embedFooter = new EmbedFooterBuilder();
@@ -592,6 +592,7 @@ namespace FMBot.Bot.Commands
                 "There is now a new command you can use to see your top artists: `.fmartists 'weekly/monthly/yearly/alltime' 'number of artists (max 10)'`").ConfigureAwait(false);
             return;
 
+            /*
             if (chartsize == "help")
             {
                 await ReplyAsync(".fmartistchart [3x3-10x10] [weekly/monthly/yearly/overall] [notitles/titles] [user]").ConfigureAwait(false);
@@ -716,6 +717,7 @@ namespace FMBot.Bot.Commands
 
                 await ReplyAsync("Unable to generate a FMChart due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.").ConfigureAwait(false);
             }
+            */
         }
 
 
@@ -1010,6 +1012,53 @@ namespace FMBot.Bot.Commands
             await userService.DeleteUser(userSettings.UserID).ConfigureAwait(false);
 
             await ReplyAsync("Your settings, friends and any other data have been successfully deleted.").ConfigureAwait(false);
+        }
+
+        [Command("fmsuggest"), Summary("Suggest features you want to see in the bot, or report inappropriate images.")]
+        [Alias("fmreport", "fmsuggestion", "fmsuggestions")]
+        public async Task fmsuggest(string suggestion = null)
+        {
+            try
+            {
+                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
+
+                /*
+                if (string.IsNullOrWhiteSpace(suggestion))
+                {
+                    await ReplyAsync(cfgjson.CommandPrefix + "fmsuggest 'text in quotes'").ConfigureAwait(false);
+                    return;
+                }
+                else
+                {
+                */
+                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+
+                    ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
+                    ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.SuggestionsChannel);
+
+                    SocketGuild guild = client.GetGuild(BroadcastServerID);
+                    SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
+
+                    EmbedBuilder builder = new EmbedBuilder();
+                    EmbedAuthorBuilder eab = new EmbedAuthorBuilder
+                    {
+                        IconUrl = Context.User.GetAvatarUrl(),
+                        Name = Context.User.Username
+                    };
+                    builder.WithAuthor(eab);
+                    builder.WithTitle(Context.User.Username + "'s suggestion:");
+                    builder.WithDescription(suggestion);
+
+                    await channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
+
+                    await ReplyAsync("Your suggestion has been sent to the .fmbot server!").ConfigureAwait(false);
+                //}
+            }
+            catch (Exception e)
+            {
+                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(disclient, e);
+            }
         }
     }
 }

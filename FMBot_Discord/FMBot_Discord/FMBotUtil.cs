@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 
 namespace FMBot.Bot
 {
+    
     public static class FMBotUtil
     {
         #region Database Functions
@@ -250,6 +251,9 @@ namespace FMBot.Bot
 
                 [JsonProperty("derpikey")]
                 public string DerpiKey { get; private set; }
+
+                [JsonProperty("suggestionschannel")]
+                public string SuggestionsChannel { get; private set; }
 #pragma warning restore RCS1170 // Use read-only auto-implemented property.
             }
 
@@ -413,9 +417,20 @@ namespace FMBot.Bot
 
         public static class GlobalVars
         {
+            public static Dictionary<string, string> CensoredAlbums = new Dictionary<string, string>()
+            {
+                {"Death Grips", "No Love Deep Web"},
+                {"ミドリ(Midori)", "あらためまして、はじめまして、ミドリです。(aratamemashite hajimemashite midori desu)"},
+                {"Midori", "ratamemashite hajimemashite midori desu"},
+                {"ミドリ", "あらためまして、はじめまして、ミドリです"},
+                {"Xiu Xiu", "A Promise"},
+                {"Carcass","Reek of Putrefaction"},
+                {"Cattle Decapitation", "Human Jerky"}
+            };
             public static string ConfigFileName = "config.json";
             public static string BasePath = AppDomain.CurrentDomain.BaseDirectory;
             public static string CacheFolder = BasePath + "cache/";
+            public static string CoversFolder = BasePath + "covers/";
             public static string FeaturedUserID = "";
             public static int MessageLength = 2000;
             public static int CommandExecutions;
@@ -538,7 +553,7 @@ namespace FMBot.Bot
 
                     return finalImage;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     if (finalImage != null)
                     {
@@ -641,7 +656,5 @@ namespace FMBot.Bot
         }
 
         #endregion
-
-
     }
 }
