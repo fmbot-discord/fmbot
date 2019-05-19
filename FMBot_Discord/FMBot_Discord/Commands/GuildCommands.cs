@@ -4,6 +4,7 @@ using FMBot.Data.Entities;
 using FMBot.Services;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using static FMBot.Bot.FMBotModules;
 
@@ -96,19 +97,20 @@ namespace FMBot.Bot.Commands
             }
 
             string reply = "The " + serverUsers.Count + " Last.FM users on this server are: \n";
-            foreach (KeyValuePair<string, string> fmbotUser in serverUsers)
+            foreach (KeyValuePair<string, string> fmbotUser in serverUsers.OrderBy(o => o.Key))
             {
-                reply += fmbotUser.Key + " - " + fmbotUser.Value + "\n";
+                reply += "`" + fmbotUser.Value + "` - " + fmbotUser.Key + "\n";
 
                 if (reply.Length > 1950)
                 {
-                    await ReplyAsync(reply).ConfigureAwait(false);
+                    await Context.User.SendMessageAsync(reply).ConfigureAwait(false);
                     reply = "";
                 }
 
             }
 
-            await ReplyAsync(reply).ConfigureAwait(false);
+            await Context.User.SendMessageAsync(reply).ConfigureAwait(false);
+            await ReplyAsync("Check your DMs!").ConfigureAwait(false);
         }
 
 

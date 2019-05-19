@@ -250,11 +250,11 @@ namespace FMBot.Bot
 
             builder.WithFooter("Still need help? Join the FMBot Discord Server: https://discord.gg/srmpCaa");
 
-            await Context.User.SendMessageAsync("", false, builder.Build());
+            await Context.User.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
 
             if (!guildService.CheckIfDM(Context))
             {
-                await Context.Channel.SendMessageAsync("Check your DMs!");
+                await Context.Channel.SendMessageAsync("Check your DMs!").ConfigureAwait(false);
             }
 
         }
