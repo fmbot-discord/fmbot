@@ -145,7 +145,7 @@ namespace FMBot.Bot.Commands
 
                 foreach (string friend in friends)
                 {
-                    if (!existingFriends.Select(s => s.LastFMUserName.ToLower()).Contains(friend.ToLower()))
+                    if (existingFriends?.Where(w => w.LastFMUserName != null).Select(s => s.LastFMUserName.ToLower()).Contains(friend.ToLower()) != true)
                     {
                         if (!guildService.CheckIfDM(Context))
                         {

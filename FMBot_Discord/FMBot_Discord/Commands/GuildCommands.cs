@@ -4,8 +4,6 @@ using FMBot.Data.Entities;
 using FMBot.Services;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using static FMBot.Bot.FMBotModules;
 
@@ -69,9 +67,43 @@ namespace FMBot.Bot.Commands
             await guildService.ChangeGuildSettingAsync(Context.Guild, chartTimePeriodEnum, chartTypeEnum);
 
 
-            
-            await ReplyAsync("The .fmset default charttype for your server has been set to " + chartTypeEnum +  " with the time period " + chartTimePeriodEnum + ".");
+
+            await ReplyAsync("The .fmset default charttype for your server has been set to " + chartTypeEnum + " with the time period " + chartTimePeriodEnum + ".");
         }
+
+        [Command("fmgetmembers"), Summary("Gets Last.FM usernames from your server members.")]
+        public async Task fmGetMembersAsync()
+        {
+            if (guildService.CheckIfDM(Context))
+            {
+                await ReplyAsync("Command is not supported in DMs.").ConfigureAwait(false);
+                return;
+            }
+
+            IGuildUser serverUser = (IGuildUser)Context.Message.Author;
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator)
+            {
+                await ReplyAsync("You are not authorized to use this command. Only users with the 'Ban Members' permission or admins can use this command.");
+                return;
+            }
+
+            Dictionary<string, string> serverUsers = await guildService.FindAllUsersFromGuildAsync(Context);
+
+            if (serverUsers.Count == 0)
+            {
+                await ReplyAsync("No members found on this server.");
+                return;
+            }
+
+            string reply = "The " + serverUsers.Count + " Last.FM users on this server are: \n";
+            foreach (KeyValuePair<string, string> fmbotUser in serverUsers)
+            {
+                reply += fmbotUser.Key + " - " + fmbotUser.Value + "\n";
+            }
+
+            await ReplyAsync(reply).ConfigureAwait(false);
+        }
+
 
         #endregion
 

@@ -58,6 +58,27 @@ namespace FMBot.Services
             return null;
         }
 
+
+        // Get all guild users
+        public async Task<Dictionary<string, string>> FindAllUsersFromGuildAsync(ICommandContext context)
+        {
+            IReadOnlyCollection<IGuildUser> users = await context.Guild.GetUsersAsync().ConfigureAwait(false);
+            Dictionary<string, string> userList = new Dictionary<string, string>();
+
+            foreach (IGuildUser user in users)
+            {
+                var userId = user.Id.ToString();
+                User fmBotUser = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == userId);
+
+                if (fmBotUser != null)
+                {
+                    userList.Add(user.Nickname ?? user.Username, fmBotUser.UserNameLastFM);
+                }
+            }
+
+            return userList;
+        }
+
         public async Task ChangeGuildSettingAsync(IGuild guild, ChartTimePeriod chartTimePeriod, ChartType chartType)
         {
             string guildId = guild.Id.ToString();

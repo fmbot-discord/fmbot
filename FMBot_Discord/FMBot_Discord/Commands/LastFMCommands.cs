@@ -994,8 +994,6 @@ namespace FMBot.Bot.Commands
             }
         }
 
-
-
         [Command("fmremove"), Summary("Deletes your FMBot data.")]
         [Alias("fmdelete", "fmremovedata", "fmdeletedata")]
         public async Task fmremoveAsync()
