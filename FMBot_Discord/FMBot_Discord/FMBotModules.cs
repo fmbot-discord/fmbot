@@ -12,6 +12,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using DiscordBotsList.Api;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot
@@ -310,6 +311,22 @@ namespace FMBot.Bot
                             {
                                 UseDefaultAvatar(client);
                             }
+                        }
+                        catch (Exception e)
+                        {
+                            ExceptionReporter.ReportShardedException(client, e);
+                        }
+
+                        // Update DBL stat
+
+                        try
+                        {
+                            AuthDiscordBotListApi DblApi =
+                                new AuthDiscordBotListApi(client.CurrentUser.Id, cfgjson.DblApiToken);
+
+                            var me = await DblApi.GetMeAsync();
+
+                            await me.UpdateStatsAsync(client.Guilds.Count, client.Shards.Count, client.Shards.Select(s => s.ShardId).ToArray());
                         }
                         catch (Exception e)
                         {

@@ -254,6 +254,9 @@ namespace FMBot.Bot
 
                 [JsonProperty("suggestionschannel")]
                 public string SuggestionsChannel { get; private set; }
+
+                [JsonProperty("dblapitoken")]
+                public string DblApiToken { get; private set; }
 #pragma warning restore RCS1170 // Use read-only auto-implemented property.
             }
 
