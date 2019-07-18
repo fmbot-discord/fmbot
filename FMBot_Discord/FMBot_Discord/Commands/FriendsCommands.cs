@@ -72,23 +72,31 @@ namespace FMBot.Bot.Commands
                 const string nulltext = "[undefined]";
                 int indexval = (friends.Count - 1);
                 int playcount = 0;
+                List<string> failedFriends = new List<string>();
 
                 foreach (Friend friend in friends)
                 {
-                    string friendusername = friend.FriendUser != null ? friend.FriendUser.UserNameLastFM : friend.LastFMUserName;
-
-                    PageResponse<LastTrack> tracks = await lastFMService.GetRecentScrobblesAsync(friendusername, 1).ConfigureAwait(false);
-
-                    string TrackName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().Name) ? nulltext : tracks.FirstOrDefault().Name;
-                    string ArtistName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().ArtistName) ? nulltext : tracks.FirstOrDefault().ArtistName;
-                    string AlbumName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().AlbumName) ? nulltext : tracks.FirstOrDefault().AlbumName;
-
-                    builder.AddField(friendusername + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
-
-                    if (friends.Count <= 8)
+                    try
                     {
-                        LastResponse<LastUser> userinfo = await lastFMService.GetUserInfoAsync(friendusername).ConfigureAwait(false);
-                        playcount += userinfo.Content.Playcount;
+                        string friendusername = friend.FriendUser != null ? friend.FriendUser.UserNameLastFM : friend.LastFMUserName;
+
+                        PageResponse<LastTrack> tracks = await lastFMService.GetRecentScrobblesAsync(friendusername, 1).ConfigureAwait(false);
+
+                        string TrackName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().Name) ? nulltext : tracks.FirstOrDefault().Name;
+                        string ArtistName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().ArtistName) ? nulltext : tracks.FirstOrDefault().ArtistName;
+                        string AlbumName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().AlbumName) ? nulltext : tracks.FirstOrDefault().AlbumName;
+
+                        builder.AddField(friendusername + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
+
+                        if (friends.Count <= 8)
+                        {
+                            LastResponse<LastUser> userinfo = await lastFMService.GetUserInfoAsync(friendusername).ConfigureAwait(false);
+                            playcount += userinfo.Content.Playcount;
+                        }
+                    }
+                    catch
+                    {
+                        failedFriends.Add(friend.LastFMUserName);
                     }
                 }
 
@@ -99,6 +107,13 @@ namespace FMBot.Bot.Commands
                         Text = amountOfScrobbles + playcount.ToString("0")
                     };
                     builder.WithFooter(efb);
+                }
+
+                if (failedFriends.Count > 0)
+                {
+                    await ReplyAsync("Couldn't retrieve data for one or more of the following friends:\n" +
+                        string.Join(", ", friends.Select(s => s.LastFMUserName).ToArray()))
+                        .ConfigureAwait(false);
                 }
 
                 await Context.Channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
