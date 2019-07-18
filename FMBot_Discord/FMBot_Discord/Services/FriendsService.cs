@@ -65,7 +65,7 @@ namespace FMBot.Services
 
         public async Task RemoveAllLastFMFriendsAsync(int userID)
         {
-            List<Friend> friends = db.Friends.Where(f => f.UserID == userID).ToList();
+            List<Friend> friends = db.Friends.Where(f => f.UserID == userID || f.FriendUserID == userID).ToList();
 
             if (friends.Count > 0)
             {
