@@ -42,11 +42,12 @@ namespace FMBot.Bot.Commands
 
                 try
                 {
-                    string querystring = track.Name + " - " + track.ArtistName + " " + track.AlbumName;
+                    string querystring = track.Name + " - " + track.ArtistName;
 
                     VideoInformation youtubeResult = youtubeService.GetSearchResult(querystring);
 
-                    await ReplyAsync(youtubeResult.Url).ConfigureAwait(false);
+                    await ReplyAsync($"Searched for: `{querystring}`\n " +
+                        youtubeResult.Url).ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
@@ -63,5 +64,31 @@ namespace FMBot.Bot.Commands
             }
         }
 
+
+        [Command("fmyoutubesearch"), Summary("Search for a youtube video")]
+        [Alias("fmytsearch")]
+        public async Task fmytSearchAsync(params string[] searchterms)
+        {
+            if (searchterms.Length < 1)
+            {
+                await ReplyAsync("Please enter a searchvalue.").ConfigureAwait(false);
+                return;
+            }
+
+            string querystring = string.Join(" ", searchterms);
+
+            try
+            {
+                VideoInformation youtubeResult = youtubeService.GetSearchResult(querystring);
+
+                await ReplyAsync(youtubeResult.Url).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
+                ExceptionReporter.ReportException(disclient, e);
+                await ReplyAsync("No results have been found for this track.").ConfigureAwait(false);
+            }
+        }
     }
 }

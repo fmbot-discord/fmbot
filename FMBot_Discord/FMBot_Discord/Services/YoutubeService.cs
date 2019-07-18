@@ -4,9 +4,9 @@ using YoutubeSearch;
 
 namespace FMBot.Services
 {
-    class YoutubeService
+    internal class YoutubeService
     {
-        VideoSearch videoSearch = new VideoSearch();
+        private readonly VideoSearch videoSearch = new VideoSearch();
 
         public VideoInformation GetSearchResult(string searchValue)
         {
