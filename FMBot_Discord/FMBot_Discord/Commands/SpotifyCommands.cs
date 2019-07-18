@@ -56,7 +56,7 @@ namespace FMBot.Bot.Commands
                 }
                 else
                 {
-                    await ReplyAsync("No results have been found for this track. Querystring: " + querystring).ConfigureAwait(false);
+                    await ReplyAsync("No results have been found for this track. Querystring: `" + querystring + "`").ConfigureAwait(false);
                 }
             }
             catch (Exception e)
