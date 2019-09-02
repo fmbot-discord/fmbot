@@ -88,7 +88,6 @@ namespace FMBot.Bot.Commands
 
                         builder.AddField(friendusername + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
 
-
                         if (friends.Count <= 8)
                         {
                             LastResponse<LastUser> userinfo = await lastFMService.GetUserInfoAsync(friendusername).ConfigureAwait(false);
@@ -97,9 +96,8 @@ namespace FMBot.Bot.Commands
                     }
                     catch
                     {
-                        //failedFriends.Add(friendusername);
+                        failedFriends.Add(friend.LastFMUserName);
                     }
-
                 }
 
                 if (friends.Count <= 8)
@@ -111,12 +109,12 @@ namespace FMBot.Bot.Commands
                     builder.WithFooter(efb);
                 }
 
-                //if (failedFriends.Count > 0)
-                //{
-                //    await ReplyAsync("Couldn't retrieve data for one or more of the following friends:\n" +
-                //        string.Join(", ", friends.Select(s => s.LastFMUserName).ToArray()))
-                //        .ConfigureAwait(false);
-                //}
+                if (failedFriends.Count > 0)
+                {
+                    await ReplyAsync("Couldn't retrieve data for one or more of the following friends:\n" +
+                        string.Join(", ", friends.Select(s => s.LastFMUserName).ToArray()))
+                        .ConfigureAwait(false);
+                }
 
                 await Context.Channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
             }
