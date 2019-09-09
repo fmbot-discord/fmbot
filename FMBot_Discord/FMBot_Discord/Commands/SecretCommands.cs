@@ -1,5 +1,4 @@
-﻿using Coolbooru;
-using Discord;
+﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Data.Entities;
@@ -29,36 +28,37 @@ namespace FMBot.Bot.Commands
             try
             {
                 //filter all nsfw results and only show safe images.
-                string FilteredQuery = query + ", safe, -explicit, -nsfw, -questionable, -suggestive, -breasts";
+                //string FilteredQuery = query + ", safe, -explicit, -nsfw, -questionable, -suggestive, -breasts";
 				
-                List<CoolItem> imagelist = await derpiservice.GetImages(FilteredQuery);
+                //temporary disabled due to .net core migration
+                //List<CoolItem> imagelist = await derpiservice.GetImages(FilteredQuery);
 
-                var random = new Random();
-                int index = random.Next(imagelist.Count);
-                var item = imagelist[index];
-                var itemEmbed = await CoolStuff.Embed(int.Parse(item.id)).ConfigureAwait(false);
+                //var random = new Random();
+                //int index = random.Next(imagelist.Count);
+                //var item = imagelist[index];
+                ////var itemEmbed = await CoolStuff.Embed(int.Parse(item.id)).ConfigureAwait(false);
 
-                EmbedBuilder builder = new EmbedBuilder();
+                //EmbedBuilder builder = new EmbedBuilder();
 
-                builder.WithAuthor(new EmbedAuthorBuilder
-                {
-                    Name = itemEmbed.author_name,
-                    Url = itemEmbed.author_url
-                });
+                //builder.WithAuthor(new EmbedAuthorBuilder
+                //{
+                //    Name = itemEmbed.author_name,
+                //    Url = itemEmbed.author_url
+                //});
 
-                builder.WithUrl(itemEmbed.provider_url);
-                builder.WithDescription("Tags: " + string.Join(", ", itemEmbed.derpibooru_tags));
-                builder.WithTitle("An image");
-                builder.WithImageUrl("https:" + itemEmbed.thumbnail_url);
+                //builder.WithUrl(itemEmbed.provider_url);
+                //builder.WithDescription("Tags: " + string.Join(", ", itemEmbed.derpibooru_tags));
+                //builder.WithTitle("An image");
+                //builder.WithImageUrl("https:" + itemEmbed.thumbnail_url);
 
 
-                EmbedFooterBuilder efb = new EmbedFooterBuilder();
+                //EmbedFooterBuilder efb = new EmbedFooterBuilder();
 
-                efb.Text = "boop";
+                //efb.Text = "boop";
 
-                builder.WithFooter(efb);
+                //builder.WithFooter(efb);
 
-                await Context.Channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
+                //await Context.Channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
 
             }
             catch (Exception e)

@@ -2,13 +2,14 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using Newtonsoft.Json;
+using NLog;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Management;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -17,182 +18,6 @@ namespace FMBot.Bot
     
     public static class FMBotUtil
     {
-        #region Database Functions
-
-        public static class DBase
-        {
-            #region User Settings
-
-
-            public static async Task<IGuildUser> ConvertIDToGuildUser(IGuild guild, ulong id)
-            {
-                IReadOnlyCollection<IGuildUser> users = await guild.GetUsersAsync().ConfigureAwait(false);
-
-                foreach (IGuildUser user in users)
-                {
-                    if (user.Id == id)
-                    {
-                        return user;
-                    }
-                }
-
-                return null;
-            }
-
-            #endregion
-
-
-
-
-            #region Friend List Settings
-
-            public static bool FriendsExists(string id)
-            {
-                return File.Exists(GlobalVars.CacheFolder + id + "-friends.txt");
-            }
-
-            public static int AddFriendsEntry(string id, params string[] friendlist)
-            {
-                if (!FriendsExists(id))
-                {
-                    File.Create(GlobalVars.CacheFolder + id + "-friends.txt").Dispose();
-                    File.SetAttributes(GlobalVars.CacheFolder + id + "-friends.txt", FileAttributes.Normal);
-                }
-
-                string[] friends = File.ReadAllLines(GlobalVars.CacheFolder + id + "-friends.txt");
-
-                int listcount = friendlist.Length;
-
-                List<string> list = new List<string>(friends);
-
-                foreach (string friend in friendlist)
-                {
-                    if (!friends.Contains(friend))
-                    {
-                        list.Add(friend);
-                    }
-                    else
-                    {
-                        listcount--;
-                        continue;
-                    }
-                }
-
-                friends = list.ToArray();
-
-                File.WriteAllLines(GlobalVars.CacheFolder + id + "-friends.txt", friends);
-                File.SetAttributes(GlobalVars.CacheFolder + id + "-friends.txt", FileAttributes.Normal);
-
-                return listcount;
-            }
-
-            public static int RemoveFriendsEntry(string id, params string[] friendlist)
-            {
-                if (!FriendsExists(id))
-                {
-                    return 0;
-                }
-
-                string[] friends = File.ReadAllLines(GlobalVars.CacheFolder + id + "-friends.txt");
-                string[] friendsLower = friends.Select(s => s.ToLowerInvariant()).ToArray();
-
-                int listcount = friendlist.Length;
-
-                List<string> list = new List<string>(friends);
-
-
-                foreach (string friend in friendlist)
-                {
-                    if (friendsLower.Contains(friend.ToLower()))
-                    {
-                        list.RemoveAll(n => n.Equals(friend, StringComparison.OrdinalIgnoreCase));
-                    }
-                    else
-                    {
-                        listcount--;
-                        continue;
-                    }
-                }
-
-                friends = list.ToArray();
-
-                File.WriteAllLines(GlobalVars.CacheFolder + id + "-friends.txt", friends);
-                File.SetAttributes(GlobalVars.CacheFolder + id + "-friends.txt", FileAttributes.Normal);
-
-                return listcount;
-            }
-
-            public static string[] GetFriendsForID(string id)
-            {
-                string[] lines = File.ReadAllLines(GlobalVars.CacheFolder + id + "-friends.txt");
-                return lines;
-            }
-
-            #endregion
-
-            #region Global Settings
-
-            public static int GetIntForModeName(string mode)
-            {
-                if (mode.Equals("embedmini"))
-                {
-                    return 0;
-                }
-                else if (mode.Equals("embedfull"))
-                {
-                    return 1;
-                }
-                else if (mode.Equals("textfull"))
-                {
-                    return 2;
-                }
-                else if (mode.Equals("textmini"))
-                {
-                    return 3;
-                }
-                else if (mode.Equals("userdefined"))
-                {
-                    return 4;
-                }
-                else
-                {
-                    return 4;
-                }
-            }
-
-            public static string GetNameForModeInt(int mode, bool isservercmd = false)
-            {
-                if (mode == 0)
-                {
-                    return "embedmini";
-                }
-                else if (mode == 1)
-                {
-                    return "embedfull";
-                }
-                else if (mode == 2)
-                {
-                    return "textfull";
-                }
-                else if (mode == 3)
-                {
-                    return "textmini";
-                }
-                else if ((mode > 3 || mode < 0) && isservercmd)
-                {
-                    return "userdefined";
-                }
-                else
-                {
-                    return "NULL";
-                }
-            }
-
-            #endregion
-        }
-
-        #endregion
-
         #region Configuration Data
 
         public static class JsonCfg
@@ -461,9 +286,9 @@ namespace FMBot.Bot
 
             public static TimeSpan SystemUpTime()
             {
-                ManagementObject mo = new ManagementObject(@"\\.\root\cimv2:Win32_OperatingSystem=@");
-                DateTime lastBootUp = ManagementDateTimeConverter.ToDateTime(mo["LastBootUpTime"].ToString());
-                return DateTime.Now.ToUniversalTime() - lastBootUp.ToUniversalTime();
+                var ticks = Stopwatch.GetTimestamp();
+                var uptime = ((double)ticks) / Stopwatch.Frequency;
+                return TimeSpan.FromSeconds(uptime);
             }
 
             public static Task Log(LogMessage arg, bool nowrite = false)
@@ -472,8 +297,8 @@ namespace FMBot.Bot
                 {
                     Console.WriteLine(arg);
                 }
-
-                NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+                LogManager.ThrowExceptions = true;
+                Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
                 logger.Info(arg);
 

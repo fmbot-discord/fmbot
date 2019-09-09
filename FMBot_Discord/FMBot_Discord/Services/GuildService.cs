@@ -2,8 +2,8 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Data.Entities;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
-using System.Data.Entity;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;

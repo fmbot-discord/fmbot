@@ -1,6 +1,6 @@
 ﻿using Discord;
 using FMBot.Data.Entities;
-using System.Data.Entity;
+using Microsoft.EntityFrameworkCore;
 using System.IO;
 using System.Threading.Tasks;
 using static FMBot.Bot.FMBotUtil;

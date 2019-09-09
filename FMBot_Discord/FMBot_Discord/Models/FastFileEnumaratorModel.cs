@@ -475,7 +475,7 @@ namespace FMBot.Bot.Models
                     {
                         if (m_hndFindFile == null)
                         {
-                            new FileIOPermission(FileIOPermissionAccess.PathDiscovery, m_path).Demand();
+                            new System.Security.Permissions.FileIOPermission(FileIOPermissionAccess.PathDiscovery, m_path).Demand();
 
                             string searchPath = Path.Combine(m_path, m_filter);
                             m_hndFindFile = FindFirstFile(searchPath, m_win_find_data);

@@ -14,13 +14,9 @@ namespace FMBot.Services
         public async Task<SearchItem> GetSearchResultAsync(string searchValue, SearchType searchType = SearchType.Track)
         {
             //Create the auth object
-            ClientCredentialsAuth auth = new ClientCredentialsAuth()
-            {
-                ClientId = cfgjson.SpotifyKey,
-                ClientSecret = cfgjson.SpotifySecret,
-                Scope = Scope.None,
-            };
-            Token token = auth.DoAuth();
+            CredentialsAuth auth = new CredentialsAuth(cfgjson.SpotifyKey, cfgjson.SpotifySecret);
+            
+            Token token = await auth.GetToken();
 
             SpotifyWebAPI spotify = new SpotifyWebAPI()
             {
@@ -28,6 +24,7 @@ namespace FMBot.Services
                 AccessToken = token.AccessToken,
                 UseAuth = true
             };
+
             SearchItem result = await spotify.SearchItemsAsync(searchValue, SearchType.Track);
 
             return result;

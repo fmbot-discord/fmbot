@@ -21,3 +21,10 @@ ipch
 /FMBot_Discord/.vs/FMBot_Discord/v15/Server/sqlite3
 /FMBot_Discord/FMBot_Discord/bin
 /FMBot_Discord/.vs/FMBot_Discord/v16/Server/sqlite3
+
+bin/
+obj/
+
+packages/
+FMBot_Discord/.vs/
+.vs/
