@@ -1,62 +1,23 @@
 version: '{branch}.{build}'
-pull_requests:
-  do_not_increment_build_number: true
-image: Visual Studio 2017
+image: Visual Studio 2019
 configuration: Release
-platform: Any CPU
+init:
+- ps: $branch = $env:APPVEYOR_REPO_BRANCH -replace '\W', '-'; $env:ASSEMBLY_INFORMATIONAL_VERSION = if ($branch -eq "master") { $env:APPVEYOR_BUILD_VERSION } else { "$env:APPVEYOR_BUILD_VERSION-$branch" }
 assembly_info:
   patch: true
   file: '**\AssemblyInfo.*'
   assembly_version: '{version}'
   assembly_file_version: '{version}'
-  assembly_informational_version: '{version}'
+  assembly_informational_version: '$(ASSEMBLY_INFORMATIONAL_VERSION)'
+nuget:
+  account_feed: true
+  project_feed: true
+before_build:
+- ps: cd src
+- ps: nuget restore
 build:
   verbosity: minimal
 artifacts:
-- path: FMBot_Discord\FMBot_Discord\bin\$(configuration)
+- path: src\Bot\bin\$(configuration)
   name: BinaryRelease
-- path: BinaryFiles
-  name: BinaryFiles
-- path: FMBot_Discord\FMBot_Discord\config.json
-  name: BinaryConfig
-notifications:
-- provider: Webhook
-  url: https://discordapp.com/api/webhooks/427909968084205589/CaXfWCuDRD672hhUdePWHp1ZgjtIUASSY00hZNvJ-5fkoQbGMYcLbLj4vcQM_WWKBCqx
-  method: POST
-  body: >-
-    {
-      "embeds": [
-        {
-          "title": "Build {{buildId}}",
-          "url": "{{buildUrl}}",
-          "color": {{#passed}}40973{{/passed}}{{^passed}}11672839{{/passed}},
-          "footer": {
-            "icon_url": "{{#passed}}https://i.imgur.com/Rf4g8v6.png{{/passed}}{{^passed}}https://i.imgur.com/QaERwAW.png{{/passed}}",
-            "text": "{{#passed}}Success{{/passed}}{{^passed}}Failure{{/passed}}"
-          },
-          "author": {
-            "name": "{{commitAuthor}}",
-            "url": "https://github.com/{{repositoryName}}/commit/{{commitId}}"
-          },
-          "fields": [
-            {
-              "name": "Commit",
-              "value": "[{{commitMessage}}](https://github.com/{{repositoryName}}/commit/{{commitId}})"
-            },
-            {
-              "name": "Duration",
-              "value": "{{duration}}",
-              "inline": true
-            },
-            {
-              "name": "Build version",
-              "value": "{{buildVersion}}",
-              "inline": true
-            }
-          ]
-        }
-      ]
-    }
-  on_build_success: true
-  on_build_failure: true
-  on_build_status_changed: false
+deploy: off
