@@ -173,7 +173,7 @@ namespace FMBot.Services
         // Set LastFM Name
         public async Task ResetChartTimerAsync(User user)
         {
-            user.LastGeneratedChartDateTimeUtc = DateTime.UtcNow;
+            user.LastGeneratedChartDateTimeUtc = DateTime.Now;
 
             db.Entry(user).State = EntityState.Modified;
 

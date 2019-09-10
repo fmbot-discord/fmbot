@@ -448,11 +448,6 @@ namespace FMBot.Bot.Commands
                 await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.").ConfigureAwait(false);
                 return;
             }
-            if (userSettings.LastGeneratedChartDateTimeUtc > DateTime.UtcNow.AddSeconds(-10) && userSettings.UserType == UserType.User)
-            {
-                await ReplyAsync("You're requesting too frequently, please try again later").ConfigureAwait(false);
-                return;
-            }
 
             if (!guildService.CheckIfDM(Context))
             {

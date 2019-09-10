@@ -155,7 +155,7 @@ namespace FMBot.Bot
                     }
                     catch (Exception)
                     {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it.")).ConfigureAwait(false);
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it. \n" + e.Message)).ConfigureAwait(false);
                     }
                 }
 
@@ -193,7 +193,7 @@ namespace FMBot.Bot
                     }
                     catch (Exception)
                     {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it.")).ConfigureAwait(false);
+                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it. \n" + e.Message)).ConfigureAwait(false);
                     }
                 }
 
@@ -298,7 +298,7 @@ namespace FMBot.Bot
                     Console.WriteLine(arg);
                 }
                 LogManager.ThrowExceptions = true;
-                Logger logger = NLog.LogManager.GetCurrentClassLogger();
+                Logger logger = LogManager.GetLogger("logger");
 
                 logger.Info(arg);
 

@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DiscordBotsList.Api;
 using static FMBot.Bot.FMBotUtil;
+using Bot.Logger.Interfaces;
 
 namespace FMBot.Bot
 {
@@ -58,15 +59,16 @@ namespace FMBot.Bot
             // --- End Configuration Section ---
 
             private readonly DiscordShardedClient _discord;
-            private static Func<LogMessage, Task> _logger;
+            private readonly ILogger _logger;
+
 
             private CancellationTokenSource _cts;
 
-            public ReliabilityService(DiscordShardedClient discord, Func<LogMessage, Task> logger = null)
+            public ReliabilityService(DiscordShardedClient discord, ILogger logger)
             {
                 _cts = new CancellationTokenSource();
                 _discord = discord;
-                _logger = logger ?? (_ => Task.CompletedTask);
+                _logger = logger;
 
                 _discord.ShardConnected += ConnectedAsync;
                 _discord.ShardDisconnected += DisconnectedAsync;
@@ -75,10 +77,10 @@ namespace FMBot.Bot
             public Task ConnectedAsync(DiscordSocketClient client)
             {
                 // Cancel all previous state checks and reset the CancelToken - client is back online
-                _ = GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "Client reconnected, resetting cancel tokens..."));
+                _logger.Log("ReliabilityService", "Client reconnected, resetting cancel tokens...");
                 _cts.Cancel();
                 _cts = new CancellationTokenSource();
-                _ = GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "Client reconnected, cancel tokens reset."));
+                _logger.Log("ReliabilityService", "Client reconnected, cancel tokens reset.");
 
                 return Task.CompletedTask;
             }
@@ -86,12 +88,12 @@ namespace FMBot.Bot
             public Task DisconnectedAsync(Exception _e, DiscordSocketClient client)
             {
                 // Check the state after <timeout> to see if we reconnected
-                _ = GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "Client disconnected, starting timeout task..."));
+                _logger.Log("ReliabilityService", "Client disconnected, starting timeout task...");
                 _ = Task.Delay(_timeout, _cts.Token).ContinueWith(async _ =>
                 {
-                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "Timeout expired, continuing to check client state...")).ConfigureAwait(false);
+                    _logger.Log("ReliabilityService", "Timeout expired, continuing to check client state...");
                     await CheckStateAsync(client).ConfigureAwait(false);
-                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "State came back okay")).ConfigureAwait(false);
+                    _logger.Log("ReliabilityService", "State came back okay");
                 });
 
                 return Task.CompletedTask;
@@ -107,7 +109,7 @@ namespace FMBot.Bot
 
                 if (_attemptReset)
                 {
-                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "Attempting to reset the client")).ConfigureAwait(false);
+                    _logger.Log("ReliabilityService", "Attempting to reset the client");
 
                     Task timeout = Task.Delay(_timeout);
                     Task connect = _discord.StartAsync();
@@ -115,23 +117,21 @@ namespace FMBot.Bot
 
                     if (task == timeout)
                     {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Critical, "ReliabilityService", "Client reset timed out (task deadlocked?), killing process")).ConfigureAwait(false);
-                        ExceptionReporter.ReportStringAsException(_discord, "Client reset timed out (task deadlocked?), killing process");
+                        _logger.LogError("ReliabilityService", "Client reset timed out (task deadlocked?), killing process");
                         FailFast();
                     }
                     else if (connect.IsFaulted)
                     {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Critical, "ReliabilityService", "Client reset faulted, killing process", connect.Exception)).ConfigureAwait(false);
-                        ExceptionReporter.ReportStringAsException(_discord, "Client reset faulted, killing process\n" + connect.Exception);
+                        _logger.LogError("ReliabilityService", "Critical Error: Client reset faulted, killing process \n" + connect.Exception);
                         FailFast();
                     }
                     else
                     {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Info, "ReliabilityService", "Client reset succesfully!")).ConfigureAwait(false);
+                        _logger.Log("ReliabilityService", "Client reset succesfully!");
                     }
                 }
 
-                await GlobalVars.Log(new LogMessage(LogSeverity.Critical, "ReliabilityService", "Client did not reconnect in time, killing process")).ConfigureAwait(false);
+                _logger.LogError("ReliabilityService", "Critical Error: Client did not reconnect in time, killing process");
                 FailFast();
             }
 
@@ -154,15 +154,19 @@ namespace FMBot.Bot
                                            // or even a Dictionary<string, Timer> to quickly get
                                            // a specific Timer instance by name.
 
+            private readonly ILogger _logger;
+
             private string trackString = "";
 
             private bool timerEnabled = false;
             private readonly UserService userService = new UserService();
             private readonly LastFMService lastFMService = new LastFMService();
 
-            public TimerService(DiscordShardedClient client)
+            public TimerService(DiscordShardedClient client, ILogger logger)
             {
                 JsonCfg.ConfigJson cfgjson = JsonCfg.GetJSONData();
+                _logger = logger;
+
 
                 _timer = new Timer(async _ =>
                 {
@@ -192,7 +196,7 @@ namespace FMBot.Bot
                         }
 
 
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changing avatar to mode " + randmodestring)).ConfigureAwait(false);
+                        _logger.Log("TimerService", "Changing avatar to mode " + randmodestring);
 
                         string nulltext = "";
 
@@ -227,7 +231,7 @@ namespace FMBot.Bot
                                     AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName).ConfigureAwait(false);
 
                                     trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
+                                    _logger.Log("TimerService", "Changed avatar to: " + trackString);
 
                                     if (AlbumImages?.Large != null)
                                     {
@@ -264,7 +268,7 @@ namespace FMBot.Bot
                                     AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName).ConfigureAwait(false);
 
                                     trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
+                                    _logger.Log("TimerService", "Changed avatar to: " + trackString);
 
                                     if (AlbumImages?.Large != null)
                                     {
@@ -299,7 +303,7 @@ namespace FMBot.Bot
                                     AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName).ConfigureAwait(false);
 
                                     trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
+                                    _logger.Log("TimerService", "Changed avatar to: " + trackString);
 
                                     if (AlbumImages?.Large != null)
                                     {
@@ -414,7 +418,7 @@ namespace FMBot.Bot
                 try
                 {
                     trackString = "FMBot Default Avatar";
-                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
+                    _logger.Log("TimerService", "Changed avatar to: " + trackString);
                     FileStream fileStream = new FileStream(GlobalVars.BasePath + "avatar.png", FileMode.Open);
                     Image image = new Image(fileStream);
                     await client.CurrentUser.ModifyAsync(u => u.Avatar = image).ConfigureAwait(false);
@@ -431,7 +435,7 @@ namespace FMBot.Bot
                 try
                 {
                     trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
+                    _logger.Log("TimerService", "Changed avatar to: " + trackString);
                     //FileStream fileStream = new FileStream(GlobalVars.CoversFolder + ArtistName + " - " + AlbumName + ".png", FileMode.Open);
                     FileStream fileStream = new FileStream(GlobalVars.BasePath + "censored.png", FileMode.Open);
                     Image image = new Image(fileStream);
@@ -496,14 +500,14 @@ namespace FMBot.Bot
                             try
                             {
                                 trackString = ArtistName + Environment.NewLine + desc;
-                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
+                                _logger.Log("TimerService", "Changed avatar to: " + trackString);
                             }
                             catch (Exception)
                             {
                                 try
                                 {
                                     trackString = desc;
-                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
+                                    _logger.Log("TimerService", "Changed avatar to: " + trackString);
                                 }
                                 catch (Exception e)
                                 {
@@ -540,14 +544,14 @@ namespace FMBot.Bot
                             try
                             {
                                 trackString = ArtistName + " - " + AlbumName + Environment.NewLine + desc;
-                                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
+                                _logger.Log("TimerService", "Changed avatar to: " + trackString);
                             }
                             catch (Exception)
                             {
                                 try
                                 {
                                     trackString = desc;
-                                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
+                                    _logger.Log("TimerService", "Changed avatar to: " + trackString);
                                 }
                                 catch (Exception e)
                                 {
@@ -591,7 +595,7 @@ namespace FMBot.Bot
                 try
                 {
                     trackString = desc;
-                    await GlobalVars.Log(new LogMessage(LogSeverity.Info, "TimerService", "Changed avatar to: " + trackString)).ConfigureAwait(false);
+                    _logger.Log("TimerService", "Changed avatar to: " + trackString);
 
                     if (!string.IsNullOrWhiteSpace(link))
                     {

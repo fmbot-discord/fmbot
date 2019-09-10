@@ -1,3 +1,5 @@
+using Bot.Logger;
+using Bot.Logger.Interfaces;
 using Discord;
 using Discord.Commands;
 using Discord.Net.Providers.WS4Net;
@@ -71,7 +73,7 @@ namespace FMBot.Bot
                     LogLevel = LogSeverity.Verbose,
                 });
 
-                client.Log += Log;
+                client.Log += LogEvent;
                 client.JoinedGuild += JoinedGuild;
                 client.GuildAvailable += JoinedGuild;
                 client.LeftGuild += LeftGuild;
@@ -111,12 +113,8 @@ namespace FMBot.Bot
 
         #region Program Events
 
-        private Task Log(LogMessage arg)
-        {
-            GlobalVars.Log(arg);
+        private readonly ILogger _logger;
 
-            return Task.CompletedTask;
-        }
 
         public async Task LeftGuild(SocketGuild arg)
         {
@@ -139,10 +137,21 @@ namespace FMBot.Bot
             await Task.CompletedTask;
         }
 
+        private Task LogEvent(LogMessage logMessage)
+        {
+            Task.Run(() =>
+            {
+                // If log message is a Serializer Error, Log the message to the SerializerError folder.
+                if (logMessage.Message.Contains("Serializer Error")) this._logger.Log("SerializerError", $"Source: {logMessage.Source} Exception: {logMessage.Exception} Message: {logMessage.Message}");
+                _logger.Log(logMessage.Message);
+            });
+            return Task.CompletedTask;
+        }
+
         public async Task InstallCommands()
         {
-            map.AddSingleton(new ReliabilityService(client, Log));
-            map.AddSingleton(new TimerService(client));
+            map.AddSingleton(new ReliabilityService(client, _logger));
+            map.AddSingleton(new TimerService(client, _logger));
             services = map.BuildServiceProvider();
 
             await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services).ConfigureAwait(false);

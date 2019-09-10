@@ -24,6 +24,7 @@
     <PackageReference Include="System.Security.Permissions" Version="4.5.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Bot.Logger\Bot.Logger.csproj" />
     <ProjectReference Include="..\FMBot.Data\FMBot.Data.csproj" />
     <ProjectReference Include="..\FMBot.YoutubeSearch\FMBot.YoutubeSearch.csproj" />
   </ItemGroup>
