@@ -4,6 +4,7 @@ using Discord;
 using Discord.Commands;
 using Discord.Net.Providers.WS4Net;
 using Discord.WebSocket;
+using FMBot.Bot.Handlers;
 using FMBot.Services;
 using IF.Lastfm.Core.Api;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,6 +28,7 @@ namespace FMBot.Bot
         private CommandService commands;
         private DiscordShardedClient client;
         private IServiceProvider services;
+        private ILogger _logger;
         private readonly IServiceCollection map = new ServiceCollection();
         private string prefix;
         private readonly List<string> commandList = new List<string>();
@@ -46,6 +48,8 @@ namespace FMBot.Bot
 
         public async Task MainAsync()
         {
+            map.AddScoped<ILogger, Logger>();
+
             try
             {
                 string assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
@@ -73,7 +77,6 @@ namespace FMBot.Bot
                     LogLevel = LogSeverity.Verbose,
                 });
 
-                client.Log += LogEvent;
                 client.JoinedGuild += JoinedGuild;
                 client.GuildAvailable += JoinedGuild;
                 client.LeftGuild += LeftGuild;
@@ -88,7 +91,8 @@ namespace FMBot.Bot
 
                 string token = cfgjson.Token; // Remember to keep this private!
 
-                await InstallCommands().ConfigureAwait(false);
+                _logger = new Logger();
+                await InstallCommands(_logger).ConfigureAwait(false);
 
                 await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Logging In...")).ConfigureAwait(false);
                 await client.LoginAsync(TokenType.Bot, token).ConfigureAwait(false);
@@ -113,14 +117,10 @@ namespace FMBot.Bot
 
         #region Program Events
 
-        private readonly ILogger _logger;
-
 
         public async Task LeftGuild(SocketGuild arg)
         {
             await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Left guild " + arg.Name)).ConfigureAwait(false);
-
-            //DBase.RemoveServerEntry(arg.Id.ToString());
 
             await Task.CompletedTask;
         }
@@ -137,21 +137,15 @@ namespace FMBot.Bot
             await Task.CompletedTask;
         }
 
-        private Task LogEvent(LogMessage logMessage)
-        {
-            Task.Run(() =>
-            {
-                // If log message is a Serializer Error, Log the message to the SerializerError folder.
-                if (logMessage.Message.Contains("Serializer Error")) this._logger.Log("SerializerError", $"Source: {logMessage.Source} Exception: {logMessage.Exception} Message: {logMessage.Message}");
-                _logger.Log(logMessage.Message);
-            });
-            return Task.CompletedTask;
-        }
 
-        public async Task InstallCommands()
+        public async Task InstallCommands(ILogger logger)
         {
+            _logger = logger;
+
             map.AddSingleton(new ReliabilityService(client, _logger));
             map.AddSingleton(new TimerService(client, _logger));
+            map.AddSingleton(new ClientLogHandler(client, _logger));
+
             services = map.BuildServiceProvider();
 
             await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services).ConfigureAwait(false);
