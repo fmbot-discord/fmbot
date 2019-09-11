@@ -81,7 +81,6 @@ namespace FMBot.Bot.Commands
             try
             {
                 string lastFMUserName = userSettings.UserNameLastFM;
-                bool self = true;
 
                 if (user != null)
                 {
@@ -120,22 +119,22 @@ namespace FMBot.Bot.Commands
 
                 LastTrack currentTrack = tracks.Content[0];
                 LastTrack lastTrack = tracks.Content[1];
+				
+				const string nulltext = "[undefined]";
+				
+				string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
+				string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
+				string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nulltext : currentTrack.AlbumName;
 
-                const string nulltext = "[undefined]";
+				string LastTrackName = string.IsNullOrWhiteSpace(lastTrack.Name) ? nulltext : lastTrack.Name;
+				string LastArtistName = string.IsNullOrWhiteSpace(lastTrack.ArtistName) ? nulltext : lastTrack.ArtistName;
+				string LastAlbumName = string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? nulltext : lastTrack.AlbumName;
+				
+				int playcount = userinfo.Content.Playcount;
 				
 				switch (userSettings.ChartType)
 				{
 					case ChartType.textmini:
-						string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
-						string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
-						string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nulltext : currentTrack.AlbumName;
-
-						string LastTrackName = string.IsNullOrWhiteSpace(lastTrack.Name) ? nulltext : lastTrack.Name;
-						string LastArtistName = string.IsNullOrWhiteSpace(lastTrack.ArtistName) ? nulltext : lastTrack.ArtistName;
-						string LastAlbumName = string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? nulltext : lastTrack.AlbumName;
-
-						int playcount = userinfo.Content.Playcount;
-
 						await Context.Channel.SendMessageAsync(await _userService.GetUserTitleAsync(Context).ConfigureAwait(false)
                                                            + "\n**Current** - "
                                                            + ArtistName
@@ -151,16 +150,6 @@ namespace FMBot.Bot.Commands
                                                            + playcount.ToString("N0")).ConfigureAwait(false);
 						break;
 					case ChartType.textfull:
-						string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
-						string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
-						string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nulltext : currentTrack.AlbumName;
-
-						string LastTrackName = string.IsNullOrWhiteSpace(lastTrack.Name) ? nulltext : lastTrack.Name;
-						string LastArtistName = string.IsNullOrWhiteSpace(lastTrack.ArtistName) ? nulltext : lastTrack.ArtistName;
-						string LastAlbumName = string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? nulltext : lastTrack.AlbumName;
-
-						int playcount = userinfo.Content.Playcount;
-
 						await Context.Channel.SendMessageAsync(await _userService.GetUserTitleAsync(Context).ConfigureAwait(false)
                                                            + "\n**Current** - "
                                                            + ArtistName
