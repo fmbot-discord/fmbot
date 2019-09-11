@@ -125,11 +125,15 @@ namespace FMBot.Services
 
             if (featured == true)
             {
-                title = name + ", Featured User";
+                title = name + " - Featured";
             }
-            if (rank != UserType.User)
+            if (rank == UserType.Owner)
             {
-                title = title + " - " + rank.ToString();
+                title += " 👑";
+            }
+            if (rank == UserType.Admin)
+            {
+                title += " 🛡️";
             }
 
             return title;

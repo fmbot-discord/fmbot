@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Bot.Logger.Interfaces;
 using Discord;
 using Discord.WebSocket;
+using FMBot.Bot.Configurations;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Handlers
@@ -121,11 +122,9 @@ namespace FMBot.Bot.Handlers
         /// <param name="shard">The shard that got disconnected.</param>
         private async Task ShardDisconnectedAsync(Exception exception, DiscordSocketClient shard)
         {
-            JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
-
             try
             {
-                var channel = this._client.GetGuild(Convert.ToUInt64(cfgjson.BaseServer)).GetTextChannel(Convert.ToUInt64(cfgjson.ExceptionChannel));
+                var channel = this._client.GetGuild(Convert.ToUInt64(ConfigData.Data.BaseServer)).GetTextChannel(Convert.ToUInt64(ConfigData.Data.ExceptionChannel));
                 await channel.SendMessageAsync($"<:RedStatus:519932993343586350> Shard: `{shard.ShardId}` Disconnected with the reason {exception.Message}").ConfigureAwait(false);
             }
             catch (Exception)
@@ -142,12 +141,10 @@ namespace FMBot.Bot.Handlers
         /// <param name="shard">The shard that got connected.</param>
         private async Task ShardConnectedAsync(DiscordSocketClient shard)
         {
-            JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
-
             try
             {
                 await Task.Delay(30 * 1000).ConfigureAwait(false);
-                var channel = this._client.GetGuild(Convert.ToUInt64(cfgjson.BaseServer)).GetTextChannel(Convert.ToUInt64(cfgjson.ExceptionChannel));
+                var channel = this._client.GetGuild(Convert.ToUInt64(ConfigData.Data.BaseServer)).GetTextChannel(Convert.ToUInt64(ConfigData.Data.ExceptionChannel));
                 await channel.SendMessageAsync($"<:GreenStatus:519932750296514605> Shard: `{shard.ShardId}` Connected with {shard.Latency}ms").ConfigureAwait(false);
             }
             catch (Exception)
@@ -166,13 +163,11 @@ namespace FMBot.Bot.Handlers
         /// <param name="shard">The shard that got disconnected.</param>
         private async Task ShardLatencyUpdatedAsync(int oldPing, int updatePing, DiscordSocketClient shard)
         {
-            JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
-
             // If new or old latency if lager then 500ms.
             if (updatePing < 500 && oldPing < 500) return;
             try
             {
-                var channel = this._client.GetGuild(Convert.ToUInt64(cfgjson.BaseServer)).GetTextChannel(Convert.ToUInt64(cfgjson.ExceptionChannel));
+                var channel = this._client.GetGuild(Convert.ToUInt64(ConfigData.Data.BaseServer)).GetTextChannel(Convert.ToUInt64(ConfigData.Data.ExceptionChannel));
                 await channel.SendMessageAsync($"Shard: `{shard.ShardId}` Latency update from **{oldPing}** ms to **{updatePing}** ms").ConfigureAwait(false);
             }
             catch (Exception e)
@@ -189,11 +184,9 @@ namespace FMBot.Bot.Handlers
         /// <param name="guild">The server that the client joined.</param>
         private async Task ClientJoinedGuild(SocketGuild guild)
         {
-            JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
-
             try
             {
-                var channel = this._client.GetGuild(Convert.ToUInt64(cfgjson.BaseServer)).GetTextChannel(Convert.ToUInt64(cfgjson.ExceptionChannel));
+                var channel = this._client.GetGuild(Convert.ToUInt64(ConfigData.Data.BaseServer)).GetTextChannel(Convert.ToUInt64(ConfigData.Data.ExceptionChannel));
                 await channel.SendMessageAsync($"Joined server: {guild.Name}, Id: {guild.Id}, MemberCount: {guild.MemberCount}.").ConfigureAwait(false);
             }
             catch (Exception e)

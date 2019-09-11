@@ -12,125 +12,29 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using FMBot.Bot.Configurations;
 
 namespace FMBot.Bot
 {
     public static class FMBotUtil
     {
-        #region Configuration Data
-
-        public static class JsonCfg
-        {
-            // this structure will hold data from config.json
-            public struct ConfigJson
-            {
-#pragma warning disable RCS1170 // Use read-only auto-implemented property.
-                [JsonProperty("token")]
-                public string Token { get; private set; }
-
-                [JsonProperty("fmkey")]
-                public string FMKey { get; private set; }
-
-                [JsonProperty("fmsecret")]
-                public string FMSecret { get; private set; }
-
-                [JsonProperty("prefix")]
-                public string CommandPrefix { get; private set; }
-
-                [JsonProperty("baseserver")]
-                public string BaseServer { get; private set; }
-
-                [JsonProperty("announcementchannel")]
-                public string AnnouncementChannel { get; private set; }
-
-                [JsonProperty("featuredchannel")]
-                public string FeaturedChannel { get; private set; }
-
-                [JsonProperty("botowner")]
-                public string BotOwner { get; private set; }
-
-                [JsonProperty("timerinit")]
-                public string TimerInit { get; private set; }
-
-                [JsonProperty("timerrepeat")]
-                public string TimerRepeat { get; private set; }
-
-                [JsonProperty("spotifykey")]
-                public string SpotifyKey { get; private set; }
-
-                [JsonProperty("spotifysecret")]
-                public string SpotifySecret { get; private set; }
-
-                [JsonProperty("exceptionchannel")]
-                public string ExceptionChannel { get; private set; }
-
-                [JsonProperty("cooldown")]
-                public string Cooldown { get; private set; }
-
-                [JsonProperty("nummessages")]
-                public string NumMessages { get; private set; }
-
-                [JsonProperty("inbetweentime")]
-                public string InBetweenTime { get; private set; }
-
-                [JsonProperty("derpikey")]
-                public string DerpiKey { get; private set; }
-
-                [JsonProperty("suggestionschannel")]
-                public string SuggestionsChannel { get; private set; }
-
-                [JsonProperty("dblapitoken")]
-                public string DblApiToken { get; private set; }
-#pragma warning restore RCS1170 // Use read-only auto-implemented property.
-            }
-
-            public static async Task<ConfigJson> GetJSONDataAsync()
-            {
-                // first, let's load our configuration file
-                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "JsonCfg", "Loading Configuration async")).ConfigureAwait(false);
-                string json = "";
-                using (FileStream fs = File.OpenRead(GlobalVars.ConfigFileName))
-                using (StreamReader sr = new StreamReader(fs, new UTF8Encoding(false)))
-                {
-                    json = await sr.ReadToEndAsync().ConfigureAwait(false);
-                }
-
-                // next, let's load the values from that file
-                // to our client's configuration
-                return JsonConvert.DeserializeObject<ConfigJson>(json);
-            }
-
-            public static ConfigJson GetJSONData()
-            {
-                // first, let's load our configuration file
-                GlobalVars.Log(new LogMessage(LogSeverity.Info, "JsonCfg", "Loading Configuration non-async"));
-                string json = "";
-                using (FileStream fs = File.OpenRead(GlobalVars.ConfigFileName))
-                using (StreamReader sr = new StreamReader(fs, new UTF8Encoding(false)))
-                {
-                    json = sr.ReadToEnd();
-                }
-
-                // next, let's load the values from that file
-                // to our client's configuration
-                return JsonConvert.DeserializeObject<ConfigJson>(json);
-            }
-        }
-
-        #endregion
-
         #region Exception Reporter
 
-        public static class ExceptionReporter
+        public class ExceptionReporter
         {
+            private readonly ILogger _logger;
+
+            public ExceptionReporter(ILogger logger)
+            {
+                _logger = logger;
+            }
+
             public static async void ReportException(DiscordSocketClient client = null, Exception e = null)
             {
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
-
                 try
                 {
-                    ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
-                    ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.ExceptionChannel);
+                    ulong BroadcastServerID = Convert.ToUInt64(ConfigData.Data.BaseServer);
+                    ulong BroadcastChannelID = Convert.ToUInt64(ConfigData.Data.ExceptionChannel);
 
                     SocketGuild guild = client.GetGuild(BroadcastServerID);
                     SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
@@ -144,8 +48,8 @@ namespace FMBot.Bot
                 {
                     try
                     {
-                        ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
-                        ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.ExceptionChannel);
+                        ulong BroadcastServerID = Convert.ToUInt64(ConfigData.Data.BaseServer);
+                        ulong BroadcastChannelID = Convert.ToUInt64(ConfigData.Data.ExceptionChannel);
 
                         SocketGuild guild = client.GetGuild(BroadcastServerID);
                         SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
@@ -156,6 +60,8 @@ namespace FMBot.Bot
                     {
                         await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it. \n" + e.Message)).ConfigureAwait(false);
                     }
+
+
                 }
 
                 await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", e.Message, e), true).ConfigureAwait(false);
@@ -163,12 +69,10 @@ namespace FMBot.Bot
 
             public static async void ReportShardedException(DiscordShardedClient client = null, Exception e = null)
             {
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
-
                 try
                 {
-                    ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
-                    ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.ExceptionChannel);
+                    ulong BroadcastServerID = Convert.ToUInt64(ConfigData.Data.BaseServer);
+                    ulong BroadcastChannelID = Convert.ToUInt64(ConfigData.Data.ExceptionChannel);
 
                     SocketGuild guild = client.GetGuild(BroadcastServerID);
                     SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
@@ -182,8 +86,8 @@ namespace FMBot.Bot
                 {
                     try
                     {
-                        ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
-                        ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.ExceptionChannel);
+                        ulong BroadcastServerID = Convert.ToUInt64(ConfigData.Data.BaseServer);
+                        ulong BroadcastChannelID = Convert.ToUInt64(ConfigData.Data.ExceptionChannel);
 
                         SocketGuild guild = client.GetGuild(BroadcastServerID);
                         SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
@@ -201,12 +105,10 @@ namespace FMBot.Bot
 
             public static async void ReportStringAsException(DiscordShardedClient client, string e)
             {
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
-
                 try
                 {
-                    ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
-                    ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.ExceptionChannel);
+                    ulong BroadcastServerID = Convert.ToUInt64(ConfigData.Data.BaseServer);
+                    ulong BroadcastChannelID = Convert.ToUInt64(ConfigData.Data.ExceptionChannel);
 
                     SocketGuild guild = client.GetGuild(BroadcastServerID);
                     SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
@@ -220,8 +122,8 @@ namespace FMBot.Bot
                 {
                     try
                     {
-                        ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
-                        ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.ExceptionChannel);
+                        ulong BroadcastServerID = Convert.ToUInt64(ConfigData.Data.BaseServer);
+                        ulong BroadcastChannelID = Convert.ToUInt64(ConfigData.Data.ExceptionChannel);
 
                         SocketGuild guild = client.GetGuild(BroadcastServerID);
                         SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);

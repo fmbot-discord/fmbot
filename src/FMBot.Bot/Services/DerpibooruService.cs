@@ -6,7 +6,6 @@ namespace FMBot.Services
 {
     internal class DerpibooruService
     {
-        public static JsonCfg.ConfigJson cfgjson = JsonCfg.GetJSONData();
 
         // Last scrobble
         public async Task<List<string>> GetImages(string query)

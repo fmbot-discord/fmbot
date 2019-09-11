@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using FMBot.Bot.Configurations;
 using static FMBot.Bot.FMBotUtil;
 using static FMBot.Bot.Models.LastFMModels;
 
@@ -19,9 +20,7 @@ namespace FMBot.Services
 {
     internal class LastFMService
     {
-        public static JsonCfg.ConfigJson cfgjson = JsonCfg.GetJSONData();
-
-        public LastfmClient lastfmClient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+        public LastfmClient lastfmClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
 
         // Last scrobble
         public async Task<LastTrack> GetLastScrobbleAsync(string lastFMUserName)

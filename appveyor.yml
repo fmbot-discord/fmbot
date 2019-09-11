@@ -15,7 +15,6 @@ nuget:
 before_build:
 - ps: cd src
 - ps: nuget restore
-- ps: dotnet publish -c Release -r win10-x64
 build:
   verbosity: minimal
 artifacts:

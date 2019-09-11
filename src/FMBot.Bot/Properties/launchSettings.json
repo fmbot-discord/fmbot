@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "FMBot.Bot": {
+      "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
+}

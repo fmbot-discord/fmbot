@@ -3,18 +3,17 @@ using SpotifyAPI.Web.Auth;
 using SpotifyAPI.Web.Enums;
 using SpotifyAPI.Web.Models;
 using System.Threading.Tasks;
+using FMBot.Bot.Configurations;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Services
 {
     internal class SpotifyService
     {
-        public static JsonCfg.ConfigJson cfgjson = JsonCfg.GetJSONData();
-
         public async Task<SearchItem> GetSearchResultAsync(string searchValue, SearchType searchType = SearchType.Track)
         {
             //Create the auth object
-            CredentialsAuth auth = new CredentialsAuth(cfgjson.SpotifyKey, cfgjson.SpotifySecret);
+            CredentialsAuth auth = new CredentialsAuth(ConfigData.Data.SpotifyKey, ConfigData.Data.SpotifySecret);
             
             Token token = await auth.GetToken();
 

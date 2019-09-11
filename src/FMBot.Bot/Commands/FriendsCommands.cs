@@ -145,8 +145,6 @@ namespace FMBot.Bot.Commands
             {
                 string SelfID = Context.Message.Author.Id.ToString();
 
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
-
                 List<string> friendList = new List<string>();
                 List<string> friendNotFoundList = new List<string>();
 

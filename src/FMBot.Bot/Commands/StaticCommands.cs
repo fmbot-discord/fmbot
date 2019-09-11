@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using FMBot.Bot.Configurations;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot
@@ -127,8 +128,7 @@ namespace FMBot.Bot
         [Alias("fmbot")]
         public async Task fmhelpAsync()
         {
-            JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
-            string prefix = cfgjson.CommandPrefix;
+            string prefix = ConfigData.Data.CommandPrefix;
 
             EmbedBuilder builder = new EmbedBuilder
             {
@@ -168,9 +168,7 @@ namespace FMBot.Bot
         [Command("fmfullhelp"), Summary("Displays this list.")]
         public async Task fmfullhelpAsync()
         {
-            JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
-
-            string prefix = cfgjson.CommandPrefix;
+            string prefix = ConfigData.Data.CommandPrefix;
 
             ISelfUser SelfUser = Context.Client.CurrentUser;
 

@@ -15,7 +15,9 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
+using FMBot.Bot.Configurations;
 using static FMBot.Bot.FMBotModules;
 using static FMBot.Bot.FMBotUtil;
 
@@ -57,8 +59,6 @@ namespace FMBot.Bot
                 string assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
                 _logger.Log(Process.GetCurrentProcess().ProcessName + "FMBot v" + assemblyVersion + " loading...");
 
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
-
                 if (!Directory.Exists(GlobalVars.CacheFolder))
                 {
                     Directory.CreateDirectory(GlobalVars.CacheFolder);
@@ -83,7 +83,7 @@ namespace FMBot.Bot
                 client.GuildAvailable += JoinedGuild;
                 client.LeftGuild += LeftGuild;
 
-                prefix = cfgjson.CommandPrefix;
+                prefix = ConfigData.Data.CommandPrefix;
 
                 _logger.Log("Registering Commands and Modules...");
                 commands = new CommandService(new CommandServiceConfig()
@@ -94,7 +94,7 @@ namespace FMBot.Bot
                 await InstallCommands(_logger).ConfigureAwait(false);
 
                 _logger.Log("Logging In...");
-                await client.LoginAsync(TokenType.Bot, cfgjson.Token);
+                await client.LoginAsync(TokenType.Bot, ConfigData.Data.Token);
                 await client.StartAsync();
 
                 _logger.Log("Logged In.");
@@ -241,7 +241,7 @@ namespace FMBot.Bot
             }
 
             // Determine if the message is a command, based on if it starts with '!' or a mention prefix
-            if (!message.HasCharPrefix(Convert.ToChar(prefix), ref argPos) || message.IsPinned || (message.Author.IsBot && message.Author != curUser))
+            if (!message.HasCharPrefix(Convert.ToChar(prefix), ref argPos) || message.IsPinned || message.Author.IsBot && message.Author != curUser)
             {
                 return;
             }
@@ -261,21 +261,14 @@ namespace FMBot.Bot
                 {
                     SocketGuild guild = DiscordCaller.Guild;
                     _ = guild.Id.ToString();
-                    bool isonblacklist = await userService.GetBlacklistedAsync(message.Author).ConfigureAwait(false);
-
-                    if (isonblacklist)
-                    {
-                        await context.Channel.SendMessageAsync("You have been blacklisted from fmbot. Please contact an FMBot administrator if you have any questions regarding this decision.").ConfigureAwait(false);
-                        return;
-                    }
 
                     if (stackCooldownTarget.Contains(DiscordCaller))
                     {
                         //If they have used this command before, take the time the user last did something, add 3 seconds, and see if it's greater than this very moment.
-                        if (stackCooldownTimer[stackCooldownTarget.IndexOf(DiscordCaller)].AddSeconds(3) >= DateTimeOffset.Now)
+                        if (stackCooldownTimer[stackCooldownTarget.IndexOf(DiscordCaller)].AddSeconds(2) >= DateTimeOffset.Now)
                         {
                             //If enough time hasn't passed, reply letting them know how much longer they need to wait, and end the code.
-                            int secondsLeft = (int)(stackCooldownTimer[stackCooldownTarget.IndexOf(DiscordCaller)].AddSeconds(3) - DateTimeOffset.Now).TotalSeconds;
+                            int secondsLeft = (int)(stackCooldownTimer[stackCooldownTarget.IndexOf(DiscordCaller)].AddSeconds(2) - DateTimeOffset.Now).TotalSeconds;
                             await context.Channel.SendMessageAsync($"Please wait {secondsLeft} seconds before you use that command again!").ConfigureAwait(false);
                             return;
                         }
@@ -325,33 +318,24 @@ namespace FMBot.Bot
             Environment.Exit(1);
         }
 
-
         public async Task TestLastFMAPI()
         {
-            try
-            {
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
-                LastfmClient fmclient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
+            LastfmClient fmClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
 
-                const string LastFMName = "lastfmsupport";
-                if (!LastFMName.Equals("NULL"))
-                {
-                    IF.Lastfm.Core.Api.Helpers.PageResponse<IF.Lastfm.Core.Objects.LastTrack> tracks = await fmclient.User.GetRecentScrobbles(LastFMName, null, 1, 2).ConfigureAwait(false);
-                    if (tracks.Any())
-                    {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Last.FM API is online")).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, "Last.FM API is offline, rebooting...")).ConfigureAwait(false);
-                        Environment.Exit(1);
-                    }
-                }
-            }
-            catch (ArgumentOutOfRangeException)
+            Console.WriteLine("Checking Last.FM API...");
+            var lastFMUser = await fmClient.User.GetInfoAsync("Lastfmsupport").ConfigureAwait(false);
+
+            if (lastFMUser.Status.ToString().Equals("BadApiKey"))
             {
-                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, "Bypassing API requirement...")).ConfigureAwait(false);
-                //continue if we don't have anything
+                Console.WriteLine("Warning! Invalid API key for Last.FM! Please set the keys in the LastFMConfig.json! \n \n" +
+                                  "Exiting in 10 seconds...");
+
+                Thread.Sleep(10000);
+                Environment.Exit(0);
+            }
+            else
+            {
+                Console.WriteLine("Last.FM API test successful.");
             }
         }
 

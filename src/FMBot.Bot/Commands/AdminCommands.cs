@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Bot.Logger.Interfaces;
 using static FMBot.Bot.FMBotModules;
 using static FMBot.Bot.FMBotUtil;
 
@@ -17,24 +18,25 @@ namespace FMBot.Bot.Commands
     public class AdminCommands : ModuleBase
     {
         private readonly TimerService _timer;
+        private readonly ILogger _logger;
 
-        private readonly UserService userService = new UserService();
+        private readonly UserService _userService = new UserService();
+        private readonly AdminService _adminService = new AdminService();
 
-        private readonly AdminService adminService = new AdminService();
-
-        public AdminCommands(TimerService timer)
+        public AdminCommands(TimerService timer, ILogger logger)
         {
             _timer = timer;
+            _logger = logger;
         }
 
 
         [Command("fmdbcheck"), Summary("Checks if an entry is in the database.")]
         public async Task dbcheckAsync(IUser user = null)
         {
-            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin).ConfigureAwait(false))
+            if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Admin).ConfigureAwait(false))
             {
                 IUser chosenUser = user ?? Context.Message.Author;
-                User userSettings = await userService.GetUserSettingsAsync(chosenUser);
+                User userSettings = await _userService.GetUserSettingsAsync(chosenUser);
 
                 if (userSettings == null || userSettings.UserNameLastFM == null)
                 {
@@ -55,7 +57,7 @@ namespace FMBot.Bot.Commands
         [Alias("fmrestart")]
         public async Task fmbotrestartAsync()
         {
-            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+            if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
             {
                 await ReplyAsync("Restarting bot...");
                 await (Context.Client as DiscordSocketClient).SetStatusAsync(UserStatus.Invisible);
@@ -209,7 +211,7 @@ namespace FMBot.Bot.Commands
         [Alias("fmstarttimer", "fmtimerstart", "fmtimerrestart")]
         public async Task fmrestarttimerAsync()
         {
-            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+            if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
             {
                 try
                 {
@@ -218,8 +220,7 @@ namespace FMBot.Bot.Commands
                 }
                 catch (Exception e)
                 {
-                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                    ExceptionReporter.ReportException(client, e);
+                    _logger.LogError(e.Message, Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
                     await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
                 }
             }
@@ -229,7 +230,7 @@ namespace FMBot.Bot.Commands
         [Alias("fmtimerstop")]
         public async Task fmstoptimerAsync()
         {
-            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+            if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
             {
                 try
                 {
@@ -239,8 +240,7 @@ namespace FMBot.Bot.Commands
                 }
                 catch (Exception e)
                 {
-                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                    ExceptionReporter.ReportException(client, e);
+                    _logger.LogError(e.Message, Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
                     await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
                 }
             }
@@ -249,7 +249,7 @@ namespace FMBot.Bot.Commands
         [Command("fmtimerstatus"), Summary("Checks the status of the timer.")]
         public async Task fmtimerstatusAsync()
         {
-            if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+            if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
             {
                 try
                 {
@@ -264,8 +264,7 @@ namespace FMBot.Bot.Commands
                 }
                 catch (Exception e)
                 {
-                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                    ExceptionReporter.ReportException(client, e);
+                    _logger.LogError(e.Message, Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
                     await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
                 }
             }
@@ -278,7 +277,7 @@ namespace FMBot.Bot.Commands
         {
             try
             {
-                if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+                if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
                 {
                     if (user == null)
                     {
@@ -294,7 +293,7 @@ namespace FMBot.Bot.Commands
 
                     string UserID = user.Id.ToString();
 
-                    bool blacklistresult = await adminService.AddUserToBlacklistAsync(user.Id.ToString());
+                    bool blacklistresult = await _adminService.AddUserToBlacklistAsync(user.Id.ToString());
 
                     if (blacklistresult == true)
                     {
@@ -312,8 +311,7 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(client, e);
+                _logger.LogError(e.Message, Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
 
                 await ReplyAsync("Unable to add " + user.Username + " to the blacklist due to an internal error.");
             }
@@ -324,7 +322,7 @@ namespace FMBot.Bot.Commands
         {
             try
             {
-                if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+                if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
                 {
                     if (user == null)
                     {
@@ -334,7 +332,7 @@ namespace FMBot.Bot.Commands
 
                     string UserID = user.Id.ToString();
 
-                    bool blacklistresult = await adminService.RemoveUserFromBlacklistAsync(user.Id.ToString());
+                    bool blacklistresult = await _adminService.RemoveUserFromBlacklistAsync(user.Id.ToString());
 
                     if (blacklistresult == true)
                     {
@@ -352,8 +350,7 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                DiscordSocketClient client = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(client, e);
+                _logger.LogError(e.Message, Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
 
                 await ReplyAsync("Unable to remove " + user.Username + " from the blacklist due to an internal error.");
             }
