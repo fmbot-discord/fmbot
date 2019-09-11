@@ -122,65 +122,46 @@ namespace FMBot.Bot.Commands
                 LastTrack lastTrack = tracks.Content[1];
 
                 const string nulltext = "[undefined]";
+				
+				switch (userSettings.ChartType)
+				{
+					case ChartType.textmini:
+						string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
+						string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
+						string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nulltext : currentTrack.AlbumName;
 
-                if (userSettings.ChartType == ChartType.embedmini || userSettings.ChartType == ChartType.embedfull)
-                {
-                    if (!_guildService.CheckIfDM(Context))
-                    {
-                        GuildPermissions perms = await _guildService.CheckSufficientPermissionsAsync(Context).ConfigureAwait(false);
-                        if (!perms.EmbedLinks)
-                        {
-                            await ReplyAsync("Insufficient permissions, I need to the 'Embed links' permission to show you your scrobbles.").ConfigureAwait(false);
-                            return;
-                        }
-                    }
+						string LastTrackName = string.IsNullOrWhiteSpace(lastTrack.Name) ? nulltext : lastTrack.Name;
+						string LastArtistName = string.IsNullOrWhiteSpace(lastTrack.ArtistName) ? nulltext : lastTrack.ArtistName;
+						string LastAlbumName = string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? nulltext : lastTrack.AlbumName;
 
-                    var userTitle = await _userService.GetUserTitleAsync(Context);
+						int playcount = userinfo.Content.Playcount;
 
-                    this._embed.AddField(
-                        $"Current: {tracks.Content[0].Name}",
-                        $"By **{tracks.Content[0].ArtistName}**" + (string.IsNullOrEmpty(tracks.Content[0].AlbumName) ? "" : $" | {tracks.Content[0].AlbumName}"));
+						await Context.Channel.SendMessageAsync(await _userService.GetUserTitleAsync(Context).ConfigureAwait(false)
+                                                           + "\n**Current** - "
+                                                           + ArtistName
+                                                           + " - "
+                                                           + TrackName
+                                                           + " ["
+                                                           + AlbumName
+                                                           + "]\n<https://www.last.fm/user/"
+                                                           + userSettings.UserNameLastFM
+                                                           + ">\n"
+                                                           + userSettings.UserNameLastFM
+                                                           + "'s total scrobbles: "
+                                                           + playcount.ToString("N0")).ConfigureAwait(false);
+						break;
+					case ChartType.textfull:
+						string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
+						string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
+						string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nulltext : currentTrack.AlbumName;
 
-                    if (userSettings.ChartType == ChartType.embedfull)
-                    {
-                        this._embedAuthor.WithName("Last tracks for " + userTitle);
-                        this._embed.AddField(
-                            $"Previous: {tracks.Content[1].Name}",
-                            $"By **{tracks.Content[1].ArtistName}**" + (string.IsNullOrEmpty(tracks.Content[1].AlbumName) ? "" : $" | {tracks.Content[1].AlbumName}"));
-                    }
-                    else
-                    {
-                        this._embedAuthor.WithName("Last track for " + userTitle);
-                    }
+						string LastTrackName = string.IsNullOrWhiteSpace(lastTrack.Name) ? nulltext : lastTrack.Name;
+						string LastArtistName = string.IsNullOrWhiteSpace(lastTrack.ArtistName) ? nulltext : lastTrack.ArtistName;
+						string LastAlbumName = string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? nulltext : lastTrack.AlbumName;
 
-                    this._embed.WithTitle(tracks.Content[0].IsNowPlaying == true
-                        ? "*Now playing*"
-                        : $"Last scrobble {tracks.Content[0].TimePlayed?.ToString("g")}");
+						int playcount = userinfo.Content.Playcount;
 
-                    this._embedAuthor.WithIconUrl(Context.User.GetAvatarUrl());
-                    this._embed.WithAuthor(this._embedAuthor);
-                    this._embed.WithUrl("https://www.last.fm/user/" + lastFMUserName);
-
-                    this._embedFooter.WithText($"{userinfo.Content.Name} has {userinfo.Content.Playcount} scrobbles.");
-                    this._embed.WithFooter(this._embedFooter);
-
-                    this._embed.WithColor(Constants.LastFMColorRed);
-                    await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
-                }
-                else if (userSettings.ChartType == ChartType.textfull)
-                {
-                    string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
-                    string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
-                    string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nulltext : currentTrack.AlbumName;
-
-                    string LastTrackName = string.IsNullOrWhiteSpace(lastTrack.Name) ? nulltext : lastTrack.Name;
-                    string LastArtistName = string.IsNullOrWhiteSpace(lastTrack.ArtistName) ? nulltext : lastTrack.ArtistName;
-                    string LastAlbumName = string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? nulltext : lastTrack.AlbumName;
-
-
-                    int playcount = userinfo.Content.Playcount;
-
-                    await Context.Channel.SendMessageAsync(await _userService.GetUserTitleAsync(Context).ConfigureAwait(false)
+						await Context.Channel.SendMessageAsync(await _userService.GetUserTitleAsync(Context).ConfigureAwait(false)
                                                            + "\n**Current** - "
                                                            + ArtistName
                                                            + " - "
@@ -199,33 +180,60 @@ namespace FMBot.Bot.Commands
                                                            + userSettings.UserNameLastFM
                                                            + "'s total scrobbles: "
                                                            + playcount.ToString("N0")).ConfigureAwait(false);
-                }
-                else if (userSettings.ChartType == ChartType.textmini)
-                {
-                    string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
-                    string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? nulltext : currentTrack.ArtistName;
-                    string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nulltext : currentTrack.AlbumName;
+							break;
+					case ChartType.embedfull:
+					case ChartType.embedmini:
+					default:
+						if (!_guildService.CheckIfDM(Context))
+						{
+							GuildPermissions perms = await _guildService.CheckSufficientPermissionsAsync(Context).ConfigureAwait(false);
+							if (!perms.EmbedLinks)
+							{
+								await ReplyAsync("Insufficient permissions, I need to the 'Embed links' permission to show you your scrobbles.").ConfigureAwait(false);
+								break;
+							}
+						}
 
-                    string LastTrackName = string.IsNullOrWhiteSpace(lastTrack.Name) ? nulltext : lastTrack.Name;
-                    string LastArtistName = string.IsNullOrWhiteSpace(lastTrack.ArtistName) ? nulltext : lastTrack.ArtistName;
-                    string LastAlbumName = string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? nulltext : lastTrack.AlbumName;
+						var userTitle = await _userService.GetUserTitleAsync(Context);
 
-                    int playcount = userinfo.Content.Playcount;
+						this._embed.AddField(
+							$"Current: {tracks.Content[0].Name}",
+							$"By **{tracks.Content[0].ArtistName}**" + (string.IsNullOrEmpty(tracks.Content[0].AlbumName) ? "" : $" | {tracks.Content[0].AlbumName}"));
 
-                    await Context.Channel.SendMessageAsync(await _userService.GetUserTitleAsync(Context).ConfigureAwait(false)
-                                                           + "\n**Current** - "
-                                                           + ArtistName
-                                                           + " - "
-                                                           + TrackName
-                                                           + " ["
-                                                           + AlbumName
-                                                           + "]\n<https://www.last.fm/user/"
-                                                           + userSettings.UserNameLastFM
-                                                           + ">\n"
-                                                           + userSettings.UserNameLastFM
-                                                           + "'s total scrobbles: "
-                                                           + playcount.ToString("N0")).ConfigureAwait(false);
-                }
+						if (userSettings.ChartType == ChartType.embedfull)
+						{
+							this._embedAuthor.WithName("Last tracks for " + userTitle);
+							this._embed.AddField(
+								$"Previous: {tracks.Content[1].Name}",
+								$"By **{tracks.Content[1].ArtistName}**" + (string.IsNullOrEmpty(tracks.Content[1].AlbumName) ? "" : $" | {tracks.Content[1].AlbumName}"));
+						}
+						else
+						{
+							this._embedAuthor.WithName("Last track for " + userTitle);
+						}
+
+						this._embed.WithTitle(tracks.Content[0].IsNowPlaying == true
+							? "*Now playing*"
+							: $"Last scrobble {tracks.Content[0].TimePlayed?.ToString("g")}");
+
+						this._embedAuthor.WithIconUrl(Context.User.GetAvatarUrl());
+						this._embed.WithAuthor(this._embedAuthor);
+						this._embed.WithUrl("https://www.last.fm/user/" + lastFMUserName);
+						
+						LastImageSet AlbumImages = await _lastFmService.GetAlbumImagesAsync(currentTrack.ArtistName, currentTrack.AlbumName).ConfigureAwait(false);
+
+						if (AlbumImages?.Medium != null)
+						{
+							this._embed.WithThumbnailUrl(AlbumImages.Medium.ToString());
+						}
+
+						this._embedFooter.WithText($"{userinfo.Content.Name} has {userinfo.Content.Playcount} scrobbles.");
+						this._embed.WithFooter(this._embedFooter);
+
+						this._embed.WithColor(Constants.LastFMColorRed);
+						await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+						break;
+				}
             }
             catch (Exception e)
             {
