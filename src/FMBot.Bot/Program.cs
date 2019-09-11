@@ -52,10 +52,12 @@ namespace FMBot.Bot
 
             try
             {
-                string assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "FMBot v" + assemblyVersion + " loading...")).ConfigureAwait(false);
+                _logger = new Logger();
 
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
+                string assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                _logger.Log(Process.GetCurrentProcess().ProcessName + "FMBot v" + assemblyVersion + " loading...");
+
+                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
 
                 if (!Directory.Exists(GlobalVars.CacheFolder))
                 {
@@ -67,10 +69,10 @@ namespace FMBot.Bot
                     GlobalVars.ClearReadOnly(users);
                 }
 
-                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Initalizing Last.FM...")).ConfigureAwait(false);
+                _logger.Log("Initalizing Last.FM...");
                 await TestLastFMAPI().ConfigureAwait(false);
 
-                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Initalizing Discord...")).ConfigureAwait(false);
+                _logger.Log("Initalizing Discord...");
                 client = new DiscordShardedClient(new DiscordSocketConfig
                 {
                     WebSocketProvider = WS4NetProvider.Instance,
@@ -83,22 +85,19 @@ namespace FMBot.Bot
 
                 prefix = cfgjson.CommandPrefix;
 
-                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Registering Commands and Modules...")).ConfigureAwait(false);
+                _logger.Log("Registering Commands and Modules...");
                 commands = new CommandService(new CommandServiceConfig()
                 {
                     CaseSensitiveCommands = false
                 });
 
-                string token = cfgjson.Token; // Remember to keep this private!
-
-                _logger = new Logger();
                 await InstallCommands(_logger).ConfigureAwait(false);
 
-                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Logging In...")).ConfigureAwait(false);
-                await client.LoginAsync(TokenType.Bot, token).ConfigureAwait(false);
-                await client.StartAsync().ConfigureAwait(false);
+                _logger.Log("Logging In...");
+                await client.LoginAsync(TokenType.Bot, cfgjson.Token);
+                await client.StartAsync();
 
-                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Logged In.")).ConfigureAwait(false);
+                _logger.Log("Logged In.");
 
                 await client.SetGameAsync("🎶 Say " + prefix + "fmhelp to use 🎶").ConfigureAwait(false);
                 await client.SetStatusAsync(UserStatus.DoNotDisturb).ConfigureAwait(false);
@@ -109,7 +108,7 @@ namespace FMBot.Bot
             }
             catch (Exception e)
             {
-                await GlobalVars.Log(new LogMessage(LogSeverity.Critical, Process.GetCurrentProcess().ProcessName, "Failed to launch.", e)).ConfigureAwait(false);
+                _logger.LogException("Failed to launch.", e);
             }
         }
 

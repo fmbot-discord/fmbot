@@ -28,35 +28,37 @@ namespace FMBot.Bot.Extensions
 
         public static Color AverageColor(Bitmap bmp, Rectangle r)
         {
-            BitmapData bmd = bmp.LockBits(r, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-            int s = bmd.Stride;
-            long cr = 0;
-            long cg = 0;
-            long cb = 0;
-            long clr = (long)bmd.Scan0;
-            long tmp;
-            long row = clr;
-            for (int i = 0; i < r.Height; i++)
+            unsafe
             {
-                long col = row;
-                for (int j = 0; j < r.Width; j++)
+                BitmapData bmd = bmp.LockBits(r, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+                int s = bmd.Stride;
+                int cr = 0;
+                int cg = 0;
+                int cb = 0;
+                int* clr = (int*)(void*)bmd.Scan0;
+                int tmp;
+                int* row = clr;
+                for (int i = 0; i < r.Height; i++)
                 {
-                    tmp = col;
-                    cr += (tmp >> 0x10) & 0xff;
-                    cg += (tmp >> 0x08) & 0xff;
-                    cb += tmp & 0xff;
-                    col++;
+                    int* col = row;
+                    for (int j = 0; j < r.Width; j++)
+                    {
+                        tmp = *col;
+                        cr += (tmp >> 0x10) & 0xff;
+                        cg += (tmp >> 0x08) & 0xff;
+                        cb += tmp & 0xff;
+                        col++;
+                    }
+                    row += s >> 0x02;
                 }
-                row += s >> 0x02;
+                int div = r.Width * r.Height;
+                int d2 = div >> 0x01;
+                cr = (cr + d2) / div;
+                cg = (cg + d2) / div;
+                cb = (cb + d2) / div;
+                bmp.UnlockBits(bmd);
+                return Color.FromArgb(cr, cg, cb);
             }
-            int div = r.Width * r.Height;
-            int d2 = div >> 0x01;
-            cr = (cr + d2) / div;
-            cg = (cg + d2) / div;
-            cb = (cb + d2) / div;
-            bmp.UnlockBits(bmd);
-
-            return Color.FromArgb((int)cr, (int)cg, (int)cb);
         }
 
         public static void DrawColorString(this Graphics g, Bitmap bmp, string text, Font font, PointF point)

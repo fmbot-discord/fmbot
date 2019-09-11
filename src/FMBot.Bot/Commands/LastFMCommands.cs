@@ -54,7 +54,7 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        [Command("fm"), Summary("Displays what a user is listening to.")]
+        [Command("fm", RunMode = RunMode.Async), Summary("Displays what a user is listening to.")]
         [Alias("qm", "wm", "em", "rm", "tm", "ym", "um", "im", "om", "pm", "dm", "gm", "sm", "am", "hm", "jm", "km", "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm")]
         public async Task fmAsync(string user = null)
         {
@@ -321,7 +321,7 @@ namespace FMBot.Bot.Commands
 
 
 
-        [Command("fmartists"), Summary("Displays top artists.")]
+        [Command("fmartists", RunMode = RunMode.Async), Summary("Displays top artists.")]
         [Alias("fmartist", "fmartistlist", "fmartistslist")]
         public async Task fmArtistsAsync(string time = "weekly", int num = 6, string user = null)
         {
@@ -432,7 +432,7 @@ namespace FMBot.Bot.Commands
         }
 
 
-        [Command("fmchart"), Summary("Generates a chart based on a user's parameters.")]
+        [Command("fmchart", RunMode = RunMode.Async), Summary("Generates a chart based on a user's parameters.")]
         public async Task fmchartAsync(string chartsize = "3x3", string time = "weekly", string titlesetting = null, IUser user = null)
         {
             if (chartsize == "help")
@@ -578,7 +578,7 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        [Command("fmartistchart"), Summary("Generates an artist chart based on a user's parameters.")]
+        [Command("fmartistchart", RunMode = RunMode.Async), Summary("Generates an artist chart based on a user's parameters.")]
         [RequireBotPermission(ChannelPermission.AttachFiles)]
         public async Task fmartistchartAsync(string chartsize = "3x3", string time = "weekly", string titlesetting = "titles", IUser user = null)
         {
@@ -717,7 +717,7 @@ namespace FMBot.Bot.Commands
 
 
 
-        [Command("fmrecent"), Summary("Displays a user's recent tracks.")]
+        [Command("fmrecent", RunMode = RunMode.Async), Summary("Displays a user's recent tracks.")]
         [Alias("fmrecenttracks")]
         public async Task fmrecentAsync(string user = null, int num = 5)
         {
@@ -835,7 +835,7 @@ namespace FMBot.Bot.Commands
 
 
 
-        [Command("fmstats"), Summary("Displays user stats related to Last.FM and FMBot")]
+        [Command("fmstats", RunMode = RunMode.Async), Summary("Displays user stats related to Last.FM and FMBot")]
         [Alias("fminfo")]
         public async Task fmstatsAsync(string user = null)
         {
@@ -927,7 +927,7 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        [Command("fmfeatured"), Summary("Displays the featured avatar.")]
+        [Command("fmfeatured", RunMode = RunMode.Async), Summary("Displays the featured avatar.")]
         [Alias("fmfeaturedavatar", "fmfeatureduser", "fmfeaturedalbum")]
         public async Task fmfeaturedAsync()
         {
@@ -953,7 +953,7 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        [Command("fmset"), Summary("Sets your Last.FM name and FM mode.")]
+        [Command("fmset", RunMode = RunMode.Async), Summary("Sets your Last.FM name and FM mode.")]
         [Alias("fmsetname", "fmsetmode")]
         public async Task fmsetAsync([Summary("Your Last.FM name")] string lastFMUserName, [Summary("The mode you want to use.")] string chartType = "embedfull")
         {
@@ -991,7 +991,7 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        [Command("fmremove"), Summary("Deletes your FMBot data.")]
+        [Command("fmremove", RunMode = RunMode.Async), Summary("Deletes your FMBot data.")]
         [Alias("fmdelete", "fmremovedata", "fmdeletedata")]
         public async Task fmremoveAsync()
         {
@@ -1009,7 +1009,7 @@ namespace FMBot.Bot.Commands
             await ReplyAsync("Your settings, friends and any other data have been successfully deleted.").ConfigureAwait(false);
         }
 
-        [Command("fmsuggest"), Summary("Suggest features you want to see in the bot, or report inappropriate images.")]
+        [Command("fmsuggest", RunMode = RunMode.Async), Summary("Suggest features you want to see in the bot, or report inappropriate images.")]
         [Alias("fmreport", "fmsuggestion", "fmsuggestions")]
         public async Task fmsuggest(string suggestion = null)
         {

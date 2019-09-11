@@ -32,6 +32,7 @@ namespace FMBot.Bot.Handlers
             this._client.ShardDisconnected += ShardDisconnectedEvent;
             this._client.ShardConnected += ShardConnectedEvent;
             this._client.JoinedGuild += ClientJoinedGuildEvent;
+
         }
 
         /// <summary>
@@ -54,7 +55,7 @@ namespace FMBot.Bot.Handlers
             Task.Run(() =>
             {
                 // If log message is a Serializer Error, Log the message to the SerializerError folder.
-                if (logMessage.Message.Contains("Serializer Error")) this._logger.Log("SerializerError", $"Source: {logMessage.Source} Exception: {logMessage.Exception} Message: {logMessage.Message}");
+                if (logMessage.Message.Contains("Serializer Error")) this._logger.LogError($"Source: {logMessage.Source} Exception: {logMessage.Exception} Message: {logMessage.Message}");
                 Log(logMessage.Message);
             });
             return Task.CompletedTask;
@@ -69,7 +70,7 @@ namespace FMBot.Bot.Handlers
         {
             if (message.Contains("Unknown User") || message.Contains("Unknown Guild"))
             {
-                this._logger.Log("Unknown", message);
+                this._logger.Log(message);
                 return;
             }
 
@@ -130,7 +131,7 @@ namespace FMBot.Bot.Handlers
             catch (Exception)
             {
                 // Logs the message to a txt file if it was unable to send the message.
-                this._logger.Log("Connection/Disconnected", $"Shard: {shard.ShardId} reason: {exception.Message}");
+                this._logger.LogException($"Shard: {shard.ShardId}", exception);
             }
         }
 
@@ -152,7 +153,7 @@ namespace FMBot.Bot.Handlers
             catch (Exception)
             {
                 // Logs the message to a txt file if it was unable to send the message.
-                this._logger.Log("Connection/Connected", $"Shard: {shard.ShardId} with **{shard.Latency}** ms");
+                this._logger.Log($"Shard: {shard.ShardId} with **{shard.Latency}** ms");
             }
         }
 
@@ -174,10 +175,10 @@ namespace FMBot.Bot.Handlers
                 var channel = this._client.GetGuild(Convert.ToUInt64(cfgjson.BaseServer)).GetTextChannel(Convert.ToUInt64(cfgjson.ExceptionChannel));
                 await channel.SendMessageAsync($"Shard: `{shard.ShardId}` Latency update from **{oldPing}** ms to **{updatePing}** ms").ConfigureAwait(false);
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 // Logs the message to a txt file if it was unable to send the message.
-                this._logger.Log("Connection/Latency", $"Shard: {shard.ShardId} Latency: {updatePing}");
+                this._logger.LogException($"Shard: {shard.ShardId}", e);
             }
         }
 
@@ -195,10 +196,10 @@ namespace FMBot.Bot.Handlers
                 var channel = this._client.GetGuild(Convert.ToUInt64(cfgjson.BaseServer)).GetTextChannel(Convert.ToUInt64(cfgjson.ExceptionChannel));
                 await channel.SendMessageAsync($"Joined server: {guild.Name}, Id: {guild.Id}, MemberCount: {guild.MemberCount}.").ConfigureAwait(false);
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 // Logs the message to a txt file if it was unable to send the message.
-                this._logger.Log("Connection/Latency", $"Joined server: {guild.Name}, Id: {guild.Id}, MemberCount: {guild.MemberCount}.");
+                this._logger.LogException($"Joined server: {guild.Name}, Id: {guild.Id}, MemberCount: {guild.MemberCount}.", e);
             }
         }
     }

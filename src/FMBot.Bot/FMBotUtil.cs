@@ -15,7 +15,6 @@ using System.Threading.Tasks;
 
 namespace FMBot.Bot
 {
-    
     public static class FMBotUtil
     {
         #region Configuration Data
@@ -88,7 +87,7 @@ namespace FMBot.Bot
             public static async Task<ConfigJson> GetJSONDataAsync()
             {
                 // first, let's load our configuration file
-                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "JsonCfg", "Loading Configuration")).ConfigureAwait(false);
+                await GlobalVars.Log(new LogMessage(LogSeverity.Info, "JsonCfg", "Loading Configuration async")).ConfigureAwait(false);
                 string json = "";
                 using (FileStream fs = File.OpenRead(GlobalVars.ConfigFileName))
                 using (StreamReader sr = new StreamReader(fs, new UTF8Encoding(false)))
@@ -104,7 +103,7 @@ namespace FMBot.Bot
             public static ConfigJson GetJSONData()
             {
                 // first, let's load our configuration file
-                GlobalVars.Log(new LogMessage(LogSeverity.Info, "JsonCfg", "Loading Configuration"));
+                GlobalVars.Log(new LogMessage(LogSeverity.Info, "JsonCfg", "Loading Configuration non-async"));
                 string json = "";
                 using (FileStream fs = File.OpenRead(GlobalVars.ConfigFileName))
                 using (StreamReader sr = new StreamReader(fs, new UTF8Encoding(false)))

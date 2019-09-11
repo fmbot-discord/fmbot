@@ -77,10 +77,10 @@ namespace FMBot.Bot
             public Task ConnectedAsync(DiscordSocketClient client)
             {
                 // Cancel all previous state checks and reset the CancelToken - client is back online
-                _logger.Log("ReliabilityService", "Client reconnected, resetting cancel tokens...");
+                _logger.Log("Client reconnected, resetting cancel tokens...");
                 _cts.Cancel();
                 _cts = new CancellationTokenSource();
-                _logger.Log("ReliabilityService", "Client reconnected, cancel tokens reset.");
+                _logger.Log("Client reconnected, cancel tokens reset.");
 
                 return Task.CompletedTask;
             }
@@ -88,12 +88,12 @@ namespace FMBot.Bot
             public Task DisconnectedAsync(Exception _e, DiscordSocketClient client)
             {
                 // Check the state after <timeout> to see if we reconnected
-                _logger.Log("ReliabilityService", "Client disconnected, starting timeout task...");
+                _logger.Log("Client disconnected, starting timeout task...");
                 _ = Task.Delay(_timeout, _cts.Token).ContinueWith(async _ =>
                 {
-                    _logger.Log("ReliabilityService", "Timeout expired, continuing to check client state...");
-                    await CheckStateAsync(client).ConfigureAwait(false);
-                    _logger.Log("ReliabilityService", "State came back okay");
+                    _logger.Log("Timeout expired, continuing to check client state...");
+                    await CheckStateAsync(client);
+                    _logger.Log("State came back okay");
                 });
 
                 return Task.CompletedTask;
@@ -109,29 +109,29 @@ namespace FMBot.Bot
 
                 if (_attemptReset)
                 {
-                    _logger.Log("ReliabilityService", "Attempting to reset the client");
+                    _logger.Log("Attempting to reset the client");
 
                     Task timeout = Task.Delay(_timeout);
                     Task connect = _discord.StartAsync();
-                    Task task = await Task.WhenAny(timeout, connect).ConfigureAwait(false);
+                    Task task = await Task.WhenAny(timeout, connect);
 
                     if (task == timeout)
                     {
-                        _logger.LogError("ReliabilityService", "Client reset timed out (task deadlocked?), killing process");
+                        _logger.LogError("Client reset timed out (task deadlocked?), killing process");
                         FailFast();
                     }
                     else if (connect.IsFaulted)
                     {
-                        _logger.LogError("ReliabilityService", "Critical Error: Client reset faulted, killing process \n" + connect.Exception);
+                        _logger.LogError("Critical Error: Client reset faulted, killing process \n" + connect.Exception);
                         FailFast();
                     }
                     else
                     {
-                        _logger.Log("ReliabilityService", "Client reset succesfully!");
+                        _logger.Log("Client reset succesfully!");
                     }
                 }
 
-                _logger.LogError("ReliabilityService", "Critical Error: Client did not reconnect in time, killing process");
+                _logger.LogError("Critical Error: Client did not reconnect in time, killing process");
                 FailFast();
             }
 
@@ -171,7 +171,7 @@ namespace FMBot.Bot
                 _timer = new Timer(async _ =>
                 {
 
-                    string LastFMName = await userService.GetRandomLastFMUserAsync().ConfigureAwait(false);
+                    string LastFMName = await userService.GetRandomLastFMUserAsync();
                     if (LastFMName != null)
                     {
                         Random random = new Random();
@@ -196,7 +196,7 @@ namespace FMBot.Bot
                         }
 
 
-                        _logger.Log("TimerService", "Changing avatar to mode " + randmodestring);
+                        _logger.Log("Changing avatar to mode " + randmodestring);
 
                         string nulltext = "";
 
@@ -204,7 +204,7 @@ namespace FMBot.Bot
                         {
                             if (randavmode == 1)
                             {
-                                PageResponse<LastTrack> tracks = await lastFMService.GetRecentScrobblesAsync(LastFMName).ConfigureAwait(false);
+                                PageResponse<LastTrack> tracks = await lastFMService.GetRecentScrobblesAsync(LastFMName);
                                 LastTrack currentTrack = tracks.Content[0];
 
                                 string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? nulltext : currentTrack.Name;
@@ -228,10 +228,10 @@ namespace FMBot.Bot
                                 }
                                 else
                                 {
-                                    AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName).ConfigureAwait(false);
+                                    AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName);
 
                                     trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                                    _logger.Log("TimerService", "Changed avatar to: " + trackString);
+                                    _logger.Log("Changed avatar to: " + trackString);
 
                                     if (AlbumImages?.Large != null)
                                     {
@@ -242,7 +242,7 @@ namespace FMBot.Bot
                             }
                             else if (randavmode == 2)
                             {
-                                PageResponse<LastAlbum> albums = await lastFMService.GetTopAlbumsAsync(LastFMName, LastStatsTimeSpan.Week, 1).ConfigureAwait(false);
+                                PageResponse<LastAlbum> albums = await lastFMService.GetTopAlbumsAsync(LastFMName, LastStatsTimeSpan.Week, 1);
                                 LastAlbum currentAlbum = albums.Content[random.Next(albums.Count())];
 
                                 string ArtistName = string.IsNullOrWhiteSpace(currentAlbum.ArtistName) ? nulltext : currentAlbum.ArtistName;
@@ -265,10 +265,10 @@ namespace FMBot.Bot
                                 }
                                 else
                                 {
-                                    AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName).ConfigureAwait(false);
+                                    AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName);
 
                                     trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                                    _logger.Log("TimerService", "Changed avatar to: " + trackString);
+                                    _logger.Log("Changed avatar to: " + trackString);
 
                                     if (AlbumImages?.Large != null)
                                     {
@@ -278,7 +278,7 @@ namespace FMBot.Bot
                             }
                             else if (randavmode == 3)
                             {
-                                PageResponse<LastAlbum> albums = await lastFMService.GetTopAlbumsAsync(LastFMName, LastStatsTimeSpan.Overall, 1).ConfigureAwait(false);
+                                PageResponse<LastAlbum> albums = await lastFMService.GetTopAlbumsAsync(LastFMName, LastStatsTimeSpan.Overall, 1);
                                 LastAlbum currentAlbum = albums.Content[random.Next(albums.Count())];
 
                                 string ArtistName = string.IsNullOrWhiteSpace(currentAlbum.ArtistName) ? nulltext : currentAlbum.ArtistName;
@@ -300,10 +300,10 @@ namespace FMBot.Bot
                                 }
                                 else
                                 {
-                                    AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName).ConfigureAwait(false);
+                                    AlbumImages = await lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName);
 
                                     trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                                    _logger.Log("TimerService", "Changed avatar to: " + trackString);
+                                    _logger.Log("Changed avatar to: " + trackString);
 
                                     if (AlbumImages?.Large != null)
                                     {
@@ -370,7 +370,7 @@ namespace FMBot.Bot
                 try
                 {
                     WebRequest request = WebRequest.Create(thumbnail);
-                    WebResponse response = await request.GetResponseAsync().ConfigureAwait(false);
+                    WebResponse response = await request.GetResponseAsync();
                     using (Stream output = File.Create(GlobalVars.BasePath + "newavatar.png"))
                     using (Stream input = response.GetResponseStream())
                     {
@@ -387,11 +387,11 @@ namespace FMBot.Bot
                     if (File.Exists(GlobalVars.BasePath + "newavatar.png"))
                     {
                         FileStream fileStream = new FileStream(GlobalVars.BasePath + "newavatar.png", FileMode.Open);
-                        await client.CurrentUser.ModifyAsync(u => u.Avatar = new Image(fileStream)).ConfigureAwait(false);
+                        await client.CurrentUser.ModifyAsync(u => u.Avatar = new Image(fileStream));
                         fileStream.Close();
                     }
 
-                    await Task.Delay(5000).ConfigureAwait(false);
+                    await Task.Delay(5000);
 
 
                     ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
@@ -405,7 +405,7 @@ namespace FMBot.Bot
                     builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
                     builder.AddField("Featured:", trackString);
 
-                    await channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
+                    await channel.SendMessageAsync("", false, builder.Build());
                 }
                 catch (Exception e)
                 {
@@ -418,10 +418,10 @@ namespace FMBot.Bot
                 try
                 {
                     trackString = "FMBot Default Avatar";
-                    _logger.Log("TimerService", "Changed avatar to: " + trackString);
+                    _logger.Log("Changed avatar to: " + trackString);
                     FileStream fileStream = new FileStream(GlobalVars.BasePath + "avatar.png", FileMode.Open);
                     Image image = new Image(fileStream);
-                    await client.CurrentUser.ModifyAsync(u => u.Avatar = image).ConfigureAwait(false);
+                    await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
                     fileStream.Close();
                 }
                 catch (Exception e)
@@ -435,14 +435,14 @@ namespace FMBot.Bot
                 try
                 {
                     trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                    _logger.Log("TimerService", "Changed avatar to: " + trackString);
+                    _logger.Log("Changed avatar to: " + trackString);
                     //FileStream fileStream = new FileStream(GlobalVars.CoversFolder + ArtistName + " - " + AlbumName + ".png", FileMode.Open);
                     FileStream fileStream = new FileStream(GlobalVars.BasePath + "censored.png", FileMode.Open);
                     Image image = new Image(fileStream);
-                    await client.CurrentUser.ModifyAsync(u => u.Avatar = image).ConfigureAwait(false);
+                    await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
                     fileStream.Close();
 
-                    await Task.Delay(5000).ConfigureAwait(false);
+                    await Task.Delay(5000);
 
                     ulong BroadcastServerID = Convert.ToUInt64(cfgjson.BaseServer);
                     ulong BroadcastChannelID = Convert.ToUInt64(cfgjson.FeaturedChannel);
@@ -455,7 +455,7 @@ namespace FMBot.Bot
                     builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
                     builder.AddField("Featured:", trackString);
 
-                    await channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
+                    await channel.SendMessageAsync("", false, builder.Build());
                 }
                 catch (Exception e)
                 {
@@ -476,14 +476,14 @@ namespace FMBot.Bot
 
                 GlobalVars.FeaturedUserID = "";
 
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
+                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
                 LastfmClient fmclient = new LastfmClient(cfgjson.FMKey, cfgjson.FMSecret);
 
                 try
                 {
                     if (artistonly)
                     {
-                        PageResponse<LastArtist> artists = await fmclient.Artist.SearchAsync(fmquery, 1, 2).ConfigureAwait(false);
+                        PageResponse<LastArtist> artists = await fmclient.Artist.SearchAsync(fmquery, 1, 2);
                         LastArtist currentArtist = artists.Content[0];
 
                         string nulltext = "";
@@ -492,7 +492,7 @@ namespace FMBot.Bot
                         {
                             string ArtistName = string.IsNullOrWhiteSpace(currentArtist.Name) ? nulltext : currentArtist.Name;
 
-                            LastResponse<LastArtist> ArtistInfo = await fmclient.Artist.GetInfoAsync(ArtistName).ConfigureAwait(false);
+                            LastResponse<LastArtist> ArtistInfo = await fmclient.Artist.GetInfoAsync(ArtistName);
                             LastImageSet ArtistImages = ArtistInfo.Content.MainImage;
                             string ArtistThumbnail = ArtistImages?.Large.AbsoluteUri;
                             string ThumbnailImage = ArtistThumbnail?.ToString();
@@ -500,14 +500,14 @@ namespace FMBot.Bot
                             try
                             {
                                 trackString = ArtistName + Environment.NewLine + desc;
-                                _logger.Log("TimerService", "Changed avatar to: " + trackString);
+                                _logger.Log("Changed avatar to: " + trackString);
                             }
                             catch (Exception)
                             {
                                 try
                                 {
                                     trackString = desc;
-                                    _logger.Log("TimerService", "Changed avatar to: " + trackString);
+                                    _logger.Log("Changed avatar to: " + trackString);
                                 }
                                 catch (Exception e)
                                 {
@@ -526,7 +526,7 @@ namespace FMBot.Bot
                     }
                     else
                     {
-                        PageResponse<LastAlbum> albums = await fmclient.Album.SearchAsync(fmquery, 1, 2).ConfigureAwait(false);
+                        PageResponse<LastAlbum> albums = await fmclient.Album.SearchAsync(fmquery, 1, 2);
                         LastAlbum currentAlbum = albums.Content[0];
 
                         const string nulltext = "";
@@ -536,7 +536,7 @@ namespace FMBot.Bot
 
                         try
                         {
-                            LastResponse<LastAlbum> AlbumInfo = await fmclient.Album.GetInfoAsync(ArtistName, AlbumName).ConfigureAwait(false);
+                            LastResponse<LastAlbum> AlbumInfo = await fmclient.Album.GetInfoAsync(ArtistName, AlbumName);
                             LastImageSet AlbumImages = AlbumInfo.Content.Images;
                             string AlbumThumbnail = AlbumImages?.Large.AbsoluteUri;
                             string ThumbnailImage = AlbumThumbnail;
@@ -544,14 +544,14 @@ namespace FMBot.Bot
                             try
                             {
                                 trackString = ArtistName + " - " + AlbumName + Environment.NewLine + desc;
-                                _logger.Log("TimerService", "Changed avatar to: " + trackString);
+                                _logger.Log("Changed avatar to: " + trackString);
                             }
                             catch (Exception)
                             {
                                 try
                                 {
                                     trackString = desc;
-                                    _logger.Log("TimerService", "Changed avatar to: " + trackString);
+                                    _logger.Log("Changed avatar to: " + trackString);
                                 }
                                 catch (Exception e)
                                 {
@@ -590,12 +590,12 @@ namespace FMBot.Bot
 
                 GlobalVars.FeaturedUserID = "";
 
-                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync().ConfigureAwait(false);
+                JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
 
                 try
                 {
                     trackString = desc;
-                    _logger.Log("TimerService", "Changed avatar to: " + trackString);
+                    _logger.Log("Changed avatar to: " + trackString);
 
                     if (!string.IsNullOrWhiteSpace(link))
                     {
