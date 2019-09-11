@@ -81,6 +81,7 @@ namespace FMBot.Bot.Commands
             try
             {
                 string lastFMUserName = userSettings.UserNameLastFM;
+                bool self = true;
 
                 if (user != null)
                 {
