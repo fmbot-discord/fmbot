@@ -1,4 +1,6 @@
 version: '{branch}.{build}'
+pull_requests:
+  do_not_increment_build_number: true
 image: Visual Studio 2019
 configuration: Release
 init:
@@ -20,4 +22,8 @@ build:
 artifacts:
 - path: src\Bot\bin\$(configuration)
   name: BinaryRelease
-deploy: off
+- path: BinaryFiles
+  name: BinaryFiles
+- path: src\FMBot.Bot\config.json
+  name: BinaryConfig
+deploy: on
