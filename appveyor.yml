@@ -20,7 +20,7 @@ before_build:
 build:
   verbosity: minimal
 artifacts:
-- path: src\Bot\bin\$(configuration)
+- path: src\FMBot.Bot\bin\$(configuration)\netcoreapp2.2
   name: BinaryRelease
 - path: BinaryFiles
   name: BinaryFiles
