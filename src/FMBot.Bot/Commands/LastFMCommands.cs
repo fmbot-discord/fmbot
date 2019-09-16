@@ -423,7 +423,7 @@ namespace FMBot.Bot.Commands
 
                 if (albums.Count() < chartAlbums)
                 {
-                    await ReplyAsync($"You haven't listened to enough albums ({chartAlbums}) for a chart this size. Please try a smaller chart or a bigger time period (weekly/monthly/yearly/overall)'.");
+                    await ReplyAsync($"You haven't listened to enough albums ({albums.Count()} of required {chartAlbums}) for a chart this size. Please try a smaller chart or a bigger time period (weekly/monthly/yearly/overall)'.");
                     return;
                 }
 
