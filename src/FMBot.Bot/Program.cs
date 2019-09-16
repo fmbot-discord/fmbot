@@ -327,7 +327,7 @@ namespace FMBot.Bot
 
             if (lastFMUser.Status.ToString().Equals("BadApiKey"))
             {
-                Console.WriteLine("Warning! Invalid API key for Last.FM! Please set the keys in the LastFMConfig.json! \n \n" +
+                Console.WriteLine("Warning! Invalid API key for Last.FM! Please set the proper API keys in the Configs/ConfigData.json! \n \n" +
                                   "Exiting in 10 seconds...");
 
                 Thread.Sleep(10000);
