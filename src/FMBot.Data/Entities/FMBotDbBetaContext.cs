@@ -24,7 +24,6 @@ namespace FMBot.Data.Entities
         {
             if (!optionsBuilder.IsConfigured)
             {
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. See http://go.microsoft.com/fwlink/?LinkID=723263 for guidance on storing connection strings.
                 optionsBuilder.UseSqlServer("Data Source=(LocalDB)\\FMBotDb;Initial Catalog=FMBotDb-Beta;Integrated Security=SSPI;");
             }
         }
