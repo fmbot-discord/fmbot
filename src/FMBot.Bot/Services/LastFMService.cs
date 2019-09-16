@@ -121,37 +121,37 @@ namespace FMBot.Services
             }
         }
 
+        public LastStatsTimeSpan StringToLastStatsTimeSpan(string timespan)
+        {
+            if (timespan.Equals("monthly") || timespan.Equals("month") || timespan.Equals("m"))
+            {
+                return LastStatsTimeSpan.Month;
+            }
+            else if (timespan.Equals("yearly") || timespan.Equals("year") || timespan.Equals("y"))
+            {
+                return LastStatsTimeSpan.Year;
+            }
+            else if (timespan.Equals("overall") || timespan.Equals("alltime") || timespan.Equals("o") || timespan.Equals("at"))
+            {
+                return LastStatsTimeSpan.Overall;
+            }
+
+            return LastStatsTimeSpan.Week;
+        }
+
         public async Task GenerateChartAsync(FMBotChart chart)
         {
             try
             {
                 LastStatsTimeSpan timespan = LastStatsTimeSpan.Week;
 
-                if (chart.time.Equals("weekly") || chart.time.Equals("week") || chart.time.Equals("w"))
-                {
-                    timespan = LastStatsTimeSpan.Week;
-                }
-                else if (chart.time.Equals("monthly") || chart.time.Equals("month") || chart.time.Equals("m"))
-                {
-                    timespan = LastStatsTimeSpan.Month;
-                }
-                else if (chart.time.Equals("yearly") || chart.time.Equals("year") || chart.time.Equals("y"))
-                {
-                    timespan = LastStatsTimeSpan.Year;
-                }
-                else if (chart.time.Equals("overall") || chart.time.Equals("alltime") || chart.time.Equals("o") || chart.time.Equals("at"))
-                {
-                    timespan = LastStatsTimeSpan.Overall;
-                }
-
                 const string nulltext = "[undefined]";
 
                 if (chart.mode == 0)
                 {
-                    PageResponse<LastAlbum> albums = await GetTopAlbumsAsync(chart.LastFMName, timespan, chart.max).ConfigureAwait(false);
-                    for (int al = 0; al < chart.max; ++al)
+                    for (int albumIndex = 0; albumIndex < chart.albums.Count(); ++albumIndex)
                     {
-                        LastAlbum track = albums.Content[al];
+                        LastAlbum track = chart.albums.Content[albumIndex];
 
                         string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
                         string AlbumName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.Name;
@@ -160,7 +160,7 @@ namespace FMBot.Services
 
                         Bitmap cover;
 
-                        if (albumImages?.Medium != null)
+                        if (albumImages?.Large != null)
                         {
                             string url = albumImages.Large.AbsoluteUri;
                             string path = Path.GetFileName(url);

@@ -2,6 +2,8 @@
 using Discord.WebSocket;
 using System.Collections.Generic;
 using System.Drawing;
+using IF.Lastfm.Core.Api.Helpers;
+using IF.Lastfm.Core.Objects;
 
 namespace FMBot.Bot.Models
 {
@@ -9,6 +11,7 @@ namespace FMBot.Bot.Models
     {
         public class FMBotChart
         {
+            public PageResponse<LastAlbum> albums;
             public string time;
             public string LastFMName;
             public int max;

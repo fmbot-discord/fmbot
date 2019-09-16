@@ -351,7 +351,7 @@ namespace FMBot.Bot.Commands
         {
             if (chartsize == "help")
             {
-                await ReplyAsync("fmchart '3x3-8x8' 'weekly/monthly/yearly/overall' 'notitles/titles' 'user'");
+                await ReplyAsync("fmchart '2x2-8x8' 'weekly/monthly/yearly/overall' 'notitles/titles' 'user'");
                 return;
             }
 
@@ -383,7 +383,7 @@ namespace FMBot.Bot.Commands
                 switch (chartsize)
                 {
                     case "2x2":
-                        chartAlbums = 9;
+                        chartAlbums = 4;
                         chartRows = 2;
                         break;
                     case "3x3":
@@ -418,8 +418,18 @@ namespace FMBot.Bot.Commands
                 // Generating image
                 List<Bitmap> images = new List<Bitmap>();
 
+                var timespan = _lastFmService.StringToLastStatsTimeSpan(time);
+                PageResponse<LastAlbum> albums = await _lastFmService.GetTopAlbumsAsync(userSettings.UserNameLastFM, timespan, chartAlbums).ConfigureAwait(false);
+
+                if (albums.Count() < chartAlbums)
+                {
+                    await ReplyAsync($"You haven't listened to enough albums ({chartAlbums}) for a chart this size. Please try a smaller chart or a bigger time period (weekly/monthly/yearly/overall)'.");
+                    return;
+                }
+
                 FMBotChart chart = new FMBotChart
                 {
+                    albums = albums,
                     time = time,
                     LastFMName = userSettings.UserNameLastFM,
                     max = chartAlbums,
