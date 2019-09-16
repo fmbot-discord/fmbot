@@ -108,17 +108,17 @@ namespace FMBot.Bot
             int fixedCmdGlobalCount_Servers = GlobalVars.CommandExecutions_Servers + 1;
             int fixedCmdGlobalCount_DMs = GlobalVars.CommandExecutions_DMs + 1;
 
-            builder.AddField("Bot Uptime: ", startTime.ToReadableString());
-            builder.AddField("Server Uptime: ", GlobalVars.SystemUpTime().ToReadableString());
-            builder.AddField("Usercount: ", (await userService.GetUserCountAsync()).ToString());
+            builder.AddField("Bot Uptime: ", startTime.ToReadableString(), true);
+            builder.AddField("Server Uptime: ", GlobalVars.SystemUpTime().ToReadableString(), true);
+            builder.AddField("Usercount: ", (await userService.GetUserCountAsync()).ToString(), true);
+            builder.AddField("Servercount: ", client.Guilds.Count, true);
             builder.AddField("Commands used since bot start: ", fixedCmdGlobalCount);
             builder.AddField("Commands in servers: ", fixedCmdGlobalCount_Servers);
             builder.AddField("Commands in DMs ", fixedCmdGlobalCount_DMs);
-            builder.AddField("Servercount: ", client.Guilds.Count());
-            builder.AddField("Bot status: ", status);
-            builder.AddField("Latency: ", client.Latency + "ms");
-            builder.AddField("Shards: ", client.Shards.Count());
-            builder.AddField("Bot version: ", assemblyVersion);
+            builder.AddField("Bot status: ", status, true);
+            builder.AddField("Latency: ", client.Latency + "ms", true);
+            builder.AddField("Shards: ", client.Shards.Count, true);
+            builder.AddField("Bot version: ", assemblyVersion, true);
 
             await Context.Channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
         }
