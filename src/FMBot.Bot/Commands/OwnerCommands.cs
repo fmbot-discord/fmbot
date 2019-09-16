@@ -32,7 +32,7 @@ namespace FMBot.Bot.Commands
                     return;
                 }
 
-                if (!Enum.TryParse(userType, out UserType userTypeEnum))
+                if (!Enum.TryParse(userType, true, out UserType userTypeEnum))
                 {
                     await ReplyAsync("Invalid usertype. Please use 'User', 'Admin', or 'Owner'.").ConfigureAwait(false);
                     return;
