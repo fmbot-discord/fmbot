@@ -21,12 +21,22 @@ namespace FMBot.Bot.Configurations
 
             if (!File.Exists(ConfigFolder + "/" + ConfigFile))
             {
-                Data = new ConfigJson();
+                Data = new ConfigJson
+                {
+                    CommandPrefix = ".",
+                    TimerInit = "15",
+                    TimerRepeat = "60",
+                    Cooldown = "10",
+                    NumMessages = "5",
+                    InBetweenTime = "10"
+                };
                 var json = JsonConvert.SerializeObject(Data, Formatting.Indented);
                 File.WriteAllText(ConfigFolder + "/" + ConfigFile, json);
 
-                Console.WriteLine($"Created new bot configuration file. Please set your API keys in {ConfigFolder}/{ConfigFile} before running the bot again. \n \n" +
-                                  "Exiting in 10 seconds...");
+                Console.WriteLine("Created new bot configuration file with default values. \n" +
+                                  $"Please set your API keys in {ConfigFolder}/{ConfigFile} before running the bot again. \n \n" +
+                                  "Exiting in 10 seconds...", 
+                    ConsoleColor.Red);
 
                 Thread.Sleep(10000);
                 Environment.Exit(0);

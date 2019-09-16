@@ -14,7 +14,7 @@ namespace FMBot.Bot.Configurations
         public string FMSecret { get; private set; }
 
         [JsonProperty("prefix")]
-        public string CommandPrefix { get; private set; }
+        public string CommandPrefix { get; set; }
 
         [JsonProperty("baseserver")]
         public string BaseServer { get; private set; }
@@ -29,10 +29,10 @@ namespace FMBot.Bot.Configurations
         public string BotOwner { get; private set; }
 
         [JsonProperty("timerinit")]
-        public string TimerInit { get; private set; }
+        public string TimerInit { get; set; }
 
         [JsonProperty("timerrepeat")]
-        public string TimerRepeat { get; private set; }
+        public string TimerRepeat { get; set; }
 
         [JsonProperty("spotifykey")]
         public string SpotifyKey { get; private set; }
@@ -44,16 +44,13 @@ namespace FMBot.Bot.Configurations
         public string ExceptionChannel { get; private set; }
 
         [JsonProperty("cooldown")]
-        public string Cooldown { get; private set; }
+        public string Cooldown { get; set; }
 
         [JsonProperty("nummessages")]
-        public string NumMessages { get; private set; }
+        public string NumMessages { get; set; }
 
         [JsonProperty("inbetweentime")]
-        public string InBetweenTime { get; private set; }
-
-        [JsonProperty("derpikey")]
-        public string DerpiKey { get; private set; }
+        public string InBetweenTime { get; set; }
 
         [JsonProperty("suggestionschannel")]
         public string SuggestionsChannel { get; private set; }
