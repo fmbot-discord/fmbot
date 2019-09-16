@@ -12,6 +12,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Bot.Logger.Interfaces;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
 using static FMBot.Bot.FMBotModules;
@@ -23,6 +24,7 @@ namespace FMBot.Bot.Commands
     public class LastFMCommands : ModuleBase
     {
         private readonly TimerService _timer;
+        private readonly ILogger _logger;
 
         private readonly UserService _userService = new UserService();
         private readonly GuildService _guildService = new GuildService();
@@ -33,9 +35,10 @@ namespace FMBot.Bot.Commands
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        public LastFMCommands(TimerService timer)
+        public LastFMCommands(TimerService timer, ILogger logger)
         {
             _timer = timer;
+            _logger = logger;
             _embed = new EmbedBuilder();
             _embedAuthor = new EmbedAuthorBuilder();
             _embedFooter = new EmbedFooterBuilder();
@@ -46,7 +49,6 @@ namespace FMBot.Bot.Commands
             await _lastFmService.GenerateChartAsync(chart);
 
             // Send chart memory stream, remove when finished
-
             using (MemoryStream memory = await GlobalVars.GetChartStreamAsync(chart.DiscordUser.Id))
             {
                 await Context.Channel.SendFileAsync(memory, "chart.png");
@@ -222,11 +224,11 @@ namespace FMBot.Bot.Commands
                         await ReplyAsync("", false, this._embed.Build());
                         break;
                 }
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
+                _logger.LogError(e.Message, Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
                 await ReplyAsync("Unable to show Last.FM info due to an internal error. Try scrobbling something then use the command again.");
             }
         }
@@ -334,11 +336,11 @@ namespace FMBot.Bot.Commands
                 builder.WithFooter(embedFooter);
 
                 await Context.Channel.SendMessageAsync("", false, builder.Build());
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
+                _logger.LogError(e.Message, Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
                 await ReplyAsync("Unable to show Last.FM info due to an internal error.");
             }
         }
@@ -473,12 +475,11 @@ namespace FMBot.Bot.Commands
 
                 await Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 await loadingMsg.DeleteAsync();
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
-
+                _logger.LogError(e.Message, Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
                 await ReplyAsync("Sorry, but I was unable to generate a FMChart due to an internal error. Make sure you have scrobbles and Last.FM isn't having issues, and try again later.");
             }
         }
@@ -594,18 +595,14 @@ namespace FMBot.Bot.Commands
                 builder.WithFooter(efb);
 
                 await Context.Channel.SendMessageAsync("", false, builder.Build());
-
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
-
+                _logger.LogError(e.Message, Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
                 await ReplyAsync("Unable to show your recent tracks on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
-
-
 
         [Command("fmstats", RunMode = RunMode.Async), Summary("Displays user stats related to Last.FM and FMBot")]
         [Alias("fminfo")]
@@ -688,13 +685,11 @@ namespace FMBot.Bot.Commands
                 builder.AddField("Bot user type: ", userSettings.UserType);
 
                 await Context.Channel.SendMessageAsync("", false, builder.Build());
-
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
-
+                _logger.LogError(e.Message, Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
                 await ReplyAsync("Unable to show your stats on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
@@ -715,12 +710,11 @@ namespace FMBot.Bot.Commands
                 builder.AddField("Featured:", _timer.GetTrackString());
 
                 await Context.Channel.SendMessageAsync("", false, builder.Build());
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
-
+                _logger.LogError(e.Message, Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
                 await ReplyAsync("Unable to show the featured avatar on FMBot due to an internal error. The timer service cannot be loaded. Please wait for the bot to fully load.");
             }
         }
@@ -750,6 +744,7 @@ namespace FMBot.Bot.Commands
             _userService.SetLastFM(Context.User, lastFMUserName.Replace("'", ""), chartTypeEnum);
 
             await ReplyAsync("Your Last.FM name has been set to '" + lastFMUserName.Replace("'", "") + "' and your mode has been set to '" + chartType + "'.");
+            this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
 
             if (!_guildService.CheckIfDM(Context))
             {
@@ -778,6 +773,7 @@ namespace FMBot.Bot.Commands
             await _userService.DeleteUser(userSettings.UserID);
 
             await ReplyAsync("Your settings, friends and any other data have been successfully deleted.");
+            this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
         }
 
         [Command("fmsuggest", RunMode = RunMode.Async), Summary("Suggest features you want to see in the bot, or report inappropriate images.")]
@@ -816,12 +812,13 @@ namespace FMBot.Bot.Commands
                 await channel.SendMessageAsync("", false, builder.Build());
 
                 await ReplyAsync("Your suggestion has been sent to the .fmbot server!");
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+
                 //}
             }
             catch (Exception e)
             {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
+                _logger.LogError(e.Message, Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
             }
         }
 

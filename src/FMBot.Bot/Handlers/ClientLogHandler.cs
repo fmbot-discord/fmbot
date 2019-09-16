@@ -33,6 +33,7 @@ namespace FMBot.Bot.Handlers
             this._client.ShardDisconnected += ShardDisconnectedEvent;
             this._client.ShardConnected += ShardConnectedEvent;
             this._client.JoinedGuild += ClientJoinedGuildEvent;
+            this._client.LeftGuild += ClientLeftGuild;
 
         }
 
@@ -193,6 +194,24 @@ namespace FMBot.Bot.Handlers
             {
                 // Logs the message to a txt file if it was unable to send the message.
                 this._logger.LogException($"Joined server: {guild.Name}, Id: {guild.Id}, MemberCount: {guild.MemberCount}.", e);
+            }
+        }
+
+        /// <summary>
+        /// Sends a message that the client left a server.
+        /// </summary>
+        /// <param name="guild">The server that the client left.</param>
+        private async Task ClientLeftGuild(SocketGuild guild)
+        {
+            try
+            {
+                var channel = this._client.GetGuild(Convert.ToUInt64(ConfigData.Data.BaseServer)).GetTextChannel(Convert.ToUInt64(ConfigData.Data.ExceptionChannel));
+                await channel.SendMessageAsync($"Left server: {guild.Name}, Id: {guild.Id}.").ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                // Logs the message to a txt file if it was unable to send the message.
+                this._logger.LogException($"Left guild.", e);
             }
         }
     }

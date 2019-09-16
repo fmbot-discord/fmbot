@@ -10,23 +10,28 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Bot.Logger.Interfaces;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
 {
     public class SpotifyCommands : ModuleBase
     {
-        private readonly UserService userService = new UserService();
+        private readonly ILogger _logger;
 
-        private readonly SpotifyService spotifyService = new SpotifyService();
+        private readonly UserService _userService = new UserService();
+        private readonly SpotifyService _spotifyService = new SpotifyService();
+        private readonly LastFMService _lastFmService = new LastFMService();
 
-        private readonly LastFMService lastFMService = new LastFMService();
-
+        public SpotifyCommands(ILogger logger)
+        {
+            _logger = logger;
+        }
 
         [Command("fmspotify"), Summary("Shares a link to a Spotify track based on what a user is listening to")]
         public async Task fmspotifyAsync(IUser user = null)
         {
-            Data.Entities.User userSettings = await userService.GetUserSettingsAsync(Context.User).ConfigureAwait(false);
+            Data.Entities.User userSettings = await _userService.GetUserSettingsAsync(Context.User).ConfigureAwait(false);
 
             if (userSettings == null || userSettings.UserNameLastFM == null)
             {
@@ -36,7 +41,7 @@ namespace FMBot.Bot.Commands
 
             try
             {
-                PageResponse<LastTrack> tracks = await lastFMService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1).ConfigureAwait(false);
+                PageResponse<LastTrack> tracks = await _lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1).ConfigureAwait(false);
                 LastTrack currentTrack = tracks.Content[0];
 
                 string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? null : currentTrack.Name;
@@ -45,7 +50,7 @@ namespace FMBot.Bot.Commands
 
                 string querystring = TrackName + " - " + ArtistName + " " + AlbumName;
 
-                SearchItem item = await spotifyService.GetSearchResultAsync(querystring).ConfigureAwait(false);
+                SearchItem item = await _spotifyService.GetSearchResultAsync(querystring).ConfigureAwait(false);
 
                 if (item.Tracks?.Items?.Any() == true)
                 {
@@ -53,6 +58,7 @@ namespace FMBot.Bot.Commands
                     SimpleArtist trackArtist = track.Artists.FirstOrDefault();
 
                     await ReplyAsync("https://open.spotify.com/track/" + track.Id).ConfigureAwait(false);
+                    this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
                 }
                 else
                 {
@@ -61,8 +67,7 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
+                _logger.LogException(Context.Message.Content, e);
                 await ReplyAsync("Unable to show Last.FM info via Spotify due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.").ConfigureAwait(false);
             }
         }
@@ -79,7 +84,7 @@ namespace FMBot.Bot.Commands
                 {
                     querystring = string.Join(" ", searchterms);
 
-                    SearchItem item = await spotifyService.GetSearchResultAsync(querystring).ConfigureAwait(false);
+                    SearchItem item = await _spotifyService.GetSearchResultAsync(querystring).ConfigureAwait(false);
 
                     if (item.Tracks.Items.Count > 0)
                     {
@@ -87,6 +92,8 @@ namespace FMBot.Bot.Commands
                         SimpleArtist trackArtist = track.Artists.FirstOrDefault();
 
                         await ReplyAsync("https://open.spotify.com/track/" + track.Id).ConfigureAwait(false);
+                        this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+
                     }
                     else
                     {
@@ -100,8 +107,8 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
+                _logger.LogException(Context.Message.Content, e);
+
                 await ReplyAsync("Unable to search for music via Spotify due to an internal error.").ConfigureAwait(false);
             }
         }

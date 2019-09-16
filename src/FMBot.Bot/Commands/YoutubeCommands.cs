@@ -5,6 +5,7 @@ using FMBot.Services;
 using IF.Lastfm.Core.Objects;
 using System;
 using System.Threading.Tasks;
+using Bot.Logger.Interfaces;
 using YoutubeSearch;
 using static FMBot.Bot.FMBotUtil;
 
@@ -12,17 +13,22 @@ namespace FMBot.Bot.Commands
 {
     public class YoutubeCommands : ModuleBase
     {
-        private readonly LastFMService lastFMService = new LastFMService();
+        private readonly ILogger _logger;
 
-        private readonly UserService userService = new UserService();
+        private readonly LastFMService _lastFmService = new LastFMService();
+        private readonly UserService _userService = new UserService();
+        private readonly YoutubeService _youtubeService = new YoutubeService();
 
-        private readonly YoutubeService youtubeService = new YoutubeService();
+        public YoutubeCommands(ILogger logger)
+        {
+            _logger = logger;
+        }
 
         [Command("fmyoutube"), Summary("Shares a link to a YouTube video based on what a user is listening to")]
         [Alias("fmyt")]
         public async Task fmytAsync(IUser user = null)
         {
-            Data.Entities.User userSettings = await userService.GetUserSettingsAsync(Context.User);
+            Data.Entities.User userSettings = await _userService.GetUserSettingsAsync(Context.User);
 
             if (userSettings == null || userSettings.UserNameLastFM == null)
             {
@@ -32,7 +38,7 @@ namespace FMBot.Bot.Commands
 
             try
             {
-                LastTrack track = await lastFMService.GetLastScrobbleAsync(userSettings.UserNameLastFM).ConfigureAwait(false);
+                LastTrack track = await _lastFmService.GetLastScrobbleAsync(userSettings.UserNameLastFM).ConfigureAwait(false);
 
                 if (track == null)
                 {
@@ -44,22 +50,22 @@ namespace FMBot.Bot.Commands
                 {
                     string querystring = track.Name + " - " + track.ArtistName;
 
-                    VideoInformation youtubeResult = youtubeService.GetSearchResult(querystring);
+                    VideoInformation youtubeResult = _youtubeService.GetSearchResult(querystring);
 
                     await ReplyAsync($"Searched for: `{querystring}`\n " +
                         youtubeResult.Url).ConfigureAwait(false);
+
+                    this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
                 }
                 catch (Exception e)
                 {
-                    DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                    ExceptionReporter.ReportException(disclient, e);
+                    _logger.LogException(Context.Message.Content, e);
                     await ReplyAsync("No results have been found for this track.").ConfigureAwait(false);
                 }
             }
             catch (Exception e)
             {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
+                _logger.LogException(Context.Message.Content, e);
                 await ReplyAsync("Unable to show Last.FM info via YouTube due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.").ConfigureAwait(false);
             }
         }
@@ -79,14 +85,14 @@ namespace FMBot.Bot.Commands
 
             try
             {
-                VideoInformation youtubeResult = youtubeService.GetSearchResult(querystring);
+                VideoInformation youtubeResult = _youtubeService.GetSearchResult(querystring);
 
                 await ReplyAsync(youtubeResult.Url).ConfigureAwait(false);
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
+                _logger.LogException(Context.Message.Content, e);
                 await ReplyAsync("No results have been found for this track.").ConfigureAwait(false);
             }
         }

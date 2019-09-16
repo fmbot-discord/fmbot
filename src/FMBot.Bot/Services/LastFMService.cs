@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Bot.Logger.Interfaces;
 using FMBot.Bot.Configurations;
 using static FMBot.Bot.FMBotUtil;
 using static FMBot.Bot.Models.LastFMModels;
@@ -20,6 +21,8 @@ namespace FMBot.Services
 {
     internal class LastFMService
     {
+        private readonly ILogger _logger;
+
         public LastfmClient lastfmClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
 
         // Last scrobble
@@ -45,7 +48,8 @@ namespace FMBot.Services
             }
             catch (Exception e)
             {
-                ExceptionReporter.ReportException(null, e);
+                _logger.LogException("GetUserInfoAsync", e);
+
             }
             return null;
         }
@@ -270,7 +274,7 @@ namespace FMBot.Services
             }
             catch (Exception e)
             {
-                ExceptionReporter.ReportException(chart.disclient, e);
+                _logger.LogException("GenerateChartAsync", e);
             }
             finally
             {

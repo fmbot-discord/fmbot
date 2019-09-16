@@ -318,7 +318,7 @@ namespace FMBot.Bot
                         }
                         catch (Exception e)
                         {
-                            ExceptionReporter.ReportShardedException(client, e);
+                            _logger.LogException("ChangeFeaturedAvatar", e);
                         }
                     }
                 },
@@ -391,7 +391,7 @@ namespace FMBot.Bot
                 }
                 catch (Exception e)
                 {
-                    ExceptionReporter.ReportShardedException(client, e);
+                    _logger.LogException("ChangeToNewAvatar", e);
                 }
             }
 
@@ -408,7 +408,7 @@ namespace FMBot.Bot
                 }
                 catch (Exception e)
                 {
-                    ExceptionReporter.ReportShardedException(client, e);
+                    _logger.LogException("UseDefaultAvatar", e);
                 }
             }
 
@@ -441,11 +441,11 @@ namespace FMBot.Bot
                 }
                 catch (Exception e)
                 {
-                    ExceptionReporter.ReportShardedException(client, e);
+                    _logger.LogException("UseLocalAvatar", e);
                 }
             }
 
-            public async void UseCustomAvatar(DiscordShardedClient client, string fmquery, string desc, bool artistonly, bool important)
+            public async void UseCustomAvatar(DiscordShardedClient client, string fmquery, string desc, bool important)
             {
                 if (important && IsTimerActive())
                 {
@@ -459,100 +459,54 @@ namespace FMBot.Bot
                 GlobalVars.FeaturedUserID = "";
 
                 LastfmClient fmclient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
-
                 try
                 {
-                    if (artistonly)
-                    {
-                        PageResponse<LastArtist> artists = await fmclient.Artist.SearchAsync(fmquery, 1, 2).ConfigureAwait(false);
-                        LastArtist currentArtist = artists.Content[0];
+                    PageResponse<LastAlbum> albums = await fmclient.Album.SearchAsync(fmquery, 1, 2).ConfigureAwait(false);
+                    LastAlbum currentAlbum = albums.Content[0];
 
-                        string nulltext = "";
+                    const string nulltext = "";
+
+                    string ArtistName = string.IsNullOrWhiteSpace(currentAlbum.ArtistName) ? nulltext : currentAlbum.ArtistName;
+                    string AlbumName = string.IsNullOrWhiteSpace(currentAlbum.Name) ? nulltext : currentAlbum.Name;
+
+                    try
+                    {
+                        LastResponse<LastAlbum> AlbumInfo = await fmclient.Album.GetInfoAsync(ArtistName, AlbumName).ConfigureAwait(false);
+                        LastImageSet AlbumImages = AlbumInfo.Content.Images;
+                        string AlbumThumbnail = AlbumImages?.Large.AbsoluteUri;
+                        string ThumbnailImage = AlbumThumbnail;
 
                         try
                         {
-                            string ArtistName = string.IsNullOrWhiteSpace(currentArtist.Name) ? nulltext : currentArtist.Name;
-
-                            LastResponse<LastArtist> ArtistInfo = await fmclient.Artist.GetInfoAsync(ArtistName).ConfigureAwait(false);
-                            LastImageSet ArtistImages = ArtistInfo.Content.MainImage;
-                            string ArtistThumbnail = ArtistImages?.Large.AbsoluteUri;
-                            string ThumbnailImage = ArtistThumbnail?.ToString();
-
+                            trackString = ArtistName + " - " + AlbumName + Environment.NewLine + desc;
+                            _logger.Log("Changed avatar to: " + trackString);
+                        }
+                        catch (Exception)
+                        {
                             try
                             {
-                                trackString = ArtistName + Environment.NewLine + desc;
+                                trackString = desc;
                                 _logger.Log("Changed avatar to: " + trackString);
                             }
-                            catch (Exception)
+                            catch (Exception e)
                             {
-                                try
-                                {
-                                    trackString = desc;
-                                    _logger.Log("Changed avatar to: " + trackString);
-                                }
-                                catch (Exception e)
-                                {
-                                    ExceptionReporter.ReportShardedException(client, e);
-                                    UseDefaultAvatar(client);
-                                    trackString = "Unable to get information for this artist avatar.";
-                                }
+                                _logger.LogException("UseCustomAvatar", e);
+                                UseDefaultAvatar(client);
+                                trackString = "Unable to get information for this album cover avatar.";
                             }
+                        }
 
-                            ChangeToNewAvatar(client, ThumbnailImage);
-                        }
-                        catch (Exception e)
-                        {
-                            ExceptionReporter.ReportShardedException(client, e);
-                        }
+                        ChangeToNewAvatar(client, ThumbnailImage);
                     }
-                    else
+                    catch (Exception e)
                     {
-                        PageResponse<LastAlbum> albums = await fmclient.Album.SearchAsync(fmquery, 1, 2).ConfigureAwait(false);
-                        LastAlbum currentAlbum = albums.Content[0];
-
-                        const string nulltext = "";
-
-                        string ArtistName = string.IsNullOrWhiteSpace(currentAlbum.ArtistName) ? nulltext : currentAlbum.ArtistName;
-                        string AlbumName = string.IsNullOrWhiteSpace(currentAlbum.Name) ? nulltext : currentAlbum.Name;
-
-                        try
-                        {
-                            LastResponse<LastAlbum> AlbumInfo = await fmclient.Album.GetInfoAsync(ArtistName, AlbumName).ConfigureAwait(false);
-                            LastImageSet AlbumImages = AlbumInfo.Content.Images;
-                            string AlbumThumbnail = AlbumImages?.Large.AbsoluteUri;
-                            string ThumbnailImage = AlbumThumbnail;
-
-                            try
-                            {
-                                trackString = ArtistName + " - " + AlbumName + Environment.NewLine + desc;
-                                _logger.Log("Changed avatar to: " + trackString);
-                            }
-                            catch (Exception)
-                            {
-                                try
-                                {
-                                    trackString = desc;
-                                    _logger.Log("Changed avatar to: " + trackString);
-                                }
-                                catch (Exception e)
-                                {
-                                    ExceptionReporter.ReportShardedException(client, e);
-                                    UseDefaultAvatar(client);
-                                    trackString = "Unable to get information for this album cover avatar.";
-                                }
-                            }
-
-                            ChangeToNewAvatar(client, ThumbnailImage);
-                        }
-                        catch (Exception e)
-                        {
-                            ExceptionReporter.ReportShardedException(client, e);
-                        }
+                        _logger.LogException("UseCustomAvatar", e);
                     }
+
                 }
                 catch (Exception e)
                 {
-                    ExceptionReporter.ReportShardedException(client, e);
+                    _logger.LogException("UseCustomAvatar", e);
 
                     UseDefaultAvatar(client);
                 }
@@ -583,7 +537,7 @@ namespace FMBot.Bot
                 }
                 catch (Exception e)
                 {
-                    ExceptionReporter.ReportShardedException(client, e);
+                    _logger.LogException("UseCustomAvatarFromLink", e);
                 }
             }
 

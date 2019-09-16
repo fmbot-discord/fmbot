@@ -9,35 +9,49 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Bot.Logger.Interfaces;
+using FMBot.Bot.Configurations;
+using FMBot.Bot.Resources;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
 {
     public class FriendsCommands : ModuleBase
     {
-        private readonly FriendsService friendsService = new FriendsService();
+        private readonly ILogger _logger;
 
-        private readonly GuildService guildService = new GuildService();
+        private readonly FriendsService _friendsService = new FriendsService();
+        private readonly GuildService _guildService = new GuildService();
+        private readonly LastFMService _lastFmService = new LastFMService();
+        private readonly UserService _userService = new UserService();
 
-        private readonly LastFMService lastFMService = new LastFMService();
+        private readonly EmbedBuilder _embed;
+        private readonly EmbedAuthorBuilder _embedAuthor;
+        private readonly EmbedFooterBuilder _embedFooter;
 
-        private readonly UserService userService = new UserService();
+        public FriendsCommands(ILogger logger)
+        {
+            _logger = logger;
+            _embed = new EmbedBuilder();
+            _embedAuthor = new EmbedAuthorBuilder();
+            _embedFooter = new EmbedFooterBuilder();
+        }
 
         [Command("fmfriends"), Summary("Displays a user's friends and what they are listening to.")]
         [Alias("fmrecentfriends", "fmfriendsrecent")]
-        public async Task fmfriendsrecentAsync()
+        public async Task FmFriendsRecentAsync()
         {
-            User userSettings = await userService.GetUserSettingsAsync(Context.User).ConfigureAwait(false);
+            User userSettings = await _userService.GetUserSettingsAsync(Context.User).ConfigureAwait(false);
 
-            if (userSettings == null || userSettings.UserNameLastFM == null)
+            if (userSettings?.UserNameLastFM == null)
             {
-                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command first, then add friends using `.fmaddfriends 'lastfmname/discord name'`.").ConfigureAwait(false);
+                await UsernameNotSetErrorResponseAsync();
                 return;
             }
 
             try
             {
-                List<Friend> friends = await friendsService.GetFMFriendsAsync(Context.User).ConfigureAwait(false);
+                List<Friend> friends = await _friendsService.GetFMFriendsAsync(Context.User).ConfigureAwait(false);
 
                 if (friends?.Any() != true)
                 {
@@ -55,7 +69,7 @@ namespace FMBot.Bot.Commands
                 builder.WithAuthor(eab);
                 string URI = "https://www.last.fm/user/" + userSettings.UserNameLastFM;
                 builder.WithUrl(URI);
-                builder.Title = await userService.GetUserTitleAsync(Context).ConfigureAwait(false);
+                builder.Title = await _userService.GetUserTitleAsync(Context).ConfigureAwait(false);
 
                 string amountOfScrobbles = "Amount of scrobbles of all your friends together: ";
 
@@ -80,7 +94,7 @@ namespace FMBot.Bot.Commands
                     {
                         string friendusername = friend.FriendUser != null ? friend.FriendUser.UserNameLastFM : friend.LastFMUserName;
 
-                        PageResponse<LastTrack> tracks = await lastFMService.GetRecentScrobblesAsync(friendusername, 1).ConfigureAwait(false);
+                        PageResponse<LastTrack> tracks = await _lastFmService.GetRecentScrobblesAsync(friendusername, 1).ConfigureAwait(false);
 
                         string TrackName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().Name) ? nulltext : tracks.FirstOrDefault().Name;
                         string ArtistName = string.IsNullOrWhiteSpace(tracks.FirstOrDefault().ArtistName) ? nulltext : tracks.FirstOrDefault().ArtistName;
@@ -91,7 +105,7 @@ namespace FMBot.Bot.Commands
 
                         if (friends.Count <= 8)
                         {
-                            LastResponse<LastUser> userinfo = await lastFMService.GetUserInfoAsync(friendusername).ConfigureAwait(false);
+                            LastResponse<LastUser> userinfo = await _lastFmService.GetUserInfoAsync(friendusername).ConfigureAwait(false);
                             playcount += userinfo.Content.Playcount;
                         }
                     }
@@ -119,11 +133,11 @@ namespace FMBot.Bot.Commands
                 //}
 
                 await Context.Channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
+                _logger.LogError(e.Message, Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
 
                 await ReplyAsync("Unable to show friends due to an internal error. Try removing all your current friends using `.fmremoveallfriends` and try again.").ConfigureAwait(false);
             }
@@ -133,11 +147,11 @@ namespace FMBot.Bot.Commands
         [Alias("fmfriendsset", "fmsetfriends", "fmfriendsadd", "fmaddfriend", "fmsetfriend")]
         public async Task fmfriendssetAsync([Summary("Friend names")] params string[] friends)
         {
-            User userSettings = await userService.GetUserSettingsAsync(Context.User).ConfigureAwait(false);
+            User userSettings = await _userService.GetUserSettingsAsync(Context.User).ConfigureAwait(false);
 
-            if (userSettings == null || userSettings.UserNameLastFM == null)
+            if (userSettings?.UserNameLastFM == null)
             {
-                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command first.").ConfigureAwait(false);
+                await UsernameNotSetErrorResponseAsync();
                 return;
             }
 
@@ -150,7 +164,7 @@ namespace FMBot.Bot.Commands
 
                 int friendcount = 0;
 
-                List<Friend> existingFriends = await friendsService.GetFMFriendsAsync(Context.User).ConfigureAwait(false);
+                List<Friend> existingFriends = await _friendsService.GetFMFriendsAsync(Context.User).ConfigureAwait(false);
 
                 if (existingFriends.Count + friends.Length > 10)
                 {
@@ -162,19 +176,19 @@ namespace FMBot.Bot.Commands
                 {
                     if (existingFriends?.Where(w => w.LastFMUserName != null).Select(s => s.LastFMUserName.ToLower()).Contains(friend.ToLower()) != true)
                     {
-                        if (!guildService.CheckIfDM(Context))
+                        if (!_guildService.CheckIfDM(Context))
                         {
-                            IGuildUser friendUser = await guildService.FindUserFromGuildAsync(Context, friend).ConfigureAwait(false);
+                            IGuildUser friendUser = await _guildService.FindUserFromGuildAsync(Context, friend).ConfigureAwait(false);
 
                             if (friendUser != null)
                             {
-                                User friendUserSettings = await userService.GetUserSettingsAsync(friendUser).ConfigureAwait(false);
+                                User friendUserSettings = await _userService.GetUserSettingsAsync(friendUser).ConfigureAwait(false);
 
                                 if (friendUserSettings == null || friendUserSettings.UserNameLastFM == null)
                                 {
-                                    if (await lastFMService.LastFMUserExistsAsync(friend).ConfigureAwait(false))
+                                    if (await _lastFmService.LastFMUserExistsAsync(friend).ConfigureAwait(false))
                                     {
-                                        await friendsService.AddLastFMFriendAsync(Context.User.Id.ToString(), friend).ConfigureAwait(false);
+                                        await _friendsService.AddLastFMFriendAsync(Context.User.Id.ToString(), friend).ConfigureAwait(false);
                                         friendcount++;
                                     }
                                     else
@@ -184,15 +198,15 @@ namespace FMBot.Bot.Commands
                                 }
                                 else
                                 {
-                                    await friendsService.AddDiscordFriendAsync(Context.User.Id.ToString(), friendUser.Id.ToString()).ConfigureAwait(false);
+                                    await _friendsService.AddDiscordFriendAsync(Context.User.Id.ToString(), friendUser.Id.ToString()).ConfigureAwait(false);
                                     friendcount++;
                                 }
                             }
                             else
                             {
-                                if (await lastFMService.LastFMUserExistsAsync(friend).ConfigureAwait(false))
+                                if (await _lastFmService.LastFMUserExistsAsync(friend).ConfigureAwait(false))
                                 {
-                                    await friendsService.AddLastFMFriendAsync(Context.User.Id.ToString(), friend).ConfigureAwait(false);
+                                    await _friendsService.AddLastFMFriendAsync(Context.User.Id.ToString(), friend).ConfigureAwait(false);
                                     friendcount++;
                                 }
                                 else
@@ -203,9 +217,9 @@ namespace FMBot.Bot.Commands
                         }
                         else
                         {
-                            if (await lastFMService.LastFMUserExistsAsync(friend).ConfigureAwait(false))
+                            if (await _lastFmService.LastFMUserExistsAsync(friend).ConfigureAwait(false))
                             {
-                                await friendsService.AddLastFMFriendAsync(Context.User.Id.ToString(), friend).ConfigureAwait(false);
+                                await _friendsService.AddLastFMFriendAsync(Context.User.Id.ToString(), friend).ConfigureAwait(false);
                                 friendcount++;
                             }
                             else
@@ -236,11 +250,11 @@ namespace FMBot.Bot.Commands
                         await ReplyAsync("Could not find 1 friend. Please ensure that you spelled the name correctly.").ConfigureAwait(false);
                     }
                 }
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
+                _logger.LogError(e.Message, Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
 
                 int friendcount = friends.Length;
 
@@ -259,11 +273,11 @@ namespace FMBot.Bot.Commands
         [Alias("fmfriendsremove", "fmdeletefriend", "fmdeletefriends", "fmremovefriend")]
         public async Task fmfriendsremoveAsync([Summary("Friend names")] params string[] friends)
         {
-            User userSettings = await userService.GetUserSettingsAsync(Context.User).ConfigureAwait(false);
+            User userSettings = await _userService.GetUserSettingsAsync(Context.User).ConfigureAwait(false);
 
-            if (userSettings == null || userSettings.UserNameLastFM == null)
+            if (userSettings?.UserNameLastFM == null)
             {
-                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command first.").ConfigureAwait(false);
+                await UsernameNotSetErrorResponseAsync();
                 return;
             }
 
@@ -277,13 +291,13 @@ namespace FMBot.Bot.Commands
 
             try
             {
-                List<Friend> existingFriends = await friendsService.GetFMFriendsAsync(Context.User).ConfigureAwait(false);
+                List<Friend> existingFriends = await _friendsService.GetFMFriendsAsync(Context.User).ConfigureAwait(false);
 
                 foreach (string friend in friends)
                 {
                     if (existingFriends.Select(s => s.LastFMUserName.ToLower()).Contains(friend.ToLower()))
                     {
-                        await friendsService.RemoveLastFMFriendAsync(userSettings.UserID, friend).ConfigureAwait(false);
+                        await _friendsService.RemoveLastFMFriendAsync(userSettings.UserID, friend).ConfigureAwait(false);
                         removedfriendcount++;
                     }
                 }
@@ -300,11 +314,12 @@ namespace FMBot.Bot.Commands
                 {
                     await ReplyAsync("Succesfully removed a friend.").ConfigureAwait(false);
                 }
+
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
+                _logger.LogError(e.Message, Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
 
                 if (friends.Length > 1)
                 {
@@ -321,26 +336,39 @@ namespace FMBot.Bot.Commands
         [Alias("fmfriendsremoveall")]
         public async Task fmfriendsremoveallAsync()
         {
-            User userSettings = await userService.GetUserSettingsAsync(Context.User).ConfigureAwait(false);
+            User userSettings = await _userService.GetUserSettingsAsync(Context.User).ConfigureAwait(false);
 
-            if (userSettings == null || userSettings.UserNameLastFM == null)
+            if (userSettings?.UserNameLastFM == null)
             {
-                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command first.").ConfigureAwait(false);
+                await UsernameNotSetErrorResponseAsync();
                 return;
             }
 
             try
             {
-                await friendsService.RemoveAllLastFMFriendsAsync(userSettings.UserID).ConfigureAwait(false);
+                await _friendsService.RemoveAllLastFMFriendsAsync(userSettings.UserID).ConfigureAwait(false);
 
                 await ReplyAsync("Removed all your friends.").ConfigureAwait(false);
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
-                DiscordSocketClient disclient = Context.Client as DiscordSocketClient;
-                ExceptionReporter.ReportException(disclient, e);
+                _logger.LogError(e.Message, Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
+
                 await ReplyAsync("Unable to remove all friends due to an internal error.").ConfigureAwait(false);
             }
+        }
+
+        private async Task UsernameNotSetErrorResponseAsync()
+        {
+            this._embed.WithTitle("Error while attempting get Last.FM information");
+            this._embed.WithDescription("Last.FM username has not been set. \n" +
+                                        "To setup your Last.FM account with this bot, please use the `.fmset` command. \n" +
+                                        $"Usage: `{ConfigData.Data.CommandPrefix}fmset username mode`\n" +
+                                        "Possible modes: embedmini/embedfull/textmini/textfull");
+
+            this._embed.WithColor(Constants.WarningColorOrange);
+            await ReplyAsync("", false, this._embed.Build());
         }
     }
 }

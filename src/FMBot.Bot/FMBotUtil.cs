@@ -1,17 +1,14 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using Newtonsoft.Json;
-using NLog;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using Bot.Logger.Interfaces;
 using FMBot.Bot.Configurations;
 
 namespace FMBot.Bot
@@ -29,7 +26,7 @@ namespace FMBot.Bot
                 _logger = logger;
             }
 
-            public static async void ReportException(DiscordSocketClient client = null, Exception e = null)
+            public async Task ReportException(DiscordSocketClient client = null, Exception e = null)
             {
                 try
                 {
@@ -58,16 +55,14 @@ namespace FMBot.Bot
                     }
                     catch (Exception)
                     {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it. \n" + e.Message)).ConfigureAwait(false);
+                        _logger.LogError("LoggerError", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it.");
                     }
-
-
                 }
 
-                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", e.Message, e), true).ConfigureAwait(false);
+                _logger.LogException("NonTypedError", e);
             }
 
-            public static async void ReportShardedException(DiscordShardedClient client = null, Exception e = null)
+            public async Task ReportShardedException(DiscordShardedClient client = null, Exception e = null)
             {
                 try
                 {
@@ -96,14 +91,14 @@ namespace FMBot.Bot
                     }
                     catch (Exception)
                     {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it. \n" + e.Message)).ConfigureAwait(false);
+                        _logger.LogError("LoggerError", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it.");
                     }
                 }
 
-                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", e.Message, e), true).ConfigureAwait(false);
+                _logger.LogException("NonTypedError", e);
             }
 
-            public static async void ReportStringAsException(DiscordShardedClient client, string e)
+            public async Task ReportStringAsException(DiscordShardedClient client, string e)
             {
                 try
                 {
@@ -132,11 +127,11 @@ namespace FMBot.Bot
                     }
                     catch (Exception)
                     {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it.")).ConfigureAwait(false);
+                        _logger.LogError("LoggerError", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it.");
                     }
                 }
 
-                await GlobalVars.Log(new LogMessage(LogSeverity.Warning, "ExceptionReporter", e), true).ConfigureAwait(false);
+                _logger.LogError("NonTypedError", e);
             }
         }
 
@@ -146,7 +141,7 @@ namespace FMBot.Bot
 
         public static class GlobalVars
         {
-            public static Dictionary<string, string> CensoredAlbums = new Dictionary<string, string>()
+            public static readonly Dictionary<string, string> CensoredAlbums = new Dictionary<string, string>()
             {
                 {"Death Grips", "No Love Deep Web"},
                 {"ミドリ(Midori)", "あらためまして、はじめまして、ミドリです。(aratamemashite hajimemashite midori desu)"},
@@ -188,22 +183,8 @@ namespace FMBot.Bot
             public static TimeSpan SystemUpTime()
             {
                 var ticks = Stopwatch.GetTimestamp();
-                var uptime = ((double)ticks) / Stopwatch.Frequency;
-                return TimeSpan.FromSeconds(uptime);
-            }
-
-            public static Task Log(LogMessage arg, bool nowrite = false)
-            {
-                if (!nowrite)
-                {
-                    Console.WriteLine(arg);
-                }
-                LogManager.ThrowExceptions = true;
-                Logger logger = LogManager.GetLogger("logger");
-
-                logger.Info(arg);
-
-                return Task.CompletedTask;
+                var upTime = ((double)ticks) / Stopwatch.Frequency;
+                return TimeSpan.FromSeconds(upTime);
             }
 
             public static string GetLine(string filePath, int line)
@@ -284,10 +265,7 @@ namespace FMBot.Bot
                 }
                 catch (Exception)
                 {
-                    if (finalImage != null)
-                    {
-                        finalImage.Dispose();
-                    }
+                    finalImage?.Dispose();
 
                     throw;
                 }
@@ -312,60 +290,6 @@ namespace FMBot.Bot
 
                 return list;
             }
-
-
-            public static async void CheckIfDMBool(ICommandContext Context)
-            {
-                IDMChannel dm = await Context.User.GetOrCreateDMChannelAsync().ConfigureAwait(false);
-
-                if (dm == null)
-                {
-                    IsUserInDM = false;
-                }
-
-                IsUserInDM = Context.Channel.Name == dm.Name;
-            }
-
-            public static bool GetDMBool()
-            {
-                return IsUserInDM;
-            }
-
-            public static IUser CheckIfDM(IUser user, ICommandContext Context)
-            {
-                CheckIfDMBool(Context);
-
-                if (IsUserInDM)
-                {
-                    return user ?? Context.Message.Author;
-                }
-                else
-                {
-                    return (IGuildUser)user ?? (IGuildUser)Context.Message.Author;
-                }
-            }
-
-            public static string GetNameString(IUser DiscordUser, ICommandContext Context)
-            {
-                if (IsUserInDM)
-                {
-                    return DiscordUser.Username;
-                }
-                else
-                {
-                    IGuildUser GuildUser = (IGuildUser)DiscordUser;
-
-                    if (string.IsNullOrWhiteSpace(GuildUser.Nickname))
-                    {
-                        return GuildUser.Username;
-                    }
-                    else
-                    {
-                        return GuildUser.Nickname;
-                    }
-                }
-            }
-
 
             public static void ClearReadOnly(DirectoryInfo parentDirectory)
             {

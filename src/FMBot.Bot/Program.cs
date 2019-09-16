@@ -35,10 +35,6 @@ namespace FMBot.Bot
         private string prefix;
         private readonly List<string> commandList = new List<string>();
 
-        private readonly GuildService guildService = new GuildService();
-
-        private readonly UserService userService = new UserService();
-
         public static List<DateTimeOffset> stackCooldownTimer = new List<DateTimeOffset>();
 
         public static List<SocketGuildUser> stackCooldownTarget = new List<SocketGuildUser>();
@@ -78,15 +74,11 @@ namespace FMBot.Bot
                     WebSocketProvider = WS4NetProvider.Instance,
                     LogLevel = LogSeverity.Verbose,
                 });
-
-                client.JoinedGuild += JoinedGuild;
-                client.GuildAvailable += JoinedGuild;
-                client.LeftGuild += LeftGuild;
-
+                
                 prefix = ConfigData.Data.CommandPrefix;
 
                 _logger.Log("Registering Commands and Modules...");
-                commands = new CommandService(new CommandServiceConfig()
+                commands = new CommandService(new CommandServiceConfig
                 {
                     CaseSensitiveCommands = false
                 });
@@ -115,27 +107,7 @@ namespace FMBot.Bot
         #endregion
 
         #region Program Events
-
-
-        public async Task LeftGuild(SocketGuild arg)
-        {
-            await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Left guild " + arg.Name)).ConfigureAwait(false);
-
-            await Task.CompletedTask;
-        }
-
-        public async Task JoinedGuild(SocketGuild arg)
-        {
-            await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Joined guild " + arg.Name)).ConfigureAwait(false);
-
-            if (!await guildService.GuildExistsAsync(arg).ConfigureAwait(false))
-            {
-                await guildService.AddGuildAsync(arg).ConfigureAwait(false);
-            }
-
-            await Task.CompletedTask;
-        }
-
+        
 
         public async Task InstallCommands(ILogger logger)
         {
@@ -181,6 +153,7 @@ namespace FMBot.Bot
 
         public Task HandleCommand_CurrentUserUpdated(SocketSelfUser before, SocketSelfUser after)
         {
+            _logger = new Logger();
             string status_after = "Online";
             string status_before = "Online";
 
@@ -204,13 +177,14 @@ namespace FMBot.Bot
                 case UserStatus.Invisible: status_after = "Invisible/Offline"; break;
             }
 
-            GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Status of bot changed from " + status_before + " to " + status_after));
-
+            _logger.Log($"Status changed from {status_before} to {status_after}");
             return Task.CompletedTask;
         }
 
         public async Task HandleCommand(SocketMessage messageParam)
         {
+            _logger = new Logger();
+
             // Don't process the command if it was a System Message
             if (!(messageParam is SocketUserMessage message))
             {
@@ -223,22 +197,6 @@ namespace FMBot.Bot
 
             // Create a number to track where the prefix ends and the command begins
             int argPos = 0;
-
-            if (message.HasMentionPrefix(curUser, ref argPos) && (context.Message.Content.Contains("dm me") || context.Message.Content.Contains("help")))
-            {
-                string[] hellostrings = { "Hello!", "Hello World!", "Yo!", "OK!", "Hi!", "...", "Salutations!", "Hola!", "こんにちは！", "你好！", "Здравствуйте!", "Bonjour!", "Hallo!", "Ciao!", "Hej!", "여보세요!", "Koa!", "Aloha!", "مرحبا!" };
-
-                string replystring = hellostrings[new Random().Next(0, hellostrings.Length - 1)];
-
-                if (!GlobalVars.GetDMBool())
-                {
-                    //StaticCommands staticCommands = new StaticCommands(services);
-                    //Task help = staticCommands.fmfullhelpAsync();
-                    await context.User.SendMessageAsync(replystring).ConfigureAwait(false);
-                }
-
-                return;
-            }
 
             // Determine if the message is a command, based on if it starts with '!' or a mention prefix
             if (!message.HasCharPrefix(Convert.ToChar(prefix), ref argPos) || message.IsPinned || message.Author.IsBot && message.Author != curUser)
@@ -289,7 +247,7 @@ namespace FMBot.Bot
 
                     if (!result.IsSuccess)
                     {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason)).ConfigureAwait(false);
+                        _logger.LogError(result.ErrorReason, result.Error.ToString());
                     }
                     else
                     {
@@ -302,7 +260,7 @@ namespace FMBot.Bot
                     IResult result = await commands.ExecuteAsync(context, argPos, services).ConfigureAwait(false);
                     if (!result.IsSuccess)
                     {
-                        await GlobalVars.Log(new LogMessage(LogSeverity.Warning, Process.GetCurrentProcess().ProcessName, result.Error + ": " + result.ErrorReason)).ConfigureAwait(false);
+                        _logger.LogError(result.ErrorReason, result.Error.ToString());
                     }
                     else
                     {

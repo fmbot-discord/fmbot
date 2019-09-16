@@ -38,7 +38,7 @@ namespace FMBot.Bot.Commands
                 IUser chosenUser = user ?? Context.Message.Author;
                 User userSettings = await _userService.GetUserSettingsAsync(chosenUser);
 
-                if (userSettings == null || userSettings.UserNameLastFM == null)
+                if (userSettings?.UserNameLastFM == null)
                 {
                     await ReplyAsync("The user's Last.FM name has not been set.");
                     return;
@@ -108,45 +108,6 @@ namespace FMBot.Bot.Commands
         //    }
         //}
 
-        //[Command("fmartistoverride"), Summary("Changes the avatar to be an artist.")]
-        //[Alias("fmsetartist")]
-        //public async Task fmartistoverrideAsync(string artistname, string desc = "Custom FMBot Artist Avatar", int ievent = 0)
-        //{
-        //    IUser DiscordUser = Context.Message.Author;
-        //    if (await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
-        //    {
-        //        JsonCfg.ConfigJson cfgjson = await JsonCfg.GetJSONDataAsync();
-
-        //        if (artistname == "help")
-        //        {
-        //            await ReplyAsync(cfgjson.CommandPrefix + "fmartistoverride <artist name> [message in quotation marks] [event 0 or 1]");
-        //            return;
-        //        }
-
-        //        try
-        //        {
-        //            DiscordSocketClient client = Context.Client as DiscordSocketClient;
-
-        //            if (ievent == 1)
-        //            {
-        //                _timer.UseCustomAvatar(client, artistname, desc, true, true);
-        //                await ReplyAsync("Set avatar to '" + artistname + "' with description '" + desc + "'. This is an event and it cannot be stopped the without the Owner's assistance. To stop an event, please contact the owner of the bot or specify a different avatar without the event parameter.");
-        //            }
-        //            else
-        //            {
-        //                _timer.UseCustomAvatar(client, artistname, desc, true, false);
-        //                await ReplyAsync("Set avatar to '" + artistname + "' with description '" + desc + "'. This is not an event.");
-        //            }
-        //        }
-        //        catch (Exception e)
-        //        {
-        //            DiscordSocketClient client = Context.Client as DiscordSocketClient;
-        //            ExceptionReporter.ReportException(client, e);
-        //            await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
-        //        }
-        //    }
-        //}
-
         //[Command("fmavataroverride"), Summary("Changes the avatar to be a image from a link.")]
         //[Alias("fmsetavatar")]
         //public async Task fmavataroverrideAsync(string link, string desc = "Custom FMBot Avatar", int ievent = 0)
@@ -184,8 +145,6 @@ namespace FMBot.Bot.Commands
         //        }
         //    }
         //}
-
-        
 
         //[Command("fmresetavatar"), Summary("Changes the avatar to be the default.")]
         //public async Task fmresetavatar()
@@ -253,7 +212,7 @@ namespace FMBot.Bot.Commands
             {
                 try
                 {
-                    if (_timer.IsTimerActive() == true)
+                    if (_timer.IsTimerActive())
                     {
                         await ReplyAsync("Timer is active");
                     }

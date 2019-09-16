@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Bot.Logger.Interfaces;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Services
@@ -14,7 +15,6 @@ namespace FMBot.Services
     public class GuildService
     {
         private readonly FMBotDbContext db = new FMBotDbContext();
-
 
         // Message is in dm?
         public bool CheckIfDM(ICommandContext context)
@@ -98,15 +98,8 @@ namespace FMBot.Services
                 db.Guilds.Add(newGuild);
 
                 await db.SaveChangesAsync().ConfigureAwait(false);
-
-                await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Guild added to database.")).ConfigureAwait(false);
             }
-
-
-
-            // IGuildUser ServerUser = (IGuildUser)Context.Message.Author;
         }
-
 
         public async Task AddGuildAsync(SocketGuild guild)
         {
@@ -124,8 +117,6 @@ namespace FMBot.Services
             db.Guilds.Add(newGuild);
 
             await db.SaveChangesAsync().ConfigureAwait(false);
-
-            await GlobalVars.Log(new LogMessage(LogSeverity.Info, Process.GetCurrentProcess().ProcessName, "Guild added to database.")).ConfigureAwait(false);
         }
 
         public async Task<bool> GuildExistsAsync(SocketGuild guild)
