@@ -6,7 +6,7 @@
 
 Discord bot built with Discord.NET in C# mostly focused on LastFM functions.
 
-Feel free to join the Discord server here: https://discord.gg/srmpCaa
+Feel free to join our Discord server: https://discord.gg/srmpCaa
 
 We also host the bot, [click here to add](https://discordapp.com/oauth2/authorize?client_id=356268235697553409&scope=bot&permissions=0)
 
@@ -15,9 +15,9 @@ Get them from https://github.com/Bitl/FMBot_Discord/releases (Stable) or https:/
 
 <h1>Getting started</h1>
 
-[Create a discord bot here.](https://discordapp.com/developers/applications/me)
+[Create a Discord bot here.](https://discordapp.com/developers/applications/me)
 
-[And an LastFM API account.](https://www.last.fm/api/account/create) 
+[And an Last.FM API account.](https://www.last.fm/api/account/create) 
 
 This bot also supports the [Spotify API](https://beta.developer.spotify.com/dashboard/applications), however you do not need to use this if you don't have to.
 
@@ -26,12 +26,16 @@ Next, download the following files from the release:
 ```
 BinaryFiles.zip
 BinaryRelease.zip
-config.json
 ```
 
-Extract both BinaryRelease.zip and BinaryFiles.zip and put the files from the extracted BinaryFiles folder and the config.json into your BinaryRelease folder. 
-
-Open the config.json file with a text editor like [Notepad++](https://notepad-plus-plus.org/) and enter the token in the 'token' field, and the keys and secrets in the other fields.
+1. Extract both BinaryRelease.zip and BinaryFiles.zip and put the files from the extracted BinaryFiles folder into your BinaryRelease folder. 
+2. Install LocalDB using one of the installers in `Binaryfiles/LocalDB Installers`
+3. Check if LocalDB is installed using `SqlLocalDB info` in cmd
+4. Create the database using `sqllocaldb c FMBotDb 11.0` in cmd
+5. Make sure you have the [.NET Core 2.2 SDK](https://dotnet.microsoft.com/download/dotnet-core/2.2) installed
+6. Run the bot once using `StartFMBot.bat` so it generates a config file
+7. Enter your own values into the `Configs/ConfigData.json` file using a text editor
+8. Run the bot again using the bat file.
 
 Please note that the following parts of the file are completely 
 optional and are not required to be edited, however some commands
