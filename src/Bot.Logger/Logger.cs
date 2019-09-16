@@ -44,6 +44,7 @@ namespace Bot.Logger
         {
             string error = $"{DateTime.Now:T} : Exception - {errorReason} \n" +
                            $"{DateTime.Now:T} : {exception.Message} \n" +
+                           $"{DateTime.Now:T} : {exception.InnerException} \n" +
                            "====================================";
 
             Log(error);
