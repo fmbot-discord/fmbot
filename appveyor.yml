@@ -17,13 +17,11 @@ nuget:
 before_build:
 - ps: cd src
 - ps: nuget restore
-build:
-  verbosity: minimal
+build_script:
+ - dotnet publish -c Release
 artifacts:
-- path: src\FMBot.Bot\bin\$(configuration)\netcoreapp2.2
+- path: src\FMBot.Bot\bin\$(configuration)\netcoreapp2.2\publish
   name: BinaryRelease
 - path: BinaryFiles
   name: BinaryFiles
-- path: src\FMBot.Bot\config.json
-  name: BinaryConfig
 deploy: on

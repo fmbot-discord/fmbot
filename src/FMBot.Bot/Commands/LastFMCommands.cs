@@ -77,6 +77,7 @@ namespace FMBot.Bot.Commands
                 await ReplyAsync(
                     "Usage: `.fm 'lastfm username/discord user'` \n" +
                     "You can set your default user and your display mode through the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
                 return;
             }
 
@@ -842,6 +843,7 @@ namespace FMBot.Bot.Commands
 
             this._embed.WithColor(Constants.WarningColorOrange);
             await ReplyAsync("", false, this._embed.Build());
+            this._logger.LogError("Last.FM username not set", Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
         }
 
         private async Task NoScrobblesErrorResponseFoundAsync()
@@ -850,6 +852,7 @@ namespace FMBot.Bot.Commands
             this._embed.WithDescription("No scrobbles were found on your profile.");
             this._embed.WithColor(Constants.WarningColorOrange);
             await ReplyAsync("", false, this._embed.Build());
+            this._logger.LogError("No scrobbles found for user", Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
         }
     }
 }
