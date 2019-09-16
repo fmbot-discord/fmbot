@@ -151,20 +151,16 @@ namespace FMBot.Bot
                 {"Carcass","Reek of Putrefaction"},
                 {"Cattle Decapitation", "Human Jerky"}
             };
-            public static string ConfigFileName = "config.json";
-            public static string BasePath = AppDomain.CurrentDomain.BaseDirectory;
-            public static string CacheFolder = BasePath + "cache/";
-            public static string CoversFolder = BasePath + "covers/";
+            private static readonly string BasePath = AppDomain.CurrentDomain.BaseDirectory;
+            public static readonly string CacheFolder = BasePath + "cache/";
             public static string ImageFolder = BasePath + "resources/images/";
             public static string FeaturedUserID = "";
-            public static int MessageLength = 2000;
             public static int CommandExecutions;
             public static int CommandExecutions_Servers;
             public static int CommandExecutions_DMs;
             public static Hashtable charts = new Hashtable();
 
             private static bool IsUserInDM;
-
             public static string GetChartFileName(ulong id)
             {
                 return CacheFolder + id.ToString() + "-chart.png";

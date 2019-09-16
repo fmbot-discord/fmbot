@@ -196,7 +196,7 @@ namespace FMBot.Services
                         }
                         else
                         {
-                            cover = new Bitmap(GlobalVars.BasePath + "unknown.png");
+                            cover = new Bitmap(GlobalVars.ImageFolder + "unknown.png");
                         }
 
                         if (chart.titles)
@@ -258,7 +258,7 @@ namespace FMBot.Services
                         }
                         else
                         {
-                            cover = new Bitmap(GlobalVars.BasePath + "unknown.png");
+                            cover = new Bitmap(GlobalVars.ImageFolder + "unknown.png");
                         }
 
                         if (chart.titles)
@@ -274,6 +274,7 @@ namespace FMBot.Services
             }
             catch (Exception e)
             {
+            
                 _logger.LogException("GenerateChartAsync", e);
             }
             finally
