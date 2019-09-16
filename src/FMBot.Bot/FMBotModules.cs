@@ -353,22 +353,22 @@ namespace FMBot.Bot
                 {
                     WebRequest request = WebRequest.Create(thumbnail);
                     WebResponse response = await request.GetResponseAsync().ConfigureAwait(false);
-                    using (Stream output = File.Create(GlobalVars.BasePath + "newavatar.png"))
+                    using (Stream output = File.Create(GlobalVars.ImageFolder + "newavatar.png"))
                     using (Stream input = response.GetResponseStream())
                     {
                         input.CopyTo(output);
-                        if (File.Exists(GlobalVars.BasePath + "newavatar.png"))
+                        if (File.Exists(GlobalVars.ImageFolder + "newavatar.png"))
                         {
-                            File.SetAttributes(GlobalVars.BasePath + "newavatar.png", FileAttributes.Normal);
+                            File.SetAttributes(GlobalVars.ImageFolder + "newavatar.png", FileAttributes.Normal);
                         }
 
                         output.Close();
                         input.Close();
                     }
 
-                    if (File.Exists(GlobalVars.BasePath + "newavatar.png"))
+                    if (File.Exists(GlobalVars.ImageFolder + "newavatar.png"))
                     {
-                        FileStream fileStream = new FileStream(GlobalVars.BasePath + "newavatar.png", FileMode.Open);
+                        FileStream fileStream = new FileStream(GlobalVars.ImageFolder + "newavatar.png", FileMode.Open);
                         await client.CurrentUser.ModifyAsync(u => u.Avatar = new Image(fileStream)).ConfigureAwait(false);
                         fileStream.Close();
                     }
@@ -401,7 +401,7 @@ namespace FMBot.Bot
                 {
                     trackString = "FMBot Default Avatar";
                     _logger.Log("Changed avatar to: " + trackString);
-                    FileStream fileStream = new FileStream(GlobalVars.BasePath + "avatar.png", FileMode.Open);
+                    FileStream fileStream = new FileStream(GlobalVars.ImageFolder + "avatar.png", FileMode.Open);
                     Image image = new Image(fileStream);
                     await client.CurrentUser.ModifyAsync(u => u.Avatar = image).ConfigureAwait(false);
                     fileStream.Close();
@@ -419,7 +419,7 @@ namespace FMBot.Bot
                     trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
                     _logger.Log("Changed avatar to: " + trackString);
                     //FileStream fileStream = new FileStream(GlobalVars.CoversFolder + ArtistName + " - " + AlbumName + ".png", FileMode.Open);
-                    FileStream fileStream = new FileStream(GlobalVars.BasePath + "censored.png", FileMode.Open);
+                    FileStream fileStream = new FileStream(GlobalVars.ImageFolder + "censored.png", FileMode.Open);
                     Image image = new Image(fileStream);
                     await client.CurrentUser.ModifyAsync(u => u.Avatar = image).ConfigureAwait(false);
                     fileStream.Close();

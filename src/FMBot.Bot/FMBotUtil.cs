@@ -155,6 +155,7 @@ namespace FMBot.Bot
             public static string BasePath = AppDomain.CurrentDomain.BaseDirectory;
             public static string CacheFolder = BasePath + "cache/";
             public static string CoversFolder = BasePath + "covers/";
+            public static string ImageFolder = BasePath + "resources/images/";
             public static string FeaturedUserID = "";
             public static int MessageLength = 2000;
             public static int CommandExecutions;
