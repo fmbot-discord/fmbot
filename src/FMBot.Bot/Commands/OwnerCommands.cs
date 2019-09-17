@@ -10,7 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Bot.Logger.Interfaces;
+using Bot.Logger;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
@@ -18,11 +18,11 @@ namespace FMBot.Bot.Commands
     [Summary("FMBot Owners Only")]
     public class OwnerCommands : ModuleBase
     {
-        private readonly ILogger _logger;
+        private readonly Logger _logger;
 
         private readonly AdminService _adminService = new AdminService();
 
-        public OwnerCommands(ILogger logger)
+        public OwnerCommands(Logger logger)
         {
             _logger = logger;
         }
@@ -73,7 +73,6 @@ namespace FMBot.Bot.Commands
                     if (Directory.Exists(GlobalVars.CacheFolder))
                     {
                         DirectoryInfo users = new DirectoryInfo(GlobalVars.CacheFolder);
-                        GlobalVars.ClearReadOnly(users);
                     }
 
 

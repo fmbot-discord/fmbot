@@ -1,10 +1,9 @@
 using System;
 using System.IO;
-using Bot.Logger.Interfaces;
 
 namespace Bot.Logger
 {
-    public class Logger : ILogger
+    public class Logger
     {
         /// <inheritdoc />
         public void Log(string text, ConsoleColor color = ConsoleColor.Gray)

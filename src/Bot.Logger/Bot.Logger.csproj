@@ -5,8 +5,4 @@
     <LangVersion>8</LangVersion>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Bot.Logger.Interfaces\Bot.Logger.Interfaces.csproj" />
-  </ItemGroup>
-
 </Project>

@@ -19,8 +19,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.YoutubeSearch", "FMBo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bot.Logger", "Bot.Logger\Bot.Logger.csproj", "{731BFA7E-4B16-4FB6-A10F-8482DFE67CEA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bot.Logger.Interfaces", "Bot.Logger.Interfaces\Bot.Logger.Interfaces.csproj", "{02509931-2519-4203-8CC2-E094BE1F3243}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,10 +45,6 @@ Global
 		{731BFA7E-4B16-4FB6-A10F-8482DFE67CEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{731BFA7E-4B16-4FB6-A10F-8482DFE67CEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{731BFA7E-4B16-4FB6-A10F-8482DFE67CEA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{02509931-2519-4203-8CC2-E094BE1F3243}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{02509931-2519-4203-8CC2-E094BE1F3243}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{02509931-2519-4203-8CC2-E094BE1F3243}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{02509931-2519-4203-8CC2-E094BE1F3243}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

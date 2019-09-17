@@ -1,144 +1,15 @@
-﻿using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
-using Bot.Logger.Interfaces;
-using FMBot.Bot.Configurations;
 
 namespace FMBot.Bot
 {
     public static class FMBotUtil
     {
-        #region Exception Reporter
-
-        public class ExceptionReporter
-        {
-            private readonly ILogger _logger;
-
-            public ExceptionReporter(ILogger logger)
-            {
-                _logger = logger;
-            }
-
-            public async Task ReportException(DiscordSocketClient client = null, Exception e = null)
-            {
-                try
-                {
-                    ulong BroadcastServerID = Convert.ToUInt64(ConfigData.Data.BaseServer);
-                    ulong BroadcastChannelID = Convert.ToUInt64(ConfigData.Data.ExceptionChannel);
-
-                    SocketGuild guild = client.GetGuild(BroadcastServerID);
-                    SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
-
-                    EmbedBuilder builder = new EmbedBuilder();
-                    builder.AddField("Exception:", e.Message + "\nSource:\n" + e.Source + "\nStack Trace:\n" + e.StackTrace);
-
-                    await channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
-                }
-                catch (Exception)
-                {
-                    try
-                    {
-                        ulong BroadcastServerID = Convert.ToUInt64(ConfigData.Data.BaseServer);
-                        ulong BroadcastChannelID = Convert.ToUInt64(ConfigData.Data.ExceptionChannel);
-
-                        SocketGuild guild = client.GetGuild(BroadcastServerID);
-                        SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
-
-                        await channel.SendMessageAsync("Exception: " + e.Message + "\n\nSource:\n" + e.Source + "\n\nStack Trace:\n" + e.StackTrace).ConfigureAwait(false);
-                    }
-                    catch (Exception)
-                    {
-                        _logger.LogError("LoggerError", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it.");
-                    }
-                }
-
-                _logger.LogException("NonTypedError", e);
-            }
-
-            public async Task ReportShardedException(DiscordShardedClient client = null, Exception e = null)
-            {
-                try
-                {
-                    ulong BroadcastServerID = Convert.ToUInt64(ConfigData.Data.BaseServer);
-                    ulong BroadcastChannelID = Convert.ToUInt64(ConfigData.Data.ExceptionChannel);
-
-                    SocketGuild guild = client.GetGuild(BroadcastServerID);
-                    SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
-
-                    EmbedBuilder builder = new EmbedBuilder();
-                    builder.AddField("Exception:", e.Message + "\nSource:\n" + e.Source + "\nStack Trace:\n" + e.StackTrace);
-
-                    await channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
-                }
-                catch (Exception)
-                {
-                    try
-                    {
-                        ulong BroadcastServerID = Convert.ToUInt64(ConfigData.Data.BaseServer);
-                        ulong BroadcastChannelID = Convert.ToUInt64(ConfigData.Data.ExceptionChannel);
-
-                        SocketGuild guild = client.GetGuild(BroadcastServerID);
-                        SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
-
-                        await channel.SendMessageAsync("Exception: " + e.Message + "\n\nSource:\n" + e.Source + "\n\nStack Trace:\n" + e.StackTrace).ConfigureAwait(false);
-                    }
-                    catch (Exception)
-                    {
-                        _logger.LogError("LoggerError", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it.");
-                    }
-                }
-
-                _logger.LogException("NonTypedError", e);
-            }
-
-            public async Task ReportStringAsException(DiscordShardedClient client, string e)
-            {
-                try
-                {
-                    ulong BroadcastServerID = Convert.ToUInt64(ConfigData.Data.BaseServer);
-                    ulong BroadcastChannelID = Convert.ToUInt64(ConfigData.Data.ExceptionChannel);
-
-                    SocketGuild guild = client.GetGuild(BroadcastServerID);
-                    SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
-
-                    EmbedBuilder builder = new EmbedBuilder();
-                    builder.AddField("Exception:", e);
-
-                    await channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
-                }
-                catch (Exception)
-                {
-                    try
-                    {
-                        ulong BroadcastServerID = Convert.ToUInt64(ConfigData.Data.BaseServer);
-                        ulong BroadcastChannelID = Convert.ToUInt64(ConfigData.Data.ExceptionChannel);
-
-                        SocketGuild guild = client.GetGuild(BroadcastServerID);
-                        SocketTextChannel channel = guild.GetTextChannel(BroadcastChannelID);
-
-                        await channel.SendMessageAsync("Exception: " + e).ConfigureAwait(false);
-                    }
-                    catch (Exception)
-                    {
-                        _logger.LogError("LoggerError", "Unable to connect to the server/channel to report error. Look in the log.txt in the FMBot folder to see it.");
-                    }
-                }
-
-                _logger.LogError("NonTypedError", e);
-            }
-        }
-
-        #endregion
-
-        #region Global Variables
-
         public static class GlobalVars
         {
             public static readonly Dictionary<string, string> CensoredAlbums = new Dictionary<string, string>()
@@ -287,24 +158,6 @@ namespace FMBot.Bot
 
                 return list;
             }
-
-            public static void ClearReadOnly(DirectoryInfo parentDirectory)
-            {
-                if (parentDirectory != null)
-                {
-                    parentDirectory.Attributes = FileAttributes.Normal;
-                    foreach (FileInfo fi in parentDirectory.GetFiles())
-                    {
-                        fi.Attributes = FileAttributes.Normal;
-                    }
-                    foreach (DirectoryInfo di in parentDirectory.GetDirectories())
-                    {
-                        ClearReadOnly(di);
-                    }
-                }
-            }
         }
-
-        #endregion
     }
 }

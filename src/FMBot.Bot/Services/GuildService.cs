@@ -7,8 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Bot.Logger.Interfaces;
-using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Services
 {

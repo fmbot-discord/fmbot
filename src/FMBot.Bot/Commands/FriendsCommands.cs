@@ -1,6 +1,5 @@
 ﻿using Discord;
 using Discord.Commands;
-using Discord.WebSocket;
 using FMBot.Data.Entities;
 using FMBot.Services;
 using IF.Lastfm.Core.Api.Helpers;
@@ -9,16 +8,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Bot.Logger.Interfaces;
+using Bot.Logger;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
-using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
 {
     public class FriendsCommands : ModuleBase
     {
-        private readonly ILogger _logger;
+        private readonly Logger _logger;
 
         private readonly FriendsService _friendsService = new FriendsService();
         private readonly GuildService _guildService = new GuildService();
@@ -29,7 +27,7 @@ namespace FMBot.Bot.Commands
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        public FriendsCommands(ILogger logger)
+        public FriendsCommands(Logger logger)
         {
             _logger = logger;
             _embed = new EmbedBuilder();

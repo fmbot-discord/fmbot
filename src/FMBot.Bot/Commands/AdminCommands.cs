@@ -8,9 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Bot.Logger.Interfaces;
-using static FMBot.Bot.FMBotModules;
-using static FMBot.Bot.FMBotUtil;
+using Bot.Logger;
 
 namespace FMBot.Bot.Commands
 {
@@ -18,12 +16,12 @@ namespace FMBot.Bot.Commands
     public class AdminCommands : ModuleBase
     {
         private readonly TimerService _timer;
-        private readonly ILogger _logger;
+        private readonly Logger _logger;
 
         private readonly UserService _userService = new UserService();
         private readonly AdminService _adminService = new AdminService();
 
-        public AdminCommands(TimerService timer, ILogger logger)
+        public AdminCommands(TimerService timer, Logger logger)
         {
             _timer = timer;
             _logger = logger;

@@ -10,20 +10,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Bot.Logger.Interfaces;
+using Bot.Logger;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
 {
     public class SpotifyCommands : ModuleBase
     {
-        private readonly ILogger _logger;
+        private readonly Logger _logger;
 
         private readonly UserService _userService = new UserService();
         private readonly SpotifyService _spotifyService = new SpotifyService();
         private readonly LastFMService _lastFmService = new LastFMService();
 
-        public SpotifyCommands(ILogger logger)
+        public SpotifyCommands(Logger logger)
         {
             _logger = logger;
         }

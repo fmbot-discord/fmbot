@@ -5,7 +5,7 @@ using FMBot.Services;
 using IF.Lastfm.Core.Objects;
 using System;
 using System.Threading.Tasks;
-using Bot.Logger.Interfaces;
+using Bot.Logger;
 using YoutubeSearch;
 using static FMBot.Bot.FMBotUtil;
 
@@ -13,13 +13,13 @@ namespace FMBot.Bot.Commands
 {
     public class YoutubeCommands : ModuleBase
     {
-        private readonly ILogger _logger;
+        private readonly Logger _logger;
 
         private readonly LastFMService _lastFmService = new LastFMService();
         private readonly UserService _userService = new UserService();
         private readonly YoutubeService _youtubeService = new YoutubeService();
 
-        public YoutubeCommands(ILogger logger)
+        public YoutubeCommands(Logger logger)
         {
             _logger = logger;
         }
