@@ -1,24 +1,22 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Bot.Logger;
 using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
-using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Handlers
 {
     public class ClientLogHandler
     {
         private readonly DiscordShardedClient _client;
-        private readonly Logger _logger;
+        private readonly Logger.Logger _logger;
 
         /// <summary>
         /// Creates a new <see cref="ClientLogHandler"/>.
         /// </summary>
         /// <param name="client">The <see cref="DiscordShardedClient"/> that will be used.</param>
         /// <param name="logger">The <see cref="ILogger"/> that will be used to log all the messages.</param>
-        public ClientLogHandler(DiscordShardedClient client, Logger logger)
+        public ClientLogHandler(DiscordShardedClient client, Logger.Logger logger)
         {
             this._client = client;
             this._logger = logger;

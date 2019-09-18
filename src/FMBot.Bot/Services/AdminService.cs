@@ -1,12 +1,12 @@
-﻿using Discord;
+﻿using System.IO;
+using System.Threading.Tasks;
+using Discord;
 using FMBot.Data.Entities;
 using Microsoft.EntityFrameworkCore;
-using System.IO;
-using System.Threading.Tasks;
 using static FMBot.Bot.FMBotUtil;
 using static FMBot.Bot.Models.FastFileEnumaratorModel;
 
-namespace FMBot.Services
+namespace FMBot.Bot.Services
 {
     internal class AdminService
     {

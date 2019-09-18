@@ -2,13 +2,12 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Data.Entities;
-using FMBot.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Bot.Logger;
+using FMBot.Bot.Services;
 
 namespace FMBot.Bot.Commands
 {
@@ -16,12 +15,12 @@ namespace FMBot.Bot.Commands
     public class AdminCommands : ModuleBase
     {
         private readonly TimerService _timer;
-        private readonly Logger _logger;
+        private readonly Logger.Logger _logger;
 
         private readonly UserService _userService = new UserService();
         private readonly AdminService _adminService = new AdminService();
 
-        public AdminCommands(TimerService timer, Logger logger)
+        public AdminCommands(TimerService timer, Logger.Logger logger)
         {
             _timer = timer;
             _logger = logger;

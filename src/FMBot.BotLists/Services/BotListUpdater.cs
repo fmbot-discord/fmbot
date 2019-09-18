@@ -3,18 +3,16 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Cache;
 using System.Threading.Tasks;
-using Bot.BotLists.Configurations;
-using Bot.BotLists.Interfaces.Services;
-using Bot.Logger.Interfaces;
+using FMBot.BotLists.Configurations;
 using RestSharp;
 using RestSharp.Authenticators;
 
-namespace Bot.BotLists.Services
+namespace FMBot.BotLists.Services
 {
-    public class BotListUpdater : IBotListUpdater
+    public class BotListUpdater
     {
 
-        private readonly ILogger _logger;
+        private readonly Logger.Logger _logger;
 
 
         private static readonly ConcurrentDictionary<string, RestClient> RestClients = new ConcurrentDictionary<string, RestClient>();
@@ -24,7 +22,7 @@ namespace Bot.BotLists.Services
         /// Creates a new <see cref="BotListUpdater"/>
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> that will be used to log all the messages.</param>
-        public BotListUpdater(ILogger logger)
+        public BotListUpdater(Logger.Logger logger)
         {
 
             _logger = logger;

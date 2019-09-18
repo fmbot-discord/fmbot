@@ -1,7 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using FMBot.Services;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
 using SpotifyAPI.Web.Models;
@@ -10,20 +9,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Bot.Logger;
+using FMBot.Bot.Services;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
 {
     public class SpotifyCommands : ModuleBase
     {
-        private readonly Logger _logger;
+        private readonly Logger.Logger _logger;
 
         private readonly UserService _userService = new UserService();
         private readonly SpotifyService _spotifyService = new SpotifyService();
         private readonly LastFMService _lastFmService = new LastFMService();
 
-        public SpotifyCommands(Logger logger)
+        public SpotifyCommands(Logger.Logger logger)
         {
             _logger = logger;
         }

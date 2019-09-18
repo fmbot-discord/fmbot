@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using Bot.Logger;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -51,7 +50,7 @@ namespace FMBot.Bot
                 MessageCacheSize = 0,
             });
 
-            var logger = new Logger();
+            var logger = new Logger.Logger();
 
             var timerService = new TimerService(discordClient, logger);
 

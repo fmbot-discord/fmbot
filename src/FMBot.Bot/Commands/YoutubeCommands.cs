@@ -1,25 +1,24 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using FMBot.Services;
 using IF.Lastfm.Core.Objects;
 using System;
 using System.Threading.Tasks;
-using Bot.Logger;
-using YoutubeSearch;
+using FMBot.Bot.Services;
+using FMBot.YoutubeSearch;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
 {
     public class YoutubeCommands : ModuleBase
     {
-        private readonly Logger _logger;
+        private readonly Logger.Logger _logger;
 
         private readonly LastFMService _lastFmService = new LastFMService();
         private readonly UserService _userService = new UserService();
         private readonly YoutubeService _youtubeService = new YoutubeService();
 
-        public YoutubeCommands(Logger logger)
+        public YoutubeCommands(Logger.Logger logger)
         {
             _logger = logger;
         }

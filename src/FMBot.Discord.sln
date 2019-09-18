@@ -17,7 +17,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.DbMigration", "FMBot.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.YoutubeSearch", "FMBot.YoutubeSearch\FMBot.YoutubeSearch.csproj", "{2443BEF2-4453-4C69-9154-8186396E66A3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bot.Logger", "Bot.Logger\Bot.Logger.csproj", "{731BFA7E-4B16-4FB6-A10F-8482DFE67CEA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Logger", "FMBot.Logger\FMBot.Logger.csproj", "{731BFA7E-4B16-4FB6-A10F-8482DFE67CEA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.BotLists", "FMBot.BotLists\FMBot.BotLists.csproj", "{88AE10AA-CFAC-44E3-BBFA-D6C86D81B323}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +47,10 @@ Global
 		{731BFA7E-4B16-4FB6-A10F-8482DFE67CEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{731BFA7E-4B16-4FB6-A10F-8482DFE67CEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{731BFA7E-4B16-4FB6-A10F-8482DFE67CEA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{88AE10AA-CFAC-44E3-BBFA-D6C86D81B323}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{88AE10AA-CFAC-44E3-BBFA-D6C86D81B323}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{88AE10AA-CFAC-44E3-BBFA-D6C86D81B323}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{88AE10AA-CFAC-44E3-BBFA-D6C86D81B323}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

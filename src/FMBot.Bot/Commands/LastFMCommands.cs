@@ -2,7 +2,6 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Data.Entities;
-using FMBot.Services;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
@@ -12,9 +11,9 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Bot.Logger;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
+using FMBot.Bot.Services;
 using static FMBot.Bot.FMBotUtil;
 using static FMBot.Bot.Models.LastFMModels;
 
@@ -23,7 +22,7 @@ namespace FMBot.Bot.Commands
     public class LastFMCommands : ModuleBase
     {
         private readonly TimerService _timer;
-        private readonly Logger _logger;
+        private readonly Logger.Logger _logger;
 
         private readonly UserService _userService = new UserService();
         private readonly GuildService _guildService = new GuildService();
@@ -34,7 +33,7 @@ namespace FMBot.Bot.Commands
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        public LastFMCommands(TimerService timer, Logger logger)
+        public LastFMCommands(TimerService timer, Logger.Logger logger)
         {
             _timer = timer;
             _logger = logger;

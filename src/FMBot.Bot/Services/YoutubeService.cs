@@ -1,7 +1,7 @@
 ﻿using System.Linq;
-using YoutubeSearch;
+using FMBot.YoutubeSearch;
 
-namespace FMBot.Services
+namespace FMBot.Bot.Services
 {
     internal class YoutubeService
     {

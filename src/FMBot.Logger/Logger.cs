@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace Bot.Logger
+namespace FMBot.Logger
 {
     public class Logger
     {

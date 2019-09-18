@@ -1,28 +1,25 @@
-﻿using Discord;
-using Discord.WebSocket;
-using FMBot.Services;
-using IF.Lastfm.Core.Api;
-using IF.Lastfm.Core.Api.Enums;
-using IF.Lastfm.Core.Api.Helpers;
-using IF.Lastfm.Core.Objects;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using Bot.Logger;
-using DiscordBotsList.Api;
-using static FMBot.Bot.FMBotUtil;
+using Discord;
+using Discord.WebSocket;
 using FMBot.Bot.Configurations;
+using IF.Lastfm.Core.Api;
+using IF.Lastfm.Core.Api.Enums;
+using IF.Lastfm.Core.Api.Helpers;
+using IF.Lastfm.Core.Objects;
+using static FMBot.Bot.FMBotUtil;
 
-namespace FMBot.Bot
+namespace FMBot.Bot.Services
 {
     public class TimerService
     {
         private readonly Timer _timer; 
-        private readonly Logger _logger;
+        private readonly Logger.Logger _logger;
 
         private string trackString = "";
 
@@ -30,7 +27,7 @@ namespace FMBot.Bot
         private readonly UserService userService = new UserService();
         private readonly LastFMService lastFMService = new LastFMService();
 
-        public TimerService(DiscordShardedClient client, Logger logger)
+        public TimerService(DiscordShardedClient client, Logger.Logger logger)
         {
             _logger = logger;
 

@@ -1,13 +1,13 @@
-﻿using Discord;
-using Discord.Commands;
-using FMBot.Data.Entities;
-using Microsoft.EntityFrameworkCore;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
+using Discord.Commands;
+using FMBot.Data.Entities;
+using Microsoft.EntityFrameworkCore;
 
-namespace FMBot.Services
+namespace FMBot.Bot.Services
 {
     public class UserService
     {

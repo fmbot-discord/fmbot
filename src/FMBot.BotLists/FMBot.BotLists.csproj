@@ -10,8 +10,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Bot.BotLists.Interfaces\Bot.BotLists.Interfaces.csproj" />
-    <ProjectReference Include="..\Bot.Logger.Interfaces\Bot.Logger.Interfaces.csproj" />
+    <ProjectReference Include="..\FMBot.Bot\FMBot.Bot.csproj" />
+    <ProjectReference Include="..\FMBot.Logger\FMBot.Logger.csproj" />
   </ItemGroup>
 
 </Project>

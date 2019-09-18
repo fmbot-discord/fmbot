@@ -1,4 +1,4 @@
-﻿namespace Bot.BotLists.Structs
+﻿namespace FMBot.BotLists.Structs
 {
     public struct TokenConfig
     {

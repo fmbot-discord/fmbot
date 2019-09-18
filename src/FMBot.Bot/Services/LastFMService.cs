@@ -1,23 +1,22 @@
-﻿using FMBot.Bot.Extensions;
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
+using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
 using FMBot.Data.Entities;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
-using Bot.Logger;
-using FMBot.Bot.Configurations;
 using static FMBot.Bot.FMBotUtil;
 using static FMBot.Bot.Models.LastFMModels;
 
-namespace FMBot.Services
+namespace FMBot.Bot.Services
 {
     internal class LastFMService
     {
@@ -295,6 +294,27 @@ namespace FMBot.Services
                 {
                     image.Dispose();
                 }
+            }
+        }
+
+        public async Task TestLastFMAPI()
+        {
+            LastfmClient fmClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
+
+            Console.WriteLine("Checking Last.FM API...");
+            var lastFMUser = await fmClient.User.GetInfoAsync("Lastfmsupport").ConfigureAwait(false);
+
+            if (lastFMUser.Status.ToString().Equals("BadApiKey"))
+            {
+                Console.WriteLine("Warning! Invalid API key for Last.FM! Please set the proper API keys in the `/Configs/ConfigData.json`! \n \n" +
+                                  "Exiting in 10 seconds...");
+
+                Thread.Sleep(10000);
+                Environment.Exit(0);
+            }
+            else
+            {
+                Console.WriteLine("Last.FM API test successful.");
             }
         }
     }

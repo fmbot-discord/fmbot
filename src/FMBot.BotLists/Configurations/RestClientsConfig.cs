@@ -1,8 +1,8 @@
 ﻿using System.IO;
-using Bot.BotLists.Structs;
+using FMBot.BotLists.Structs;
 using Newtonsoft.Json;
 
-namespace Bot.BotLists.Configurations
+namespace FMBot.BotLists.Configurations
 {
     public static class RestClientsConfig
     {

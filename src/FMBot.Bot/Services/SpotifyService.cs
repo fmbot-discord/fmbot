@@ -1,12 +1,11 @@
-﻿using SpotifyAPI.Web;
+﻿using System.Threading.Tasks;
+using FMBot.Bot.Configurations;
+using SpotifyAPI.Web;
 using SpotifyAPI.Web.Auth;
 using SpotifyAPI.Web.Enums;
 using SpotifyAPI.Web.Models;
-using System.Threading.Tasks;
-using FMBot.Bot.Configurations;
-using static FMBot.Bot.FMBotUtil;
 
-namespace FMBot.Services
+namespace FMBot.Bot.Services
 {
     internal class SpotifyService
     {

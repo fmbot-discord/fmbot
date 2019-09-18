@@ -1,22 +1,21 @@
 ﻿using Discord;
 using Discord.Commands;
 using FMBot.Data.Entities;
-using FMBot.Services;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Bot.Logger;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
+using FMBot.Bot.Services;
 
 namespace FMBot.Bot.Commands
 {
     public class FriendsCommands : ModuleBase
     {
-        private readonly Logger _logger;
+        private readonly Logger.Logger _logger;
 
         private readonly FriendsService _friendsService = new FriendsService();
         private readonly GuildService _guildService = new GuildService();
@@ -27,7 +26,7 @@ namespace FMBot.Bot.Commands
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        public FriendsCommands(Logger logger)
+        public FriendsCommands(Logger.Logger logger)
         {
             _logger = logger;
             _embed = new EmbedBuilder();

@@ -3,14 +3,13 @@ using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Data.Entities;
-using FMBot.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Bot.Logger;
+using FMBot.Bot.Services;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
@@ -18,11 +17,11 @@ namespace FMBot.Bot.Commands
     [Summary("FMBot Owners Only")]
     public class OwnerCommands : ModuleBase
     {
-        private readonly Logger _logger;
+        private readonly Logger.Logger _logger;
 
         private readonly AdminService _adminService = new AdminService();
 
-        public OwnerCommands(Logger logger)
+        public OwnerCommands(Logger.Logger logger)
         {
             _logger = logger;
         }

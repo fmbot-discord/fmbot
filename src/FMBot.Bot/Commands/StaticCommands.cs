@@ -1,17 +1,17 @@
-﻿using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
-using FMBot.Bot.Extensions;
-using FMBot.Services;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Discord;
+using Discord.Commands;
+using Discord.WebSocket;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
+using FMBot.Bot.Services;
 using static FMBot.Bot.FMBotUtil;
 
-namespace FMBot.Bot
+namespace FMBot.Bot.Commands
 {
     public class StaticCommands : ModuleBase
     {

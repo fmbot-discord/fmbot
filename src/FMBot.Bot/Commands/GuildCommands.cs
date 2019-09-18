@@ -1,11 +1,11 @@
 ﻿using Discord;
 using Discord.Commands;
 using FMBot.Data.Entities;
-using FMBot.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using FMBot.Bot.Services;
 
 namespace FMBot.Bot.Commands
 {
