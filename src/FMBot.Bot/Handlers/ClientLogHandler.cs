@@ -41,7 +41,7 @@ namespace FMBot.Bot.Handlers
         /// <param name="guild">The server that the client joined.</param>
         private Task ClientJoinedGuildEvent(SocketGuild guild)
         {
-            Task.Run(async () => await ClientJoinedGuild(guild).ConfigureAwait(false));
+            Task.Run(async () => await ClientJoinedGuild(guild));
             return Task.CompletedTask;
         }
 
@@ -85,7 +85,7 @@ namespace FMBot.Bot.Handlers
         /// <param name="shard">The shard that got disconnected.</param>
         private Task ShardDisconnectedEvent(Exception exception, DiscordSocketClient shard)
         {
-            Task.Run(async () => await ShardDisconnectedAsync(exception, shard).ConfigureAwait(false));
+            Task.Run(async () => await ShardDisconnectedAsync(exception, shard));
             return Task.CompletedTask;
         }
 
@@ -98,7 +98,7 @@ namespace FMBot.Bot.Handlers
         /// <param name="shard">The shard that got disconnected.</param>
         private Task ShardLatencyEvent(int oldPing, int updatePing, DiscordSocketClient shard)
         {
-            Task.Run(async () => await ShardLatencyUpdatedAsync(oldPing, updatePing, shard).ConfigureAwait(false));
+            Task.Run(async () => await ShardLatencyUpdatedAsync(oldPing, updatePing, shard));
             return Task.CompletedTask;
         }
 
@@ -109,7 +109,7 @@ namespace FMBot.Bot.Handlers
         /// <param name="shard">The shard that got connected.</param>
         private Task ShardConnectedEvent(DiscordSocketClient shard)
         {
-            Task.Run(async () => await ShardConnectedAsync(shard).ConfigureAwait(false));
+            Task.Run(async () => await ShardConnectedAsync(shard));
             return Task.CompletedTask;
         }
 
@@ -124,7 +124,7 @@ namespace FMBot.Bot.Handlers
             try
             {
                 var channel = this._client.GetGuild(Convert.ToUInt64(ConfigData.Data.BaseServer)).GetTextChannel(Convert.ToUInt64(ConfigData.Data.ExceptionChannel));
-                await channel.SendMessageAsync($"<:RedStatus:519932993343586350> Shard: `{shard.ShardId}` Disconnected with the reason {exception.Message}").ConfigureAwait(false);
+                await channel.SendMessageAsync($"<:RedStatus:519932993343586350> Shard: `{shard.ShardId}` Disconnected with the reason {exception.Message}");
             }
             catch (Exception)
             {
@@ -142,9 +142,9 @@ namespace FMBot.Bot.Handlers
         {
             try
             {
-                await Task.Delay(30 * 1000).ConfigureAwait(false);
+                await Task.Delay(30 * 1000);
                 var channel = this._client.GetGuild(Convert.ToUInt64(ConfigData.Data.BaseServer)).GetTextChannel(Convert.ToUInt64(ConfigData.Data.ExceptionChannel));
-                await channel.SendMessageAsync($"<:GreenStatus:519932750296514605> Shard: `{shard.ShardId}` Connected with {shard.Latency}ms").ConfigureAwait(false);
+                await channel.SendMessageAsync($"<:GreenStatus:519932750296514605> Shard: `{shard.ShardId}` Connected with {shard.Latency}ms");
             }
             catch (Exception)
             {
@@ -167,7 +167,7 @@ namespace FMBot.Bot.Handlers
             try
             {
                 var channel = this._client.GetGuild(Convert.ToUInt64(ConfigData.Data.BaseServer)).GetTextChannel(Convert.ToUInt64(ConfigData.Data.ExceptionChannel));
-                await channel.SendMessageAsync($"Shard: `{shard.ShardId}` Latency update from **{oldPing}** ms to **{updatePing}** ms").ConfigureAwait(false);
+                await channel.SendMessageAsync($"Shard: `{shard.ShardId}` Latency update from **{oldPing}** ms to **{updatePing}** ms");
             }
             catch (Exception e)
             {
@@ -186,7 +186,7 @@ namespace FMBot.Bot.Handlers
             try
             {
                 var channel = this._client.GetGuild(Convert.ToUInt64(ConfigData.Data.BaseServer)).GetTextChannel(Convert.ToUInt64(ConfigData.Data.ExceptionChannel));
-                await channel.SendMessageAsync($"Joined server: {guild.Name}, Id: {guild.Id}, MemberCount: {guild.MemberCount}.").ConfigureAwait(false);
+                await channel.SendMessageAsync($"Joined server: {guild.Name}, Id: {guild.Id}, MemberCount: {guild.MemberCount}.");
             }
             catch (Exception e)
             {
@@ -204,7 +204,7 @@ namespace FMBot.Bot.Handlers
             try
             {
                 var channel = this._client.GetGuild(Convert.ToUInt64(ConfigData.Data.BaseServer)).GetTextChannel(Convert.ToUInt64(ConfigData.Data.ExceptionChannel));
-                await channel.SendMessageAsync($"Left server: {guild.Name}, Id: {guild.Id}.").ConfigureAwait(false);
+                await channel.SendMessageAsync($"Left server: {guild.Name}, Id: {guild.Id}.");
             }
             catch (Exception e)
             {

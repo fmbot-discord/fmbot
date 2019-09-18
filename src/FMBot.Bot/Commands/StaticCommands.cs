@@ -42,31 +42,31 @@ namespace FMBot.Bot.Commands
                 "https://discord.gg/srmpCaa");
 
 
-            await Context.Channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
+            await Context.Channel.SendMessageAsync("", false, builder.Build());
         }
 
         [Command("fmdonate"), Summary("Please donate if you like this bot!")]
         public async Task donateAsync()
         {
-            await ReplyAsync("If you like the bot and you would like to support its development, feel free to support the developer at: https://www.paypal.me/Bitl").ConfigureAwait(false);
+            await ReplyAsync("If you like the bot and you would like to support its development, feel free to support the developer at: https://www.paypal.me/Bitl");
         }
 
         [Command("fmgithub"), Summary("GitHub Page")]
         public async Task githubAsync()
         {
-            await ReplyAsync("https://github.com/Bitl/FMBot_Discord").ConfigureAwait(false);
+            await ReplyAsync("https://github.com/Bitl/FMBot_Discord");
         }
 
         [Command("fmgitlab"), Summary("GitLab Page")]
         public async Task gitlabAsync()
         {
-            await ReplyAsync("https://gitlab.com/Bitl/FMBot_Discord").ConfigureAwait(false);
+            await ReplyAsync("https://gitlab.com/Bitl/FMBot_Discord");
         }
 
         [Command("fmbugs"), Summary("Report bugs here!")]
         public async Task bugsAsync()
         {
-            await ReplyAsync("Report bugs here:\nGithub: https://github.com/Bitl/FMBot_Discord/issues \nGitLab: https://gitlab.com/Bitl/FMBot_Discord/issues").ConfigureAwait(false);
+            await ReplyAsync("Report bugs here:\nGithub: https://github.com/Bitl/FMBot_Discord/issues \nGitLab: https://gitlab.com/Bitl/FMBot_Discord/issues");
         }
 
         [Command("fmstatus"), Summary("Displays bot stats.")]
@@ -120,7 +120,7 @@ namespace FMBot.Bot.Commands
             builder.AddField("Shards: ", client.Shards.Count, true);
             builder.AddField("Bot version: ", assemblyVersion, true);
 
-            await Context.Channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
+            await Context.Channel.SendMessageAsync("", false, builder.Build());
         }
 
 
@@ -161,7 +161,7 @@ namespace FMBot.Bot.Commands
 
             builder.WithFooter("Please use `" + prefix + "fmfullhelp` to get a list of all possible commands.");
 
-            await Context.Channel.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
+            await Context.Channel.SendMessageAsync("", false, builder.Build());
         }
 
 
@@ -209,7 +209,7 @@ namespace FMBot.Bot.Commands
 
                 if (length < 1990)
                 {
-                    await Context.User.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
+                    await Context.User.SendMessageAsync("", false, builder.Build());
 
                     builder = new EmbedBuilder();
                     length = 0;
@@ -248,11 +248,11 @@ namespace FMBot.Bot.Commands
 
             builder.WithFooter("Still need help? Join the FMBot Discord Server: https://discord.gg/srmpCaa");
 
-            await Context.User.SendMessageAsync("", false, builder.Build()).ConfigureAwait(false);
+            await Context.User.SendMessageAsync("", false, builder.Build());
 
             if (!guildService.CheckIfDM(Context))
             {
-                await Context.Channel.SendMessageAsync("Check your DMs!").ConfigureAwait(false);
+                await Context.Channel.SendMessageAsync("Check your DMs!");
             }
 
         }

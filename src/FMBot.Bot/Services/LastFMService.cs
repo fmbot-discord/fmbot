@@ -25,7 +25,7 @@ namespace FMBot.Bot.Services
         // Last scrobble
         public async Task<LastTrack> GetLastScrobbleAsync(string lastFMUserName)
         {
-            PageResponse<LastTrack> tracks = await LastfmClient.User.GetRecentScrobbles(lastFMUserName, null, 1, 1).ConfigureAwait(false);
+            PageResponse<LastTrack> tracks = await LastfmClient.User.GetRecentScrobbles(lastFMUserName, null, 1, 1);
 
             return tracks.Content[0];
         }
@@ -33,13 +33,13 @@ namespace FMBot.Bot.Services
         // Recent scrobbles
         public async Task<PageResponse<LastTrack>> GetRecentScrobblesAsync(string lastFMUserName, int count = 2)
         {
-            return await LastfmClient.User.GetRecentScrobbles(lastFMUserName, null, 1, count).ConfigureAwait(false);
+            return await LastfmClient.User.GetRecentScrobbles(lastFMUserName, null, 1, count);
         }
 
         // User
         public async Task<LastResponse<LastUser>> GetUserInfoAsync(string lastFMUserName)
         {
-            return await LastfmClient.User.GetInfoAsync(lastFMUserName).ConfigureAwait(false);
+            return await LastfmClient.User.GetInfoAsync(lastFMUserName);
 
             return null;
         }
@@ -47,13 +47,13 @@ namespace FMBot.Bot.Services
         // Album info
         public async Task<LastResponse<LastAlbum>> GetAlbumInfoAsync(string artistName, string albumName)
         {
-            return await LastfmClient.Album.GetInfoAsync(artistName, albumName).ConfigureAwait(false);
+            return await LastfmClient.Album.GetInfoAsync(artistName, albumName);
         }
 
         // Album images
         public async Task<LastImageSet> GetAlbumImagesAsync(string artistName, string albumName)
         {
-            LastResponse<LastAlbum> album = await LastfmClient.Album.GetInfoAsync(artistName, albumName).ConfigureAwait(false);
+            LastResponse<LastAlbum> album = await LastfmClient.Album.GetInfoAsync(artistName, albumName);
 
             return album?.Content?.Images;
         }
@@ -61,21 +61,21 @@ namespace FMBot.Bot.Services
         // Top albums
         public async Task<PageResponse<LastAlbum>> GetTopAlbumsAsync(string lastFMUserName, LastStatsTimeSpan timespan, int count = 2)
         {
-            return await LastfmClient.User.GetTopAlbums(lastFMUserName, timespan, 1, count).ConfigureAwait(false);
+            return await LastfmClient.User.GetTopAlbums(lastFMUserName, timespan, 1, count);
         }
 
         // Artist info
         public async Task<LastResponse<LastArtist>> GetArtistInfoAsync(string artistName)
         {
-            return await LastfmClient.Artist.GetInfoAsync(artistName).ConfigureAwait(false);
+            return await LastfmClient.Artist.GetInfoAsync(artistName);
         }
 
         // Artist info
         public async Task<LastImageSet> GetArtistImageAsync(string artistName)
         {
-            LastResponse<LastArtist> artist = await LastfmClient.Artist.GetInfoAsync(artistName).ConfigureAwait(false);
+            LastResponse<LastArtist> artist = await LastfmClient.Artist.GetInfoAsync(artistName);
 
-            var artist2 = await LastfmClient.Artist.GetInfoByMbidAsync(artist.Content.Mbid).ConfigureAwait(false);
+            var artist2 = await LastfmClient.Artist.GetInfoByMbidAsync(artist.Content.Mbid);
 
             return artist2?.Content?.MainImage;
         }
@@ -83,13 +83,13 @@ namespace FMBot.Bot.Services
         // Top artists
         public async Task<PageResponse<LastArtist>> GetTopArtistsAsync(string lastFMUserName, LastStatsTimeSpan timespan, int count = 2)
         {
-            return await LastfmClient.User.GetTopArtists(lastFMUserName, timespan, 1, count).ConfigureAwait(false);
+            return await LastfmClient.User.GetTopArtists(lastFMUserName, timespan, 1, count);
         }
 
         // Check if lastfm user exists
         public async Task<bool> LastFMUserExistsAsync(string lastFMUserName)
         {
-            LastResponse<LastUser> lastFMUser = await LastfmClient.User.GetInfoAsync(lastFMUserName).ConfigureAwait(false);
+            LastResponse<LastUser> lastFMUser = await LastfmClient.User.GetInfoAsync(lastFMUserName);
 
             return lastFMUser.Success;
         }
@@ -150,7 +150,7 @@ namespace FMBot.Bot.Services
                         string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
                         string AlbumName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.Name;
 
-                        LastImageSet albumImages = await GetAlbumImagesAsync(ArtistName, AlbumName).ConfigureAwait(false);
+                        LastImageSet albumImages = await GetAlbumImagesAsync(ArtistName, AlbumName);
 
                         Bitmap cover;
 
@@ -167,7 +167,7 @@ namespace FMBot.Bot.Services
                             else
                             {
                                 WebRequest request = WebRequest.Create(url);
-                                using (WebResponse response = await request.GetResponseAsync().ConfigureAwait(false))
+                                using (WebResponse response = await request.GetResponseAsync())
                                 {
                                     using (Stream responseStream = response.GetResponseStream())
                                     {
@@ -206,14 +206,14 @@ namespace FMBot.Bot.Services
                 // Artist mode
                 else if (chart.mode == 1)
                 {
-                    PageResponse<LastArtist> artists = await GetTopArtistsAsync(chart.LastFMName, timespan, chart.max).ConfigureAwait(false);
+                    PageResponse<LastArtist> artists = await GetTopArtistsAsync(chart.LastFMName, timespan, chart.max);
                     for (int al = 0; al < chart.max; ++al)
                     {
                         LastArtist artist = artists.Content[al];
 
                         string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? nulltext : artist.Name;
 
-                        LastImageSet artistImage = await GetArtistImageAsync(ArtistName).ConfigureAwait(false);
+                        LastImageSet artistImage = await GetArtistImageAsync(ArtistName);
 
                         Bitmap cover;
 
@@ -230,7 +230,7 @@ namespace FMBot.Bot.Services
                             else
                             {
                                 WebRequest request = WebRequest.Create(url);
-                                using (WebResponse response = await request.GetResponseAsync().ConfigureAwait(false))
+                                using (WebResponse response = await request.GetResponseAsync())
                                 {
                                     using (Stream responseStream = response.GetResponseStream())
                                     {
@@ -302,7 +302,7 @@ namespace FMBot.Bot.Services
             LastfmClient fmClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
 
             Console.WriteLine("Checking Last.FM API...");
-            var lastFMUser = await fmClient.User.GetInfoAsync("Lastfmsupport").ConfigureAwait(false);
+            var lastFMUser = await fmClient.User.GetInfoAsync("Lastfmsupport");
 
             if (lastFMUser.Status.ToString().Equals("BadApiKey"))
             {

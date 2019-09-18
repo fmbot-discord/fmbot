@@ -34,12 +34,12 @@ namespace FMBot.Bot.Commands
         {
             if (guildService.CheckIfDM(Context))
             {
-                await ReplyAsync("Command is not supported in DMs.").ConfigureAwait(false);
+                await ReplyAsync("Command is not supported in DMs.");
                 return;
             }
 
             IGuildUser serverUser = (IGuildUser)Context.Message.Author;
-            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator && !await adminService.HasCommandAccessAsync(Context.User, UserType.Admin).ConfigureAwait(false))
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator && !await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
             {
                 await ReplyAsync("You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
                 return;
@@ -76,14 +76,14 @@ namespace FMBot.Bot.Commands
         {
             if (guildService.CheckIfDM(Context))
             {
-                await ReplyAsync("Command is not supported in DMs.").ConfigureAwait(false);
+                await ReplyAsync("Command is not supported in DMs.");
                 return;
             }
 
             IGuildUser serverUser = (IGuildUser)Context.Message.Author;
-            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator && !await adminService.HasCommandAccessAsync(Context.User, UserType.Admin).ConfigureAwait(false))
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator && !await adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
             {
-                await ReplyAsync("You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.").ConfigureAwait(false);
+                await ReplyAsync("You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
                 return;
             }
 
@@ -102,14 +102,14 @@ namespace FMBot.Bot.Commands
 
                 if (reply.Length > 1950)
                 {
-                    await Context.User.SendMessageAsync(reply).ConfigureAwait(false);
+                    await Context.User.SendMessageAsync(reply);
                     reply = "";
                 }
 
             }
 
-            await Context.User.SendMessageAsync(reply).ConfigureAwait(false);
-            await ReplyAsync("Check your DMs!").ConfigureAwait(false);
+            await Context.User.SendMessageAsync(reply);
+            await ReplyAsync("Check your DMs!");
         }
 
 

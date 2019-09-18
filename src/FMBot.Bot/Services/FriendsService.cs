@@ -80,7 +80,7 @@ namespace FMBot.Bot.Services
         public async Task AddDiscordFriendAsync(string discordUserID, string friendDiscordUserID)
         {
             User user = await db.Users
-                .FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID).ConfigureAwait(false);
+                .FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
 
             if (user == null)
             {
@@ -95,14 +95,14 @@ namespace FMBot.Bot.Services
             }
 
             User friendUser = await db.Users
-                .FirstOrDefaultAsync(f => f.DiscordUserID == friendDiscordUserID).ConfigureAwait(false);
+                .FirstOrDefaultAsync(f => f.DiscordUserID == friendDiscordUserID);
 
             if (friendUser == null)
             {
                 return;
             }
 
-            if (await db.Friends.FirstOrDefaultAsync(f => f.UserID == user.UserID && f.LastFMUserName == friendUser.UserNameLastFM).ConfigureAwait(false) != null)
+            if (await db.Friends.FirstOrDefaultAsync(f => f.UserID == user.UserID && f.LastFMUserName == friendUser.UserNameLastFM) != null)
             {
                 return;
             }

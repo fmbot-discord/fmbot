@@ -23,13 +23,13 @@ namespace FMBot.Bot.Services
         // Get user from guild with ID
         public async Task<IGuildUser> FindUserFromGuildAsync(ICommandContext context, ulong id)
         {
-            return await context.Guild.GetUserAsync(id).ConfigureAwait(false);
+            return await context.Guild.GetUserAsync(id);
         }
 
 
         public async Task<GuildPermissions> CheckSufficientPermissionsAsync(ICommandContext context)
         {
-            IGuildUser user = await context.Guild.GetUserAsync(context.Client.CurrentUser.Id).ConfigureAwait(false);
+            IGuildUser user = await context.Guild.GetUserAsync(context.Client.CurrentUser.Id);
             return user.GuildPermissions;
         }
 
@@ -37,7 +37,7 @@ namespace FMBot.Bot.Services
         // Get user from guild with searchvalue
         public async Task<IGuildUser> FindUserFromGuildAsync(ICommandContext context, string searchValue)
         {
-            IReadOnlyCollection<IGuildUser> users = await context.Guild.GetUsersAsync().ConfigureAwait(false);
+            IReadOnlyCollection<IGuildUser> users = await context.Guild.GetUsersAsync();
 
             if (searchValue.Length > 3)
             {
@@ -59,7 +59,7 @@ namespace FMBot.Bot.Services
         // Get all guild users
         public async Task<Dictionary<string, string>> FindAllUsersFromGuildAsync(ICommandContext context)
         {
-            IReadOnlyCollection<IGuildUser> users = await context.Guild.GetUsersAsync().ConfigureAwait(false);
+            IReadOnlyCollection<IGuildUser> users = await context.Guild.GetUsersAsync();
             Dictionary<string, string> userList = new Dictionary<string, string>();
 
             foreach (IGuildUser user in users)
@@ -79,7 +79,7 @@ namespace FMBot.Bot.Services
         public async Task ChangeGuildSettingAsync(IGuild guild, ChartTimePeriod chartTimePeriod, ChartType chartType)
         {
             string guildId = guild.Id.ToString();
-            Guild existingGuild = await db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guildId).ConfigureAwait(false);
+            Guild existingGuild = await db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guildId);
 
             if (existingGuild == null)
             {
@@ -94,7 +94,7 @@ namespace FMBot.Bot.Services
 
                 db.Guilds.Add(newGuild);
 
-                await db.SaveChangesAsync().ConfigureAwait(false);
+                await db.SaveChangesAsync();
             }
         }
 
@@ -113,12 +113,12 @@ namespace FMBot.Bot.Services
 
             db.Guilds.Add(newGuild);
 
-            await db.SaveChangesAsync().ConfigureAwait(false);
+            await db.SaveChangesAsync();
         }
 
         public async Task<bool> GuildExistsAsync(SocketGuild guild)
         {
-            return await db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guild.Id.ToString()).ConfigureAwait(false) != null;
+            return await db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guild.Id.ToString()) != null;
         }
     }
 }

@@ -18,7 +18,7 @@ namespace FMBot.Bot.Services
         {
             string discordUserID = discordUser.Id.ToString();
 
-            return await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID).ConfigureAwait(false);
+            return await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
         }
 
 
@@ -31,7 +31,7 @@ namespace FMBot.Bot.Services
                 return context.User.Username;
             }
 
-            IGuildUser guildUser = await context.Guild.GetUserAsync(context.User.Id).ConfigureAwait(false);
+            IGuildUser guildUser = await context.Guild.GetUserAsync(context.User.Id);
 
             return guildUser.Nickname ?? context.User.Username;
         }
@@ -41,7 +41,7 @@ namespace FMBot.Bot.Services
         {
             string discordUserID = discordUser.Id.ToString();
 
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID).ConfigureAwait(false);
+            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
 
             if (user == null)
             {
@@ -56,7 +56,7 @@ namespace FMBot.Bot.Services
         {
             string discordUserID = discordUser.Id.ToString();
 
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID).ConfigureAwait(false);
+            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
 
             if (user == null)
             {
@@ -69,7 +69,7 @@ namespace FMBot.Bot.Services
         // Featured
         public async Task<User> GetFeaturedUserAsync()
         {
-            return await db.Users.FirstOrDefaultAsync(f => f.Featured == true).ConfigureAwait(false);
+            return await db.Users.FirstOrDefaultAsync(f => f.Featured == true);
         }
 
 
@@ -77,7 +77,7 @@ namespace FMBot.Bot.Services
         // Random user
         public async Task<string> GetRandomLastFMUserAsync()
         {
-            User featuredUser = await db.Users.FirstOrDefaultAsync(f => f.Featured == true).ConfigureAwait(false);
+            User featuredUser = await db.Users.FirstOrDefaultAsync(f => f.Featured == true);
             if (featuredUser != null)
             {
                 featuredUser.Featured = false;
@@ -104,7 +104,7 @@ namespace FMBot.Bot.Services
         {
             string discordUserID = discordUser.Id.ToString();
 
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID).ConfigureAwait(false);
+            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
 
             if (user == null)
             {
@@ -117,9 +117,9 @@ namespace FMBot.Bot.Services
         // UserTitle
         public async Task<string> GetUserTitleAsync(ICommandContext context)
         {
-            string name = await GetNameAsync(context).ConfigureAwait(false);
-            UserType rank = await GetRankAsync(context.User).ConfigureAwait(false);
-            bool? featured = await GetFeaturedAsync(context.User).ConfigureAwait(false);
+            string name = await GetNameAsync(context);
+            UserType rank = await GetRankAsync(context.User);
+            bool? featured = await GetFeaturedAsync(context.User);
 
             string title = name;
 
@@ -181,23 +181,23 @@ namespace FMBot.Bot.Services
 
             db.Entry(user).State = EntityState.Modified;
 
-            await db.SaveChangesAsync().ConfigureAwait(false);
+            await db.SaveChangesAsync();
         }
 
         // Remove user
         public async Task DeleteUser(int userID)
         {
-            User user = await db.Users.FirstOrDefaultAsync(f => f.UserID == userID).ConfigureAwait(false);
+            User user = await db.Users.FirstOrDefaultAsync(f => f.UserID == userID);
 
             db.Users.Remove(user);
 
-            await db.SaveChangesAsync().ConfigureAwait(false);
+            await db.SaveChangesAsync();
         }
 
         // Usercount
         public async Task<int> GetUserCountAsync()
         {
-            return await db.Users.CountAsync().ConfigureAwait(false);
+            return await db.Users.CountAsync();
         }
     }
 }

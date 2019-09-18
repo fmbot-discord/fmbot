@@ -418,7 +418,7 @@ namespace FMBot.Bot.Commands
                 List<Bitmap> images = new List<Bitmap>();
 
                 var timespan = _lastFmService.StringToLastStatsTimeSpan(time);
-                PageResponse<LastAlbum> albums = await _lastFmService.GetTopAlbumsAsync(userSettings.UserNameLastFM, timespan, chartAlbums).ConfigureAwait(false);
+                PageResponse<LastAlbum> albums = await _lastFmService.GetTopAlbumsAsync(userSettings.UserNameLastFM, timespan, chartAlbums);
 
                 if (albums.Count() < chartAlbums)
                 {

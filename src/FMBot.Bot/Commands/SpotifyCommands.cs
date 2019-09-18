@@ -30,17 +30,17 @@ namespace FMBot.Bot.Commands
         [Command("fmspotify"), Summary("Shares a link to a Spotify track based on what a user is listening to")]
         public async Task fmspotifyAsync(IUser user = null)
         {
-            Data.Entities.User userSettings = await _userService.GetUserSettingsAsync(Context.User).ConfigureAwait(false);
+            Data.Entities.User userSettings = await _userService.GetUserSettingsAsync(Context.User);
 
             if (userSettings == null || userSettings.UserNameLastFM == null)
             {
-                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.").ConfigureAwait(false);
+                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
                 return;
             }
 
             try
             {
-                PageResponse<LastTrack> tracks = await _lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1).ConfigureAwait(false);
+                PageResponse<LastTrack> tracks = await _lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
                 LastTrack currentTrack = tracks.Content[0];
 
                 string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? null : currentTrack.Name;
@@ -49,25 +49,25 @@ namespace FMBot.Bot.Commands
 
                 string querystring = TrackName + " - " + ArtistName + " " + AlbumName;
 
-                SearchItem item = await _spotifyService.GetSearchResultAsync(querystring).ConfigureAwait(false);
+                SearchItem item = await _spotifyService.GetSearchResultAsync(querystring);
 
                 if (item.Tracks?.Items?.Any() == true)
                 {
                     FullTrack track = item.Tracks.Items.FirstOrDefault();
                     SimpleArtist trackArtist = track.Artists.FirstOrDefault();
 
-                    await ReplyAsync("https://open.spotify.com/track/" + track.Id).ConfigureAwait(false);
+                    await ReplyAsync("https://open.spotify.com/track/" + track.Id);
                     this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
                 }
                 else
                 {
-                    await ReplyAsync("No results have been found for this track. Querystring: `" + querystring + "`").ConfigureAwait(false);
+                    await ReplyAsync("No results have been found for this track. Querystring: `" + querystring + "`");
                 }
             }
             catch (Exception e)
             {
                 _logger.LogException(Context.Message.Content, e);
-                await ReplyAsync("Unable to show Last.FM info via Spotify due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.").ConfigureAwait(false);
+                await ReplyAsync("Unable to show Last.FM info via Spotify due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
 
@@ -83,32 +83,32 @@ namespace FMBot.Bot.Commands
                 {
                     querystring = string.Join(" ", searchterms);
 
-                    SearchItem item = await _spotifyService.GetSearchResultAsync(querystring).ConfigureAwait(false);
+                    SearchItem item = await _spotifyService.GetSearchResultAsync(querystring);
 
                     if (item.Tracks.Items.Count > 0)
                     {
                         FullTrack track = item.Tracks.Items.FirstOrDefault();
                         SimpleArtist trackArtist = track.Artists.FirstOrDefault();
 
-                        await ReplyAsync("https://open.spotify.com/track/" + track.Id).ConfigureAwait(false);
+                        await ReplyAsync("https://open.spotify.com/track/" + track.Id);
                         this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
 
                     }
                     else
                     {
-                        await ReplyAsync("No results have been found for this track.").ConfigureAwait(false);
+                        await ReplyAsync("No results have been found for this track.");
                     }
                 }
                 else
                 {
-                    await ReplyAsync("Please specify what you want to search for.").ConfigureAwait(false);
+                    await ReplyAsync("Please specify what you want to search for.");
                 }
             }
             catch (Exception e)
             {
                 _logger.LogException(Context.Message.Content, e);
 
-                await ReplyAsync("Unable to search for music via Spotify due to an internal error.").ConfigureAwait(false);
+                await ReplyAsync("Unable to search for music via Spotify due to an internal error.");
             }
         }
     }

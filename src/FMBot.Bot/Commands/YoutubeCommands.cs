@@ -31,17 +31,17 @@ namespace FMBot.Bot.Commands
 
             if (userSettings == null || userSettings.UserNameLastFM == null)
             {
-                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.").ConfigureAwait(false);
+                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
                 return;
             }
 
             try
             {
-                LastTrack track = await _lastFmService.GetLastScrobbleAsync(userSettings.UserNameLastFM).ConfigureAwait(false);
+                LastTrack track = await _lastFmService.GetLastScrobbleAsync(userSettings.UserNameLastFM);
 
                 if (track == null)
                 {
-                    await ReplyAsync("No scrobbles found on your LastFM profile. (" + userSettings.UserNameLastFM + ")").ConfigureAwait(false);
+                    await ReplyAsync("No scrobbles found on your LastFM profile. (" + userSettings.UserNameLastFM + ")");
                     return;
                 }
 
@@ -52,20 +52,20 @@ namespace FMBot.Bot.Commands
                     VideoInformation youtubeResult = _youtubeService.GetSearchResult(querystring);
 
                     await ReplyAsync($"Searched for: `{querystring}`\n " +
-                        youtubeResult.Url).ConfigureAwait(false);
+                        youtubeResult.Url);
 
                     this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
                 }
                 catch (Exception e)
                 {
                     _logger.LogException(Context.Message.Content, e);
-                    await ReplyAsync("No results have been found for this track.").ConfigureAwait(false);
+                    await ReplyAsync("No results have been found for this track.");
                 }
             }
             catch (Exception e)
             {
                 _logger.LogException(Context.Message.Content, e);
-                await ReplyAsync("Unable to show Last.FM info via YouTube due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.").ConfigureAwait(false);
+                await ReplyAsync("Unable to show Last.FM info via YouTube due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
 
@@ -76,7 +76,7 @@ namespace FMBot.Bot.Commands
         {
             if (searchterms.Length < 1)
             {
-                await ReplyAsync("Please enter a searchvalue.").ConfigureAwait(false);
+                await ReplyAsync("Please enter a searchvalue.");
                 return;
             }
 
@@ -86,13 +86,13 @@ namespace FMBot.Bot.Commands
             {
                 VideoInformation youtubeResult = _youtubeService.GetSearchResult(querystring);
 
-                await ReplyAsync(youtubeResult.Url).ConfigureAwait(false);
+                await ReplyAsync(youtubeResult.Url);
                 this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
                 _logger.LogException(Context.Message.Content, e);
-                await ReplyAsync("No results have been found for this track.").ConfigureAwait(false);
+                await ReplyAsync("No results have been found for this track.");
             }
         }
     }

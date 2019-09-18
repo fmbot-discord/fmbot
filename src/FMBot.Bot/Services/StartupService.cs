@@ -38,12 +38,12 @@ namespace FMBot.Bot.Services
             if (string.IsNullOrWhiteSpace(discordToken))
                 throw new Exception("Please enter your bots token into the `/Configs/ConfigData.json` file.");
 
-            await _lastFmService;
+            await _lastFmService.TestLastFMAPI();
 
             await _discord.LoginAsync(TokenType.Bot, discordToken);     // Login to discord
             await _discord.StartAsync();                                // Connect to the websocket
 
-            await _discord.SetGameAsync("🎶 Say " + ConfigData.Data.CommandPrefix + "fmhelp to use 🎶").ConfigureAwait(false);
+            await _discord.SetGameAsync("🎶 Say " + ConfigData.Data.CommandPrefix + "fmhelp to use 🎶");
             await _discord.SetStatusAsync(UserStatus.DoNotDisturb);
 
             await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);     // Load commands and modules into the command service
