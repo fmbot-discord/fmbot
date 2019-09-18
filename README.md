@@ -1,6 +1,6 @@
 <h1>.fmbot</h1>
 
-[![Build status](https://ci.appveyor.com/api/projects/status/7bl2caa1wcpp9yta?svg=true)](https://ci.appveyor.com/project/Bitl/fmbot-discord)
+[![Build status](https://ci.appveyor.com/api/projects/status/jjgux53retdjw1d9?svg=true)](https://ci.appveyor.com/project/fmbotdiscord/fmbot-discord)
 
 ![Logo](https://raw.githubusercontent.com/Bitl/FMBot_Discord/1.1.4/fmbotlogo.png)
 
