@@ -11,7 +11,7 @@ Feel free to join our Discord server: https://discord.gg/srmpCaa
 We also host the bot, [click here to add](https://discordapp.com/oauth2/authorize?client_id=356268235697553409&scope=bot&permissions=0)
 
 <h1>Download Binaries</h1>
-Get them from https://github.com/Bitl/FMBot_Discord/releases (Stable) or https://ci.appveyor.com/project/Bitl/fmbot-discord/build/artifacts (Latest).
+Get them from https://github.com/Bitl/FMBot_Discord/releases (Stable) or https://ci.appveyor.com/project/fmbotdiscord/fmbot-discord/build/artifacts (Latest).
 
 <h1>Getting started</h1>
 
