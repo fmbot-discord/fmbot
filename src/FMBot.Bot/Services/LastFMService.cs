@@ -296,26 +296,5 @@ namespace FMBot.Bot.Services
                 }
             }
         }
-
-        public async Task TestLastFMAPI()
-        {
-            LastfmClient fmClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
-
-            Console.WriteLine("Checking Last.FM API...");
-            var lastFMUser = await fmClient.User.GetInfoAsync("Lastfmsupport");
-
-            if (lastFMUser.Status.ToString().Equals("BadApiKey"))
-            {
-                Console.WriteLine("Warning! Invalid API key for Last.FM! Please set the proper API keys in the `/Configs/ConfigData.json`! \n \n" +
-                                  "Exiting in 10 seconds...");
-
-                Thread.Sleep(10000);
-                Environment.Exit(0);
-            }
-            else
-            {
-                Console.WriteLine("Last.FM API test successful.");
-            }
-        }
     }
 }

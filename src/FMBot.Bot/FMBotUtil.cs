@@ -27,8 +27,6 @@ namespace FMBot.Bot
             public static string ImageFolder = BasePath + "resources/images/";
             public static string FeaturedUserID = "";
             public static int CommandExecutions;
-            public static int CommandExecutions_Servers;
-            public static int CommandExecutions_DMs;
             public static Hashtable charts = new Hashtable();
 
             private static bool IsUserInDM;

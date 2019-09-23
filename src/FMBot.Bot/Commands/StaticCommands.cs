@@ -105,16 +105,12 @@ namespace FMBot.Bot.Commands
             string assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
             int fixedCmdGlobalCount = GlobalVars.CommandExecutions + 1;
-            int fixedCmdGlobalCount_Servers = GlobalVars.CommandExecutions_Servers + 1;
-            int fixedCmdGlobalCount_DMs = GlobalVars.CommandExecutions_DMs + 1;
 
             builder.AddField("Bot Uptime: ", startTime.ToReadableString(), true);
             builder.AddField("Server Uptime: ", GlobalVars.SystemUpTime().ToReadableString(), true);
             builder.AddField("Usercount: ", (await userService.GetUserCountAsync()).ToString(), true);
             builder.AddField("Servercount: ", client.Guilds.Count, true);
-            builder.AddField("Commands used since bot start: ", fixedCmdGlobalCount);
-            builder.AddField("Commands in servers: ", fixedCmdGlobalCount_Servers);
-            builder.AddField("Commands in DMs ", fixedCmdGlobalCount_DMs);
+            builder.AddField("Commands used: ", fixedCmdGlobalCount, true);
             builder.AddField("Bot status: ", status, true);
             builder.AddField("Latency: ", client.Latency + "ms", true);
             builder.AddField("Shards: ", client.Shards.Count, true);
