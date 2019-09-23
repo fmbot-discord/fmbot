@@ -5,7 +5,6 @@ namespace FMBot.Logger
 {
     public class Logger
     {
-        /// <inheritdoc />
         public void Log(string text, ConsoleColor color = ConsoleColor.Gray)
         {
             Console.ForegroundColor = color;
@@ -21,13 +20,11 @@ namespace FMBot.Logger
             sw.WriteLine($"{DateTime.Now:T} : {text}");
         }
 
-        /// <inheritdoc />
         public void LogCommandUsed(ulong? id, ulong channelId, ulong userId, string commandName)
         {
             Log($"GuildId: {id} || ChannelId: {channelId} || UserId: {userId} || Used: {commandName}");
         }
 
-        /// <inheritdoc />
         public void LogError(string errorReason, string message = null, string username = null, string guildName = null, ulong? guildId = null)
         {
             string error = $"{DateTime.Now:T} : Error - {errorReason} \n" +
