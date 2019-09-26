@@ -26,6 +26,7 @@ namespace FMBot.Bot.Services
         public async Task<LastTrack> GetLastScrobbleAsync(string lastFMUserName)
         {
             PageResponse<LastTrack> tracks = await LastfmClient.User.GetRecentScrobbles(lastFMUserName, null, 1, 1);
+            GlobalVars.LastFMApiCalls++;
 
             return tracks.Content[0];
         }
@@ -33,27 +34,35 @@ namespace FMBot.Bot.Services
         // Recent scrobbles
         public async Task<PageResponse<LastTrack>> GetRecentScrobblesAsync(string lastFMUserName, int count = 2)
         {
-            return await LastfmClient.User.GetRecentScrobbles(lastFMUserName, null, 1, count);
+            var recentScrobbles = await LastfmClient.User.GetRecentScrobbles(lastFMUserName, null, 1, count);
+            GlobalVars.LastFMApiCalls++;
+
+            return recentScrobbles;
         }
 
         // User
         public async Task<LastResponse<LastUser>> GetUserInfoAsync(string lastFMUserName)
         {
-            return await LastfmClient.User.GetInfoAsync(lastFMUserName);
+            var user = await LastfmClient.User.GetInfoAsync(lastFMUserName);
+            GlobalVars.LastFMApiCalls++;
 
-            return null;
+            return user;
         }
 
         // Album info
         public async Task<LastResponse<LastAlbum>> GetAlbumInfoAsync(string artistName, string albumName)
         {
-            return await LastfmClient.Album.GetInfoAsync(artistName, albumName);
+            var albumInfo = await LastfmClient.Album.GetInfoAsync(artistName, albumName);
+            GlobalVars.LastFMApiCalls++;
+
+            return albumInfo;
         }
 
         // Album images
         public async Task<LastImageSet> GetAlbumImagesAsync(string artistName, string albumName)
         {
             LastResponse<LastAlbum> album = await LastfmClient.Album.GetInfoAsync(artistName, albumName);
+            GlobalVars.LastFMApiCalls++;
 
             return album?.Content?.Images;
         }
@@ -61,13 +70,19 @@ namespace FMBot.Bot.Services
         // Top albums
         public async Task<PageResponse<LastAlbum>> GetTopAlbumsAsync(string lastFMUserName, LastStatsTimeSpan timespan, int count = 2)
         {
-            return await LastfmClient.User.GetTopAlbums(lastFMUserName, timespan, 1, count);
+            var topAlbums = await LastfmClient.User.GetTopAlbums(lastFMUserName, timespan, 1, count);
+            GlobalVars.LastFMApiCalls++;
+
+            return topAlbums;
         }
 
         // Artist info
         public async Task<LastResponse<LastArtist>> GetArtistInfoAsync(string artistName)
         {
-            return await LastfmClient.Artist.GetInfoAsync(artistName);
+            var artistInfo = await LastfmClient.Artist.GetInfoAsync(artistName);
+            GlobalVars.LastFMApiCalls++;
+
+            return artistInfo;
         }
 
         // Artist info
@@ -76,6 +91,7 @@ namespace FMBot.Bot.Services
             LastResponse<LastArtist> artist = await LastfmClient.Artist.GetInfoAsync(artistName);
 
             var artist2 = await LastfmClient.Artist.GetInfoByMbidAsync(artist.Content.Mbid);
+            GlobalVars.LastFMApiCalls++;
 
             return artist2?.Content?.MainImage;
         }
@@ -83,13 +99,17 @@ namespace FMBot.Bot.Services
         // Top artists
         public async Task<PageResponse<LastArtist>> GetTopArtistsAsync(string lastFMUserName, LastStatsTimeSpan timespan, int count = 2)
         {
-            return await LastfmClient.User.GetTopArtists(lastFMUserName, timespan, 1, count);
+            var topArtists = await LastfmClient.User.GetTopArtists(lastFMUserName, timespan, 1, count);
+            GlobalVars.LastFMApiCalls++;
+
+            return topArtists;
         }
 
         // Check if lastfm user exists
         public async Task<bool> LastFMUserExistsAsync(string lastFMUserName)
         {
             LastResponse<LastUser> lastFMUser = await LastfmClient.User.GetInfoAsync(lastFMUserName);
+            GlobalVars.LastFMApiCalls++;
 
             return lastFMUser.Success;
         }
@@ -269,7 +289,6 @@ namespace FMBot.Bot.Services
             }
             catch (Exception e)
             {
-
                 //_logger.LogException("GenerateChartAsync", e);
             }
             finally

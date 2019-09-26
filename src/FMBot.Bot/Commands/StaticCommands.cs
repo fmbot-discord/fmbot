@@ -41,6 +41,9 @@ namespace FMBot.Bot.Commands
             builder.AddField("Join the FMBot server for support and updates:",
                 "https://discord.gg/srmpCaa");
 
+            builder.AddField("Please upvote us on Discord Bots if you enjoy the bot:",
+                "https://discordbots.org/bot/356268235697553409");
+
 
             await Context.Channel.SendMessageAsync("", false, builder.Build());
         }
@@ -48,25 +51,20 @@ namespace FMBot.Bot.Commands
         [Command("fmdonate"), Summary("Please donate if you like this bot!")]
         public async Task donateAsync()
         {
-            await ReplyAsync("If you like the bot and you would like to support its development, feel free to support the developer at: https://www.paypal.me/Bitl");
+            await ReplyAsync("If you like the bot and you would like to support its development, " +
+                             "feel free to support the developers at: https://www.paypal.me/Bitl and https://www.paypal.me/th0m");
         }
 
         [Command("fmgithub"), Summary("GitHub Page")]
         public async Task githubAsync()
         {
-            await ReplyAsync("https://github.com/Bitl/FMBot_Discord");
-        }
-
-        [Command("fmgitlab"), Summary("GitLab Page")]
-        public async Task gitlabAsync()
-        {
-            await ReplyAsync("https://gitlab.com/Bitl/FMBot_Discord");
+            await ReplyAsync("https://github.com/fmbot-discord/fmbot");
         }
 
         [Command("fmbugs"), Summary("Report bugs here!")]
         public async Task bugsAsync()
         {
-            await ReplyAsync("Report bugs here:\nGithub: https://github.com/Bitl/FMBot_Discord/issues \nGitLab: https://gitlab.com/Bitl/FMBot_Discord/issues");
+            await ReplyAsync("Please report bugs here:\nGithub: https://github.com/fmbot-discord/fmbot/issues");
         }
 
         [Command("fmstatus"), Summary("Displays bot stats.")]
@@ -82,7 +80,6 @@ namespace FMBot.Bot.Commands
 
             EmbedBuilder builder = new EmbedBuilder();
             builder.WithAuthor(eab);
-            builder.WithDescription(SelfUser.Username + " Statistics");
 
             TimeSpan startTime = (DateTime.Now - Process.GetCurrentProcess().StartTime);
 
@@ -109,8 +106,10 @@ namespace FMBot.Bot.Commands
             builder.AddField("Bot Uptime: ", startTime.ToReadableString(), true);
             builder.AddField("Server Uptime: ", GlobalVars.SystemUpTime().ToReadableString(), true);
             builder.AddField("Usercount: ", (await userService.GetUserCountAsync()).ToString(), true);
+            builder.AddField("Discord usercount: ", client.Guilds.Select(s => s.MemberCount).Sum(), true);
             builder.AddField("Servercount: ", client.Guilds.Count, true);
             builder.AddField("Commands used: ", fixedCmdGlobalCount, true);
+            builder.AddField("Last.FM API calls: ", GlobalVars.LastFMApiCalls, true);
             builder.AddField("Bot status: ", status, true);
             builder.AddField("Latency: ", client.Latency + "ms", true);
             builder.AddField("Shards: ", client.Shards.Count, true);

@@ -27,6 +27,7 @@ namespace FMBot.Bot
             public static string ImageFolder = BasePath + "resources/images/";
             public static string FeaturedUserID = "";
             public static int CommandExecutions;
+            public static int LastFMApiCalls;
             public static Hashtable charts = new Hashtable();
 
             private static bool IsUserInDM;
@@ -51,24 +52,6 @@ namespace FMBot.Bot
                 var ticks = Stopwatch.GetTimestamp();
                 var upTime = ((double)ticks) / Stopwatch.Frequency;
                 return TimeSpan.FromSeconds(upTime);
-            }
-
-            public static string GetLine(string filePath, int line)
-            {
-                using (StreamReader sr = new StreamReader(filePath))
-                {
-                    for (int i = 1; i < line; i++)
-                    {
-                        sr.ReadLine();
-                    }
-
-                    return sr.ReadLine();
-                }
-            }
-
-            public static string MultiLine(params string[] args)
-            {
-                return string.Join(Environment.NewLine, args);
             }
 
             public static Bitmap Combine(List<Bitmap> images, bool vertical = false)
