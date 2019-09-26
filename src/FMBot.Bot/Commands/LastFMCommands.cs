@@ -183,7 +183,15 @@ namespace FMBot.Bot.Commands
                             }
                         }
 
-                        var userTitle = await _userService.GetUserTitleAsync(Context);
+                        string userTitle;
+                        if (self)
+                        {
+                            userTitle = await _userService.GetUserTitleAsync(Context);
+                        }
+                        else
+                        {
+                            userTitle = $"{lastFMUserName}, requested by {await _userService.GetUserTitleAsync(Context)}";
+                        }
 
                         this._embed.AddField(
                             $"Current: {tracks.Content[0].Name}",
@@ -203,7 +211,7 @@ namespace FMBot.Bot.Commands
 
                         this._embed.WithTitle(tracks.Content[0].IsNowPlaying == true
                             ? "*Now playing*"
-                            : $"Last scrobble {tracks.Content[0].TimePlayed?.ToString("g")}");
+                            : $"Last scrobble {tracks.Content[0].TimePlayed?.ToString("g")} (UTC)");
 
                         this._embedAuthor.WithIconUrl(Context.User.GetAvatarUrl());
                         this._embed.WithAuthor(this._embedAuthor);
