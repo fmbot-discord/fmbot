@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -14,7 +12,7 @@ namespace FMBot.Bot
 {
     public class Startup
     {
-        public IConfigurationRoot Configuration { get; }
+        private IConfigurationRoot Configuration { get; }
 
         public Startup(string[] args)
         {
@@ -24,11 +22,12 @@ namespace FMBot.Bot
 
         public static async Task RunAsync(string[] args)
         {
+            AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionTrapper;
             var startup = new Startup(args);
             await startup.RunAsync();
         }
 
-        public async Task RunAsync()
+        private async Task RunAsync()
         {
             var services = new ServiceCollection(); // Create a new instance of a service collection
             ConfigureServices(services);
@@ -70,6 +69,14 @@ namespace FMBot.Bot
                 //.AddSingleton<LoggingService>()         // Add loggingservice to the collection
                 .AddSingleton<Random>() // Add random to the collection
                 .AddSingleton(Configuration); // Add the configuration to the collection
+        }
+
+        static void UnhandledExceptionTrapper(object sender, UnhandledExceptionEventArgs e)
+        {
+            Console.WriteLine("Unhandled exception! \n \n" + e.ExceptionObject + "\n", ConsoleColor.Red);
+
+            var logger = new Logger.Logger();
+            logger.Log("UnhandledException! \n \n" + e.ExceptionObject + "\n");
         }
     }
 }
