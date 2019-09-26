@@ -1,6 +1,6 @@
 <h1>.fmbot</h1>
 
-[![Build status](https://ci.appveyor.com/api/projects/status/jjgux53retdjw1d9?svg=true)](https://ci.appveyor.com/project/fmbotdiscord/fmbot-discord)
+[![Build status](https://ci.appveyor.com/api/projects/status/jjgux53retdjw1d9?svg=true)](https://ci.appveyor.com/project/fmbotdiscord/fmbot)
 
 ![Logo](https://raw.githubusercontent.com/Bitl/FMBot_Discord/1.1.4/fmbotlogo.png)
 
@@ -11,7 +11,7 @@ Feel free to join our Discord server: https://discord.gg/srmpCaa
 We also host the bot, [click here to add](https://discordapp.com/oauth2/authorize?client_id=356268235697553409&scope=bot&permissions=0)
 
 <h1>Download Binaries</h1>
-Get them from https://github.com/Bitl/FMBot_Discord/releases (Stable) or https://ci.appveyor.com/project/fmbotdiscord/fmbot/build/artifacts (Latest).
+Get them from https://github.com/fmbot-discord/fmbot/releases (Stable) or https://ci.appveyor.com/project/fmbotdiscord/fmbot/build/artifacts (Latest).
 
 <h1>Getting started</h1>
 
