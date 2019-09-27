@@ -45,11 +45,8 @@ namespace FMBot.Bot.Handlers
                 if (StackCooldownTarget.Contains(msg.Author))
                 {
                     //If they have used this command before, take the time the user last did something, add 2 seconds, and see if it's greater than this very moment.
-                    if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(2) >= DateTimeOffset.Now)
+                    if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(1).AddMilliseconds(600) >= DateTimeOffset.Now)
                     {
-                        //If enough time hasn't passed, reply letting them know how much longer they need to wait, and end the code.
-                        var secondsLeft = (int)(StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(2) - DateTimeOffset.Now).TotalSeconds;
-                        await context.Channel.SendMessageAsync($"Please wait {secondsLeft + 1} seconds before you use that command again!");
                         return;
                     }
 
@@ -64,14 +61,14 @@ namespace FMBot.Bot.Handlers
 
                 var result = await _commands.ExecuteAsync(context, argPos, _provider);     // Execute the command
 
-                if (!result.IsSuccess)
+                if (result.IsSuccess)
                 {
-                    // If not successful, reply with the error.
-                    await context.Channel.SendMessageAsync(result.ToString());
+                    FMBotUtil.GlobalVars.CommandExecutions++;
                 }
                 else
                 {
-                    FMBotUtil.GlobalVars.CommandExecutions++;
+                    var logger = new Logger.Logger();
+                    logger.LogError(result.ToString(), context.Message.Content);
                 }
             }
         }
