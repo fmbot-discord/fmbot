@@ -1,0 +1,36 @@
+# EditorConfig to support per-project formatting.
+# http://editorconfig.org
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[**.js]
+indent_style = tab
+
+[**.{scss,css}]
+indent_style = tab
+
+[**.{cs}]
+indent_style = space
+indent_size = 4
+
+[**.{config,xml,json,yml}]
+indent_style = space
+indent_size = 2
+
+[**.{htm,html,cshtml}]
+indent_style = space
+indent_size = 4
+
+[**.cshtml]
+charset = utf-8-bom
+
+[**.md]
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = false

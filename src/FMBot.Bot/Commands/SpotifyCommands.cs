@@ -1,4 +1,4 @@
-﻿using Discord;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using IF.Lastfm.Core.Api.Helpers;
@@ -57,7 +57,7 @@ namespace FMBot.Bot.Commands
                     SimpleArtist trackArtist = track.Artists.FirstOrDefault();
 
                     await ReplyAsync("https://open.spotify.com/track/" + track.Id);
-                    this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+                    _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
                 }
                 else
                 {
@@ -91,7 +91,7 @@ namespace FMBot.Bot.Commands
                         SimpleArtist trackArtist = track.Artists.FirstOrDefault();
 
                         await ReplyAsync("https://open.spotify.com/track/" + track.Id);
-                        this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+                        _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
 
                     }
                     else

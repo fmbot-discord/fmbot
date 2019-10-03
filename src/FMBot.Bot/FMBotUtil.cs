@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -91,7 +91,7 @@ namespace FMBot.Bot
                     using (Graphics g = Graphics.FromImage(finalImage))
                     {
                         //set background color
-                        g.Clear(System.Drawing.Color.Black);
+                        g.Clear(Color.Black);
 
                         //go through each image and draw it on the final image
                         int offset = 0;

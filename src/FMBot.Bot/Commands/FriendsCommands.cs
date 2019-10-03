@@ -1,4 +1,4 @@
-﻿using Discord;
+using Discord;
 using Discord.Commands;
 using FMBot.Data.Entities;
 using IF.Lastfm.Core.Api.Helpers;
@@ -130,7 +130,7 @@ namespace FMBot.Bot.Commands
                 //}
 
                 await Context.Channel.SendMessageAsync("", false, builder.Build());
-                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+                _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
@@ -247,7 +247,7 @@ namespace FMBot.Bot.Commands
                         await ReplyAsync("Could not find 1 friend. Please ensure that you spelled the name correctly.");
                     }
                 }
-                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+                _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
@@ -312,7 +312,7 @@ namespace FMBot.Bot.Commands
                     await ReplyAsync("Succesfully removed a friend.");
                 }
 
-                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+                _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
@@ -346,7 +346,7 @@ namespace FMBot.Bot.Commands
                 await _friendsService.RemoveAllLastFMFriendsAsync(userSettings.UserID);
 
                 await ReplyAsync("Removed all your friends.");
-                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+                _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
@@ -358,14 +358,14 @@ namespace FMBot.Bot.Commands
 
         private async Task UsernameNotSetErrorResponseAsync()
         {
-            this._embed.WithTitle("Error while attempting get Last.FM information");
-            this._embed.WithDescription("Last.FM username has not been set. \n" +
+            _embed.WithTitle("Error while attempting get Last.FM information");
+            _embed.WithDescription("Last.FM username has not been set. \n" +
                                         "To setup your Last.FM account with this bot, please use the `.fmset` command. \n" +
                                         $"Usage: `{ConfigData.Data.CommandPrefix}fmset username mode`\n" +
                                         "Possible modes: embedmini/embedfull/textmini/textfull");
 
-            this._embed.WithColor(Constants.WarningColorOrange);
-            await ReplyAsync("", false, this._embed.Build());
+            _embed.WithColor(Constants.WarningColorOrange);
+            await ReplyAsync("", false, _embed.Build());
         }
     }
 }

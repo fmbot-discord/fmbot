@@ -40,12 +40,10 @@ namespace FMBot.Bot.Handlers
             var argPos = 0;     // Check if the message has a valid command prefix
             if (msg.HasStringPrefix(ConfigData.Data.CommandPrefix, ref argPos) || msg.HasMentionPrefix(_discord.CurrentUser, ref argPos))
             {
-                _ = context.Channel.TriggerTypingAsync();
-
                 if (StackCooldownTarget.Contains(msg.Author))
                 {
-                    //If they have used this command before, take the time the user last did something, add 2 seconds, and see if it's greater than this very moment.
-                    if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(1).AddMilliseconds(600) >= DateTimeOffset.Now)
+                    //If they have used this command before, take the time the user last did something, add 1600ms, and see if it's greater than this very moment.
+                    if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMilliseconds(1600) >= DateTimeOffset.Now)
                     {
                         return;
                     }

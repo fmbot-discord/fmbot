@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32.SafeHandles;
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -26,7 +26,7 @@ namespace FMBot.Bot.Models
             /// </summary>
             public readonly FileAttributes Attributes;
 
-            public DateTime CreationTime => this.CreationTimeUtc.ToLocalTime();
+            public DateTime CreationTime => CreationTimeUtc.ToLocalTime();
 
             /// <summary>
             /// File creation time in UTC
@@ -36,7 +36,7 @@ namespace FMBot.Bot.Models
             /// <summary>
             /// Gets the last access time in local time.
             /// </summary>
-            public DateTime LastAccesTime => this.LastAccessTimeUtc.ToLocalTime();
+            public DateTime LastAccesTime => LastAccessTimeUtc.ToLocalTime();
 
             /// <summary>
             /// File last access time in UTC
@@ -46,7 +46,7 @@ namespace FMBot.Bot.Models
             /// <summary>
             /// Gets the last access time in local time.
             /// </summary>
-            public DateTime LastWriteTime => this.LastWriteTimeUtc.ToLocalTime();
+            public DateTime LastWriteTime => LastWriteTimeUtc.ToLocalTime();
 
             /// <summary>
             /// File last write time in UTC
@@ -76,7 +76,7 @@ namespace FMBot.Bot.Models
             /// </returns>
             public override string ToString()
             {
-                return this.Name;
+                return Name;
             }
 
             /// <summary>
@@ -87,22 +87,22 @@ namespace FMBot.Bot.Models
             /// object wraps.</param>
             internal FileData(string dir, WIN32_FIND_DATA findData)
             {
-                this.Attributes = findData.dwFileAttributes;
+                Attributes = findData.dwFileAttributes;
 
 
-                this.CreationTimeUtc = ConvertDateTime(findData.ftCreationTime_dwHighDateTime,
+                CreationTimeUtc = ConvertDateTime(findData.ftCreationTime_dwHighDateTime,
                                                     findData.ftCreationTime_dwLowDateTime);
 
-                this.LastAccessTimeUtc = ConvertDateTime(findData.ftLastAccessTime_dwHighDateTime,
+                LastAccessTimeUtc = ConvertDateTime(findData.ftLastAccessTime_dwHighDateTime,
                                                     findData.ftLastAccessTime_dwLowDateTime);
 
-                this.LastWriteTimeUtc = ConvertDateTime(findData.ftLastWriteTime_dwHighDateTime,
+                LastWriteTimeUtc = ConvertDateTime(findData.ftLastWriteTime_dwHighDateTime,
                                                     findData.ftLastWriteTime_dwLowDateTime);
 
-                this.Size = CombineHighLowInts(findData.nFileSizeHigh, findData.nFileSizeLow);
+                Size = CombineHighLowInts(findData.nFileSizeHigh, findData.nFileSizeLow);
 
-                this.Name = findData.cFileName;
-                this.Path = System.IO.Path.Combine(dir, findData.cFileName);
+                Name = findData.cFileName;
+                Path = System.IO.Path.Combine(dir, findData.cFileName);
             }
 
             private static long CombineHighLowInts(uint high, uint low)
@@ -175,7 +175,7 @@ namespace FMBot.Bot.Models
             /// </exception>
             public static IEnumerable<FileData> EnumerateFiles(string path)
             {
-                return FastDirectoryEnumerator.EnumerateFiles(path, "*");
+                return EnumerateFiles(path, "*");
             }
 
             /// <summary>
@@ -194,7 +194,7 @@ namespace FMBot.Bot.Models
             /// </exception>
             public static IEnumerable<FileData> EnumerateFiles(string path, string searchPattern)
             {
-                return FastDirectoryEnumerator.EnumerateFiles(path, searchPattern, SearchOption.TopDirectoryOnly);
+                return EnumerateFiles(path, searchPattern, SearchOption.TopDirectoryOnly);
             }
 
             /// <summary>
@@ -255,7 +255,7 @@ namespace FMBot.Bot.Models
             /// </exception>
             public static FileData[] GetFiles(string path, string searchPattern, SearchOption searchOption)
             {
-                IEnumerable<FileData> e = FastDirectoryEnumerator.EnumerateFiles(path, searchPattern, searchOption);
+                IEnumerable<FileData> e = EnumerateFiles(path, searchPattern, searchOption);
                 List<FileData> list = new List<FileData>(e);
 
                 FileData[] retval = new FileData[list.Count];
@@ -351,7 +351,7 @@ namespace FMBot.Bot.Models
                 /// </returns>
                 protected override bool ReleaseHandle()
                 {
-                    return FindClose(base.handle);
+                    return FindClose(handle);
                 }
             }
 
@@ -380,7 +380,7 @@ namespace FMBot.Bot.Models
 
                     public SearchContext(string path)
                     {
-                        this.Path = path;
+                        Path = path;
                     }
                 }
 
@@ -475,7 +475,7 @@ namespace FMBot.Bot.Models
                     {
                         if (m_hndFindFile == null)
                         {
-                            new System.Security.Permissions.FileIOPermission(FileIOPermissionAccess.PathDiscovery, m_path).Demand();
+                            new FileIOPermission(FileIOPermissionAccess.PathDiscovery, m_path).Demand();
 
                             string searchPath = Path.Combine(m_path, m_filter);
                             m_hndFindFile = FindFirstFile(searchPath, m_win_find_data);

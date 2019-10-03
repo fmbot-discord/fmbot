@@ -1,4 +1,4 @@
-﻿using Discord;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using IF.Lastfm.Core.Objects;
@@ -54,7 +54,7 @@ namespace FMBot.Bot.Commands
                     await ReplyAsync($"Searched for: `{querystring}`\n " +
                         youtubeResult.Url);
 
-                    this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+                    _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
                 }
                 catch (Exception e)
                 {
@@ -87,7 +87,7 @@ namespace FMBot.Bot.Commands
                 VideoInformation youtubeResult = _youtubeService.GetSearchResult(querystring);
 
                 await ReplyAsync(youtubeResult.Url);
-                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+                _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
