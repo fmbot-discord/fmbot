@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord.Commands;
@@ -55,6 +55,14 @@ namespace FMBot.Bot.Handlers
                     //If they've never used this command before, add their username and when they just used this command.
                     StackCooldownTarget.Add(msg.Author);
                     StackCooldownTimer.Add(DateTimeOffset.Now);
+                }
+
+                var searchResult = _commands.Search(context, argPos);
+
+                // If no command were found, return.
+                if (searchResult.Commands == null || searchResult.Commands.Count == 0)
+                {
+                    return;
                 }
 
                 var result = await _commands.ExecuteAsync(context, argPos, _provider);     // Execute the command
