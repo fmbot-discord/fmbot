@@ -75,7 +75,7 @@ namespace FMBot.Bot.Commands
                 await ReplyAsync(
                     "Usage: `.fm 'lastfm username/discord user'` \n" +
                     "You can set your default user and your display mode through the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
-                _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
                 return;
             }
 
@@ -86,28 +86,13 @@ namespace FMBot.Bot.Commands
 
                 if (user != null)
                 {
-                    if (await _lastFmService.LastFMUserExistsAsync(user))
+                    var alternativeLastFmUserName = await FindUser(user);
+                    if (!string.IsNullOrEmpty(alternativeLastFmUserName))
                     {
-                        lastFMUserName = user;
+                        lastFMUserName = alternativeLastFmUserName;
                         self = false;
                     }
-                    else if (!_guildService.CheckIfDM(Context))
-                    {
-                        IGuildUser guildUser = await _guildService.FindUserFromGuildAsync(Context, user);
-
-                        if (guildUser != null)
-                        {
-                            User guildUserLastFM = await _userService.GetUserSettingsAsync(guildUser);
-
-                            if (guildUserLastFM?.UserNameLastFM != null)
-                            {
-                                lastFMUserName = guildUserLastFM.UserNameLastFM;
-                                self = false;
-                            }
-                        }
-                    }
                 }
-
 
                 PageResponse<LastTrack> tracks = await _lastFmService.GetRecentScrobblesAsync(lastFMUserName);
 
@@ -193,45 +178,45 @@ namespace FMBot.Bot.Commands
                             userTitle = $"{lastFMUserName}, requested by {await _userService.GetUserTitleAsync(Context)}";
                         }
 
-                        _embed.AddField(
+                        this._embed.AddField(
                             $"Current: {tracks.Content[0].Name}",
                             $"By **{tracks.Content[0].ArtistName}**" + (string.IsNullOrEmpty(tracks.Content[0].AlbumName) ? "" : $" | {tracks.Content[0].AlbumName}"));
 
                         if (userSettings.ChartType == ChartType.embedfull)
                         {
-                            _embedAuthor.WithName("Last tracks for " + userTitle);
-                            _embed.AddField(
+                            this._embedAuthor.WithName("Last tracks for " + userTitle);
+                            this._embed.AddField(
                                 $"Previous: {tracks.Content[1].Name}",
                                 $"By **{tracks.Content[1].ArtistName}**" + (string.IsNullOrEmpty(tracks.Content[1].AlbumName) ? "" : $" | {tracks.Content[1].AlbumName}"));
                         }
                         else
                         {
-                            _embedAuthor.WithName("Last track for " + userTitle);
+                            this._embedAuthor.WithName("Last track for " + userTitle);
                         }
 
-                        _embed.WithTitle(tracks.Content[0].IsNowPlaying == true
+                        this._embed.WithTitle(tracks.Content[0].IsNowPlaying == true
                             ? "*Now playing*"
                             : $"Last scrobble {tracks.Content[0].TimePlayed?.ToString("g")} (UTC)");
 
-                        _embedAuthor.WithIconUrl(Context.User.GetAvatarUrl());
-                        _embed.WithAuthor(_embedAuthor);
-                        _embed.WithUrl("https://www.last.fm/user/" + lastFMUserName);
+                        this._embedAuthor.WithIconUrl(Context.User.GetAvatarUrl());
+                        this._embed.WithAuthor(this._embedAuthor);
+                        this._embed.WithUrl("https://www.last.fm/user/" + lastFMUserName);
 
                         LastImageSet AlbumImages = await _lastFmService.GetAlbumImagesAsync(currentTrack.ArtistName, currentTrack.AlbumName);
 
                         if (AlbumImages?.Medium != null)
                         {
-                            _embed.WithThumbnailUrl(AlbumImages.Medium.ToString());
+                            this._embed.WithThumbnailUrl(AlbumImages.Medium.ToString());
                         }
 
-                        _embedFooter.WithText($"{userinfo.Content.Name} has {userinfo.Content.Playcount} scrobbles.");
-                        _embed.WithFooter(_embedFooter);
+                        this._embedFooter.WithText($"{userinfo.Content.Name} has {userinfo.Content.Playcount} scrobbles.");
+                        this._embed.WithFooter(this._embedFooter);
 
-                        _embed.WithColor(Constants.LastFMColorRed);
-                        await ReplyAsync("", false, _embed.Build());
+                        this._embed.WithColor(Constants.LastFMColorRed);
+                        await ReplyAsync("", false, this._embed.Build());
                         break;
                 }
-                _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
@@ -343,7 +328,7 @@ namespace FMBot.Bot.Commands
                 builder.WithFooter(embedFooter);
 
                 await Context.Channel.SendMessageAsync("", false, builder.Build());
-                _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
@@ -354,9 +339,9 @@ namespace FMBot.Bot.Commands
 
 
         [Command("fmchart", RunMode = RunMode.Async), Summary("Generates a chart based on a user's parameters.")]
-        public async Task fmchartAsync(string chartsize = "3x3", string time = "weekly", string titlesetting = null, IUser user = null)
+        public async Task fmchartAsync(string chartSize = "3x3", string time = "weekly", string titleSetting = null, string user = null)
         {
-            if (chartsize == "help")
+            if (chartSize == "help")
             {
                 await ReplyAsync("fmchart '2x2-8x8' 'weekly/monthly/yearly/overall' 'notitles/titles' 'user'");
                 return;
@@ -369,6 +354,9 @@ namespace FMBot.Bot.Commands
                 await UsernameNotSetErrorResponseAsync();
                 return;
             }
+
+            var lastFMUserName = userSettings.UserNameLastFM;
+            bool self = true;
 
             if (!_guildService.CheckIfDM(Context))
             {
@@ -386,7 +374,7 @@ namespace FMBot.Bot.Commands
                 int chartAlbums;
                 int chartRows;
 
-                switch (chartsize)
+                switch (chartSize)
                 {
                     case "2x2":
                         chartAlbums = 4;
@@ -417,21 +405,33 @@ namespace FMBot.Bot.Commands
                         chartRows = 8;
                         break;
                     default:
-                        await ReplyAsync("Your chart's size isn't valid. Sizes supported: 3x3-8x8");
+                        await ReplyAsync($"Your chart's size isn't valid. Sizes supported: 3x3-8x8. \n" +
+                                         $"Example: `{ConfigData.Data.CommandPrefix}fmchart 5x5 monthly titles`. For more info, use `.fmchart help`");
                         return;
                 }
 
                 _ = Context.Channel.TriggerTypingAsync();
 
+                if (user != null)
+                {
+                    var alternativeLastFmUserName = await FindUser(user);
+                    if (!string.IsNullOrEmpty(alternativeLastFmUserName))
+                    {
+                        lastFMUserName = alternativeLastFmUserName;
+                        self = false;
+                    }
+                }
+
                 // Generating image
                 List<Bitmap> images = new List<Bitmap>();
 
                 var timespan = _lastFmService.StringToLastStatsTimeSpan(time);
-                PageResponse<LastAlbum> albums = await _lastFmService.GetTopAlbumsAsync(userSettings.UserNameLastFM, timespan, chartAlbums);
+                PageResponse<LastAlbum> albums = await _lastFmService.GetTopAlbumsAsync(lastFMUserName, timespan, chartAlbums);
 
                 if (albums.Count() < chartAlbums)
                 {
-                    await ReplyAsync($"You haven't listened to enough albums ({albums.Count()} of required {chartAlbums}) for a chart this size. Please try a smaller chart or a bigger time period (weekly/monthly/yearly/overall)'.");
+                    await ReplyAsync($"User hasn't listened to enough albums ({albums.Count()} of required {chartAlbums}) for a chart this size. " +
+                                     "Please try a smaller chart or a bigger time period (weekly/monthly/yearly/overall)'.");
                     return;
                 }
 
@@ -439,14 +439,14 @@ namespace FMBot.Bot.Commands
                 {
                     albums = albums,
                     time = time,
-                    LastFMName = userSettings.UserNameLastFM,
+                    LastFMName = lastFMUserName,
                     max = chartAlbums,
                     rows = chartRows,
                     images = images,
                     DiscordUser = Context.User,
                     disclient = Context.Client as DiscordSocketClient,
                     mode = 0,
-                    titles = titlesetting == null ? userSettings.TitlesEnabled ?? true : titlesetting == "titles",
+                    titles = titleSetting == null ? userSettings.TitlesEnabled ?? true : titleSetting == "titles",
                 };
 
                 await _userService.ResetChartTimerAsync(userSettings);
@@ -454,45 +454,53 @@ namespace FMBot.Bot.Commands
                 await SendChartMessage(chart);
 
                 // Adding extra infobox
-                _embedAuthor.WithIconUrl(Context.User.GetAvatarUrl());
+                this._embedAuthor.WithIconUrl(Context.User.GetAvatarUrl());
 
-                _embed.WithColor(Constants.LastFMColorRed);
-                _embed.WithAuthor(_embedAuthor);
-                var URI = "https://www.last.fm/user/" + userSettings.UserNameLastFM;
-                _embed.WithUrl(URI);
-                _embed.Title = await _userService.GetUserTitleAsync(Context);
+                this._embed.WithColor(Constants.LastFMColorRed);
+                this._embed.WithAuthor(this._embedAuthor);
+                var URI = "https://www.last.fm/user/" + lastFMUserName;
+                this._embed.WithUrl(URI);
 
-                // @TODO: clean up
+                string chartDescription;
                 if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                 {
-                    _embed.WithDescription("Last.FM " + chartsize + " Weekly Chart for " + userSettings.UserNameLastFM);
+                    chartDescription = chartSize + " Weekly Chart";
                 }
                 else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
                 {
-                    _embed.WithDescription("Last.FM " + chartsize + " Monthly Chart for " + userSettings.UserNameLastFM);
+                    chartDescription = chartSize + " Monthly Chart";
                 }
                 else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
                 {
-                    _embed.WithDescription("Last.FM " + chartsize + " Yearly Chart for " + userSettings.UserNameLastFM);
+                    chartDescription = chartSize + " Yearly Chart";
                 }
                 else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
                 {
-                    _embed.WithDescription("Last.FM " + chartsize + " Overall Chart for " + userSettings.UserNameLastFM);
+                    chartDescription = chartSize + " Overall Chart";
                 }
                 else
                 {
-                    _embed.WithDescription("Last.FM " + chartsize + " Chart for " + userSettings.UserNameLastFM);
+                    chartDescription = chartSize + " Chart";
                 }
 
-                LastResponse<LastUser> userInfo = await _lastFmService.GetUserInfoAsync(userSettings.UserNameLastFM);
+                if (self)
+                {
+                    this._embedAuthor.WithName(chartDescription + " for " + await _userService.GetUserTitleAsync(Context));
+                }
+                else
+                {
+                    this._embedAuthor.WithName($"{chartDescription} for {lastFMUserName}, requested by {await _userService.GetUserTitleAsync(Context)}");
+                }
 
-                int playcount = userInfo.Content.Playcount;
+                LastResponse<LastUser> userInfo = await _lastFmService.GetUserInfoAsync(lastFMUserName);
 
-                _embedFooter.Text = userSettings.UserNameLastFM + "'s total scrobbles: " + playcount.ToString("0");
-                _embed.WithFooter(_embedFooter);
+                int playCount = userInfo.Content.Playcount;
 
-                await Context.Channel.SendMessageAsync("", false, _embed.Build());
-                _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+                this._embedFooter.Text = $"{lastFMUserName} has {playCount} scrobbles.";
+                this._embed.WithFooter(this._embedFooter);
+
+                await Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
@@ -612,7 +620,7 @@ namespace FMBot.Bot.Commands
                 builder.WithFooter(efb);
 
                 await Context.Channel.SendMessageAsync("", false, builder.Build());
-                _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
@@ -702,7 +710,7 @@ namespace FMBot.Bot.Commands
                 builder.AddField("Bot user type: ", userSettings.UserType);
 
                 await Context.Channel.SendMessageAsync("", false, builder.Build());
-                _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
@@ -727,7 +735,7 @@ namespace FMBot.Bot.Commands
                 builder.AddField("Featured:", _timer.GetTrackString());
 
                 await Context.Channel.SendMessageAsync("", false, builder.Build());
-                _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
             }
             catch (Exception e)
             {
@@ -761,7 +769,7 @@ namespace FMBot.Bot.Commands
             _userService.SetLastFM(Context.User, lastFMUserName.Replace("'", ""), chartTypeEnum);
 
             await ReplyAsync("Your Last.FM name has been set to '" + lastFMUserName.Replace("'", "") + "' and your mode has been set to '" + chartType + "'.");
-            _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+            this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
 
             if (!_guildService.CheckIfDM(Context))
             {
@@ -790,7 +798,7 @@ namespace FMBot.Bot.Commands
             await _userService.DeleteUser(userSettings.UserID);
 
             await ReplyAsync("Your settings, friends and any other data have been successfully deleted.");
-            _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+            this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
         }
 
         [Command("fmsuggest", RunMode = RunMode.Async), Summary("Suggest features you want to see in the bot, or report inappropriate images.")]
@@ -829,7 +837,7 @@ namespace FMBot.Bot.Commands
                 await channel.SendMessageAsync("", false, builder.Build());
 
                 await ReplyAsync("Your suggestion has been sent to the .fmbot server!");
-                _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+                this._logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
 
                 //}
             }
@@ -841,24 +849,46 @@ namespace FMBot.Bot.Commands
 
         private async Task UsernameNotSetErrorResponseAsync()
         {
-            _embed.WithTitle("Error while attempting get Last.FM information");
-            _embed.WithDescription("Last.FM username has not been set. \n" +
+            this._embed.WithTitle("Error while attempting get Last.FM information");
+            this._embed.WithDescription("Last.FM username has not been set. \n" +
                                         "To setup your Last.FM account with this bot, please use the `.fmset` command. \n" +
                                         $"Usage: `{ConfigData.Data.CommandPrefix}fmset username mode`\n" +
                                         "Possible modes: embedmini/embedfull/textmini/textfull");
 
-            _embed.WithColor(Constants.WarningColorOrange);
-            await ReplyAsync("", false, _embed.Build());
-            _logger.LogError("Last.FM username not set", Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
+            this._embed.WithColor(Constants.WarningColorOrange);
+            await ReplyAsync("", false, this._embed.Build());
+            this._logger.LogError("Last.FM username not set", Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
         }
 
         private async Task NoScrobblesErrorResponseFoundAsync()
         {
-            _embed.WithTitle("Error while attempting get Last.FM information");
-            _embed.WithDescription("No scrobbles were found on your profile.");
-            _embed.WithColor(Constants.WarningColorOrange);
-            await ReplyAsync("", false, _embed.Build());
-            _logger.LogError("No scrobbles found for user", Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
+            this._embed.WithTitle("Error while attempting get Last.FM information");
+            this._embed.WithDescription("No scrobbles were found on your profile.");
+            this._embed.WithColor(Constants.WarningColorOrange);
+            await ReplyAsync("", false, this._embed.Build());
+            this._logger.LogError("No scrobbles found for user", Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
+        }
+
+        private async Task<string> FindUser(string user)
+        {
+            if (await _lastFmService.LastFMUserExistsAsync(user))
+            {
+                return user;
+            }
+
+            if (!_guildService.CheckIfDM(Context))
+            {
+                IGuildUser guildUser = await _guildService.FindUserFromGuildAsync(Context, user);
+
+                if (guildUser != null)
+                {
+                    User guildUserLastFm = await _userService.GetUserSettingsAsync(guildUser);
+
+                    return guildUserLastFm?.UserNameLastFM;
+                }
+            }
+
+            return null;
         }
     }
 }
