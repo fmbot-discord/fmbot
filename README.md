@@ -1,6 +1,6 @@
 <h1>.fmbot</h1>
 
-[![Build status](https://ci.appveyor.com/api/projects/status/jjgux53retdjw1d9?svg=true)](https://ci.appveyor.com/project/fmbotdiscord/fmbot)
+[![Build status](https://ci.appveyor.com/api/projects/status/jjgux53retdjw1d9?svg=true)](https://ci.appveyor.com/project/fmbotdiscord/fmbot) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/878c29f25df44d22b3909c494539727d)](https://www.codacy.com/manual/th0mk/fmbot?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=fmbot-discord/fmbot&amp;utm_campaign=Badge_Grade)
 
 ![Logo](https://raw.githubusercontent.com/Bitl/FMBot_Discord/1.1.4/fmbotlogo.png)
 
