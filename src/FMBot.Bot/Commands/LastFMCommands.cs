@@ -98,7 +98,7 @@ namespace FMBot.Bot.Commands
 
                 if (tracks?.Any() != true)
                 {
-                    await NoScrobblesErrorResponseFoundAsync();
+                    await NoScrobblesErrorResponseFoundAsync(tracks.Status);
                     return;
                 }
 
@@ -307,13 +307,12 @@ namespace FMBot.Bot.Commands
                 builder.WithUrl("https://www.last.fm/user/" + lastFMUserName + "/library/artists");
                 builder.Title = lastFMUserName + " top " + num + " artists (" + timePeriod + ")";
 
-                const string nulltext = "[undefined]";
                 int indexval = (num - 1);
                 for (int i = 0; i <= indexval; i++)
                 {
                     LastArtist artist = artists.Content[i];
 
-                    string artistName = string.IsNullOrWhiteSpace(artist.Name) ? nulltext : artist.Name;
+                    string artistName = artist.Name;
 
                     int correctnum = (i + 1);
                     builder.AddField("#" + correctnum + ": " + artist.Name, artist.PlayCount.Value.ToString("N0") + " times scrobbled");
@@ -561,7 +560,6 @@ namespace FMBot.Bot.Commands
                     }
                 }
 
-
                 PageResponse<LastTrack> tracks = await _lastFmService.GetRecentScrobblesAsync(lastFMUserName, num);
 
                 EmbedBuilder builder = new EmbedBuilder
@@ -574,30 +572,33 @@ namespace FMBot.Bot.Commands
                     builder.WithAuthor(new EmbedAuthorBuilder
                     {
                         IconUrl = Context.User.GetAvatarUrl(),
-                        Name = lastFMUserName
+                        Name = $"Last {num} tracks for {await _userService.GetUserTitleAsync(Context)}"
+                    });
+                }
+                else
+                {
+                    builder.WithAuthor(new EmbedAuthorBuilder
+                    {
+                        Name = $"Last {num} tracks for {lastFMUserName} requested by {await _userService.GetUserTitleAsync(Context)}"
                     });
                 }
 
+                builder.WithTitle(tracks.Content[0].IsNowPlaying == true
+                    ? "*Now playing*"
+                    : $"Last scrobble {tracks.Content[0].TimePlayed?.ToString("g")} (UTC)");
                 builder.WithUrl("https://www.last.fm/user/" + lastFMUserName);
-                builder.Title = await _userService.GetUserTitleAsync(Context);
 
-                builder.WithDescription("Top " + num + " Recent Track List");
-
-                const string nulltext = "[undefined]";
                 int indexval = (num - 1);
                 for (int i = 0; i <= indexval; i++)
                 {
                     LastTrack track = tracks.Content[i];
 
-                    string TrackName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.Name;
-                    string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
-                    string AlbumName = string.IsNullOrWhiteSpace(track.AlbumName) ? nulltext : track.AlbumName;
-
+                    string TrackName = track.Name;
+                    string ArtistName =  track.ArtistName;
+                    string AlbumName = track.AlbumName;
 
                     if (i == 0)
                     {
-                        LastResponse<LastAlbum> AlbumInfo = await _lastFmService.GetAlbumInfoAsync(ArtistName, AlbumName);
-
                         LastImageSet AlbumImages = await _lastFmService.GetAlbumImagesAsync(ArtistName, AlbumName);
 
                         if (AlbumImages?.Medium != null)
@@ -607,7 +608,7 @@ namespace FMBot.Bot.Commands
                     }
 
                     int correctnum = (i + 1);
-                    builder.AddField("Track #" + correctnum.ToString() + ":", TrackName + " - " + ArtistName + " | " + AlbumName);
+                    builder.AddField("#" + correctnum + ": " + TrackName, $"By **{ArtistName}**" + (string.IsNullOrEmpty(AlbumName) ? "" :$" | {AlbumName}"));
                 }
 
                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
@@ -860,10 +861,19 @@ namespace FMBot.Bot.Commands
             this._logger.LogError("Last.FM username not set", Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);
         }
 
-        private async Task NoScrobblesErrorResponseFoundAsync()
+        private async Task NoScrobblesErrorResponseFoundAsync(LastResponseStatus apiResponse)
         {
             this._embed.WithTitle("Error while attempting get Last.FM information");
-            this._embed.WithDescription("No scrobbles were found on your profile.");
+            switch (apiResponse)
+            {
+                case LastResponseStatus.Failure:
+                    this._embed.WithDescription("Last.FM is having issues. Please try again later.");
+                    break;
+                default:
+                    this._embed.WithDescription("You have no scrobbles on your profile, or Last.FM is having issues. Please try again later.");
+                    break;
+            }
+
             this._embed.WithColor(Constants.WarningColorOrange);
             await ReplyAsync("", false, this._embed.Build());
             this._logger.LogError("No scrobbles found for user", Context.Message.Content, Context.User.Username, Context.Guild?.Name, Context.Guild?.Id);

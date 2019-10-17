@@ -18,6 +18,7 @@ indent_style = tab
 [**.{cs}]
 indent_style = space
 indent_size = 4
+dotnet_style_qualification_for_field = true
 
 [**.{config,xml,json,yml}]
 indent_style = space
