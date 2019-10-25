@@ -12,7 +12,7 @@ namespace FMBot.Bot.Extensions
             Rectangle r = new Rectangle(Point.Truncate(point), Size.Ceiling(sf));
             r.Intersect(new Rectangle(0, 0, bmp.Width, bmp.Height));
             //shadow
-			Color brshShadow = Color.FromArgb(128, 0, 0, 0);
+			Color brshShadow = Color.FromArgb(255, 0, 0, 0);
 			PointF shadowAngle = new PointF(point.X-2f, point.Y-2f);
             g.DrawString(text, font, new SolidBrush(brshShadow), point);
 			//text
