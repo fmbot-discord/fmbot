@@ -11,11 +11,13 @@ namespace FMBot.Bot.Extensions
             SizeF sf = g.MeasureString(text, font);
             Rectangle r = new Rectangle(Point.Truncate(point), Size.Ceiling(sf));
             r.Intersect(new Rectangle(0, 0, bmp.Width, bmp.Height));
-            Color brsh = Color.FromArgb(255, 255, 255);
-            g.DrawString(text, font, new SolidBrush(brsh), point);
-			Color brshShadow = Color.FromArgb(0, 0, 0);
+            //shadow
+			Color brshShadow = Color.FromArgb(128, 0, 0, 0);
 			PointF shadowAngle = new PointF(point.X-2f, point.Y-2f);
             g.DrawString(text, font, new SolidBrush(brshShadow), point);
+			//text
+			Color brsh = Color.FromArgb(255, 255, 255, 255);
+            g.DrawString(text, font, new SolidBrush(brsh), point);
         }
     }
 }
