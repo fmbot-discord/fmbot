@@ -14,7 +14,7 @@ namespace FMBot.Bot.Extensions
             Color brsh = Color.FromArgb(255, 255, 255);
             g.DrawString(text, font, new SolidBrush(brsh), point);
 			Color brshShadow = Color.FromArgb(0, 0, 0);
-			PointF shadowAngle = new PointF(point.x-2f, point.y-2f);
+			PointF shadowAngle = new PointF(point.X-2f, point.Y-2f);
             g.DrawString(text, font, new SolidBrush(brshShadow), point);
         }
     }
