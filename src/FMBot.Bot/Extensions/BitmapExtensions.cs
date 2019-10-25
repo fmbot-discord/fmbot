@@ -55,7 +55,7 @@ namespace FMBot.Bot.Extensions
             return Color.FromArgb(r, g, b);
         }
 		
-		private int PerceivedBrightness(Color c)
+		private static int PerceivedBrightness(Color c)
 		{
 			return (int)Math.Sqrt(
 				c.R * c.R * .299 +
