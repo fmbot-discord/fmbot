@@ -68,7 +68,7 @@ namespace FMBot.Bot.Extensions
             SizeF sf = g.MeasureString(text, font);
             Rectangle r = new Rectangle(Point.Truncate(point), Size.Ceiling(sf));
             r.Intersect(new Rectangle(0, 0, bmp.Width, bmp.Height));
-			Color foreColor = (PerceivedBrightness(MostDifferent(AverageColor(bmp))) > 130 ? Color.Black : Color.White);
+			Color foreColor = (PerceivedBrightness(MostDifferent(AverageColor(bmp))) > 130 ? Color.White : Color.Black);
             g.DrawString(text, font, new SolidBrush(foreColor), point);
         }
     }
