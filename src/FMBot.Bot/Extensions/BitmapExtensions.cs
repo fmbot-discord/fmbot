@@ -55,7 +55,7 @@ namespace FMBot.Bot.Extensions
             return Color.FromArgb(r, g, b);
         }
 		
-		private static MakeGrayscale(Color original)
+		private static Color MakeGrayscale(Color original)
 		{
 			int grayScale = (int)((original.R * 0.3) + (original.G * 0.59) + (original.B * 0.11));
 			return Color.FromArgb(grayScale, grayScale, grayScale);
