@@ -55,10 +55,12 @@ namespace FMBot.Bot.Extensions
             return Color.FromArgb(r, g, b);
         }
 		
-		private static Color MakeGrayscale(Color original)
+		private int PerceivedBrightness(Color c)
 		{
-			int grayScale = (int)((original.R * 0.3) + (original.G * 0.59) + (original.B * 0.11));
-			return Color.FromArgb(grayScale, grayScale, grayScale);
+			return (int)Math.Sqrt(
+				c.R * c.R * .299 +
+				c.G * c.G * .587 +
+				c.B * c.B * .114);
 		}
 
         public static void DrawColorString(this Graphics g, Bitmap bmp, string text, Font font, PointF point)
@@ -66,8 +68,8 @@ namespace FMBot.Bot.Extensions
             SizeF sf = g.MeasureString(text, font);
             Rectangle r = new Rectangle(Point.Truncate(point), Size.Ceiling(sf));
             r.Intersect(new Rectangle(0, 0, bmp.Width, bmp.Height));
-            Color brsh = MakeGrayscale(MostDifferent(AverageColor(bmp)));
-            g.DrawString(text, font, new SolidBrush(brsh), point);
+			Color foreColor = (PerceivedBrightness(MostDifferent(AverageColor(bmp))) > 130 ? Color.Black : Color.White);
+            g.DrawString(text, font, new SolidBrush(foreColor), point);
         }
     }
 }
