@@ -16,9 +16,18 @@ indent_style = tab
 indent_style = tab
 
 [**.{cs}]
+# Organize usings
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
 indent_style = space
 indent_size = 4
-dotnet_style_qualification_for_field = true
+
+# this. preferences
+dotnet_style_qualification_for_field = true:warning
+dotnet_style_qualification_for_property = true:warning
+dotnet_style_qualification_for_method = false:silent
+dotnet_style_qualification_for_event = true:warning
 
 [**.{config,xml,json,yml}]
 indent_style = space
