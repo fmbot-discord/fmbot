@@ -132,7 +132,8 @@ namespace FMBot.Bot.Commands
                 "Displays your stats, or stats of entered username or user");
 
             this._embed.AddField(prefix + "fmset 'username' 'embedmini/embedfull/textmini/textfull'",
-                "Sets your default LastFM name, followed by the display mode you want to use");
+                "Sets your default Last.FM name, followed by the display mode you want to use. " +
+                "Note that users in shared servers will be able to see and request your Last.FM username.");
 
             this._embed.AddField(prefix + "fmrecent 'lastfm username/ discord user' '1-10'",
                 "Shows a list of your most recent tracks, defaults to 5");

@@ -754,7 +754,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("fmset", RunMode = RunMode.Async)]
-        [Summary("Sets your Last.FM name and FM mode.")]
+        [Summary("Sets your Last.FM name and FM mode. Please note that users in shared servers will be able to see and request your Last.FM username.")]
         [Alias("fmsetname", "fmsetmode")]
         public async Task fmsetAsync([Summary("Your Last.FM name")] string lastFMUserName,
             [Summary("The mode you want to use.")] string chartType = "embedfull")
@@ -872,7 +872,8 @@ namespace FMBot.Bot.Commands
             this._embed.WithDescription("Last.FM username has not been set. \n" +
                                         "To setup your Last.FM account with this bot, please use the `.fmset` command. \n" +
                                         $"Usage: `{ConfigData.Data.CommandPrefix}fmset username mode`\n" +
-                                        "Possible modes: embedmini/embedfull/textmini/textfull");
+                                        "Possible modes: embedmini/embedfull/textmini/textfull. \n" +
+                                        "Please note that users in shared servers will be able to see and request your Last.FM username.");
 
             this._embed.WithColor(Constants.WarningColorOrange);
             await ReplyAsync("", false, this._embed.Build());
