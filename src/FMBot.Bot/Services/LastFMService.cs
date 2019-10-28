@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Dasync.Collections;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Data.Entities;
@@ -13,6 +14,7 @@ using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
+using Microsoft.EntityFrameworkCore.Internal;
 using static FMBot.Bot.FMBotUtil;
 using static FMBot.Bot.Models.LastFMModels;
 
@@ -161,130 +163,59 @@ namespace FMBot.Bot.Services
                     Directory.CreateDirectory(GlobalVars.CacheFolder);
 
                 // Album mode
-                if (chart.mode == 0)
+                await chart.albums.ParallelForEachAsync(async album =>
                 {
-                    for (int albumIndex = 0; albumIndex < chart.albums.Count(); ++albumIndex)
+                    string artistName = string.IsNullOrWhiteSpace(album.ArtistName) ? nulltext : album.ArtistName;
+                    string albumName = string.IsNullOrWhiteSpace(album.Name) ? nulltext : album.Name;
+
+                    LastImageSet albumImages = await GetAlbumImagesAsync(artistName, albumName);
+
+                    Bitmap chartImage;
+
+                    if (albumImages?.Large != null)
                     {
-                        LastAlbum track = chart.albums.Content[albumIndex];
+                        string url = albumImages.Large.AbsoluteUri;
+                        string path = Path.GetFileName(url);
 
-                        string ArtistName = string.IsNullOrWhiteSpace(track.ArtistName) ? nulltext : track.ArtistName;
-                        string AlbumName = string.IsNullOrWhiteSpace(track.Name) ? nulltext : track.Name;
-
-                        LastImageSet albumImages = await GetAlbumImagesAsync(ArtistName, AlbumName);
-
-                        Bitmap cover;
-
-                        if (albumImages?.Large != null)
+                        if (File.Exists(GlobalVars.CacheFolder + path))
                         {
-                            string url = albumImages.Large.AbsoluteUri;
-                            string path = Path.GetFileName(url);
-
-                            if (File.Exists(GlobalVars.CacheFolder + path))
-                            {
-                                cover = new Bitmap(GlobalVars.CacheFolder + path);
-                            }
-                            else
-                            {
-                                WebRequest request = WebRequest.Create(url);
-                                using (WebResponse response = await request.GetResponseAsync())
-                                {
-                                    using (Stream responseStream = response.GetResponseStream())
-                                    {
-                                        Bitmap bitmap = new Bitmap(responseStream);
-
-                                        cover = bitmap;
-                                        using (MemoryStream memory = new MemoryStream())
-                                        {
-                                            using (FileStream fs = new FileStream(GlobalVars.CacheFolder + path, FileMode.Create, FileAccess.ReadWrite))
-                                            {
-                                                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
-                                                byte[] bytes = memory.ToArray();
-                                                fs.Write(bytes, 0, bytes.Length);
-                                            }
-                                        }
-
-                                    }
-                                }
-                            }
+                            chartImage = new Bitmap(GlobalVars.CacheFolder + path);
                         }
                         else
                         {
-                            cover = new Bitmap(GlobalVars.ImageFolder + "unknown.png");
-                        }
+                            WebRequest request = WebRequest.Create(url);
+                            using WebResponse response = await request.GetResponseAsync();
+                            await using Stream responseStream = response.GetResponseStream();
 
-                        if (chart.titles)
-                        {
-                            Graphics text = Graphics.FromImage(cover);
-                            text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
-                            text.DrawColorString(cover, AlbumName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 12.0f));
-                        }
+                            Bitmap bitmap = new Bitmap(responseStream);
 
-                        chart.images.Add(cover);
+                            chartImage = bitmap;
+                            await using MemoryStream memory = new MemoryStream();
+                            await using FileStream fs = new FileStream(GlobalVars.CacheFolder + path, FileMode.Create, FileAccess.ReadWrite);
+
+                            bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
+
+                            byte[] bytes = memory.ToArray();
+                            fs.Write(bytes, 0, bytes.Length);
+                        }
                     }
-                }
-                // Artist mode
-                else if (chart.mode == 1)
-                {
-                    PageResponse<LastArtist> artists = await GetTopArtistsAsync(chart.LastFMName, timespan, chart.max);
-                    for (int al = 0; al < chart.max; ++al)
+                    else
                     {
-                        LastArtist artist = artists.Content[al];
-
-                        string ArtistName = string.IsNullOrWhiteSpace(artist.Name) ? nulltext : artist.Name;
-
-                        LastImageSet artistImage = await GetArtistImageAsync(ArtistName);
-
-                        Bitmap cover;
-
-                        if (artistImage?.Large != null)
-                        {
-                            string url = artistImage.Large.AbsoluteUri;
-                            string path = Path.GetFileName(url);
-
-                            if (File.Exists(GlobalVars.CacheFolder + path))
-                            {
-                                cover = new Bitmap(GlobalVars.CacheFolder + path);
-
-                            }
-                            else
-                            {
-                                WebRequest request = WebRequest.Create(url);
-                                using (WebResponse response = await request.GetResponseAsync())
-                                {
-                                    using (Stream responseStream = response.GetResponseStream())
-                                    {
-                                        Bitmap bitmap = new Bitmap(responseStream);
-
-                                        cover = bitmap;
-                                        using (MemoryStream memory = new MemoryStream())
-                                        {
-                                            using (FileStream fs = new FileStream(GlobalVars.CacheFolder + path, FileMode.Create, FileAccess.ReadWrite))
-                                            {
-                                                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
-                                                byte[] bytes = memory.ToArray();
-                                                fs.Write(bytes, 0, bytes.Length);
-                                            }
-                                        }
-
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            cover = new Bitmap(GlobalVars.ImageFolder + "unknown.png");
-                        }
-
-                        if (chart.titles)
-                        {
-                            Graphics text = Graphics.FromImage(cover);
-                            text.DrawColorString(cover, ArtistName, new Font("Arial", 8.0f, FontStyle.Bold), new PointF(2.0f, 2.0f));
-                        }
-
-                        chart.images.Add(cover);
-
+                        chartImage = new Bitmap(GlobalVars.ImageFolder + "unknown.png");
                     }
-                }
+
+                    if (chart.titles)
+                    {
+                        Graphics text = Graphics.FromImage(chartImage);
+                        text.DrawColorString(chartImage, artistName, new Font("Arial", 8.0f, FontStyle.Bold),
+                            new PointF(2.0f, 2.0f));
+                        text.DrawColorString(chartImage, albumName, new Font("Arial", 8.0f, FontStyle.Bold),
+                            new PointF(2.0f, 12.0f));
+                    }
+
+                    chart.images.Add(new ChartImage(chartImage, chart.albums.IndexOf(album)));
+
+                });
             }
             catch (Exception e)
             {
@@ -292,23 +223,22 @@ namespace FMBot.Bot.Services
             }
             finally
             {
-                List<List<Bitmap>> ImageLists = GlobalVars.splitBitmapList(chart.images, chart.rows);
+                List<List<Bitmap>> imageList = GlobalVars.splitBitmapList(chart.images.OrderBy(o => o.Index).Select(s => s.Image).ToList(), chart.rows);
 
-                List<Bitmap> BitmapList = new List<Bitmap>();
-
-                foreach (List<Bitmap> list in ImageLists.ToArray())
+                List<Bitmap> bitmapList = new List<Bitmap>();
+                foreach (List<Bitmap> list in imageList.ToArray())
                 {
                     //combine them into one image
                     Bitmap stitchedRow = GlobalVars.Combine(list);
-                    BitmapList.Add(stitchedRow);
+                    bitmapList.Add(stitchedRow);
                 }
 
                 lock (GlobalVars.charts.SyncRoot)
                 {
-                    GlobalVars.charts[GlobalVars.GetChartFileName(chart.DiscordUser.Id)] = GlobalVars.Combine(BitmapList, true);
+                    GlobalVars.charts[GlobalVars.GetChartFileName(chart.DiscordUser.Id)] = GlobalVars.Combine(bitmapList, true);
                 }
 
-                foreach (Bitmap image in BitmapList.ToArray())
+                foreach (Bitmap image in bitmapList.ToArray())
                 {
                     image.Dispose();
                 }

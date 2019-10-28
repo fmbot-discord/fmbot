@@ -441,8 +441,6 @@ namespace FMBot.Bot.Commands
                 }
 
                 // Generating image
-                var images = new List<Bitmap>();
-
                 var timespan = this._lastFmService.StringToLastStatsTimeSpan(time);
                 var albums = await this._lastFmService.GetTopAlbumsAsync(lastFMUserName, timespan, chartAlbums);
 
@@ -457,11 +455,10 @@ namespace FMBot.Bot.Commands
                 var chart = new FMBotChart
                 {
                     albums = albums,
-                    time = time,
                     LastFMName = lastFMUserName,
                     max = chartAlbums,
                     rows = chartRows,
-                    images = images,
+                    images = new List<ChartImage>(),
                     DiscordUser = this.Context.User,
                     disclient = this.Context.Client as DiscordSocketClient,
                     mode = 0,
