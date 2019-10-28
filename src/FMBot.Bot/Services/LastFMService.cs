@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -182,7 +182,6 @@ namespace FMBot.Bot.Services
                             if (File.Exists(GlobalVars.CacheFolder + path))
                             {
                                 cover = new Bitmap(GlobalVars.CacheFolder + path);
-
                             }
                             else
                             {

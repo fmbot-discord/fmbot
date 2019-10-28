@@ -31,11 +31,10 @@ namespace FMBot.Bot.Commands
             this._embedAuthor = new EmbedAuthorBuilder();
         }
 
-
-        [Command("fminvite")]
+        [Command("fminvite", RunMode = RunMode.Async)]
         [Summary("Info for inviting the bot to a server")]
         [Alias("fmserver")]
-        public async Task inviteAsync()
+        public async Task InviteAsync()
         {
             var SelfID = this.Context.Client.CurrentUser.Id.ToString();
 
@@ -52,7 +51,7 @@ namespace FMBot.Bot.Commands
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         }
 
-        [Command("fminfo")]
+        [Command("fminfo", RunMode = RunMode.Async)]
         [Summary("Please donate if you like this bot!")]
         [Alias("fmdonate", "fmgithub", "fmgitlab", "fmissues", "fmbugs")]
         public async Task InfoAsync()
@@ -82,9 +81,9 @@ namespace FMBot.Bot.Commands
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         }
 
-        [Command("fmstatus")]
+        [Command("fmstatus", RunMode = RunMode.Async)]
         [Summary("Displays bot stats.")]
-        public async Task statusAsync()
+        public async Task StatusAsync()
         {
             var selfUser = this.Context.Client.CurrentUser;
 
@@ -118,11 +117,10 @@ namespace FMBot.Bot.Commands
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         }
 
-
-        [Command("fmhelp")]
+        [Command("fmhelp", RunMode = RunMode.Async)]
         [Summary("Quick help summary to get started.")]
         [Alias("fmbot")]
-        public async Task fmhelpAsync()
+        public async Task HelpAsync()
         {
             var prefix = ConfigData.Data.CommandPrefix;
 
@@ -159,13 +157,11 @@ namespace FMBot.Bot.Commands
         }
 
 
-        [Command("fmfullhelp")]
+        [Command("fmfullhelp", RunMode = RunMode.Async)]
         [Summary("Displays this list.")]
-        public async Task fmfullhelpAsync()
+        public async Task FullHelpAsync()
         {
             var prefix = ConfigData.Data.CommandPrefix;
-
-            var SelfUser = this.Context.Client.CurrentUser;
 
             string description = null;
             var length = 0;
@@ -192,14 +188,12 @@ namespace FMBot.Bot.Commands
                     }
                 }
 
-
                 if (description.Length < 1024)
                 {
                     builder.AddField
                     (module.Name + (module.Summary != null ? " - " + module.Summary : ""),
                         description != null ? description : "");
                 }
-
 
                 length += description.Length;
                 description = null;
@@ -213,7 +207,6 @@ namespace FMBot.Bot.Commands
                 }
             }
 
-
             builder = new EmbedBuilder
             {
                 Title = "Additional information"
@@ -224,20 +217,16 @@ namespace FMBot.Bot.Commands
                 "- Chart sizes range from 3x3 to 10x10 \n" +
                 "- Most commands have no required parameters");
 
-
             builder.AddField("Setting your username",
                 "Use `" + prefix +
                 "fmset 'username' 'embedfull/embedmini/textfull/textmini'` to set your global LastFM username. " +
                 "The last parameter means the mode that your embed will be");
 
-
             builder.AddField("Making album charts",
                 "`" + prefix + "fmchart '3x3-10x10' 'weekly/monthly/yearly/overall' 'notitles/titles' 'user'`");
 
-
             builder.AddField("Making artist charts",
                 "`" + prefix + "fmartistchart '3x3-10x10' 'weekly/monthly/yearly/overall' 'notitles/titles' 'user'`");
-
 
             builder.AddField("Setting the default server settings",
                 "Please note that server defaults are a planned feature. \n" +

@@ -60,7 +60,7 @@ namespace FMBot.Bot.Commands
         [Summary("Displays what a user is listening to.")]
         [Alias("qm", "wm", "em", "rm", "tm", "ym", "um", "im", "om", "pm", "dm", "gm", "sm", "am", "hm", "jm", "km",
             "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm")]
-        public async Task fmAsync(string user = null)
+        public async Task FMAsync(string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -252,7 +252,7 @@ namespace FMBot.Bot.Commands
         [Command("fmartists", RunMode = RunMode.Async)]
         [Summary("Displays top artists.")]
         [Alias("fmartist", "fmartistlist", "fmartistslist")]
-        public async Task fmArtistsAsync(string time = "weekly", int num = 6, string user = null)
+        public async Task ArtistsAsync(string time = "weekly", int num = 6, string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -353,10 +353,9 @@ namespace FMBot.Bot.Commands
             }
         }
 
-
         [Command("fmchart", RunMode = RunMode.Async)]
         [Summary("Generates a chart based on a user's parameters.")]
-        public async Task fmchartAsync(string chartSize = "3x3", string time = "weekly", string titleSetting = null,
+        public async Task ChartAsync(string chartSize = "3x3", string time = "weekly", string titleSetting = null,
             string user = null)
         {
             if (chartSize == "help")
@@ -537,7 +536,7 @@ namespace FMBot.Bot.Commands
         [Command("fmrecent", RunMode = RunMode.Async)]
         [Summary("Displays a user's recent tracks.")]
         [Alias("fmrecenttracks")]
-        public async Task fmrecentAsync(string user = null, int num = 5)
+        public async Task RecentAsync(string user = null, int num = 5)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -651,7 +650,7 @@ namespace FMBot.Bot.Commands
 
         [Command("fmstats", RunMode = RunMode.Async)]
         [Summary("Displays user stats related to Last.FM and FMBot")]
-        public async Task fmstatsAsync(string user = null)
+        public async Task StatsAsync(string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -732,7 +731,7 @@ namespace FMBot.Bot.Commands
         [Command("fmfeatured", RunMode = RunMode.Async)]
         [Summary("Displays the featured avatar.")]
         [Alias("fmfeaturedavatar", "fmfeatureduser", "fmfeaturedalbum")]
-        public async Task fmfeaturedAsync()
+        public async Task FeaturedAsync()
         {
             try
             {
@@ -799,7 +798,7 @@ namespace FMBot.Bot.Commands
         [Command("fmremove", RunMode = RunMode.Async)]
         [Summary("Deletes your FMBot data.")]
         [Alias("fmdelete", "fmremovedata", "fmdeletedata")]
-        public async Task fmremoveAsync()
+        public async Task RemoveAsync()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -820,7 +819,7 @@ namespace FMBot.Bot.Commands
         [Command("fmsuggest", RunMode = RunMode.Async)]
         [Summary("Suggest features you want to see in the bot, or report inappropriate images.")]
         [Alias("fmreport", "fmsuggestion", "fmsuggestions")]
-        public async Task fmsuggest(string suggestion = null)
+        public async Task Suggest(string suggestion = null)
         {
             try
             {
