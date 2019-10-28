@@ -139,11 +139,11 @@ namespace FMBot.Bot.Services
             {
                 return LastStatsTimeSpan.Month;
             }
-            else if (timespan.Equals("yearly") || timespan.Equals("year") || timespan.Equals("y"))
+            if (timespan.Equals("yearly") || timespan.Equals("year") || timespan.Equals("y"))
             {
                 return LastStatsTimeSpan.Year;
             }
-            else if (timespan.Equals("overall") || timespan.Equals("alltime") || timespan.Equals("o") || timespan.Equals("at"))
+            if (timespan.Equals("overall") || timespan.Equals("alltime") || timespan.Equals("o") || timespan.Equals("at") || timespan.Equals("a"))
             {
                 return LastStatsTimeSpan.Overall;
             }
