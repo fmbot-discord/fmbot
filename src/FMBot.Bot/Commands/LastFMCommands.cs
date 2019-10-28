@@ -94,15 +94,19 @@ namespace FMBot.Bot.Commands
                     }
                 }
 
-                PageResponse<LastTrack> tracks = await _lastFmService.GetRecentScrobblesAsync(lastFMUserName);
+                var trackTask = _lastFmService.GetRecentScrobblesAsync(lastFMUserName);
+                var userInfoTask = _lastFmService.GetUserInfoAsync(lastFMUserName);
+
+                Task.WaitAll(trackTask, userInfoTask);
+
+                var tracks = trackTask.Result;
+                var userInfo = userInfoTask.Result;
 
                 if (tracks?.Any() != true)
                 {
                     await NoScrobblesErrorResponseFoundAsync(tracks.Status);
                     return;
                 }
-
-                LastResponse<LastUser> userinfo = await _lastFmService.GetUserInfoAsync(lastFMUserName);
 
                 LastTrack currentTrack = tracks.Content[0];
                 LastTrack lastTrack = tracks.Content[1];
@@ -117,7 +121,7 @@ namespace FMBot.Bot.Commands
                 string lastTrackArtistName = lastTrack.ArtistName;
                 string lastTrackAlbumName = string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? nullText : lastTrack.AlbumName;
 
-                int playCount = userinfo.Content.Playcount;
+                int playCount = userInfo.Content.Playcount;
 
                 switch (userSettings.ChartType)
                 {
@@ -202,14 +206,14 @@ namespace FMBot.Bot.Commands
                         this._embed.WithAuthor(this._embedAuthor);
                         this._embed.WithUrl("https://www.last.fm/user/" + lastFMUserName);
 
-                        LastImageSet AlbumImages = await _lastFmService.GetAlbumImagesAsync(currentTrack.ArtistName, currentTrack.AlbumName);
+                        var albumImages = await _lastFmService.GetAlbumImagesAsync(currentTrack.ArtistName, currentTrack.AlbumName);
 
-                        if (AlbumImages?.Medium != null)
+                        if (albumImages?.Medium != null)
                         {
-                            this._embed.WithThumbnailUrl(AlbumImages.Medium.ToString());
+                            this._embed.WithThumbnailUrl(albumImages.Medium.ToString());
                         }
 
-                        this._embedFooter.WithText($"{userinfo.Content.Name} has {userinfo.Content.Playcount} scrobbles.");
+                        this._embedFooter.WithText($"{userInfo.Content.Name} has {userInfo.Content.Playcount} scrobbles.");
                         this._embed.WithFooter(this._embedFooter);
 
                         this._embed.WithColor(Constants.LastFMColorRed);
@@ -262,26 +266,15 @@ namespace FMBot.Bot.Commands
             try
             {
                 string lastFMUserName = userSettings.UserNameLastFM;
+                bool self = true;
 
                 if (user != null)
                 {
-                    if (await _lastFmService.LastFMUserExistsAsync(user))
+                    var alternativeLastFmUserName = await FindUser(user);
+                    if (!string.IsNullOrEmpty(alternativeLastFmUserName))
                     {
-                        lastFMUserName = user;
-                    }
-                    else if (!_guildService.CheckIfDM(Context))
-                    {
-                        IGuildUser guildUser = await _guildService.FindUserFromGuildAsync(Context, user);
-
-                        if (guildUser != null)
-                        {
-                            User guildUserLastFM = await _userService.GetUserSettingsAsync(guildUser);
-
-                            if (guildUserLastFM?.UserNameLastFM != null)
-                            {
-                                lastFMUserName = guildUserLastFM.UserNameLastFM;
-                            }
-                        }
+                        lastFMUserName = alternativeLastFmUserName;
+                        self = false;
                     }
                 }
 
@@ -289,7 +282,7 @@ namespace FMBot.Bot.Commands
 
                 if (artists?.Any() != true)
                 {
-                    await ReplyAsync("No artists found on this profile. (" + lastFMUserName + ")");
+                    await NoScrobblesErrorResponseFoundAsync(artists.Status);
                     return;
                 }
 
@@ -311,8 +304,6 @@ namespace FMBot.Bot.Commands
                 for (int i = 0; i <= indexval; i++)
                 {
                     LastArtist artist = artists.Content[i];
-
-                    string artistName = artist.Name;
 
                     int correctnum = (i + 1);
                     builder.AddField("#" + correctnum + ": " + artist.Name, artist.PlayCount.Value.ToString("N0") + " times scrobbled");
@@ -594,7 +585,7 @@ namespace FMBot.Bot.Commands
                     LastTrack track = tracks.Content[i];
 
                     string TrackName = track.Name;
-                    string ArtistName =  track.ArtistName;
+                    string ArtistName = track.ArtistName;
                     string AlbumName = track.AlbumName;
 
                     if (i == 0)
@@ -608,7 +599,7 @@ namespace FMBot.Bot.Commands
                     }
 
                     int correctnum = (i + 1);
-                    builder.AddField("#" + correctnum + ": " + TrackName, $"By **{ArtistName}**" + (string.IsNullOrEmpty(AlbumName) ? "" :$" | {AlbumName}"));
+                    builder.AddField("#" + correctnum + ": " + TrackName, $"By **{ArtistName}**" + (string.IsNullOrEmpty(AlbumName) ? "" : $" | {AlbumName}"));
                 }
 
                 EmbedFooterBuilder efb = new EmbedFooterBuilder();
@@ -867,10 +858,10 @@ namespace FMBot.Bot.Commands
             switch (apiResponse)
             {
                 case LastResponseStatus.Failure:
-                    this._embed.WithDescription("Last.FM is having issues. Please try again later.");
+                    this._embed.WithDescription("Last.FM has issues and/or is down. Please try again later.");
                     break;
                 default:
-                    this._embed.WithDescription("You have no scrobbles on your profile, or Last.FM is having issues. Please try again later.");
+                    this._embed.WithDescription("You have no scrobbles/artists on your profile, or Last.FM is having issues. Please try again later.");
                     break;
             }
 
