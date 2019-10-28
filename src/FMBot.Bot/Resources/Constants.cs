@@ -11,6 +11,8 @@ namespace FMBot.Bot.Resources
 
         public const string LastFMUserUrl = "https://www.last.fm/user/";
 
+        public const int InviteLinkPermissions = 50176;
+
         /// <summary>The Discord color for a warning embed.</summary>
         public static Color WarningColorOrange = new Color(255, 174, 66);
     }

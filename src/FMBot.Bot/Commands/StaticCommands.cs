@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -8,6 +8,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using static FMBot.Bot.FMBotUtil;
 
@@ -15,188 +16,180 @@ namespace FMBot.Bot.Commands
 {
     public class StaticCommands : ModuleBase
     {
+        private readonly EmbedBuilder _embed;
+        private readonly EmbedAuthorBuilder _embedAuthor;
+
         private readonly CommandService _service;
-
-        private readonly UserService userService = new UserService();
-
-        private readonly GuildService guildService = new GuildService();
+        private readonly GuildService _guildService = new GuildService();
+        private readonly UserService _userService = new UserService();
 
         public StaticCommands(CommandService service)
         {
-            _service = service;
+            this._service = service;
+            this._embed = new EmbedBuilder()
+                .WithColor(Constants.LastFMColorRed);
+            this._embedAuthor = new EmbedAuthorBuilder();
         }
 
 
-        [Command("fminvite"), Summary("Invites the bot to a server")]
+        [Command("fminvite")]
+        [Summary("Info for inviting the bot to a server")]
         [Alias("fmserver")]
         public async Task inviteAsync()
         {
-            EmbedBuilder builder = new EmbedBuilder();
+            var SelfID = this.Context.Client.CurrentUser.Id.ToString();
 
-            string SelfID = Context.Client.CurrentUser.Id.ToString();
+            this._embed.AddField("Invite the bot to your own server with the link below:",
+                "https://discordapp.com/oauth2/authorize?client_id=" + SelfID + "&scope=bot&permissions=" + Constants.InviteLinkPermissions);
 
-            builder.AddField("Invite the bot to your own server with the link below:",
-                "https://discordapp.com/oauth2/authorize?client_id=" + SelfID + "&scope=bot&permissions=50176");
-
-            builder.AddField("Join the FMBot server for support and updates:",
+            this._embed.AddField("Join the FMBot server for support and updates:",
                 "https://discord.gg/srmpCaa");
 
-            builder.AddField("Please upvote us on Discord Bots if you enjoy the bot:",
+            this._embed.AddField("Please upvote us on Discord Bots if you enjoy the bot:",
                 "https://discordbots.org/bot/356268235697553409");
 
-
-            await Context.Channel.SendMessageAsync("", false, builder.Build());
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         }
 
-        [Command("fmdonate"), Summary("Please donate if you like this bot!")]
-        public async Task donateAsync()
+        [Command("fminfo")]
+        [Summary("Please donate if you like this bot!")]
+        [Alias("fmdonate", "fmgithub", "fmgitlab", "fmissues", "fmbugs")]
+        public async Task InfoAsync()
         {
-            await ReplyAsync("If you like the bot and you would like to support its development, " +
-                             "feel free to support the developers at: https://www.paypal.me/Bitl and https://www.paypal.me/th0m");
+            var SelfID = this.Context.Client.CurrentUser.Id.ToString();
+
+            this._embed.AddField("Invite the bot to your own server with the link below:",
+                "https://discordapp.com/oauth2/authorize?client_id=" + SelfID + "&scope=bot&permissions=" + Constants.InviteLinkPermissions);
+
+            this._embed.AddField("Like the bot and want support its development?",
+                "Feel free to support the developers here: \n" +
+                "https://www.paypal.me/Bitl and https://www.paypal.me/th0m");
+
+            this._embed.AddField("Post issues and feature requests here:",
+                "https://github.com/fmbot-discord/fmbot/issues/new/choose");
+
+            this._embed.AddField("View the code on Github:",
+                "https://github.com/fmbot-discord/fmbot");
+
+            this._embed.AddField("Or on GitLab:",
+                "https://gitlab.com/Bitl/FMBot_Discord");
+
+            this._embed.AddField("Join the FMBot server for support and updates:",
+                "https://discord.gg/srmpCaa");
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         }
 
-        [Command("fmgithub"), Summary("GitHub Page")]
-        public async Task githubAsync()
-        {
-            await ReplyAsync("https://github.com/fmbot-discord/fmbot");
-        }
-
-        [Command("fmbugs"), Summary("Report bugs here!")]
-        public async Task bugsAsync()
-        {
-            await ReplyAsync("Please report bugs here:\nGithub: https://github.com/fmbot-discord/fmbot/issues");
-        }
-
-        [Command("fmstatus"), Summary("Displays bot stats.")]
+        [Command("fmstatus")]
+        [Summary("Displays bot stats.")]
         public async Task statusAsync()
         {
-            ISelfUser SelfUser = Context.Client.CurrentUser;
+            var selfUser = this.Context.Client.CurrentUser;
 
-            EmbedAuthorBuilder eab = new EmbedAuthorBuilder
-            {
-                IconUrl = SelfUser.GetAvatarUrl(),
-                Name = SelfUser.Username
-            };
+            this._embedAuthor.WithIconUrl(selfUser.GetAvatarUrl());
+            this._embedAuthor.WithName(selfUser.Username);
 
-            EmbedBuilder builder = new EmbedBuilder();
-            builder.WithAuthor(eab);
+            this._embed.WithAuthor(this._embedAuthor);
 
-            TimeSpan startTime = (DateTime.Now - Process.GetCurrentProcess().StartTime);
+            var startTime = DateTime.Now - Process.GetCurrentProcess().StartTime;
 
-            DiscordShardedClient client = Context.Client as DiscordShardedClient;
+            var client = this.Context.Client as DiscordShardedClient;
 
-            SocketSelfUser SocketSelf = Context.Client.CurrentUser as SocketSelfUser;
+            var socketSelfUser = this.Context.Client.CurrentUser as SocketSelfUser;
 
-            string status = "Online";
+            var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
-            switch (SocketSelf.Status)
-            {
-                case UserStatus.Offline: status = "Offline"; break;
-                case UserStatus.Online: status = "Online"; break;
-                case UserStatus.Idle: status = "Idle"; break;
-                case UserStatus.AFK: status = "AFK"; break;
-                case UserStatus.DoNotDisturb: status = "Do Not Disturb"; break;
-                case UserStatus.Invisible: status = "Invisible/Offline"; break;
-            }
+            var fixedCmdGlobalCount = GlobalVars.CommandExecutions + 1;
 
-            string assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            this._embed.AddField("Bot Uptime: ", startTime.ToReadableString(), true);
+            this._embed.AddField("Server Uptime: ", GlobalVars.SystemUpTime().ToReadableString(), true);
+            this._embed.AddField("Usercount: ", (await this._userService.GetUserCountAsync()).ToString(), true);
+            this._embed.AddField("Discord usercount: ", client.Guilds.Select(s => s.MemberCount).Sum(), true);
+            this._embed.AddField("Servercount: ", client.Guilds.Count, true);
+            this._embed.AddField("Commands used: ", fixedCmdGlobalCount, true);
+            this._embed.AddField("Last.FM API calls: ", GlobalVars.LastFMApiCalls, true);
+            this._embed.AddField("Bot status: ", socketSelfUser.Status.ToString(), true);
+            this._embed.AddField("Average latency: ", client.Shards.Select(s => s.Latency).Average() + "ms", true);
+            this._embed.AddField("Shards: ", client.Shards.Count, true);
+            this._embed.AddField("Bot version: ", assemblyVersion, true);
 
-            int fixedCmdGlobalCount = GlobalVars.CommandExecutions + 1;
-
-            builder.AddField("Bot Uptime: ", startTime.ToReadableString(), true);
-            builder.AddField("Server Uptime: ", GlobalVars.SystemUpTime().ToReadableString(), true);
-            builder.AddField("Usercount: ", (await userService.GetUserCountAsync()).ToString(), true);
-            builder.AddField("Discord usercount: ", client.Guilds.Select(s => s.MemberCount).Sum(), true);
-            builder.AddField("Servercount: ", client.Guilds.Count, true);
-            builder.AddField("Commands used: ", fixedCmdGlobalCount, true);
-            builder.AddField("Last.FM API calls: ", GlobalVars.LastFMApiCalls, true);
-            builder.AddField("Bot status: ", status, true);
-            builder.AddField("Latency: ", client.Latency + "ms", true);
-            builder.AddField("Shards: ", client.Shards.Count, true);
-            builder.AddField("Bot version: ", assemblyVersion, true);
-
-            await Context.Channel.SendMessageAsync("", false, builder.Build());
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         }
 
 
-        [Command("fmhelp"), Summary("Quick help summary to get started.")]
+        [Command("fmhelp")]
+        [Summary("Quick help summary to get started.")]
         [Alias("fmbot")]
         public async Task fmhelpAsync()
         {
-            string prefix = ConfigData.Data.CommandPrefix;
+            var prefix = ConfigData.Data.CommandPrefix;
 
-            EmbedBuilder builder = new EmbedBuilder
-            {
-                Title = prefix + "FMBot Quick Start Guide",
-            };
+            this._embed.WithTitle(prefix + "FMBot Quick Start Guide");
 
-            builder.AddField(prefix + "fm 'lastfm username/ discord user'",
+            this._embed.AddField(prefix + "fm 'lastfm username/ discord user'",
                 "Displays your stats, or stats of entered username or user");
 
-            builder.AddField(prefix + "fmset 'username' 'embedmini/embedfull/textmini/textfull'",
+            this._embed.AddField(prefix + "fmset 'username' 'embedmini/embedfull/textmini/textfull'",
                 "Sets your default LastFM name, followed by the display mode you want to use");
 
-            builder.AddField(prefix + "fmrecent 'lastfm username/ discord user' '1-10'",
+            this._embed.AddField(prefix + "fmrecent 'lastfm username/ discord user' '1-10'",
                 "Shows a list of your most recent tracks, defaults to 5");
 
-            builder.AddField(prefix + "fmrecent 'lastfm username/ discord user' '1-10'",
+            this._embed.AddField(prefix + "fmrecent 'lastfm username/ discord user' '1-10'",
                 "Shows a list of your most recent tracks, defaults to 5");
 
-            builder.AddField(prefix + "fmchart '3x3-10x10' 'weekly/monthly/yearly/overall' 'titles/notitles'",
+            this._embed.AddField(prefix + "fmchart '3x3-10x10' 'weekly/monthly/yearly/overall' 'titles/notitles'",
                 "Generates an image chart of your top albums");
 
-            builder.AddField(prefix + "fmspotify",
+            this._embed.AddField(prefix + "fmspotify",
                 "Gets the spotify link of your last played song");
 
-            builder.AddField(prefix + "fmyoutube",
+            this._embed.AddField(prefix + "fmyoutube",
                 "Gets the youtube link of your last played song");
 
-            builder.AddField(prefix + "fmfriends",
+            this._embed.AddField(prefix + "fmfriends",
                 "Get a list of the songs your friends played");
 
-            builder.WithFooter("Please use `" + prefix + "fmfullhelp` to get a list of all possible commands.");
+            this._embed.WithFooter("Please use `" + prefix + "fmfullhelp` to get a list of all possible commands.");
 
-            await Context.Channel.SendMessageAsync("", false, builder.Build());
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         }
 
 
-        [Command("fmfullhelp"), Summary("Displays this list.")]
+        [Command("fmfullhelp")]
+        [Summary("Displays this list.")]
         public async Task fmfullhelpAsync()
         {
-            string prefix = ConfigData.Data.CommandPrefix;
+            var prefix = ConfigData.Data.CommandPrefix;
 
-            ISelfUser SelfUser = Context.Client.CurrentUser;
+            var SelfUser = this.Context.Client.CurrentUser;
 
             string description = null;
-            int length = 0;
+            var length = 0;
 
-            EmbedBuilder builder = new EmbedBuilder();
+            var builder = new EmbedBuilder();
 
-            foreach (ModuleInfo module in _service.Modules.OrderByDescending(o => o.Commands.Count()).Where(w => !w.Name.Contains("SecretCommands") && !w.Name.Contains("OwnerCommands") && !w.Name.Contains("AdminCommands") && !w.Name.Contains("GuildCommands")))
+            foreach (var module in this._service.Modules.OrderByDescending(o => o.Commands.Count()).Where(w =>
+                !w.Name.Contains("SecretCommands") && !w.Name.Contains("OwnerCommands") &&
+                !w.Name.Contains("AdminCommands") && !w.Name.Contains("GuildCommands")))
             {
-                foreach (CommandInfo cmd in module.Commands)
+                foreach (var cmd in module.Commands)
                 {
-                    PreconditionResult result = await cmd.CheckPreconditionsAsync(Context);
+                    var result = await cmd.CheckPreconditionsAsync(this.Context);
                     if (result.IsSuccess)
                     {
                         if (!string.IsNullOrWhiteSpace(cmd.Summary))
-                        {
                             description += $"{prefix}{cmd.Aliases.First()} - {cmd.Summary}\n";
-                        }
                         else
-                        {
                             description += $"{prefix}{cmd.Aliases.First()}\n";
-                        }
                     }
                 }
 
 
                 if (description.Length < 1024)
-                {
                     builder.AddField
-                        (module.Name + (module.Summary != null ? " - " + module.Summary : ""),
+                    (module.Name + (module.Summary != null ? " - " + module.Summary : ""),
                         description != null ? description : "");
-                }
 
 
                 length += description.Length;
@@ -204,7 +197,7 @@ namespace FMBot.Bot.Commands
 
                 if (length < 1990)
                 {
-                    await Context.User.SendMessageAsync("", false, builder.Build());
+                    await this.Context.User.SendMessageAsync("", false, builder.Build());
 
                     builder = new EmbedBuilder();
                     length = 0;
@@ -214,7 +207,7 @@ namespace FMBot.Bot.Commands
 
             builder = new EmbedBuilder
             {
-                Title = "Additional information",
+                Title = "Additional information"
             };
 
             builder.AddField("Quick tips",
@@ -224,7 +217,8 @@ namespace FMBot.Bot.Commands
 
 
             builder.AddField("Setting your username",
-                "Use `" + prefix + "fmset 'username' 'embedfull/embedmini/textfull/textmini'` to set your global LastFM username. " +
+                "Use `" + prefix +
+                "fmset 'username' 'embedfull/embedmini/textfull/textmini'` to set your global LastFM username. " +
                 "The last parameter means the mode that your embed will be");
 
 
@@ -243,13 +237,10 @@ namespace FMBot.Bot.Commands
 
             builder.WithFooter("Still need help? Join the FMBot Discord Server: https://discord.gg/srmpCaa");
 
-            await Context.User.SendMessageAsync("", false, builder.Build());
+            await this.Context.User.SendMessageAsync("", false, builder.Build());
 
-            if (!guildService.CheckIfDM(Context))
-            {
-                await Context.Channel.SendMessageAsync("Check your DMs!");
-            }
-
+            if (!this._guildService.CheckIfDM(this.Context))
+                await this.Context.Channel.SendMessageAsync("Check your DMs!");
         }
     }
 }
