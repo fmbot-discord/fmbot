@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using FMBot.Bot.Models;
 using FMBot.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -57,23 +58,20 @@ namespace FMBot.Bot.Services
 
 
         // Get all guild users
-        public async Task<Dictionary<string, string>> FindAllUsersFromGuildAsync(ICommandContext context)
+        public async Task<List<UserExportModel>> FindAllUsersFromGuildAsync(ICommandContext context)
         {
-            IReadOnlyCollection<IGuildUser> users = await context.Guild.GetUsersAsync();
-            Dictionary<string, string> userList = new Dictionary<string, string>();
+            var users = await context.Guild.GetUsersAsync();
 
-            foreach (IGuildUser user in users)
-            {
-                var userId = user.Id.ToString();
-                User fmBotUser = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == userId);
+            var userIds = users.Select(s => s.Id.ToString()).ToList();
 
-                if (fmBotUser != null)
-                {
-                    userList.Add(user.Nickname ?? user.Username, fmBotUser.UserNameLastFM);
-                }
-            }
-
-            return userList;
+            return this.db.Users
+                .Where(w => userIds.Contains(w.DiscordUserID))
+                .Select(s =>
+                    new UserExportModel(
+                        s.DiscordUserID,
+                        users.First(f => f.Id.ToString() == s.DiscordUserID).ToString(),
+                        s.UserNameLastFM))
+                .ToList();
         }
 
         public async Task ChangeGuildSettingAsync(IGuild guild, ChartTimePeriod chartTimePeriod, ChartType chartType)

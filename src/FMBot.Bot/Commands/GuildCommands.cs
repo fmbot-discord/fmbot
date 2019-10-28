@@ -1,11 +1,15 @@
-﻿using Discord;
+using Discord;
 using Discord.Commands;
 using FMBot.Data.Entities;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using FMBot.Bot.Services;
+using Newtonsoft.Json;
+using Unosquare.Swan.Formatters;
 
 namespace FMBot.Bot.Commands
 {
@@ -24,9 +28,6 @@ namespace FMBot.Bot.Commands
             _service = service;
             _timer = timer;
         }
-
-
-        #region Server Staff Only Commands
 
         [Command("fmserverset"), Summary("Sets the global FMBot settings for the server.")]
         [Alias("fmserversetmode")]
@@ -87,7 +88,7 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            Dictionary<string, string> serverUsers = await guildService.FindAllUsersFromGuildAsync(Context);
+            var serverUsers = await guildService.FindAllUsersFromGuildAsync(Context);
 
             if (serverUsers.Count == 0)
             {
@@ -95,25 +96,34 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            string reply = "The " + serverUsers.Count + " Last.FM users on this server are: \n";
-            foreach (KeyValuePair<string, string> fmbotUser in serverUsers.OrderBy(o => o.Key))
+            try
             {
-                reply += "`" + fmbotUser.Value + "` - " + fmbotUser.Key + "\n";
-
-                if (reply.Length > 1950)
+                var userJson = System.Text.Json.JsonSerializer.Serialize(serverUsers, new JsonSerializerOptions
                 {
-                    await Context.User.SendMessageAsync(reply);
-                    reply = "";
-                }
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                });
 
+                await this.Context.User.SendFileAsync(ToStream(userJson), $"users_UTC-{DateTime.UtcNow.ToString("u")}.json");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
             }
 
-            await Context.User.SendMessageAsync(reply);
             await ReplyAsync("Check your DMs!");
         }
 
 
-        #endregion
-
+        public static Stream ToStream(string str)
+        {
+            MemoryStream stream = new MemoryStream();
+            StreamWriter writer = new StreamWriter(stream);
+            writer.Write(str);
+            writer.Flush();
+            stream.Position = 0;
+            return stream;
+        }
     }
 }
