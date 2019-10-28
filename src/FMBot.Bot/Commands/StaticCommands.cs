@@ -18,9 +18,9 @@ namespace FMBot.Bot.Commands
     {
         private readonly EmbedBuilder _embed;
         private readonly EmbedAuthorBuilder _embedAuthor;
+        private readonly GuildService _guildService = new GuildService();
 
         private readonly CommandService _service;
-        private readonly GuildService _guildService = new GuildService();
         private readonly UserService _userService = new UserService();
 
         public StaticCommands(CommandService service)
@@ -40,7 +40,8 @@ namespace FMBot.Bot.Commands
             var SelfID = this.Context.Client.CurrentUser.Id.ToString();
 
             this._embed.AddField("Invite the bot to your own server with the link below:",
-                "https://discordapp.com/oauth2/authorize?client_id=" + SelfID + "&scope=bot&permissions=" + Constants.InviteLinkPermissions);
+                "https://discordapp.com/oauth2/authorize?client_id=" + SelfID + "&scope=bot&permissions=" +
+                Constants.InviteLinkPermissions);
 
             this._embed.AddField("Join the FMBot server for support and updates:",
                 "https://discord.gg/srmpCaa");
@@ -59,7 +60,8 @@ namespace FMBot.Bot.Commands
             var SelfID = this.Context.Client.CurrentUser.Id.ToString();
 
             this._embed.AddField("Invite the bot to your own server with the link below:",
-                "https://discordapp.com/oauth2/authorize?client_id=" + SelfID + "&scope=bot&permissions=" + Constants.InviteLinkPermissions);
+                "https://discordapp.com/oauth2/authorize?client_id=" + SelfID + "&scope=bot&permissions=" +
+                Constants.InviteLinkPermissions);
 
             this._embed.AddField("Like the bot and want support its development?",
                 "Feel free to support the developers here: \n" +
@@ -179,17 +181,23 @@ namespace FMBot.Bot.Commands
                     if (result.IsSuccess)
                     {
                         if (!string.IsNullOrWhiteSpace(cmd.Summary))
+                        {
                             description += $"{prefix}{cmd.Aliases.First()} - {cmd.Summary}\n";
+                        }
                         else
+                        {
                             description += $"{prefix}{cmd.Aliases.First()}\n";
+                        }
                     }
                 }
 
 
                 if (description.Length < 1024)
+                {
                     builder.AddField
                     (module.Name + (module.Summary != null ? " - " + module.Summary : ""),
                         description != null ? description : "");
+                }
 
 
                 length += description.Length;
@@ -240,7 +248,9 @@ namespace FMBot.Bot.Commands
             await this.Context.User.SendMessageAsync("", false, builder.Build());
 
             if (!this._guildService.CheckIfDM(this.Context))
+            {
                 await this.Context.Channel.SendMessageAsync("Check your DMs!");
+            }
         }
     }
 }
