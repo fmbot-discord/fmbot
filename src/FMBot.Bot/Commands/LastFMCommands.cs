@@ -712,7 +712,6 @@ namespace FMBot.Bot.Commands
                 this._embed.AddField("User Type", userInfo.Content.Type, true);
                 this._embed.AddField("Total scrobbles", userInfo.Content.Playcount, true);
                 this._embed.AddField("Country", userInfo.Content.Country, true);
-                this._embed.AddField("Gender", userInfo.Content.Gender, true);
                 this._embed.AddField("Is subscriber?", userInfo.Content.IsSubscriber.ToString(), true);
                 this._embed.AddField("Bot Chart Mode", userSettings.ChartType, true);
                 this._embed.AddField("Bot user type", userSettings.UserType, true);
