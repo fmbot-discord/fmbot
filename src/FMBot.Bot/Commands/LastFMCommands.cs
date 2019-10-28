@@ -490,7 +490,7 @@ namespace FMBot.Bot.Commands
                 {
                     chartDescription = chartSize + " Yearly Chart";
                 }
-                else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at"))
+                else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at") || time.Equals("a"))
                 {
                     chartDescription = chartSize + " Overall Chart";
                 }
