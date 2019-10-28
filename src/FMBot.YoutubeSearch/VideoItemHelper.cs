@@ -1,4 +1,4 @@
-﻿// This file is part of YoutubeSearch.
+// This file is part of YoutubeSearch.
 //
 // YoutubeSearch is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,23 +19,23 @@ namespace FMBot.YoutubeSearch
     {
         public static string cull(string strSource, string strStart, string strEnd)
         {
-			int Start, End;
+            int Start, End;
 
             if (strSource.Contains(strStart) && strSource.Contains(strEnd))
             {
                 Start = strSource.IndexOf(strStart, 0) + strStart.Length;
                 End = strSource.IndexOf(strEnd, Start);
 
-				int val = (End > Start ? End - Start : Start - End);
-				if (val < 1 || val >= strSource.Length)
-					return "";
+                var val = End > Start ? End - Start : Start - End;
+                if (val < 1 || val >= strSource.Length)
+                {
+                    return "";
+                }
 
-				return strSource.Substring(Start, val);
+                return strSource.Substring(Start, val);
             }
-            else
-            {
-                return "";
-            }
+
+            return "";
         }
     }
 }

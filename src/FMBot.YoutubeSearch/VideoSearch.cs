@@ -1,4 +1,4 @@
-﻿// YoutubeSearch
+// YoutubeSearch
 // YoutubeSearch is a library for .NET, written in C#, to show search query results from YouTube.
 //
 // (c) 2016 Torsten Klinger - torsten.klinger(at)googlemail.com
@@ -33,24 +33,24 @@ namespace FMBot.YoutubeSearch
         private const string YtQueryUrl = "https://www.youtube.com/results?search_query=";
         private const string YtThumbnailUrl = "https://i.ytimg.com/vi/";
         private const string YtWatchUrl = "http://www.youtube.com/watch?v=";
+        private string author;
+        private string description;
+        private string duration;
 
 
-        List<VideoInformation> items;
+        private List<VideoInformation> items;
+        private bool noAuthor;
+        private bool noDesc;
+        private string thumbnail;
 
-        WebClient webclient;
+        private string title;
+        private string url;
+        private string viewCount;
 
-        string title;
-        string author;
-        string description;
-        string duration;
-        string url;
-        string thumbnail;
-        string viewCount;
-        bool noDesc = false;
-        bool noAuthor = false;
+        private WebClient webclient;
 
         /// <summary>
-        /// Doing asynchronous search query with given parameters. Returns a List object.
+        ///     Doing asynchronous search query with given parameters. Returns a List object.
         /// </summary>
         /// <param name="querystring"></param>
         /// <param name="querypages">number of pages to query</param>
@@ -61,28 +61,30 @@ namespace FMBot.YoutubeSearch
         {
             //negative index not allowed
             if (querypagesOffset < 0)
+            {
                 querypagesOffset = 0;
+            }
 
 
-            items = new List<VideoInformation>();
+            this.items = new List<VideoInformation>();
 
-            webclient = new WebClient();
+            this.webclient = new WebClient();
 
             // Do search, regarding offset
-            for (int i = (1 + querypagesOffset); i <= (querypages + querypagesOffset); i++)
+            for (var i = 1 + querypagesOffset; i <= querypages + querypagesOffset; i++)
             {
                 // Search address
-                string html = await webclient.DownloadStringTaskAsync(YtQueryUrl + querystring + "&page=" + i);
+                var html = await this.webclient.DownloadStringTaskAsync(YtQueryUrl + querystring + "&page=" + i);
 
                 //extract information from page
                 ProcessPage(html);
             }
 
-            return items;
+            return this.items;
         }
 
         /// <summary>
-        /// Doing search query with given parameters. Returns a List object.
+        ///     Doing search query with given parameters. Returns a List object.
         /// </summary>
         /// <param name="querystring"></param>
         /// <param name="querypages">number of pages to query</param>
@@ -92,101 +94,112 @@ namespace FMBot.YoutubeSearch
         {
             //negative index not allowed
             if (querypagesOffset < 0)
+            {
                 querypagesOffset = 0;
+            }
 
-            items = new List<VideoInformation>();
+            this.items = new List<VideoInformation>();
 
-            webclient = new WebClient();
+            this.webclient = new WebClient();
 
             // Do search, regarding offset
-            for (int i = (1 + querypagesOffset); i <= (querypages + querypagesOffset); i++)
+            for (var i = 1 + querypagesOffset; i <= querypages + querypagesOffset; i++)
             {
                 // Search address
-                string html = webclient.DownloadString(YtQueryUrl + querystring + "&page=" + i);
+                var html = this.webclient.DownloadString(YtQueryUrl + querystring + "&page=" + i);
 
                 //extract information from page
                 ProcessPage(html);
             }
 
-            return items;
+            return this.items;
         }
 
 
         private void ProcessPage(string htmlPage)
         {
-            MatchCollection result = Regex.Matches(htmlPage, Pattern, RegexOptions.Singleline);
+            var result = Regex.Matches(htmlPage, Pattern, RegexOptions.Singleline);
 
-            for (int ctr = 0; ctr <= result.Count - 1; ctr++)
+            for (var ctr = 0; ctr <= result.Count - 1; ctr++)
             {
                 if (result[ctr].Value.Contains("yt-uix-button-subscription-container\">") ||
                     result[ctr].Value.Contains("\"instream\":true"))
+                {
                     continue; // Don't add to the list of search results if the value is a channel or live stream.
+                }
 
                 // Title
-                title = result[ctr].Groups[1].Value;
+                this.title = result[ctr].Groups[1].Value;
 
                 // Author
-                author = VideoItemHelper.cull(result[ctr].Value, "/user/", "class").Replace('"', ' ').TrimStart()
+                this.author = VideoItemHelper.cull(result[ctr].Value, "/user/", "class").Replace('"', ' ').TrimStart()
                     .TrimEnd();
-                if (string.IsNullOrEmpty(author))
+                if (string.IsNullOrEmpty(this.author))
                 {
-                    author = VideoItemHelper.cull(result[ctr].Value, " >", "</a>");
-                    if (string.IsNullOrEmpty(author))
-                        noAuthor = true;
+                    this.author = VideoItemHelper.cull(result[ctr].Value, " >", "</a>");
+                    if (string.IsNullOrEmpty(this.author))
+                    {
+                        this.noAuthor = true;
+                    }
                 }
 
                 // Description
-                description = VideoItemHelper.cull(result[ctr].Value, "dir=\"ltr\" class=\"yt-uix-redirect-link\">",
+                this.description = VideoItemHelper.cull(result[ctr].Value,
+                    "dir=\"ltr\" class=\"yt-uix-redirect-link\">",
                     "</div>");
-                if (string.IsNullOrEmpty(description))
+                if (string.IsNullOrEmpty(this.description))
                 {
-                    description = VideoItemHelper.cull(result[ctr].Value,
+                    this.description = VideoItemHelper.cull(result[ctr].Value,
                         "<div class=\"yt-lockup-description yt-ui-ellipsis yt-ui-ellipsis-2\" dir=\"ltr\">", "</div>");
-                    if (string.IsNullOrEmpty(description))
-                        noDesc = true;
+                    if (string.IsNullOrEmpty(this.description))
+                    {
+                        this.noDesc = true;
+                    }
                 }
 
                 // Duration
-                duration = VideoItemHelper
+                this.duration = VideoItemHelper
                     .cull(VideoItemHelper.cull(result[ctr].Value, "id=\"description-id-", "span"), ": ", "<")
                     .Replace(".", "");
 
                 // Url
-                url = string.Concat(YtWatchUrl, VideoItemHelper.cull(result[ctr].Value, "watch?v=", "\""));
+                this.url = string.Concat(YtWatchUrl, VideoItemHelper.cull(result[ctr].Value, "watch?v=", "\""));
 
                 // Thumbnail
-                thumbnail = YtThumbnailUrl + VideoItemHelper.cull(result[ctr].Value, "watch?v=", "\"") +
-                            "/mqdefault.jpg";
+                this.thumbnail = YtThumbnailUrl + VideoItemHelper.cull(result[ctr].Value, "watch?v=", "\"") +
+                                 "/mqdefault.jpg";
 
                 // View Count
                 {
-                    string strView = VideoItemHelper.cull(result[ctr].Value, "</li><li>", "</li></ul></div>");
+                    var strView = VideoItemHelper.cull(result[ctr].Value, "</li><li>", "</li></ul></div>");
                     if (!string.IsNullOrEmpty(strView) && !string.IsNullOrWhiteSpace(strView))
                     {
-                        string[] strParsedArr =
-                            strView.Split(new string[] {" "}, StringSplitOptions.RemoveEmptyEntries);
+                        var strParsedArr =
+                            strView.Split(new[] {" "}, StringSplitOptions.RemoveEmptyEntries);
 
-                        string parsedText = strParsedArr[0];
+                        var parsedText = strParsedArr[0];
                         parsedText = parsedText.Trim().Replace(",", ".");
 
-                        viewCount = parsedText;
+                        this.viewCount = parsedText;
                     }
                 }
 
                 // Remove playlists
-                if (title != "__title__" && duration != "")
+                if (this.title != "__title__" && this.duration != "")
                 {
                     // Add item to list
-                    items.Add(new VideoInformation()
+                    this.items.Add(new VideoInformation
                     {
-                        Title = title, Author = author, Description = description, Duration = duration, Url = url,
-                        Thumbnail = thumbnail, NoAuthor = noAuthor, NoDescription = noDesc, ViewCount = viewCount
+                        Title = this.title, Author = this.author, Description = this.description,
+                        Duration = this.duration, Url = this.url,
+                        Thumbnail = this.thumbnail, NoAuthor = this.noAuthor, NoDescription = this.noDesc,
+                        ViewCount = this.viewCount
                     });
                 }
 
                 // Reset values to default for next loop.
-                noAuthor = false;
-                noDesc = false;
+                this.noAuthor = false;
+                this.noDesc = false;
             }
         }
     }
