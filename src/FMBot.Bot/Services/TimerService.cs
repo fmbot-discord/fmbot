@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -9,9 +8,7 @@ using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
-using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
-using IF.Lastfm.Core.Objects;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Services
@@ -20,12 +17,12 @@ namespace FMBot.Bot.Services
     {
         private readonly Logger.Logger _logger;
         private readonly Timer _timer;
-        private readonly LastFMService lastFMService = new LastFMService();
-        private readonly UserService userService = new UserService();
+        private readonly LastFMService _lastFMService = new LastFMService();
+        private readonly UserService _userService = new UserService();
 
-        private bool timerEnabled;
+        private bool _timerEnabled;
 
-        private string trackString = "";
+        private string _trackString = "";
 
         public TimerService(DiscordShardedClient client, Logger.Logger logger)
         {
@@ -37,145 +34,106 @@ namespace FMBot.Bot.Services
                     var randomAvatarMode = random.Next(1, 4);
                     var randomAvatarModeDesc = "";
 
-                    if (randomAvatarMode == 1)
+                    switch (randomAvatarMode)
                     {
-                        randomAvatarModeDesc = "Recent Listens";
-                    }
-                    else if (randomAvatarMode == 2)
-                    {
-                        randomAvatarModeDesc = "Weekly Albums";
-                    }
-                    else if (randomAvatarMode == 3)
-                    {
-                        randomAvatarModeDesc = "Overall Albums";
-                    }
-                    else if (randomAvatarMode == 4)
-                    {
-                        randomAvatarModeDesc = "Default Avatar";
+                        case 1:
+                            randomAvatarModeDesc = "Recent Listens";
+                            break;
+                        case 2:
+                            randomAvatarModeDesc = "Weekly Albums";
+                            break;
+                        case 3:
+                            randomAvatarModeDesc = "Monthly Albums";
+                            break;
+                        case 4:
+                            randomAvatarModeDesc = "Overall Albums";
+                            break;
                     }
 
-                    this._logger.Log("Changing avatar to mode " + randomAvatarModeDesc);
-
-                    var nulltext = "";
                     try
                     {
+                        var lastFMUserName = await this._userService.GetRandomLastFMUserAsync();
+
                         switch (randomAvatarMode)
                         {
+                            // Recent listens
                             case 1:
+                                var tracks = await this._lastFMService.GetRecentScrobblesAsync(lastFMUserName, 25);
+                                var trackList = tracks
+                                    .Select(s => new LastFMModels.Album(s.ArtistName, s.AlbumName))
+                                    .Where(w => !string.IsNullOrEmpty(w.AlbumName) && !GlobalVars.CensoredAlbums.Contains(w));
+
+                                var currentTrack = trackList.First();
+
+                                var albumImages = await this._lastFMService.GetAlbumImagesAsync(currentTrack.ArtistName, currentTrack.AlbumName);
+
+                                this._trackString = $"Album: {currentTrack.AlbumName} \n" +
+                                                   $"by **{currentTrack.ArtistName}** \n \n" +
+                                                   $"User: {lastFMUserName} ({randomAvatarModeDesc})";
+
+                                this._logger.Log("Changing avatar to: " + this._trackString);
+
+                                if (albumImages?.Large != null)
                                 {
-                                    var lastFMUserName = await this.userService.GetRandomLastFMUserAsync();
-                                    var tracks = await this.lastFMService.GetRecentScrobblesAsync(lastFMUserName, 25);
-                                    var trackList = tracks.Select(s => new LastFMModels.Album(s.ArtistName, s.AlbumName));
-                                    var currentTrack = trackList.First(f => !GlobalVars.CensoredAlbums.Contains(f));
+                                    ChangeToNewAvatar(client, albumImages.Large.AbsoluteUri);
+                                }
+                                else
+                                {
+                                    goto case 2;
+                                }
 
-                                    var albumImages = await this.lastFMService.GetAlbumImagesAsync(currentTrack.ArtistName, currentTrack.AlbumName);
+                                break;
+                            // Weekly albums
+                            case 2:
+                            case 3:
+                            case 4:
+                                var timespan = LastStatsTimeSpan.Week;
+                                switch (randomAvatarMode)
+                                {
+                                    case 3:
+                                        timespan = LastStatsTimeSpan.Month;
+                                        break;
+                                    case 4:
+                                        timespan = LastStatsTimeSpan.Overall;
+                                        break;
+                                }
 
-                                    this.trackString = $"Featured album: {currentTrack.AlbumName} \n" +
-                                                       $"by **{currentTrack.ArtistName}** \n \n" +
+                                var albums = await this._lastFMService.GetTopAlbumsAsync(lastFMUserName, timespan, 6);
+                                var albumList = albums
+                                    .Select(s => new LastFMModels.Album(s.ArtistName, s.Name))
+                                    .Where(w => !GlobalVars.CensoredAlbums.Contains(w))
+                                    .ToList();
+
+                                var currentAlbum = albumList[random.Next(0, albumList.Count - 1)];
+
+                                var albumImage = await this._lastFMService.GetAlbumImagesAsync(currentAlbum.ArtistName, currentAlbum.AlbumName);
+
+                                this._trackString = $"Album: {currentAlbum.AlbumName} \n" +
+                                                   $"by **{currentAlbum.ArtistName}** \n \n" +
+                                                   $"User: {lastFMUserName} ({randomAvatarModeDesc})";
+
+                                if (albumImage?.Large != null)
+                                {
+                                    this._logger.Log("Changing avatar to: " + this._trackString);
+
+                                    ChangeToNewAvatar(client, albumImage.Large.AbsoluteUri);
+                                }
+                                else
+                                {
+                                    this._logger.Log("Featured album had no image, switching to alternative album");
+
+                                    var alternativeAlbum = albumList[albumList.Count];
+                                    var alternativeAlbumImage = await this._lastFMService.GetAlbumImagesAsync(alternativeAlbum.ArtistName, alternativeAlbum.AlbumName);
+
+                                    this._trackString = $"Album: {alternativeAlbum.AlbumName} \n" +
+                                                       $"by **{alternativeAlbum.ArtistName}** \n \n" +
                                                        $"User: {lastFMUserName} ({randomAvatarModeDesc})";
 
-                                    this._logger.Log("Changing avatar to: " + this.trackString);
+                                    this._logger.Log("Changing avatar to: " + this._trackString);
 
-                                    if (albumImages?.Large != null)
-                                    {
-                                        ChangeToNewAvatar(client, albumImages.Large.AbsoluteUri);
-                                    }
-
-                                    break;
+                                    ChangeToNewAvatar(client, alternativeAlbumImage.Large.AbsoluteUri);
                                 }
-                            case 2:
-                                {
-                                    var lastFMUserName = await this.userService.GetRandomLastFMUserAsync();
-                                    var albums =
-                                        await this.lastFMService.GetTopAlbumsAsync(lastFMUserName, LastStatsTimeSpan.Week, 1);
-                                    var currentAlbum = albums.Content[random.Next(albums.Count())];
 
-                                    var ArtistName = string.IsNullOrWhiteSpace(currentAlbum.ArtistName)
-                                        ? nulltext
-                                        : currentAlbum.ArtistName;
-                                    var AlbumName = string.IsNullOrWhiteSpace(currentAlbum.Name)
-                                        ? nulltext
-                                        : currentAlbum.Name;
-
-                                    LastImageSet AlbumImages = null;
-
-                                    if (GlobalVars.CensoredAlbums.Contains(
-                                        new KeyValuePair<string, string>(ArtistName, AlbumName)))
-                                    {
-                                        // use the censored cover.
-                                        try
-                                        {
-                                            UseLocalAvatar(client, AlbumName, ArtistName, lastFMUserName);
-                                        }
-                                        catch (Exception)
-                                        {
-                                            UseDefaultAvatar(client);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        AlbumImages = await this.lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName);
-
-                                        this.trackString =
-                                            ArtistName + " - " + AlbumName + Environment.NewLine + lastFMUserName;
-                                        this._logger.Log("Changed avatar to: " + this.trackString);
-
-                                        if (AlbumImages?.Large != null)
-                                        {
-                                            ChangeToNewAvatar(client, AlbumImages.Large.AbsoluteUri);
-                                        }
-                                    }
-
-                                    break;
-                                }
-                            case 3:
-                                {
-                                    var lastFMUserName = await this.userService.GetRandomLastFMUserAsync();
-                                    var albums =
-                                        await this.lastFMService.GetTopAlbumsAsync(lastFMUserName, LastStatsTimeSpan.Overall,
-                                            1);
-                                    var currentAlbum = albums.Content[random.Next(albums.Count())];
-
-                                    var ArtistName = string.IsNullOrWhiteSpace(currentAlbum.ArtistName)
-                                        ? nulltext
-                                        : currentAlbum.ArtistName;
-                                    var AlbumName = string.IsNullOrWhiteSpace(currentAlbum.Name)
-                                        ? nulltext
-                                        : currentAlbum.Name;
-
-                                    LastImageSet AlbumImages = null;
-
-                                    if (GlobalVars.CensoredAlbums.Contains(
-                                        new KeyValuePair<string, string>(ArtistName, AlbumName)))
-                                    {
-                                        // use the censored cover.
-                                        try
-                                        {
-                                            UseLocalAvatar(client, AlbumName, ArtistName, lastFMUserName);
-                                        }
-                                        catch (Exception)
-                                        {
-                                            UseDefaultAvatar(client);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        AlbumImages = await this.lastFMService.GetAlbumImagesAsync(ArtistName, AlbumName);
-
-                                        this.trackString =
-                                            ArtistName + " - " + AlbumName + Environment.NewLine + lastFMUserName;
-                                        this._logger.Log("Changed avatar to: " + this.trackString);
-
-                                        if (AlbumImages?.Large != null)
-                                        {
-                                            ChangeToNewAvatar(client, AlbumImages.Large.AbsoluteUri);
-                                        }
-                                    }
-
-                                    break;
-                                }
-                            case 4:
-                                UseDefaultAvatar(client);
                                 break;
                         }
                     }
@@ -186,13 +144,11 @@ namespace FMBot.Bot.Services
                 },
                 null,
                 TimeSpan.FromSeconds(
-                    Convert.ToDouble(ConfigData.Data
-                        .TimerInit)), // 4) Time that message should fire after the timer is created
+                    Convert.ToDouble(ConfigData.Data.TimerInit)), // 4) Time that message should fire after the timer is created
                 TimeSpan.FromMinutes(
-                    Convert.ToDouble(ConfigData.Data
-                        .TimerRepeat))); // 5) Time after which message should repeat (use `Timeout.Infinite` for no repeat)
+                    Convert.ToDouble(ConfigData.Data.TimerRepeat))); // 5) Time after which message should repeat (use `Timeout.Infinite` for no repeat)
 
-            this.timerEnabled = true;
+            this._timerEnabled = true;
         }
 
         public void Stop() // 6) Example to make the timer stop running
@@ -200,7 +156,7 @@ namespace FMBot.Bot.Services
             if (IsTimerActive())
             {
                 this._timer.Change(Timeout.Infinite, Timeout.Infinite);
-                this.timerEnabled = false;
+                this._timerEnabled = false;
             }
         }
 
@@ -210,15 +166,15 @@ namespace FMBot.Bot.Services
             {
                 this._timer.Change(TimeSpan.FromSeconds(Convert.ToDouble(ConfigData.Data.TimerInit)),
                     TimeSpan.FromMinutes(Convert.ToDouble(ConfigData.Data.TimerRepeat)));
-                this.timerEnabled = true;
+                this._timerEnabled = true;
             }
         }
 
-        public async void ChangeToNewAvatar(DiscordShardedClient client, string thumbnail)
+        public async void ChangeToNewAvatar(DiscordShardedClient client, string imageUrl)
         {
             try
             {
-                var request = WebRequest.Create(thumbnail);
+                var request = WebRequest.Create(imageUrl);
                 var response = await request.GetResponseAsync();
                 using (Stream output = File.Create(GlobalVars.ImageFolder + "newavatar.png"))
                 using (var input = response.GetResponseStream())
@@ -230,7 +186,7 @@ namespace FMBot.Bot.Services
                     }
 
                     output.Close();
-                    input.Close();
+                    this._logger.Log("New avatar downloaded");
                 }
 
                 if (File.Exists(GlobalVars.ImageFolder + "newavatar.png"))
@@ -238,21 +194,21 @@ namespace FMBot.Bot.Services
                     var fileStream = new FileStream(GlobalVars.ImageFolder + "newavatar.png", FileMode.Open);
                     await client.CurrentUser.ModifyAsync(u => u.Avatar = new Image(fileStream));
                     fileStream.Close();
+                    this._logger.Log("Avatar succesfully changed");
                 }
 
-                await Task.Delay(5000);
+                await Task.Delay(2000);
 
+                var broadcastServerId = Convert.ToUInt64(ConfigData.Data.BaseServer);
+                var broadcastChannelId = Convert.ToUInt64(ConfigData.Data.FeaturedChannel);
 
-                var BroadcastServerID = Convert.ToUInt64(ConfigData.Data.BaseServer);
-                var BroadcastChannelID = Convert.ToUInt64(ConfigData.Data.FeaturedChannel);
-
-                var guild = client.GetGuild(BroadcastServerID);
-                var channel = guild.GetTextChannel(BroadcastChannelID);
+                var guild = client.GetGuild(broadcastServerId);
+                var channel = guild.GetTextChannel(broadcastChannelId);
 
                 var builder = new EmbedBuilder();
-                var SelfUser = client.CurrentUser;
-                builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
-                builder.AddField("Featured:", this.trackString);
+                var selfUser = client.CurrentUser;
+                builder.WithThumbnailUrl(selfUser.GetAvatarUrl());
+                builder.AddField("Featured:", this._trackString);
 
                 await channel.SendMessageAsync("", false, builder.Build());
             }
@@ -266,8 +222,8 @@ namespace FMBot.Bot.Services
         {
             try
             {
-                this.trackString = "FMBot Default Avatar";
-                this._logger.Log("Changed avatar to: " + this.trackString);
+                this._trackString = "FMBot Default Avatar";
+                this._logger.Log("Changed avatar to: " + this._trackString);
                 var fileStream = new FileStream(GlobalVars.ImageFolder + "avatar.png", FileMode.Open);
                 var image = new Image(fileStream);
                 await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
@@ -279,13 +235,12 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async void UseLocalAvatar(DiscordShardedClient client, string AlbumName, string ArtistName,
-            string LastFMName)
+        public async void UseLocalAvatar(DiscordShardedClient client, string AlbumName, string ArtistName, string LastFMName)
         {
             try
             {
-                this.trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                this._logger.Log("Changed avatar to: " + this.trackString);
+                this._trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
+                this._logger.Log("Changed avatar to: " + this._trackString);
                 //FileStream fileStream = new FileStream(GlobalVars.CoversFolder + ArtistName + " - " + AlbumName + ".png", FileMode.Open);
                 var fileStream = new FileStream(GlobalVars.ImageFolder + "censored.png", FileMode.Open);
                 var image = new Image(fileStream);
@@ -303,81 +258,13 @@ namespace FMBot.Bot.Services
                 var builder = new EmbedBuilder();
                 var SelfUser = client.CurrentUser;
                 builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
-                builder.AddField("Featured:", this.trackString);
+                builder.AddField("Featured:", this._trackString);
 
                 await channel.SendMessageAsync("", false, builder.Build());
             }
             catch (Exception e)
             {
                 this._logger.LogException("UseLocalAvatar", e);
-            }
-        }
-
-        public async void UseCustomAvatar(DiscordShardedClient client, string fmquery, string desc, bool important)
-        {
-            if (important && IsTimerActive())
-            {
-                Stop();
-            }
-            else if (!important && !IsTimerActive())
-            {
-                Restart();
-            }
-
-            GlobalVars.FeaturedUserID = "";
-
-            var fmclient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
-            try
-            {
-                var albums = await fmclient.Album.SearchAsync(fmquery, 1, 2);
-                var currentAlbum = albums.Content[0];
-
-                const string nulltext = "";
-
-                var ArtistName = string.IsNullOrWhiteSpace(currentAlbum.ArtistName)
-                    ? nulltext
-                    : currentAlbum.ArtistName;
-                var AlbumName = string.IsNullOrWhiteSpace(currentAlbum.Name) ? nulltext : currentAlbum.Name;
-
-                try
-                {
-                    var AlbumInfo = await fmclient.Album.GetInfoAsync(ArtistName, AlbumName);
-                    var AlbumImages = AlbumInfo.Content.Images;
-                    var AlbumThumbnail = AlbumImages?.Large.AbsoluteUri;
-                    var ThumbnailImage = AlbumThumbnail;
-
-                    try
-                    {
-                        this.trackString = ArtistName + " - " + AlbumName + Environment.NewLine + desc;
-                        this._logger.Log("Changed avatar to: " + this.trackString);
-                    }
-                    catch (Exception)
-                    {
-                        try
-                        {
-                            this.trackString = desc;
-                            this._logger.Log("Changed avatar to: " + this.trackString);
-                        }
-                        catch (Exception e)
-                        {
-                            this._logger.LogException("UseCustomAvatar", e);
-                            UseDefaultAvatar(client);
-                            this.trackString = "Unable to get information for this album cover avatar.";
-                        }
-                    }
-
-                    ChangeToNewAvatar(client, ThumbnailImage);
-                }
-                catch (Exception e)
-                {
-                    this._logger.LogException("UseCustomAvatar", e);
-                }
-            }
-            catch (Exception e)
-            {
-                this._logger.LogException("UseCustomAvatar", e);
-
-                UseDefaultAvatar(client);
             }
         }
 
@@ -396,8 +283,8 @@ namespace FMBot.Bot.Services
 
             try
             {
-                this.trackString = desc;
-                this._logger.Log("Changed avatar to: " + this.trackString);
+                this._trackString = desc;
+                this._logger.Log("Changed avatar to: " + this._trackString);
 
                 if (!string.IsNullOrWhiteSpace(link))
                 {
@@ -412,12 +299,12 @@ namespace FMBot.Bot.Services
 
         public string GetTrackString()
         {
-            return this.trackString;
+            return this._trackString;
         }
 
         public bool IsTimerActive()
         {
-            return this.timerEnabled;
+            return this._timerEnabled;
         }
     }
 }
