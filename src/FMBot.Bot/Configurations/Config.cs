@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 
 namespace FMBot.Bot.Configurations
 {
@@ -57,5 +57,8 @@ namespace FMBot.Bot.Configurations
 
         [JsonProperty("dblapitoken")]
         public string DblApiToken { get; private set; }
+
+        [JsonProperty("geniusaccesstoken")]
+        public string GeniusAccessToken { get; private set; }
     }
 }
