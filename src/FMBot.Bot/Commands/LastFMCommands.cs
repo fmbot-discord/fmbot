@@ -27,6 +27,9 @@ namespace FMBot.Bot.Commands
         private readonly Logger.Logger _logger;
         private readonly TimerService _timer;
 
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
+        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
+
         private readonly UserService _userService = new UserService();
 
         public LastFMCommands(TimerService timer, Logger.Logger logger)
@@ -265,7 +268,7 @@ namespace FMBot.Bot.Commands
             if (time == "help")
             {
                 await ReplyAsync(
-                    "Usage: `.fmartists 'weekly/monthly/yearly/alltime' 'number of artists (max 10)'` \n" +
+                    "Usage: `.fmartists 'weekly/monthly/yearly/alltime' 'number of artists (max 10)' 'lastfm username/discord user'` \n" +
                     "You can set your default user and your display mode through the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
                 return;
             }
@@ -273,7 +276,7 @@ namespace FMBot.Bot.Commands
             if (!Enum.TryParse(time, true, out ChartTimePeriod timePeriod))
             {
                 await ReplyAsync("Invalid time period. Please use 'weekly', 'monthly', 'yearly', or 'alltime'. \n" +
-                                 "Usage: `.fmartists 'weekly/monthly/yearly/alltime' 'number of artists (max 10)'`");
+                                 "Usage: `.fmartists 'weekly/monthly/yearly/alltime' 'number of artists (max 10)' 'lastfm username/discord user'`");
                 return;
             }
 
@@ -360,8 +363,29 @@ namespace FMBot.Bot.Commands
         {
             if (chartSize == "help")
             {
-                await ReplyAsync("fmchart '2x2-8x8' 'weekly/monthly/yearly/overall' 'notitles/titles' 'user'");
+                await ReplyAsync(".fmchart '2x2-8x8' 'weekly/monthly/yearly/overall' 'notitles/titles' 'lastfm username/discord user'");
                 return;
+            }
+
+            var msg = this.Context.Message as SocketUserMessage;
+            if (StackCooldownTarget.Contains(this.Context.Message.Author))
+            {
+                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(10) >= DateTimeOffset.Now)
+                {
+                    var secondsLeft = (int)(StackCooldownTimer[StackCooldownTarget.IndexOf(Context.Message.Author as SocketGuildUser)].AddSeconds(11) - DateTimeOffset.Now).TotalSeconds;
+                    if (secondsLeft < 7)
+                    {
+                        await ReplyAsync($"Please wait {secondsLeft} seconds before generating a chart again.");
+                    }
+                    return;
+                }
+
+                StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
+            }
+            else
+            {
+                StackCooldownTarget.Add(msg.Author);
+                StackCooldownTimer.Add(DateTimeOffset.Now);
             }
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -533,7 +557,7 @@ namespace FMBot.Bot.Commands
         [Command("fmrecent", RunMode = RunMode.Async)]
         [Summary("Displays a user's recent tracks.")]
         [Alias("fmrecenttracks")]
-        public async Task RecentAsync(string user = null, int num = 5)
+        public async Task RecentAsync(string amount = "5", string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -545,13 +569,21 @@ namespace FMBot.Bot.Commands
 
             if (user == "help")
             {
-                await ReplyAsync(".fmrecent 'user' 'number of items (max 10)'");
+                await ReplyAsync(".fmrecent 'number of items (max 10)' 'lastfm username/discord user'");
                 return;
             }
 
-            if (num > 10)
+            if (!int.TryParse(amount, out int amountOfTracks))
             {
-                num = 10;
+                await ReplyAsync("Please enter a valid amount. \n" +
+                                 "`.fmrecent 'number of items (max 10)' 'lastfm username/discord user'` \n" +
+                                 "Example: `.fmrecent 8`");
+                return;
+            }
+
+            if (amountOfTracks > 10)
+            {
+                amountOfTracks = 10;
             }
 
             try
@@ -569,7 +601,7 @@ namespace FMBot.Bot.Commands
                     }
                 }
 
-                var tracksTask = this._lastFmService.GetRecentScrobblesAsync(lastFMUserName, num);
+                var tracksTask = this._lastFmService.GetRecentScrobblesAsync(lastFMUserName, amountOfTracks);
                 var userInfoTask = this._lastFmService.GetUserInfoAsync(lastFMUserName);
 
                 Task.WaitAll(tracksTask, userInfoTask);
@@ -603,7 +635,7 @@ namespace FMBot.Bot.Commands
                     : $"Last scrobble {tracks.Content[0].TimePlayed?.ToString("g")} (UTC)");
                 this._embed.WithUrl(Constants.LastFMUserUrl + lastFMUserName);
 
-                var indexval = num - 1;
+                var indexval = amountOfTracks - 1;
                 for (var i = 0; i <= indexval; i++)
                 {
                     var track = tracks.Content[i];
@@ -752,7 +784,7 @@ namespace FMBot.Bot.Commands
         [Command("fmset", RunMode = RunMode.Async)]
         [Summary("Sets your Last.FM name and FM mode. Please note that users in shared servers will be able to see and request your Last.FM username.")]
         [Alias("fmsetname", "fmsetmode")]
-        public async Task fmsetAsync([Summary("Your Last.FM name")] string lastFMUserName,
+        public async Task SetAsync([Summary("Your Last.FM name")] string lastFMUserName,
             [Summary("The mode you want to use.")] string chartType = "embedfull")
         {
             if (lastFMUserName == "help")
