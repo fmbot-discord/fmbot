@@ -1,63 +1,71 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using Discord.WebSocket;
-using IF.Lastfm.Core.Api.Helpers;
-using IF.Lastfm.Core.Objects;
-using SpotifyAPI.Web.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
 {
     public class SpotifyCommands : ModuleBase
     {
+        private readonly EmbedBuilder _embed;
+
+        private readonly LastFMService _lastFmService = new LastFMService();
         private readonly Logger.Logger _logger;
+        private readonly SpotifyService _spotifyService = new SpotifyService();
 
         private readonly UserService _userService = new UserService();
-        private readonly SpotifyService _spotifyService = new SpotifyService();
-        private readonly LastFMService _lastFmService = new LastFMService();
 
         public SpotifyCommands(Logger.Logger logger)
         {
-            _logger = logger;
+            this._logger = logger;
+            this._embed = new EmbedBuilder()
+                .WithColor(Constants.LastFMColorRed);
         }
 
-        [Command("fmspotify"), Summary("Shares a link to a Spotify track based on what a user is listening to")]
-        public async Task fmspotifyAsync(IUser user = null)
+        [Command("fmspotify")]
+        [Summary("Shares a link to a Spotify track based on what a user is listening to")]
+        public async Task SpotifyAsync()
         {
-            Data.Entities.User userSettings = await _userService.GetUserSettingsAsync(Context.User);
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            if (userSettings == null || userSettings.UserNameLastFM == null)
+            if (userSettings?.UserNameLastFM == null)
             {
-                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
+                this._embed.UsernameNotSetErrorResponse(this.Context, this._logger);
+                await ReplyAsync("", false, this._embed.Build());
                 return;
             }
 
             try
             {
-                PageResponse<LastTrack> tracks = await _lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
-                LastTrack currentTrack = tracks.Content[0];
+                var tracks = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
 
-                string TrackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? null : currentTrack.Name;
-                string ArtistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? null : currentTrack.ArtistName;
-                string AlbumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? null : currentTrack.AlbumName;
+                if (tracks?.Any() != true)
+                {
+                    this._embed.NoScrobblesFoundErrorResponse(tracks.Status, this.Context, this._logger);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
+                }
 
-                string querystring = TrackName + " - " + ArtistName + " " + AlbumName;
+                var currentTrack = tracks.Content[0];
 
-                SearchItem item = await _spotifyService.GetSearchResultAsync(querystring);
+                var trackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? null : currentTrack.Name;
+                var artistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? null : currentTrack.ArtistName;
+                var albumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? null : currentTrack.AlbumName;
+
+                var querystring = trackName + " - " + artistName + " " + albumName;
+
+                var item = await this._spotifyService.GetSearchResultAsync(querystring);
 
                 if (item.Tracks?.Items?.Any() == true)
                 {
-                    FullTrack track = item.Tracks.Items.FirstOrDefault();
-                    SimpleArtist trackArtist = track.Artists.FirstOrDefault();
+                    var track = item.Tracks.Items.FirstOrDefault();
 
                     await ReplyAsync("https://open.spotify.com/track/" + track.Id);
-                    _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+                    this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
+                        this.Context.Message.Content);
                 }
                 else
                 {
@@ -66,33 +74,33 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                _logger.LogException(Context.Message.Content, e);
-                await ReplyAsync("Unable to show Last.FM info via Spotify due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
+                this._logger.LogException(this.Context.Message.Content, e);
+                await ReplyAsync(
+                    "Unable to show Last.FM info via Spotify due to an internal error. " +
+                    "Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
 
-        [Command("fmspotifysearch"), Summary("Shares a link to a Spotify track based on a user's search parameters")]
+        [Command("fmspotifysearch")]
+        [Summary("Shares a link to a Spotify track based on a user's search parameters")]
         [Alias("fmspotifyfind")]
-        public async Task fmspotifysearchAsync(params string[] searchterms)
+        public async Task SpotifySearchAsync(params string[] searchValues)
         {
             try
             {
-                string querystring = null;
-
-                if (searchterms.Length > 0)
+                if (searchValues.Length > 0)
                 {
-                    querystring = string.Join(" ", searchterms);
+                    var querystring = string.Join(" ", searchValues);
 
-                    SearchItem item = await _spotifyService.GetSearchResultAsync(querystring);
+                    var item = await this._spotifyService.GetSearchResultAsync(querystring);
 
                     if (item.Tracks.Items.Count > 0)
                     {
-                        FullTrack track = item.Tracks.Items.FirstOrDefault();
-                        SimpleArtist trackArtist = track.Artists.FirstOrDefault();
+                        var track = item.Tracks.Items.FirstOrDefault();
 
                         await ReplyAsync("https://open.spotify.com/track/" + track.Id);
-                        _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
-
+                        this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id,
+                            this.Context.User.Id, this.Context.Message.Content);
                     }
                     else
                     {
@@ -106,7 +114,7 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                _logger.LogException(Context.Message.Content, e);
+                this._logger.LogException(this.Context.Message.Content, e);
 
                 await ReplyAsync("Unable to search for music via Spotify due to an internal error.");
             }

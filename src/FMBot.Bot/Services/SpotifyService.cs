@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Auth;
@@ -12,20 +12,18 @@ namespace FMBot.Bot.Services
         public async Task<SearchItem> GetSearchResultAsync(string searchValue, SearchType searchType = SearchType.Track)
         {
             //Create the auth object
-            CredentialsAuth auth = new CredentialsAuth(ConfigData.Data.SpotifyKey, ConfigData.Data.SpotifySecret);
-            
-            Token token = await auth.GetToken();
+            var auth = new CredentialsAuth(ConfigData.Data.SpotifyKey, ConfigData.Data.SpotifySecret);
 
-            SpotifyWebAPI spotify = new SpotifyWebAPI()
+            var token = await auth.GetToken();
+
+            var spotify = new SpotifyWebAPI
             {
                 TokenType = token.TokenType,
                 AccessToken = token.AccessToken,
                 UseAuth = true
             };
 
-            SearchItem result = await spotify.SearchItemsAsync(searchValue, SearchType.Track);
-
-            return result;
+            return await spotify.SearchItemsAsync(searchValue, searchType);
         }
     }
 }
