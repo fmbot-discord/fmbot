@@ -67,11 +67,11 @@ namespace FMBot.Bot.Services
 
                                 var albumImages = await this._lastFMService.GetAlbumImagesAsync(currentTrack.ArtistName, currentTrack.AlbumName);
 
-                                this._trackString = $"Album: {currentTrack.AlbumName} \n" +
+                                this._trackString = $"{currentTrack.AlbumName} \n" +
                                                    $"by **{currentTrack.ArtistName}** \n \n" +
                                                    $"User: {lastFMUserName} ({randomAvatarModeDesc})";
 
-                                this._logger.Log("Changing avatar to: " + this._trackString);
+                                this._logger.Log("Featured: Changing avatar to: " + this._trackString);
 
                                 if (albumImages?.Large != null)
                                 {
@@ -79,6 +79,7 @@ namespace FMBot.Bot.Services
                                 }
                                 else
                                 {
+                                    this._logger.Log("Featured: Album had no image, switching to alternative avatar mode");
                                     goto case 2;
                                 }
 
@@ -98,40 +99,47 @@ namespace FMBot.Bot.Services
                                         break;
                                 }
 
-                                var albums = await this._lastFMService.GetTopAlbumsAsync(lastFMUserName, timespan, 6);
+                                var albums = await this._lastFMService.GetTopAlbumsAsync(lastFMUserName, timespan, 10);
+
+                                if (!albums.Any())
+                                {
+                                    this._logger.Log($"Featured: User {lastFMUserName} had no albums, switching to different user.");
+                                    lastFMUserName = await this._userService.GetRandomLastFMUserAsync();
+                                    albums = await this._lastFMService.GetTopAlbumsAsync(lastFMUserName, timespan, 10);
+                                }
+
                                 var albumList = albums
                                     .Select(s => new LastFMModels.Album(s.ArtistName, s.Name))
                                     .Where(w => !GlobalVars.CensoredAlbums.Contains(w))
                                     .ToList();
 
-                                var currentAlbum = albumList[random.Next(0, albumList.Count - 1)];
+                                var albumFound = false;
+                                var i = 0;
 
-                                var albumImage = await this._lastFMService.GetAlbumImagesAsync(currentAlbum.ArtistName, currentAlbum.AlbumName);
-
-                                this._trackString = $"Album: {currentAlbum.AlbumName} \n" +
-                                                   $"by **{currentAlbum.ArtistName}** \n \n" +
-                                                   $"User: {lastFMUserName} ({randomAvatarModeDesc})";
-
-                                if (albumImage?.Large != null)
+                                while (!albumFound)
                                 {
-                                    this._logger.Log("Changing avatar to: " + this._trackString);
+                                    var currentAlbum = albumList[i];
 
-                                    ChangeToNewAvatar(client, albumImage.Large.AbsoluteUri);
-                                }
-                                else
-                                {
-                                    this._logger.Log("Featured album had no image, switching to alternative album");
+                                    var albumImage = await this._lastFMService.GetAlbumImagesAsync(currentAlbum.ArtistName, currentAlbum.AlbumName);
 
-                                    var alternativeAlbum = albumList[albumList.Count];
-                                    var alternativeAlbumImage = await this._lastFMService.GetAlbumImagesAsync(alternativeAlbum.ArtistName, alternativeAlbum.AlbumName);
+                                    this._trackString = $"{currentAlbum.AlbumName} \n" +
+                                                        $"by **{currentAlbum.ArtistName}** \n \n" +
+                                                        $"User: {lastFMUserName} ({randomAvatarModeDesc})";
 
-                                    this._trackString = $"Album: {alternativeAlbum.AlbumName} \n" +
-                                                       $"by **{alternativeAlbum.ArtistName}** \n \n" +
-                                                       $"User: {lastFMUserName} ({randomAvatarModeDesc})";
+                                    if (albumImage?.Large != null)
+                                    {
+                                        this._logger.Log($"Featured: Album {i} success, changing avatar to: \n" +
+                                                         $"{this._trackString}");
 
-                                    this._logger.Log("Changing avatar to: " + this._trackString);
+                                        ChangeToNewAvatar(client, albumImage.Large.AbsoluteUri);
+                                        albumFound = true;
+                                    }
+                                    else
+                                    {
+                                        this._logger.Log($"Featured: Album {i} had no image, switching to alternative album");
 
-                                    ChangeToNewAvatar(client, alternativeAlbumImage.Large.AbsoluteUri);
+                                        i++;
+                                    }
                                 }
 
                                 break;
