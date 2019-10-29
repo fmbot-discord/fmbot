@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
+using FMBot.Bot.Models;
 
 namespace FMBot.Bot
 {
@@ -12,16 +13,18 @@ namespace FMBot.Bot
     {
         public static class GlobalVars
         {
-            public static readonly Dictionary<string, string> CensoredAlbums = new Dictionary<string, string>()
+            public static readonly List<LastFMModels.Album> CensoredAlbums = new List<LastFMModels.Album>
             {
-                {"Death Grips", "No Love Deep Web"},
-                {"ミドリ(Midori)", "あらためまして、はじめまして、ミドリです。(aratamemashite hajimemashite midori desu)"},
-                {"Midori", "ratamemashite hajimemashite midori desu"},
-                {"ミドリ", "あらためまして、はじめまして、ミドリです"},
-                {"Xiu Xiu", "A Promise"},
-                {"Carcass","Reek of Putrefaction"},
-                {"Cattle Decapitation", "Human Jerky"}
+                new LastFMModels.Album("Death Grips", "No Love Deep Web"),
+                new LastFMModels.Album("ミドリ(Midori)", "あらためまして、はじめまして、ミドリです。(aratamemashite hajimemashite midori desu)"),
+                new LastFMModels.Album("Midori", "ratamemashite hajimemashite midori desu"),
+                new LastFMModels.Album("ミドリ", "あらためまして、はじめまして、ミドリです"),
+                new LastFMModels.Album("Xiu Xiu", "A Promise"),
+                new LastFMModels.Album("Carcass","Reek of Putrefaction"),
+                new LastFMModels.Album("Cattle Decapitation", "Human Jerky"),
+                new LastFMModels.Album("Niki Istrefi", "EUROMANTIC001")
             };
+
             private static readonly string BasePath = AppDomain.CurrentDomain.BaseDirectory;
             public static readonly string CacheFolder = BasePath + "cache/";
             public static string ImageFolder = BasePath + "resources/images/";
