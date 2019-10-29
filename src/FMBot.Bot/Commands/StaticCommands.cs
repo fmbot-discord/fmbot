@@ -133,13 +133,10 @@ namespace FMBot.Bot.Commands
                 "Sets your default Last.FM name, followed by the display mode you want to use. " +
                 "Note that users in shared servers will be able to see and request your Last.FM username.");
 
-            this._embed.AddField(prefix + "fmrecent 'lastfm username/ discord user' '1-10'",
+            this._embed.AddField(prefix + "fmrecent '1-10' 'lastfm username/ discord user'",
                 "Shows a list of your most recent tracks, defaults to 5");
 
-            this._embed.AddField(prefix + "fmrecent 'lastfm username/ discord user' '1-10'",
-                "Shows a list of your most recent tracks, defaults to 5");
-
-            this._embed.AddField(prefix + "fmchart '3x3-10x10' 'weekly/monthly/yearly/overall' 'titles/notitles'",
+            this._embed.AddField(prefix + "fmchart '2x2-8x8' 'weekly/monthly/yearly/overall' 'titles/notitles'",
                 "Generates an image chart of your top albums");
 
             this._embed.AddField(prefix + "fmspotify",
