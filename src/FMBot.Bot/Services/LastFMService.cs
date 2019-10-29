@@ -160,10 +160,6 @@ namespace FMBot.Bot.Services
         {
             try
             {
-                var timespan = LastStatsTimeSpan.Week;
-
-                const string nulltext = "[undefined]";
-
                 if (!Directory.Exists(GlobalVars.CacheFolder))
                 {
                     Directory.CreateDirectory(GlobalVars.CacheFolder);
@@ -172,10 +168,7 @@ namespace FMBot.Bot.Services
                 // Album mode
                 await chart.albums.ParallelForEachAsync(async album =>
                 {
-                    var artistName = string.IsNullOrWhiteSpace(album.ArtistName) ? nulltext : album.ArtistName;
-                    var albumName = string.IsNullOrWhiteSpace(album.Name) ? nulltext : album.Name;
-
-                    var albumImages = await GetAlbumImagesAsync(artistName, albumName);
+                    var albumImages = await GetAlbumImagesAsync(album.ArtistName, album.Name);
 
                     Bitmap chartImage;
 
@@ -195,16 +188,19 @@ namespace FMBot.Bot.Services
                             await using var responseStream = response.GetResponseStream();
 
                             var bitmap = new Bitmap(responseStream);
-
                             chartImage = bitmap;
-                            await using var memory = new MemoryStream();
-                            await using var fs = new FileStream(GlobalVars.CacheFolder + path, FileMode.Create,
+
+                            await using var memoryStream = new MemoryStream();
+                            await using var fileStream = new FileStream(
+                                GlobalVars.CacheFolder + path,
+                                FileMode.Create,
                                 FileAccess.ReadWrite);
 
-                            bitmap.Save(memory, ImageFormat.Png);
+                            bitmap.Save(memoryStream, ImageFormat.Png);
 
-                            var bytes = memory.ToArray();
-                            fs.Write(bytes, 0, bytes.Length);
+                            var bytes = memoryStream.ToArray();
+                            await fileStream.WriteAsync(bytes, 0, bytes.Length);
+                            await fileStream.DisposeAsync();
                         }
                     }
                     else
@@ -215,18 +211,14 @@ namespace FMBot.Bot.Services
                     if (chart.titles)
                     {
                         var text = Graphics.FromImage(chartImage);
-                        text.DrawColorString(chartImage, artistName, new Font("Arial", 8.0f, FontStyle.Bold),
+                        text.DrawColorString(chartImage, album.ArtistName, new Font("Arial", 8.0f, FontStyle.Bold),
                             new PointF(2.0f, 2.0f));
-                        text.DrawColorString(chartImage, albumName, new Font("Arial", 8.0f, FontStyle.Bold),
+                        text.DrawColorString(chartImage, album.Name, new Font("Arial", 8.0f, FontStyle.Bold),
                             new PointF(2.0f, 12.0f));
                     }
 
                     chart.images.Add(new ChartImage(chartImage, chart.albums.IndexOf(album)));
                 });
-            }
-            catch (Exception e)
-            {
-                //_logger.LogException("GenerateChartAsync", e);
             }
             finally
             {
