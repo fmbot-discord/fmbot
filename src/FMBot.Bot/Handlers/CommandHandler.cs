@@ -42,8 +42,8 @@ namespace FMBot.Bot.Handlers
             {
                 if (StackCooldownTarget.Contains(msg.Author))
                 {
-                    //If they have used this command before, take the time the user last did something, add 1600ms, and see if it's greater than this very moment.
-                    if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMilliseconds(1600) >= DateTimeOffset.Now)
+                    //If they have used this command before, take the time the user last did something, add 1500ms, and see if it's greater than this very moment.
+                    if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMilliseconds(1500) >= DateTimeOffset.Now)
                     {
                         return;
                     }

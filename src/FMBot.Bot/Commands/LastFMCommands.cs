@@ -108,7 +108,8 @@ namespace FMBot.Bot.Commands
 
                 if (tracks?.Any() != true)
                 {
-                    await NoScrobblesErrorResponseFoundAsync(tracks.Status);
+                    this._embed.NoScrobblesFoundErrorResponse(tracks.Status, this.Context, this._logger);
+                    await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
 
@@ -306,7 +307,8 @@ namespace FMBot.Bot.Commands
 
                 if (artists?.Any() != true)
                 {
-                    await NoScrobblesErrorResponseFoundAsync(artists.Status);
+                    this._embed.NoScrobblesFoundErrorResponse(artists.Status, this.Context, this._logger);
+                    await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
 
@@ -611,7 +613,8 @@ namespace FMBot.Bot.Commands
 
                 if (tracks?.Any() != true)
                 {
-                    await NoScrobblesErrorResponseFoundAsync(tracks.Status);
+                    this._embed.NoScrobblesFoundErrorResponse(tracks.Status, this.Context, this._logger);
+                    await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
 
@@ -896,37 +899,8 @@ namespace FMBot.Bot.Commands
 
         private async Task UsernameNotSetErrorResponseAsync()
         {
-            this._embed.WithTitle("Error while attempting get Last.FM information");
-            this._embed.WithDescription("Last.FM username has not been set. \n" +
-                                        "To setup your Last.FM account with this bot, please use the `.fmset` command. \n" +
-                                        $"Usage: `{ConfigData.Data.CommandPrefix}fmset username mode`\n" +
-                                        "Possible modes: embedmini/embedfull/textmini/textfull. \n" +
-                                        "Please note that users in shared servers will be able to see and request your Last.FM username.");
-
-            this._embed.WithColor(Constants.WarningColorOrange);
+            this._embed.UsernameNotSetErrorResponse(this.Context, this._logger);
             await ReplyAsync("", false, this._embed.Build());
-            this._logger.LogError("Last.FM username not set", this.Context.Message.Content, this.Context.User.Username,
-                this.Context.Guild?.Name, this.Context.Guild?.Id);
-        }
-
-        private async Task NoScrobblesErrorResponseFoundAsync(LastResponseStatus apiResponse)
-        {
-            this._embed.WithTitle("Error while attempting get Last.FM information");
-            switch (apiResponse)
-            {
-                case LastResponseStatus.Failure:
-                    this._embed.WithDescription("Last.FM has issues and/or is down. Please try again later.");
-                    break;
-                default:
-                    this._embed.WithDescription(
-                        "You have no scrobbles/artists on your profile, or Last.FM is having issues. Please try again later.");
-                    break;
-            }
-
-            this._embed.WithColor(Constants.WarningColorOrange);
-            await ReplyAsync("", false, this._embed.Build());
-            this._logger.LogError("No scrobbles found for user", this.Context.Message.Content,
-                this.Context.User.Username, this.Context.Guild?.Name, this.Context.Guild?.Id);
         }
 
         private async Task<string> FindUser(string user)
