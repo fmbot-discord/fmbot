@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -134,6 +134,10 @@ namespace FMBot.Bot.Services
             if (rank == UserType.Admin)
             {
                 title += " 🛡️";
+            }
+            if (rank == UserType.Contributor)
+            {
+                title += " 🔥";
             }
 
             return title;

@@ -1,4 +1,4 @@
-﻿namespace FMBot.Data.Entities
+namespace FMBot.Data.Entities
 {
     public enum UserType
     {
@@ -6,6 +6,8 @@
 
         Admin = 1,
 
-        Owner = 2
+        Owner = 2,
+
+        Contributor = 3
     }
 }

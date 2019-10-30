@@ -1,4 +1,4 @@
-﻿using Discord;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Extensions;
@@ -32,7 +32,7 @@ namespace FMBot.Bot.Commands
         {
             if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
             {
-                if (userId == null || userType == null)
+                if (userId == null || userType == null || userId == "help")
                 {
                     await ReplyAsync("Please format your command like this: `.fmsetusertype 'discord id' 'User/Admin/Owner'`");
                     return;
@@ -40,7 +40,7 @@ namespace FMBot.Bot.Commands
 
                 if (!Enum.TryParse(userType, true, out UserType userTypeEnum))
                 {
-                    await ReplyAsync("Invalid usertype. Please use 'User', 'Admin', or 'Owner'.");
+                    await ReplyAsync("Invalid usertype. Please use 'User', 'Contributor', 'Admin', or 'Owner'.");
                     return;
                 }
 
