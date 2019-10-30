@@ -22,7 +22,17 @@ namespace FMBot.Bot
                 new LastFMModels.Album("Xiu Xiu", "A Promise"),
                 new LastFMModels.Album("Carcass","Reek of Putrefaction"),
                 new LastFMModels.Album("Cattle Decapitation", "Human Jerky"),
-                new LastFMModels.Album("Niki Istrefi", "EUROMANTIC001")
+                new LastFMModels.Album("Niki Istrefi", "EUROMANTIC001"),
+                new LastFMModels.Album("Last Days Of Humanity", "Hymns Of Indigestible Suppuration"),
+                new LastFMModels.Album("Last Days Of Humanity", "The Xtc Of Swallowing L.D.O.H. Feaces"),
+                new LastFMModels.Album("Last Days Of Humanity", "The Heart of Gore"),
+                new LastFMModels.Album("Last Days Of Humanity", "Human Atrocity"),
+                new LastFMModels.Album("Last Days Of Humanity", "Rennes in Blood"),
+                new LastFMModels.Album("Last Days Of Humanity", "Goresurrection"),
+                new LastFMModels.Album("Last Days Of Humanity", "Putrefaction In Progress"),
+                new LastFMModels.Album("Last Days Of Humanity", "The Sound of Rancid Juices Sloshing Around Your Coffin"),
+                new LastFMModels.Album("Last Days Of Humanity", "In Advanced Haemorrhaging Conditions"),
+                new LastFMModels.Album("Last Days Of Humanity", "Extreme Experience Of Inhuman Motivations"),
             };
 
             private static readonly string BasePath = AppDomain.CurrentDomain.BaseDirectory;
