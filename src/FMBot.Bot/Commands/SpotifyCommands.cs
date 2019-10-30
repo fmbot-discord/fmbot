@@ -27,6 +27,7 @@ namespace FMBot.Bot.Commands
 
         [Command("fmspotify")]
         [Summary("Shares a link to a Spotify track based on what a user is listening to")]
+        [Alias("fmsp", "fms")]
         public async Task SpotifyAsync()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);

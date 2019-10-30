@@ -360,6 +360,7 @@ namespace FMBot.Bot.Commands
 
         [Command("fmchart", RunMode = RunMode.Async)]
         [Summary("Generates a chart based on a user's parameters.")]
+        [Alias("fmc")]
         public async Task ChartAsync(string chartSize = "3x3", string time = "weekly", string titleSetting = null,
             string user = null)
         {
@@ -558,7 +559,7 @@ namespace FMBot.Bot.Commands
 
         [Command("fmrecent", RunMode = RunMode.Async)]
         [Summary("Displays a user's recent tracks.")]
-        [Alias("fmrecenttracks")]
+        [Alias("fmrecenttracks", "fmr")]
         public async Task RecentAsync(string amount = "5", string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -682,6 +683,7 @@ namespace FMBot.Bot.Commands
 
         [Command("fmstats", RunMode = RunMode.Async)]
         [Summary("Displays user stats related to Last.FM and FMBot")]
+        [Alias("fms")]
         public async Task StatsAsync(string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
