@@ -37,16 +37,16 @@ namespace FMBot.Bot.Services
                     switch (randomAvatarMode)
                     {
                         case 1:
-                            randomAvatarModeDesc = "Recent Listens";
+                            randomAvatarModeDesc = "Recent listens";
                             break;
                         case 2:
-                            randomAvatarModeDesc = "Weekly Albums";
+                            randomAvatarModeDesc = "Weekly albums";
                             break;
                         case 3:
-                            randomAvatarModeDesc = "Monthly Albums";
+                            randomAvatarModeDesc = "Monthly albums";
                             break;
                         case 4:
-                            randomAvatarModeDesc = "Overall Albums";
+                            randomAvatarModeDesc = "Overall albums";
                             break;
                     }
 
@@ -68,8 +68,8 @@ namespace FMBot.Bot.Services
                                 var albumImages = await this._lastFMService.GetAlbumImagesAsync(currentTrack.ArtistName, currentTrack.AlbumName);
 
                                 this._trackString = $"{currentTrack.AlbumName} \n" +
-                                                   $"by **{currentTrack.ArtistName}** \n \n" +
-                                                   $"User: {lastFMUserName} ({randomAvatarModeDesc})";
+                                                   $"by {currentTrack.ArtistName} \n \n" +
+                                                   $"{randomAvatarModeDesc} from {lastFMUserName}";
 
                                 this._logger.Log("Featured: Changing avatar to: " + this._trackString);
 
@@ -80,7 +80,7 @@ namespace FMBot.Bot.Services
                                 else
                                 {
                                     this._logger.Log("Featured: Album had no image, switching to alternative avatar mode");
-                                    goto case 2;
+                                    goto case 3;
                                 }
 
                                 break;
@@ -123,8 +123,8 @@ namespace FMBot.Bot.Services
                                     var albumImage = await this._lastFMService.GetAlbumImagesAsync(currentAlbum.ArtistName, currentAlbum.AlbumName);
 
                                     this._trackString = $"{currentAlbum.AlbumName} \n" +
-                                                        $"by **{currentAlbum.ArtistName}** \n \n" +
-                                                        $"User: {lastFMUserName} ({randomAvatarModeDesc})";
+                                                        $"by {currentAlbum.ArtistName} \n \n" +
+                                                        $"{randomAvatarModeDesc} from {lastFMUserName}";
 
                                     if (albumImage?.Large != null)
                                     {
@@ -137,7 +137,6 @@ namespace FMBot.Bot.Services
                                     else
                                     {
                                         this._logger.Log($"Featured: Album {i} had no image, switching to alternative album");
-
                                         i++;
                                     }
                                 }
