@@ -61,7 +61,9 @@ namespace FMBot.Bot.Services
                                 var tracks = await this._lastFMService.GetRecentScrobblesAsync(lastFMUserName, 25);
                                 var trackList = tracks
                                     .Select(s => new LastFMModels.Album(s.ArtistName, s.AlbumName))
-                                    .Where(w => !string.IsNullOrEmpty(w.AlbumName) && !GlobalVars.CensoredAlbums.Contains(w));
+                                    .Where(w => !string.IsNullOrEmpty(w.AlbumName) &&
+                                        !GlobalVars.CensoredAlbums.Select(s => s.ArtistName).Contains(w.ArtistName) &&
+                                        !GlobalVars.CensoredAlbums.Select(s => s.AlbumName).Contains(w.AlbumName));
 
                                 var currentTrack = trackList.First();
 
@@ -110,7 +112,8 @@ namespace FMBot.Bot.Services
 
                                 var albumList = albums
                                     .Select(s => new LastFMModels.Album(s.ArtistName, s.Name))
-                                    .Where(w => !GlobalVars.CensoredAlbums.Contains(w))
+                                    .Where(w => !GlobalVars.CensoredAlbums.Select(s => s.ArtistName).Contains(w.ArtistName) &&
+                                                !GlobalVars.CensoredAlbums.Select(s => s.AlbumName).Contains(w.AlbumName))
                                     .ToList();
 
                                 var albumFound = false;

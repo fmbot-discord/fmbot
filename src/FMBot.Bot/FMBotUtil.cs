@@ -13,7 +13,7 @@ namespace FMBot.Bot
     {
         public static class GlobalVars
         {
-            public static readonly List<LastFMModels.Album> CensoredAlbums = new List<LastFMModels.Album>
+            public static readonly IReadOnlyList<LastFMModels.Album> CensoredAlbums = new List<LastFMModels.Album>
             {
                 new LastFMModels.Album("Death Grips", "No Love Deep Web"),
                 new LastFMModels.Album("ミドリ(Midori)", "あらためまして、はじめまして、ミドリです。(aratamemashite hajimemashite midori desu)"),
