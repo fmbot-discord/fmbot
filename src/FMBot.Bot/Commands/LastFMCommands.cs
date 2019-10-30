@@ -781,7 +781,8 @@ namespace FMBot.Bot.Commands
                 this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
                     this.Context.Guild?.Name, this.Context.Guild?.Id);
                 await ReplyAsync(
-                    "Unable to show the featured avatar on FMBot due to an internal error. The timer service cannot be loaded. Please wait for the bot to fully load.");
+                    "Unable to show the featured avatar on FMBot due to an internal error. \n" +
+                    "The bot might not have changed its avatar since its last startup. Please wait until a new featured user is chosen.");
             }
         }
 
