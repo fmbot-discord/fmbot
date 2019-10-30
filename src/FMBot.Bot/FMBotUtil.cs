@@ -33,6 +33,7 @@ namespace FMBot.Bot
                 new LastFMModels.Album("Last Days Of Humanity", "The Sound of Rancid Juices Sloshing Around Your Coffin"),
                 new LastFMModels.Album("Last Days Of Humanity", "In Advanced Haemorrhaging Conditions"),
                 new LastFMModels.Album("Last Days Of Humanity", "Extreme Experience Of Inhuman Motivations"),
+                new LastFMModels.Album("Cannibal Corpse", "Tomb of the Mutilated"),
             };
 
             private static readonly string BasePath = AppDomain.CurrentDomain.BaseDirectory;
