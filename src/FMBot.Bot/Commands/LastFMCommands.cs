@@ -683,7 +683,6 @@ namespace FMBot.Bot.Commands
 
         [Command("fmstats", RunMode = RunMode.Async)]
         [Summary("Displays user stats related to Last.FM and FMBot")]
-        [Alias("fms")]
         public async Task StatsAsync(string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
