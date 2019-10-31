@@ -370,27 +370,6 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            var msg = this.Context.Message as SocketUserMessage;
-            if (StackCooldownTarget.Contains(this.Context.Message.Author))
-            {
-                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(10) >= DateTimeOffset.Now)
-                {
-                    var secondsLeft = (int)(StackCooldownTimer[StackCooldownTarget.IndexOf(Context.Message.Author as SocketGuildUser)].AddSeconds(11) - DateTimeOffset.Now).TotalSeconds;
-                    if (secondsLeft < 7)
-                    {
-                        await ReplyAsync($"Please wait {secondsLeft} seconds before generating a chart again.");
-                    }
-                    return;
-                }
-
-                StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
-            }
-            else
-            {
-                StackCooldownTarget.Add(msg.Author);
-                StackCooldownTimer.Add(DateTimeOffset.Now);
-            }
-
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             if (userSettings?.UserNameLastFM == null)
@@ -491,6 +470,27 @@ namespace FMBot.Bot.Commands
                     mode = 0,
                     titles = titleSetting == null ? userSettings.TitlesEnabled ?? true : titleSetting == "titles"
                 };
+
+                var msg = this.Context.Message as SocketUserMessage;
+                if (StackCooldownTarget.Contains(this.Context.Message.Author))
+                {
+                    if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(10) >= DateTimeOffset.Now)
+                    {
+                        var secondsLeft = (int)(StackCooldownTimer[StackCooldownTarget.IndexOf(Context.Message.Author as SocketGuildUser)].AddSeconds(11) - DateTimeOffset.Now).TotalSeconds;
+                        if (secondsLeft <= 7)
+                        {
+                            await ReplyAsync($"Please wait {secondsLeft} seconds before generating a chart again.");
+                        }
+                        return;
+                    }
+
+                    StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
+                }
+                else
+                {
+                    StackCooldownTarget.Add(msg.Author);
+                    StackCooldownTimer.Add(DateTimeOffset.Now);
+                }
 
                 await this._userService.ResetChartTimerAsync(userSettings);
 
