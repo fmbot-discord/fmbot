@@ -850,12 +850,12 @@ namespace FMBot.Bot.Commands
 
             if (chartType == null)
             {
-                setReply += $" and your mode has been set to '{chartTypeEnum}', which is the default mode. \n" +
+                setReply += $" and your .fm mode has been set to '{chartTypeEnum}', which is the default mode. \n" +
                             $"Want more info about the different modes? Use `{prfx}fmset help`";
             }
             else
             {
-                setReply += $" and your mode has been set to '{chartTypeEnum}.'";
+                setReply += $" and your .fm mode has been set to '{chartTypeEnum}.'";
             }
 
             await ReplyAsync(setReply);
