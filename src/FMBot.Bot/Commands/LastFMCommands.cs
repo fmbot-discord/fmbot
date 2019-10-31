@@ -7,6 +7,7 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Data.Entities;
@@ -114,57 +115,37 @@ namespace FMBot.Bot.Commands
                 }
 
                 var currentTrack = tracks.Content[0];
-                var lastTrack = tracks.Content[1];
-
-                var trackName = currentTrack.Name;
-                var artistName = currentTrack.ArtistName;
-                var albumName = currentTrack.AlbumName;
-
-                var lastTrackName = lastTrack.Name;
-                var lastTrackArtistName = lastTrack.ArtistName;
-                var lastTrackAlbumName = lastTrack.AlbumName;
+                var previousTrack = tracks.Content[1];
 
                 var playCount = userInfo.Content.Playcount;
+
+                var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+                var embedTitle = self ? userTitle : $"{lastFMUserName}, requested by {userTitle}";
 
                 switch (userSettings.ChartType)
                 {
                     case ChartType.textmini:
-                        await this.Context.Channel.SendMessageAsync(
-                            await this._userService.GetUserTitleAsync(this.Context)
-                            + "\n**Current** - "
-                            + artistName
-                            + " - "
-                            + trackName
-                            + " ["
-                            + albumName
-                            + "]\n<https://www.last.fm/user/"
-                            + userSettings.UserNameLastFM
-                            + ">\n"
-                            + userSettings.UserNameLastFM
-                            + "'s total scrobbles: "
-                            + playCount.ToString("N0"));
-                        break;
                     case ChartType.textfull:
-                        await this.Context.Channel.SendMessageAsync(
-                            await this._userService.GetUserTitleAsync(this.Context)
-                            + "\n**Current** - "
-                            + artistName
-                            + " - "
-                            + trackName
-                            + " ["
-                            + albumName
-                            + "]\n**Previous** - "
-                            + lastTrackArtistName
-                            + " - "
-                            + lastTrackName
-                            + " ["
-                            + lastTrackAlbumName
-                            + "]\n<https://www.last.fm/user/"
-                            + userSettings.UserNameLastFM
-                            + ">\n"
-                            + userSettings.UserNameLastFM
-                            + "'s total scrobbles: "
-                            + playCount.ToString("N0"));
+                        var fmText = $"Last tracks for {embedTitle}: \n" +
+                                      $"*{currentTrack.Name}* \n" +
+                                      $"By **{currentTrack.ArtistName}**" +
+                                      (string.IsNullOrWhiteSpace(currentTrack.AlbumName)
+                                          ? "\n"
+                                          : $" | {currentTrack.AlbumName}\n");
+
+                        if (userSettings.ChartType == ChartType.textfull)
+                        {
+                            fmText += $"*{previousTrack.Name}* \n" +
+                                      $"By **{previousTrack.ArtistName}**" +
+                                      (string.IsNullOrWhiteSpace(previousTrack.AlbumName)
+                                          ? "\n"
+                                          : $" | {previousTrack.AlbumName}\n");
+                        }
+
+                        fmText += $"<{Constants.LastFMUserUrl + userSettings.UserNameLastFM}> has {playCount} scrobbles.";
+
+                        fmText = fmText.FilterOutMentions();
+                        await this.Context.Channel.SendMessageAsync(fmText);
                         break;
                     default:
                         if (!this._guildService.CheckIfDM(this.Context))
@@ -178,24 +159,20 @@ namespace FMBot.Bot.Commands
                             }
                         }
 
-                        var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-                        string embedTitle;
-                        embedTitle = self ? userTitle : $"{lastFMUserName}, requested by {userTitle}";
-
                         this._embed.AddField(
-                            $"{tracks.Content[0].Name}",
-                            $"By **{tracks.Content[0].ArtistName}**" +
-                            (string.IsNullOrEmpty(tracks.Content[0].AlbumName)
+                            $"{currentTrack.Name}",
+                            $"By **{currentTrack.ArtistName}**" +
+                            (string.IsNullOrEmpty(currentTrack.AlbumName)
                                 ? ""
-                                : $" | {tracks.Content[0].AlbumName}"));
+                                : $" | {currentTrack.AlbumName}"));
 
                         if (userSettings.ChartType == ChartType.embedfull)
                         {
                             this._embedAuthor.WithName("Last tracks for " + embedTitle);
                             this._embed.AddField(
-                                $"{tracks.Content[1].Name}",
-                                $"By **{tracks.Content[1].ArtistName}**" +
-                                (string.IsNullOrEmpty(tracks.Content[1].AlbumName)
+                                $"{previousTrack.Name}",
+                                $"By **{previousTrack.ArtistName}**" +
+                                (string.IsNullOrEmpty(previousTrack.AlbumName)
                                     ? ""
                                     : $" | {tracks.Content[1].AlbumName}"));
                         }
@@ -207,7 +184,7 @@ namespace FMBot.Bot.Commands
                         this._embedAuthor.WithUrl(Constants.LastFMUserUrl + lastFMUserName);
 
                         string footerText;
-                        if (tracks.Content[0].IsNowPlaying == true)
+                        if (currentTrack.IsNowPlaying == true)
                         {
                             footerText = 
                                 $"{userInfo.Content.Name} has {userInfo.Content.Playcount} scrobbles - Now Playing";
@@ -216,20 +193,16 @@ namespace FMBot.Bot.Commands
                         {
                             footerText =
                                 $"{userInfo.Content.Name} has {userInfo.Content.Playcount} scrobbles";
-                            if (tracks.Content[0].TimePlayed.HasValue)
+                            if (currentTrack.TimePlayed.HasValue)
                             {
                                 footerText += " - Last scrobble:";
-                                this._embed.WithTimestamp(tracks.Content[0].TimePlayed.Value);
+                                this._embed.WithTimestamp(currentTrack.TimePlayed.Value);
                             }
                         }
 
                         this._embedFooter.WithText(footerText);
 
                         this._embed.WithFooter(this._embedFooter);
-
-                        //this._embed.WithTitle(tracks.Content[0].IsNowPlaying == true
-                        //    ? "*Now playing*"
-                        //    : $"Last scrobble {tracks.Content[0].TimePlayed?.ToString("g")} (UTC)");
 
                         this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                         this._embed.WithAuthor(this._embedAuthor);
@@ -244,9 +217,6 @@ namespace FMBot.Bot.Commands
                             this._embed.WithThumbnailUrl(albumImages.Medium.ToString());
                         }
 
-                        
-
-                        this._embed.WithColor(Constants.LastFMColorRed);
                         await ReplyAsync("", false, this._embed.Build());
                         break;
                 }

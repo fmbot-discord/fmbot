@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace FMBot.Bot.Extensions
 {
@@ -13,6 +14,13 @@ namespace FMBot.Bot.Extensions
             {
                 yield return str.Substring(index, Math.Min(MessageLength, str.Length - index));
             }
+        }
+
+        public static string FilterOutMentions(this string str)
+        {
+            var pattern = new Regex("(@everyone|@here|<@)");
+            var cleanedPattern = pattern.Replace(str, "");
+            return cleanedPattern;
         }
     }
 }
