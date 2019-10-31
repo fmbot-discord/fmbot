@@ -116,16 +116,13 @@ namespace FMBot.Bot.Commands
                 var currentTrack = tracks.Content[0];
                 var lastTrack = tracks.Content[1];
 
-                const string nullText = "[undefined]";
-
                 var trackName = currentTrack.Name;
                 var artistName = currentTrack.ArtistName;
-                var albumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? nullText : currentTrack.AlbumName;
+                var albumName = currentTrack.AlbumName;
 
                 var lastTrackName = lastTrack.Name;
                 var lastTrackArtistName = lastTrack.ArtistName;
-                var lastTrackAlbumName =
-                    string.IsNullOrWhiteSpace(lastTrack.AlbumName) ? nullText : lastTrack.AlbumName;
+                var lastTrackAlbumName = lastTrack.AlbumName;
 
                 var playCount = userInfo.Content.Playcount;
 
@@ -181,19 +178,12 @@ namespace FMBot.Bot.Commands
                             }
                         }
 
-                        string userTitle;
-                        if (self)
-                        {
-                            userTitle = await this._userService.GetUserTitleAsync(this.Context);
-                        }
-                        else
-                        {
-                            userTitle =
-                                $"{lastFMUserName}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
-                        }
+                        var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+                        string embedTitle;
+                        embedTitle = self ? userTitle : $"{lastFMUserName}, requested by {userTitle}";
 
                         this._embed.AddField(
-                            $"Current: {tracks.Content[0].Name}",
+                            $"{tracks.Content[0].Name}",
                             $"By **{tracks.Content[0].ArtistName}**" +
                             (string.IsNullOrEmpty(tracks.Content[0].AlbumName)
                                 ? ""
@@ -201,9 +191,9 @@ namespace FMBot.Bot.Commands
 
                         if (userSettings.ChartType == ChartType.embedfull)
                         {
-                            this._embedAuthor.WithName("Last tracks for " + userTitle);
+                            this._embedAuthor.WithName("Last tracks for " + embedTitle);
                             this._embed.AddField(
-                                $"Previous: {tracks.Content[1].Name}",
+                                $"{tracks.Content[1].Name}",
                                 $"By **{tracks.Content[1].ArtistName}**" +
                                 (string.IsNullOrEmpty(tracks.Content[1].AlbumName)
                                     ? ""
@@ -211,12 +201,35 @@ namespace FMBot.Bot.Commands
                         }
                         else
                         {
-                            this._embedAuthor.WithName("Last track for " + userTitle);
+                            this._embedAuthor.WithName("Last track for " + embedTitle);
                         }
 
-                        this._embed.WithTitle(tracks.Content[0].IsNowPlaying == true
-                            ? "*Now playing*"
-                            : $"Last scrobble {tracks.Content[0].TimePlayed?.ToString("g")} (UTC)");
+                        this._embedAuthor.WithUrl(Constants.LastFMUserUrl + lastFMUserName);
+
+                        string footerText;
+                        if (tracks.Content[0].IsNowPlaying == true)
+                        {
+                            footerText = 
+                                $"{userInfo.Content.Name} has {userInfo.Content.Playcount} scrobbles - Now Playing";
+                        }
+                        else 
+                        {
+                            footerText =
+                                $"{userInfo.Content.Name} has {userInfo.Content.Playcount} scrobbles";
+                            if (tracks.Content[0].TimePlayed.HasValue)
+                            {
+                                footerText += " - Last scrobble:";
+                                this._embed.WithTimestamp(tracks.Content[0].TimePlayed.Value);
+                            }
+                        }
+
+                        this._embedFooter.WithText(footerText);
+
+                        this._embed.WithFooter(this._embedFooter);
+
+                        //this._embed.WithTitle(tracks.Content[0].IsNowPlaying == true
+                        //    ? "*Now playing*"
+                        //    : $"Last scrobble {tracks.Content[0].TimePlayed?.ToString("g")} (UTC)");
 
                         this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                         this._embed.WithAuthor(this._embedAuthor);
@@ -231,9 +244,7 @@ namespace FMBot.Bot.Commands
                             this._embed.WithThumbnailUrl(albumImages.Medium.ToString());
                         }
 
-                        this._embedFooter.WithText(
-                            $"{userInfo.Content.Name} has {userInfo.Content.Playcount} scrobbles.");
-                        this._embed.WithFooter(this._embedFooter);
+                        
 
                         this._embed.WithColor(Constants.LastFMColorRed);
                         await ReplyAsync("", false, this._embed.Build());
@@ -790,31 +801,64 @@ namespace FMBot.Bot.Commands
         [Summary("Sets your Last.FM name and FM mode. Please note that users in shared servers will be able to see and request your Last.FM username.")]
         [Alias("fmsetname", "fmsetmode")]
         public async Task SetAsync([Summary("Your Last.FM name")] string lastFMUserName,
-            [Summary("The mode you want to use.")] string chartType = "embedfull")
+            [Summary("The mode you want to use.")] string chartType = null)
         {
+            var prfx = ConfigData.Data.CommandPrefix;
             if (lastFMUserName == "help")
             {
-                await ReplyAsync(ConfigData.Data.CommandPrefix +
-                                 "fmset 'Last.FM Username' 'embedmini/embedfull/textmini/textfull'");
+                var replyString = $"Use this command to setup and change your fmbot settings. \n " +
+                                  $"You can set your username and you can change the mode for the `.fm` command.\n \n" +
+                                  $"`{prfx}fmset 'Last.FM Username' 'embedmini/embedfull/textmini/textfull'` \n \n";
+
+                var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+                if (userSettings?.UserNameLastFM != null)
+                {
+                    var differentMode = userSettings.ChartType == ChartType.embedmini ? "embedfull" : "embedmini";
+                    replyString += $"Example of picking a different mode: \n" +
+                                   $"`{prfx}fmset {userSettings.UserNameLastFM} {differentMode}`";
+                }
+                else
+                {
+                    replyString += "Example of picking a mode: \n" +
+                                   $"`{prfx}fmset lastfmusername embedfull`";
+                }
+
+                this._embed.WithTitle("Changing your .fmbot settings");
+                this._embed.WithDescription(replyString);
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 return;
             }
 
-            if (!await this._lastFmService.LastFMUserExistsAsync(lastFMUserName.Replace("'", "")))
+            lastFMUserName = lastFMUserName.Replace("'", "");
+            if (!await this._lastFmService.LastFMUserExistsAsync(lastFMUserName))
             {
                 await ReplyAsync("LastFM user could not be found. Please check if the name you entered is correct.");
                 return;
             }
 
-            if (!Enum.TryParse(chartType.Replace("'", ""), true, out ChartType chartTypeEnum))
+            var chartTypeEnum = ChartType.embedmini;
+            if (chartType != null && !Enum.TryParse(chartType.Replace("'", ""), true, out chartTypeEnum))
             {
                 await ReplyAsync("Invalid mode. Please use 'embedmini', 'embedfull', 'textfull', or 'textmini'.");
                 return;
             }
 
-            this._userService.SetLastFM(this.Context.User, lastFMUserName.Replace("'", ""), chartTypeEnum);
+            this._userService.SetLastFM(this.Context.User, lastFMUserName, chartTypeEnum);
 
-            await ReplyAsync("Your Last.FM name has been set to '" + lastFMUserName.Replace("'", "") +
-                             "' and your mode has been set to '" + chartType + "'.");
+            var setReply = $"Your Last.FM name has been set to '{lastFMUserName}'";
+
+            if (chartType == null)
+            {
+                setReply += $" and your mode has been set to '{chartTypeEnum}', which is the default mode. \n" +
+                            $"Want more info about the different modes? Use `{prfx}fmset help`";
+            }
+            else
+            {
+                setReply += $" and your mode has been set to '{chartTypeEnum}.'";
+            }
+
+            await ReplyAsync(setReply);
             this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
                 this.Context.Message.Content);
 
