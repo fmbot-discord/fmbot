@@ -144,7 +144,14 @@ namespace FMBot.Bot.Commands
 
                         fmText += $"<{Constants.LastFMUserUrl + userSettings.UserNameLastFM}> has {playCount} scrobbles.";
 
+                        if (fmText.ContainsMentions())
+                        {
+                            await this.Context.Channel.SendMessageAsync(this.Context.Message.Author.Mention +
+                                                                        " Congratulations, you tried to get the bot to ping someone/ the entire server! \n" +
+                                                                        "Have a cookie for your weak attempt: 🍪. Glory to Arstotzka!");
+                        }
                         fmText = fmText.FilterOutMentions();
+
                         await this.Context.Channel.SendMessageAsync(fmText);
                         break;
                     default:

@@ -22,5 +22,10 @@ namespace FMBot.Bot.Extensions
             var cleanedPattern = pattern.Replace(str, "");
             return cleanedPattern;
         }
+        public static bool ContainsMentions(this string str)
+        {
+            var matchesPattern = Regex.Match(str, "(@everyone|@here|<@)");
+            return matchesPattern.Success;
+        }
     }
 }
