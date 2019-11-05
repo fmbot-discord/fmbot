@@ -126,29 +126,14 @@ namespace FMBot.Bot.Commands
 
             this._embed.WithTitle(prefix + "FMBot Quick Start Guide");
 
-            this._embed.AddField(prefix + "fm 'lastfm username/ discord user'",
-                "Displays your stats, or stats of entered username or user");
+            this._embed.AddField($"Main command `{prefix}fm`",
+                "Displays last scrobbles, and looks different depending on the mode you've set.");
 
-            this._embed.AddField(prefix + "fmset 'username' 'embedmini/embedfull/textmini/textfull'",
-                "Sets your default Last.FM name, followed by the display mode you want to use. " +
-                "Note that users in shared servers will be able to see and request your Last.FM username.");
+            this._embed.AddField("Setting up: `.fmset lastfmusername`",
+                $"For more settings, please use `{prefix}fmset help`.");
 
-            this._embed.AddField(prefix + "fmrecent '1-10' 'lastfm username/ discord user'",
-                "Shows a list of your most recent tracks, defaults to 5");
-
-            this._embed.AddField(prefix + "fmchart '2x2-8x8' 'weekly/monthly/yearly/overall' 'titles/notitles'",
-                "Generates an image chart of your top albums");
-
-            this._embed.AddField(prefix + "fmspotify",
-                "Gets the spotify link of your last played song");
-
-            this._embed.AddField(prefix + "fmyoutube",
-                "Gets the youtube link of your last played song");
-
-            this._embed.AddField(prefix + "fmfriends",
-                "Get a list of the songs your friends played");
-
-            this._embed.WithFooter("Please use `" + prefix + "fmfullhelp` to get a list of all possible commands.");
+            this._embed.AddField("For more commands and info, please read the documentation here:",
+                "https://fmbot-discord.github.io/docs/commands/");
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         }
