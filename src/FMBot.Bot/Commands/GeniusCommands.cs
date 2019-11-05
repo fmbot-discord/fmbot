@@ -77,7 +77,7 @@ namespace FMBot.Bot.Commands
                         $"By **[{songResult.PrimaryArtist.Name}]({songResult.PrimaryArtist.Url})**");
 
                     var rnd = new Random();
-                    if (rnd.Next(0, 5) == 1)
+                    if (rnd.Next(0, 5) == 1 && searchValues.Length < 1)
                     {
                         this._embedFooter.WithText("Tip: Search for other songs by simply adding the searchvalue behind .fmgenius.");
                         this._embed.WithFooter(this._embedFooter);
