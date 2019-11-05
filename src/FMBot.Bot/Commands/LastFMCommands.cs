@@ -243,7 +243,7 @@ namespace FMBot.Bot.Commands
 
         [Command("fmartists", RunMode = RunMode.Async)]
         [Summary("Displays top artists.")]
-        [Alias("fmartist", "fmartistlist", "fmartistslist")]
+        [Alias("fmartist","fma", "fmartistlist", "fmartistslist")]
         public async Task ArtistsAsync(string time = "weekly", int num = 6, string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);

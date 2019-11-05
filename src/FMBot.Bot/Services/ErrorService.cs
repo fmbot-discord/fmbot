@@ -9,7 +9,7 @@ namespace FMBot.Bot.Services
 {
     public static class ErrorService
     {
-        public static EmbedBuilder UsernameNotSetErrorResponse(this EmbedBuilder embed, ICommandContext context, Logger.Logger logger)
+        public static void UsernameNotSetErrorResponse(this EmbedBuilder embed, ICommandContext context, Logger.Logger logger)
         {
             embed.WithTitle("Error while attempting get Last.FM information");
             embed.WithDescription("Last.FM username has not been set. \n" +
@@ -19,11 +19,9 @@ namespace FMBot.Bot.Services
 
             embed.WithColor(Constants.WarningColorOrange);
             logger.LogError("Last.FM username not set", context.Message.Content, context.User.Username, context.Guild?.Name, context.Guild?.Id);
-
-            return embed;
         }
 
-        public static EmbedBuilder NoScrobblesFoundErrorResponse(this EmbedBuilder embed, LastResponseStatus apiResponse, ICommandContext context, Logger.Logger logger)
+        public static void NoScrobblesFoundErrorResponse(this EmbedBuilder embed, LastResponseStatus apiResponse, ICommandContext context, Logger.Logger logger)
         {
             embed.WithTitle("Error while attempting get Last.FM information");
             switch (apiResponse)
@@ -39,8 +37,6 @@ namespace FMBot.Bot.Services
 
             embed.WithColor(Constants.WarningColorOrange);
             logger.LogError("No scrobbles found for user", context.Message.Content, context.User.Username, context.Guild?.Name, context.Guild?.Id);
-
-            return embed;
         }
     }
 }
