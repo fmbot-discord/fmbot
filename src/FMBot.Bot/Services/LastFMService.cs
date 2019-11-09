@@ -42,6 +42,25 @@ namespace FMBot.Bot.Services
             return recentScrobbles;
         }
 
+
+        public static string TrackToLinkedString(LastTrack track)
+        {
+            return $"[{track.Name}]({track.Url})\n" +
+                   $"By **{track.ArtistName}**" +
+                   (string.IsNullOrWhiteSpace(track.AlbumName)
+                       ? "\n"
+                       : $" | *{track.AlbumName}*\n");
+        }
+
+        public static string TrackToString(LastTrack track)
+        {
+            return $"{track.Name}\n" +
+                   $"By **{track.ArtistName}**" +
+                   (string.IsNullOrWhiteSpace(track.AlbumName)
+                       ? "\n"
+                       : $" | *{track.AlbumName}*\n");
+        }
+
         // User
         public async Task<LastResponse<LastUser>> GetUserInfoAsync(string lastFMUserName)
         {

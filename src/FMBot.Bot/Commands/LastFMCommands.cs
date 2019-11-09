@@ -64,7 +64,8 @@ namespace FMBot.Bot.Commands
         [Summary("Displays what a user is listening to.")]
         [Alias("qm", "wm", "em", "rm", "tm", "ym", "um", "im", "om", "pm", "dm", "gm", "sm", "am", "hm", "jm", "km",
             "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm")]
-        public async Task FMAsync(string user = null)
+        public async Task
+            FMAsync(string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -122,34 +123,29 @@ namespace FMBot.Bot.Commands
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
                 var embedTitle = self ? userTitle : $"{lastFMUserName}, requested by {userTitle}";
 
+                var fmText = "";
+
+
                 switch (userSettings.ChartType)
                 {
                     case ChartType.textmini:
                     case ChartType.textfull:
-                        var fmText = $"Last tracks for {embedTitle}: \n" +
-                                      $"*{currentTrack.Name}* \n" +
-                                      $"By **{currentTrack.ArtistName}**" +
-                                      (string.IsNullOrWhiteSpace(currentTrack.AlbumName)
-                                          ? "\n"
-                                          : $" | {currentTrack.AlbumName}\n");
-
-                        if (userSettings.ChartType == ChartType.textfull)
+                        if (userSettings.ChartType == ChartType.textmini)
                         {
-                            fmText += $"*{previousTrack.Name}* \n" +
-                                      $"By **{previousTrack.ArtistName}**" +
-                                      (string.IsNullOrWhiteSpace(previousTrack.AlbumName)
-                                          ? "\n"
-                                          : $" | {previousTrack.AlbumName}\n");
+                            fmText += $"Last track for {embedTitle}: \n";
+
+                            fmText += LastFMService.TrackToString(currentTrack);
+                        }
+                        else
+                        {
+                            fmText += $"Last tracks for {embedTitle}: \n";
+
+                            fmText += LastFMService.TrackToString(currentTrack);
+                            fmText += LastFMService.TrackToString(previousTrack);
                         }
 
                         fmText += $"<{Constants.LastFMUserUrl + userSettings.UserNameLastFM}> has {playCount} scrobbles.";
 
-                        if (fmText.ContainsMentions())
-                        {
-                            await this.Context.Channel.SendMessageAsync(this.Context.Message.Author.Mention +
-                                                                        " Congratulations, you tried to get the bot to ping someone/ the entire server! \n" +
-                                                                        "Have a cookie for your weak attempt: 🍪. Glory to Arstotzka!");
-                        }
                         fmText = fmText.FilterOutMentions();
 
                         await this.Context.Channel.SendMessageAsync(fmText);
@@ -166,37 +162,30 @@ namespace FMBot.Bot.Commands
                             }
                         }
 
-                        this._embed.AddField(
-                            $"{currentTrack.Name}",
-                            $"By **{currentTrack.ArtistName}**" +
-                            (string.IsNullOrEmpty(currentTrack.AlbumName)
-                                ? ""
-                                : $" | {currentTrack.AlbumName}"));
+                        fmText += LastFMService.TrackToLinkedString(currentTrack);
 
                         if (userSettings.ChartType == ChartType.embedfull)
                         {
                             this._embedAuthor.WithName("Last tracks for " + embedTitle);
-                            this._embed.AddField(
-                                $"{previousTrack.Name}",
-                                $"By **{previousTrack.ArtistName}**" +
-                                (string.IsNullOrEmpty(previousTrack.AlbumName)
-                                    ? ""
-                                    : $" | {tracks.Content[1].AlbumName}"));
+                            fmText += "\n";
+                            fmText += LastFMService.TrackToLinkedString(previousTrack);
                         }
                         else
                         {
                             this._embedAuthor.WithName("Last track for " + embedTitle);
                         }
 
+                        this._embed.WithDescription(fmText);
+
                         this._embedAuthor.WithUrl(Constants.LastFMUserUrl + lastFMUserName);
 
                         string footerText;
                         if (currentTrack.IsNowPlaying == true)
                         {
-                            footerText = 
+                            footerText =
                                 $"{userInfo.Content.Name} has {userInfo.Content.Playcount} scrobbles - Now Playing";
                         }
-                        else 
+                        else
                         {
                             footerText =
                                 $"{userInfo.Content.Name} has {userInfo.Content.Playcount} scrobbles";
@@ -240,10 +229,9 @@ namespace FMBot.Bot.Commands
             }
         }
 
-
         [Command("fmartists", RunMode = RunMode.Async)]
         [Summary("Displays top artists.")]
-        [Alias("fmartist","fma", "fmartistlist", "fmartistslist")]
+        [Alias("fmartist", "fma", "fmartistlist", "fmartistslist")]
         public async Task ArtistsAsync(string time = "weekly", int num = 10, string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
