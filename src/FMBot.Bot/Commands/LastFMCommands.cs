@@ -244,7 +244,7 @@ namespace FMBot.Bot.Commands
         [Command("fmartists", RunMode = RunMode.Async)]
         [Summary("Displays top artists.")]
         [Alias("fmartist","fma", "fmartistlist", "fmartistslist")]
-        public async Task ArtistsAsync(string time = "weekly", int num = 6, string user = null)
+        public async Task ArtistsAsync(string time = "weekly", int num = 10, string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -269,9 +269,13 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            if (num > 10)
+            if (num > 20)
             {
-                num = 10;
+                num = 20;
+            }
+            if (num < 1)
+            {
+                num = 1;
             }
 
             var timeSpan = this._lastFmService.GetLastStatsTimeSpan(timePeriod);
@@ -312,21 +316,20 @@ namespace FMBot.Bot.Commands
                 }
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                this._embedAuthor.WithName($"Artists for {userTitle}");
+                var artistsString = num == 1 ? "artist" : "artists";
+                this._embedAuthor.WithName($"Top {num} {timePeriod} {artistsString} for {userTitle}");
+                this._embedAuthor.WithUrl(Constants.LastFMUserUrl + lastFMUserName + "/library/artists");
                 this._embed.WithAuthor(this._embedAuthor);
 
-                this._embed.WithTitle($"Top {num} artists ({timePeriod})");
-                this._embed.WithUrl(Constants.LastFMUserUrl + lastFMUserName + "/library/artists");
-
-                var indexVal = num - 1;
-                for (var i = 0; i <= indexVal; i++)
+                string description = "";
+                for (var i = 0; i < artists.Count(); i++)
                 {
                     var artist = artists.Content[i];
 
-                    var correctNum = i + 1;
-                    this._embed.AddField("#" + correctNum + ": " + artist.Name,
-                        artist.PlayCount.Value.ToString("N0") + " times scrobbled");
+                    description += $"{i + 1}. [{artist.Name}]({artist.Url}) ({artist.PlayCount} plays) \n";
                 }
+
+                this._embed.WithDescription(description);
 
                 var userInfo = await this._lastFmService.GetUserInfoAsync(lastFMUserName);
 
