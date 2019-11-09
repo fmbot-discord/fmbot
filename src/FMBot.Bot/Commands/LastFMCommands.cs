@@ -64,8 +64,7 @@ namespace FMBot.Bot.Commands
         [Summary("Displays what a user is listening to.")]
         [Alias("qm", "wm", "em", "rm", "tm", "ym", "um", "im", "om", "pm", "dm", "gm", "sm", "am", "hm", "jm", "km",
             "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm")]
-        public async Task
-            FMAsync(string user = null)
+        public async Task FMAsync(string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -567,6 +566,10 @@ namespace FMBot.Bot.Commands
             {
                 amountOfTracks = 10;
             }
+            if (amountOfTracks < 1)
+            {
+                amountOfTracks = 1;
+            }
 
             try
             {
@@ -598,38 +601,22 @@ namespace FMBot.Bot.Commands
                     return;
                 }
 
-                string userTitle;
-                if (self)
-                {
-                    userTitle = await this._userService.GetUserTitleAsync(this.Context);
-                }
-                else
-                {
-                    userTitle =
-                        $"{lastFMUserName}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
-                }
+                var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+                var title = self ? userTitle : $"{lastFMUserName}, requested by {userTitle}";
+                this._embedAuthor.WithName($"Latest tracks for {title}");
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                this._embedAuthor.WithName($"Latest tracks for {userTitle}");
+                this._embedAuthor.WithUrl(Constants.LastFMUserUrl + lastFMUserName);
                 this._embed.WithAuthor(this._embedAuthor);
 
-                this._embed.WithTitle(tracks.Content[0].IsNowPlaying == true
-                    ? "*Now playing*"
-                    : $"Last scrobble {tracks.Content[0].TimePlayed?.ToString("g")} (UTC)");
-                this._embed.WithUrl(Constants.LastFMUserUrl + lastFMUserName);
-
-                var indexval = amountOfTracks - 1;
-                for (var i = 0; i <= indexval; i++)
+                var fmRecentText = "";
+                for (var i = 0; i < tracks.Count(); i++)
                 {
                     var track = tracks.Content[i];
 
-                    var TrackName = track.Name;
-                    var ArtistName = track.ArtistName;
-                    var AlbumName = track.AlbumName;
-
                     if (i == 0)
                     {
-                        var albumImages = await this._lastFmService.GetAlbumImagesAsync(ArtistName, AlbumName);
+                        var albumImages = await this._lastFmService.GetAlbumImagesAsync(track.ArtistName, track.AlbumName);
 
                         if (albumImages?.Medium != null)
                         {
@@ -637,14 +624,30 @@ namespace FMBot.Bot.Commands
                         }
                     }
 
-                    var correctNum = i + 1;
-                    this._embed.AddField("#" + correctNum + ": " + TrackName,
-                        $"By **{ArtistName}**" + (string.IsNullOrEmpty(AlbumName) ? "" : $" | {AlbumName}"));
+                    fmRecentText += $"{i + 1}. {LastFMService.TrackToLinkedString(track)}\n";
                 }
 
-                var playcount = userInfo.Content.Playcount;
+                this._embed.WithDescription(fmRecentText);
 
-                this._embedFooter.WithText(lastFMUserName + "'s total scrobbles: " + playcount.ToString("0"));
+                string footerText;
+                if (tracks.Content[0].IsNowPlaying == true)
+                {
+                    footerText =
+                        $"{userInfo.Content.Name} has {userInfo.Content.Playcount} scrobbles - Now Playing";
+                }
+                else
+                {
+                    footerText =
+                        $"{userInfo.Content.Name} has {userInfo.Content.Playcount} scrobbles";
+                    if (tracks.Content[0].TimePlayed.HasValue)
+                    {
+                        footerText += " - Last scrobble:";
+                        this._embed.WithTimestamp(tracks.Content[0].TimePlayed.Value);
+                    }
+                }
+
+                this._embedFooter.WithText(footerText);
+
                 this._embed.WithFooter(this._embedFooter);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
