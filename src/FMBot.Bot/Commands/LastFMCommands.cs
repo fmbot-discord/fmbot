@@ -149,6 +149,8 @@ namespace FMBot.Bot.Commands
                         await this.Context.Channel.SendMessageAsync(fmText);
                         break;
                     default:
+                        var albumImages = this._lastFmService.GetAlbumImagesAsync(currentTrack.ArtistName, currentTrack.AlbumName);
+
                         if (!this._guildService.CheckIfDM(this.Context))
                         {
                             var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
@@ -204,13 +206,10 @@ namespace FMBot.Bot.Commands
                         this._embed.WithAuthor(this._embedAuthor);
                         this._embed.WithUrl(Constants.LastFMUserUrl + lastFMUserName);
 
-                        var albumImages =
-                            await this._lastFmService.GetAlbumImagesAsync(currentTrack.ArtistName,
-                                currentTrack.AlbumName);
 
-                        if (albumImages?.Medium != null)
+                        if ((await albumImages)?.Large != null)
                         {
-                            this._embed.WithThumbnailUrl(albumImages.Medium.ToString());
+                            this._embed.WithThumbnailUrl((await albumImages).Large.ToString());
                         }
 
                         await ReplyAsync("", false, this._embed.Build());
