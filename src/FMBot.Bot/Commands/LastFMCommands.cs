@@ -124,7 +124,6 @@ namespace FMBot.Bot.Commands
 
                 var fmText = "";
 
-
                 switch (userSettings.ChartType)
                 {
                     case ChartType.textmini:
@@ -161,31 +160,29 @@ namespace FMBot.Bot.Commands
                             }
                         }
 
-                        fmText += LastFMService.TrackToLinkedString(currentTrack);
-
-                        if (userSettings.ChartType == ChartType.embedfull)
+                        if (userSettings.ChartType == ChartType.embedmini)
                         {
-                            this._embedAuthor.WithName("Last tracks for " + embedTitle);
-                            fmText += "\n";
-                            fmText += LastFMService.TrackToLinkedString(previousTrack);
+                            fmText += LastFMService.TrackToLinkedString(currentTrack);
+                            this._embed.WithDescription(fmText);
                         }
                         else
                         {
-                            this._embedAuthor.WithName("Last track for " + embedTitle);
+                            this._embed.AddField("Current:", LastFMService.TrackToLinkedString(currentTrack));
+                            this._embed.AddField("Previous:", LastFMService.TrackToLinkedString(previousTrack));
                         }
 
-                        this._embed.WithDescription(fmText);
-
-                        this._embedAuthor.WithUrl(Constants.LastFMUserUrl + lastFMUserName);
-
+                        string headerText;
                         string footerText;
                         if (currentTrack.IsNowPlaying == true)
                         {
+                            headerText = $"Now playing - ";
                             footerText =
-                                $"{userInfo.Content.Name} has {userInfo.Content.Playcount} scrobbles - Now Playing";
+                                $"{userInfo.Content.Name} has {userInfo.Content.Playcount} scrobbles";
                         }
                         else
                         {
+                            headerText = userSettings.ChartType == ChartType.embedmini ? "Last track for " : "Last tracks for ";
+
                             footerText =
                                 $"{userInfo.Content.Name} has {userInfo.Content.Playcount} scrobbles";
                             if (currentTrack.TimePlayed.HasValue)
@@ -194,6 +191,10 @@ namespace FMBot.Bot.Commands
                                 this._embed.WithTimestamp(currentTrack.TimePlayed.Value);
                             }
                         }
+
+                        headerText += embedTitle;
+                        this._embedAuthor.WithName(headerText);
+                        this._embedAuthor.WithUrl(Constants.LastFMUserUrl + lastFMUserName);
 
                         this._embedFooter.WithText(footerText);
 
