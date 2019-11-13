@@ -22,12 +22,12 @@ namespace FMBot.Bot.Services
 {
     internal class LastFMService
     {
-        private readonly LastfmClient LastFMClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
+        private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
 
         // Last scrobble
         public async Task<LastTrack> GetLastScrobbleAsync(string lastFMUserName)
         {
-            var tracks = await this.LastFMClient.User.GetRecentScrobbles(lastFMUserName, null, 1, 1);
+            var tracks = await this._lastFMClient.User.GetRecentScrobbles(lastFMUserName, null, 1, 1);
             GlobalVars.LastFMApiCalls++;
 
             return tracks.Content[0];
@@ -36,7 +36,7 @@ namespace FMBot.Bot.Services
         // Recent scrobbles
         public async Task<PageResponse<LastTrack>> GetRecentScrobblesAsync(string lastFMUserName, int count = 2)
         {
-            var recentScrobbles = await this.LastFMClient.User.GetRecentScrobbles(lastFMUserName, null, 1, count);
+            var recentScrobbles = await this._lastFMClient.User.GetRecentScrobbles(lastFMUserName, null, 1, count);
             GlobalVars.LastFMApiCalls++;
 
             return recentScrobbles;
@@ -45,6 +45,11 @@ namespace FMBot.Bot.Services
 
         public static string TrackToLinkedString(LastTrack track)
         {
+            if (track.Name.IndexOfAny(new[] { '(', ')'}) >= 0)
+            {
+                return TrackToString(track);
+            }
+
             return $"[{track.Name}]({track.Url})\n" +
                    $"By **{track.ArtistName}**" +
                    (string.IsNullOrWhiteSpace(track.AlbumName)
@@ -64,7 +69,7 @@ namespace FMBot.Bot.Services
         // User
         public async Task<LastResponse<LastUser>> GetUserInfoAsync(string lastFMUserName)
         {
-            var user = await this.LastFMClient.User.GetInfoAsync(lastFMUserName);
+            var user = await this._lastFMClient.User.GetInfoAsync(lastFMUserName);
             GlobalVars.LastFMApiCalls++;
 
             return user;
@@ -73,7 +78,7 @@ namespace FMBot.Bot.Services
         // Album info
         public async Task<LastResponse<LastAlbum>> GetAlbumInfoAsync(string artistName, string albumName)
         {
-            var albumInfo = await this.LastFMClient.Album.GetInfoAsync(artistName, albumName);
+            var albumInfo = await this._lastFMClient.Album.GetInfoAsync(artistName, albumName);
             GlobalVars.LastFMApiCalls++;
 
             return albumInfo;
@@ -82,7 +87,7 @@ namespace FMBot.Bot.Services
         // Album images
         public async Task<LastImageSet> GetAlbumImagesAsync(string artistName, string albumName)
         {
-            var album = await this.LastFMClient.Album.GetInfoAsync(artistName, albumName);
+            var album = await this._lastFMClient.Album.GetInfoAsync(artistName, albumName);
             GlobalVars.LastFMApiCalls++;
 
             return album?.Content?.Images;
@@ -92,7 +97,7 @@ namespace FMBot.Bot.Services
         public async Task<PageResponse<LastAlbum>> GetTopAlbumsAsync(string lastFMUserName, LastStatsTimeSpan timespan,
             int count = 2)
         {
-            var topAlbums = await this.LastFMClient.User.GetTopAlbums(lastFMUserName, timespan, 1, count);
+            var topAlbums = await this._lastFMClient.User.GetTopAlbums(lastFMUserName, timespan, 1, count);
             GlobalVars.LastFMApiCalls++;
 
             return topAlbums;
@@ -101,7 +106,7 @@ namespace FMBot.Bot.Services
         // Artist info
         public async Task<LastResponse<LastArtist>> GetArtistInfoAsync(string artistName)
         {
-            var artistInfo = await this.LastFMClient.Artist.GetInfoAsync(artistName);
+            var artistInfo = await this._lastFMClient.Artist.GetInfoAsync(artistName);
             GlobalVars.LastFMApiCalls++;
 
             return artistInfo;
@@ -110,9 +115,9 @@ namespace FMBot.Bot.Services
         // Artist info
         public async Task<LastImageSet> GetArtistImageAsync(string artistName)
         {
-            var artist = await this.LastFMClient.Artist.GetInfoAsync(artistName);
+            var artist = await this._lastFMClient.Artist.GetInfoAsync(artistName);
 
-            var artist2 = await this.LastFMClient.Artist.GetInfoByMbidAsync(artist.Content.Mbid);
+            var artist2 = await this._lastFMClient.Artist.GetInfoByMbidAsync(artist.Content.Mbid);
             GlobalVars.LastFMApiCalls++;
 
             return artist2?.Content?.MainImage;
@@ -122,7 +127,7 @@ namespace FMBot.Bot.Services
         public async Task<PageResponse<LastArtist>> GetTopArtistsAsync(string lastFMUserName,
             LastStatsTimeSpan timespan, int count = 2)
         {
-            var topArtists = await this.LastFMClient.User.GetTopArtists(lastFMUserName, timespan, 1, count);
+            var topArtists = await this._lastFMClient.User.GetTopArtists(lastFMUserName, timespan, 1, count);
             GlobalVars.LastFMApiCalls++;
 
             return topArtists;
@@ -131,7 +136,7 @@ namespace FMBot.Bot.Services
         // Check if lastfm user exists
         public async Task<bool> LastFMUserExistsAsync(string lastFMUserName)
         {
-            var lastFMUser = await this.LastFMClient.User.GetInfoAsync(lastFMUserName);
+            var lastFMUser = await this._lastFMClient.User.GetInfoAsync(lastFMUserName);
             GlobalVars.LastFMApiCalls++;
 
             return lastFMUser.Success;
