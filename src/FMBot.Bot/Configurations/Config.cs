@@ -25,9 +25,6 @@ namespace FMBot.Bot.Configurations
         [JsonProperty("featuredchannel")]
         public string FeaturedChannel { get; private set; }
 
-        [JsonProperty("botowner")]
-        public string BotOwner { get; private set; }
-
         [JsonProperty("timerinit")]
         public string TimerInit { get; set; }
 
