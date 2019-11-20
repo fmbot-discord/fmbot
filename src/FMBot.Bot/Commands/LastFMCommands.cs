@@ -474,34 +474,32 @@ namespace FMBot.Bot.Commands
 
                 await SendChartMessage(chart);
 
-                // Adding extra infobox
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-
-                this._embed.WithColor(Constants.LastFMColorRed);
-                this._embed.WithAuthor(this._embedAuthor);
-                var URI = Constants.LastFMUserUrl + lastFMUserName;
-                this._embed.WithUrl(URI);
-
                 string chartDescription;
+                string datePreset;
                 if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
                 {
                     chartDescription = chartSize + " Weekly Chart";
+                    datePreset = "LAST_7_DAYS";
                 }
                 else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
                 {
                     chartDescription = chartSize + " Monthly Chart";
+                    datePreset = "LAST_30_DAYS";
                 }
                 else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
                 {
                     chartDescription = chartSize + " Yearly Chart";
+                    datePreset = "LAST_365_DAYS";
                 }
                 else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at") || time.Equals("a"))
                 {
                     chartDescription = chartSize + " Overall Chart";
+                    datePreset = "ALL";
                 }
                 else
                 {
                     chartDescription = chartSize + " Chart";
+                    datePreset = "LAST_7_DAYS";
                 }
 
                 if (self)
@@ -515,6 +513,11 @@ namespace FMBot.Bot.Commands
                         $"{chartDescription} for {lastFMUserName}, requested by {await this._userService.GetUserTitleAsync(this.Context)}");
                 }
 
+                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+                this._embedAuthor.WithUrl(
+                    $"{Constants.LastFMUserUrl}{lastFMUserName}/library/albums?date_preset={datePreset}");
+
+                this._embed.WithAuthor(this._embedAuthor);
                 var userInfo = await this._lastFmService.GetUserInfoAsync(lastFMUserName);
 
                 var playCount = userInfo.Content.Playcount;
