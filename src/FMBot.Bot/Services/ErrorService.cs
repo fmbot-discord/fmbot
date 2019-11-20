@@ -27,7 +27,8 @@ namespace FMBot.Bot.Services
             switch (apiResponse)
             {
                 case LastResponseStatus.Failure:
-                    embed.WithDescription("Last.FM has issues and/or is down. Please try again later.");
+                    embed.WithDescription("Can't retrieve scrobbles because Last.FM is having issues. Please try again later. \n" +
+                                          "Please note that .fmbot isn't affiliated with Last.FM.");
                     break;
                 default:
                     embed.WithDescription(
@@ -36,7 +37,7 @@ namespace FMBot.Bot.Services
             }
 
             embed.WithColor(Constants.WarningColorOrange);
-            logger.LogError("No scrobbles found for user", context.Message.Content, context.User.Username, context.Guild?.Name, context.Guild?.Id);
+            logger.LogError($"No scrobbles found for user, error code {apiResponse}", context.Message.Content, context.User.Username, context.Guild?.Name, context.Guild?.Id);
         }
     }
 }
