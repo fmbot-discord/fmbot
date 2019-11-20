@@ -45,7 +45,7 @@ namespace FMBot.Bot.Services
 
         public static string TrackToLinkedString(LastTrack track)
         {
-            if (track.Name.IndexOfAny(new[] { '(', ')'}) >= 0)
+            if (track.Name.IndexOfAny(new[] { '(', ')' }) >= 0)
             {
                 return TrackToString(track);
             }
@@ -234,11 +234,26 @@ namespace FMBot.Bot.Services
 
                     if (chart.titles)
                     {
-                        var text = Graphics.FromImage(chartImage);
-                        text.DrawColorString(chartImage, album.ArtistName, new Font("Arial", 8.0f, FontStyle.Bold),
-                            new PointF(2.0f, 2.0f));
-                        text.DrawColorString(chartImage, album.Name, new Font("Arial", 8.0f, FontStyle.Bold),
-                            new PointF(2.0f, 12.0f));
+                        try
+                        {
+                            using Graphics graphics = Graphics.FromImage(chartImage);
+
+                            graphics.DrawColorString(
+                                chartImage,
+                                album.ArtistName,
+                                new Font("Arial", 8.0f, FontStyle.Bold),
+                                new PointF(2.0f, 2.0f));
+
+                            graphics.DrawColorString(
+                                chartImage,
+                                album.Name,
+                                new Font("Arial", 8.0f, FontStyle.Bold),
+                                new PointF(2.0f, 12.0f));
+                        }
+                        catch (Exception e)
+                        {
+                            // TODO: Find out why this bugs on certain album images (rare)
+                        }
                     }
 
                     chart.images.Add(new ChartImage(chartImage, chart.albums.IndexOf(album)));
@@ -250,13 +265,7 @@ namespace FMBot.Bot.Services
                     GlobalVars.splitBitmapList(chart.images.OrderBy(o => o.Index).Select(s => s.Image).ToList(),
                         chart.rows);
 
-                var bitmapList = new List<Bitmap>();
-                foreach (var list in imageList.ToArray())
-                {
-                    //combine them into one image
-                    var stitchedRow = GlobalVars.Combine(list);
-                    bitmapList.Add(stitchedRow);
-                }
+                var bitmapList = imageList.ToArray().Select(list => GlobalVars.Combine(list)).ToList();
 
                 lock (GlobalVars.charts.SyncRoot)
                 {
