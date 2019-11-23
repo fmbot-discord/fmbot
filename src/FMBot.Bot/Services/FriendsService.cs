@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -9,44 +9,50 @@ namespace FMBot.Bot.Services
 {
     public class FriendsService
     {
-        private readonly FMBotDbContext db = new FMBotDbContext();
+        private readonly FMBotDbContext _db = new FMBotDbContext();
 
-        public async Task<List<Friend>> GetFMFriendsAsync(IUser discordUser)
+        public async Task<IReadOnlyList<string>> GetFMFriendsAsync(IUser discordUser)
         {
-            string id = discordUser.Id.ToString();
+            var id = discordUser.Id.ToString();
 
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == id);
+            var user = await this._db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == id);
 
-            List<Friend> friends = await db.Friends.Where(w => w.UserID == user.UserID).ToListAsync();
+            var dbFriends = await this._db.Friends
+                .Include(i => i.User)
+                .Where(w => w.UserID == user.UserID).ToListAsync();
+
+            var friends = dbFriends.Select(
+                    s => s.LastFMUserName ?? s.User.UserNameLastFM)
+                .ToList();
 
             return friends;
         }
 
         public async Task AddLastFMFriendAsync(string discordUserID, string lastfmusername)
         {
-            User user = db.Users.FirstOrDefault(f => f.DiscordUserID == discordUserID);
+            var user = this._db.Users.FirstOrDefault(f => f.DiscordUserID == discordUserID);
 
             if (user == null)
             {
-                User newUser = new User
+                var newUser = new User
                 {
                     DiscordUserID = discordUserID,
                     UserType = UserType.User
                 };
 
-                db.Users.Add(newUser);
+                this._db.Users.Add(newUser);
                 user = newUser;
             }
 
-            Friend friend = new Friend
+            var friend = new Friend
             {
                 User = user,
-                LastFMUserName = lastfmusername,
+                LastFMUserName = lastfmusername
             };
 
-            db.Friends.Add(friend);
+            this._db.Friends.Add(friend);
 
-            db.SaveChanges();
+            this._db.SaveChanges();
 
             await Task.CompletedTask;
         }
@@ -54,23 +60,23 @@ namespace FMBot.Bot.Services
 
         public async Task RemoveLastFMFriendAsync(int userID, string lastfmusername)
         {
-            Friend friend = db.Friends.FirstOrDefault(f => f.UserID == userID && f.LastFMUserName == lastfmusername);
+            var friend = this._db.Friends.FirstOrDefault(f => f.UserID == userID && f.LastFMUserName == lastfmusername);
 
-            db.Friends.Remove(friend);
+            this._db.Friends.Remove(friend);
 
-            db.SaveChanges();
+            this._db.SaveChanges();
 
             await Task.CompletedTask;
         }
 
         public async Task RemoveAllLastFMFriendsAsync(int userID)
         {
-            List<Friend> friends = db.Friends.Where(f => f.UserID == userID || f.FriendUserID == userID).ToList();
+            var friends = this._db.Friends.Where(f => f.UserID == userID || f.FriendUserID == userID).ToList();
 
             if (friends.Count > 0)
             {
-                db.Friends.RemoveRange(friends);
-                db.SaveChanges();
+                this._db.Friends.RemoveRange(friends);
+                this._db.SaveChanges();
             }
 
             await Task.CompletedTask;
@@ -79,22 +85,22 @@ namespace FMBot.Bot.Services
 
         public async Task AddDiscordFriendAsync(string discordUserID, string friendDiscordUserID)
         {
-            User user = await db.Users
+            var user = await this._db.Users
                 .FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
 
             if (user == null)
             {
-                User newUser = new User
+                var newUser = new User
                 {
                     DiscordUserID = discordUserID,
                     UserType = UserType.User
                 };
 
-                db.Users.Add(newUser);
+                this._db.Users.Add(newUser);
                 user = newUser;
             }
 
-            User friendUser = await db.Users
+            var friendUser = await this._db.Users
                 .FirstOrDefaultAsync(f => f.DiscordUserID == friendDiscordUserID);
 
             if (friendUser == null)
@@ -102,24 +108,23 @@ namespace FMBot.Bot.Services
                 return;
             }
 
-            if (await db.Friends.FirstOrDefaultAsync(f => f.UserID == user.UserID && f.LastFMUserName == friendUser.UserNameLastFM) != null)
+            if (await this._db.Friends.FirstOrDefaultAsync(f =>
+                    f.UserID == user.UserID && f.LastFMUserName == friendUser.UserNameLastFM) != null)
             {
                 return;
             }
 
-            Friend friend = new Friend
+            var friend = new Friend
             {
                 User = user,
                 FriendUser = friendUser
             };
 
-            db.Friends.Add(friend);
+            this._db.Friends.Add(friend);
 
-            db.SaveChanges();
+            this._db.SaveChanges();
 
             await Task.CompletedTask;
         }
-
-
     }
 }
