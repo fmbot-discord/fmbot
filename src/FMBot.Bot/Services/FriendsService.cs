@@ -18,11 +18,11 @@ namespace FMBot.Bot.Services
             var user = await this._db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == id);
 
             var dbFriends = await this._db.Friends
-                .Include(i => i.User)
+                .Include(i => i.FriendUser)
                 .Where(w => w.UserID == user.UserID).ToListAsync();
 
             var friends = dbFriends.Select(
-                    s => s.LastFMUserName ?? s.User.UserNameLastFM)
+                    s => s.LastFMUserName ?? s.FriendUser.UserNameLastFM)
                 .ToList();
 
             return friends;
