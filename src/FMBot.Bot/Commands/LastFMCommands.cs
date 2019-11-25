@@ -613,7 +613,7 @@ namespace FMBot.Bot.Commands
                 this._embed.WithAuthor(this._embedAuthor);
 
                 var fmRecentText = "";
-                for (var i = 0; i < tracks.Count(); i++)
+                for (var i = 0; i < tracks.Content.Count; i++)
                 {
                     var track = tracks.Content[i];
 
@@ -627,7 +627,7 @@ namespace FMBot.Bot.Commands
                         }
                     }
 
-                    fmRecentText += $"{i + 1}. {LastFMService.TrackToLinkedString(track)}\n";
+                    fmRecentText += $"`{i + 1}` {LastFMService.TrackToLinkedString(track)}\n";
                 }
 
                 this._embed.WithDescription(fmRecentText);
