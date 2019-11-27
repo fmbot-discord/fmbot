@@ -45,7 +45,7 @@ namespace FMBot.Bot.Services
 
         public static string TrackToLinkedString(LastTrack track)
         {
-            if (track.Name.IndexOfAny(new[] { '(', ')' }) >= 0)
+            if (track.Url.ToString().IndexOfAny(new[] { '(', ')' }) >= 0)
             {
                 return TrackToString(track);
             }
