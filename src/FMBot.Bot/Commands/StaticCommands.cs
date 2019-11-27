@@ -97,6 +97,7 @@ namespace FMBot.Bot.Commands
 
             var startTime = DateTime.Now - currentProcess.StartTime;
             var currentMemoryUsage = currentProcess.WorkingSet64;
+            var peakMemoryUsage = currentProcess.PeakWorkingSet64;
 
             var client = this.Context.Client as DiscordShardedClient;
 
@@ -112,7 +113,7 @@ namespace FMBot.Bot.Commands
             this._embed.AddField("Servercount: ", client.Guilds.Count, true);
             this._embed.AddField("Commands used: ", fixedCmdGlobalCount, true);
             this._embed.AddField("Last.FM API calls: ", GlobalVars.LastFMApiCalls, true);
-            this._embed.AddField("Memory usage: ", currentMemoryUsage.ToFormattedByteString(), true);
+            this._embed.AddField("Memory usage: ", $"{currentMemoryUsage.ToFormattedByteString()} (Peak: {peakMemoryUsage.ToFormattedByteString()})", true);
             this._embed.AddField("Average latency: ", Math.Round(client.Shards.Select(s => s.Latency).Average(), 2) + "ms", true);
             this._embed.AddField("Shards: ", client.Shards.Count, true);
             this._embed.AddField("Bot version: ", assemblyVersion, true);
