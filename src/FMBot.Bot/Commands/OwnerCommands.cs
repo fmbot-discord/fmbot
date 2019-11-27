@@ -100,7 +100,7 @@ namespace FMBot.Bot.Commands
 
                     foreach (DriveInfo drive in drives.Where(w => w.IsReady))
                     {
-                        builder.AddField(drive.Name + " - " + drive.VolumeLabel + ":", _adminService.FormatBytes(drive.AvailableFreeSpace) + " free of " + _adminService.FormatBytes(drive.TotalSize));
+                        builder.AddField(drive.Name + " - " + drive.VolumeLabel + ":", drive.AvailableFreeSpace.ToFormattedByteString() + " free of " + drive.TotalSize.ToFormattedByteString());
                     }
 
                     await Context.Channel.SendMessageAsync("", false, builder.Build());

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -16,12 +15,10 @@ namespace FMBot.Bot.Services
         // User settings
         public async Task<User> GetUserSettingsAsync(IUser discordUser)
         {
-            string discordUserID = discordUser.Id.ToString();
+            var discordUserID = discordUser.Id.ToString();
 
-            return await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
+            return await this.db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
         }
-
-
 
         // Discord nickname/username
         public async Task<string> GetNameAsync(ICommandContext context)
@@ -31,7 +28,7 @@ namespace FMBot.Bot.Services
                 return context.User.Username;
             }
 
-            IGuildUser guildUser = await context.Guild.GetUserAsync(context.User.Id);
+            var guildUser = await context.Guild.GetUserAsync(context.User.Id);
 
             return guildUser.Nickname ?? context.User.Username;
         }
@@ -39,9 +36,9 @@ namespace FMBot.Bot.Services
         // Rank
         public async Task<UserType> GetRankAsync(IUser discordUser)
         {
-            string discordUserID = discordUser.Id.ToString();
+            var discordUserID = discordUser.Id.ToString();
 
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
+            var user = await this.db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
 
             if (user == null)
             {
@@ -54,9 +51,9 @@ namespace FMBot.Bot.Services
         // Featured
         public async Task<bool?> GetFeaturedAsync(IUser discordUser)
         {
-            string discordUserID = discordUser.Id.ToString();
+            var discordUserID = discordUser.Id.ToString();
 
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
+            var user = await this.db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
 
             if (user == null)
             {
@@ -69,31 +66,29 @@ namespace FMBot.Bot.Services
         // Featured
         public async Task<User> GetFeaturedUserAsync()
         {
-            return await db.Users.FirstOrDefaultAsync(f => f.Featured == true);
+            return await this.db.Users.FirstOrDefaultAsync(f => f.Featured == true);
         }
-
-
 
         // Random user
         public async Task<string> GetRandomLastFMUserAsync()
         {
-            User featuredUser = await db.Users.FirstOrDefaultAsync(f => f.Featured == true);
+            var featuredUser = await this.db.Users.FirstOrDefaultAsync(f => f.Featured == true);
             if (featuredUser != null)
             {
                 featuredUser.Featured = false;
 
-                db.Entry(featuredUser).State = EntityState.Modified;
+                this.db.Entry(featuredUser).State = EntityState.Modified;
             }
 
-            List<User> users = db.Users.Where(w => w.Blacklisted != true).ToList();
+            var users = this.db.Users.Where(w => w.Blacklisted != true).ToList();
 
-            Random rand = new Random();
-            User user = users[rand.Next(users.Count)];
+            var rand = new Random();
+            var user = users[rand.Next(users.Count)];
 
             user.Featured = true;
 
-            db.Entry(user).State = EntityState.Modified;
-            db.SaveChanges();
+            this.db.Entry(user).State = EntityState.Modified;
+            this.db.SaveChanges();
 
             return user.UserNameLastFM;
         }
@@ -102,9 +97,9 @@ namespace FMBot.Bot.Services
         // Server Blacklisting
         public async Task<bool> GetBlacklistedAsync(IUser discordUser)
         {
-            string discordUserID = discordUser.Id.ToString();
+            var discordUserID = discordUser.Id.ToString();
 
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
+            var user = await this.db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
 
             if (user == null)
             {
@@ -117,24 +112,27 @@ namespace FMBot.Bot.Services
         // UserTitle
         public async Task<string> GetUserTitleAsync(ICommandContext context)
         {
-            string name = await GetNameAsync(context);
-            UserType rank = await GetRankAsync(context.User);
-            bool? featured = await GetFeaturedAsync(context.User);
+            var name = await GetNameAsync(context);
+            var rank = await GetRankAsync(context.User);
+            var featured = await GetFeaturedAsync(context.User);
 
-            string title = name;
+            var title = name;
 
             if (featured == true)
             {
                 title = name + " - Featured";
             }
+
             if (rank == UserType.Owner)
             {
                 title += " 👑";
             }
+
             if (rank == UserType.Admin)
             {
                 title += " 🛡️";
             }
+
             if (rank == UserType.Contributor)
             {
                 title += " 🔥";
@@ -146,35 +144,34 @@ namespace FMBot.Bot.Services
         // Set LastFM Name
         public void SetLastFM(IUser discordUser, string lastFMName, ChartType chartType)
         {
-            string discordUserID = discordUser.Id.ToString();
+            var discordUserID = discordUser.Id.ToString();
 
-            User user = db.Users.FirstOrDefault(f => f.DiscordUserID == discordUserID);
+            var user = this.db.Users.FirstOrDefault(f => f.DiscordUserID == discordUserID);
 
             if (user == null)
             {
-                User newUser = new User
+                var newUser = new User
                 {
                     DiscordUserID = discordUserID,
                     UserType = UserType.User,
                     UserNameLastFM = lastFMName,
                     TitlesEnabled = true,
                     ChartTimePeriod = ChartTimePeriod.Monthly,
-                    ChartType = chartType,
-
+                    ChartType = chartType
                 };
 
-                db.Users.Add(newUser);
+                this.db.Users.Add(newUser);
 
-                db.SaveChanges();
+                this.db.SaveChanges();
             }
             else
             {
                 user.UserNameLastFM = lastFMName;
                 user.ChartType = chartType;
 
-                db.Entry(user).State = EntityState.Modified;
+                this.db.Entry(user).State = EntityState.Modified;
 
-                db.SaveChanges();
+                this.db.SaveChanges();
             }
         }
 
@@ -183,25 +180,24 @@ namespace FMBot.Bot.Services
         {
             user.LastGeneratedChartDateTimeUtc = DateTime.Now;
 
-            db.Entry(user).State = EntityState.Modified;
+            this.db.Entry(user).State = EntityState.Modified;
 
-            await db.SaveChangesAsync();
+            await this.db.SaveChangesAsync();
         }
 
         // Remove user
         public async Task DeleteUser(int userID)
         {
-            User user = await db.Users.FirstOrDefaultAsync(f => f.UserID == userID);
+            var user = await this.db.Users.FirstOrDefaultAsync(f => f.UserID == userID);
 
-            db.Users.Remove(user);
+            this.db.Users.Remove(user);
 
-            await db.SaveChangesAsync();
+            await this.db.SaveChangesAsync();
         }
 
-        // Usercount
-        public async Task<int> GetUserCountAsync()
+        public async Task<int> GetTotalUserCountAsync()
         {
-            return await db.Users.CountAsync();
+            return await this.db.Users.CountAsync();
         }
     }
 }

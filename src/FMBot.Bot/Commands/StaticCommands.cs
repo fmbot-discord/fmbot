@@ -22,6 +22,7 @@ namespace FMBot.Bot.Commands
 
         private readonly CommandService _service;
         private readonly UserService _userService = new UserService();
+        private readonly FriendsService _friendService = new FriendsService();
 
         public StaticCommands(CommandService service)
         {
@@ -92,11 +93,12 @@ namespace FMBot.Bot.Commands
 
             this._embed.WithAuthor(this._embedAuthor);
 
-            var startTime = DateTime.Now - Process.GetCurrentProcess().StartTime;
+            var currentProcess = Process.GetCurrentProcess();
+
+            var startTime = DateTime.Now - currentProcess.StartTime;
+            var currentMemoryUsage = currentProcess.WorkingSet64;
 
             var client = this.Context.Client as DiscordShardedClient;
-
-            var socketSelfUser = this.Context.Client.CurrentUser as SocketSelfUser;
 
             var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
@@ -104,13 +106,14 @@ namespace FMBot.Bot.Commands
 
             this._embed.AddField("Bot Uptime: ", startTime.ToReadableString(), true);
             this._embed.AddField("Server Uptime: ", GlobalVars.SystemUpTime().ToReadableString(), true);
-            this._embed.AddField("Usercount: ", (await this._userService.GetUserCountAsync()).ToString(), true);
+            this._embed.AddField("Usercount: ", (await this._userService.GetTotalUserCountAsync()).ToString(), true);
+            this._embed.AddField("Friendcount: ", (await this._friendService.GetTotalFriendCountAsync()).ToString(), true);
             this._embed.AddField("Discord usercount: ", client.Guilds.Select(s => s.MemberCount).Sum(), true);
             this._embed.AddField("Servercount: ", client.Guilds.Count, true);
             this._embed.AddField("Commands used: ", fixedCmdGlobalCount, true);
             this._embed.AddField("Last.FM API calls: ", GlobalVars.LastFMApiCalls, true);
-            this._embed.AddField("Bot status: ", socketSelfUser.Status.ToString(), true);
-            this._embed.AddField("Average latency: ", client.Shards.Select(s => s.Latency).Average() + "ms", true);
+            this._embed.AddField("Memory usage: ", currentMemoryUsage.ToFormattedByteString(), true);
+            this._embed.AddField("Average latency: ", Math.Round(client.Shards.Select(s => s.Latency).Average(), 2) + "ms", true);
             this._embed.AddField("Shards: ", client.Shards.Count, true);
             this._embed.AddField("Bot version: ", assemblyVersion, true);
 

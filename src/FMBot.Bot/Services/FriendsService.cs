@@ -126,5 +126,10 @@ namespace FMBot.Bot.Services
 
             await Task.CompletedTask;
         }
+
+        public async Task<int> GetTotalFriendCountAsync()
+        {
+            return await this._db.Friends.CountAsync();
+        }
     }
 }
