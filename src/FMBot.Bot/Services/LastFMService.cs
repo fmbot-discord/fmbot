@@ -207,11 +207,20 @@ namespace FMBot.Bot.Services
                         }
                         else
                         {
-                            var request = WebRequest.Create(url);
-                            using var response = await request.GetResponseAsync();
-                            await using var responseStream = response.GetResponseStream();
+                            Bitmap bitmap;
+                            try
+                            {
+                                var request = WebRequest.Create(url);
+                                using var response = await request.GetResponseAsync();
+                                await using var responseStream = response.GetResponseStream();
 
-                            var bitmap = new Bitmap(responseStream);
+                                bitmap = new Bitmap(responseStream);
+                            }
+                            catch
+                            {
+                                bitmap = new Bitmap(GlobalVars.ImageFolder + "loading-error.png");
+                            }
+
                             chartImage = bitmap;
 
                             await using var memoryStream = new MemoryStream();
