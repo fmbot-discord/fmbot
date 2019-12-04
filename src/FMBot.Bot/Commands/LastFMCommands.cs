@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -11,7 +10,6 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Data.Entities;
-using IF.Lastfm.Core.Api.Enums;
 using static FMBot.Bot.FMBotUtil;
 using static FMBot.Bot.Models.LastFMModels;
 
@@ -25,6 +23,7 @@ namespace FMBot.Bot.Commands
         private readonly FriendsService _friendsService = new FriendsService();
         private readonly GuildService _guildService = new GuildService();
         private readonly LastFMService _lastFmService = new LastFMService();
+        private readonly ChartService _chartService = new ChartService();
         private readonly Logger.Logger _logger;
         private readonly TimerService _timer;
 
@@ -45,7 +44,7 @@ namespace FMBot.Bot.Commands
 
         private async Task SendChartMessage(FMBotChart chart)
         {
-            await this._lastFmService.GenerateChartAsync(chart);
+            await this._chartService.GenerateChartAsync(chart);
 
             // Send chart memory stream, remove when finished
             using (var memory = await GlobalVars.GetChartStreamAsync(chart.DiscordUser.Id))
