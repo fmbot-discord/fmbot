@@ -7,11 +7,11 @@ using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Data.Entities;
 using static FMBot.Bot.FMBotUtil;
-using static FMBot.Bot.Models.LastFMModels;
 
 namespace FMBot.Bot.Commands
 {
@@ -42,12 +42,12 @@ namespace FMBot.Bot.Commands
             this._embedFooter = new EmbedFooterBuilder();
         }
 
-        private async Task SendChartMessage(FMBotChart chart)
+        private async Task SendChartMessage(ChartSettings chartSettings)
         {
-            await this._chartService.GenerateChartAsync(chart);
+            await this._chartService.GenerateChartAsync(chartSettings);
 
             // Send chart memory stream, remove when finished
-            using (var memory = await GlobalVars.GetChartStreamAsync(chart.DiscordUser.Id))
+            using (var memory = await GlobalVars.GetChartStreamAsync(chartSettings.DiscordUser.Id))
             {
                 await this.Context.Channel.SendFileAsync(memory, "chart.png");
             }
@@ -55,7 +55,7 @@ namespace FMBot.Bot.Commands
             lock (GlobalVars.charts.SyncRoot)
             {
                 // @TODO: remove only once in a while to keep it cached
-                GlobalVars.charts.Remove(GlobalVars.GetChartFileName(chart.DiscordUser.Id));
+                GlobalVars.charts.Remove(GlobalVars.GetChartFileName(chartSettings.DiscordUser.Id));
             }
         }
 
@@ -338,12 +338,12 @@ namespace FMBot.Bot.Commands
         [Command("fmchart", RunMode = RunMode.Async)]
         [Summary("Generates a chart based on a user's parameters.")]
         [Alias("fmc")]
-        public async Task ChartAsync(string chartSize = "3x3", string time = "weekly", string titleSetting = null,
-            string user = null)
+        public async Task ChartAsync(string chartSize = "3x3", string time = "weekly", params string[] otherSettings)
         {
             if (chartSize == "help")
             {
-                await ReplyAsync(".fmchart '2x2-8x8' 'weekly/monthly/yearly/overall' 'notitles/titles' 'lastfm username/discord user'");
+                await ReplyAsync(".fmchart '2x2-8x8' 'weekly/monthly/yearly/overall' \n" +
+                                 "Optional extra settings: 'notitles', 'nt', 'skipemptyimages', 's'");
                 return;
             }
 
@@ -372,81 +372,82 @@ namespace FMBot.Bot.Commands
             // @TODO: change to intparse or the likes
             try
             {
-                int chartAlbums;
+                int albumCount;
                 int chartRows;
 
                 switch (chartSize)
                 {
                     case "2x2":
-                        chartAlbums = 4;
+                        albumCount = 4;
                         chartRows = 2;
                         break;
                     case "3x3":
-                        chartAlbums = 9;
+                        albumCount = 9;
                         chartRows = 3;
                         break;
                     case "4x4":
-                        chartAlbums = 16;
+                        albumCount = 16;
                         chartRows = 4;
                         break;
                     case "5x5":
-                        chartAlbums = 25;
+                        albumCount = 25;
                         chartRows = 5;
                         break;
                     case "6x6":
-                        chartAlbums = 36;
+                        albumCount = 36;
                         chartRows = 6;
                         break;
                     case "7x7":
-                        chartAlbums = 49;
+                        albumCount = 49;
                         chartRows = 7;
                         break;
                     case "8x8":
-                        chartAlbums = 64;
+                        albumCount = 64;
                         chartRows = 8;
                         break;
                     default:
-                        await ReplyAsync("Your chart's size isn't valid. Sizes supported: 3x3-8x8. \n" +
-                                         $"Example: `{ConfigData.Data.CommandPrefix}fmchart 5x5 monthly titles`. For more info, use `.fmchart help`");
+                        await ReplyAsync("Your chart's size isn't valid. Sizes supported: 2x2-8x8. \n" +
+                                         $"Example: `{ConfigData.Data.CommandPrefix}fmchart 5x5 monthly notitles skipemptyimages`. For more info, use `.fmchart help`");
                         return;
                 }
 
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                if (user != null)
-                {
-                    var alternativeLastFmUserName = await FindUser(user);
-                    if (!string.IsNullOrEmpty(alternativeLastFmUserName))
-                    {
-                        lastFMUserName = alternativeLastFmUserName;
-                        self = false;
-                    }
-                }
-
                 // Generating image
                 var timespan = this._lastFmService.StringToLastStatsTimeSpan(time);
-                var albums = await this._lastFmService.GetTopAlbumsAsync(lastFMUserName, timespan, chartAlbums);
 
-                if (albums.Count() < chartAlbums)
+                var chartSettings = new ChartSettings(chartRows, 0, this.Context.User);
+
+                chartSettings = this._chartService.SetExtraSettings(chartSettings, otherSettings);
+                chartSettings.ImagesNeeded = albumCount;
+
+                var extraAlbums = 0;
+                if (chartSettings.SkipArtistsWithoutImage)
                 {
-                    await ReplyAsync(
-                        $"User hasn't listened to enough albums ({albums.Count()} of required {chartAlbums}) for a chart this size. " +
-                        "Please try a smaller chart or a bigger time period (weekly/monthly/yearly/overall)'.");
+                    extraAlbums = (chartRows * 2) + (chartRows > 5 ? 8 : 2);
+                }
+
+                albumCount += extraAlbums;
+
+                var albums = await this._lastFmService.GetTopAlbumsAsync(lastFMUserName, timespan, albumCount);
+
+                if (albums.Count() < albumCount)
+                {
+                    var reply =
+                        $"User hasn't listened to enough albums ({albums.Count()} of required {albumCount}) for a chart this size. " +
+                        "Please try a smaller chart or a bigger time period (weekly/monthly/yearly/overall)'.";
+
+                    if (chartSettings.SkipArtistsWithoutImage)
+                    {
+                        reply += "\n\n" +
+                                 $"Note that {extraAlbums} extra albums are required because you are skipping albums without an image.";
+                    }
+
+                    await ReplyAsync(reply);
                     return;
                 }
 
-                var chart = new FMBotChart
-                {
-                    albums = albums,
-                    LastFMName = lastFMUserName,
-                    max = chartAlbums,
-                    rows = chartRows,
-                    images = new List<ChartImage>(),
-                    DiscordUser = this.Context.User,
-                    disclient = this.Context.Client as DiscordSocketClient,
-                    mode = 0,
-                    titles = titleSetting == null ? userSettings.TitlesEnabled ?? true : titleSetting == "titles"
-                };
+                chartSettings.Albums = albums;
 
                 var msg = this.Context.Message as SocketUserMessage;
                 if (StackCooldownTarget.Contains(this.Context.Message.Author))
@@ -471,7 +472,7 @@ namespace FMBot.Bot.Commands
 
                 await this._userService.ResetChartTimerAsync(userSettings);
 
-                await SendChartMessage(chart);
+                await SendChartMessage(chartSettings);
 
                 string chartDescription;
                 string datePreset;
@@ -522,6 +523,16 @@ namespace FMBot.Bot.Commands
                 var playCount = userInfo.Content.Playcount;
 
                 this._embedFooter.Text = $"{lastFMUserName} has {playCount} scrobbles.";
+
+                if (chartSettings.SkipArtistsWithoutImage)
+                {
+                    this._embed.AddField("Skip albums without images?", "Enabled");
+                }
+                if (!chartSettings.TitlesEnabled)
+                {
+                    this._embed.AddField("Titles enabled?", "False");
+                }
+
                 this._embed.WithFooter(this._embedFooter);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());

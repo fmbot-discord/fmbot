@@ -27,5 +27,16 @@ namespace FMBot.Bot.Extensions
             var matchesPattern = Regex.Match(str, "(@everyone|@here|<@)");
             return matchesPattern.Success;
         }
+
+        public static bool ContainsAny(this string haystack, params string[] needles)
+        {
+            foreach (string needle in needles)
+            {
+                if (haystack.Contains(needle))
+                    return true;
+            }
+
+            return false;
+        }
     }
 }

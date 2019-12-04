@@ -18,7 +18,7 @@ namespace FMBot.Bot.Services
     {
         private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
 
-        public async Task GenerateChartAsync(LastFMModels.FMBotChart chart)
+        public async Task GenerateChartAsync(ChartSettings chart)
         {
             try
             {
@@ -28,7 +28,7 @@ namespace FMBot.Bot.Services
                 }
 
                 // Album mode
-                await chart.albums.ParallelForEachAsync(async album =>
+                await chart.Albums.ParallelForEachAsync(async album =>
                 {
                     var albumInfo = await this._lastFMClient.Album.GetInfoAsync(album.ArtistName, album.Name);
                     FMBotUtil.GlobalVars.LastFMApiCalls++;
@@ -36,6 +36,7 @@ namespace FMBot.Bot.Services
                     var albumImages = albumInfo?.Content?.Images;
 
                     Bitmap chartImage;
+                    bool validImage = true;
 
                     if (albumImages?.Large != null)
                     {
@@ -48,11 +49,21 @@ namespace FMBot.Bot.Services
                         }
                         else
                         {
-                            var request = WebRequest.Create(url);
-                            using var response = await request.GetResponseAsync();
-                            await using var responseStream = response.GetResponseStream();
+                            Bitmap bitmap;
+                            try
+                            {
+                                var request = WebRequest.Create(url);
+                                using var response = await request.GetResponseAsync();
+                                await using var responseStream = response.GetResponseStream();
 
-                            var bitmap = new Bitmap(responseStream);
+                                bitmap = new Bitmap(responseStream);
+                            }
+                            catch
+                            {
+                                bitmap = new Bitmap(FMBotUtil.GlobalVars.ImageFolder + "loading-error.png");
+                                validImage = false;
+                            }
+
                             chartImage = bitmap;
 
                             await using var memoryStream = new MemoryStream();
@@ -71,9 +82,10 @@ namespace FMBot.Bot.Services
                     else
                     {
                         chartImage = new Bitmap(FMBotUtil.GlobalVars.ImageFolder + "unknown.png");
+                        validImage = false;
                     }
 
-                    if (chart.titles)
+                    if (chart.TitlesEnabled)
                     {
                         try
                         {
@@ -97,16 +109,22 @@ namespace FMBot.Bot.Services
                         }
                     }
 
-                    chart.images.Add(new LastFMModels.ChartImage(chartImage, chart.albums.IndexOf(album)));
+                    chart.ChartImages.Add(new ChartImage(chartImage, chart.Albums.IndexOf(album), validImage));
                 });
             }
             finally
             {
                 var imageList =
-                    FMBotUtil.GlobalVars.splitBitmapList(chart.images.OrderBy(o => o.Index).Select(s => s.Image).ToList(),
-                        chart.rows);
+                    FMBotUtil.GlobalVars.splitBitmapList(
+                        chart.ChartImages
+                            .OrderBy(o => o.Index)
+                            .Where(w => !chart.SkipArtistsWithoutImage || w.ValidImage)
+                            .Take(chart.ImagesNeeded)
+                            .Select(s => s.Image)
+                            .ToList(),
+                        chart.Height);
 
-                var bitmapList = imageList.ToArray().Select(list => FMBotUtil.GlobalVars.Combine(list)).ToList();
+                var bitmapList = imageList.Select(list => FMBotUtil.GlobalVars.Combine(list)).ToList();
 
                 lock (FMBotUtil.GlobalVars.charts.SyncRoot)
                 {
@@ -119,6 +137,23 @@ namespace FMBot.Bot.Services
                     image.Dispose();
                 }
             }
+        }
+
+        public ChartSettings SetExtraSettings(ChartSettings currentChartSettings, string[] extraOptions)
+        {
+            var chartSettings = currentChartSettings;
+
+            if (extraOptions.Contains("notitles") || extraOptions.Contains("nt"))
+            {
+                chartSettings.TitlesEnabled = false;
+            }
+
+            if (extraOptions.Contains("skipemptyimages") || extraOptions.Contains("skip") || extraOptions.Contains("s"))
+            {
+                chartSettings.SkipArtistsWithoutImage = true;
+            }
+
+            return chartSettings;
         }
     }
 }

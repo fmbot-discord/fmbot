@@ -1,52 +1,15 @@
-using Discord;
-using Discord.WebSocket;
-using System.Collections.Generic;
-using System.Drawing;
-using IF.Lastfm.Core.Api.Helpers;
-using IF.Lastfm.Core.Objects;
-
 namespace FMBot.Bot.Models
 {
-    public class LastFMModels
+    public class Album
     {
-        public class FMBotChart
+        public Album(string artist, string album)
         {
-            public PageResponse<LastAlbum> albums;
-            public string LastFMName;
-            public int max;
-            public int rows;
-            public List<ChartImage> images;
-            public IUser DiscordUser;
-            public DiscordSocketClient disclient;
-            public int mode;
-            public bool titles;
+            this.ArtistName = artist;
+            this.AlbumName = album;
         }
 
-        public class ChartImage
-        {
-            public ChartImage(Bitmap image, int indexOf)
-            {
-                this.Image = image;
-                this.Index = indexOf;
-            }
+        public string ArtistName { get; }
 
-            public Bitmap Image { get; }
-
-            public int Index { get;  }
-        }
-
-
-        public class Album
-        {
-            public Album(string artist, string album)
-            {
-                this.ArtistName = artist;
-                this.AlbumName = album;
-            }
-
-            public string ArtistName { get; }
-
-            public string AlbumName { get; }
-        }
+        public string AlbumName { get; }
     }
 }
