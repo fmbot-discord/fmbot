@@ -148,7 +148,11 @@ namespace FMBot.Bot.Services
                 chartSettings.TitlesEnabled = false;
             }
 
-            if (extraOptions.Contains("skipemptyimages") || extraOptions.Contains("skip") || extraOptions.Contains("s"))
+            if (extraOptions.Contains("skipemptyimages") ||
+                extraOptions.Contains("skipemptyalbums") ||
+                extraOptions.Contains("skipalbums") ||
+                extraOptions.Contains("skip") ||
+                extraOptions.Contains("s"))
             {
                 chartSettings.SkipArtistsWithoutImage = true;
             }
