@@ -65,8 +65,17 @@ namespace FMBot.Bot.Services
             return user;
         }
 
+        // Track info
+        public async Task<LastResponse<LastTrack>> GetTrackInfoAsync(string trackName, string artistName, string username = null)
+        {
+            var trackInfo = await this._lastFMClient.Track.GetInfoAsync(trackName, artistName, username);
+            GlobalVars.LastFMApiCalls++;
+
+            return trackInfo;
+        }
+
         // Album info
-        public async Task<LastResponse<LastAlbum>> GetAlbumInfoAsync(string artistName, string albumName)
+        public async Task<LastResponse<LastAlbum>> GetAlbumInfoAsync(string artistName, string albumName, string username = null)
         {
             var albumInfo = await this._lastFMClient.Album.GetInfoAsync(artistName, albumName);
             GlobalVars.LastFMApiCalls++;
@@ -94,7 +103,7 @@ namespace FMBot.Bot.Services
         }
 
         // Artist info
-        public async Task<LastResponse<LastArtist>> GetArtistInfoAsync(string artistName)
+        public async Task<LastResponse<LastArtist>> GetArtistInfoAsync(string artistName, string userName = null)
         {
             var artistInfo = await this._lastFMClient.Artist.GetInfoAsync(artistName);
             GlobalVars.LastFMApiCalls++;

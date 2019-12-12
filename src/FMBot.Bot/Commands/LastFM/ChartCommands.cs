@@ -11,20 +11,19 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using static FMBot.Bot.FMBotUtil;
 
-namespace FMBot.Bot.Commands
+namespace FMBot.Bot.Commands.LastFM
 {
     public class ChartCommands : ModuleBase
     {
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
+        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
+        private readonly ChartService _chartService = new ChartService();
         private readonly EmbedBuilder _embed;
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly GuildService _guildService = new GuildService();
         private readonly LastFMService _lastFmService = new LastFMService();
-        private readonly ChartService _chartService = new ChartService();
         private readonly Logger.Logger _logger;
-
-        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
-        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
 
         private readonly UserService _userService = new UserService();
 
@@ -143,7 +142,7 @@ namespace FMBot.Bot.Commands
                 var extraAlbums = 0;
                 if (chartSettings.SkipArtistsWithoutImage)
                 {
-                    extraAlbums = (chartRows * 2) + (chartRows > 5 ? 8 : 2);
+                    extraAlbums = chartRows * 2 + (chartRows > 5 ? 8 : 2);
                 }
 
                 albumCount += extraAlbums;
@@ -171,13 +170,18 @@ namespace FMBot.Bot.Commands
                 var msg = this.Context.Message as SocketUserMessage;
                 if (StackCooldownTarget.Contains(this.Context.Message.Author))
                 {
-                    if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(10) >= DateTimeOffset.Now)
+                    if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(10) >=
+                        DateTimeOffset.Now)
                     {
-                        var secondsLeft = (int)(StackCooldownTimer[StackCooldownTarget.IndexOf(Context.Message.Author as SocketGuildUser)].AddSeconds(11) - DateTimeOffset.Now).TotalSeconds;
+                        var secondsLeft =
+                            (int) (StackCooldownTimer[
+                                           StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
+                                       .AddSeconds(11) - DateTimeOffset.Now).TotalSeconds;
                         if (secondsLeft <= 7)
                         {
                             await ReplyAsync($"Please wait {secondsLeft} seconds before generating a chart again.");
                         }
+
                         return;
                     }
 
@@ -210,7 +214,8 @@ namespace FMBot.Bot.Commands
                     chartDescription = chartSize + " Yearly Chart";
                     datePreset = "LAST_365_DAYS";
                 }
-                else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at") || time.Equals("a"))
+                else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at") ||
+                         time.Equals("a"))
                 {
                     chartDescription = chartSize + " Overall Chart";
                     datePreset = "ALL";
@@ -247,6 +252,7 @@ namespace FMBot.Bot.Commands
                 {
                     this._embed.AddField("Skip albums without images?", "Enabled");
                 }
+
                 if (!chartSettings.TitlesEnabled)
                 {
                     this._embed.AddField("Titles enabled?", "False");
