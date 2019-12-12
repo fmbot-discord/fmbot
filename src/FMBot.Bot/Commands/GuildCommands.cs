@@ -28,7 +28,7 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            var serverUser = (IGuildUser) this.Context.Message.Author;
+            var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
@@ -75,7 +75,7 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            var serverUser = (IGuildUser) this.Context.Message.Author;
+            var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
@@ -84,22 +84,32 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            var serverUsers = await this._guildService.FindAllUsersFromGuildAsync(this.Context);
-
-            if (serverUsers.Count == 0)
+            try
             {
-                await ReplyAsync("No members found on this server.");
-                return;
+                var serverUsers = await this._guildService.FindAllUsersFromGuildAsync(this.Context);
+
+
+                if (serverUsers.Count == 0)
+                {
+                    await ReplyAsync("No members found on this server.");
+                    return;
+                }
+
+                var userJson = JsonSerializer.Serialize(serverUsers, new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                });
+
+                await this.Context.User.SendFileAsync(StringToStream(userJson),
+                    $"users_{this.Context.Guild.Name}_UTC-{DateTime.UtcNow:u}.json");
+
             }
-
-            var userJson = JsonSerializer.Serialize(serverUsers, new JsonSerializerOptions
+            catch (Exception e)
             {
-                WriteIndented = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
-
-            await this.Context.User.SendFileAsync(StringToStream(userJson),
-                $"users_{this.Context.Guild.Name}_UTC-{DateTime.UtcNow:u}.json");
+                Console.WriteLine(e);
+                throw;
+            }
 
             await ReplyAsync("Check your DMs!");
         }
