@@ -2,6 +2,11 @@ using System;
 
 namespace FMBot.Domain.Models
 {
+    public class AlbumResponse
+    {
+        public Album Album { get; set; }
+    }
+
     public class Album
     {
         public string Name { get; set; }

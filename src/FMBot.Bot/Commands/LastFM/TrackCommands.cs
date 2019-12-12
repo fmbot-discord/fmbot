@@ -87,6 +87,8 @@ namespace FMBot.Bot.Commands.LastFM
                 var currentTrack = tracks.Content[0];
                 var previousTrack = tracks.Content[1];
 
+                var test = await this._lastFmService.GetTrackInfoAsync(currentTrack.Name, currentTrack.ArtistName);
+
                 var playCount = userInfo.Content.Playcount;
 
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);

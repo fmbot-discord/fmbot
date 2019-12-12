@@ -25,6 +25,7 @@
     <PackageReference Include="Genius.NET" Version="2.0.0" />
     <PackageReference Include="Inflatable.Lastfm" Version="1.1.0.339" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="3.1.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.9.5" />
     <PackageReference Include="NLog.Web.AspNetCore" Version="4.9.0" />
     <PackageReference Include="SpotifyAPI.Web" Version="4.2.2" />
@@ -35,6 +36,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Bot.Logger\Bot.Logger.csproj" />
     <ProjectReference Include="..\FMBot.Data\FMBot.Data.csproj" />
+    <ProjectReference Include="..\FMBot.Domain\FMBot.Domain.csproj" />
     <ProjectReference Include="..\FMBot.Logger\FMBot.Logger.csproj" />
     <ProjectReference Include="..\FMBot.YoutubeSearch\FMBot.YoutubeSearch.csproj" />
   </ItemGroup>

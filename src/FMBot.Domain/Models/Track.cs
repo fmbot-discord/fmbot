@@ -3,7 +3,12 @@ using System.Net.Mime;
 
 namespace FMBot.Domain.Models
 {
-    public partial class Track
+    public class TrackResponse
+    {
+        public Track Track { get; set; }
+    }
+
+    public class Track
     {
         public string Name { get; set; }
         public Guid Mbid { get; set; }
@@ -19,7 +24,7 @@ namespace FMBot.Domain.Models
         public Wiki Wiki { get; set; }
     }
 
-    public partial class Toptags
+    public class Toptags
     {
         public Tag[] Tag { get; set; }
     }

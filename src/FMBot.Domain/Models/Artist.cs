@@ -3,6 +3,11 @@ using Newtonsoft.Json;
 
 namespace FMBot.Domain.Models
 {
+    public class ArtistResponse
+    {
+        public Artist Artist { get; set; }
+    }
+
     public class Artist
     {
         public string Name { get; set; }

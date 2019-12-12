@@ -175,7 +175,7 @@ namespace FMBot.Bot.Services
             }
         }
 
-        // Set LastFM Name
+
         public async Task ResetChartTimerAsync(User user)
         {
             user.LastGeneratedChartDateTimeUtc = DateTime.Now;

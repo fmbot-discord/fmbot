@@ -1,11 +1,17 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Net.Http;
 using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
 using FMBot.Data.Entities;
+using FMBot.Domain.Models;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
+using Microsoft.AspNetCore.WebUtilities;
+using Newtonsoft.Json;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Services
@@ -13,6 +19,15 @@ namespace FMBot.Bot.Services
     internal class LastFMService
     {
         private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
+
+        private readonly HttpClient _client = new HttpClient();
+
+        Dictionary<string, string> queryParams = new Dictionary<string, string>
+        {
+            {"api_key", ConfigData.Data.FMKey },
+            {"api_secret", ConfigData.Data.FMSecret },
+            {"format", "json" }
+        };
 
         // Last scrobble
         public async Task<LastTrack> GetLastScrobbleAsync(string lastFMUserName)
@@ -66,12 +81,26 @@ namespace FMBot.Bot.Services
         }
 
         // Track info
-        public async Task<LastResponse<LastTrack>> GetTrackInfoAsync(string trackName, string artistName, string username = null)
+        public async Task<Track> GetTrackInfoAsync(string trackName, string artistName, string username = null)
         {
-            var trackInfo = await this._lastFMClient.Track.GetInfoAsync(trackName, artistName, username);
+            this.queryParams.Add("method", "track.getInfo");
+            this.queryParams.Add("artist", artistName);
+            this.queryParams.Add("track", trackName);
+
+            var url = QueryHelpers.AddQueryString("http://ws.audioscrobbler.com/2.0/", queryParams);
+
+            var httpResponse = await _client.GetAsync(url);
             GlobalVars.LastFMApiCalls++;
 
-            return trackInfo;
+            if (!httpResponse.IsSuccessStatusCode)
+            {
+                throw new Exception("Cannot retrieve tasks");
+            }
+
+            var content = await httpResponse.Content.ReadAsStringAsync();
+            var track = JsonConvert.DeserializeObject<TrackResponse>(content);
+
+            return track.Track;
         }
 
         // Album info
