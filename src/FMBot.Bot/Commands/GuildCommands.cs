@@ -107,8 +107,8 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
-                throw;
+                await ReplyAsync(
+                    "Something went wrong while creating an export.");
             }
 
             await ReplyAsync("Check your DMs!");
