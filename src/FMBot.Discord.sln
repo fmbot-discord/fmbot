@@ -21,6 +21,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Logger", "FMBot.Logge
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.BotLists", "FMBot.BotLists\FMBot.BotLists.csproj", "{88AE10AA-CFAC-44E3-BBFA-D6C86D81B323}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FMBot.Domain", "FMBot.Domain\FMBot.Domain.csproj", "{1C1B04B5-D8DD-4719-B77F-5F81C370FFF4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{88AE10AA-CFAC-44E3-BBFA-D6C86D81B323}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{88AE10AA-CFAC-44E3-BBFA-D6C86D81B323}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{88AE10AA-CFAC-44E3-BBFA-D6C86D81B323}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C1B04B5-D8DD-4719-B77F-5F81C370FFF4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C1B04B5-D8DD-4719-B77F-5F81C370FFF4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C1B04B5-D8DD-4719-B77F-5F81C370FFF4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C1B04B5-D8DD-4719-B77F-5F81C370FFF4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
