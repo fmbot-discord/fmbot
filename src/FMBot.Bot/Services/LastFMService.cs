@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Net.Http;
 using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
 using FMBot.Data.Entities;
-using FMBot.Domain.Models;
+using FMBot.LastFM.Models;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
@@ -86,6 +85,11 @@ namespace FMBot.Bot.Services
             this.queryParams.Add("method", "track.getInfo");
             this.queryParams.Add("artist", artistName);
             this.queryParams.Add("track", trackName);
+
+            if (!string.IsNullOrEmpty(username))
+            {
+                this.queryParams.Add("username", username);
+            }
 
             var url = QueryHelpers.AddQueryString("http://ws.audioscrobbler.com/2.0/", queryParams);
 

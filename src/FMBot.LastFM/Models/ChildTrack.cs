@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace FMBot.Domain.Models
+namespace FMBot.LastFM.Models
 {
     public partial class ChildTrack
     {

@@ -1,4 +1,4 @@
-namespace FMBot.Domain.Models
+namespace FMBot.LastFM.Models
 {
     public class Wiki
     {

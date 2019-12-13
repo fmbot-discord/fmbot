@@ -1,7 +1,6 @@
 using System;
-using System.Net.Mime;
 
-namespace FMBot.Domain.Models
+namespace FMBot.LastFM.Models
 {
     public class TrackResponse
     {

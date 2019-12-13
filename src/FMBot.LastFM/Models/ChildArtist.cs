@@ -1,6 +1,6 @@
 using System;
 
-namespace FMBot.Domain.Models
+namespace FMBot.LastFM.Models
 {
     public class ChildArtist
     {

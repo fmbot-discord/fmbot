@@ -36,7 +36,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Bot.Logger\Bot.Logger.csproj" />
     <ProjectReference Include="..\FMBot.Data\FMBot.Data.csproj" />
-    <ProjectReference Include="..\FMBot.Domain\FMBot.Domain.csproj" />
+    <ProjectReference Include="..\FMBot.LastFM\FMBot.LastFM.csproj" />
     <ProjectReference Include="..\FMBot.Logger\FMBot.Logger.csproj" />
     <ProjectReference Include="..\FMBot.YoutubeSearch\FMBot.YoutubeSearch.csproj" />
   </ItemGroup>
