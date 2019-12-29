@@ -1,12 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Data.Entities;
+using FMBot.LastFM.Models;
+using FMBot.LastFM.Services;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -18,12 +22,14 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly GuildService _guildService = new GuildService();
         private readonly LastFMService _lastFmService = new LastFMService();
         private readonly Logger.Logger _logger;
+        private readonly Api _api;
 
         private readonly UserService _userService = new UserService();
 
         public TrackCommands(Logger.Logger logger)
         {
             this._logger = logger;
+            this._api = new Api(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -77,6 +83,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var tracks = trackTask.Result;
                 var userInfo = userInfoTask.Result;
 
+
                 if (tracks?.Any() != true)
                 {
                     this._embed.NoScrobblesFoundErrorResponse(tracks.Status, this.Context, this._logger);
@@ -86,8 +93,6 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var currentTrack = tracks.Content[0];
                 var previousTrack = tracks.Content[1];
-
-                var test = await this._lastFmService.GetTrackInfoAsync(currentTrack.Name, currentTrack.ArtistName);
 
                 var playCount = userInfo.Content.Playcount;
 

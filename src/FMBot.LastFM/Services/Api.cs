@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 using FMBot.LastFM.Models;
 using Microsoft.AspNetCore.WebUtilities;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Schema;
+using Newtonsoft.Json.Schema.Generation;
 
 namespace FMBot.LastFM.Services
 {
@@ -23,19 +26,19 @@ namespace FMBot.LastFM.Services
             this._secret = secret;
         }
 
-        public async Task<T> CallApiAsync<T>(Dictionary<string, string> parameters, Call call)
+        public async Task<Response<T>> CallApiAsync<T>(Dictionary<string, string> parameters, string call)
         {
             var queryParams = new Dictionary<string, string>
             {
                 {"api_key", this._key },
                 {"api_secret", this._secret },
                 {"format", "json" },
-                {"method", call.ToString() }
+                {"method", call }
             };
 
-            foreach (var parameter in parameters)
+            foreach (var (key, value) in parameters)
             {
-                queryParams.Add(parameter.Key, parameter.Value);
+                queryParams.Add(key, value);
             }
 
             var url = QueryHelpers.AddQueryString(apiUrl, queryParams);
@@ -44,12 +47,36 @@ namespace FMBot.LastFM.Services
 
             if (!httpResponse.IsSuccessStatusCode)
             {
-                throw new Exception("Cannot retrieve tasks");
+                return new Response<T>
+                {
+                    Success = false,
+                    Error = LastResponseStatus.Unknown
+                };
             }
 
             var content = await httpResponse.Content.ReadAsStringAsync();
 
-            return JsonConvert.DeserializeObject<T>(content);
+            var parsedContent = JObject.Parse(content);
+
+            var schemaGenerator = new JSchemaGenerator();
+            var errorSchema = schemaGenerator.Generate(typeof(ErrorResponse));
+            if (parsedContent.IsValid(errorSchema))
+            {
+                var errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(content);
+                return new Response<T>
+                {
+                    Success = false,
+                    Error = errorResponse.Error,
+                    Message = errorResponse.Message
+                };
+            }
+
+            var parsedObject = JsonConvert.DeserializeObject<T>(content);
+            return new Response<T>
+            {
+                Success = true,
+                Content = parsedObject
+            };
         }
     }
 }
