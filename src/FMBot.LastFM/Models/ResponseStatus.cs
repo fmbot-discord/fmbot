@@ -1,6 +1,6 @@
 namespace FMBot.LastFM.Models
 {
-    public enum LastResponseStatus
+    public enum ResponseStatus
     {
         Unknown = 0,
 

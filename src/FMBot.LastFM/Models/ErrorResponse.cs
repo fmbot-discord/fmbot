@@ -8,7 +8,7 @@ namespace FMBot.LastFM.Models
         public bool Success { get; set; }
 
         [JsonProperty("error")]
-        public LastResponseStatus? Error { get; set; }
+        public ResponseStatus? Error { get; set; }
 
         [JsonProperty("message")]
         public string Message { get; set; }

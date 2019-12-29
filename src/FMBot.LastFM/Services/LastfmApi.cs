@@ -11,7 +11,7 @@ using Newtonsoft.Json.Schema.Generation;
 
 namespace FMBot.LastFM.Services
 {
-    public class Api
+    public class LastfmApi
     {
         private readonly HttpClient _client = new HttpClient();
 
@@ -20,7 +20,7 @@ namespace FMBot.LastFM.Services
         private readonly string _key;
         private readonly string _secret;
 
-        public Api(string key, string secret)
+        public LastfmApi(string key, string secret)
         {
             this._key = key;
             this._secret = secret;
@@ -50,7 +50,7 @@ namespace FMBot.LastFM.Services
                 return new Response<T>
                 {
                     Success = false,
-                    Error = LastResponseStatus.Unknown
+                    Error = ResponseStatus.Unknown
                 };
             }
 
@@ -71,12 +71,21 @@ namespace FMBot.LastFM.Services
                 };
             }
 
-            var parsedObject = JsonConvert.DeserializeObject<T>(content);
-            return new Response<T>
+
+            var response = new Response<T>();
+            try
             {
-                Success = true,
-                Content = parsedObject
-            };
+                var parsedObject = JsonConvert.DeserializeObject<T>(content);
+                response.Content = parsedObject;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+
+            response.Success = true;
+            return response;
         }
     }
 }

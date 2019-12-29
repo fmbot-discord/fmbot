@@ -22,14 +22,14 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly GuildService _guildService = new GuildService();
         private readonly LastFMService _lastFmService = new LastFMService();
         private readonly Logger.Logger _logger;
-        private readonly Api _api;
+        private readonly LastfmApi _lastfmApi;
 
         private readonly UserService _userService = new UserService();
 
         public TrackCommands(Logger.Logger logger)
         {
             this._logger = logger;
-            this._api = new Api(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
+            this._lastfmApi = new LastfmApi(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();

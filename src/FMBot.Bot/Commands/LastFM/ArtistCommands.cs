@@ -1,11 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Data.Entities;
+using FMBot.LastFM.Models;
+using FMBot.LastFM.Services;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -16,6 +20,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly GuildService _guildService = new GuildService();
         private readonly LastFMService _lastFmService = new LastFMService();
+        private readonly LastfmApi _lastfmApi;
         private readonly Logger.Logger _logger;
 
         private readonly UserService _userService = new UserService();
@@ -23,6 +28,7 @@ namespace FMBot.Bot.Commands.LastFM
         public ArtistCommands(Logger.Logger logger)
         {
             this._logger = logger;
+            this._lastfmApi = new LastfmApi(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -32,7 +38,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("fmartist", RunMode = RunMode.Async)]
         [Summary("Displays current artist.")]
         [Alias("fmartist", "fma")]
-        public async Task ArtistsAsync(string artist)
+        public async Task ArtistsAsync(params string[] artistValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -42,37 +48,90 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            if (artist == "help")
+            string artist;
+            if (artistValues.Length > 0)
             {
-                await ReplyAsync(
-                    "Usage: `.fmartist 'name'\n" +
-                    "If you don't enter any artists name, it will get the info from the artist you're currently listening to.");
-                return;
+                if (artistValues.First() == "help")
+                {
+                    await ReplyAsync(
+                        "Usage: `.fmartist 'name'\n" +
+                        "If you don't enter any artists name, it will get the info from the artist you're currently listening to.");
+                    return;
+                }
+
+                artist = string.Join(" ", artistValues);
+            }
+            else
+            {
+                var track = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
+
+                if (track == null)
+                {
+                    this._embed.NoScrobblesFoundErrorResponse(track.Status, this.Context, this._logger);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
+                }
+
+                artist = track.Content.First().ArtistName;
             }
 
-            var artists = await this._lastFmService.GetArtistInfoAsync(artist, userSettings.UserNameLastFM);
-
-            if (!artists.Success)
+            var queryParams = new Dictionary<string, string>
             {
-                this._embed.NoScrobblesFoundErrorResponse(artists.Status, this.Context, this._logger);
+                {"artist", artist },
+                {"username", userSettings.UserNameLastFM }
+            };
+
+            var artistCall = await this._lastfmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+
+            if (!artistCall.Success)
+            {
+                this._embed.NoScrobblesFoundErrorResponse(artistCall.Error.Value, this.Context, this._logger);
                 await ReplyAsync("", false, this._embed.Build());
                 return;
             }
 
+            var artistInfo = artistCall.Content.Artist;
             string userTitle;
 
             userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
-
             this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            this._embedAuthor.WithName($"Info about  for {userTitle}");
-            this._embedAuthor.WithUrl(Constants.LastFMUserUrl + userSettings.UserNameLastFM + "/library/artists");
+            this._embedAuthor.WithName($"Artist info about {artistInfo.Name} for {userTitle}");
+            this._embedAuthor.WithUrl(artistInfo.Url);
             this._embed.WithAuthor(this._embedAuthor);
 
+            this._embed.AddField("Listeners", artistInfo.Stats.Listeners, true);
+            this._embed.AddField("Global playcount", artistInfo.Stats.Playcount, true);
+            if (artistInfo.Stats.Userplaycount.HasValue)
+            {
+                this._embed.AddField("Your playcount", artistInfo.Stats.Userplaycount, true);
+            }
+
+            if (!string.IsNullOrWhiteSpace(artistInfo.Bio.Content))
+            {
+                var linktext = $"<a href=\"{artistInfo.Url}\">Read more on Last.fm</a>";
+                this._embed.AddField("Summary", artistInfo.Bio.Summary.Replace(linktext, ""));
+            }
+
+            if (artistInfo.Tags.Tag.Any())
+            {
+                string tags = "";
+                for (var i = 0; i < artistInfo.Tags.Tag.Length; i++)
+                {
+                    if (i != 0)
+                    {
+                        tags += " - ";
+                    }
+                    var tag = artistInfo.Tags.Tag[i];
+                    tags += $"[{tag.Name}]({tag.Url})";
+                }
+
+                this._embed.AddField("Tags", tags);
+            }
+            
             var description = "";
 
             this._embed.WithDescription(description);
-
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,

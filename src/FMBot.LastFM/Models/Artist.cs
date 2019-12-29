@@ -12,7 +12,7 @@ namespace FMBot.LastFM.Models
     {
         public string Name { get; set; }
         public Guid Mbid { get; set; }
-        public Uri Url { get; set; }
+        public string Url { get; set; }
         public Image[] Image { get; set; }
         public long Streamable { get; set; }
         public long Ontour { get; set; }
@@ -33,11 +33,5 @@ namespace FMBot.LastFM.Models
         public long Listeners { get; set; }
         public long Playcount { get; set; }
         public long? Userplaycount { get; set; }
-    }
-
-    public partial class Tags
-    {
-        [JsonProperty("Tag")]
-        public Tag[] TagArray { get; set; }
     }
 }
