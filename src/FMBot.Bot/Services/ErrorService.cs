@@ -59,5 +59,24 @@ namespace FMBot.Bot.Services
             embed.WithColor(Constants.WarningColorOrange);
             logger.LogError($"No scrobbles found for user, error code {apiResponse}", context.Message.Content, context.User.Username, context.Guild?.Name, context.Guild?.Id);
         }
+
+        public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus apiResponse, string message, ICommandContext context, Logger.Logger logger)
+        {
+            embed.WithTitle("Error while attempting get Last.FM information");
+            switch (apiResponse)
+            {
+                case ResponseStatus.Failure:
+                    embed.WithDescription("Can't retrieve scrobbles because Last.FM is having issues. Please try again later. \n" +
+                                          "Please note that .fmbot isn't affiliated with Last.FM.");
+                    break;
+                default:
+                    embed.WithDescription(
+                        message);
+                    break;
+            }
+
+            embed.WithColor(Constants.WarningColorOrange);
+            logger.LogError($"Last.fm returned error: {message}, error code {apiResponse}", context.Message.Content, context.User.Username, context.Guild?.Name, context.Guild?.Id);
+        }
     }
 }

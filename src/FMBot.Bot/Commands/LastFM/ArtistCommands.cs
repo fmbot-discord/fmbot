@@ -37,7 +37,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("fmartist", RunMode = RunMode.Async)]
         [Summary("Displays current artist.")]
-        [Alias("fmartist", "fma")]
+        [Alias("fma")]
         public async Task ArtistsAsync(params string[] artistValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -85,15 +85,14 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!artistCall.Success)
             {
-                this._embed.NoScrobblesFoundErrorResponse(artistCall.Error.Value, this.Context, this._logger);
+                this._embed.ErrorResponse(artistCall.Error.Value, artistCall.Message, this.Context, this._logger);
                 await ReplyAsync("", false, this._embed.Build());
                 return;
             }
 
             var artistInfo = artistCall.Content.Artist;
-            string userTitle;
 
-            userTitle = await this._userService.GetUserTitleAsync(this.Context);
+            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
             this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
             this._embedAuthor.WithName($"Artist info about {artistInfo.Name} for {userTitle}");
@@ -140,7 +139,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("fmartists", RunMode = RunMode.Async)]
         [Summary("Displays top artists.")]
-        [Alias("fmal", "fmartistlist", "fmartistslist")]
+        [Alias("fmal","fmas", "fmartistlist", "fmartistslist")]
         public async Task ArtistsAsync(string time = "weekly", int num = 10, string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
