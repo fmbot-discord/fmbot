@@ -22,7 +22,7 @@ before_build:
 build_script:
  - dotnet publish -c Release
 artifacts:
-- path: src\FMBot.Bot\bin\$(configuration)\netcoreapp3.0\publish
+- path: src\FMBot.Bot\bin\$(configuration)\netcoreapp3.1\publish
   name: BinaryRelease
 - path: BinaryFiles
   name: BinaryFiles
