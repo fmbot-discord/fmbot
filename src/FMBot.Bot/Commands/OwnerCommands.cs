@@ -118,11 +118,10 @@ namespace FMBot.Bot.Commands
         {
             if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
             {
-                DiscordSocketClient SelfUser = Context.Client as DiscordSocketClient;
-
+                var client = this.Context.Client as DiscordShardedClient;
                 string desc = null;
 
-                foreach (SocketGuild guild in SelfUser.Guilds.OrderByDescending(o => o.MemberCount).Take(100))
+                foreach (SocketGuild guild in client.Guilds.OrderByDescending(o => o.MemberCount).Take(100))
                 {
                     desc += $"{guild.Name} - Users: {guild.Users.Count()}, Owner: {guild.Owner.ToString()}\n";
                 }
