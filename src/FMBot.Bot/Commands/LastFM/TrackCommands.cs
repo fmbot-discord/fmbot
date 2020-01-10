@@ -141,15 +141,26 @@ namespace FMBot.Bot.Commands.LastFM
                             }
                         }
 
+                        var lastYearOverview = "[Your Last.year for 2019](https://www.last.fm/user/" + lastFMUserName + "/listening-report/year)";
+                        var lastYearLinkExpirationDate = new DateTime(2020, 1, 12);
+
                         if (userSettings.ChartType == ChartType.embedmini)
                         {
                             fmText += LastFMService.TrackToLinkedString(currentTrack);
+                            if (DateTime.Now <= lastYearLinkExpirationDate)
+                            {
+                                fmText += $"\n{lastYearOverview}";
+                            }
                             this._embed.WithDescription(fmText);
                         }
                         else
                         {
                             this._embed.AddField("Current:", LastFMService.TrackToLinkedString(currentTrack));
                             this._embed.AddField("Previous:", LastFMService.TrackToLinkedString(previousTrack));
+                            if (DateTime.Now <= lastYearLinkExpirationDate)
+                            {
+                                this._embed.WithDescription(lastYearOverview);
+                            }
                         }
 
                         string headerText;
