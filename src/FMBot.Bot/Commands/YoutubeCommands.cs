@@ -1,98 +1,99 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using Discord.WebSocket;
-using IF.Lastfm.Core.Objects;
-using System;
-using System.Threading.Tasks;
+using FMBot.Bot.Extensions;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.YoutubeSearch;
-using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
 {
     public class YoutubeCommands : ModuleBase
     {
-        private readonly Logger.Logger _logger;
+        private readonly EmbedBuilder _embed;
 
         private readonly LastFMService _lastFmService = new LastFMService();
+        private readonly Logger.Logger _logger;
         private readonly UserService _userService = new UserService();
         private readonly YoutubeService _youtubeService = new YoutubeService();
 
         public YoutubeCommands(Logger.Logger logger)
         {
-            _logger = logger;
+            this._logger = logger;
+            this._embed = new EmbedBuilder()
+                .WithColor(Constants.LastFMColorRed);
         }
 
-        [Command("fmyoutube"), Summary("Shares a link to a YouTube video based on what a user is listening to")]
-        [Alias("fmyt", "fmy")]
-        public async Task fmytAsync(IUser user = null)
+        [Command("fmyoutube")]
+        [Summary("Shares a link to a YouTube video based on what a user is listening to")]
+        [Alias("fmyt", "fmy", "fmyoutubesearch", "fmytsearch", "fmyts")]
+        public async Task YoutubeAsync(params string[] searchValues)
         {
-            Data.Entities.User userSettings = await _userService.GetUserSettingsAsync(Context.User);
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            if (userSettings == null || userSettings.UserNameLastFM == null)
+            if (userSettings?.UserNameLastFM == null)
             {
-                await ReplyAsync("Your LastFM username has not been set. Please set your username using the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
+                this._embed.UsernameNotSetErrorResponse(this.Context, this._logger);
+                await ReplyAsync("", false, this._embed.Build());
                 return;
             }
 
             try
             {
-                LastTrack track = await _lastFmService.GetLastScrobbleAsync(userSettings.UserNameLastFM);
+                _ = this.Context.Channel.TriggerTypingAsync();
 
-                if (track == null)
+                string querystring;
+                if (searchValues.Length > 0)
                 {
-                    await ReplyAsync("No scrobbles found on your LastFM profile. (" + userSettings.UserNameLastFM + ")");
-                    return;
+                    querystring = string.Join(" ", searchValues);
+                }
+                else
+                {
+                    var tracks = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM);
+
+                    if (tracks?.Any() != true)
+                    {
+                        this._embed.NoScrobblesFoundErrorResponse(tracks.Status, this.Context, this._logger);
+                        await ReplyAsync("", false, this._embed.Build());
+                        return;
+                    }
+
+                    var currentTrack = tracks.Content[0];
+                    querystring = currentTrack.Name + " - " + currentTrack.ArtistName;
                 }
 
                 try
                 {
-                    string querystring = track.Name + " - " + track.ArtistName;
+                    var youtubeResult = this._youtubeService.GetSearchResult(querystring);
 
-                    VideoInformation youtubeResult = _youtubeService.GetSearchResult(querystring);
+                    var name = await this._userService.GetNameAsync(this.Context);
 
-                    await ReplyAsync($"Searched for: `{querystring}`\n " +
-                        youtubeResult.Url);
+                    var reply = $"{name} searched for: `{querystring}`" +
+                                $"\n{youtubeResult.Url}";
 
-                    _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
+                    var rnd = new Random();
+                    if (rnd.Next(0, 5) == 1 && searchValues.Length < 1)
+                    {
+                        reply += "\n*Tip: Search for other songs or videos by simply adding the searchvalue behind .fmyoutube.*";
+                    }
+
+                    await ReplyAsync(reply.FilterOutMentions());
+
+                    this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
+                        this.Context.Message.Content);
                 }
                 catch (Exception e)
                 {
-                    _logger.LogException(Context.Message.Content, e);
-                    await ReplyAsync("No results have been found for this track.");
+                    this._logger.LogException(Context.Message.Content, e);
+                    await ReplyAsync("No results have been found for this query.");
                 }
             }
             catch (Exception e)
             {
-                _logger.LogException(Context.Message.Content, e);
-                await ReplyAsync("Unable to show Last.FM info via YouTube due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
-            }
-        }
-
-
-        [Command("fmyoutubesearch"), Summary("Search for a youtube video")]
-        [Alias("fmytsearch")]
-        public async Task fmytSearchAsync(params string[] searchterms)
-        {
-            if (searchterms.Length < 1)
-            {
-                await ReplyAsync("Please enter a searchvalue.");
-                return;
-            }
-
-            string querystring = string.Join(" ", searchterms);
-
-            try
-            {
-                VideoInformation youtubeResult = _youtubeService.GetSearchResult(querystring);
-
-                await ReplyAsync(youtubeResult.Url);
-                _logger.LogCommandUsed(Context.Guild?.Id, Context.Channel.Id, Context.User.Id, Context.Message.Content);
-            }
-            catch (Exception e)
-            {
-                _logger.LogException(Context.Message.Content, e);
-                await ReplyAsync("No results have been found for this track.");
+                this._logger.LogException(Context.Message.Content, e);
+                await ReplyAsync(
+                    "Unable to show Last.FM info via YouTube due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
     }
