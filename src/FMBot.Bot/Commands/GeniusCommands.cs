@@ -28,7 +28,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("fmgenius")]
-        [Summary("Shares a link to the Genius lyrics based on what a user is listening to")]
+        [Summary("Shares a link to the Genius lyrics based on what a user is listening to or what the user is searching for.")]
         [Alias("fmlyrics", "fmg", "fmlyricsfind", "fmlyricsearch", "fmlyricssearch")]
         public async Task GeniusAsync(params string[] searchValues)
         {

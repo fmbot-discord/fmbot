@@ -10,9 +10,9 @@ namespace FMBot.LastFM.Models
     public class Album
     {
         public string Name { get; set; }
-        public ChildArtist Artist { get; set; }
+        public string Artist { get; set; }
         public Guid Mbid { get; set; }
-        public Uri Url { get; set; }
+        public string Url { get; set; }
         public Image[] Image { get; set; }
         public long Listeners { get; set; }
         public long Playcount { get; set; }
