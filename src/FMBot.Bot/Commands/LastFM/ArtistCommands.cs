@@ -114,24 +114,11 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (artistInfo.Tags.Tag.Any())
             {
-                string tags = "";
-                for (var i = 0; i < artistInfo.Tags.Tag.Length; i++)
-                {
-                    if (i != 0)
-                    {
-                        tags += " - ";
-                    }
-                    var tag = artistInfo.Tags.Tag[i];
-                    tags += $"[{tag.Name}]({tag.Url})";
-                }
+                var tags = this._lastFmService.TagsToString(artistInfo.Tags);
 
                 this._embed.AddField("Tags", tags);
             }
             
-            var description = "";
-
-            this._embed.WithDescription(description);
-
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
                 this.Context.Message.Content);

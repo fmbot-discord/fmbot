@@ -70,6 +70,22 @@ namespace FMBot.Bot.Services
                        : $" | *{track.AlbumName}*\n");
         }
 
+        public string TagsToString(Tags tags)
+        {
+            var tagString = "";
+            for (var i = 0; i < tags.Tag.Length; i++)
+            {
+                if (i != 0)
+                {
+                    tagString += " - ";
+                }
+                var tag = tags.Tag[i];
+                tagString += $"[{tag.Name}]({tag.Url})";
+            }
+
+            return tagString;
+        }
+
         // User
         public async Task<LastResponse<LastUser>> GetUserInfoAsync(string lastFMUserName)
         {

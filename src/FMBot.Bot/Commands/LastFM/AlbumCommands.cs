@@ -99,16 +99,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (albumInfo.Tags.Tag.Any())
             {
-                string tags = "";
-                for (var i = 0; i < albumInfo.Tags.Tag.Length; i++)
-                {
-                    if (i != 0)
-                    {
-                        tags += " - ";
-                    }
-                    var tag = albumInfo.Tags.Tag[i];
-                    tags += $"[{tag.Name}]({tag.Url})";
-                }
+                var tags = this._lastFmService.TagsToString(albumInfo.Tags);
 
                 this._embed.AddField("Tags", tags);
             }
