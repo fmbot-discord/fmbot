@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -64,14 +65,15 @@ namespace FMBot.Bot.Services
 
             var userIds = users.Select(s => s.Id.ToString()).ToList();
 
-            return this.db.Users
+            var usersObject = this.db.Users
                 .Where(w => userIds.Contains(w.DiscordUserID))
                 .Select(s =>
                     new UserExportModel(
                         s.DiscordUserID,
-                        users.First(f => f.Id.ToString() == s.DiscordUserID).ToString(),
-                        s.UserNameLastFM))
-                .ToList();
+                        "Username temporarily not visible", //users.First(f => f.Id.ToString() == s.DiscordUserID).ToString() https://github.com/dotnet/efcore/issues/18179
+                        s.UserNameLastFM));
+
+            return usersObject.ToList();
         }
 
         public async Task ChangeGuildSettingAsync(IGuild guild, ChartTimePeriod chartTimePeriod, ChartType chartType)
