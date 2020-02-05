@@ -9,7 +9,7 @@
 
 Discord bot built with Discord.NET in C# mostly focused on LastFM functions.
 
-Documentation: https://fmbot-discord.github.io/docs/
+Documentation: https://fmbot.xyz/
 
 Feel free to join our Discord server: https://discord.gg/srmpCaa
 
@@ -20,4 +20,4 @@ Get them from https://github.com/fmbot-discord/fmbot/releases (Stable) or https:
 
 <h1>Selfhosting</h1>
 
-Please see https://fmbot-discord.github.io/docs/setup/.
+Please see https://fmbot.xyz/setup/.
