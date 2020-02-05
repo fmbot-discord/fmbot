@@ -20,4 +20,4 @@ Get them from https://github.com/fmbot-discord/fmbot/releases (Stable) or https:
 
 <h1>Selfhosting</h1>
 
-Please see https://fmbot-discord.github.io/docs/setup/.
+Please see https://fmbot.xyz/setup/.
