@@ -90,6 +90,7 @@ namespace FMBot.Bot.Commands
 
             this._embedAuthor.WithIconUrl(selfUser.GetAvatarUrl());
             this._embedAuthor.WithName(selfUser.Username);
+            this._embedAuthor.WithUrl("https://fmbot.xyz/");
 
             this._embed.WithAuthor(this._embedAuthor);
 
@@ -137,7 +138,7 @@ namespace FMBot.Bot.Commands
                 $"For more settings, please use `{prefix}fmset help`.");
 
             this._embed.AddField("For more commands and info, please read the documentation here:",
-                "https://fmbot-discord.github.io/docs/commands/");
+                "https://fmbot.xyz/");
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         }
