@@ -31,6 +31,11 @@ namespace FMBot.Bot.Services
                     embed.WithDescription("Can't retrieve scrobbles because Last.FM is having issues. Please try again later. \n" +
                                           "Please note that .fmbot isn't affiliated with Last.FM.");
                     break;
+                case LastResponseStatus.MissingParameters:
+                    embed.WithDescription("You have no scrobbles/artists on your profile, or Last.FM is having issues. Please try again later. \n \n" +
+                                          "Recently changed your Last.FM username? Please change it here too using `.fmset`. \n" +
+                                          "For more info on your settings, use `.fmset help`.");
+                    break;
                 default:
                     embed.WithDescription(
                         "You have no scrobbles/artists on your profile, or Last.FM is having issues. Please try again later.");
