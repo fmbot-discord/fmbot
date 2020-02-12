@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ using FMBot.Bot.Services;
 using FMBot.LastFM.Models;
 using FMBot.LastFM.Services;
 using SpotifyAPI.Web.Models;
+using ImageFormat = System.Drawing.Imaging.ImageFormat;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -39,7 +41,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("fmalbum", RunMode = RunMode.Async)]
         [Summary("Displays current album.")]
         [Alias("fmab")]
-        public async Task AlbumsAsync()
+        public async Task AlbumAsync()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -109,6 +111,72 @@ namespace FMBot.Bot.Commands.LastFM
             this._embed.WithDescription(description);
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
+                this.Context.Message.Content);
+        }
+
+        [Command("fmcover", RunMode = RunMode.Async)]
+        [Summary("Displays current album cover.")]
+        [Alias("fmabc","fmco", "fmalbumcover")]
+        public async Task AlbumCoverAsync()
+        {
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            if (userSettings?.UserNameLastFM == null)
+            {
+                this._embed.UsernameNotSetErrorResponse(this.Context, this._logger);
+                await ReplyAsync("", false, this._embed.Build());
+                return;
+            }
+
+            var tracks = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
+
+            if (tracks?.Any() != true)
+            {
+                this._embed.NoScrobblesFoundErrorResponse(tracks.Status, this.Context, this._logger);
+                await ReplyAsync("", false, this._embed.Build());
+                return;
+            }
+
+            var currentTrack = tracks.Content[0];
+            var albumInfo = await this._lastFmService.GetAlbumImagesAsync(currentTrack.ArtistName, currentTrack.AlbumName);
+
+            if (albumInfo.Largest == null)
+            {
+                this._embed.WithDescription("Sorry, no album cover found for this album: \n" +
+                                            $"{currentTrack.ArtistName} - {currentTrack.AlbumName}\n" +
+                                            $"[View on last.fm]({currentTrack.Url})");
+                await ReplyAsync("", false, this._embed.Build());
+                return;
+            }
+
+            var image = await this._lastFmService.GetAlbumImageAsBitmapAsync(albumInfo.Largest);
+            if (image == null)
+            {
+                this._embed.WithDescription("Sorry, something went wrong while getting album cover for this album: \n" +
+                                            $"{currentTrack.ArtistName} - {currentTrack.AlbumName}\n" +
+                                            $"[View on last.fm]({currentTrack.Url})");
+                await ReplyAsync("", false, this._embed.Build());
+                return;
+            }
+
+            this._embed.WithDescription(LastFMService.TrackToLinkedString(currentTrack));
+
+            this._embedFooter.WithText(
+                $"Album cover requested by {await this._userService.GetUserTitleAsync(this.Context)}");
+            this._embed.WithFooter(this._embedFooter);
+
+            var imageMemoryStream = new MemoryStream();
+            image.Save(imageMemoryStream, ImageFormat.Png);
+            imageMemoryStream.Position = 0;
+
+            await this.Context.Channel.SendFileAsync(
+                imageMemoryStream,
+                $"cover-{currentTrack.Mbid}.png",
+                null,
+                false,
+                this._embed.Build());
+
             this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
                 this.Context.Message.Content);
         }

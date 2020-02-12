@@ -1,8 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Dasync.Collections;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Models;
 using FMBot.Data.Entities;
 using FMBot.LastFM.Models;
 using IF.Lastfm.Core.Api;
@@ -141,9 +147,24 @@ namespace FMBot.Bot.Services
             return album?.Content?.Images;
         }
 
+        public async Task<Bitmap> GetAlbumImageAsBitmapAsync(Uri largestImageSize)
+        {
+            try
+            {
+                var request = WebRequest.Create(largestImageSize);
+                using var response = await request.GetResponseAsync();
+                await using var responseStream = response.GetResponseStream();
+
+                return new Bitmap(responseStream);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         // Top albums
-        public async Task<PageResponse<LastAlbum>> GetTopAlbumsAsync(string lastFMUserName, LastStatsTimeSpan timespan,
-            int count = 2)
+        public async Task<PageResponse<LastAlbum>> GetTopAlbumsAsync(string lastFMUserName, LastStatsTimeSpan timespan, int count = 2)
         {
             var topAlbums = await this._lastFMClient.User.GetTopAlbums(lastFMUserName, timespan, 1, count);
             GlobalVars.LastFMApiCalls++;
