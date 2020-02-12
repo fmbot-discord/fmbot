@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -31,7 +32,7 @@ namespace FMBot.Bot.Services
 
         public async Task<GuildPermissions> CheckSufficientPermissionsAsync(ICommandContext context)
         {
-            IGuildUser user = await context.Guild.GetUserAsync(context.Client.CurrentUser.Id);
+            var user = await context.Guild.GetUserAsync(context.Client.CurrentUser.Id);
             return user.GuildPermissions;
         }
 
@@ -39,14 +40,15 @@ namespace FMBot.Bot.Services
         // Get user from guild with searchvalue
         public async Task<IGuildUser> FindUserFromGuildAsync(ICommandContext context, string searchValue)
         {
-            IReadOnlyCollection<IGuildUser> users = await context.Guild.GetUsersAsync();
+            var users = await context.Guild.GetUsersAsync();
 
             if (searchValue.Length > 3)
             {
-                string id = searchValue.Trim(new char[] { '@', '!', '<', '>' });
-                IEnumerable<IGuildUser> filteredUsers = users.Where(f => f.Id.ToString() == id || f.Nickname == searchValue || f.Username == searchValue);
+                var id = searchValue.Trim('@', '!', '<', '>');
+                var filteredUsers = users.Where(f =>
+                    f.Id.ToString() == id || f.Nickname == searchValue || f.Username == searchValue);
 
-                IGuildUser user = filteredUsers.FirstOrDefault();
+                var user = filteredUsers.FirstOrDefault();
 
                 if (user != null)
                 {
@@ -78,47 +80,138 @@ namespace FMBot.Bot.Services
 
         public async Task ChangeGuildSettingAsync(IGuild guild, ChartTimePeriod chartTimePeriod, ChartType chartType)
         {
-            string guildId = guild.Id.ToString();
-            Guild existingGuild = await db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guildId);
+            var guildId = guild.Id.ToString();
+            var existingGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guildId);
 
             if (existingGuild == null)
             {
-                Guild newGuild = new Guild
+                var newGuild = new Guild
                 {
                     DiscordGuildID = guildId,
                     ChartTimePeriod = chartTimePeriod,
                     ChartType = chartType,
                     Name = guild.Name,
-                    TitlesEnabled = true,
+                    TitlesEnabled = true
                 };
 
-                db.Guilds.Add(newGuild);
+                this.db.Guilds.Add(newGuild);
 
-                await db.SaveChangesAsync();
+                await this.db.SaveChangesAsync();
+            }
+        }
+
+        public async Task SetGuildReactionsAsync(IGuild guild, string[] reactions)
+        {
+            var guildId = guild.Id.ToString();
+
+            var existingGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guildId);
+
+            if (existingGuild == null)
+            {
+                var newGuild = new Guild
+                {
+                    DiscordGuildID = guildId,
+                    TitlesEnabled = true,
+                    ChartTimePeriod = ChartTimePeriod.Monthly,
+                    ChartType = ChartType.embedmini,
+                    EmoteReactions = reactions,
+                    Name = guild.Name
+                };
+
+                this.db.Guilds.Add(newGuild);
+
+                await this.db.SaveChangesAsync();
+            }
+            else
+            {
+                existingGuild.EmoteReactions = reactions;
+                existingGuild.Name = guild.Name;
+
+                this.db.Entry(existingGuild).State = EntityState.Modified;
+
+                await this.db.SaveChangesAsync();
+            }
+        }
+
+        public bool ValidateReactions(string[] emoteString)
+        {
+            foreach (var emote in emoteString)
+            {
+                if (emote.Length == 2)
+                {
+                    try
+                    {
+                        var unused = new Emoji(emote);
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        Emote.Parse(emote);
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+
+        public async Task AddReactionsAsync(IUserMessage message, IGuild guild)
+        {
+            var guildId = guild.Id.ToString();
+
+            var dbGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guildId);
+
+            if (dbGuild == null || !guild.Emotes.Any())
+            {
+                return;
+            }
+
+            foreach (var emoteString in dbGuild.EmoteReactions)
+            {
+                if (emoteString.Length == 2)
+                {
+                    var emote = new Emoji(emoteString);
+                    await message.AddReactionAsync(emote);
+                }
+                else
+                {
+                    var emote = Emote.Parse(emoteString);
+                    await message.AddReactionAsync(emote);
+                }
             }
         }
 
         public async Task AddGuildAsync(SocketGuild guild)
         {
-            string guildId = guild.Id.ToString();
+            var guildId = guild.Id.ToString();
 
-            Guild newGuild = new Guild
+            var newGuild = new Guild
             {
                 DiscordGuildID = guildId,
                 ChartTimePeriod = ChartTimePeriod.Monthly,
                 ChartType = ChartType.embedmini,
                 Name = guild.Name,
-                TitlesEnabled = true,
+                TitlesEnabled = true
             };
 
-            db.Guilds.Add(newGuild);
+            this.db.Guilds.Add(newGuild);
 
-            await db.SaveChangesAsync();
+            await this.db.SaveChangesAsync();
         }
 
         public async Task<bool> GuildExistsAsync(SocketGuild guild)
         {
-            return await db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guild.Id.ToString()) != null;
+            return await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guild.Id.ToString()) != null;
         }
     }
 }

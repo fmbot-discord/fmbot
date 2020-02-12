@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -204,7 +205,13 @@ namespace FMBot.Bot.Commands.LastFM
                             this._embed.WithThumbnailUrl((await albumImages).Large.ToString());
                         }
 
-                        await ReplyAsync("", false, this._embed.Build());
+                        var message = await ReplyAsync("", false, this._embed.Build());
+
+                        if (!this._guildService.CheckIfDM(this.Context))
+                        {
+                            await this._guildService.AddReactionsAsync(message, this.Context.Guild);
+                        }
+
                         break;
                 }
 

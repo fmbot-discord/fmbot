@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Discord;
@@ -62,6 +63,55 @@ namespace FMBot.Bot.Commands
 
             await ReplyAsync("The .fmset default chart type for your server has been set to " + chartTypeEnum +
                              " with the time period " + chartTimePeriodEnum + ".");
+        }
+
+        [Command("fmserverreactions", RunMode = RunMode.Async)]
+        [Summary("Sets reactions for some server commands.")]
+        [Alias("fmserversetreactions")]
+        public async Task SetGuildReactionsAsync(params string[] emotes)
+        {
+            if (this._guildService.CheckIfDM(this.Context))
+            {
+                await ReplyAsync("Command is not supported in DMs.");
+                return;
+            }
+
+            var serverUser = (IGuildUser)this.Context.Message.Author;
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
+                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync(
+                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                return;
+            }
+
+            if (emotes.Count() > 3)
+            {
+                await ReplyAsync("Sorry, max amount emote reactions you can set is 3!");
+                return;
+            }
+
+            if (emotes.Length == 0)
+            {
+                await this._guildService.SetGuildReactionsAsync(this.Context.Guild, null);
+                await ReplyAsync(
+                    "Removed all server reactions!");
+                return;
+            }
+
+            if (!this._guildService.ValidateReactions(emotes))
+            {
+                await ReplyAsync(
+                    "Sorry, one or multiple of your reactions seems invalid. Please try again.\n" +
+                    "Please check if you have a space between every emote.");
+                return;
+            }
+
+            await this._guildService.SetGuildReactionsAsync(this.Context.Guild, emotes);
+
+            var message = await ReplyAsync("Emote reactions have been set! \n" +
+                                           "Please check if all reactions have been applied to this message correctly. If not, you might have used an emote from a different server.");
+            await this._guildService.AddReactionsAsync(message, Context.Guild);
         }
 
         [Command("fmexport", RunMode = RunMode.Async)]
