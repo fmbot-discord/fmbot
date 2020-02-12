@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace FMBot.Data.Entities
@@ -17,6 +17,8 @@ namespace FMBot.Data.Entities
         public bool? TitlesEnabled { get; set; }
         public ChartType ChartType { get; set; }
         public ChartTimePeriod ChartTimePeriod { get; set; }
+
+        public string[] EmoteReactions { get; set; }
 
         public virtual ICollection<GuildUsers> GuildUsers { get; set; }
     }

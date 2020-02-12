@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -96,6 +96,11 @@ namespace FMBot.Data.Entities
                 entity.Property(e => e.GuildID).HasColumnName("GuildID");
 
                 entity.Property(e => e.DiscordGuildID).HasColumnName("DiscordGuildID");
+
+                entity.Property(e => e.EmoteReactions)
+                    .HasConversion(
+                        v => string.Join(',', v),
+                        v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
             });
 
             modelBuilder.Entity<User>(entity =>
