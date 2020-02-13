@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -9,6 +10,7 @@ using FMBot.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Prometheus;
 
 namespace FMBot.Bot
 {
@@ -38,7 +40,7 @@ namespace FMBot.Bot
             //provider.GetRequiredService<LoggingService>();      // Start the logging service
             provider.GetRequiredService<CommandHandler>(); // Start the command handler service
 
-            await provider.GetRequiredService<StartupService>().StartAsync(); // Start the startup service
+            await provider.GetRequiredService<StartupService>().StartAsync(new Logger.Logger()); // Start the startup service
             await Task.Delay(-1); // Keep the program alive
         }
 
@@ -46,25 +48,25 @@ namespace FMBot.Bot
         {
             var discordClient = new DiscordShardedClient(new DiscordSocketConfig
             {
-                // Add discord to the collection
-                LogLevel = LogSeverity.Verbose, // Tell the logger to give Verbose amount of info
-                MessageCacheSize = 0,
+                LogLevel = LogSeverity.Verbose,
+                MessageCacheSize = 0
             });
 
             var logger = new Logger.Logger();
 
+            // Timer service (featured)
             var timerService = new TimerService(discordClient, logger);
 
             using (var context = new FMBotDbContext())
             {
                 try
                 {
-                    Console.WriteLine("Ensuring database is up to date...");
+                    logger.Log("Ensuring database is up to date...");
                     context.Database.Migrate();
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"Something went wrong while creating/updating the database! \n{e.Message}");
+                    logger.LogError("Migrations", $"Something went wrong while creating/updating the database! \n{e.Message}");
                     throw;
                 }
             }
@@ -82,9 +84,31 @@ namespace FMBot.Bot
                 .AddSingleton(logger)
                 .AddSingleton(timerService)
 
-                //.AddSingleton<LoggingService>()         // Add loggingservice to the collection
                 .AddSingleton<Random>() // Add random to the collection
                 .AddSingleton(Configuration); // Add the configuration to the collection
+
+            _ = StartMetricsServer(discordClient, logger);
+        }
+
+        static async Task StartMetricsServer(DiscordShardedClient client, Logger.Logger logger)
+        {
+            logger.Log("Starting metrics server");
+
+            // Wait for login
+            await Task.Delay(7500);
+
+            var prometheusPort = 4444;
+            if (client.CurrentUser.Username.Contains("develop"))
+            {
+                prometheusPort = 4422;
+            }
+
+            logger.Log($"Prometheus starting on port {prometheusPort}");
+
+            var server = new MetricServer(hostname: "localhost", port: prometheusPort);
+            server.Start();
+
+            logger.Log($"Prometheus running on localhost:{prometheusPort}/metrics");
         }
 
         static void UnhandledExceptionTrapper(object sender, UnhandledExceptionEventArgs e)

@@ -13,6 +13,7 @@ namespace FMBot.Bot
     {
         public static class GlobalVars
         {
+            // TODO: Move this to database
             public static readonly IReadOnlyList<Album> CensoredAlbums = new List<Album>
             {
                 new Album("Death Grips", "No Love Deep Web"),
@@ -41,14 +42,11 @@ namespace FMBot.Bot
             public static readonly string CacheFolder = BasePath + "cache/";
             public static string ImageFolder = BasePath + "resources/images/";
             public static string FeaturedUserID = "";
-            public static int CommandExecutions;
-            public static int LastFMApiCalls;
             public static Hashtable charts = new Hashtable();
 
-            private static bool IsUserInDM;
             public static string GetChartFileName(ulong id)
             {
-                return CacheFolder + id.ToString() + "-chart.png";
+                return CacheFolder + id + "-chart.png";
             }
 
             public static async Task<MemoryStream> GetChartStreamAsync(ulong id)

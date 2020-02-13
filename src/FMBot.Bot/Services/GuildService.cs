@@ -211,5 +211,10 @@ namespace FMBot.Bot.Services
         {
             return await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guild.Id.ToString()) != null;
         }
+
+        public async Task<int> GetTotalGuildCountAsync()
+        {
+            return await this.db.Guilds.CountAsync();
+        }
     }
 }

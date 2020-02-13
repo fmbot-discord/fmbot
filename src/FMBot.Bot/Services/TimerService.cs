@@ -8,7 +8,10 @@ using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using IF.Lastfm.Core.Api.Enums;
+using NLog;
+using Prometheus;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Services
@@ -17,8 +20,10 @@ namespace FMBot.Bot.Services
     {
         private readonly Logger.Logger _logger;
         private readonly Timer _timer;
+        private readonly Timer _statsTimer;
         private readonly LastFMService _lastFMService = new LastFMService();
         private readonly UserService _userService = new UserService();
+        private readonly GuildService _guildService = new GuildService();
 
         private bool _timerEnabled;
 
@@ -157,6 +162,18 @@ namespace FMBot.Bot.Services
                     Convert.ToDouble(ConfigData.Data.TimerInit)), // 4) Time that message should fire after the timer is created
                 TimeSpan.FromMinutes(
                     Convert.ToDouble(ConfigData.Data.TimerRepeat))); // 5) Time after which message should repeat (use `Timeout.Infinite` for no repeat)
+
+            this._statsTimer = new Timer(async _ =>
+            {
+                Statistics.DiscordServerCount.Set(client.Guilds.Count);
+                Statistics.RegisteredUsers.Set(await this._userService.GetTotalUserCountAsync());
+                Statistics.RegisteredGuilds.Set(await this._guildService.GetTotalGuildCountAsync());
+
+                await client.SetGameAsync($"{ConfigData.Data.CommandPrefix}fm | {client.Guilds.Count} servers | fmbot.xyz");
+            },
+            null,
+            TimeSpan.FromSeconds(30), // 4) Time that message should fire after the timer is created
+            TimeSpan.FromMinutes(1)); // 5) Time after which message should repeat (use `Timeout.Infinite` for no repeat)
 
             this._timerEnabled = true;
         }

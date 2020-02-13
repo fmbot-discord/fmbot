@@ -9,6 +9,7 @@ using Dasync.Collections;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using IF.Lastfm.Core.Api;
 using Microsoft.EntityFrameworkCore.Internal;
 
@@ -31,7 +32,7 @@ namespace FMBot.Bot.Services
                 await chart.Albums.ParallelForEachAsync(async album =>
                 {
                     var albumInfo = await this._lastFMClient.Album.GetInfoAsync(album.ArtistName, album.Name);
-                    FMBotUtil.GlobalVars.LastFMApiCalls++;
+                    Statistics.LastfmApiCalls.Inc();
 
                     var albumImages = albumInfo?.Content?.Images;
 

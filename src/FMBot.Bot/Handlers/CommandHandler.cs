@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Resources;
 
 namespace FMBot.Bot.Handlers
 {
@@ -69,7 +70,7 @@ namespace FMBot.Bot.Handlers
 
                 if (result.IsSuccess)
                 {
-                    FMBotUtil.GlobalVars.CommandExecutions++;
+                    Statistics.CommandsExecuted.Inc();
                 }
                 else
                 {

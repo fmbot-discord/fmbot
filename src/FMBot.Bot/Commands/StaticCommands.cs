@@ -104,16 +104,14 @@ namespace FMBot.Bot.Commands
 
             var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
-            var fixedCmdGlobalCount = GlobalVars.CommandExecutions + 1;
-
             this._embed.AddField("Bot Uptime: ", startTime.ToReadableString(), true);
             this._embed.AddField("Server Uptime: ", GlobalVars.SystemUpTime().ToReadableString(), true);
             this._embed.AddField("Usercount: ", (await this._userService.GetTotalUserCountAsync()).ToString(), true);
             this._embed.AddField("Friendcount: ", (await this._friendService.GetTotalFriendCountAsync()).ToString(), true);
             this._embed.AddField("Discord usercount: ", client.Guilds.Select(s => s.MemberCount).Sum(), true);
             this._embed.AddField("Servercount: ", client.Guilds.Count, true);
-            this._embed.AddField("Commands used: ", fixedCmdGlobalCount, true);
-            this._embed.AddField("Last.FM API calls: ", GlobalVars.LastFMApiCalls, true);
+            this._embed.AddField("Commands used: ", Statistics.CommandsExecuted.Value, true);
+            this._embed.AddField("Last.FM API calls: ", Statistics.LastfmApiCalls.Value, true);
             this._embed.AddField("Memory usage: ", $"{currentMemoryUsage.ToFormattedByteString()} (Peak: {peakMemoryUsage.ToFormattedByteString()})", true);
             this._embed.AddField("Average latency: ", Math.Round(client.Shards.Select(s => s.Latency).Average(), 2) + "ms", true);
             this._embed.AddField("Shards: ", client.Shards.Count, true);

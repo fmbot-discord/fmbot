@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Dasync.Collections;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Data.Entities;
 using FMBot.LastFM.Models;
 using IF.Lastfm.Core.Api;
@@ -38,7 +39,7 @@ namespace FMBot.Bot.Services
         public async Task<LastTrack> GetLastScrobbleAsync(string lastFMUserName)
         {
             var tracks = await this._lastFMClient.User.GetRecentScrobbles(lastFMUserName, null, 1, 1);
-            GlobalVars.LastFMApiCalls++;
+            Statistics.LastfmApiCalls.Inc();
 
             return tracks.Content[0];
         }
@@ -47,7 +48,7 @@ namespace FMBot.Bot.Services
         public async Task<PageResponse<LastTrack>> GetRecentScrobblesAsync(string lastFMUserName, int count = 2)
         {
             var recentScrobbles = await this._lastFMClient.User.GetRecentScrobbles(lastFMUserName, null, 1, count);
-            GlobalVars.LastFMApiCalls++;
+            Statistics.LastfmApiCalls.Inc();
 
             return recentScrobbles;
         }
@@ -96,7 +97,7 @@ namespace FMBot.Bot.Services
         public async Task<LastResponse<LastUser>> GetUserInfoAsync(string lastFMUserName)
         {
             var user = await this._lastFMClient.User.GetInfoAsync(lastFMUserName);
-            GlobalVars.LastFMApiCalls++;
+            Statistics.LastfmApiCalls.Inc();
 
             return user;
         }
@@ -116,7 +117,7 @@ namespace FMBot.Bot.Services
             var url = QueryHelpers.AddQueryString("http://ws.audioscrobbler.com/2.0/", queryParams);
 
             var httpResponse = await _client.GetAsync(url);
-            GlobalVars.LastFMApiCalls++;
+            Statistics.LastfmApiCalls.Inc();
 
             if (!httpResponse.IsSuccessStatusCode)
             {
@@ -133,7 +134,7 @@ namespace FMBot.Bot.Services
         public async Task<LastResponse<LastAlbum>> GetAlbumInfoAsync(string artistName, string albumName, string username = null)
         {
             var albumInfo = await this._lastFMClient.Album.GetInfoAsync(artistName, albumName);
-            GlobalVars.LastFMApiCalls++;
+            Statistics.LastfmApiCalls.Inc();
 
             return albumInfo;
         }
@@ -142,7 +143,7 @@ namespace FMBot.Bot.Services
         public async Task<LastImageSet> GetAlbumImagesAsync(string artistName, string albumName)
         {
             var album = await this._lastFMClient.Album.GetInfoAsync(artistName, albumName);
-            GlobalVars.LastFMApiCalls++;
+            Statistics.LastfmApiCalls.Inc();
 
             return album?.Content?.Images;
         }
@@ -167,7 +168,7 @@ namespace FMBot.Bot.Services
         public async Task<PageResponse<LastAlbum>> GetTopAlbumsAsync(string lastFMUserName, LastStatsTimeSpan timespan, int count = 2)
         {
             var topAlbums = await this._lastFMClient.User.GetTopAlbums(lastFMUserName, timespan, 1, count);
-            GlobalVars.LastFMApiCalls++;
+            Statistics.LastfmApiCalls.Inc();
 
             return topAlbums;
         }
@@ -176,28 +177,18 @@ namespace FMBot.Bot.Services
         public async Task<LastResponse<LastArtist>> GetArtistInfoAsync(string artistName, string userName = null)
         {
             var artistInfo = await this._lastFMClient.Artist.GetInfoAsync(artistName);
-            GlobalVars.LastFMApiCalls++;
+            Statistics.LastfmApiCalls.Inc();
 
             return artistInfo;
         }
 
-        // Artist info
-        public async Task<LastImageSet> GetArtistImageAsync(string artistName)
-        {
-            var artist = await this._lastFMClient.Artist.GetInfoAsync(artistName);
-
-            var artist2 = await this._lastFMClient.Artist.GetInfoByMbidAsync(artist.Content.Mbid);
-            GlobalVars.LastFMApiCalls++;
-
-            return artist2?.Content?.MainImage;
-        }
 
         // Top artists
         public async Task<PageResponse<LastArtist>> GetTopArtistsAsync(string lastFMUserName,
             LastStatsTimeSpan timespan, int count = 2)
         {
             var topArtists = await this._lastFMClient.User.GetTopArtists(lastFMUserName, timespan, 1, count);
-            GlobalVars.LastFMApiCalls++;
+            Statistics.LastfmApiCalls.Inc();
 
             return topArtists;
         }
@@ -206,7 +197,7 @@ namespace FMBot.Bot.Services
         public async Task<bool> LastFMUserExistsAsync(string lastFMUserName)
         {
             var lastFMUser = await this._lastFMClient.User.GetInfoAsync(lastFMUserName);
-            GlobalVars.LastFMApiCalls++;
+            Statistics.LastfmApiCalls.Inc();
 
             return lastFMUser.Success;
         }
