@@ -1,7 +1,5 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -171,7 +169,7 @@ namespace FMBot.Bot.Services
 
             var dbGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guildId);
 
-            if (dbGuild == null || !guild.Emotes.Any())
+            if (dbGuild?.EmoteReactions == null || !dbGuild.EmoteReactions.Any())
             {
                 return;
             }
