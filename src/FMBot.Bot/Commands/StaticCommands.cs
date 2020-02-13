@@ -63,9 +63,9 @@ namespace FMBot.Bot.Commands
                 "https://discordapp.com/oauth2/authorize?client_id=" + SelfID + "&scope=bot&permissions=" +
                 Constants.InviteLinkPermissions);
 
-            this._embed.AddField("Like the bot and want support its development?",
-                "Feel free to support the developers here: \n" +
-                "https://www.paypal.me/Bitl and https://www.paypal.me/th0m");
+            this._embed.AddField("Support the developers",
+                "Frikandel: https://www.paypal.me/th0m \n" +
+                "Bitl: https://www.paypal.me/Bitl");
 
             this._embed.AddField("Post issues and feature requests here:",
                 "https://github.com/fmbot-discord/fmbot/issues/new/choose");
