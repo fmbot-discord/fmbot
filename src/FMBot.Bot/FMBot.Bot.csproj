@@ -8,7 +8,8 @@
     <ApplicationIcon>avatar.ico</ApplicationIcon>
     <Authors>Bitl#3305 &amp; Frikandel#0001</Authors>
     <PackageId>FMBot</PackageId>
-    <PackageProjectUrl>https://github.com/Bitl/FMBot_Discord</PackageProjectUrl>
+    <PackageProjectUrl>https://fmbot.xyz/</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/fmbot-discord/fmbot</RepositoryUrl>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
