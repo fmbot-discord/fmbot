@@ -1,10 +1,12 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Handlers;
 using FMBot.Bot.Services;
+using FMBot.Data.Entities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -52,6 +54,20 @@ namespace FMBot.Bot
             var logger = new Logger.Logger();
 
             var timerService = new TimerService(discordClient, logger);
+
+            using (var context = new FMBotDbContext())
+            {
+                try
+                {
+                    Console.WriteLine("Ensuring database is up to date...");
+                    context.Database.Migrate();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Something went wrong while creating/updating the database! \n{e.Message}");
+                    throw;
+                }
+            }
 
             services
                 .AddSingleton(discordClient)
