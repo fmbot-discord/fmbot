@@ -172,7 +172,7 @@ namespace FMBot.Bot.Services
                 await client.SetGameAsync($"{ConfigData.Data.CommandPrefix}fm | {client.Guilds.Count} servers | fmbot.xyz");
             },
             null,
-            TimeSpan.FromSeconds(30), // 4) Time that message should fire after the timer is created
+            TimeSpan.FromMinutes(1), // 4) Time that message should fire after the timer is created
             TimeSpan.FromMinutes(1)); // 5) Time after which message should repeat (use `Timeout.Infinite` for no repeat)
 
             this._timerEnabled = true;

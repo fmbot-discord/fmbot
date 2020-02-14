@@ -92,13 +92,12 @@ namespace FMBot.Bot
 
         static async Task StartMetricsServer(DiscordShardedClient client, Logger.Logger logger)
         {
+            // Wait for login
+            await Task.Delay(30000);
             logger.Log("Starting metrics server");
 
-            // Wait for login
-            await Task.Delay(7500);
-
             var prometheusPort = 4444;
-            if (client.CurrentUser.Username.Contains("develop"))
+            if (client.CurrentUser != null && client.CurrentUser.Username.Contains("develop"))
             {
                 prometheusPort = 4422;
             }
