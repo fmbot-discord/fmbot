@@ -264,7 +264,7 @@ namespace FMBot.Bot.Commands
 
             if (friends.Length == 0)
             {
-                await ReplyAsync("Please enter at least one friend to remove.");
+                await ReplyAsync("Please enter at least one friend to remove. Please use their last.fm usernames.");
                 return;
             }
 
@@ -312,7 +312,7 @@ namespace FMBot.Bot.Commands
                 }
                 else
                 {
-                    await ReplyAsync("Unable to add a friend due to an internal error. Did you add anyone?");
+                    await ReplyAsync("Unable to remove a friend due to an internal error. Did you add anyone?");
                 }
             }
         }
