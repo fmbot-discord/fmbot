@@ -33,7 +33,7 @@ namespace FMBot.Bot.Services
 
         public async Task StartAsync()
         {
-           this._logger.Log("Starting bot");
+            this._logger.Log("Starting bot");
 
             var discordToken = ConfigData.Data.Token; // Get the discord token from the config file
             if (string.IsNullOrWhiteSpace(discordToken))
@@ -44,10 +44,10 @@ namespace FMBot.Bot.Services
             await TestLastFmApi();
 
             this._logger.Log("Logging into Discord");
-            await this._client.LoginAsync(TokenType.Bot, discordToken); 
+            await this._client.LoginAsync(TokenType.Bot, discordToken);
 
             this._logger.Log("Starting connection between Discord and the client");
-            await this._client.StartAsync(); 
+            await this._client.StartAsync();
 
             await this._client.SetStatusAsync(UserStatus.DoNotDisturb);
 
@@ -58,6 +58,8 @@ namespace FMBot.Bot.Services
 
             await StartMetricsServer();
         }
+
+
 
         private async Task TestLastFmApi()
         {
@@ -81,14 +83,16 @@ namespace FMBot.Bot.Services
             }
         }
 
+
         private Task StartMetricsServer()
         {
+            Thread.Sleep(TimeSpan.FromSeconds(Constants.BotWarmupTimeInSeconds));
             this._logger.Log("Starting metrics server");
 
             var prometheusPort = 4444;
             if (!this._client.CurrentUser.Id.Equals(Constants.BotProductionId))
             {
-                this._logger.Log("Metrics server port selected is non-production");
+                this._logger.Log("Prometheus port selected is non-production");
                 prometheusPort = 4422;
             }
 

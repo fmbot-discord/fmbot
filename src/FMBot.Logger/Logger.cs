@@ -14,7 +14,7 @@ namespace FMBot.Logger
             var filePath = $"Logs/{DateTime.Now:MMMM, yyyy}";
             if (!File.Exists(filePath)) Directory.CreateDirectory(filePath);
             filePath += $"/{DateTime.Now:dddd, MMMM d, yyyy}.txt";
-            using var file = new FileStream(filePath, FileMode.Append, FileAccess.Write, FileShare.None);
+            using var file = new FileStream(filePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
             using var sw = new StreamWriter(file);
 
             sw.WriteLine($"{DateTime.Now:T} : {text}");

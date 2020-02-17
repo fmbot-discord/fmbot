@@ -174,7 +174,7 @@ namespace FMBot.Bot.Services
                     await client.SetGameAsync($"{ConfigData.Data.CommandPrefix}fm | {client.Guilds.Count} servers | fmbot.xyz");
                 },
                 null,
-                TimeSpan.FromSeconds(30),
+                TimeSpan.FromSeconds(Constants.BotWarmupTimeInSeconds + 10),
                 TimeSpan.FromMinutes(1));
 
             this._externalStatsTimer = new Timer(async _ =>
@@ -194,7 +194,7 @@ namespace FMBot.Bot.Services
                     }
                 },
                 null,
-                TimeSpan.FromSeconds(40),
+                TimeSpan.FromSeconds(Constants.BotWarmupTimeInSeconds + 20),
                 TimeSpan.FromMinutes(5));
 
             this._timerEnabled = true;
