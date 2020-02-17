@@ -166,6 +166,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 this._embed.WithTitle("Changing your .fmbot settings");
+                this._embed.WithUrl($"{Constants.DocsUrl}/commands/");
                 this._embed.WithDescription(replyString);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());

@@ -53,11 +53,22 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (user == "help")
             {
-                await ReplyAsync(
-                    "Usage: `.fm 'lastfm username/discord user'` \n" +
-                    "You can set your default user and your display mode through the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                var prfx = ConfigData.Data.CommandPrefix;
+                var replyString = "`.fm` shows you your last scrobble(s). \n " +
+                                  "This command can also be used on others, for example `.fm lastfmusername` or `.fm @discorduser`\n \n" +
+
+                                  "You can set your username and you can change the mode with the `.fmset` command.\n";
+
+                var differentMode = userSettings.ChartType == ChartType.embedmini ? "embedfull" : "embedmini";
+                replyString += $"`{prfx}fmset {userSettings.UserNameLastFM} {differentMode}` \n \n" +
+                               $"For more info, use `.fmset help`.";
+
+
+                this._embed.WithUrl($"{Constants.DocsUrl}/commands/tracks/");
+                this._embed.WithTitle("Using the .fm command");
+                this._embed.WithDescription(replyString);
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 return;
             }
 
@@ -359,6 +370,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         private async Task UsernameNotSetErrorResponseAsync()
         {
+            this._embed.WithUrl($"{Constants.DocsUrl}/commands/");
             this._embed.UsernameNotSetErrorResponse(this.Context, this._logger);
             await ReplyAsync("", false, this._embed.Build());
         }

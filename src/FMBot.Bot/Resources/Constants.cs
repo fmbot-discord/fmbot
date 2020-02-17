@@ -12,6 +12,8 @@ namespace FMBot.Bot.Resources
 
         public const ulong BotProductionId = 356268235697553409;
 
+        public const string DocsUrl = "https://fmbot.xyz";
+
         /// <summary>The Discord color for a warning embed.</summary>
         public static Color WarningColorOrange = new Color(255, 174, 66);
     }
