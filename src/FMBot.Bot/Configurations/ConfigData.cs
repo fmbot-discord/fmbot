@@ -24,7 +24,7 @@ namespace FMBot.Bot.Configurations
                 Data = new ConfigJson
                 {
                     CommandPrefix = ".",
-                    TimerInit = "60",
+                    TimerInit = "20",
                     TimerRepeat = "60",
                     Cooldown = "10",
                     NumMessages = "5",

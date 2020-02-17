@@ -10,7 +10,6 @@ using FMBot.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Prometheus;
 
 namespace FMBot.Bot
 {
@@ -40,7 +39,7 @@ namespace FMBot.Bot
             //provider.GetRequiredService<LoggingService>();      // Start the logging service
             provider.GetRequiredService<CommandHandler>(); // Start the command handler service
 
-            await provider.GetRequiredService<StartupService>().StartAsync(new Logger.Logger()); // Start the startup service
+            await provider.GetRequiredService<StartupService>().StartAsync(); // Start the startup service
             await Task.Delay(-1); // Keep the program alive
         }
 
@@ -53,12 +52,26 @@ namespace FMBot.Bot
             });
 
             var logger = new Logger.Logger();
+            
+            services
+                .AddSingleton(discordClient)
+                .AddSingleton(new CommandService(new CommandServiceConfig
+                {
+                    LogLevel = LogSeverity.Verbose,
+                    DefaultRunMode = RunMode.Async,
+                }))
+                .AddSingleton<CommandHandler>()
+                .AddSingleton<StartupService>()
+                .AddSingleton<TimerService>()
+                .AddSingleton(logger)
+                .AddSingleton<Random>() // Add random to the collection
+                .AddSingleton(Configuration); // Add the configuration to the collection
 
             using (var context = new FMBotDbContext())
             {
                 try
                 {
-                    logger.Log("Ensuring database is up to date...");
+                    logger.Log("Ensuring database is up to date");
                     context.Database.Migrate();
                 }
                 catch (Exception e)
@@ -67,51 +80,6 @@ namespace FMBot.Bot
                     throw;
                 }
             }
-
-            
-
-
-            services
-                .AddSingleton(discordClient)
-                .AddSingleton(new CommandService(new CommandServiceConfig
-                {
-                    // Add the command service to the collection
-                    LogLevel = LogSeverity.Verbose, // Tell the logger to give Verbose amount of info
-                    DefaultRunMode = RunMode.Async, // Force all commands to run async by default
-                }))
-                .AddSingleton<CommandHandler>() // Add the command handler to the collection
-                .AddSingleton<StartupService>() // Add startupservice to the collection
-                .AddSingleton(logger)
-                .AddSingleton<Random>() // Add random to the collection
-                .AddSingleton(Configuration); // Add the configuration to the collection
-
-            while (discordClient.LoginState != LoginState.LoggedIn)
-            {
-                
-                var timerService = new TimerService(discordClient, logger);
-                services.AddSingleton(timerService);
-
-                StartMetricsServer(discordClient, logger);
-            }
-        }
-
-        private async Task StartMetricsServer(DiscordShardedClient client, Logger.Logger logger)
-        {
-            // Wait for login
-            logger.Log("Starting metrics server");
-
-            var prometheusPort = 4444;
-            if (client.CurrentUser != null && client.CurrentUser.Username.Contains("develop"))
-            {
-                prometheusPort = 4422;
-            }
-
-            logger.Log($"Prometheus starting on port {prometheusPort}");
-
-            var server = new MetricServer(hostname: "localhost", port: prometheusPort);
-            server.Start();
-
-            logger.Log($"Prometheus running on localhost:{prometheusPort}/metrics");
         }
 
         static void UnhandledExceptionTrapper(object sender, UnhandledExceptionEventArgs e)

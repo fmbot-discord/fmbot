@@ -6,29 +6,34 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Resources;
 using IF.Lastfm.Core.Api;
+using Prometheus;
 
 namespace FMBot.Bot.Services
 {
     public class StartupService
     {
         private readonly CommandService _commands;
-        private readonly DiscordShardedClient _discord;
+        private readonly DiscordShardedClient _client;
         private readonly IServiceProvider _provider;
+        private readonly Logger.Logger _logger;
 
         public StartupService(
             IServiceProvider provider,
             DiscordShardedClient discord,
-            CommandService commands)
+            CommandService commands,
+            Logger.Logger logger)
         {
             this._provider = provider;
-            this._discord = discord;
+            this._client = discord;
             this._commands = commands;
+            this._logger = logger;
         }
 
-        public async Task StartAsync(Logger.Logger logger)
+        public async Task StartAsync()
         {
-            logger.Log("Starting bot...");
+           this._logger.Log("Starting bot");
 
             var discordToken = ConfigData.Data.Token; // Get the discord token from the config file
             if (string.IsNullOrWhiteSpace(discordToken))
@@ -36,28 +41,34 @@ namespace FMBot.Bot.Services
                 throw new Exception("Please enter your bots token into the `/Configs/ConfigData.json` file.");
             }
 
-            await TestLastFMAPI(logger);
+            await TestLastFmApi();
 
-            await this._discord.LoginAsync(TokenType.Bot, discordToken); // Login to discord
-            await this._discord.StartAsync(); // Connect to the websocket
+            this._logger.Log("Logging into Discord");
+            await this._client.LoginAsync(TokenType.Bot, discordToken); 
 
-            await this._discord.SetGameAsync("Starting bot...");
-            await this._discord.SetStatusAsync(UserStatus.DoNotDisturb);
+            this._logger.Log("Starting connection between Discord and the client");
+            await this._client.StartAsync(); 
 
-            await this._commands.AddModulesAsync(Assembly.GetEntryAssembly(),
-                this._provider); // Load commands and modules into the command service
+            await this._client.SetStatusAsync(UserStatus.DoNotDisturb);
+
+            await this._commands
+                .AddModulesAsync(
+                    Assembly.GetEntryAssembly(),
+                    this._provider); // Load commands and modules into the command service
+
+            await StartMetricsServer();
         }
 
-        private async Task TestLastFMAPI(Logger.Logger logger)
+        private async Task TestLastFmApi()
         {
             var fmClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
 
-            logger.Log("Checking Last.FM API...");
+            this._logger.Log("Testing Last.FM API");
             var lastFMUser = await fmClient.User.GetInfoAsync("Lastfmsupport");
 
             if (lastFMUser.Status.ToString().Equals("BadApiKey"))
             {
-                logger.LogError("BadLastfmApiKey",
+                this._logger.LogError("BadLastfmApiKey",
                     "Warning! Invalid API key for Last.FM! Please set the proper API keys in the `/Configs/ConfigData.json`! \n \n" +
                     "Exiting in 5 seconds...");
 
@@ -66,8 +77,28 @@ namespace FMBot.Bot.Services
             }
             else
             {
-                logger.Log("Last.FM API test successful.");
+                this._logger.Log("Last.FM API test successful");
             }
+        }
+
+        private Task StartMetricsServer()
+        {
+            this._logger.Log("Starting metrics server");
+
+            var prometheusPort = 4444;
+            if (!this._client.CurrentUser.Id.Equals(Constants.BotProductionId))
+            {
+                this._logger.Log("Metrics server port selected is non-production");
+                prometheusPort = 4422;
+            }
+
+            this._logger.Log($"Prometheus starting on port {prometheusPort}");
+
+            var server = new MetricServer("localhost", prometheusPort);
+            server.Start();
+
+            this._logger.Log($"Prometheus running on localhost:{prometheusPort}/metrics");
+            return Task.CompletedTask;
         }
     }
 }
