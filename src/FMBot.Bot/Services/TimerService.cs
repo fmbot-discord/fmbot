@@ -161,7 +161,7 @@ namespace FMBot.Bot.Services
                     }
                 },
                 null,
-                TimeSpan.FromSeconds(Convert.ToDouble(ConfigData.Data.TimerInit)), // 4) Time that message should fire after the timer is created
+                TimeSpan.FromSeconds(Convert.ToDouble(Constants.BotWarmupTimeInSeconds + ConfigData.Data.TimerInit)), // 4) Time that message should fire after the timer is created
                 TimeSpan.FromMinutes(Convert.ToDouble(ConfigData.Data.TimerRepeat))); // 5) Time after which message should repeat (use `Timeout.Infinite` for no repeat)
 
             this._internalStatsTimer = new Timer(async _ =>
