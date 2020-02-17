@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Threading;
 using Newtonsoft.Json;
@@ -24,7 +24,7 @@ namespace FMBot.Bot.Configurations
                 Data = new ConfigJson
                 {
                     CommandPrefix = ".",
-                    TimerInit = "15",
+                    TimerInit = "60",
                     TimerRepeat = "60",
                     Cooldown = "10",
                     NumMessages = "5",

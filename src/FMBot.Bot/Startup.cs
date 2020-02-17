@@ -54,9 +54,6 @@ namespace FMBot.Bot
 
             var logger = new Logger.Logger();
 
-            // Timer service (featured)
-            var timerService = new TimerService(discordClient, logger);
-
             using (var context = new FMBotDbContext())
             {
                 try
@@ -71,6 +68,9 @@ namespace FMBot.Bot
                 }
             }
 
+            
+
+
             services
                 .AddSingleton(discordClient)
                 .AddSingleton(new CommandService(new CommandServiceConfig
@@ -82,18 +82,22 @@ namespace FMBot.Bot
                 .AddSingleton<CommandHandler>() // Add the command handler to the collection
                 .AddSingleton<StartupService>() // Add startupservice to the collection
                 .AddSingleton(logger)
-                .AddSingleton(timerService)
-
                 .AddSingleton<Random>() // Add random to the collection
                 .AddSingleton(Configuration); // Add the configuration to the collection
 
-            _ = StartMetricsServer(discordClient, logger);
+            while (discordClient.LoginState != LoginState.LoggedIn)
+            {
+                
+                var timerService = new TimerService(discordClient, logger);
+                services.AddSingleton(timerService);
+
+                StartMetricsServer(discordClient, logger);
+            }
         }
 
-        static async Task StartMetricsServer(DiscordShardedClient client, Logger.Logger logger)
+        private async Task StartMetricsServer(DiscordShardedClient client, Logger.Logger logger)
         {
             // Wait for login
-            await Task.Delay(30000);
             logger.Log("Starting metrics server");
 
             var prometheusPort = 4444;

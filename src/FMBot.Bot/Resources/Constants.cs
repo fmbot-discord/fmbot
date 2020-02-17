@@ -10,6 +10,8 @@ namespace FMBot.Bot.Resources
 
         public const int InviteLinkPermissions = 52288;
 
+        public const ulong BotProductionId = 356268235697553409;
+
         /// <summary>The Discord color for a warning embed.</summary>
         public static Color WarningColorOrange = new Color(255, 174, 66);
     }

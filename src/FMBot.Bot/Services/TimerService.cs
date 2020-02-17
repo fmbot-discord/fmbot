@@ -6,12 +6,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
+using DiscordBotsList.Api;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using IF.Lastfm.Core.Api.Enums;
-using NLog;
-using Prometheus;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Services
@@ -20,7 +19,8 @@ namespace FMBot.Bot.Services
     {
         private readonly Logger.Logger _logger;
         private readonly Timer _timer;
-        private readonly Timer _statsTimer;
+        private readonly Timer _internalStatsTimer;
+        private readonly Timer _externalStatsTimer;
         private readonly LastFMService _lastFMService = new LastFMService();
         private readonly UserService _userService = new UserService();
         private readonly GuildService _guildService = new GuildService();
@@ -158,13 +158,12 @@ namespace FMBot.Bot.Services
                     }
                 },
                 null,
-                TimeSpan.FromSeconds(
-                    Convert.ToDouble(ConfigData.Data.TimerInit)), // 4) Time that message should fire after the timer is created
+                TimeSpan.FromMinutes(1), // 4) Time that message should fire after the timer is created
                 TimeSpan.FromMinutes(
                     Convert.ToDouble(ConfigData.Data.TimerRepeat))); // 5) Time after which message should repeat (use `Timeout.Infinite` for no repeat)
 
-            this._statsTimer = new Timer(async _ =>
-            {
+            this._internalStatsTimer = new Timer(async _ =>
+            { 
                 Statistics.DiscordServerCount.Set(client.Guilds.Count);
                 Statistics.RegisteredUsers.Set(await this._userService.GetTotalUserCountAsync());
                 Statistics.RegisteredGuilds.Set(await this._guildService.GetTotalGuildCountAsync());
@@ -172,8 +171,28 @@ namespace FMBot.Bot.Services
                 await client.SetGameAsync($"{ConfigData.Data.CommandPrefix}fm | {client.Guilds.Count} servers | fmbot.xyz");
             },
             null,
-            TimeSpan.FromMinutes(1), // 4) Time that message should fire after the timer is created
-            TimeSpan.FromMinutes(1)); // 5) Time after which message should repeat (use `Timeout.Infinite` for no repeat)
+            TimeSpan.FromMinutes(1),
+            TimeSpan.FromMinutes(1));
+
+            this._externalStatsTimer = new Timer(async _ =>
+                {
+                    if (client.CurrentUser.Id.Equals(Constants.BotProductionId) && !string.IsNullOrEmpty(ConfigData.Data.DblApiToken))
+                    {
+                        logger.Log("Updating top.gg server count...");
+                        var dblApi = new AuthDiscordBotListApi(Constants.BotProductionId, ConfigData.Data.DblApiToken);
+
+                        var me = await dblApi.GetMeAsync();
+                        await me.UpdateStatsAsync(client.Guilds.Count);
+                    }
+                    else
+                    {
+                        logger.Log("Non-production bot found or top.gg token not entered, cancelling top.gg server count updater.");
+                        this._externalStatsTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                    }
+                },
+                null,
+                TimeSpan.FromMinutes(1),
+                TimeSpan.FromMinutes(5));
 
             this._timerEnabled = true;
         }
