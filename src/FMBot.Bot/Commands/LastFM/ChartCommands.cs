@@ -36,14 +36,14 @@ namespace FMBot.Bot.Commands.LastFM
             this._embedFooter = new EmbedFooterBuilder();
         }
 
-        private async Task SendChartMessage(ChartSettings chartSettings)
+        private async Task SendChartMessage(ChartSettings chartSettings, Embed embed)
         {
             await this._chartService.GenerateChartAsync(chartSettings);
 
             // Send chart memory stream, remove when finished
             using (var memory = await GlobalVars.GetChartStreamAsync(chartSettings.DiscordUser.Id))
             {
-                await this.Context.Channel.SendFileAsync(memory, "chart.png");
+                await this.Context.Channel.SendFileAsync(memory, "chart.png", null, false, embed);
             }
 
             lock (GlobalVars.charts.SyncRoot)
@@ -195,8 +195,6 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this._userService.ResetChartTimerAsync(userSettings);
 
-                await SendChartMessage(chartSettings);
-
                 string chartDescription;
                 string datePreset;
                 if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
@@ -260,7 +258,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithFooter(this._embedFooter);
 
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                await SendChartMessage(chartSettings, this._embed.Build());
+
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
                     this.Context.Message.Content);
             }
