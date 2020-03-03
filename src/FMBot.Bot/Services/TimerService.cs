@@ -184,8 +184,15 @@ namespace FMBot.Bot.Services
                         logger.Log("Updating top.gg server count");
                         var dblApi = new AuthDiscordBotListApi(Constants.BotProductionId, ConfigData.Data.DblApiToken);
 
-                        var me = await dblApi.GetMeAsync();
-                        await me.UpdateStatsAsync(client.Guilds.Count);
+                        try
+                        {
+                            var me = await dblApi.GetMeAsync();
+                            await me.UpdateStatsAsync(client.Guilds.Count);
+                        }
+                        catch (Exception e)
+                        {
+                            logger.LogException("Exception while updating top.gg count!", e);
+                        }
                     }
                     else
                     {
