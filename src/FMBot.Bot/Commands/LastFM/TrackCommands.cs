@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -10,7 +8,6 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Data.Entities;
-using FMBot.LastFM.Models;
 using FMBot.LastFM.Services;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -23,14 +20,12 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly GuildService _guildService = new GuildService();
         private readonly LastFMService _lastFmService = new LastFMService();
         private readonly Logger.Logger _logger;
-        private readonly LastfmApi _lastfmApi;
 
         private readonly UserService _userService = new UserService();
 
         public TrackCommands(Logger.Logger logger)
         {
             this._logger = logger;
-            this._lastfmApi = new LastfmApi(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -41,7 +36,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays what a user is listening to.")]
         [Alias("np", "qm", "wm", "em", "rm", "tm", "ym", "um", "im", "om", "pm", "dm", "gm", "sm", "am", "hm", "jm", "km",
             "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm")]
-        public async Task FMAsync(string user = null)
+        public async Task FMAsync(params string[] user)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -51,7 +46,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            if (user == "help")
+            if (user.Length > 0 && user.First() == "help")
             {
                 var prfx = ConfigData.Data.CommandPrefix;
                 var replyString = "`.fm` shows you your last scrobble(s). \n " +
@@ -77,10 +72,10 @@ namespace FMBot.Bot.Commands.LastFM
                 var lastFMUserName = userSettings.UserNameLastFM;
                 var self = true;
 
-                if (user != null)
+                if (user.Length > 0 && !string.IsNullOrEmpty(user.First()))
                 {
-                    var alternativeLastFmUserName = await FindUser(user);
-                    if (!string.IsNullOrEmpty(alternativeLastFmUserName))
+                    var alternativeLastFmUserName = await FindUser(user.First());
+                    if (!string.IsNullOrEmpty(alternativeLastFmUserName) && await this._lastFmService.LastFMUserExistsAsync(alternativeLastFmUserName))
                     {
                         lastFMUserName = alternativeLastFmUserName;
                         self = false;
