@@ -39,7 +39,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("fm", RunMode = RunMode.Async)]
         [Summary("Displays what a user is listening to.")]
-        [Alias("qm", "wm", "em", "rm", "tm", "ym", "um", "im", "om", "pm", "dm", "gm", "sm", "am", "hm", "jm", "km",
+        [Alias("np", "qm", "wm", "em", "rm", "tm", "ym", "um", "im", "om", "pm", "dm", "gm", "sm", "am", "hm", "jm", "km",
             "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm")]
         public async Task FMAsync(string user = null)
         {
