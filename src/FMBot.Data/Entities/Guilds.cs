@@ -1,15 +1,7 @@
-using System;
-using System.Collections.Generic;
-
 namespace FMBot.Data.Entities
 {
     public partial class Guild
     {
-        public Guild()
-        {
-            GuildUsers = new HashSet<GuildUsers>();
-        }
-
         public int GuildID { get; set; }
         public string DiscordGuildID { get; set; }
         public string Name { get; set; }
@@ -19,7 +11,5 @@ namespace FMBot.Data.Entities
         public ChartTimePeriod ChartTimePeriod { get; set; }
 
         public string[] EmoteReactions { get; set; }
-
-        public virtual ICollection<GuildUsers> GuildUsers { get; set; }
     }
 }

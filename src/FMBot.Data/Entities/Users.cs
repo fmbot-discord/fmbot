@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace FMBot.Data.Entities
@@ -9,7 +9,6 @@ namespace FMBot.Data.Entities
         {
             FriendsFriendUser = new HashSet<Friend>();
             FriendsUser = new HashSet<Friend>();
-            GuildUsers = new HashSet<GuildUsers>();
         }
 
         public int UserID { get; set; }
@@ -25,6 +24,5 @@ namespace FMBot.Data.Entities
 
         public ICollection<Friend> FriendsFriendUser { get; set; }
         public ICollection<Friend> FriendsUser { get; set; }
-        public ICollection<GuildUsers> GuildUsers { get; set; }
     }
 }

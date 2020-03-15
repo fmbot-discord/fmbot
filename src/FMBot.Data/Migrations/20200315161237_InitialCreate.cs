@@ -1,6 +1,6 @@
 ﻿using System;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace FMBot.Data.Migrations
 {
@@ -13,13 +13,14 @@ namespace FMBot.Data.Migrations
                 columns: table => new
                 {
                     GuildID = table.Column<int>(nullable: false)
-                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     DiscordGuildID = table.Column<string>(nullable: true),
                     Name = table.Column<string>(nullable: true),
                     Blacklisted = table.Column<bool>(nullable: true),
                     TitlesEnabled = table.Column<bool>(nullable: true),
                     ChartType = table.Column<int>(nullable: false),
-                    ChartTimePeriod = table.Column<int>(nullable: false)
+                    ChartTimePeriod = table.Column<int>(nullable: false),
+                    EmoteReactions = table.Column<string>(nullable: true)
                 },
                 constraints: table =>
                 {
@@ -31,7 +32,7 @@ namespace FMBot.Data.Migrations
                 columns: table => new
                 {
                     UserID = table.Column<int>(nullable: false)
-                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     DiscordUserID = table.Column<string>(nullable: true),
                     Featured = table.Column<bool>(nullable: true),
                     Blacklisted = table.Column<bool>(nullable: true),
@@ -40,7 +41,7 @@ namespace FMBot.Data.Migrations
                     UserNameLastFM = table.Column<string>(nullable: true),
                     ChartType = table.Column<int>(nullable: false),
                     ChartTimePeriod = table.Column<int>(nullable: false),
-                    LastGeneratedChartDateTimeUtc = table.Column<DateTime>(type: "datetime", nullable: true)
+                    LastGeneratedChartDateTimeUtc = table.Column<DateTime>(nullable: true)
                 },
                 constraints: table =>
                 {
@@ -52,7 +53,7 @@ namespace FMBot.Data.Migrations
                 columns: table => new
                 {
                     FriendID = table.Column<int>(nullable: false)
-                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     UserID = table.Column<int>(nullable: false),
                     LastFMUserName = table.Column<string>(nullable: true),
                     FriendUserID = table.Column<int>(nullable: true)
@@ -74,30 +75,6 @@ namespace FMBot.Data.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateTable(
-                name: "GuildUsers",
-                columns: table => new
-                {
-                    GuildID = table.Column<int>(nullable: false),
-                    UserID = table.Column<int>(nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_dbo.GuildUsers", x => new { x.GuildID, x.UserID });
-                    table.ForeignKey(
-                        name: "FK_dbo.GuildUsers_dbo.Guilds_GuildID",
-                        column: x => x.GuildID,
-                        principalTable: "Guilds",
-                        principalColumn: "GuildID",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_dbo.GuildUsers_dbo.Users_UserID",
-                        column: x => x.UserID,
-                        principalTable: "Users",
-                        principalColumn: "UserID",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
             migrationBuilder.CreateIndex(
                 name: "IX_FriendUserID",
                 table: "Friends",
@@ -107,25 +84,12 @@ namespace FMBot.Data.Migrations
                 name: "IX_UserID",
                 table: "Friends",
                 column: "UserID");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_GuildID",
-                table: "GuildUsers",
-                column: "GuildID");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UserID",
-                table: "GuildUsers",
-                column: "UserID");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
                 name: "Friends");
-
-            migrationBuilder.DropTable(
-                name: "GuildUsers");
 
             migrationBuilder.DropTable(
                 name: "Guilds");
