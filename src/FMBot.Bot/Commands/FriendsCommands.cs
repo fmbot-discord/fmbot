@@ -278,7 +278,7 @@ namespace FMBot.Bot.Commands
                 {
                     if (existingFriends.Select(s => s.ToLower()).Contains(friend.ToLower()))
                     {
-                        await this._friendsService.RemoveLastFMFriendAsync(userSettings.UserID, friend);
+                        await this._friendsService.RemoveLastFMFriendAsync(userSettings.UserId, friend);
                         removedfriendcount++;
                     }
                 }
@@ -332,7 +332,7 @@ namespace FMBot.Bot.Commands
 
             try
             {
-                await this._friendsService.RemoveAllLastFMFriendsAsync(userSettings.UserID);
+                await this._friendsService.RemoveAllLastFMFriendsAsync(userSettings.UserId);
 
                 await ReplyAsync("Removed all your friends.");
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,

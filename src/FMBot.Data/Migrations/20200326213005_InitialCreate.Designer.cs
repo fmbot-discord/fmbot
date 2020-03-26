@@ -10,7 +10,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FMBot.Data.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    [Migration("20200326181325_InitialCreate")]
+    [Migration("20200326213005_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -18,122 +18,144 @@ namespace FMBot.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn)
-                .HasAnnotation("ProductVersion", "2.2.6-servicing-10079")
+                .HasAnnotation("ProductVersion", "3.1.1")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             modelBuilder.Entity("FMBot.Data.Entities.Friend", b =>
                 {
-                    b.Property<int>("FriendID")
+                    b.Property<int>("FriendId")
                         .ValueGeneratedOnAdd()
+                        .HasColumnName("friend_id")
                         .HasColumnType("integer")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
-                    b.Property<int?>("FriendUserID")
+                    b.Property<int?>("FriendUserId")
+                        .HasColumnName("friend_user_id")
                         .HasColumnType("integer");
 
                     b.Property<string>("LastFMUserName")
+                        .HasColumnName("last_fm_user_name")
                         .HasColumnType("text");
 
-                    b.Property<int>("UserID")
+                    b.Property<int>("UserId")
+                        .HasColumnName("user_id")
                         .HasColumnType("integer");
 
-                    b.HasKey("FriendID")
-                        .HasName("PK_dbo.Friends");
+                    b.HasKey("FriendId")
+                        .HasName("pk_friends");
 
-                    b.HasIndex("FriendUserID")
-                        .HasName("IX_FriendUserID");
+                    b.HasIndex("FriendUserId")
+                        .HasName("ix_friends_friend_user_id");
 
-                    b.HasIndex("UserID")
-                        .HasName("IX_UserID");
+                    b.HasIndex("UserId")
+                        .HasName("ix_friends_user_id");
 
-                    b.ToTable("Friends");
+                    b.ToTable("friends");
                 });
 
             modelBuilder.Entity("FMBot.Data.Entities.Guild", b =>
                 {
-                    b.Property<int>("GuildID")
+                    b.Property<int>("GuildId")
                         .ValueGeneratedOnAdd()
+                        .HasColumnName("guild_id")
                         .HasColumnType("integer")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<bool?>("Blacklisted")
+                        .HasColumnName("blacklisted")
                         .HasColumnType("boolean");
 
                     b.Property<int>("ChartTimePeriod")
+                        .HasColumnName("chart_time_period")
                         .HasColumnType("integer");
 
                     b.Property<int>("ChartType")
+                        .HasColumnName("chart_type")
                         .HasColumnType("integer");
 
-                    b.Property<decimal>("DiscordGuildID")
+                    b.Property<decimal>("DiscordGuildId")
+                        .HasColumnName("discord_guild_id")
                         .HasColumnType("numeric(20,0)");
 
                     b.Property<string>("EmoteReactions")
+                        .HasColumnName("emote_reactions")
                         .HasColumnType("text");
 
                     b.Property<string>("Name")
+                        .HasColumnName("name")
                         .HasColumnType("text");
 
                     b.Property<bool?>("TitlesEnabled")
+                        .HasColumnName("titles_enabled")
                         .HasColumnType("boolean");
 
-                    b.HasKey("GuildID")
-                        .HasName("PK_dbo.Guilds");
+                    b.HasKey("GuildId")
+                        .HasName("pk_guilds");
 
-                    b.ToTable("Guilds");
+                    b.ToTable("guilds");
                 });
 
             modelBuilder.Entity("FMBot.Data.Entities.User", b =>
                 {
-                    b.Property<int>("UserID")
+                    b.Property<int>("UserId")
                         .ValueGeneratedOnAdd()
+                        .HasColumnName("user_id")
                         .HasColumnType("integer")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<bool?>("Blacklisted")
+                        .HasColumnName("blacklisted")
                         .HasColumnType("boolean");
 
                     b.Property<int>("ChartTimePeriod")
+                        .HasColumnName("chart_time_period")
                         .HasColumnType("integer");
 
                     b.Property<int>("ChartType")
+                        .HasColumnName("chart_type")
                         .HasColumnType("integer");
 
-                    b.Property<decimal>("DiscordUserID")
+                    b.Property<decimal>("DiscordUserId")
+                        .HasColumnName("discord_user_id")
                         .HasColumnType("numeric(20,0)");
 
                     b.Property<bool?>("Featured")
+                        .HasColumnName("featured")
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("LastGeneratedChartDateTimeUtc")
+                        .HasColumnName("last_generated_chart_date_time_utc")
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<bool?>("TitlesEnabled")
+                        .HasColumnName("titles_enabled")
                         .HasColumnType("boolean");
 
                     b.Property<string>("UserNameLastFM")
+                        .HasColumnName("user_name_last_fm")
                         .HasColumnType("text");
 
                     b.Property<int>("UserType")
+                        .HasColumnName("user_type")
                         .HasColumnType("integer");
 
-                    b.HasKey("UserID")
-                        .HasName("PK_dbo.Users");
+                    b.HasKey("UserId")
+                        .HasName("pk_users");
 
-                    b.ToTable("Users");
+                    b.ToTable("users");
                 });
 
             modelBuilder.Entity("FMBot.Data.Entities.Friend", b =>
                 {
                     b.HasOne("FMBot.Data.Entities.User", "FriendUser")
-                        .WithMany("FriendsFriendUser")
-                        .HasForeignKey("FriendUserID")
-                        .HasConstraintName("FK_dbo.Friends_dbo.Users_FriendUserID");
+                        .WithMany("FriendedByUsers")
+                        .HasForeignKey("FriendUserId")
+                        .HasConstraintName("FK.Friends.Users_FriendUserID");
 
                     b.HasOne("FMBot.Data.Entities.User", "User")
-                        .WithMany("FriendsUser")
-                        .HasForeignKey("UserID")
-                        .HasConstraintName("FK_dbo.Friends_dbo.Users_UserID")
+                        .WithMany("Friends")
+                        .HasForeignKey("UserId")
+                        .HasConstraintName("FK.Friends.Users_UserID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

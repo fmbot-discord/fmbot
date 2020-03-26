@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,10 +20,9 @@ namespace FMBot.DbMigration
                               "This tool requires you to have ran .fmbot with PostgreSQL at least once. \n\n" +
                               "Options: \n" +
                               "1. Migrate all data to new db \n" +
-                              "2. Migrate only users \n" +
-                              "3. Migrate only friends \n" +
-                              "4. Migrate only guilds \n" +
-                              "5. Clear new database \n" +
+                              "2. Migrate only users and friends \n" +
+                              "3. Migrate only guilds \n" +
+                              "4. Clear new database \n" +
                               "Select an option to continue...");
 
             var key = Console.ReadKey().Key.ToString();
@@ -30,23 +30,18 @@ namespace FMBot.DbMigration
 
             if (key == "D1")
             {
-                CopyNewUsers();
-                CopyFriends();
-                CopyGuilds();
+                await CopyUsers();
+                await CopyGuilds();
             }
             else if (key == "D2")
             {
-                CopyNewUsers();
+                await CopyUsers();
             }
             else if (key == "D3")
             {
-                CopyFriends();
+                await CopyGuilds();
             }
             else if (key == "D4")
-            {
-                CopyGuilds();
-            }
-            else if (key == "D5")
             {
                 await ClearNewDatabase();
                 saveToDatabase = false;
@@ -59,141 +54,127 @@ namespace FMBot.DbMigration
             if (saveToDatabase)
             {
                 Console.WriteLine($"Saving changes to database...");
-                NewDatabaseContext.SaveChanges();
+                try
+                {
+                    await NewDatabaseContext.SaveChangesAsync();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Something went wrong!");
+                    Console.WriteLine(e);
+                    if (e.InnerException != null)
+                    {
+                        Console.WriteLine(e.InnerException);
+                    }
+                    await Task.Delay(10000);
+                    throw;
+                }
             }
 
             Console.WriteLine("Done! Press any key to quit program.");
             Console.ReadKey();
         }
 
-        private static void CopyNewUsers()
+        private static async Task CopyUsers()
         {
             Console.WriteLine("Starting user migration...");
 
             Console.WriteLine("Retrieving users from old database");
-            var oldUsers = OldDatabaseContext.Users.ToList();
+            var oldUsers = await OldDatabaseContext.Users
+                .Include(i => i.FriendsUser)
+                .ToListAsync();
             Console.WriteLine($"Old database has {oldUsers.Count} users");
 
-            Thread.Sleep(1000);
-
             Console.WriteLine("Retrieving users from new database");
-            var newUsers = NewDatabaseContext.Users.ToList();
+            var newUsers = await NewDatabaseContext.Users.ToListAsync();
             Console.WriteLine($"New database has {newUsers.Count} users");
 
-            Thread.Sleep(1000);
-
             var usersToInsert = oldUsers
-                .Where(w => !w.DiscordUserID.Contains(newUsers.Select(s => s.DiscordUserID).ToString()) &&
-                            !w.UserID.ToString().Contains(newUsers.Select(s => s.UserID).ToString()))
+                .Where(w => !w.DiscordUserID.Contains(newUsers.Select(s => s.DiscordUserId).ToString()) &&
+                            !w.UserID.ToString().Contains(newUsers.Select(s => s.UserId).ToString()))
                 .ToList();
 
-            Thread.Sleep(1000);
-
             Console.WriteLine($"Inserting {usersToInsert.Count} users that do not yet exist into the new database");
-            NewDatabaseContext.Users.AddRange(
+            await NewDatabaseContext.Users.AddRangeAsync(
                 usersToInsert
                     .Select(s => new Data.Entities.User
                     {
                         Blacklisted = s.Blacklisted,
                         ChartTimePeriod = s.ChartTimePeriod,
                         ChartType = s.ChartType,
-                        DiscordUserID = ulong.Parse(s.DiscordUserID),
+                        DiscordUserId = ulong.Parse(s.DiscordUserID),
                         Featured = s.Featured,
                         LastGeneratedChartDateTimeUtc = s.LastGeneratedChartDateTimeUtc,
                         TitlesEnabled = s.TitlesEnabled,
-                        UserID = s.UserID,
                         UserNameLastFM = s.UserNameLastFM,
-                        UserType = s.UserType
+                        UserType = s.UserType,
+                        UserId = s.UserID,
+                        Friends = s.FriendsUser.Select(se => new Data.Entities.Friend
+                        {
+                            UserId = se.UserID,
+                            LastFMUserName = se.LastFMUserName,
+                            FriendUserId = se.FriendUserID,
+                        }).ToList()
                     }));
-            Console.WriteLine($"Users have been inserted.");
+
+            Console.WriteLine("Users have been inserted.");
+
+            NewDatabaseContext.Database.ExecuteSqlRaw("SELECT pg_catalog.setval(pg_get_serial_sequence('users', 'user_id'), (SELECT MAX(user_id) FROM users)+1);");
+            Console.WriteLine("User key value has been fixed.");
+
+            NewDatabaseContext.Database.ExecuteSqlRaw("SELECT pg_catalog.setval(pg_get_serial_sequence('friends', 'friend_id'), (SELECT MAX(friend_id) FROM friends)+1);");
+            Console.WriteLine("Friend key value has been fixed.");
         }
 
-        private static void CopyFriends()
-        {
-            Console.WriteLine("Starting friend migration...");
-
-            Console.WriteLine("Retrieving friends from old database");
-            var oldFriends = OldDatabaseContext.Friends.ToList();
-            Console.WriteLine($"Old database has {oldFriends.Count} friends");
-
-            Thread.Sleep(1000);
-
-            Console.WriteLine("Retrieving friends from new database");
-            var newFriends = NewDatabaseContext.Friends.ToList();
-            Console.WriteLine($"New database has {newFriends.Count} friends");
-
-            Thread.Sleep(1000);
-
-            var friendsToInsert = oldFriends
-                .Where(w => !w.FriendID.ToString().Contains(newFriends.Select(s => s.FriendID).ToString()))
-                .ToList();
-
-            Thread.Sleep(1000);
-
-            Console.WriteLine($"Inserting {friendsToInsert.Count} friends that do not yet exist into the new database");
-            NewDatabaseContext.Friends.AddRange(
-                friendsToInsert
-                    .Select(s => new Data.Entities.Friend
-                    {
-                        FriendID = s.FriendID,
-                        FriendUserID = s.FriendUserID,
-                        LastFMUserName = s.LastFMUserName
-                    }));
-            Console.WriteLine($"Friends have been inserted.");
-        }
-
-        private static void CopyGuilds()
+        private static async Task CopyGuilds()
         {
             Console.WriteLine("Starting guild migration...");
 
             Console.WriteLine("Retrieving guilds from old database");
-            var oldGuilds = OldDatabaseContext.Guilds.ToList();
+            var oldGuilds = await OldDatabaseContext.Guilds.ToListAsync();
             Console.WriteLine($"Old database has {oldGuilds.Count} guilds");
 
-            Thread.Sleep(1000);
-
             Console.WriteLine("Retrieving guilds from new database");
-            var newGuilds = NewDatabaseContext.Guilds.ToList();
+            var newGuilds = await NewDatabaseContext.Guilds.ToListAsync();
             Console.WriteLine($"New database has {newGuilds.Count} guilds");
 
-            Thread.Sleep(1000);
-
             var guildsToInsert = oldGuilds
-                .Where(w => !w.GuildID.ToString().Contains(newGuilds.Select(s => s.GuildID).ToString()))
+                .Where(w => !w.GuildID.ToString().Contains(newGuilds.Select(s => s.GuildId).ToString()))
                 .ToList();
 
-            Thread.Sleep(1000);
-
             Console.WriteLine($"Inserting {guildsToInsert.Count} guilds that do not yet exist into the new database");
-            NewDatabaseContext.Guilds.AddRange(
+            await NewDatabaseContext.Guilds.AddRangeAsync(
                 guildsToInsert
                     .Select(s => new Data.Entities.Guild
                     {
-                        GuildID = s.GuildID,
                         ChartTimePeriod = s.ChartTimePeriod,
                         ChartType = s.ChartType,
                         TitlesEnabled = s.TitlesEnabled,
                         Blacklisted = s.Blacklisted,
-                        DiscordGuildID = ulong.Parse(s.DiscordGuildID),
+                        DiscordGuildId = ulong.Parse(s.DiscordGuildID),
                         EmoteReactions = s.EmoteReactions,
                         Name = s.Name
                     }));
-            Console.WriteLine($"Guilds have been inserted.");
+
+            Console.WriteLine("Guilds have been inserted.");
+
+            NewDatabaseContext.Database.ExecuteSqlRaw("SELECT pg_catalog.setval(pg_get_serial_sequence('guilds', 'guild_id'), (SELECT MAX(guild_id) FROM guilds)+1);");
+            Console.WriteLine("Guild key value has been fixed.");
         }
 
         private static async Task ClearNewDatabase()
         {
             Console.WriteLine("\n" +
-                              "Clearing database will start in 5 seconds... \n" +
+                              "Clearing new database will start in 4 seconds... \n" +
                               "Use ctrl + c to cancel");
 
-            await Task.Delay(5000);
+            await Task.Delay(4000);
 
-            NewDatabaseContext.Database.ExecuteSqlRaw("DELETE FROM public.\"Friends\";");
-            NewDatabaseContext.Database.ExecuteSqlRaw("DELETE FROM public.\"Users\";");
-            NewDatabaseContext.Database.ExecuteSqlRaw("DELETE FROM public.\"Guilds\";");
+            NewDatabaseContext.Database.ExecuteSqlRaw("DELETE FROM friends;");
+            NewDatabaseContext.Database.ExecuteSqlRaw("DELETE FROM users;");
+            NewDatabaseContext.Database.ExecuteSqlRaw("DELETE FROM guilds;");
 
-            Console.WriteLine($"New database has been cleared");
+            Console.WriteLine("New database has been cleared");
         }
     }
 }

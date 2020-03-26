@@ -16,7 +16,7 @@ namespace FMBot.Bot.Services
         // User settings
         public async Task<User> GetUserSettingsAsync(IUser discordUser)
         {
-            return await this.db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUser.Id);
+            return await this.db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
         }
 
         // Discord nickname/username
@@ -35,7 +35,7 @@ namespace FMBot.Bot.Services
         // Rank
         public async Task<UserType> GetRankAsync(IUser discordUser)
         {
-            var user = await this.db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUser.Id);
+            var user = await this.db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
             if (user == null)
             {
@@ -48,7 +48,7 @@ namespace FMBot.Bot.Services
         // Featured
         public async Task<bool?> GetFeaturedAsync(IUser discordUser)
         {
-            var user = await this.db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUser.Id);
+            var user = await this.db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
             if (user == null)
             {
@@ -92,7 +92,7 @@ namespace FMBot.Bot.Services
         // Server Blacklisting
         public async Task<bool> GetBlacklistedAsync(IUser discordUser)
         {
-            var user = await this.db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUser.Id);
+            var user = await this.db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
             if (user == null)
             {
@@ -137,13 +137,13 @@ namespace FMBot.Bot.Services
         // Set LastFM Name
         public void SetLastFM(IUser discordUser, string lastFMName, ChartType chartType)
         {
-            var user = this.db.Users.FirstOrDefault(f => f.DiscordUserID == discordUser.Id);
+            var user = this.db.Users.FirstOrDefault(f => f.DiscordUserId == discordUser.Id);
 
             if (user == null)
             {
                 var newUser = new User
                 {
-                    DiscordUserID = discordUser.Id,
+                    DiscordUserId = discordUser.Id,
                     UserType = UserType.User,
                     UserNameLastFM = lastFMName,
                     TitlesEnabled = true,
@@ -179,7 +179,7 @@ namespace FMBot.Bot.Services
         // Remove user
         public async Task DeleteUser(int userID)
         {
-            var user = await this.db.Users.FirstOrDefaultAsync(f => f.UserID == userID);
+            var user = await this.db.Users.FirstOrDefaultAsync(f => f.UserId == userID);
 
             this.db.Users.Remove(user);
 

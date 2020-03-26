@@ -15,7 +15,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> HasCommandAccessAsync(IUser discordUser, UserType userType)
         {
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUser.Id);
+            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
             if (user == null)
             {
@@ -58,7 +58,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> SetUserTypeAsync(ulong discordUserID, UserType userType)
         {
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
+            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
 
             if (user == null)
             {
@@ -77,7 +77,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> AddUserToBlacklistAsync(ulong discordUserID)
         {
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
+            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
 
             if (user == null)
             {
@@ -96,7 +96,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> RemoveUserFromBlacklistAsync(ulong discordUserID)
         {
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
+            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
 
             if (user == null)
             {

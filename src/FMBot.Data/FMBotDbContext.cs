@@ -18,45 +18,43 @@ namespace FMBot.Data
         public virtual DbSet<Friend> Friends { get; set; }
         public virtual DbSet<Guild> Guilds { get; set; }
         public virtual DbSet<User> Users { get; set; }
-
+        
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
                 optionsBuilder.UseNpgsql("Host=localhost;Port=5433;Username=postgres;Password=password;Database=fmbot;Command Timeout=15;Timeout=30");
+                optionsBuilder.UseSnakeCaseNamingConvention();
             }
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.HasAnnotation("ProductVersion", "2.2.6-servicing-10079");
-
             modelBuilder.Entity<Friend>(entity =>
             {
-                entity.HasKey(e => e.FriendID)
-                    .HasName("PK_dbo.Friends");
+                entity.HasKey(e => e.FriendId);
 
-                entity.HasIndex(e => e.FriendUserID)
-                    .HasName("IX_FriendUserID");
+                //entity.Property(b => b.FriendId)
+                //    .UseIdentityAlwaysColumn();
 
-                entity.HasIndex(e => e.UserID)
-                    .HasName("IX_UserID");
+                entity.HasIndex(e => e.FriendUserId);
+
+                entity.HasIndex(e => e.UserId);
 
                 entity.HasOne(d => d.FriendUser)
-                    .WithMany(p => p.FriendsFriendUser)
-                    .HasForeignKey(d => d.FriendUserID)
-                    .HasConstraintName("FK_dbo.Friends_dbo.Users_FriendUserID");
+                    .WithMany(p => p.FriendedByUsers)
+                    .HasForeignKey(d => d.FriendUserId)
+                    .HasConstraintName("FK.Friends.Users_FriendUserID");
 
                 entity.HasOne(d => d.User)
-                    .WithMany(p => p.FriendsUser)
-                    .HasForeignKey(d => d.UserID)
-                    .HasConstraintName("FK_dbo.Friends_dbo.Users_UserID");
+                    .WithMany(p => p.Friends)
+                    .HasForeignKey(d => d.UserId)
+                    .HasConstraintName("FK.Friends.Users_UserID");
             });
 
             modelBuilder.Entity<Guild>(entity =>
             {
-                entity.HasKey(e => e.GuildID)
-                    .HasName("PK_dbo.Guilds");
+                entity.HasKey(e => e.GuildId);
 
                 entity.Property(e => e.EmoteReactions)
                     .HasConversion(
@@ -66,8 +64,7 @@ namespace FMBot.Data
 
             modelBuilder.Entity<User>(entity =>
             {
-                entity.HasKey(e => e.UserID)
-                    .HasName("PK_dbo.Users");
+                entity.HasKey(e => e.UserId);
             });
         }
     }

@@ -67,10 +67,10 @@ namespace FMBot.Bot.Services
             var userIds = users.Select(s => s.Id).ToList();
 
             var usersObject = this.db.Users
-                .Where(w => userIds.Contains(w.DiscordUserID))
+                .Where(w => userIds.Contains(w.DiscordUserId))
                 .Select(s =>
                     new UserExportModel(
-                        s.DiscordUserID,
+                        s.DiscordUserId,
                         "Username temporarily not visible", //users.First(f => f.Id.ToString() == s.DiscordUserID).ToString() https://github.com/dotnet/efcore/issues/18179
                         s.UserNameLastFM));
 
@@ -79,13 +79,13 @@ namespace FMBot.Bot.Services
 
         public async Task ChangeGuildSettingAsync(IGuild guild, ChartTimePeriod chartTimePeriod, ChartType chartType)
         {
-            var existingGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guild.Id);
+            var existingGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
 
             if (existingGuild == null)
             {
                 var newGuild = new Guild
                 {
-                    DiscordGuildID = guild.Id,
+                    DiscordGuildId = guild.Id,
                     ChartTimePeriod = chartTimePeriod,
                     ChartType = chartType,
                     Name = guild.Name,
@@ -100,13 +100,13 @@ namespace FMBot.Bot.Services
 
         public async Task SetGuildReactionsAsync(IGuild guild, string[] reactions)
         {
-            var existingGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guild.Id);
+            var existingGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
 
             if (existingGuild == null)
             {
                 var newGuild = new Guild
                 {
-                    DiscordGuildID = guild.Id,
+                    DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
                     ChartTimePeriod = ChartTimePeriod.Monthly,
                     ChartType = ChartType.embedmini,
@@ -165,7 +165,7 @@ namespace FMBot.Bot.Services
         {
             var guildId = guild.Id.ToString();
 
-            var dbGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guild.Id);
+            var dbGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
 
             if (dbGuild?.EmoteReactions == null || !dbGuild.EmoteReactions.Any())
             {
@@ -193,7 +193,7 @@ namespace FMBot.Bot.Services
 
             var newGuild = new Guild
             {
-                DiscordGuildID = guild.Id,
+                DiscordGuildId = guild.Id,
                 ChartTimePeriod = ChartTimePeriod.Monthly,
                 ChartType = ChartType.embedmini,
                 Name = guild.Name,
@@ -207,7 +207,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> GuildExistsAsync(SocketGuild guild)
         {
-            return await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildID == guild.Id) != null;
+            return await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id) != null;
         }
 
         public async Task<int> GetTotalGuildCountAsync()

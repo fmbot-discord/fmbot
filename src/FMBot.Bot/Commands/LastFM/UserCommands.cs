@@ -229,8 +229,8 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            await this._friendsService.RemoveAllLastFMFriendsAsync(userSettings.UserID);
-            await this._userService.DeleteUser(userSettings.UserID);
+            await this._friendsService.RemoveAllLastFMFriendsAsync(userSettings.UserId);
+            await this._userService.DeleteUser(userSettings.UserId);
 
             await ReplyAsync("Your settings, friends and any other data have been successfully deleted.");
             this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
