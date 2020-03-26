@@ -1,7 +1,8 @@
 using System;
+using FMBot.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace FMBot.Data.Entities
+namespace FMBot.Data
 {
     public class FMBotDbContext : DbContext
     {

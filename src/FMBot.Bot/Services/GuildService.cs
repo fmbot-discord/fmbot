@@ -5,6 +5,7 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Models;
+using FMBot.Data;
 using FMBot.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 

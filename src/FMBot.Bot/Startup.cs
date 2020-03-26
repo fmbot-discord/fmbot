@@ -1,12 +1,11 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Handlers;
 using FMBot.Bot.Services;
-using FMBot.Data.Entities;
+using FMBot.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

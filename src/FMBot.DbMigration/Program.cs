@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using FMBot.Data;
 
 namespace FMBot.DbMigration
 {
