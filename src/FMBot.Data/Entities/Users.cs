@@ -12,7 +12,7 @@ namespace FMBot.Data.Entities
         }
 
         public int UserID { get; set; }
-        public string DiscordUserID { get; set; }
+        public ulong DiscordUserID { get; set; }
         public bool? Featured { get; set; }
         public bool? Blacklisted { get; set; }
         public UserType UserType { get; set; }

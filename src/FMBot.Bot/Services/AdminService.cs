@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Threading.Tasks;
 using Discord;
 using FMBot.Data;
@@ -15,9 +15,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> HasCommandAccessAsync(IUser discordUser, UserType userType)
         {
-            string discordUserID = discordUser.Id.ToString();
-
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
+            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUser.Id);
 
             if (user == null)
             {
@@ -58,7 +56,7 @@ namespace FMBot.Bot.Services
         }
 
 
-        public async Task<bool> SetUserTypeAsync(string discordUserID, UserType userType)
+        public async Task<bool> SetUserTypeAsync(ulong discordUserID, UserType userType)
         {
             User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
 
@@ -77,7 +75,7 @@ namespace FMBot.Bot.Services
         }
 
 
-        public async Task<bool> AddUserToBlacklistAsync(string discordUserID)
+        public async Task<bool> AddUserToBlacklistAsync(ulong discordUserID)
         {
             User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
 
@@ -96,7 +94,7 @@ namespace FMBot.Bot.Services
         }
 
 
-        public async Task<bool> RemoveUserFromBlacklistAsync(string discordUserID)
+        public async Task<bool> RemoveUserFromBlacklistAsync(ulong discordUserID)
         {
             User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);
 

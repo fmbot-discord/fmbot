@@ -175,7 +175,7 @@ namespace FMBot.Bot.Commands
                             {
                                 if (await this._lastFmService.LastFMUserExistsAsync(friend))
                                 {
-                                    await this._friendsService.AddLastFMFriendAsync(this.Context.User.Id.ToString(),
+                                    await this._friendsService.AddLastFMFriendAsync(this.Context.User.Id,
                                         friend);
                                     addedFriendsCount++;
                                 }
@@ -186,7 +186,7 @@ namespace FMBot.Bot.Commands
                             }
                             else
                             {
-                                await this._friendsService.AddDiscordFriendAsync(this.Context.User.Id.ToString(), friendUser.Id.ToString());
+                                await this._friendsService.AddDiscordFriendAsync(this.Context.User.Id, friendUser.Id);
                                 addedFriendsCount++;
                             }
                         }
@@ -194,7 +194,7 @@ namespace FMBot.Bot.Commands
                         {
                             if (await this._lastFmService.LastFMUserExistsAsync(friend))
                             {
-                                await this._friendsService.AddLastFMFriendAsync(this.Context.User.Id.ToString(),
+                                await this._friendsService.AddLastFMFriendAsync(this.Context.User.Id,
                                     friend);
                                 addedFriendsCount++;
                             }

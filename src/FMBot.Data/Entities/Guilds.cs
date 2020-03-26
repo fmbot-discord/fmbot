@@ -3,7 +3,7 @@ namespace FMBot.Data.Entities
     public partial class Guild
     {
         public int GuildID { get; set; }
-        public string DiscordGuildID { get; set; }
+        public ulong DiscordGuildID { get; set; }
         public string Name { get; set; }
         public bool? Blacklisted { get; set; }
         public bool? TitlesEnabled { get; set; }

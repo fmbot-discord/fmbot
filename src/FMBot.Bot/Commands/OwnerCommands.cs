@@ -44,7 +44,7 @@ namespace FMBot.Bot.Commands
                     return;
                 }
 
-                if (await _adminService.SetUserTypeAsync(userId, userTypeEnum))
+                if (await _adminService.SetUserTypeAsync(ulong.Parse(userId), userTypeEnum))
                 {
                     await ReplyAsync("You got it. User perms changed.");
                 }

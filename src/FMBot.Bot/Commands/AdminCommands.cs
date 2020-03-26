@@ -1,11 +1,8 @@
-﻿using Discord;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Data.Entities;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using FMBot.Bot.Services;
 
@@ -249,7 +246,7 @@ namespace FMBot.Bot.Commands
 
                     string UserID = user.Id.ToString();
 
-                    bool blacklistresult = await _adminService.AddUserToBlacklistAsync(user.Id.ToString());
+                    bool blacklistresult = await _adminService.AddUserToBlacklistAsync(user.Id);
 
                     if (blacklistresult == true)
                     {
@@ -288,7 +285,7 @@ namespace FMBot.Bot.Commands
 
                     string UserID = user.Id.ToString();
 
-                    bool blacklistresult = await _adminService.RemoveUserFromBlacklistAsync(user.Id.ToString());
+                    bool blacklistresult = await _adminService.RemoveUserFromBlacklistAsync(user.Id);
 
                     if (blacklistresult == true)
                     {

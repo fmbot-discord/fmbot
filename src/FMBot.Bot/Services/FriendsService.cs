@@ -14,22 +14,18 @@ namespace FMBot.Bot.Services
 
         public async Task<IReadOnlyList<string>> GetFMFriendsAsync(IUser discordUser)
         {
-            var id = discordUser.Id.ToString();
+            var user = await this._db.Users
+                .Include(i => i.FriendsUser)
+                .FirstOrDefaultAsync(f => f.DiscordUserID == discordUser.Id);
 
-            var user = await this._db.Users.FirstOrDefaultAsync(f => f.DiscordUserID == id);
-
-            var dbFriends = await this._db.Friends
-                .Include(i => i.FriendUser)
-                .Where(w => w.UserID == user.UserID).ToListAsync();
-
-            var friends = dbFriends.Select(
+            var friends = user.FriendsUser.Select(
                     s => s.LastFMUserName ?? s.FriendUser.UserNameLastFM)
                 .ToList();
 
             return friends;
         }
 
-        public async Task AddLastFMFriendAsync(string discordUserID, string lastfmusername)
+        public async Task AddLastFMFriendAsync(ulong discordUserID, string lastfmusername)
         {
             var user = this._db.Users.FirstOrDefault(f => f.DiscordUserID == discordUserID);
 
@@ -87,7 +83,7 @@ namespace FMBot.Bot.Services
         }
 
 
-        public async Task AddDiscordFriendAsync(string discordUserID, string friendDiscordUserID)
+        public async Task AddDiscordFriendAsync(ulong discordUserID, ulong friendDiscordUserID)
         {
             var user = await this._db.Users
                 .FirstOrDefaultAsync(f => f.DiscordUserID == discordUserID);

@@ -14,7 +14,7 @@ namespace FMBot.Data.Migrations
                 {
                     GuildID = table.Column<int>(nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    DiscordGuildID = table.Column<string>(nullable: true),
+                    DiscordGuildID = table.Column<decimal>(nullable: false),
                     Name = table.Column<string>(nullable: true),
                     Blacklisted = table.Column<bool>(nullable: true),
                     TitlesEnabled = table.Column<bool>(nullable: true),
@@ -33,7 +33,7 @@ namespace FMBot.Data.Migrations
                 {
                     UserID = table.Column<int>(nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    DiscordUserID = table.Column<string>(nullable: true),
+                    DiscordUserID = table.Column<decimal>(nullable: false),
                     Featured = table.Column<bool>(nullable: true),
                     Blacklisted = table.Column<bool>(nullable: true),
                     UserType = table.Column<int>(nullable: false),
