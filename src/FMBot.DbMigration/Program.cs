@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using FMBot.Data;
 using FMBot.DbMigration.OldDatabase.Entities;
@@ -9,12 +7,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.DbMigration
 {
-    class Program
+    static class Program
     {
         private static readonly FMBotDbContext NewDatabaseContext = new FMBotDbContext();
         private static readonly LocalDbDbContext OldDatabaseContext = new LocalDbDbContext();
 
-        static async Task Main()
+        private static async Task Main()
         {
             Console.WriteLine("Welcome to the migration tool for migrating the .fmbot database tool from localdb to PostgreSQL \n" +
                               "This tool requires you to have ran .fmbot with PostgreSQL at least once. \n\n" +
