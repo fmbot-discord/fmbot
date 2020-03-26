@@ -9,6 +9,7 @@ using FMBot.Bot.Models;
 
 namespace FMBot.Bot
 {
+    // TODO: get rid of this file
     public static class FMBotUtil
     {
         public static class GlobalVars
@@ -38,6 +39,7 @@ namespace FMBot.Bot
                 new Album("Regurgitate", "Carnivorous Erection")
             };
 
+            // TODO: Move this somewhere else
             private static readonly string BasePath = AppDomain.CurrentDomain.BaseDirectory;
             public static readonly string CacheFolder = BasePath + "cache/";
             public static string ImageFolder = BasePath + "resources/images/";
