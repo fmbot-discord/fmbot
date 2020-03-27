@@ -72,7 +72,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     var secondsLeft = (int)(StackCooldownTimer[
                                                     StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
-                                                .AddSeconds(5) - DateTimeOffset.Now).TotalSeconds;
+                                                .AddSeconds(6) - DateTimeOffset.Now).TotalSeconds;
                     if (secondsLeft <= 2)
                     {
                         var secondString = secondsLeft == 1 ? "second" : "seconds";
