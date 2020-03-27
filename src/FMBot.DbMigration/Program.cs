@@ -21,6 +21,7 @@ namespace FMBot.DbMigration
                               "2. Migrate only users and friends \n" +
                               "3. Migrate only guilds \n" +
                               "4. Clear new database \n" +
+                              "5. Fix key values (use this if you have issues inserting new records) \n" +
                               "Select an option to continue...");
 
             var key = Console.ReadKey().Key.ToString();
@@ -44,9 +45,17 @@ namespace FMBot.DbMigration
                 await ClearNewDatabase();
                 saveToDatabase = false;
             }
+            else if (key == "D5")
+            {
+                await FixKeyValues();
+                await Task.Delay(10000);
+                Environment.Exit(1);
+            }
             else
             {
                 Console.WriteLine("\nKey not recognized");
+                await Task.Delay(10000);
+                Environment.Exit(1);
             }
 
             if (saveToDatabase)
@@ -68,6 +77,8 @@ namespace FMBot.DbMigration
                     throw;
                 }
             }
+
+            await FixKeyValues();
 
             Console.WriteLine("Done! Press any key to quit program.");
             Console.ReadKey();
@@ -116,12 +127,6 @@ namespace FMBot.DbMigration
                     }));
 
             Console.WriteLine("Users have been inserted.");
-
-            NewDatabaseContext.Database.ExecuteSqlRaw("SELECT pg_catalog.setval(pg_get_serial_sequence('users', 'user_id'), (SELECT MAX(user_id) FROM users)+1);");
-            Console.WriteLine("User key value has been fixed.");
-
-            NewDatabaseContext.Database.ExecuteSqlRaw("SELECT pg_catalog.setval(pg_get_serial_sequence('friends', 'friend_id'), (SELECT MAX(friend_id) FROM friends)+1);");
-            Console.WriteLine("Friend key value has been fixed.");
         }
 
         private static async Task CopyGuilds()
@@ -155,18 +160,27 @@ namespace FMBot.DbMigration
                     }));
 
             Console.WriteLine("Guilds have been inserted.");
+        }
 
-            NewDatabaseContext.Database.ExecuteSqlRaw("SELECT pg_catalog.setval(pg_get_serial_sequence('guilds', 'guild_id'), (SELECT MAX(guild_id) FROM guilds)+1);");
+        private static async Task FixKeyValues()
+        {
+            await NewDatabaseContext.Database.ExecuteSqlRawAsync("SELECT pg_catalog.setval(pg_get_serial_sequence('users', 'user_id'), (SELECT MAX(user_id) FROM users)+1);");
+            Console.WriteLine("User key value has been fixed.");
+
+            await NewDatabaseContext.Database.ExecuteSqlRawAsync("SELECT pg_catalog.setval(pg_get_serial_sequence('friends', 'friend_id'), (SELECT MAX(friend_id) FROM friends)+1);");
+            Console.WriteLine("Friend key value has been fixed.");
+
+            await NewDatabaseContext.Database.ExecuteSqlRawAsync("SELECT pg_catalog.setval(pg_get_serial_sequence('guilds', 'guild_id'), (SELECT MAX(guild_id) FROM guilds)+1);");
             Console.WriteLine("Guild key value has been fixed.");
         }
 
         private static async Task ClearNewDatabase()
         {
             Console.WriteLine("\n" +
-                              "Clearing new database will start in 4 seconds... \n" +
+                              "Clearing new database will start in 5 seconds... \n" +
                               "Use ctrl + c to cancel");
 
-            await Task.Delay(4000);
+            await Task.Delay(5000);
 
             NewDatabaseContext.Database.ExecuteSqlRaw("DELETE FROM friends;");
             NewDatabaseContext.Database.ExecuteSqlRaw("DELETE FROM users;");
