@@ -74,8 +74,8 @@ namespace FMBot.Bot.Commands.LastFM
                     var secondsLeft =
                         (int)(StackCooldownTimer[
                                 StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
-                            .AddSeconds(10) - DateTimeOffset.Now).TotalSeconds;
-                    if (secondsLeft <= 4)
+                            .AddSeconds(9) - DateTimeOffset.Now).TotalSeconds;
+                    if (secondsLeft <= 2)
                     {
                         var secondString = secondsLeft == 1 ? "second" : "seconds";
                         await ReplyAsync($"Please wait {secondsLeft} {secondString} before generating a chart again.");
