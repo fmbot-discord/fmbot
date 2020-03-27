@@ -192,11 +192,11 @@ namespace FMBot.Bot.Commands.LastFM
                         {
                             footerText =
                                 $"{userInfo.Content.Name} has {userInfo.Content.Playcount} total scrobbles";
-                            if (currentTrack.IsNowPlaying == true && currentTrack.TimePlayed.HasValue)
-                            {
-                                footerText += " - Last scrobble:";
-                                this._embed.WithTimestamp(currentTrack.TimePlayed.Value);
-                            }
+                        }
+                        if (currentTrack.IsNowPlaying != true && currentTrack.TimePlayed.HasValue)
+                        {
+                            footerText += " | Last scrobble:";
+                            this._embed.WithTimestamp(currentTrack.TimePlayed.Value);
                         }
 
                         this._embedAuthor.WithName(headerText);
