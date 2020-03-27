@@ -142,14 +142,16 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary(
             "Sets your Last.FM name and FM mode. Please note that users in shared servers will be able to see and request your Last.FM username.")]
         [Alias("fmsetname", "fmsetmode")]
-        public async Task SetAsync([Summary("Your Last.FM name")] string lastFMUserName,
+        public async Task SetAsync([Summary("Your Last.FM name")] string lastFMUserName = null,
             [Summary("The mode you want to use.")] string chartType = null)
         {
             var prfx = ConfigData.Data.CommandPrefix;
-            if (lastFMUserName == "help")
+
+            if (lastFMUserName == null || lastFMUserName == "help")
             {
-                var replyString = "Use this command to setup and change your fmbot settings. \n " +
-                                  "You can set your username and you can change the mode for the `.fm` command.\n \n" +
+                var replyString = ".fmset is the command you use to set your last.fm username in the bot, so it knows who you are on the last.fm website. \n" +
+                                  "Don't have a last.fm account yet? Register here: https://www.last.fm/join \n \n" +
+                                  "Sets your username and mode for the `.fm` command:\n \n" +
                                   $"`{prfx}fmset 'Last.FM Username' 'embedmini/embedfull/textmini/textfull'` \n \n";
 
                 var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);

@@ -13,10 +13,10 @@ namespace FMBot.Bot.Services
         public static void UsernameNotSetErrorResponse(this EmbedBuilder embed, ICommandContext context, Logger.Logger logger)
         {
             embed.WithTitle("Error while attempting get Last.FM information");
-            embed.WithDescription("Last.FM username has not been set. \n" +
-                                        "To setup your Last.FM account with this bot, please use the `.fmset` command. \n" +
+            embed.WithDescription("Your Last.FM username has not been set. \n" +
+                                        "Please use the `.fmset` command to connect your Last.FM account to .fmbot. \n" +
                                         $"Example: `{ConfigData.Data.CommandPrefix}fmset lastfmusername`\n \n" +
-                                        $"For more info, use `.fmset help`.");
+                                        "For more info, use `.fmset help`.");
 
             embed.WithColor(Constants.WarningColorOrange);
             logger.LogError("Last.FM username not set", context.Message.Content, context.User.Username, context.Guild?.Name, context.Guild?.Id);
