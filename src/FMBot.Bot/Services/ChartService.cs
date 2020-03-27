@@ -4,6 +4,8 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Dasync.Collections;
 using FMBot.Bot.Configurations;
@@ -31,25 +33,30 @@ namespace FMBot.Bot.Services
                 // Album mode
                 await chart.Albums.ParallelForEachAsync(async album =>
                 {
-                    var albumInfo = await this._lastFMClient.Album.GetInfoAsync(album.ArtistName, album.Name);
-                    Statistics.LastfmApiCalls.Inc();
-
-                    var albumImages = albumInfo?.Content?.Images;
+                    var localAlbumId = CalculateMd5Hash(album.Url.LocalPath);
 
                     Bitmap chartImage;
-                    bool validImage = true;
+                    var validImage = true;
 
-                    if (albumImages?.Large != null)
+                    var fileName = localAlbumId + ".png";
+                    var localPath = FMBotUtil.GlobalVars.CacheFolder + fileName;
+
+                    if (File.Exists(localPath))
                     {
-                        var url = albumImages.Large.AbsoluteUri;
-                        var path = Path.GetFileName(url);
+                        chartImage = new Bitmap(localPath);
+                    }
+                    else
+                    {
+                        var albumInfo = await this._lastFMClient.Album.GetInfoAsync(album.ArtistName, album.Name);
+                        Statistics.LastfmApiCalls.Inc();
 
-                        if (File.Exists(FMBotUtil.GlobalVars.CacheFolder + path))
+                        var albumImages = albumInfo?.Content?.Images;
+
+                        if (albumImages?.Large != null)
                         {
-                            chartImage = new Bitmap(FMBotUtil.GlobalVars.CacheFolder + path);
-                        }
-                        else
-                        {
+
+                            var url = albumImages.Large.AbsoluteUri;
+
                             Bitmap bitmap;
                             try
                             {
@@ -67,30 +74,33 @@ namespace FMBot.Bot.Services
 
                             chartImage = bitmap;
 
-                            await using var memoryStream = new MemoryStream();
-                            await using var fileStream = new FileStream(
-                                FMBotUtil.GlobalVars.CacheFolder + path,
-                                FileMode.Create,
-                                FileAccess.ReadWrite);
+                            if (validImage)
+                            {
+                                await using var memoryStream = new MemoryStream();
+                                await using var fileStream = new FileStream(
+                                    localPath,
+                                    FileMode.Create,
+                                    FileAccess.ReadWrite);
 
-                            bitmap.Save(memoryStream, ImageFormat.Png);
+                                bitmap.Save(memoryStream, ImageFormat.Png);
 
-                            var bytes = memoryStream.ToArray();
-                            await fileStream.WriteAsync(bytes, 0, bytes.Length);
-                            await fileStream.DisposeAsync();
+                                var bytes = memoryStream.ToArray();
+                                await fileStream.WriteAsync(bytes, 0, bytes.Length);
+                                await fileStream.DisposeAsync();
+                            }
+                        }
+                        else
+                        {
+                            chartImage = new Bitmap(FMBotUtil.GlobalVars.ImageFolder + "unknown.png");
+                            validImage = false;
                         }
                     }
-                    else
-                    {
-                        chartImage = new Bitmap(FMBotUtil.GlobalVars.ImageFolder + "unknown.png");
-                        validImage = false;
-                    }
-
+                    
                     if (chart.TitlesEnabled)
                     {
                         try
                         {
-                            using Graphics graphics = Graphics.FromImage(chartImage);
+                            using var graphics = Graphics.FromImage(chartImage);
 
                             graphics.DrawColorString(
                                 chartImage,
@@ -138,6 +148,20 @@ namespace FMBot.Bot.Services
                     image.Dispose();
                 }
             }
+        }
+
+        private static string CalculateMd5Hash(string input)
+        {
+            var md5 = MD5.Create();
+            var inputBytes = Encoding.ASCII.GetBytes(input);
+            var hash = md5.ComputeHash(inputBytes);
+
+            var sb = new StringBuilder();
+            for (var i = 0; i < hash.Length; i++)
+            {
+                sb.Append(i.ToString("X2"));
+            }
+            return sb.ToString();
         }
 
         public ChartSettings SetExtraSettings(ChartSettings currentChartSettings, string[] extraOptions)
