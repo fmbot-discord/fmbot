@@ -101,7 +101,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (albumInfo.Tags.Tag.Any())
             {
-                var tags = this._lastFmService.TagsToString(albumInfo.Tags);
+                var tags = this._lastFmService.TagsToLinkedString(albumInfo.Tags);
 
                 this._embed.AddField("Tags", tags);
             }

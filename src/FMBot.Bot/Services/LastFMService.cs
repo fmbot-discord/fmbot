@@ -77,7 +77,7 @@ namespace FMBot.Bot.Services
                        : $" | *{track.AlbumName}*\n");
         }
 
-        public string TagsToString(Tags tags)
+        public string TagsToLinkedString(Tags tags)
         {
             var tagString = "";
             for (var i = 0; i < tags.Tag.Length; i++)
@@ -88,6 +88,22 @@ namespace FMBot.Bot.Services
                 }
                 var tag = tags.Tag[i];
                 tagString += $"[{tag.Name}]({tag.Url})";
+            }
+
+            return tagString;
+        }
+
+        public string TopTagsToString(Toptags tags)
+        {
+            var tagString = "";
+            for (var i = 0; i < tags.Tag.Length; i++)
+            {
+                if (i != 0)
+                {
+                    tagString += " - ";
+                }
+                var tag = tags.Tag[i];
+                tagString += $"{tag.Name}";
             }
 
             return tagString;

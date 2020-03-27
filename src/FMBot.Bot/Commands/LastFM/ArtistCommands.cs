@@ -114,7 +114,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (artistInfo.Tags.Tag.Any())
             {
-                var tags = this._lastFmService.TagsToString(artistInfo.Tags);
+                var tags = this._lastFmService.TagsToLinkedString(artistInfo.Tags);
 
                 this._embed.AddField("Tags", tags);
             }
