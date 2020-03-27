@@ -68,13 +68,11 @@ namespace FMBot.Bot.Commands.LastFM
             var msg = this.Context.Message as SocketUserMessage;
             if (StackCooldownTarget.Contains(this.Context.Message.Author))
             {
-                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(10) >=
-                    DateTimeOffset.Now)
+                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(5) >= DateTimeOffset.Now)
                 {
-                    var secondsLeft =
-                        (int)(StackCooldownTimer[
-                                StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
-                            .AddSeconds(9) - DateTimeOffset.Now).TotalSeconds;
+                    var secondsLeft = (int)(StackCooldownTimer[
+                                                    StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
+                                                .AddSeconds(5) - DateTimeOffset.Now).TotalSeconds;
                     if (secondsLeft <= 2)
                     {
                         var secondString = secondsLeft == 1 ? "second" : "seconds";
