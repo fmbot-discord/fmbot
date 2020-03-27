@@ -33,7 +33,7 @@ namespace FMBot.Bot.Services
                 // Album mode
                 await chart.Albums.ParallelForEachAsync(async album =>
                 {
-                    var localAlbumId = CalculateMd5Hash(album.Url.LocalPath);
+                    var localAlbumId = Base64Encode(album.Url.LocalPath);
 
                     Bitmap chartImage;
                     var validImage = true;
@@ -150,18 +150,10 @@ namespace FMBot.Bot.Services
             }
         }
 
-        private static string CalculateMd5Hash(string input)
+        private static string Base64Encode(string plainText)
         {
-            var md5 = MD5.Create();
-            var inputBytes = Encoding.ASCII.GetBytes(input);
-            var hash = md5.ComputeHash(inputBytes);
-
-            var sb = new StringBuilder();
-            for (var i = 0; i < hash.Length; i++)
-            {
-                sb.Append(i.ToString("X2"));
-            }
-            return sb.ToString();
+            var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
+            return Convert.ToBase64String(plainTextBytes);
         }
 
         public ChartSettings SetExtraSettings(ChartSettings currentChartSettings, string[] extraOptions)
