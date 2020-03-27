@@ -33,7 +33,8 @@ namespace FMBot.Bot.Services
                 // Album mode
                 await chart.Albums.ParallelForEachAsync(async album =>
                 {
-                    var localAlbumId = Base64Encode(album.Url.LocalPath);
+                    var encodedId = Base64Encode(album.Url.LocalPath);
+                    var localAlbumId = TruncateLongString(encodedId, 60);
 
                     Bitmap chartImage;
                     var validImage = true;
@@ -154,6 +155,12 @@ namespace FMBot.Bot.Services
         {
             var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
             return Convert.ToBase64String(plainTextBytes);
+        }
+        public static string TruncateLongString(string str, int maxLength)
+        {
+            if (string.IsNullOrEmpty(str))
+                return str;
+            return str.Substring(0, Math.Min(str.Length, maxLength));
         }
 
         public ChartSettings SetExtraSettings(ChartSettings currentChartSettings, string[] extraOptions)
