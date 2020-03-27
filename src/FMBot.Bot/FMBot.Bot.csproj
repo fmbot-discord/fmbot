@@ -36,7 +36,7 @@
     <PackageReference Include="System.Security.Permissions" Version="4.7.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Bot.Logger\Bot.Logger.csproj" />
+    <ProjectReference Include="..\FMBot.Logger\FMBot.Logger.csproj" />
     <ProjectReference Include="..\FMBot.Data\FMBot.Data.csproj" />
     <ProjectReference Include="..\FMBot.LastFM\FMBot.LastFM.csproj" />
     <ProjectReference Include="..\FMBot.Logger\FMBot.Logger.csproj" />
