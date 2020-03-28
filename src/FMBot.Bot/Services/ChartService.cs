@@ -33,7 +33,7 @@ namespace FMBot.Bot.Services
                 // Album mode
                 await chart.Albums.ParallelForEachAsync(async album =>
                 {
-                    var encodedId = Base64Encode(album.Url.LocalPath);
+                    var encodedId = ReplaceInvalidChars(album.Url.LocalPath.Replace("/music/",""));
                     var localAlbumId = TruncateLongString(encodedId, 60);
 
                     Bitmap chartImage;
@@ -150,13 +150,12 @@ namespace FMBot.Bot.Services
                 }
             }
         }
-
-        private static string Base64Encode(string plainText)
+        private string ReplaceInvalidChars(string filename)
         {
-            var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
-            return Convert.ToBase64String(plainTextBytes);
+            return string.Join("_", filename.Split(Path.GetInvalidFileNameChars()));
         }
-        public static string TruncateLongString(string str, int maxLength)
+
+        private static string TruncateLongString(string str, int maxLength)
         {
             if (string.IsNullOrEmpty(str))
                 return str;
