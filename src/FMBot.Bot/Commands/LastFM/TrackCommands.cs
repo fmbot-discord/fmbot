@@ -174,25 +174,11 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                         headerText += embedTitle;
 
-                        var footerText = "";
+                        await trackInfoTask;
+                        var trackInfo = trackInfoTask.Result;
+                        var footerText =
+                            $"{userInfo.Content.Name} has {trackInfo.Userplaycount} scrobbles on this track | {userInfo.Content.Playcount} total scrobbles";
 
-                        if (userSettings.ChartType == ChartType.embedmini)
-                        {
-                            await trackInfoTask;
-                            var trackInfo = trackInfoTask.Result;
-
-                            if (trackInfo.Toptags.Tag.Any())
-                            {
-                                footerText += $"{this._lastFmService.TopTagsToString(trackInfo.Toptags)}\n";
-                            }
-                            footerText +=
-                                $"{userInfo.Content.Name} has {trackInfo.Userplaycount} scrobbles on this track | {userInfo.Content.Playcount} total scrobbles";
-                        }
-                        else
-                        {
-                            footerText =
-                                $"{userInfo.Content.Name} has {userInfo.Content.Playcount} total scrobbles";
-                        }
                         if (currentTrack.IsNowPlaying != true && currentTrack.TimePlayed.HasValue)
                         {
                             footerText += " | Last scrobble:";
