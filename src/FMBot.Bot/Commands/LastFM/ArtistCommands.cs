@@ -270,10 +270,9 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 await ReplyAsync(indexStartedReply);
+                await this._guildService.UpdateGuildIndexTimestampAsync(Context.Guild);
 
                 var serverUsers = await this._indexService.IndexGuild(users);
-
-                await this._guildService.UpdateGuildIndexTimestampAsync(Context.Guild);
 
                 await ReplyAsync($"<@{Context.User.Id}> Indexing server complete!");
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,

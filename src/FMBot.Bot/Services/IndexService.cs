@@ -21,7 +21,7 @@ namespace FMBot.Bot.Services
 
         private readonly FMBotDbContext _db = new FMBotDbContext();
 
-        private const int MaxRequestsPerMinute = 30;
+        private const int MaxRequestsPerMinute = 35;
 
         public async Task<bool> IndexGuild(IReadOnlyList<User> users)
         {
@@ -40,11 +40,9 @@ namespace FMBot.Bot.Services
                         break;
                     }
 
-                    Console.WriteLine("Sleeping");
                     Thread.Sleep(1000);
                 }
 
-                Console.WriteLine("Executing");
                 var succes = await StoreArtistsForUser(user);
                 requestsInLastMinute++;
 
@@ -52,10 +50,7 @@ namespace FMBot.Bot.Services
                 {
                     failedRequests++;
                 }
-            }, maxDegreeOfParallelism: 5);
-
-            await this._db.SaveChangesAsync();
-            Console.WriteLine("Saving changes");
+            }, maxDegreeOfParallelism: 6);
 
             return true;
         }
@@ -77,6 +72,8 @@ namespace FMBot.Bot.Services
             user.LastIndexed = now;
 
             this._db.Users.Update(user);
+
+            await this._db.SaveChangesAsync();
 
             return true;
         }
