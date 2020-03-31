@@ -1,14 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Dasync.Collections;
 using FMBot.Bot.Configurations;
-using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Data.Entities;
 using FMBot.LastFM.Models;
@@ -18,7 +14,6 @@ using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
 using Microsoft.AspNetCore.WebUtilities;
 using Newtonsoft.Json;
-using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Services
 {

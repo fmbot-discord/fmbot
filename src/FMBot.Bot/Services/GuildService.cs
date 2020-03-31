@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -121,6 +122,44 @@ namespace FMBot.Bot.Services
             else
             {
                 existingGuild.EmoteReactions = reactions;
+                existingGuild.Name = guild.Name;
+
+                this.db.Entry(existingGuild).State = EntityState.Modified;
+
+                await this.db.SaveChangesAsync();
+            }
+        }
+
+        public async Task<DateTime?> GetGuildIndexTimestampAsync(IGuild guild)
+        {
+            var existingGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+
+            return existingGuild?.LastIndexed;
+        }
+
+        public async Task UpdateGuildIndexTimestampAsync(IGuild guild)
+        {
+            var existingGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+
+            if (existingGuild == null)
+            {
+                var newGuild = new Guild
+                {
+                    DiscordGuildId = guild.Id,
+                    ChartTimePeriod = ChartTimePeriod.Monthly,
+                    ChartType = ChartType.embedmini,
+                    Name = guild.Name,
+                    TitlesEnabled = true,
+                    LastIndexed = DateTime.UtcNow
+                };
+
+                this.db.Guilds.Add(newGuild);
+
+                await this.db.SaveChangesAsync();
+            }
+            else
+            {
+                existingGuild.LastIndexed = DateTime.UtcNow;
                 existingGuild.Name = guild.Name;
 
                 this.db.Entry(existingGuild).State = EntityState.Modified;

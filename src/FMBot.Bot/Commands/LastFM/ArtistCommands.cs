@@ -19,6 +19,8 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly GuildService _guildService = new GuildService();
+        private readonly IndexService _indexService = new IndexService();
+        private readonly ArtistsService _artistsService = new ArtistsService();
         private readonly LastFMService _lastFmService = new LastFMService();
         private readonly LastfmApi _lastfmApi;
         private readonly Logger.Logger _logger;
@@ -48,31 +50,10 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            string artist;
-            if (artistValues.Length > 0)
+            var artist = await GetArtistOrHelp(artistValues, userSettings, "fmartist");
+            if (artist == null)
             {
-                if (artistValues.First() == "help")
-                {
-                    await ReplyAsync(
-                        "Usage: `.fmartist 'name'\n" +
-                        "If you don't enter any artists name, it will get the info from the artist you're currently listening to.");
-                    return;
-                }
-
-                artist = string.Join(" ", artistValues);
-            }
-            else
-            {
-                var track = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
-
-                if (track == null)
-                {
-                    this._embed.NoScrobblesFoundErrorResponse(track.Status, this.Context, this._logger);
-                    await ReplyAsync("", false, this._embed.Build());
-                    return;
-                }
-
-                artist = track.Content.First().ArtistName;
+                return;
             }
 
             var queryParams = new Dictionary<string, string>
@@ -231,6 +212,211 @@ namespace FMBot.Bot.Commands.LastFM
                     this.Context.Guild?.Name, this.Context.Guild?.Id);
                 await ReplyAsync("Unable to show Last.FM info due to an internal error.");
             }
+        }
+
+        [Command("fmindex", RunMode = RunMode.Async)]
+        [Summary("GIndexes top 1000 artists for every user in your server.")]
+        public async Task IndexGuildAsync()
+        {
+            if (this._guildService.CheckIfDM(this.Context))
+            {
+                await ReplyAsync("This command is not supported in DMs.");
+                return;
+            }
+
+            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(Context.Guild);
+
+            try
+            {
+                var users = await this._indexService.GetUsersForContext(this.Context);
+
+                var guildOnCooldown =
+                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
+
+                if (users.Count == 0)
+                {
+                    var reply =
+                        $"No new registered .fmbot members found on this server or all users have already been indexed in the last {Constants.GuildIndexCooldown.TotalHours} hours.";
+
+                    if (guildOnCooldown)
+                    {
+                        var timeTillIndex = lastIndex.Value.Add(Constants.GuildIndexCooldown) - DateTime.UtcNow;
+                        reply +=
+                            $"\nGuild top artists for every user can be updated again in {(int)timeTillIndex.TotalHours} hours and {timeTillIndex:mm} minutes";
+                    }
+                    await ReplyAsync(reply);
+                    return;
+                }
+
+                string usersString = "";
+                if (guildOnCooldown)
+                {
+                    usersString = "new ";
+                }
+
+                if (users.Count == 1)
+                {
+                    usersString += "user";
+                }
+                else
+                {
+                    usersString += "users";
+                }
+
+                var indexStartedReply = $"Indexing top 1000 artists for {users.Count} {usersString} in this server.";
+                if (users.Count >= 100)
+                {
+                    indexStartedReply += "\nPlease note that this can take a while since this server has a lot of registered members.";
+                }
+
+                await ReplyAsync(indexStartedReply);
+
+                var serverUsers = await this._indexService.IndexGuild(users);
+
+                await this._guildService.UpdateGuildIndexTimestampAsync(Context.Guild);
+
+                await ReplyAsync($"<@{Context.User.Id}> Indexing server complete!");
+                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
+                    this.Context.Message.Content);
+            }
+            catch (Exception e)
+            {
+                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
+                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                await ReplyAsync(
+                    "Something went wrong while indexing users. Please let us know as this feature is in beta.");
+            }
+        }
+
+        [Command("fmwhoknows", RunMode = RunMode.Async)]
+        [Summary("Shows what other users listen to the same artist in your server")]
+        [Alias("fmw", "fmwk")]
+        public async Task WhoKnowsAsync(params string[] artistValues)
+        {
+            if (this._guildService.CheckIfDM(this.Context))
+            {
+                await ReplyAsync("This command is not supported in DMs.");
+                return;
+            }
+
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            if (userSettings?.UserNameLastFM == null)
+            {
+                await UsernameNotSetErrorResponseAsync();
+                return;
+            }
+
+            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(Context.Guild);
+
+            if (lastIndex == null)
+            {
+                await ReplyAsync("This server hasn't been indexed yet (or it isn't finished).\n" +
+                                 "Please run `.fmindex` to index this server.");
+                return;
+            }
+            if (lastIndex < DateTime.UtcNow.AddDays(-60))
+            {
+                await ReplyAsync("Server index data is out of date, it was last updated over 60 days ago.\n" +
+                                 "Please run `.fmindex` to re-index this server.");
+                return;
+            }
+
+            var artistQuery = await GetArtistOrHelp(artistValues, userSettings, "fmartist");
+            if (artistQuery == null)
+            {
+                return;
+            }
+
+            var queryParams = new Dictionary<string, string>
+            {
+                {"artist", artistQuery },
+                {"username", userSettings.UserNameLastFM }
+            };
+
+            var artistCall = await this._lastfmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+
+            if (!artistCall.Success)
+            {
+                this._embed.ErrorResponse(artistCall.Error.Value, artistCall.Message, this.Context, this._logger);
+                await ReplyAsync("", false, this._embed.Build());
+                return;
+            }
+            Statistics.LastfmApiCalls.Inc();
+
+            var artist = artistCall.Content;
+
+            try
+            {
+                var artists = await this._artistsService.GetUsersForArtist(Context, artist.Artist.Name);
+
+                if (artists.Count == 0)
+                {
+                    await ReplyAsync("No registered .fmbot members found on this server or all users have already been indexed in the last 24 hours.");
+                    return;
+                }
+
+                var serverUsers = await this._artistsService.UserListToIndex(artists, artistCall.Content, userSettings.UserId);
+
+                this._embed.WithDescription(serverUsers);
+                var footer = "";
+                if (lastIndex < DateTime.UtcNow.Add(-Constants.GuildIndexCooldown))
+                {
+                    footer += "Update data with `.fmindex` | ";
+                }
+
+                this._embed.WithTitle($"Who knows {artist.Artist.Name} in {Context.Guild.Name}");
+                this._embed.WithUrl(artist.Artist.Url);
+
+                var timeTillIndex = DateTime.UtcNow - lastIndex.Value;
+
+                footer += $"Last updated {(int)timeTillIndex.TotalHours}h{timeTillIndex:mm}m ago";
+                this._embedFooter.WithText(footer);
+                this._embed.WithFooter(this._embedFooter);
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
+                    this.Context.Message.Content);
+            }
+            catch (Exception e)
+            {
+                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
+                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                await ReplyAsync(
+                    "Something went wrong while using whoknows. Please let us know as this feature is in beta.");
+            }
+        }
+
+        private async Task<string> GetArtistOrHelp(string[] artistValues, User userSettings, string command)
+        {
+            string artist;
+            if (artistValues.Length > 0)
+            {
+                if (artistValues.First() == "help")
+                {
+                    await ReplyAsync(
+                        $"Usage: `.{command} 'name'\n" +
+                        "If you don't enter any artists name, it will get the info from the artist you're currently listening to.");
+                    return null;
+                }
+
+                artist = string.Join(" ", artistValues);
+            }
+            else
+            {
+                var track = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
+
+                if (track == null)
+                {
+                    this._embed.NoScrobblesFoundErrorResponse(track.Status, this.Context, this._logger);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return null;
+                }
+
+                artist = track.Content.First().ArtistName;
+            }
+
+            return artist;
         }
 
         private async Task UsernameNotSetErrorResponseAsync()
