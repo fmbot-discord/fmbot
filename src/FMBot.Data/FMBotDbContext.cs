@@ -18,6 +18,7 @@ namespace FMBot.Data
         public virtual DbSet<Friend> Friends { get; set; }
         public virtual DbSet<Guild> Guilds { get; set; }
         public virtual DbSet<User> Users { get; set; }
+        public virtual DbSet<Artist> Artists { get; set; }
         
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -33,9 +34,6 @@ namespace FMBot.Data
             modelBuilder.Entity<Friend>(entity =>
             {
                 entity.HasKey(e => e.FriendId);
-
-                //entity.Property(b => b.FriendId)
-                //    .UseIdentityAlwaysColumn();
 
                 entity.HasIndex(e => e.FriendUserId);
 
@@ -65,6 +63,15 @@ namespace FMBot.Data
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.UserId);
+            });
+
+            modelBuilder.Entity<Artist>(entity =>
+            {
+                entity.HasKey(a => a.ArtistId);
+
+                entity.HasOne(u => u.User)
+                    .WithMany(a => a.Artists)
+                    .HasForeignKey(f => f.UserId);
             });
         }
     }

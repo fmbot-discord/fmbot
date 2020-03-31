@@ -1,3 +1,5 @@
+using System;
+
 namespace FMBot.Data.Entities
 {
     public class Guild
@@ -17,5 +19,9 @@ namespace FMBot.Data.Entities
         public ChartTimePeriod ChartTimePeriod { get; set; }
 
         public string[] EmoteReactions { get; set; }
+
+        public DateTime? LastIndexed { get; set; }
+
+        public bool? SpecialGuild { get; set; }
     }
 }

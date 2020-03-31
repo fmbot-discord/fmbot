@@ -11,6 +11,8 @@ namespace FMBot.Data.Entities
 
         public bool? Featured { get; set; }
 
+        public bool? FeaturedNotificationsEnabled { get; set; }
+
         public bool? Blacklisted { get; set; }
 
         public UserType UserType { get; set; }
@@ -25,8 +27,12 @@ namespace FMBot.Data.Entities
 
         public DateTime? LastGeneratedChartDateTimeUtc { get; set; }
 
+        public DateTime? LastIndexed { get; set; }
+
         public ICollection<Friend> FriendedByUsers { get; set; }
 
         public ICollection<Friend> Friends { get; set; }
+
+        public ICollection<Artist> Artists { get; set; }
     }
 }
