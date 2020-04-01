@@ -10,6 +10,7 @@ using FMBot.Bot.Services;
 using FMBot.Data.Entities;
 using FMBot.LastFM.Models;
 using FMBot.LastFM.Services;
+using Artist = FMBot.Data.Entities.Artist;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -349,10 +350,14 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 var artists = await this._artistsService.GetUsersForArtist(Context, artist.Artist.Name);
 
-                if (artists.Count == 0)
+                switch (artists.Count)
                 {
-                    await ReplyAsync("No registered .fmbot members found on this server or all users have already been indexed in the last 24 hours.");
-                    return;
+                    case 0 when artist.Artist.Stats.Userplaycount == 0:
+                        await ReplyAsync("Sorry, but nobody has this artists in their top 1000 artists and you don't have any plays.");
+                        return;
+                    case 0:
+                        artists = this._artistsService.AddArtistToIndexList(artists, userSettings, artist);
+                        break;
                 }
 
                 var serverUsers = await this._artistsService.UserListToIndex(artists, artistCall.Content, userSettings.UserId);

@@ -21,13 +21,14 @@ namespace FMBot.Bot.Services
 
         private readonly FMBotDbContext _db = new FMBotDbContext();
 
-        private const int MaxRequestsPerMinute = 35;
+        private const int MaxRequestsPerMinute = 100;
 
         public async Task<bool> IndexGuild(IReadOnlyList<User> users)
         {
             var requestsInLastMinute = 0;
             var failedRequests = 0;
             var lastMinute = DateTime.Now.AddSeconds(users.Count).Minute;
+            Console.WriteLine($"Starting artist update for {users.Count} users");
 
             await users.ParallelForEachAsync(async user =>
             {
@@ -43,39 +44,51 @@ namespace FMBot.Bot.Services
                     Thread.Sleep(1000);
                 }
 
+                Console.WriteLine($"Storing artists for {user.UserNameLastFM}");
                 var succes = await StoreArtistsForUser(user);
                 requestsInLastMinute++;
 
                 if (!succes)
                 {
                     failedRequests++;
+                    Console.WriteLine($"Skipped user {user.UserNameLastFM}, probably already indexed in the last 48h");
                 }
-            }, maxDegreeOfParallelism: 6);
+            }, maxDegreeOfParallelism: 10);
+
+            Console.WriteLine($"Saving artists for {users.Count} users");
+            await this._db.SaveChangesAsync();
 
             return true;
         }
 
         private async Task<bool> StoreArtistsForUser(User user)
         {
-            var topArtists = await this._lastFMClient.User.GetTopArtists(user.UserNameLastFM, LastStatsTimeSpan.Overall, 1, 1000);
-            Statistics.LastfmApiCalls.Inc();
+            user = await this._db.Users.FindAsync(user.UserId);
 
-            var now = DateTime.UtcNow;
-            user.Artists = topArtists.Select(a => new Artist
+            if (user.LastIndexed == null || user.LastIndexed < DateTime.UtcNow.Add(-Constants.GuildIndexCooldown))
             {
-                LastUpdated = now,
-                Name = a.Name,
-                Playcount = a.PlayCount.Value,
-                UserId = user.UserId
-            }).ToList();
+                this._db.Artists.RemoveRange(user.Artists);
 
-            user.LastIndexed = now;
+                var topArtists = await this._lastFMClient.User.GetTopArtists(user.UserNameLastFM, LastStatsTimeSpan.Overall, 1, 1000);
+                Statistics.LastfmApiCalls.Inc();
 
-            this._db.Users.Update(user);
+                var now = DateTime.UtcNow;
+                user.Artists = topArtists.Select(a => new Artist
+                {
+                    LastUpdated = now,
+                    Name = a.Name,
+                    Playcount = a.PlayCount.Value,
+                    UserId = user.UserId
+                }).ToList();
 
-            await this._db.SaveChangesAsync();
+                user.LastIndexed = now;
 
-            return true;
+                this._db.Users.Update(user);
+
+                return true;
+            }
+
+            return false;
         }
 
         public async Task<IReadOnlyList<User>> GetUsersForContext(ICommandContext context)
