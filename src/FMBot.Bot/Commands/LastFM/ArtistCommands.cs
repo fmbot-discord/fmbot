@@ -264,10 +264,12 @@ namespace FMBot.Bot.Commands.LastFM
                     usersString += "users";
                 }
 
+                var expectedTime = TimeSpan.FromSeconds(3 * users.Count);
                 var indexStartedReply = $"Indexing top 1000 artists for {users.Count} {usersString} in this server.";
-                if (users.Count >= 100)
+                if (users.Count >= 50)
                 {
-                    indexStartedReply += "\nPlease note that this can take a while since this server has a lot of registered members.";
+                    indexStartedReply += "\nPlease note that this can take a while since this server has a lot of registered members. \n" +
+                                         $"Estimated time for indexing all users: {(int)expectedTime.TotalMinutes} minutes.";
                 }
 
                 await ReplyAsync(indexStartedReply);
@@ -285,6 +287,7 @@ namespace FMBot.Bot.Commands.LastFM
                     this.Context.Guild?.Name, this.Context.Guild?.Id);
                 await ReplyAsync(
                     "Something went wrong while indexing users. Please let us know as this feature is in beta.");
+                await this._guildService.UpdateGuildIndexTimestampAsync(Context.Guild, DateTime.UtcNow);
             }
         }
 

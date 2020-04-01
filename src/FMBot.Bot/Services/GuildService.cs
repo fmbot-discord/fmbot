@@ -137,7 +137,7 @@ namespace FMBot.Bot.Services
             return existingGuild?.LastIndexed;
         }
 
-        public async Task UpdateGuildIndexTimestampAsync(IGuild guild)
+        public async Task UpdateGuildIndexTimestampAsync(IGuild guild, DateTime? timestamp = null)
         {
             var existingGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
 
@@ -150,7 +150,7 @@ namespace FMBot.Bot.Services
                     ChartType = ChartType.embedmini,
                     Name = guild.Name,
                     TitlesEnabled = true,
-                    LastIndexed = DateTime.UtcNow
+                    LastIndexed = timestamp ?? DateTime.UtcNow
                 };
 
                 this.db.Guilds.Add(newGuild);
@@ -159,7 +159,7 @@ namespace FMBot.Bot.Services
             }
             else
             {
-                existingGuild.LastIndexed = DateTime.UtcNow;
+                existingGuild.LastIndexed = timestamp ?? DateTime.UtcNow;
                 existingGuild.Name = guild.Name;
 
                 this.db.Entry(existingGuild).State = EntityState.Modified;

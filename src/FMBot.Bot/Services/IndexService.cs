@@ -30,7 +30,7 @@ namespace FMBot.Bot.Services
             var lastMinute = DateTime.Now.AddSeconds(users.Count).Minute;
             Console.WriteLine($"Starting artist update for {users.Count} users");
 
-            await users.ParallelForEachAsync(async user =>
+            foreach (var user in users)
             {
                 while (requestsInLastMinute >= MaxRequestsPerMinute)
                 {
@@ -53,7 +53,7 @@ namespace FMBot.Bot.Services
                     failedRequests++;
                     Console.WriteLine($"Skipped user {user.UserNameLastFM}, probably already indexed in the last 48h");
                 }
-            }, maxDegreeOfParallelism: 5);
+            }
 
             Console.WriteLine($"Saving artists for {users.Count} users");
             await this._db.SaveChangesAsync();
