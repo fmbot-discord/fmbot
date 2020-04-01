@@ -4,6 +4,7 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Handlers;
+using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Data;
 using Microsoft.EntityFrameworkCore;
@@ -51,7 +52,7 @@ namespace FMBot.Bot
             });
 
             var logger = new Logger.Logger();
-            
+
             services
                 .AddSingleton(discordClient)
                 .AddSingleton(new CommandService(new CommandServiceConfig
@@ -62,6 +63,8 @@ namespace FMBot.Bot
                 .AddSingleton<CommandHandler>()
                 .AddSingleton<StartupService>()
                 .AddSingleton<TimerService>()
+                .AddSingleton<IUserIndexQueue, UserIndexQueue>()
+                .AddSingleton<IndexService>()
                 .AddSingleton(logger)
                 .AddSingleton<Random>() // Add random to the collection
                 .AddSingleton(Configuration); // Add the configuration to the collection

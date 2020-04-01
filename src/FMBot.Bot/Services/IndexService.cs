@@ -1,17 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Dasync.Collections;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Data;
 using FMBot.Data.Entities;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using PostgreSQLCopyHelper;
 
 namespace FMBot.Bot.Services
 {
@@ -21,86 +25,67 @@ namespace FMBot.Bot.Services
 
         private readonly FMBotDbContext _db = new FMBotDbContext();
 
-        private const int MaxRequestsPerMinute = 40;
+        private readonly IUserIndexQueue _userIndexQueue;
 
-        public async Task<bool> IndexGuild(IReadOnlyList<User> users)
+        public IndexService(IUserIndexQueue userIndexQueue)
         {
-            var requestsInLastMinute = 0;
-            var failedRequests = 0;
-            var lastMinute = DateTime.Now.AddSeconds(users.Count).Minute;
+            this._userIndexQueue = userIndexQueue;
+            this._userIndexQueue.UsersToIndex.SubscribeAsync(OnNextAsync);
+        }
+
+        private async Task OnNextAsync(User obj)
+        {
+            await StoreArtistsForUser(obj);
+        }
+
+        public async Task<int> IndexGuild(IReadOnlyList<User> users)
+        {
             Console.WriteLine($"Starting artist update for {users.Count} users");
 
-            foreach (var user in users)
-            {
-                while (requestsInLastMinute >= MaxRequestsPerMinute)
-                {
-                    if (DateTime.Now.AddSeconds(users.Count).Minute != lastMinute)
-                    {
-                        requestsInLastMinute = 0;
-                        lastMinute = DateTime.Now.AddSeconds(users.Count).Minute;
-                        break;
-                    }
+            this._userIndexQueue.Publish(users.ToList());
 
-                    Thread.Sleep(1000);
-                }
+            var usersInQueue = await this._userIndexQueue.UsersToIndex.Count();
 
-                Console.WriteLine($"Storing artists for {user.UserNameLastFM}");
-                var succes = await StoreArtistsForUser(user);
-                requestsInLastMinute++;
-
-                if (!succes)
-                {
-                    failedRequests++;
-                    Console.WriteLine($"Skipped user {user.UserNameLastFM}, probably already indexed in the last 48h");
-                }
-            }
-
-            Console.WriteLine($"Saving artists for {users.Count} users");
-            await this._db.SaveChangesAsync();
-
-            return true;
+            return usersInQueue;
         }
 
-        private async Task<bool> StoreArtistsForUser(User user)
+        private async Task StoreArtistsForUser(User user)
         {
-            user = await this._db.Users.FindAsync(user.UserId);
+            Thread.Sleep(800);
 
-            var canBeIndexed = await UserCanBeIndexed(user);
+            Console.WriteLine($"Starting artist store for {user.UserNameLastFM}");
 
-            if (canBeIndexed)
+            var topArtists = await this._lastFMClient.User.GetTopArtists(user.UserNameLastFM, LastStatsTimeSpan.Overall, 1, 1000);
+            Statistics.LastfmApiCalls.Inc();
+
+            var now = DateTime.UtcNow;
+            var artists = topArtists.Select(a => new Artist
             {
-                var topArtists = await this._lastFMClient.User.GetTopArtists(user.UserNameLastFM, LastStatsTimeSpan.Overall, 1, 1000);
-                Statistics.LastfmApiCalls.Inc();
+                LastUpdated = now,
+                Name = a.Name,
+                Playcount = a.PlayCount.Value,
+                UserId = user.UserId
+            }).ToList();
 
-                var now = DateTime.UtcNow;
-                user.Artists = topArtists.Select(a => new Artist
-                {
-                    LastUpdated = now,
-                    Name = a.Name,
-                    Playcount = a.PlayCount.Value,
-                    UserId = user.UserId
-                }).ToList();
+            var connString = this._db.Database.GetDbConnection().ConnectionString;
+            var copyHelper = new PostgreSQLCopyHelper<Artist>("public", "artists")
+                .MapText("name", x => x.Name)
+                .MapInteger("user_id", x => x.UserId)
+                .MapInteger("playcount", x => x.Playcount)
+                .MapTimeStamp("last_updated", x => x.LastUpdated);
 
-                this._db.Users.Update(user);
-
-                return true;
-            }
-
-            return false;
-        }
-
-        private async Task<bool> UserCanBeIndexed(User user)
-        {
-            if (user.LastIndexed == null || user.LastIndexed < DateTime.UtcNow.Add(-Constants.GuildIndexCooldown))
+            await using (var connection = new NpgsqlConnection(connString))
             {
-                user.LastIndexed = DateTime.UtcNow;
-                this._db.Entry(user).State = EntityState.Modified;
-                await this._db.SaveChangesAsync();
+                connection.Open();
 
-                return true;
+                await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.artists WHERE user_id = {user.UserId};", connection);
+                await deleteCurrentArtists.ExecuteNonQueryAsync();
+
+                copyHelper.SaveAll(connection, artists);
+
+                await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_indexed='{now.ToString("u")}' WHERE user_id = {user.UserId};", connection);
+                await setIndexTime.ExecuteNonQueryAsync();
             }
-
-            return false;
         }
 
         public async Task<IReadOnlyList<User>> GetUsersForContext(ICommandContext context)

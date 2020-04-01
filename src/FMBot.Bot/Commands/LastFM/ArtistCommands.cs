@@ -20,7 +20,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly GuildService _guildService = new GuildService();
-        private readonly IndexService _indexService = new IndexService();
+        private readonly IndexService _indexService;
         private readonly ArtistsService _artistsService = new ArtistsService();
         private readonly LastFMService _lastFmService = new LastFMService();
         private readonly LastfmApi _lastfmApi;
@@ -28,9 +28,10 @@ namespace FMBot.Bot.Commands.LastFM
 
         private readonly UserService _userService = new UserService();
 
-        public ArtistCommands(Logger.Logger logger)
+        public ArtistCommands(Logger.Logger logger, IndexService indexService)
         {
             this._logger = logger;
+            this._indexService = indexService;
             this._lastfmApi = new LastfmApi(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
@@ -243,7 +244,7 @@ namespace FMBot.Bot.Commands.LastFM
                     {
                         var timeTillIndex = lastIndex.Value.Add(Constants.GuildIndexCooldown) - DateTime.UtcNow;
                         reply +=
-                            $"\nGuild top artists for every user can be updated again in {(int)timeTillIndex.TotalHours} hours and {timeTillIndex:mm} minutes";
+                            $"\nAll users in this server can be updated again in {(int)timeTillIndex.TotalHours} hours and {timeTillIndex:mm} minutes";
                     }
                     await ReplyAsync(reply);
                     return;
@@ -264,22 +265,24 @@ namespace FMBot.Bot.Commands.LastFM
                     usersString += "users";
                 }
 
-                var expectedTime = TimeSpan.FromSeconds(3 * users.Count);
-                var indexStartedReply = $"Indexing top 1000 artists for {users.Count} {usersString} in this server.";
-                if (users.Count >= 50)
+                var expectedTime = TimeSpan.FromSeconds(1.5 * users.Count);
+                var indexStartedReply = $"{users.Count} {usersString} have been added to the queue for adding or updating their top 1000 artists.";
+                if (users.Count >= 60)
                 {
                     indexStartedReply += "\nPlease note that this can take a while since this server has a lot of registered members. \n" +
                                          $"Estimated time for indexing all users: {(int)expectedTime.TotalMinutes} minutes.";
                 }
 
+                indexStartedReply +=
+                    "\n*Note: Due to technical limitations, you will currently not be alerted when the server index is finished*";
+
                 await ReplyAsync(indexStartedReply);
+
                 await this._guildService.UpdateGuildIndexTimestampAsync(Context.Guild);
-
-                var serverUsers = await this._indexService.IndexGuild(users);
-
-                await ReplyAsync($"<@{Context.User.Id}> Indexing server complete!");
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
                     this.Context.Message.Content);
+
+                var serverUsers = await this._indexService.IndexGuild(users);
             }
             catch (Exception e)
             {

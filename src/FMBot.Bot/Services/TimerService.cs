@@ -260,7 +260,7 @@ namespace FMBot.Bot.Services
 
                 var guild = client.GetGuild(broadcastServerId);
                 var channel = guild.GetTextChannel(broadcastChannelId);
-
+                 
                 var builder = new EmbedBuilder();
                 var selfUser = client.CurrentUser;
                 builder.WithThumbnailUrl(selfUser.GetAvatarUrl());
