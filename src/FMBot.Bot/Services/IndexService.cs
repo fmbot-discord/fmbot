@@ -21,7 +21,7 @@ namespace FMBot.Bot.Services
 
         private readonly FMBotDbContext _db = new FMBotDbContext();
 
-        private const int MaxRequestsPerMinute = 100;
+        private const int MaxRequestsPerMinute = 40;
 
         public async Task<bool> IndexGuild(IReadOnlyList<User> users)
         {
@@ -53,7 +53,7 @@ namespace FMBot.Bot.Services
                     failedRequests++;
                     Console.WriteLine($"Skipped user {user.UserNameLastFM}, probably already indexed in the last 48h");
                 }
-            }, maxDegreeOfParallelism: 10);
+            }, maxDegreeOfParallelism: 5);
 
             Console.WriteLine($"Saving artists for {users.Count} users");
             await this._db.SaveChangesAsync();
