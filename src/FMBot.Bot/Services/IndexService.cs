@@ -63,14 +63,12 @@ namespace FMBot.Bot.Services
 
         private async Task<bool> StoreArtistsForUser(User user)
         {
-            user = await this._db.Users
-                .Include(i => i.Artists)
-                .FirstOrDefaultAsync(f => f.UserId == user.UserId);
+            user = await this._db.Users.FindAsync(user.UserId);
 
-            if (user.LastIndexed == null || user.LastIndexed < DateTime.UtcNow.Add(-Constants.GuildIndexCooldown))
+            var canBeIndexed = await UserCanBeIndexed(user);
+
+            if (canBeIndexed)
             {
-                this._db.Artists.RemoveRange(user.Artists);
-
                 var topArtists = await this._lastFMClient.User.GetTopArtists(user.UserNameLastFM, LastStatsTimeSpan.Overall, 1, 1000);
                 Statistics.LastfmApiCalls.Inc();
 
@@ -83,9 +81,21 @@ namespace FMBot.Bot.Services
                     UserId = user.UserId
                 }).ToList();
 
-                user.LastIndexed = now;
-
                 this._db.Users.Update(user);
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private async Task<bool> UserCanBeIndexed(User user)
+        {
+            if (user.LastIndexed == null || user.LastIndexed < DateTime.UtcNow.Add(-Constants.GuildIndexCooldown))
+            {
+                user.LastIndexed = DateTime.UtcNow;
+                this._db.Entry(user).State = EntityState.Modified;
+                await this._db.SaveChangesAsync();
 
                 return true;
             }
