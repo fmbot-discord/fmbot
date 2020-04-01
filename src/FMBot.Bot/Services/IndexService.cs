@@ -63,7 +63,9 @@ namespace FMBot.Bot.Services
 
         private async Task<bool> StoreArtistsForUser(User user)
         {
-            user = await this._db.Users.FindAsync(user.UserId);
+            user = await this._db.Users
+                .Include(i => i.Artists)
+                .FirstOrDefaultAsync(f => f.UserId == user.UserId);
 
             if (user.LastIndexed == null || user.LastIndexed < DateTime.UtcNow.Add(-Constants.GuildIndexCooldown))
             {
