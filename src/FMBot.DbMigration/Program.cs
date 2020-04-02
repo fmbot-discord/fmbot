@@ -4,6 +4,9 @@ using System.Threading.Tasks;
 using FMBot.Data;
 using FMBot.DbMigration.OldDatabase.Entities;
 using Microsoft.EntityFrameworkCore;
+using Friend = FMBot.Domain.DatabaseModels.Friend;
+using Guild = FMBot.Domain.DatabaseModels.Guild;
+using User = FMBot.Domain.DatabaseModels.User;
 
 namespace FMBot.DbMigration
 {
@@ -106,7 +109,7 @@ namespace FMBot.DbMigration
             Console.WriteLine($"Inserting {usersToInsert.Count} users that do not yet exist into the new database");
             await NewDatabaseContext.Users.AddRangeAsync(
                 usersToInsert
-                    .Select(s => new Data.Entities.User
+                    .Select(s => new User
                     {
                         Blacklisted = s.Blacklisted,
                         ChartTimePeriod = s.ChartTimePeriod,
@@ -118,7 +121,7 @@ namespace FMBot.DbMigration
                         UserNameLastFM = s.UserNameLastFM,
                         UserType = s.UserType,
                         UserId = s.UserID,
-                        Friends = s.FriendsUser.Select(se => new Data.Entities.Friend
+                        Friends = s.FriendsUser.Select(se => new Friend
                         {
                             UserId = se.UserID,
                             LastFMUserName = se.LastFMUserName,
@@ -148,7 +151,7 @@ namespace FMBot.DbMigration
             Console.WriteLine($"Inserting {guildsToInsert.Count} guilds that do not yet exist into the new database");
             await NewDatabaseContext.Guilds.AddRangeAsync(
                 guildsToInsert
-                    .Select(s => new Data.Entities.Guild
+                    .Select(s => new Guild
                     {
                         ChartTimePeriod = s.ChartTimePeriod,
                         ChartType = s.ChartType,

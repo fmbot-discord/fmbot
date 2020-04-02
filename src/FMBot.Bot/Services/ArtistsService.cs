@@ -4,10 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord.Commands;
 using FMBot.Data;
-using FMBot.Data.Entities;
-using FMBot.LastFM.Models;
+using FMBot.Domain.ApiModels;
+using FMBot.Domain.DatabaseModels;
 using Microsoft.EntityFrameworkCore;
-using Artist = FMBot.Data.Entities.Artist;
+using Artist = FMBot.Domain.DatabaseModels.Artist;
 
 namespace FMBot.Bot.Services
 {

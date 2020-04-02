@@ -7,10 +7,10 @@ using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Data.Entities;
-using FMBot.LastFM.Models;
+using FMBot.Domain.ApiModels;
+using FMBot.Domain.DatabaseModels;
 using FMBot.LastFM.Services;
-using Artist = FMBot.Data.Entities.Artist;
+using Artist = FMBot.Domain.DatabaseModels.Artist;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -23,16 +23,16 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly IndexService _indexService;
         private readonly ArtistsService _artistsService = new ArtistsService();
         private readonly LastFMService _lastFmService = new LastFMService();
-        private readonly LastfmApi _lastfmApi;
+        private readonly ILastfmApi _lastfmApi;
         private readonly Logger.Logger _logger;
 
         private readonly UserService _userService = new UserService();
 
-        public ArtistCommands(Logger.Logger logger, IndexService indexService)
+        public ArtistCommands(Logger.Logger logger, IndexService indexService, ILastfmApi lastfmApi)
         {
             this._logger = logger;
             this._indexService = indexService;
-            this._lastfmApi = new LastfmApi(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
+            this._lastfmApi = lastfmApi;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -226,7 +226,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(Context.Guild);
+            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
             try
             {
@@ -278,7 +278,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await ReplyAsync(indexStartedReply);
 
-                await this._guildService.UpdateGuildIndexTimestampAsync(Context.Guild);
+                await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild);
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
                     this.Context.Message.Content);
 
@@ -290,7 +290,7 @@ namespace FMBot.Bot.Commands.LastFM
                     this.Context.Guild?.Name, this.Context.Guild?.Id);
                 await ReplyAsync(
                     "Something went wrong while indexing users. Please let us know as this feature is in beta.");
-                await this._guildService.UpdateGuildIndexTimestampAsync(Context.Guild, DateTime.UtcNow);
+                await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
             }
         }
 

@@ -2,16 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.LastFM.Models;
+using FMBot.Domain.ApiModels;
 using FMBot.LastFM.Services;
-using SpotifyAPI.Web.Models;
 using ImageFormat = System.Drawing.Imaging.ImageFormat;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -23,15 +20,15 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly GuildService _guildService = new GuildService();
         private readonly LastFMService _lastFmService = new LastFMService();
-        private readonly LastfmApi _lastfmApi;
+        private readonly ILastfmApi _lastfmApi;
         private readonly Logger.Logger _logger;
 
         private readonly UserService _userService = new UserService();
 
-        public AlbumCommands(Logger.Logger logger)
+        public AlbumCommands(Logger.Logger logger, ILastfmApi lastfmApi)
         {
             this._logger = logger;
-            this._lastfmApi = new LastfmApi(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
+            this._lastfmApi = lastfmApi;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();

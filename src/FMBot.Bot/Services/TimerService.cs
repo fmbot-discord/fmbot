@@ -8,10 +8,11 @@ using Discord;
 using Discord.WebSocket;
 using DiscordBotsList.Api;
 using FMBot.Bot.Configurations;
-using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.Domain.BotModels;
 using IF.Lastfm.Core.Api.Enums;
 using static FMBot.Bot.FMBotUtil;
+using Image = Discord.Image;
 
 namespace FMBot.Bot.Services
 {
@@ -68,7 +69,7 @@ namespace FMBot.Bot.Services
                             case 1:
                                 var tracks = await this._lastFMService.GetRecentScrobblesAsync(lastFMUserName, 25);
                                 var trackList = tracks
-                                    .Select(s => new Album(s.ArtistName, s.AlbumName))
+                                    .Select(s => new CensoredAlbum(s.ArtistName, s.AlbumName))
                                     .Where(w => !string.IsNullOrEmpty(w.AlbumName) &&
                                         !GlobalVars.CensoredAlbums.Select(s => s.ArtistName).Contains(w.ArtistName) &&
                                         !GlobalVars.CensoredAlbums.Select(s => s.AlbumName).Contains(w.AlbumName));
@@ -119,7 +120,7 @@ namespace FMBot.Bot.Services
                                 }
 
                                 var albumList = albums
-                                    .Select(s => new Album(s.ArtistName, s.Name))
+                                    .Select(s => new CensoredAlbum(s.ArtistName, s.Name))
                                     .Where(w => !GlobalVars.CensoredAlbums.Select(s => s.ArtistName).Contains(w.ArtistName) &&
                                                 !GlobalVars.CensoredAlbums.Select(s => s.AlbumName).Contains(w.AlbumName))
                                     .ToList();

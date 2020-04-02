@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
-using FMBot.Bot.Models;
+using FMBot.Domain.BotModels;
 
 namespace FMBot.Bot
 {
@@ -15,28 +15,28 @@ namespace FMBot.Bot
         public static class GlobalVars
         {
             // TODO: Move this to database
-            public static readonly IReadOnlyList<Album> CensoredAlbums = new List<Album>
+            public static readonly IReadOnlyList<CensoredAlbum> CensoredAlbums = new List<CensoredAlbum>
             {
-                new Album("Death Grips", "No Love Deep Web"),
-                new Album("ミドリ(Midori)", "あらためまして、はじめまして、ミドリです。(aratamemashite hajimemashite midori desu)"),
-                new Album("Midori", "ratamemashite hajimemashite midori desu"),
-                new Album("ミドリ", "あらためまして、はじめまして、ミドリです"),
-                new Album("Xiu Xiu", "A Promise"),
-                new Album("Carcass","Reek of Putrefaction"),
-                new Album("Cattle Decapitation", "Human Jerky"),
-                new Album("Niki Istrefi", "EUROMANTIC001"),
-                new Album("Last Days Of Humanity", "Hymns Of Indigestible Suppuration"),
-                new Album("Last Days Of Humanity", "The Xtc Of Swallowing L.D.O.H. Feaces"),
-                new Album("Last Days Of Humanity", "The Heart of Gore"),
-                new Album("Last Days Of Humanity", "Human Atrocity"),
-                new Album("Last Days Of Humanity", "Rennes in Blood"),
-                new Album("Last Days Of Humanity", "Goresurrection"),
-                new Album("Last Days Of Humanity", "Putrefaction In Progress"),
-                new Album("Last Days Of Humanity", "The Sound of Rancid Juices Sloshing Around Your Coffin"),
-                new Album("Last Days Of Humanity", "In Advanced Haemorrhaging Conditions"),
-                new Album("Last Days Of Humanity", "Extreme Experience Of Inhuman Motivations"),
-                new Album("Cannibal Corpse", "Tomb of the Mutilated"),
-                new Album("Regurgitate", "Carnivorous Erection")
+                new CensoredAlbum("Death Grips", "No Love Deep Web"),
+                new CensoredAlbum("ミドリ(Midori)", "あらためまして、はじめまして、ミドリです。(aratamemashite hajimemashite midori desu)"),
+                new CensoredAlbum("Midori", "ratamemashite hajimemashite midori desu"),
+                new CensoredAlbum("ミドリ", "あらためまして、はじめまして、ミドリです"),
+                new CensoredAlbum("Xiu Xiu", "A Promise"),
+                new CensoredAlbum("Carcass","Reek of Putrefaction"),
+                new CensoredAlbum("Cattle Decapitation", "Human Jerky"),
+                new CensoredAlbum("Niki Istrefi", "EUROMANTIC001"),
+                new CensoredAlbum("Last Days Of Humanity", "Hymns Of Indigestible Suppuration"),
+                new CensoredAlbum("Last Days Of Humanity", "The Xtc Of Swallowing L.D.O.H. Feaces"),
+                new CensoredAlbum("Last Days Of Humanity", "The Heart of Gore"),
+                new CensoredAlbum("Last Days Of Humanity", "Human Atrocity"),
+                new CensoredAlbum("Last Days Of Humanity", "Rennes in Blood"),
+                new CensoredAlbum("Last Days Of Humanity", "Goresurrection"),
+                new CensoredAlbum("Last Days Of Humanity", "Putrefaction In Progress"),
+                new CensoredAlbum("Last Days Of Humanity", "The Sound of Rancid Juices Sloshing Around Your Coffin"),
+                new CensoredAlbum("Last Days Of Humanity", "In Advanced Haemorrhaging Conditions"),
+                new CensoredAlbum("Last Days Of Humanity", "Extreme Experience Of Inhuman Motivations"),
+                new CensoredAlbum("Cannibal Corpse", "Tomb of the Mutilated"),
+                new CensoredAlbum("Regurgitate", "Carnivorous Erection")
             };
 
             // TODO: Move this somewhere else

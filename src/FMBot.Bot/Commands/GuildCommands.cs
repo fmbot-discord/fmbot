@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Services;
-using FMBot.Data.Entities;
+using FMBot.Domain.DatabaseModels;
 
 namespace FMBot.Bot.Commands
 {

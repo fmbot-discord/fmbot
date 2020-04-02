@@ -6,7 +6,7 @@ using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Data.Entities;
+using FMBot.Domain.DatabaseModels;
 
 namespace FMBot.Bot.Commands.LastFM
 {

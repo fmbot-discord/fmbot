@@ -1,12 +1,15 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Handlers;
-using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Data;
+using FMBot.Domain.BotModels;
+using FMBot.LastFM.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,8 +22,11 @@ namespace FMBot.Bot
 
         public Startup(string[] args)
         {
-            var builder = new ConfigurationBuilder(); // Create a new instance of the config builder
-            Configuration = builder.Build(); // Build the configuration
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory() + "/configs")
+                .AddJsonFile("ConfigData.json");
+
+            this.Configuration = builder.Build(); // Build the configuration
         }
 
         public static async Task RunAsync(string[] args)
@@ -67,7 +73,11 @@ namespace FMBot.Bot
                 .AddSingleton<IndexService>()
                 .AddSingleton(logger)
                 .AddSingleton<Random>() // Add random to the collection
-                .AddSingleton(Configuration); // Add the configuration to the collection
+                .AddSingleton(this.Configuration) // Add the configuration to the collection
+                .AddHttpClient();
+
+            services
+                .AddTransient<ILastfmApi, LastfmApi>();
 
             using (var context = new FMBotDbContext())
             {

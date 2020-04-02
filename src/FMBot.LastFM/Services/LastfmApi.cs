@@ -1,29 +1,30 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using FMBot.LastFM.Models;
+using FMBot.Domain.ApiModels;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Schema;
-using Newtonsoft.Json.Schema.Generation;
 
 namespace FMBot.LastFM.Services
 {
-    public class LastfmApi
+    public class LastfmApi : ILastfmApi
     {
-        private readonly HttpClient _client = new HttpClient();
-
         private const string apiUrl = "http://ws.audioscrobbler.com/2.0/";
+
+        private readonly HttpClient _client;
 
         private readonly string _key;
         private readonly string _secret;
 
-        public LastfmApi(string key, string secret)
+        public LastfmApi(IConfigurationRoot configuration, IHttpClientFactory httpClientFactory)
         {
-            this._key = key;
-            this._secret = secret;
+            this._key = configuration.GetSection("fmkey").Value;
+            this._secret = configuration.GetSection("fmsecret").Value;
+            this._client = httpClientFactory.CreateClient();
         }
 
         public async Task<Response<T>> CallApiAsync<T>(Dictionary<string, string> parameters, string call)
@@ -43,48 +44,73 @@ namespace FMBot.LastFM.Services
 
             var url = QueryHelpers.AddQueryString(apiUrl, queryParams);
 
-            var httpResponse = await this._client.GetAsync(url);
-
-            if (!httpResponse.IsSuccessStatusCode)
+            var request = new HttpRequestMessage
             {
+                RequestUri = new Uri(url),
+                Method = HttpMethod.Post
+            };
+
+            using var httpResponse = await this._client.SendAsync(request);
+
+            var content = await httpResponse.Content.ReadAsStreamAsync();
+
+            if (httpResponse.StatusCode == HttpStatusCode.NotFound)
+            {
+                using var streamReader = new StreamReader(content);
+
                 return new Response<T>
                 {
                     Success = false,
-                    Error = ResponseStatus.Unknown
+                    Error = ResponseStatus.MissingParameters,
+                    Message = "Not found"
                 };
             }
-
-            var content = await httpResponse.Content.ReadAsStringAsync();
-
-            var parsedContent = JObject.Parse(content);
-
-            var schemaGenerator = new JSchemaGenerator();
-            var errorSchema = schemaGenerator.Generate(typeof(ErrorResponse));
-            if (parsedContent.IsValid(errorSchema))
-            {
-                var errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(content);
-                return new Response<T>
-                {
-                    Success = false,
-                    Error = errorResponse.Error,
-                    Message = errorResponse.Message
-                };
-            }
-
 
             var response = new Response<T>();
-            try
+
+            // TODO: Fix this for artists that it cannot find! Check if response is an error first
+            using (var streamReader = new StreamReader(content))
             {
-                var parsedObject = JsonConvert.DeserializeObject<T>(content);
-                response.Content = parsedObject;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
+                try
+                {
+                    var deserializeObject = JsonConvert.DeserializeObject<T>(await streamReader.ReadToEndAsync());
+                    if (deserializeObject == null)
+                    {
+                        response = await CheckForError(response, streamReader);
+                    }
+                    else
+                    {
+                        response.Content = deserializeObject;
+                        response.Success = true;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+
+                    response = await CheckForError(response, streamReader);
+                }
             }
 
-            response.Success = true;
+            return response;
+        }
+
+        private static async Task<Response<T>> CheckForError<T>(Response<T> response, StreamReader streamReader)
+        {
+            try
+            {
+                var errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(await streamReader.ReadToEndAsync());
+                response.Success = false;
+                response.Error = errorResponse.Error;
+                response.Message = errorResponse.Message;
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = "Something went wrong while deserializing the error object last.fm returned";
+                Console.WriteLine(ex);
+            }
+
             return response;
         }
     }

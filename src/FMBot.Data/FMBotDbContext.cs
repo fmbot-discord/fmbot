@@ -1,5 +1,5 @@
 using System;
-using FMBot.Data.Entities;
+using FMBot.Domain.DatabaseModels;
 using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Data

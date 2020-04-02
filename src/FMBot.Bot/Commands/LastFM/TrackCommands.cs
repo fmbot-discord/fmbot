@@ -7,7 +7,7 @@ using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Data.Entities;
+using FMBot.Domain.DatabaseModels;
 using FMBot.LastFM.Services;
 
 namespace FMBot.Bot.Commands.LastFM

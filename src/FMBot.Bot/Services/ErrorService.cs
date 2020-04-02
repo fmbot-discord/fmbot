@@ -1,9 +1,8 @@
-using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
-using FMBot.LastFM.Models;
+using FMBot.Domain.ApiModels;
 using IF.Lastfm.Core.Api.Enums;
 
 namespace FMBot.Bot.Services

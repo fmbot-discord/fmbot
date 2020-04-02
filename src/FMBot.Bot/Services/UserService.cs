@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using FMBot.Data;
-using FMBot.Data.Entities;
+using FMBot.Domain.DatabaseModels;
 using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services

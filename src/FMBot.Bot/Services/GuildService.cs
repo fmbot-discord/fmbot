@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using FMBot.Bot.Models;
 using FMBot.Data;
-using FMBot.Data.Entities;
+using FMBot.Domain.BotModels;
+using FMBot.Domain.DatabaseModels;
 using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services

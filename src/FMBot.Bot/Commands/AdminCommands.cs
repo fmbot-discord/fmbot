@@ -1,10 +1,10 @@
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using FMBot.Data.Entities;
 using System;
 using System.Threading.Tasks;
 using FMBot.Bot.Services;
+using FMBot.Domain.DatabaseModels;
 
 namespace FMBot.Bot.Commands
 {

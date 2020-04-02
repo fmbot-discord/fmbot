@@ -1,7 +1,6 @@
-using System;
 using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
-using FMBot.Bot.Models;
+using FMBot.Domain.BotModels;
 using Genius;
 using Genius.Models;
 using Microsoft.EntityFrameworkCore.Internal;

@@ -4,14 +4,12 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
 using Dasync.Collections;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.Domain.BotModels;
 using IF.Lastfm.Core.Api;
 using Microsoft.EntityFrameworkCore.Internal;
 

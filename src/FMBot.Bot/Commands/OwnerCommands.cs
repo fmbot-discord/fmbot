@@ -2,7 +2,6 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Extensions;
-using FMBot.Data.Entities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using FMBot.Bot.Services;
+using FMBot.Domain.DatabaseModels;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands

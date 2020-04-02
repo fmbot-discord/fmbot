@@ -2,10 +2,9 @@ using System.IO;
 using System.Threading.Tasks;
 using Discord;
 using FMBot.Data;
-using FMBot.Data.Entities;
+using FMBot.Domain.DatabaseModels;
 using Microsoft.EntityFrameworkCore;
 using static FMBot.Bot.FMBotUtil;
-using static FMBot.Bot.Models.FastFileEnumaratorModel;
 
 namespace FMBot.Bot.Services
 {
@@ -15,7 +14,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> HasCommandAccessAsync(IUser discordUser, UserType userType)
         {
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
             if (user == null)
             {
@@ -111,16 +110,6 @@ namespace FMBot.Bot.Services
 
             return true;
         }
-
-
-        public static void DeleteAllCharts()
-        {
-            foreach (FileData file in FastDirectoryEnumerator.EnumerateFiles(GlobalVars.CacheFolder, "*.png"))
-            {
-                File.Delete(file.Path);
-            }
-        }
-
 
         public string FormatBytes(long bytes)
         {
