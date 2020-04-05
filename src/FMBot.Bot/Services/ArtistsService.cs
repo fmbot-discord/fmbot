@@ -47,11 +47,11 @@ namespace FMBot.Bot.Services
 
                 if (index == 0)
                 {
-                    reply += $"👑 [{artist.User.UserNameLastFM}]({Constants.LastFMUserUrl}/{artist.User.UserNameLastFM}) ";
+                    reply += $"👑 [{artist.User.UserNameLastFM}]({Constants.LastFMUserUrl}{artist.User.UserNameLastFM}) ";
                 }
                 else
                 {
-                    reply += $" {index + 1}.  [{artist.User.UserNameLastFM}]({Constants.LastFMUserUrl}/{artist.User.UserNameLastFM}) ";
+                    reply += $" {index + 1}.  [{artist.User.UserNameLastFM}]({Constants.LastFMUserUrl}{artist.User.UserNameLastFM}) ";
                 }
                 if (artist.UserId != userId)
                 {
