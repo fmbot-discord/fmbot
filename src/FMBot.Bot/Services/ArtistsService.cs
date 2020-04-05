@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord.Commands;
+using FMBot.Bot.Resources;
 using FMBot.Data;
 using FMBot.Domain.ApiModels;
 using FMBot.Domain.DatabaseModels;
@@ -40,11 +41,11 @@ namespace FMBot.Bot.Services
                 var artist = artists[index];
                 if (index == 0)
                 {
-                    reply += $"👑 <@{artist.User.DiscordUserId}>";
+                    reply += $"👑 [{artist.User.UserNameLastFM}]({Constants.LastFMUserUrl}/{artist.User.UserNameLastFM}) ";
                 }
                 else
                 {
-                    reply += $" {index + 1}.  <@{artist.User.DiscordUserId}> ";
+                    reply += $" {index + 1}.  [{artist.User.UserNameLastFM}]({Constants.LastFMUserUrl}/{artist.User.UserNameLastFM}) ";
                 }
                 if (artist.UserId != userId)
                 {
@@ -58,7 +59,7 @@ namespace FMBot.Bot.Services
 
             if (artists.Count == 1)
             {
-                reply += "\nNobody else has this artist in their top 1000 artists.";
+                reply += $"\nNobody else has this artist in their top {Constants.ArtistsToIndex} artists.";
             }
 
             return reply;
