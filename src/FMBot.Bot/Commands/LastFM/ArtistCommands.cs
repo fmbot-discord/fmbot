@@ -265,7 +265,7 @@ namespace FMBot.Bot.Commands.LastFM
                     usersString += "users";
                 }
 
-                var expectedTime = TimeSpan.FromSeconds(1.5 * users.Count);
+                var expectedTime = TimeSpan.FromSeconds(2.2 * users.Count);
                 var indexStartedReply = $"{users.Count} {usersString} have been added to the queue for adding or updating their top {Constants.ArtistsToIndex} artists.";
                 if (users.Count >= 60)
                 {

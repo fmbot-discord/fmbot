@@ -51,7 +51,7 @@ namespace FMBot.Bot.Services
 
         private async Task StoreArtistsForUser(User user)
         {
-            Thread.Sleep(800);
+            Thread.Sleep(1800);
 
             Console.WriteLine($"Starting artist store for {user.UserNameLastFM}");
 
