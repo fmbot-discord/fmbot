@@ -26,6 +26,7 @@ namespace FMBot.Bot.Services
                 Playcount = Convert.ToInt32(artist.Artist.Stats.Userplaycount.Value),
                 User = new User
                 {
+                    UserNameLastFM = userSettings.UserNameLastFM,
                     DiscordUserId = userSettings.DiscordUserId
                 }
             });
@@ -79,7 +80,7 @@ namespace FMBot.Bot.Services
 
             return await this._db.Artists
                 .Include(i => i.User)
-                .Where(w => w.Name == artistName
+                .Where(w => w.Name.ToLower() == artistName.ToLower()
                             && userIds.Contains(w.User.DiscordUserId))
                 .OrderByDescending(o => o.Playcount)
                 .Take(15)

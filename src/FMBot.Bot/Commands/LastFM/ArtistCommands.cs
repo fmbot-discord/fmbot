@@ -359,14 +359,13 @@ namespace FMBot.Bot.Commands.LastFM
                 switch (artists.Count)
                 {
                     case 0 when artist.Artist.Stats.Userplaycount == 0:
-                        await ReplyAsync($"Sorry, but nobody has this artists in their top {Constants.ArtistsToIndex} artists and you don't have any plays.");
-                        return;
+                        break;
                     case 0:
                         artists = this._artistsService.AddArtistToIndexList(artists, userSettings, artist);
                         break;
                 }
 
-                var serverUsers = await this._artistsService.UserListToIndex(artists, artistCall.Content, userSettings.UserId);
+                var serverUsers = await this._artistsService.UserListToIndex(artists, artist, userSettings.UserId);
 
                 this._embed.WithDescription(serverUsers);
                 var footer = "";
