@@ -55,7 +55,7 @@ namespace FMBot.Bot.Services
 
             Console.WriteLine($"Starting artist store for {user.UserNameLastFM}");
 
-            var topArtists = await this._lastFMClient.User.GetTopArtists(user.UserNameLastFM, LastStatsTimeSpan.Overall, 1, 1000);
+            var topArtists = await this._lastFMClient.User.GetTopArtists(user.UserNameLastFM, LastStatsTimeSpan.Overall, 1, Constants.ArtistsToIndex);
             Statistics.LastfmApiCalls.Inc();
 
             var now = DateTime.UtcNow;

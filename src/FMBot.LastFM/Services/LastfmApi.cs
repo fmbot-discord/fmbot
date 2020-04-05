@@ -56,8 +56,6 @@ namespace FMBot.LastFM.Services
 
             if (httpResponse.StatusCode == HttpStatusCode.NotFound)
             {
-                using var streamReader = new StreamReader(content);
-
                 return new Response<T>
                 {
                     Success = false,
@@ -68,27 +66,35 @@ namespace FMBot.LastFM.Services
 
             var response = new Response<T>();
 
-            // TODO: Fix this for artists that it cannot find! Check if response is an error first
             using (var streamReader = new StreamReader(content))
             {
                 try
                 {
-                    var deserializeObject = JsonConvert.DeserializeObject<T>(await streamReader.ReadToEndAsync());
-                    if (deserializeObject == null)
+                    // Check for error response first since last.fm returns 200 ok even if something isn't found
+                    var errorResponse = await CheckForError(response, streamReader);
+
+                    if (errorResponse.Message == null)
                     {
-                        response = await CheckForError(response, streamReader);
+                        content.Position = 0;
+                        streamReader.DiscardBufferedData();
+
+                        var deserializeObject = JsonConvert.DeserializeObject<T>(await streamReader.ReadToEndAsync());
+                        response.Content = deserializeObject;
+                        response.Success = true;
+
                     }
                     else
                     {
-                        response.Content = deserializeObject;
-                        response.Success = true;
+                        response.Success = false;
+                        response.Message = errorResponse.Message;
+                        response.Error = errorResponse.Error;
                     }
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    Console.WriteLine(e);
-
-                    response = await CheckForError(response, streamReader);
+                    response.Success = false;
+                    response.Message = "Something went wrong while deserializing the object last.fm returned";
+                    Console.WriteLine(ex);
                 }
             }
 
@@ -106,8 +112,6 @@ namespace FMBot.LastFM.Services
             }
             catch (Exception ex)
             {
-                response.Success = false;
-                response.Message = "Something went wrong while deserializing the error object last.fm returned";
                 Console.WriteLine(ex);
             }
 

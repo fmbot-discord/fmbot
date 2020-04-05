@@ -217,7 +217,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("fmindex", RunMode = RunMode.Async)]
-        [Summary("GIndexes top 1000 artists for every user in your server.")]
+        [Summary("Indexes top 2000 artists for every user in your server.")]
         public async Task IndexGuildAsync()
         {
             if (this._guildService.CheckIfDM(this.Context))
@@ -266,7 +266,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var expectedTime = TimeSpan.FromSeconds(1.5 * users.Count);
-                var indexStartedReply = $"{users.Count} {usersString} have been added to the queue for adding or updating their top 1000 artists.";
+                var indexStartedReply = $"{users.Count} {usersString} have been added to the queue for adding or updating their top {Constants.ArtistsToIndex} artists.";
                 if (users.Count >= 60)
                 {
                     indexStartedReply += "\nPlease note that this can take a while since this server has a lot of registered members. \n" +
@@ -359,7 +359,7 @@ namespace FMBot.Bot.Commands.LastFM
                 switch (artists.Count)
                 {
                     case 0 when artist.Artist.Stats.Userplaycount == 0:
-                        await ReplyAsync("Sorry, but nobody has this artists in their top 1000 artists and you don't have any plays.");
+                        await ReplyAsync($"Sorry, but nobody has this artists in their top {Constants.ArtistsToIndex} artists and you don't have any plays.");
                         return;
                     case 0:
                         artists = this._artistsService.AddArtistToIndexList(artists, userSettings, artist);
