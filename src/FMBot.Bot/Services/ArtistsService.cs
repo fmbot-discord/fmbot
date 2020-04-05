@@ -39,6 +39,12 @@ namespace FMBot.Bot.Services
             for (var index = 0; index < artists.Count; index++)
             {
                 var artist = artists[index];
+                var playString = "plays";
+                if (artist.Playcount == 1)
+                {
+                    playString = "play";
+                }
+
                 if (index == 0)
                 {
                     reply += $"👑 [{artist.User.UserNameLastFM}]({Constants.LastFMUserUrl}/{artist.User.UserNameLastFM}) ";
@@ -49,11 +55,11 @@ namespace FMBot.Bot.Services
                 }
                 if (artist.UserId != userId)
                 {
-                    reply += $"- **{artist.Playcount}** plays\n";
+                    reply += $"- **{artist.Playcount}** {playString}\n";
                 }
                 else
                 {
-                    reply += $"- **{artistResponse.Artist.Stats.Userplaycount}** plays\n";
+                    reply += $"- **{artistResponse.Artist.Stats.Userplaycount}** {playString}\n";
                 }
             }
 
