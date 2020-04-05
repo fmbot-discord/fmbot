@@ -13,6 +13,7 @@ using FMBot.Domain.BotModels;
 using FMBot.Domain.DatabaseModels;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
+using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using PostgreSQLCopyHelper;
@@ -51,12 +52,19 @@ namespace FMBot.Bot.Services
 
         private async Task StoreArtistsForUser(User user)
         {
-            Thread.Sleep(1800);
+            Thread.Sleep(1200);
 
             Console.WriteLine($"Starting artist store for {user.UserNameLastFM}");
 
-            var topArtists = await this._lastFMClient.User.GetTopArtists(user.UserNameLastFM, LastStatsTimeSpan.Overall, 1, Constants.ArtistsToIndex);
-            Statistics.LastfmApiCalls.Inc();
+            var topArtists = new List<LastArtist>();
+
+            var amountOfPages = Constants.ArtistsToIndex / 1000;
+            for (int i = 1; i < amountOfPages + 1; i++)
+            {
+                topArtists.AddRange(await this._lastFMClient.User.GetTopArtists(user.UserNameLastFM,
+                    LastStatsTimeSpan.Overall, i, 1000));
+                Statistics.LastfmApiCalls.Inc();
+            }
 
             var now = DateTime.UtcNow;
             var artists = topArtists.Select(a => new Artist
