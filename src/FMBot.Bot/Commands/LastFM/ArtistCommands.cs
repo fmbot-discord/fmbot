@@ -80,11 +80,36 @@ namespace FMBot.Bot.Commands.LastFM
             this._embedAuthor.WithUrl(artistInfo.Url);
             this._embed.WithAuthor(this._embedAuthor);
 
-            this._embed.AddField("Listeners", artistInfo.Stats.Listeners, true);
-            this._embed.AddField("Global playcount", artistInfo.Stats.Playcount, true);
+            string globalStats = "";
+            globalStats += $"`{artistInfo.Stats.Listeners}` listeners";
+            globalStats += $"\n`{artistInfo.Stats.Playcount}` global plays";
             if (artistInfo.Stats.Userplaycount.HasValue)
             {
-                this._embed.AddField("Your playcount", artistInfo.Stats.Userplaycount, true);
+                globalStats += $"\n`{artistInfo.Stats.Userplaycount}` plays by you";
+            }
+            this._embed.AddField("Global stats", globalStats, true);
+
+            if (!this._guildService.CheckIfDM(this.Context))
+            {
+                string serverStats = "";
+                var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
+                if (lastIndex != null)
+                {
+                    var guildUsers = await this.Context.Guild.GetUsersAsync();
+                    var serverListeners = await this._artistsService.GetArtistListenerCountForServer(guildUsers, artistInfo.Name);
+                    var serverPlaycount = await this._artistsService.GetArtistPlayCountForServer(guildUsers, artistInfo.Name);
+                    var avgServerListenerPlaycount = await this._artistsService.GetArtistAverageListenerPlaycountForServer(guildUsers, artistInfo.Name);
+
+                    serverStats += $"`{serverListeners}` listeners";
+                    serverStats += $"\n`{serverPlaycount}` total plays";
+                    serverStats += $"\n`{(int)avgServerListenerPlaycount}` average plays";
+                }
+                else
+                {
+                    serverStats += "Run `.fmindex` to get server stats";
+                }
+
+                this._embed.AddField("Server stats", serverStats, true);
             }
 
             if (!string.IsNullOrWhiteSpace(artistInfo.Bio.Content))

@@ -99,5 +99,40 @@ namespace FMBot.Bot.Services
                     };
                 }).ToList();
         }
+
+
+        public async Task<int> GetArtistListenerCountForServer(IReadOnlyCollection<IGuildUser> guildUsers, string artistName)
+        {
+            var userIds = guildUsers.Select(s => s.Id);
+
+            return await this._db.Artists
+                .Include(i => i.User)
+                .Where(w => w.Name.ToLower() == artistName.ToLower()
+                            && userIds.Contains(w.User.DiscordUserId))
+                .CountAsync();
+        }
+
+        public async Task<int> GetArtistPlayCountForServer(IReadOnlyCollection<IGuildUser> guildUsers, string artistName)
+        {
+            var userIds = guildUsers.Select(s => s.Id);
+
+            return await this._db.Artists
+                .Include(i => i.User)
+                .Where(w => w.Name.ToLower() == artistName.ToLower()
+                            && userIds.Contains(w.User.DiscordUserId))
+                .Select(s => s.Playcount)
+                .SumAsync();
+        }
+
+        public async Task<double> GetArtistAverageListenerPlaycountForServer(IReadOnlyCollection<IGuildUser> guildUsers, string artistName)
+        {
+            var userIds = guildUsers.Select(s => s.Id);
+
+            return await this._db.Artists
+                .Include(i => i.User)
+                .Where(w => w.Name.ToLower() == artistName.ToLower()
+                            && userIds.Contains(w.User.DiscordUserId))
+                .AverageAsync(a => a.Playcount);
+        }
     }
 }

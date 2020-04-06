@@ -13,6 +13,13 @@ namespace FMBot.Bot.Services
     {
         private readonly FMBotDbContext db = new FMBotDbContext();
 
+        private readonly string connString;
+
+        public UserService()
+        {
+            this.connString = this.db.Database.GetDbConnection().ConnectionString;
+        }
+
         // User settings
         public async Task<User> GetUserSettingsAsync(IUser discordUser)
         {
@@ -188,6 +195,7 @@ namespace FMBot.Bot.Services
 
         public async Task<int> GetTotalUserCountAsync()
         {
+
             return await this.db.Users.CountAsync();
         }
     }
