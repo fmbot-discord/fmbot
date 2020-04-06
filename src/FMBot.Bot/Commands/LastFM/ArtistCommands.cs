@@ -4,13 +4,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.ApiModels;
 using FMBot.Domain.DatabaseModels;
 using FMBot.LastFM.Services;
-using Artist = FMBot.Domain.DatabaseModels.Artist;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -226,15 +224,27 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
             try
             {
-                var users = await this._indexService.GetUsersForContext(this.Context);
+                var guildUsers = await this.Context.Guild.GetUsersAsync();
+                var users= await this._indexService.GetUsersToIndex(guildUsers);
+                var indexedUserCount = await this._indexService.GetIndexedUsersCount(guildUsers);
 
                 var guildOnCooldown =
                     lastIndex != null && lastIndex > DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
 
+                var guildRecentlyIndexed =
+                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(6));
+
+                if (guildRecentlyIndexed)
+                {
+                    await ReplyAsync("An index was recently started on this server. Please wait before running this command again.");
+                    return;
+                }
                 if (users.Count == 0)
                 {
                     var reply =
@@ -249,6 +259,7 @@ namespace FMBot.Bot.Commands.LastFM
                     await ReplyAsync(reply);
                     return;
                 }
+
 
                 string usersString = "";
                 if (guildOnCooldown)
@@ -265,24 +276,25 @@ namespace FMBot.Bot.Commands.LastFM
                     usersString += "users";
                 }
 
-                var expectedTime = TimeSpan.FromSeconds(2.2 * users.Count);
-                var indexStartedReply = $"{users.Count} {usersString} have been added to the queue for adding or updating their top {Constants.ArtistsToIndex} artists.";
-                if (users.Count >= 60)
-                {
-                    indexStartedReply += "\nPlease note that this can take a while since this server has a lot of registered members. \n" +
-                                         $"Estimated time for indexing all users: {(int)expectedTime.TotalMinutes} minutes.";
-                }
+                this._embed.WithTitle($"Added {users.Count} {usersString} to bot indexing queue");
 
-                indexStartedReply +=
-                    "\n*Note: Due to technical limitations, you will currently not be alerted when the server index is finished*";
+                var expectedTime = TimeSpan.FromSeconds(2 * users.Count);
+                var indexStartedReply = $"Indexing stores users their all time top {Constants.ArtistsToIndex} artists. \n\n" +
+                                        $"`{users.Count}` new users or users with expired artists added to queue. This will take approximately {(int)expectedTime.TotalMinutes} minutes.\n" +
+                                        $"`{indexedUserCount}` users already indexed on this server.\n \n" +
+                                        "*Note: You will currently not be alerted when the index is finished.*";
 
-                await ReplyAsync(indexStartedReply);
+
+                this._embed.WithDescription(indexStartedReply);
 
                 await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild);
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
                     this.Context.Message.Content);
 
-                var serverUsers = await this._indexService.IndexGuild(users);
+                this._indexService.IndexGuild(users);
             }
             catch (Exception e)
             {
@@ -317,7 +329,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (lastIndex == null)
             {
-                await ReplyAsync("This server hasn't been indexed yet (or it isn't finished).\n" +
+                await ReplyAsync("This server hasn't been indexed yet.\n" +
                                  "Please run `.fmindex` to index this server.");
                 return;
             }
@@ -327,6 +339,8 @@ namespace FMBot.Bot.Commands.LastFM
                                  "Please run `.fmindex` to re-index this server.");
                 return;
             }
+
+            _ = this.Context.Channel.TriggerTypingAsync();
 
             var artistQuery = await GetArtistOrHelp(artistValues, userSettings, "fmartist");
             if (artistQuery == null)
@@ -354,18 +368,19 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var artists = await this._artistsService.GetUsersForArtist(Context, artist.Artist.Name);
+                var guildUsers = await this.Context.Guild.GetUsersAsync();
+                var usersWithArtist = await this._artistsService.GetIndexedUsersForArtist(guildUsers, artist.Artist.Name);
 
-                switch (artists.Count)
+                switch (usersWithArtist.Count)
                 {
                     case 0 when artist.Artist.Stats.Userplaycount == 0:
                         break;
                     case 0:
-                        artists = this._artistsService.AddArtistToIndexList(artists, userSettings, artist);
+                        usersWithArtist = this._artistsService.AddArtistToIndexList(usersWithArtist, userSettings, artist);
                         break;
                 }
 
-                var serverUsers = await this._artistsService.UserListToIndex(artists, artist, userSettings.UserId);
+                var serverUsers = this._artistsService.ArtistWithUserToStringList(usersWithArtist, artist, userSettings.UserId);
 
                 this._embed.WithDescription(serverUsers);
                 var footer = "";

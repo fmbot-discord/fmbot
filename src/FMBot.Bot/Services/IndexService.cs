@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
@@ -39,15 +40,11 @@ namespace FMBot.Bot.Services
             await StoreArtistsForUser(obj);
         }
 
-        public async Task<int> IndexGuild(IReadOnlyList<User> users)
+        public void IndexGuild(IReadOnlyList<User> users)
         {
             Console.WriteLine($"Starting artist update for {users.Count} users");
 
             this._userIndexQueue.Publish(users.ToList());
-
-            var usersInQueue = await this._userIndexQueue.UsersToIndex.Count();
-
-            return usersInQueue;
         }
 
         private async Task StoreArtistsForUser(User user)
@@ -96,11 +93,9 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async Task<IReadOnlyList<User>> GetUsersForContext(ICommandContext context)
+        public async Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> guildUsers)
         {
-            var users = await context.Guild.GetUsersAsync();
-
-            var userIds = users.Select(s => s.Id).ToList();
+            var userIds = guildUsers.Select(s => s.Id).ToList();
 
             var tooRecent = DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
             return await this._db.Users
@@ -108,6 +103,18 @@ namespace FMBot.Bot.Services
                 .Where(w => userIds.Contains(w.DiscordUserId)
                 && w.LastIndexed == null || w.LastIndexed <= tooRecent)
                 .ToListAsync();
+        }
+
+        public async Task<int> GetIndexedUsersCount(IReadOnlyCollection<IGuildUser> guildUsers)
+        {
+            var userIds = guildUsers.Select(s => s.Id).ToList();
+
+            var indexCooldown = DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
+
+            return await this._db.Users
+                .Where(w => userIds.Contains(w.DiscordUserId)
+                    && w.LastIndexed != null && w.LastIndexed >= indexCooldown)
+                .CountAsync();
         }
     }
 }

@@ -2,10 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord.Commands;
+using Discord;
 using FMBot.Bot.Resources;
 using FMBot.Data;
 using FMBot.Domain.ApiModels;
+using FMBot.Domain.BotModels;
 using FMBot.Domain.DatabaseModels;
 using Microsoft.EntityFrameworkCore;
 using Artist = FMBot.Domain.DatabaseModels.Artist;
@@ -16,30 +17,28 @@ namespace FMBot.Bot.Services
     {
         private readonly FMBotDbContext _db = new FMBotDbContext();
 
-        public IReadOnlyList<Artist> AddArtistToIndexList(IReadOnlyList<Artist> artists, User userSettings, ArtistResponse artist)
+        public IReadOnlyList<ArtistWithUser> AddArtistToIndexList(IReadOnlyList<ArtistWithUser> artists, User userSettings, ArtistResponse artist)
         {
             var newArtistList = artists.ToList();
-            newArtistList.Add(new Artist
+            newArtistList.Add(new ArtistWithUser
             {
                 UserId = userSettings.UserId,
-                Name = artist.Artist.Name,
+                ArtistName = artist.Artist.Name,
                 Playcount = Convert.ToInt32(artist.Artist.Stats.Userplaycount.Value),
-                User = new User
-                {
-                    UserNameLastFM = userSettings.UserNameLastFM,
-                    DiscordUserId = userSettings.DiscordUserId
-                }
+                LastFMUsername = userSettings.UserNameLastFM,
+                DiscordUserId = userSettings.DiscordUserId
             });
 
             return newArtistList;
         }
 
-        public async Task<string> UserListToIndex(IReadOnlyList<Artist> artists, ArtistResponse artistResponse, int userId)
+        public string ArtistWithUserToStringList(IReadOnlyList<ArtistWithUser> artists, ArtistResponse artistResponse, int userId)
         {
             var reply = "";
             for (var index = 0; index < artists.Count; index++)
             {
                 var artist = artists[index];
+                var discordName = artist.DiscordName.Replace("(", "").Replace(")", "").Replace("[", "").Replace("]", "");
                 var playString = "plays";
                 if (artist.Playcount == 1)
                 {
@@ -48,11 +47,11 @@ namespace FMBot.Bot.Services
 
                 if (index == 0)
                 {
-                    reply += $"👑 [{artist.User.UserNameLastFM}]({Constants.LastFMUserUrl}{artist.User.UserNameLastFM}) ";
+                    reply += $"👑 [{discordName}]({Constants.LastFMUserUrl}{artist.LastFMUsername}) ";
                 }
                 else
                 {
-                    reply += $" {index + 1}.  [{artist.User.UserNameLastFM}]({Constants.LastFMUserUrl}{artist.User.UserNameLastFM}) ";
+                    reply += $" {index + 1}.  [{discordName}]({Constants.LastFMUserUrl}{artist.LastFMUsername}) ";
                 }
                 if (artist.UserId != userId)
                 {
@@ -72,19 +71,32 @@ namespace FMBot.Bot.Services
             return reply;
         }
 
-        public async Task<IReadOnlyList<Artist>> GetUsersForArtist(ICommandContext context, string artistName)
+        public async Task<IReadOnlyList<ArtistWithUser>> GetIndexedUsersForArtist(IReadOnlyCollection<IGuildUser> guildUsers, string artistName)
         {
-            var users = await context.Guild.GetUsersAsync();
+            var userIds = guildUsers.Select(s => s.Id);
 
-            var userIds = users.Select(s => s.Id).ToList();
-
-            return await this._db.Artists
+            var artists = await this._db.Artists
                 .Include(i => i.User)
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
                             && userIds.Contains(w.User.DiscordUserId))
                 .OrderByDescending(o => o.Playcount)
                 .Take(15)
                 .ToListAsync();
+
+            return artists
+                .Select(s =>
+                {
+                    var discordUser = guildUsers.First(f => f.Id == s.User.DiscordUserId);
+                    return new ArtistWithUser
+                    {
+                        ArtistName = s.Name,
+                        DiscordName = discordUser.Nickname ?? discordUser.Username,
+                        Playcount = s.Playcount,
+                        DiscordUserId = s.User.DiscordUserId,
+                        LastFMUsername = s.User.UserNameLastFM,
+                        UserId = s.UserId
+                    };
+                }).ToList();
         }
     }
 }
