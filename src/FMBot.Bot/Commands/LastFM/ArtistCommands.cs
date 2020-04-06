@@ -99,7 +99,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.AddField("Tags", tags);
             }
-            
+
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
                 this.Context.Message.Content);
@@ -107,7 +107,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("fmartists", RunMode = RunMode.Async)]
         [Summary("Displays top artists.")]
-        [Alias("fmal","fmas", "fmartistlist", "fmartistslist")]
+        [Alias("fmal", "fmas", "fmartistlist", "fmartistslist")]
         public async Task ArtistsAsync(string time = "weekly", int num = 10, string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -231,7 +231,7 @@ namespace FMBot.Bot.Commands.LastFM
             try
             {
                 var guildUsers = await this.Context.Guild.GetUsersAsync();
-                var users= await this._indexService.GetUsersToIndex(guildUsers);
+                var users = await this._indexService.GetUsersToIndex(guildUsers);
                 var indexedUserCount = await this._indexService.GetIndexedUsersCount(guildUsers);
 
                 var guildOnCooldown =
@@ -279,11 +279,17 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithTitle($"Added {users.Count} {usersString} to bot indexing queue");
 
                 var expectedTime = TimeSpan.FromSeconds(2 * users.Count);
-                var indexStartedReply = $"Indexing stores users their all time top {Constants.ArtistsToIndex} artists. \n\n" +
-                                        $"`{users.Count}` new users or users with expired artists added to queue. This will take approximately {(int)expectedTime.TotalMinutes} minutes.\n" +
-                                        $"`{indexedUserCount}` users already indexed on this server.\n \n" +
-                                        "*Note: You will currently not be alerted when the index is finished.*";
+                var indexStartedReply =
+                    $"Indexing stores users their all time top {Constants.ArtistsToIndex} artists. \n\n" +
+                    $"`{users.Count}` new users or users with expired artists added to queue.";
 
+                if (expectedTime.TotalMinutes >= 2)
+                {
+                    indexStartedReply += $" This will take approximately {(int)expectedTime.TotalMinutes} minutes.";
+                }
+
+                indexStartedReply += $"\n`{indexedUserCount}` users already indexed on this server.\n \n" +
+                                     "*Note: You will currently not be alerted when the index is finished.*";
 
                 this._embed.WithDescription(indexStartedReply);
 
