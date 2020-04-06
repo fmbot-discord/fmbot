@@ -116,23 +116,34 @@ namespace FMBot.Bot.Services
         {
             var userIds = guildUsers.Select(s => s.Id);
 
-            return await this._db.Artists
+            var query = this._db.Artists
                 .Include(i => i.User)
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
-                            && userIds.Contains(w.User.DiscordUserId))
-                .Select(s => s.Playcount)
-                .SumAsync();
+                            && userIds.Contains(w.User.DiscordUserId));
+
+            if (await query.AnyAsync())
+            {
+                return await query.SumAsync(s => s.Playcount);
+            }
+
+            return 0;
         }
 
         public async Task<double> GetArtistAverageListenerPlaycountForServer(IReadOnlyCollection<IGuildUser> guildUsers, string artistName)
         {
             var userIds = guildUsers.Select(s => s.Id);
 
-            return await this._db.Artists
+            var query = this._db.Artists
                 .Include(i => i.User)
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
-                            && userIds.Contains(w.User.DiscordUserId))
-                .AverageAsync(a => a.Playcount);
+                            && userIds.Contains(w.User.DiscordUserId));
+
+            if (await query.AnyAsync())
+            {
+                return await query.AverageAsync(s => s.Playcount);
+            }
+
+            return 0;
         }
     }
 }

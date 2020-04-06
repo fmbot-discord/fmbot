@@ -56,6 +56,8 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var queryParams = new Dictionary<string, string>
             {
                 {"artist", artist },
