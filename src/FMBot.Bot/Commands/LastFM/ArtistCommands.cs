@@ -104,7 +104,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                     serverStats += $"`{serverListeners}` listeners";
                     serverStats += $"\n`{serverPlaycount}` total plays";
-                    serverStats += $"\n`{(int)avgServerListenerPlaycount}` average plays";
+                    serverStats += $"\n`{(int)avgServerListenerPlaycount}` average plays per listener";
                 }
                 else
                 {
