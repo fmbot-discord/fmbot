@@ -9,6 +9,7 @@ using FMBot.Bot.Services;
 using FMBot.Domain.ApiModels;
 using FMBot.Domain.DatabaseModels;
 using FMBot.LastFM.Services;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -272,7 +273,7 @@ namespace FMBot.Bot.Commands.LastFM
                     await ReplyAsync("An index was recently started on this server. Please wait before running this command again.");
                     return;
                 }
-                if (users.Count == 0)
+                if (users.Count == 0 && lastIndex != null)
                 {
                     var reply =
                         $"No new registered .fmbot members found on this server or all users have already been indexed in the last {Constants.GuildIndexCooldown.TotalHours} hours.";
@@ -286,7 +287,12 @@ namespace FMBot.Bot.Commands.LastFM
                     await ReplyAsync(reply);
                     return;
                 }
-
+                if (users.Count == 0 && lastIndex == null)
+                {
+                    await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow.AddDays(-1));
+                    await ReplyAsync("All users on this server have already been indexed or nobody is registered on .fmbot here.\n" +
+                                     "The server has now been registered anyway, so you can start using the commands that require indexing.");
+                }
 
                 string usersString = "";
                 if (guildOnCooldown)
