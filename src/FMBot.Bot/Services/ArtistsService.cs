@@ -16,10 +16,9 @@ namespace FMBot.Bot.Services
     {
         private readonly FMBotDbContext _db = new FMBotDbContext();
 
-        public static IList<ArtistWithUser> AddArtistToIndexList(IList<ArtistWithUser> artists, User userSettings, IGuildUser user, ArtistResponse artist)
+        public static IList<ArtistWithUser> AddUserToIndexList(IList<ArtistWithUser> artists, User userSettings, IGuildUser user, ArtistResponse artist)
         {
-            var newArtistList = artists;
-            newArtistList.Add(new ArtistWithUser
+            artists.Add(new ArtistWithUser
             {
                 UserId = userSettings.UserId,
                 ArtistName = artist.Artist.Name,
@@ -29,18 +28,17 @@ namespace FMBot.Bot.Services
                 DiscordName = user.Nickname ?? user.Username
             });
 
-            return newArtistList.OrderByDescending(o => o.Playcount).ToList();
+            return artists;
         }
 
         public static string ArtistWithUserToStringList(IList<ArtistWithUser> artists, ArtistResponse artistResponse, int userId)
         {
             var reply = "";
-            var userThatRequestedInList = false;
 
             var artistsCount = artists.Count;
-            if (artistsCount > 12)
+            if (artistsCount > 14)
             {
-                artistsCount = 12;
+                artistsCount = 14;
             }
 
             for (var index = 0; index < artistsCount; index++)
@@ -64,23 +62,8 @@ namespace FMBot.Bot.Services
                 }
                 else
                 {
-                    userThatRequestedInList = true;
                     reply += $"- **{artistResponse.Artist.Stats.Userplaycount}** {playString}\n";
                 }
-            }
-
-            if (!userThatRequestedInList)
-            {
-                var artistWithUser = artists.FirstOrDefault(f => f.UserId == userId);
-                var nameWithLink = NameWithLink(artistWithUser);
-                var playString = GetPlaysString(artistWithUser.Playcount);
-
-                var position = artists.IndexOf(artistWithUser);
-
-                reply += " ...\n";
-
-                reply += $" {position + 1}.  {nameWithLink} ";
-                reply += $"- **{artistResponse.Artist.Stats.Userplaycount}** {playString}\n";
             }
 
             if (artists.Count == 1)
@@ -100,14 +83,7 @@ namespace FMBot.Bot.Services
 
         private static string GetPlaysString(int artistPlaycount)
         {
-            if (artistPlaycount == 1)
-            {
-                return "play";
-            }
-            else
-            {
-                return "plays";
-            }
+            return artistPlaycount == 1 ? "play" : "plays";
         }
 
         public async Task<IList<ArtistWithUser>> GetIndexedUsersForArtist(IReadOnlyCollection<IGuildUser> guildUsers, string artistName)
@@ -119,6 +95,7 @@ namespace FMBot.Bot.Services
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
                             && userIds.Contains(w.User.DiscordUserId))
                 .OrderByDescending(o => o.Playcount)
+                .Take(14)
                 .ToListAsync();
 
             return artists
@@ -138,7 +115,7 @@ namespace FMBot.Bot.Services
         }
 
 
-        public async Task<int> GetArtistListenerCountForServer(IReadOnlyCollection<IGuildUser> guildUsers, string artistName)
+        public async Task<int> GetArtistListenerCountForServer(IEnumerable<IGuildUser> guildUsers, string artistName)
         {
             var userIds = guildUsers.Select(s => s.Id);
 
@@ -149,7 +126,7 @@ namespace FMBot.Bot.Services
                 .CountAsync();
         }
 
-        public async Task<int> GetArtistPlayCountForServer(IReadOnlyCollection<IGuildUser> guildUsers, string artistName)
+        public async Task<int> GetArtistPlayCountForServer(IEnumerable<IGuildUser> guildUsers, string artistName)
         {
             var userIds = guildUsers.Select(s => s.Id);
 
@@ -158,15 +135,19 @@ namespace FMBot.Bot.Services
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
                             && userIds.Contains(w.User.DiscordUserId));
 
-            if (await query.AnyAsync())
+            // This is bad practice, but it helps with speed. An exception gets thrown if the artist does not exist in the database.
+            // Checking if the records exist first would be an extra database call
+            try
             {
                 return await query.SumAsync(s => s.Playcount);
             }
-
-            return 0;
+            catch
+            {
+                return 0;
+            }
         }
 
-        public async Task<double> GetArtistAverageListenerPlaycountForServer(IReadOnlyCollection<IGuildUser> guildUsers, string artistName)
+        public async Task<double> GetArtistAverageListenerPlaycountForServer(IEnumerable<IGuildUser> guildUsers, string artistName)
         {
             var userIds = guildUsers.Select(s => s.Id);
 
@@ -175,12 +156,14 @@ namespace FMBot.Bot.Services
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
                             && userIds.Contains(w.User.DiscordUserId));
 
-            if (await query.AnyAsync())
+            try
             {
                 return await query.AverageAsync(s => s.Playcount);
             }
-
-            return 0;
+            catch
+            {
+                return 0;
+            }
         }
     }
 }

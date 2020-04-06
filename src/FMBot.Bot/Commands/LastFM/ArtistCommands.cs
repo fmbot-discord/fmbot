@@ -410,7 +410,7 @@ namespace FMBot.Bot.Commands.LastFM
                         break;
                     case 0:
                         var user = await Context.Guild.GetUserAsync(Context.User.Id);
-                        usersWithArtist = ArtistsService.AddArtistToIndexList(usersWithArtist, userSettings, user, artist);
+                        usersWithArtist = ArtistsService.AddUserToIndexList(usersWithArtist, userSettings, user, artist);
                         break;
                 }
 
