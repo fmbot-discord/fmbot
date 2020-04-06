@@ -382,11 +382,17 @@ namespace FMBot.Bot.Commands.LastFM
                     case 0 when artist.Artist.Stats.Userplaycount == 0:
                         break;
                     case 0:
-                        usersWithArtist = this._artistsService.AddArtistToIndexList(usersWithArtist, userSettings, artist);
+                        var user = await Context.Guild.GetUserAsync(Context.User.Id);
+                        usersWithArtist = this._artistsService.AddArtistToIndexList(usersWithArtist, userSettings, user, artist);
                         break;
                 }
 
                 var serverUsers = this._artistsService.ArtistWithUserToStringList(usersWithArtist, artist, userSettings.UserId);
+
+                if (usersWithArtist.Count == 0)
+                {
+                    serverUsers = "Nobody in this server (not even you) has listened to this artist.";
+                }
 
                 this._embed.WithDescription(serverUsers);
                 var footer = "";

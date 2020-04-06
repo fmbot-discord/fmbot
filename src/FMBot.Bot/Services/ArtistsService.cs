@@ -17,7 +17,7 @@ namespace FMBot.Bot.Services
     {
         private readonly FMBotDbContext _db = new FMBotDbContext();
 
-        public IReadOnlyList<ArtistWithUser> AddArtistToIndexList(IReadOnlyList<ArtistWithUser> artists, User userSettings, ArtistResponse artist)
+        public IReadOnlyList<ArtistWithUser> AddArtistToIndexList(IReadOnlyList<ArtistWithUser> artists, User userSettings, IGuildUser user, ArtistResponse artist)
         {
             var newArtistList = artists.ToList();
             newArtistList.Add(new ArtistWithUser
@@ -26,7 +26,8 @@ namespace FMBot.Bot.Services
                 ArtistName = artist.Artist.Name,
                 Playcount = Convert.ToInt32(artist.Artist.Stats.Userplaycount.Value),
                 LastFMUsername = userSettings.UserNameLastFM,
-                DiscordUserId = userSettings.DiscordUserId
+                DiscordUserId = userSettings.DiscordUserId,
+                DiscordName = user.Nickname ?? user.Username
             });
 
             return newArtistList;
