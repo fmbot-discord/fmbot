@@ -104,7 +104,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                     serverStats += $"`{serverListeners}` listeners";
                     serverStats += $"\n`{serverPlaycount}` total plays";
-                    serverStats += $"\n`{(int)avgServerListenerPlaycount}` average plays per listener";
+                    serverStats += $"\n`{(int)avgServerListenerPlaycount}` median plays";
                 }
                 else
                 {
@@ -410,11 +410,11 @@ namespace FMBot.Bot.Commands.LastFM
                         break;
                     case 0:
                         var user = await Context.Guild.GetUserAsync(Context.User.Id);
-                        usersWithArtist = this._artistsService.AddArtistToIndexList(usersWithArtist, userSettings, user, artist);
+                        usersWithArtist = ArtistsService.AddArtistToIndexList(usersWithArtist, userSettings, user, artist);
                         break;
                 }
 
-                var serverUsers = this._artistsService.ArtistWithUserToStringList(usersWithArtist, artist, userSettings.UserId);
+                var serverUsers = ArtistsService.ArtistWithUserToStringList(usersWithArtist, artist, userSettings.UserId);
 
                 if (usersWithArtist.Count == 0)
                 {
@@ -423,17 +423,25 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithDescription(serverUsers);
                 var footer = "";
+
+                var timeTillIndex = DateTime.UtcNow - lastIndex.Value;
+                footer += $"Last updated {(int)timeTillIndex.TotalHours}h{timeTillIndex:mm}m ago";
                 if (lastIndex < DateTime.UtcNow.Add(-Constants.GuildIndexCooldown))
                 {
-                    footer += "Update data with `.fmindex` | ";
+                    footer += " - Update data with `.fmindex`";
                 }
+
+                var serverListeners = await this._artistsService.GetArtistListenerCountForServer(guildUsers, artist.Artist.Name);
+                var serverPlaycount = await this._artistsService.GetArtistPlayCountForServer(guildUsers, artist.Artist.Name);
+                var avgServerListenerPlaycount = await this._artistsService.GetArtistAverageListenerPlaycountForServer(guildUsers, artist.Artist.Name);
+
+                footer += $"\n{serverListeners} listeners - ";
+                footer += $"{serverPlaycount} total plays - ";
+                footer += $"{(int)avgServerListenerPlaycount} median plays";
 
                 this._embed.WithTitle($"Who knows {artist.Artist.Name} in {Context.Guild.Name}");
                 this._embed.WithUrl(artist.Artist.Url);
 
-                var timeTillIndex = DateTime.UtcNow - lastIndex.Value;
-
-                footer += $"Last updated {(int)timeTillIndex.TotalHours}h{timeTillIndex:mm}m ago";
                 this._embedFooter.WithText(footer);
                 this._embed.WithFooter(this._embedFooter);
 
