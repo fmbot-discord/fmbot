@@ -447,8 +447,12 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $"{serverPlaycount} total plays - ";
                     footer += $"{(int)avgServerListenerPlaycount} median plays";
                 }
+                else if (guildUsers.Count < 125)
+                {
+                    footer += "\nView server artist averages in `.fmartist`";
+                }
 
-                this._embed.WithTitle($"Who knows {artist.Artist.Name} in {Context.Guild.Name}");
+                    this._embed.WithTitle($"Who knows {artist.Artist.Name} in {Context.Guild.Name}");
                 this._embed.WithUrl(artist.Artist.Url);
 
                 this._embedFooter.WithText(footer);
