@@ -425,14 +425,17 @@ namespace FMBot.Bot.Commands.LastFM
                 var guildUsers = await this.Context.Guild.GetUsersAsync();
                 var usersWithArtist = await this._artistsService.GetIndexedUsersForArtist(guildUsers, artist.Artist.Name);
 
-                switch (usersWithArtist.Count)
+                if (usersWithArtist.Count == 0 && artist.Artist.Stats.Userplaycount != 0)
                 {
-                    case 0 when artist.Artist.Stats.Userplaycount == 0:
-                        break;
-                    case 0:
-                        var user = await Context.Guild.GetUserAsync(Context.User.Id);
-                        usersWithArtist = ArtistsService.AddUserToIndexList(usersWithArtist, userSettings, user, artist);
-                        break;
+                    var guildUser = await Context.Guild.GetUserAsync(Context.User.Id);
+                    usersWithArtist =
+                        ArtistsService.AddUserToIndexList(usersWithArtist, userSettings, guildUser, artist);
+                }
+                if (!usersWithArtist.Select(s => s.UserId).Contains(userSettings.UserId) && usersWithArtist.Count != 14 && artist.Artist.Stats.Userplaycount != 0)
+                {
+                    var guildUser = await Context.Guild.GetUserAsync(Context.User.Id);
+                    usersWithArtist =
+                        ArtistsService.AddUserToIndexList(usersWithArtist, userSettings, guildUser, artist);
                 }
 
                 var serverUsers = ArtistsService.ArtistWithUserToStringList(usersWithArtist, artist, userSettings.UserId);
