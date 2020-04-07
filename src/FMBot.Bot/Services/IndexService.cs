@@ -101,7 +101,7 @@ namespace FMBot.Bot.Services
             return await this._db.Users
                 .Include(i => i.Artists)
                 .Where(w => userIds.Contains(w.DiscordUserId)
-                && w.LastIndexed == null || w.LastIndexed <= tooRecent)
+                && (w.LastIndexed == null || w.LastIndexed <= tooRecent))
                 .ToListAsync();
         }
 
