@@ -28,7 +28,7 @@ namespace FMBot.Bot.Services
                 DiscordName = user.Nickname ?? user.Username
             });
 
-            return artists;
+            return artists.OrderByDescending(o => o.Playcount).ToList();
         }
 
         public static string ArtistWithUserToStringList(IList<ArtistWithUser> artists, ArtistResponse artistResponse, int userId)
