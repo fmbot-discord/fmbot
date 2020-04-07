@@ -10,6 +10,7 @@ using FMBot.Domain.ApiModels;
 using FMBot.Domain.DatabaseModels;
 using FMBot.LastFM.Services;
 using Microsoft.EntityFrameworkCore.Query.Internal;
+using SpotifyAPI.Web.Enums;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -22,6 +23,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly IndexService _indexService;
         private readonly ArtistsService _artistsService = new ArtistsService();
         private readonly LastFMService _lastFmService = new LastFMService();
+        private readonly SpotifyService _spotifyService = new SpotifyService();
         private readonly ILastfmApi _lastfmApi;
         private readonly Logger.Logger _logger;
 
@@ -66,6 +68,7 @@ namespace FMBot.Bot.Commands.LastFM
             };
 
             var artistCall = await this._lastfmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+            var spotifyArtistResultsTask = this._spotifyService.GetSearchResultAsync(artist, SearchType.Artist);
 
             if (!artistCall.Success)
             {
@@ -75,6 +78,18 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var artistInfo = artistCall.Content.Artist;
+            var spotifyResults = await spotifyArtistResultsTask;
+
+            if (spotifyResults.Artists?.Items?.Any() == true)
+            {
+                var spotifyArtist = spotifyResults.Artists.Items.FirstOrDefault();
+                if (spotifyArtist.Images.Any() && spotifyArtist.Name.ToLower() == artistInfo.Name.ToLower())
+                {
+                    this._embed.WithThumbnailUrl(spotifyArtist.Images.OrderByDescending(o => o.Height).FirstOrDefault().Url);
+                    this._embedFooter.WithText("Image source: Spotify");
+                    this._embed.WithFooter(this._embedFooter);
+                }
+            }
 
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
@@ -452,7 +467,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += "\nView server artist averages in `.fmartist`";
                 }
 
-                    this._embed.WithTitle($"Who knows {artist.Artist.Name} in {Context.Guild.Name}");
+                this._embed.WithTitle($"Who knows {artist.Artist.Name} in {Context.Guild.Name}");
                 this._embed.WithUrl(artist.Artist.Url);
 
                 this._embedFooter.WithText(footer);
