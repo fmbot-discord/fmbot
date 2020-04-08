@@ -31,9 +31,9 @@ namespace FMBot.Bot.Commands
             this._embedFooter = new EmbedFooterBuilder();
         }
 
-        [Command("fmfriends", RunMode = RunMode.Async)]
+        [Command("friends", RunMode = RunMode.Async)]
         [Summary("Displays a user's friends and what they are listening to.")]
-        [Alias("fmrecentfriends", "fmfriendsrecent")]
+        [Alias("recentfriends", "friendsrecent")]
         public async Task FriendsAsync()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -128,9 +128,9 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        [Command("fmaddfriends", RunMode = RunMode.Async)]
+        [Command("addfriends", RunMode = RunMode.Async)]
         [Summary("Adds your friends' Last.FM names.")]
-        [Alias("fmfriendsset", "fmsetfriends", "fmfriendsadd", "fmaddfriend", "fmsetfriend")]
+        [Alias("friendsset", "setfriends", "friendsadd", "addfriend", "setfriend")]
         public async Task AddFriends([Summary("Friend names")] params string[] friends)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -249,9 +249,9 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        [Command("fmremovefriends", RunMode = RunMode.Async)]
+        [Command("removefriends", RunMode = RunMode.Async)]
         [Summary("Remove your friends' Last.FM names.")]
-        [Alias("fmfriendsremove", "fmdeletefriend", "fmdeletefriends", "fmremovefriend")]
+        [Alias("friendsremove", "deletefriend", "deletefriends", "removefriend")]
         public async Task RemoveFriends([Summary("Friend names")] params string[] friends)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -317,9 +317,9 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        [Command("fmremoveallfriends", RunMode = RunMode.Async)]
+        [Command("removeallfriends", RunMode = RunMode.Async)]
         [Summary("Remove all your friends")]
-        [Alias("fmfriendsremoveall")]
+        [Alias("friendsremoveall")]
         public async Task RemoveAllFriends()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);

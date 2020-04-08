@@ -27,9 +27,9 @@ namespace FMBot.Bot.Commands
             this._embedFooter = new EmbedFooterBuilder();
         }
 
-        [Command("fmgenius")]
+        [Command("genius")]
         [Summary("Shares a link to the Genius lyrics based on what a user is listening to or what the user is searching for.")]
-        [Alias("fmlyrics", "fmg", "fmlyricsfind", "fmlyricsearch", "fmlyricssearch")]
+        [Alias("lyrics", "g", "lyricsfind", "lyricsearch", "lyricssearch")]
         public async Task GeniusAsync(params string[] searchValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);

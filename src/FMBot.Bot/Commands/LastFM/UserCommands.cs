@@ -6,7 +6,7 @@ using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Domain.DatabaseModels;
+using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -33,7 +33,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._embedFooter = new EmbedFooterBuilder();
         }
 
-        [Command("fmstats", RunMode = RunMode.Async)]
+        [Command("stats", RunMode = RunMode.Async)]
         [Summary("Displays user stats related to Last.FM and FMBot")]
         public async Task StatsAsync(string user = null)
         {
@@ -113,7 +113,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        [Command("fmfeatured", RunMode = RunMode.Async)]
+        [Command("featured", RunMode = RunMode.Async)]
         [Summary("Displays the featured avatar.")]
         [Alias("fmfeaturedavatar", "fmfeatureduser", "fmfeaturedalbum")]
         public async Task FeaturedAsync()
@@ -138,10 +138,10 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        [Command("fmset", RunMode = RunMode.Async)]
+        [Command("set", RunMode = RunMode.Async)]
         [Summary(
             "Sets your Last.FM name and FM mode. Please note that users in shared servers will be able to see and request your Last.FM username.")]
-        [Alias("fmsetname", "fmsetmode")]
+        [Alias("setname", "setmode")]
         public async Task SetAsync([Summary("Your Last.FM name")] string lastFMUserName = null,
             [Summary("The mode you want to use.")] string chartType = null)
         {
@@ -218,9 +218,9 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        [Command("fmremove", RunMode = RunMode.Async)]
+        [Command("remove", RunMode = RunMode.Async)]
         [Summary("Deletes your FMBot data.")]
-        [Alias("fmdelete", "fmremovedata", "fmdeletedata")]
+        [Alias("delete", "removedata", "deletedata")]
         public async Task RemoveAsync()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -239,9 +239,9 @@ namespace FMBot.Bot.Commands.LastFM
                 this.Context.Message.Content);
         }
 
-        [Command("fmsuggest", RunMode = RunMode.Async)]
+        [Command("suggest", RunMode = RunMode.Async)]
         [Summary("Suggest features you want to see in the bot, or report inappropriate images.")]
-        [Alias("fmreport", "fmsuggestion", "fmsuggestions")]
+        [Alias("report", "suggestion", "suggestions")]
         public async Task Suggest(string suggestion = null)
         {
             try

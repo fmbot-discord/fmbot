@@ -6,9 +6,9 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Domain.BotModels;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -23,13 +23,15 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly GuildService _guildService = new GuildService();
         private readonly LastFMService _lastFmService = new LastFMService();
+        private readonly IPrefixService _prefixService;
         private readonly Logger.Logger _logger;
 
         private readonly UserService _userService = new UserService();
 
-        public ChartCommands(Logger.Logger logger)
+        public ChartCommands(Logger.Logger logger, IPrefixService prefixService)
         {
             this._logger = logger;
+            this._prefixService = prefixService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -53,15 +55,17 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        [Command("fmchart", RunMode = RunMode.Async)]
+        [Command("chart", RunMode = RunMode.Async)]
         [Summary("Generates a chart based on a user's parameters.")]
-        [Alias("fmc")]
+        [Alias("c")]
         public async Task ChartAsync(string chartSize = "3x3", string time = "weekly", params string[] otherSettings)
         {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
             if (chartSize == "help")
             {
-                await ReplyAsync(".fmchart '2x2-8x8' 'weekly/monthly/yearly/overall' \n" +
-                                 "Optional extra settings: 'notitles', 'nt', 'skipemptyimages', 's'");
+                await ReplyAsync($"{prfx}chart '2x2-8x8' 'weekly/monthly/yearly/overall' \n" +
+                                 "Optional extra settings: 'notitles', 'nt', 'skipemptyimages', 's'\n" +
+                                 "Size and time period are always required before any other parameters.");
                 return;
             }
 
@@ -150,7 +154,7 @@ namespace FMBot.Bot.Commands.LastFM
                         break;
                     default:
                         await ReplyAsync("Your chart's size isn't valid. Sizes supported: 2x2-8x8. \n" +
-                                         $"Example: `{ConfigData.Data.CommandPrefix}fmchart 5x5 monthly notitles skipemptyimages`. For more info, use `.fmchart help`");
+                                         $"Example: `{prfx}fmchart 5x5 monthly notitles skipemptyimages`. For more info, use `{prfx}chart help`");
                         return;
                 }
 

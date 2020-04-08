@@ -2,7 +2,7 @@ using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
-using FMBot.Domain.ApiModels;
+using FMBot.LastFM.Domain.Enums;
 using IF.Lastfm.Core.Api.Enums;
 
 namespace FMBot.Bot.Services
@@ -11,6 +11,7 @@ namespace FMBot.Bot.Services
     {
         public static void UsernameNotSetErrorResponse(this EmbedBuilder embed, ICommandContext context, Logger.Logger logger)
         {
+
             embed.WithTitle("Error while attempting get Last.FM information");
             embed.WithDescription("Your Last.FM username has not been set. \n" +
                                         "Please use the `.fmset` command to connect your Last.FM account to .fmbot. \n" +

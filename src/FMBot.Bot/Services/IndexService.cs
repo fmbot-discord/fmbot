@@ -8,10 +8,10 @@ using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
-using FMBot.Data;
-using FMBot.Domain.BotModels;
-using FMBot.Domain.DatabaseModels;
+using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Objects;
@@ -49,7 +49,7 @@ namespace FMBot.Bot.Services
 
         private async Task StoreArtistsForUser(User user)
         {
-            Thread.Sleep(1200);
+            Thread.Sleep(1400);
 
             Console.WriteLine($"Starting artist store for {user.UserNameLastFM}");
 

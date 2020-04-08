@@ -26,9 +26,9 @@ namespace FMBot.Bot.Commands
                 .WithColor(Constants.LastFMColorRed);
         }
 
-        [Command("fmspotify")]
+        [Command("spotify")]
         [Summary("Shares a link to a Spotify track based on what a user is listening to")]
-        [Alias("fmsp", "fms", "fmspotifyfind", "fmspotifysearch")]
+        [Alias("sp", "s", "spotifyfind", "spotifysearch")]
         public async Task SpotifyAsync(params string[] searchValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);

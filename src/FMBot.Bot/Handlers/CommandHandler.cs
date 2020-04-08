@@ -5,79 +5,123 @@ using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
+using FMBot.Bot.Services;
 
 namespace FMBot.Bot.Handlers
 {
     public class CommandHandler
     {
-        private readonly DiscordShardedClient _discord;
-        private readonly CommandService _commands;
-        private readonly IServiceProvider _provider;
-
         private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
         private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
+        private readonly CommandService _commands;
+        private readonly DiscordShardedClient _discord;
+        private readonly IPrefixService _prefixService;
+        private readonly IServiceProvider _provider;
 
         // DiscordSocketClient, CommandService, IConfigurationRoot, and IServiceProvider are injected automatically from the IServiceProvider
         public CommandHandler(
             DiscordShardedClient discord,
             CommandService commands,
-            IServiceProvider provider)
+            IServiceProvider provider, IPrefixService prefixService)
         {
-            _discord = discord;
-            _commands = commands;
-            _provider = provider;
+            this._discord = discord;
+            this._commands = commands;
+            this._provider = provider;
+            this._prefixService = prefixService;
 
-            _discord.MessageReceived += OnMessageReceivedAsync;
+            this._discord.MessageReceived += OnMessageReceivedAsync;
         }
 
         private async Task OnMessageReceivedAsync(SocketMessage s)
         {
-            var msg = s as SocketUserMessage;     // Ensure the message is from a user/bot
-            if (msg == null) return;
-            if (msg.Author.Id == _discord.CurrentUser.Id) return;     // Ignore self when checking commands
-            if (msg.Author.IsBot) return;     // Ignore bots
-
-            var context = new ShardedCommandContext(_discord, msg);     // Create the command context
-
-            var argPos = 0;     // Check if the message has a valid command prefix
-            if (msg.HasStringPrefix(ConfigData.Data.CommandPrefix, ref argPos) || msg.HasMentionPrefix(_discord.CurrentUser, ref argPos))
+            var msg = s as SocketUserMessage; // Ensure the message is from a user/bot
+            if (msg == null)
             {
-                if (StackCooldownTarget.Contains(msg.Author))
-                {
-                    //If they have used this command before, take the time the user last did something, add 1500ms, and see if it's greater than this very moment.
-                    if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMilliseconds(1500) >= DateTimeOffset.Now)
-                    {
-                        return;
-                    }
+                return;
+            }
 
-                    StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
-                }
-                else
-                {
-                    //If they've never used this command before, add their username and when they just used this command.
-                    StackCooldownTarget.Add(msg.Author);
-                    StackCooldownTimer.Add(DateTimeOffset.Now);
-                }
+            if (msg.Author.Id == this._discord.CurrentUser.Id)
+            {
+                return; // Ignore self when checking commands
+            }
 
-                var searchResult = _commands.Search(context, argPos);
+            if (msg.Author.IsBot)
+            {
+                return; // Ignore bots
+            }
 
-                // If no command were found, return.
-                if (searchResult.Commands == null || searchResult.Commands.Count == 0)
+            var context = new ShardedCommandContext(this._discord, msg); // Create the command context
+
+            var argPos = 0; // Check if the message has a valid command prefix
+            var customPrefix = this._prefixService.GetPrefix(context.Guild?.Id);
+            if (msg.HasStringPrefix(ConfigData.Data.CommandPrefix, ref argPos) && customPrefix == null ||
+                msg.HasMentionPrefix(this._discord.CurrentUser, ref argPos))
+            {
+                await ExecuteCommand(msg, context, argPos);
+            }
+            else if (msg.HasStringPrefix(customPrefix, ref argPos, StringComparison.CurrentCultureIgnoreCase))
+            {
+                await ExecuteCommand(msg, context, argPos, customPrefix);
+            }
+        }
+
+        private async Task ExecuteCommand(SocketUserMessage msg, ShardedCommandContext context, int argPos,
+            string customPrefix = null)
+        {
+            if (StackCooldownTarget.Contains(msg.Author))
+            {
+                //If they have used this command before, take the time the user last did something, add 1100ms, and see if it's greater than this very moment.
+                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMilliseconds(1100) >=
+                    DateTimeOffset.Now)
                 {
                     return;
                 }
 
-                var result = await _commands.ExecuteAsync(context, argPos, _provider);     // Execute the command
+                StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
+            }
+            else
+            {
+                //If they've never used this command before, add their username and when they just used this command.
+                StackCooldownTarget.Add(msg.Author);
+                StackCooldownTimer.Add(DateTimeOffset.Now);
+            }
 
-                if (result.IsSuccess)
+            var searchResult = this._commands.Search(context, argPos);
+
+            // If no command were found, return.
+            if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && msg.Content != customPrefix)
+            {
+                return;
+            }
+
+            if ((searchResult.Commands == null || searchResult.Commands.Count == 0) &&
+                msg.Content == ConfigData.Data.CommandPrefix && customPrefix == null)
+            {
+                var commandPrefixResult = await this._commands.ExecuteAsync(context, "fm", this._provider);
+
+                if (commandPrefixResult.IsSuccess)
                 {
                     Statistics.CommandsExecuted.Inc();
                 }
                 else
                 {
                     var logger = new Logger.Logger();
-                    logger.LogError(result.ToString(), context.Message.Content);
+                    logger.LogError(commandPrefixResult.ToString(), context.Message.Content);
                 }
+
+                return;
+            }
+
+            var result = await this._commands.ExecuteAsync(context, argPos, this._provider);
+
+            if (result.IsSuccess)
+            {
+                Statistics.CommandsExecuted.Inc();
+            }
+            else
+            {
+                var logger = new Logger.Logger();
+                logger.LogError(result.ToString(), context.Message.Content);
             }
         }
     }

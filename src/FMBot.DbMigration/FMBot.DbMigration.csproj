@@ -6,6 +6,7 @@
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FMBot.Data\FMBot.Data.csproj" />
+    <ProjectReference Include="..\FMBot.Persistence.Domain\FMBot.Persistence.Domain.csproj" />
+    <ProjectReference Include="..\FMBot.Persistence.EntityFrameWork\FMBot.Persistence.EntityFrameWork.csproj" />
   </ItemGroup>
 </Project>

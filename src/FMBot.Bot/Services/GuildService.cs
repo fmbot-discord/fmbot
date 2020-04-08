@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using FMBot.Data;
-using FMBot.Domain.BotModels;
-using FMBot.Domain.DatabaseModels;
+using FMBot.Bot.Models;
+using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services
@@ -122,6 +122,37 @@ namespace FMBot.Bot.Services
             else
             {
                 existingGuild.EmoteReactions = reactions;
+                existingGuild.Name = guild.Name;
+
+                this.db.Entry(existingGuild).State = EntityState.Modified;
+
+                await this.db.SaveChangesAsync();
+            }
+        }
+
+        public async Task SetGuildPrefixAsync(IGuild guild, string prefix)
+        {
+            var existingGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+
+            if (existingGuild == null)
+            {
+                var newGuild = new Guild
+                {
+                    DiscordGuildId = guild.Id,
+                    TitlesEnabled = true,
+                    ChartTimePeriod = ChartTimePeriod.Monthly,
+                    ChartType = ChartType.embedmini,
+                    Name = guild.Name,
+                    Prefix = prefix
+                };
+
+                this.db.Guilds.Add(newGuild);
+
+                await this.db.SaveChangesAsync();
+            }
+            else
+            {
+                existingGuild.Prefix = prefix;
                 existingGuild.Name = guild.Name;
 
                 this.db.Entry(existingGuild).State = EntityState.Modified;

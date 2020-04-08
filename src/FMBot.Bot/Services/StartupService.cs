@@ -16,6 +16,7 @@ namespace FMBot.Bot.Services
     {
         private readonly CommandService _commands;
         private readonly DiscordShardedClient _client;
+        private readonly IPrefixService _prefixService;
         private readonly IServiceProvider _provider;
         private readonly Logger.Logger _logger;
 
@@ -23,12 +24,14 @@ namespace FMBot.Bot.Services
             IServiceProvider provider,
             DiscordShardedClient discord,
             CommandService commands,
-            Logger.Logger logger)
+            Logger.Logger logger,
+            IPrefixService prefixService)
         {
             this._provider = provider;
             this._client = discord;
             this._commands = commands;
             this._logger = logger;
+            this._prefixService = prefixService;
         }
 
         public async Task StartAsync()
@@ -81,6 +84,9 @@ namespace FMBot.Bot.Services
             {
                 this._logger.Log("Last.FM API test successful");
             }
+
+            this._logger.Log("Loading all prefixes");
+            await this._prefixService.LoadAllPrefixes();
         }
 
 

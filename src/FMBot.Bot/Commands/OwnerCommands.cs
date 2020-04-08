@@ -3,13 +3,11 @@ using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using FMBot.Bot.Services;
-using FMBot.Domain.DatabaseModels;
+using FMBot.Persistence.Domain.Models;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
@@ -26,9 +24,9 @@ namespace FMBot.Bot.Commands
             _logger = logger;
         }
 
-        [Command("fmsetusertype"), Summary("Sets usertype for other users")]
-        [Alias("fmsetperms")]
-        public async Task fmsetusertypeAsync(string userId = null, string userType = null)
+        [Command("setusertype"), Summary("Sets usertype for other users")]
+        [Alias("setperms")]
+        public async Task SetUserTypeAsync(string userId = null, string userType = null)
         {
             if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
             {
@@ -61,9 +59,9 @@ namespace FMBot.Bot.Commands
         }
 
 
-        [Command("fmremovereadonly"), Summary("Removes read only on all directories.")]
-        [Alias("fmreadonlyfix")]
-        public async Task fmremovereadonlyAsync()
+        [Command("removereadonly"), Summary("Removes read only on all directories.")]
+        [Alias("readonlyfix")]
+        public async Task RemoveReadOnlyAsync()
         {
             if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
             {
@@ -85,9 +83,9 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        [Command("fmstoragecheck"), Summary("Checks how much storage is left on the server.")]
-        [Alias("fmcheckstorage", "fmstorage")]
-        public async Task fmstoragecheckAsync()
+        [Command("storagecheck"), Summary("Checks how much storage is left on the server.")]
+        [Alias("checkstorage", "storage")]
+        public async Task StorageCheckAsync()
         {
             if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
             {
@@ -113,8 +111,8 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        [Command("fmserverlist"), Summary("Displays a list showing information related to every server the bot has joined.")]
-        public async Task fmserverlistAsync()
+        [Command("serverlist"), Summary("Displays a list showing information related to every server the bot has joined.")]
+        public async Task ServerListAsync()
         {
             if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
             {
@@ -139,9 +137,9 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        [Command("fmnameoverride"), Summary("Changes the bot's name.")]
-        [Alias("fmsetbotname")]
-        public async Task FmnameoverrideAsync(string name = ".fmbot")
+        [Command("nameoverride"), Summary("Changes the bot's name.")]
+        [Alias("setbotname")]
+        public async Task NameOverrideAsync(string name = ".fmbot")
         {
             if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
             {

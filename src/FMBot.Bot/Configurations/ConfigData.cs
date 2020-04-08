@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Threading;
-using FMBot.Domain.BotModels;
+using FMBot.Bot.Models;
 using Newtonsoft.Json;
 
 namespace FMBot.Bot.Configurations
@@ -11,7 +11,7 @@ namespace FMBot.Bot.Configurations
         private const string ConfigFolder = "configs";
         private const string ConfigFile = "ConfigData.json";
 
-        public static ConfigJson Data { get; }
+        public static ConfigModel Data { get; }
 
         /// <summary>
         /// Loads all the <see cref="ConfigData"/> needed to start the bot.
@@ -22,9 +22,9 @@ namespace FMBot.Bot.Configurations
 
             if (!File.Exists(ConfigFolder + "/" + ConfigFile))
             {
-                Data = new ConfigJson
+                Data = new ConfigModel
                 {
-                    CommandPrefix = ".",
+                    CommandPrefix = ".fm",
                     TimerInit = "20",
                     TimerRepeat = "60",
                     Cooldown = "10",
@@ -45,7 +45,7 @@ namespace FMBot.Bot.Configurations
             else
             {
                 var json = File.ReadAllText(ConfigFolder + "/" + ConfigFile);
-                Data = JsonConvert.DeserializeObject<ConfigJson>(json);
+                Data = JsonConvert.DeserializeObject<ConfigModel>(json);
             }
         }
     }

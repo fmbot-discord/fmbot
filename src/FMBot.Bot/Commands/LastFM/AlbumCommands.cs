@@ -7,7 +7,8 @@ using Discord;
 using Discord.Commands;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Domain.ApiModels;
+using FMBot.LastFM.Domain.Models;
+using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
 using ImageFormat = System.Drawing.Imaging.ImageFormat;
 
@@ -35,9 +36,9 @@ namespace FMBot.Bot.Commands.LastFM
             this._embedFooter = new EmbedFooterBuilder();
         }
 
-        [Command("fmalbum", RunMode = RunMode.Async)]
+        [Command("album", RunMode = RunMode.Async)]
         [Summary("Displays current album.")]
-        [Alias("fmab")]
+        [Alias("ab")]
         public async Task AlbumAsync()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -112,9 +113,9 @@ namespace FMBot.Bot.Commands.LastFM
                 this.Context.Message.Content);
         }
 
-        [Command("fmcover", RunMode = RunMode.Async)]
+        [Command("cover", RunMode = RunMode.Async)]
         [Summary("Displays current album cover.")]
-        [Alias("fmabc","fmco", "fmalbumcover")]
+        [Alias("abc","co", "albumcover")]
         public async Task AlbumCoverAsync()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);

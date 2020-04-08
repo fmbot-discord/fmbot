@@ -8,7 +8,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Bot", "FMBot.Bot\FMBo
 		{769E7FD4-97EB-447C-92FB-11ED991EDAEF} = {769E7FD4-97EB-447C-92FB-11ED991EDAEF}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Data", "FMBot.Data\FMBot.Data.csproj", "{769E7FD4-97EB-447C-92FB-11ED991EDAEF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Persistence.EntityFrameWork", "FMBot.Persistence.EntityFrameWork\FMBot.Persistence.EntityFrameWork.csproj", "{769E7FD4-97EB-447C-92FB-11ED991EDAEF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.DbMigration", "FMBot.DbMigration\FMBot.DbMigration.csproj", "{49E3B52B-8020-4714-8FE4-8C8BE223525F}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -23,7 +23,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.BotLists", "FMBot.Bot
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.LastFM", "FMBot.LastFM\FMBot.LastFM.csproj", "{1C1B04B5-D8DD-4719-B77F-5F81C370FFF4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FMBot.Domain", "FMBot.Domain\FMBot.Domain.csproj", "{2A6ECC70-CF19-408F-B092-9530EE6DD06F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Persistence", "FMBot.Persistence\FMBot.Persistence.csproj", "{2A6ECC70-CF19-408F-B092-9530EE6DD06F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FMBot.Persistence.Domain", "FMBot.Persistence.Domain\FMBot.Persistence.Domain.csproj", "{BE7C2F06-785E-4BCE-9413-3197ECBD9790}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FMBot.LastFM.Domain", "FMBot.LastFM.Domain\FMBot.LastFM.Domain.csproj", "{FE7500D8-093E-405A-B767-2A9C49D8DE7F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,6 +67,14 @@ Global
 		{2A6ECC70-CF19-408F-B092-9530EE6DD06F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2A6ECC70-CF19-408F-B092-9530EE6DD06F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2A6ECC70-CF19-408F-B092-9530EE6DD06F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE7C2F06-785E-4BCE-9413-3197ECBD9790}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE7C2F06-785E-4BCE-9413-3197ECBD9790}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE7C2F06-785E-4BCE-9413-3197ECBD9790}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE7C2F06-785E-4BCE-9413-3197ECBD9790}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE7500D8-093E-405A-B767-2A9C49D8DE7F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE7500D8-093E-405A-B767-2A9C49D8DE7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE7500D8-093E-405A-B767-2A9C49D8DE7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE7500D8-093E-405A-B767-2A9C49D8DE7F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

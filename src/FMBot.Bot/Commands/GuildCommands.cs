@@ -5,8 +5,9 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Domain.DatabaseModels;
+using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands
 {
@@ -16,9 +17,27 @@ namespace FMBot.Bot.Commands
         private readonly AdminService _adminService = new AdminService();
         private readonly GuildService _guildService = new GuildService();
 
-        [Command("fmserverset", RunMode = RunMode.Async)]
+        private readonly IPrefixService _prefixService;
+
+        private readonly Logger.Logger _logger;
+
+        private readonly EmbedBuilder _embed;
+        private readonly EmbedAuthorBuilder _embedAuthor;
+        private readonly EmbedFooterBuilder _embedFooter;
+
+        public GuildCommands(IPrefixService prefixService, Logger.Logger logger)
+        {
+            this._prefixService = prefixService;
+            this._logger = logger;
+            this._embed = new EmbedBuilder()
+                .WithColor(Constants.LastFMColorRed);
+            this._embedAuthor = new EmbedAuthorBuilder();
+            this._embedFooter = new EmbedFooterBuilder();
+        }
+
+        [Command("serverset", RunMode = RunMode.Async)]
         [Summary("Sets the global FMBot settings for the server.")]
-        [Alias("fmserversetmode")]
+        [Alias("serversetmode")]
         public async Task SetServerAsync([Summary("The default mode you want to use.")]
             string chartType = "embedmini", [Summary("The default timeperiod you want to use.")]
             string chartTimePeriod = "monthly")
@@ -63,11 +82,12 @@ namespace FMBot.Bot.Commands
 
             await ReplyAsync("The .fmset default chart type for your server has been set to " + chartTypeEnum +
                              " with the time period " + chartTimePeriodEnum + ".");
+            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id, this.Context.Message.Content);
         }
 
-        [Command("fmserverreactions", RunMode = RunMode.Async)]
+        [Command("serverreactions", RunMode = RunMode.Async)]
         [Summary("Sets reactions for some server commands.")]
-        [Alias("fmserversetreactions")]
+        [Alias("serversetreactions")]
         public async Task SetGuildReactionsAsync(params string[] emotes)
         {
             if (this._guildService.CheckIfDM(this.Context))
@@ -112,11 +132,12 @@ namespace FMBot.Bot.Commands
             var message = await ReplyAsync("Emote reactions have been set! \n" +
                                            "Please check if all reactions have been applied to this message correctly. If not, you might have used an emote from a different server.");
             await this._guildService.AddReactionsAsync(message, Context.Guild);
+            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id, this.Context.Message.Content);
         }
 
-        [Command("fmexport", RunMode = RunMode.Async)]
+        [Command("export", RunMode = RunMode.Async)]
         [Summary("Gets Last.FM usernames from your server members in json format.")]
-        [Alias("fmgetmembers", "fmexportmembers")]
+        [Alias("getmembers", "exportmembers")]
         public async Task GetMembersAsync()
         {
             if (this._guildService.CheckIfDM(this.Context))
@@ -162,7 +183,73 @@ namespace FMBot.Bot.Commands
             }
 
             await ReplyAsync("Check your DMs!");
+            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id, this.Context.Message.Content);
         }
+
+        /// <summary>
+        /// Changes the prefix for the server.
+        /// </summary>
+        /// <param name="prefix">The desired prefix.</param>
+        [Command("prefix", RunMode = RunMode.Async)]
+        public async Task SetPrefixAsync(string prefix = null)
+        {
+            if (this._guildService.CheckIfDM(this.Context))
+            {
+                await ReplyAsync("Command is not supported in DMs.");
+                return;
+            }
+
+            var serverUser = (IGuildUser)this.Context.Message.Author;
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
+                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync(
+                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(prefix) || prefix.ToLower() == "remove" || prefix.ToLower() == "delete")
+            {
+                await this._guildService.SetGuildPrefixAsync(this.Context.Guild, null);
+                this._prefixService.RemovePrefix(Context.Guild.Id);
+                await ReplyAsync("Removed prefix!");
+                return;
+            }
+            if (prefix.ToLower() == ".fm")
+            {
+                await this._guildService.SetGuildPrefixAsync(this.Context.Guild, null);
+                this._prefixService.RemovePrefix(Context.Guild.Id);
+                await ReplyAsync("Reset to default prefix `.fm`!");
+                return;
+            }
+
+            if (prefix.Length > 20)
+            {
+                await ReplyAsync("Max prefix length is 20 characters...");
+                return;
+            }
+            if (prefix.Contains("*") || prefix.Contains("`") || prefix.Contains("~"))
+            {
+                await ReplyAsync("You can't have a custom prefix that contains ** * **or **`** or **~**");
+                return;
+            }
+
+            await this._guildService.SetGuildPrefixAsync(this.Context.Guild, prefix);
+            this._prefixService.StorePrefix(prefix, Context.Guild.Id);
+
+            this._embed.WithTitle("Successfully added custom prefix!");
+            this._embed.WithDescription("Examples:\n" +
+                                        $"- `{prefix}fm`\n" +
+                                        $"- `{prefix}chart 8x8 monthly`\n" +
+                                        $"- `{prefix}whoknows` \n \n" +
+                                        "Reminder that you can always ping the bot followed by your command. \n" +
+                                        $"The [.fmbot docs]({Constants.DocsUrl}) will still have the `.fm` prefix everywhere. \n\n" +
+                                        $"To remove the custom prefix, do `{prefix}prefix remove`");
+
+            await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id, this.Context.Message.Content);
+        }
+
 
         private static Stream StringToStream(string str)
         {

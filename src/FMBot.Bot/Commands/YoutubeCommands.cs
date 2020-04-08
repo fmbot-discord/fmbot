@@ -25,9 +25,9 @@ namespace FMBot.Bot.Commands
                 .WithColor(Constants.LastFMColorRed);
         }
 
-        [Command("fmyoutube")]
+        [Command("youtube")]
         [Summary("Shares a link to a YouTube video based on what a user is listening to")]
-        [Alias("fmyt", "fmy", "fmyoutubesearch", "fmytsearch", "fmyts")]
+        [Alias("yt", "y", "youtubesearch", "ytsearch", "yts")]
         public async Task YoutubeAsync(params string[] searchValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using FMBot.Domain.DatabaseModels;
+using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.DbMigration.OldDatabase.Entities
 {

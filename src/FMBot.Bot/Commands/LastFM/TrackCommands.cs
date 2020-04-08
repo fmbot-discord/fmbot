@@ -7,8 +7,8 @@ using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Domain.DatabaseModels;
 using FMBot.LastFM.Services;
+using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -23,9 +23,12 @@ namespace FMBot.Bot.Commands.LastFM
 
         private readonly UserService _userService = new UserService();
 
-        public TrackCommands(Logger.Logger logger)
+        private readonly IPrefixService _prefixService;
+
+        public TrackCommands(Logger.Logger logger, IPrefixService prefixService)
         {
             this._logger = logger;
+            this._prefixService = prefixService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -48,19 +51,25 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (user.Length > 0 && user.First() == "help")
             {
-                var prfx = ConfigData.Data.CommandPrefix;
-                var replyString = "`.fm` shows you your last scrobble(s). \n " +
-                                  "This command can also be used on others, for example `.fm lastfmusername` or `.fm @discorduser`\n \n" +
+                var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
+                var fmString = "fm";
+                if (prfx == ".fm")
+                {
+                    fmString = "";
+                }
+
+                var replyString = $"`{prfx}{fmString}` shows you your last scrobble(s). \n " +
+                                  $"This command can also be used on others, for example `{prfx}{fmString} lastfmusername` or `{prfx}{fmString} @discorduser`\n \n" +
 
                                   "You can set your username and you can change the mode with the `.fmset` command.\n";
 
                 var differentMode = userSettings.ChartType == ChartType.embedmini ? "embedfull" : "embedmini";
-                replyString += $"`{prfx}fmset {userSettings.UserNameLastFM} {differentMode}` \n \n" +
-                               $"For more info, use `.fmset help`.";
+                replyString += $"`{prfx}set {userSettings.UserNameLastFM} {differentMode}` \n \n" +
+                               $"For more info, use `{prfx}set help`.";
 
 
                 this._embed.WithUrl($"{Constants.DocsUrl}/commands/tracks/");
-                this._embed.WithTitle("Using the .fm command");
+                this._embed.WithTitle($"Using the {prfx}{fmString} command");
                 this._embed.WithDescription(replyString);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
@@ -223,9 +232,9 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        [Command("fmrecent", RunMode = RunMode.Async)]
+        [Command("recent", RunMode = RunMode.Async)]
         [Summary("Displays a user's recent tracks.")]
-        [Alias("fmrecenttracks", "fmr")]
+        [Alias("recenttracks", "r")]
         public async Task RecentAsync(string amount = "5", string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -236,17 +245,18 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
             if (user == "help")
             {
-                await ReplyAsync(".fmrecent 'number of items (max 10)' 'lastfm username/discord user'");
+                await ReplyAsync($"{prfx}recent 'number of items (max 10)' 'lastfm username/discord user'");
                 return;
             }
 
             if (!int.TryParse(amount, out var amountOfTracks))
             {
                 await ReplyAsync("Please enter a valid amount. \n" +
-                                 "`.fmrecent 'number of items (max 10)' 'lastfm username/discord user'` \n" +
-                                 "Example: `.fmrecent 8`");
+                                 $"`{prfx}recent 'number of items (max 10)' 'lastfm username/discord user'` \n" +
+                                 $"Example: `{prfx}recent 8`");
                 return;
             }
 

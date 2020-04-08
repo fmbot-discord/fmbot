@@ -1,10 +1,8 @@
-using System.IO;
 using System.Threading.Tasks;
 using Discord;
-using FMBot.Data;
-using FMBot.Domain.DatabaseModels;
+using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
-using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Services
 {
@@ -14,7 +12,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> HasCommandAccessAsync(IUser discordUser, UserType userType)
         {
-            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+            var user = await this.db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
             if (user == null)
             {
@@ -57,7 +55,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> SetUserTypeAsync(ulong discordUserID, UserType userType)
         {
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
+            var user = await this.db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
 
             if (user == null)
             {
@@ -66,9 +64,9 @@ namespace FMBot.Bot.Services
 
             user.UserType = userType;
 
-            db.Entry(user).State = EntityState.Modified;
+            this.db.Entry(user).State = EntityState.Modified;
 
-            await db.SaveChangesAsync();
+            await this.db.SaveChangesAsync();
 
             return true;
         }
@@ -76,7 +74,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> AddUserToBlacklistAsync(ulong discordUserID)
         {
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
+            var user = await this.db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
 
             if (user == null)
             {
@@ -85,9 +83,9 @@ namespace FMBot.Bot.Services
 
             user.Blacklisted = true;
 
-            db.Entry(user).State = EntityState.Modified;
+            this.db.Entry(user).State = EntityState.Modified;
 
-            await db.SaveChangesAsync();
+            await this.db.SaveChangesAsync();
 
             return true;
         }
@@ -95,7 +93,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> RemoveUserFromBlacklistAsync(ulong discordUserID)
         {
-            User user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
+            var user = await this.db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
 
             if (user == null)
             {
@@ -104,16 +102,16 @@ namespace FMBot.Bot.Services
 
             user.Blacklisted = false;
 
-            db.Entry(user).State = EntityState.Modified;
+            this.db.Entry(user).State = EntityState.Modified;
 
-            await db.SaveChangesAsync();
+            await this.db.SaveChangesAsync();
 
             return true;
         }
 
         public string FormatBytes(long bytes)
         {
-            string[] Suffix = { "B", "KB", "MB", "GB", "TB" };
+            string[] Suffix = {"B", "KB", "MB", "GB", "TB"};
             int i;
             double dblSByte = bytes;
             for (i = 0; i < Suffix.Length && bytes >= 1024; i++, bytes /= 1024)

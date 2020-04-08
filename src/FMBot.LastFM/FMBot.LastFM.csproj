@@ -12,11 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FMBot.Domain\FMBot.Domain.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Models\" />
+    <ProjectReference Include="..\FMBot.LastFM.Domain\FMBot.LastFM.Domain.csproj" />
   </ItemGroup>
 
 </Project>

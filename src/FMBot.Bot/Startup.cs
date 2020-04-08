@@ -4,12 +4,11 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Handlers;
+using FMBot.Bot.Models;
 using FMBot.Bot.Services;
-using FMBot.Data;
-using FMBot.Domain.BotModels;
 using FMBot.LastFM.Services;
+using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -70,6 +69,7 @@ namespace FMBot.Bot
                 .AddSingleton<StartupService>()
                 .AddSingleton<TimerService>()
                 .AddSingleton<IUserIndexQueue, UserIndexQueue>()
+                .AddSingleton<IPrefixService, PrefixService>()
                 .AddSingleton<IndexService>()
                 .AddSingleton(logger)
                 .AddSingleton<Random>() // Add random to the collection

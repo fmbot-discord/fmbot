@@ -20,7 +20,7 @@ namespace FMBot.Bot.Resources
         public static TimeSpan GuildIndexCooldown = TimeSpan.FromDays(2);
 
         /// <summary>Amount of users to index. Should always end with 000</summary>
-        public const int ArtistsToIndex = 2000;
+        public const int ArtistsToIndex = 4000;
 
         /// <summary>The Discord color for a warning embed.</summary>
         public static Color WarningColorOrange = new Color(255, 174, 66);

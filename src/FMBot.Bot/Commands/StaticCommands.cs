@@ -21,20 +21,22 @@ namespace FMBot.Bot.Commands
         private readonly GuildService _guildService = new GuildService();
 
         private readonly CommandService _service;
+        private readonly IPrefixService _prefixService;
         private readonly UserService _userService = new UserService();
         private readonly FriendsService _friendService = new FriendsService();
 
-        public StaticCommands(CommandService service)
+        public StaticCommands(CommandService service, IPrefixService prefixService)
         {
             this._service = service;
+            this._prefixService = prefixService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
         }
 
-        [Command("fminvite", RunMode = RunMode.Async)]
+        [Command("invite", RunMode = RunMode.Async)]
         [Summary("Info for inviting the bot to a server")]
-        [Alias("fmserver")]
+        [Alias("server")]
         public async Task InviteAsync()
         {
             var SelfID = this.Context.Client.CurrentUser.Id.ToString();
@@ -52,9 +54,9 @@ namespace FMBot.Bot.Commands
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         }
 
-        [Command("fminfo", RunMode = RunMode.Async)]
+        [Command("info", RunMode = RunMode.Async)]
         [Summary("Please donate if you like this bot!")]
-        [Alias("fmdonate", "fmgithub", "fmgitlab", "fmissues", "fmbugs")]
+        [Alias("donate", "github", "gitlab", "issues", "bugs")]
         public async Task InfoAsync()
         {
             var SelfID = this.Context.Client.CurrentUser.Id.ToString();
@@ -82,7 +84,7 @@ namespace FMBot.Bot.Commands
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         }
 
-        [Command("fmstatus", RunMode = RunMode.Async)]
+        [Command("status", RunMode = RunMode.Async)]
         [Summary("Displays bot stats.")]
         public async Task StatusAsync()
         {
@@ -120,20 +122,38 @@ namespace FMBot.Bot.Commands
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         }
 
-        [Command("fmhelp", RunMode = RunMode.Async)]
+        [Command("help", RunMode = RunMode.Async)]
         [Summary("Quick help summary to get started.")]
-        [Alias("fmbot")]
+        [Alias("bot")]
         public async Task HelpAsync()
         {
-            var prefix = ConfigData.Data.CommandPrefix;
+            var customPrefix = true;
+            var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            if (prefix == null)
+            {
+                prefix = ConfigData.Data.CommandPrefix;
+                customPrefix = false;
+            }
 
-            this._embed.WithTitle(prefix + "FMBot Quick Start Guide");
+            this._embed.WithTitle(".fmbot Quick Start Guide");
 
-            this._embed.AddField($"Main command `{prefix}fm`",
+            var mainCommand = "fm";
+            if (!customPrefix)
+            {
+                mainCommand = "";
+            }
+
+            this._embed.AddField($"Main command `{prefix}{mainCommand}`",
                 "Displays last scrobbles, and looks different depending on the mode you've set.");
 
             this._embed.AddField("Setting up: `.fmset lastfmusername`",
                 $"For more settings, please use `{prefix}fmset help`.");
+
+            if (customPrefix)
+            {
+                this._embed.AddField("Custom prefix:",
+                    $"This server has the `{prefix}` prefix.");
+            }
 
             this._embed.AddField("For more commands and info, please read the documentation here:",
                 "https://fmbot.xyz/");
@@ -142,7 +162,7 @@ namespace FMBot.Bot.Commands
         }
 
 
-        [Command("fmfullhelp", RunMode = RunMode.Async)]
+        [Command("fullhelp", RunMode = RunMode.Async)]
         [Summary("Displays this list.")]
         public async Task FullHelpAsync()
         {

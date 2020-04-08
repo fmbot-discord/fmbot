@@ -4,12 +4,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Domain.ApiModels;
-using FMBot.Domain.DatabaseModels;
+using FMBot.LastFM.Domain.Models;
+using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
-using Microsoft.EntityFrameworkCore.Query.Internal;
+using FMBot.Persistence.Domain.Models;
 using SpotifyAPI.Web.Enums;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -24,28 +25,31 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly ArtistsService _artistsService = new ArtistsService();
         private readonly LastFMService _lastFmService = new LastFMService();
         private readonly SpotifyService _spotifyService = new SpotifyService();
+        private readonly IPrefixService _prefixService;
         private readonly ILastfmApi _lastfmApi;
         private readonly Logger.Logger _logger;
 
         private readonly UserService _userService = new UserService();
 
-        public ArtistCommands(Logger.Logger logger, IndexService indexService, ILastfmApi lastfmApi)
+        public ArtistCommands(Logger.Logger logger, IndexService indexService, ILastfmApi lastfmApi, IPrefixService prefixService)
         {
             this._logger = logger;
             this._indexService = indexService;
             this._lastfmApi = lastfmApi;
+            this._prefixService = prefixService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embedFooter = new EmbedFooterBuilder();
         }
 
-        [Command("fmartist", RunMode = RunMode.Async)]
+        [Command("artist", RunMode = RunMode.Async)]
         [Summary("Displays current artist.")]
-        [Alias("fma")]
+        [Alias("a")]
         public async Task ArtistsAsync(params string[] artistValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
 
             if (userSettings?.UserNameLastFM == null)
             {
@@ -148,12 +152,13 @@ namespace FMBot.Bot.Commands.LastFM
                 this.Context.Message.Content);
         }
 
-        [Command("fmartists", RunMode = RunMode.Async)]
+        [Command("artists", RunMode = RunMode.Async)]
         [Summary("Displays top artists.")]
-        [Alias("fmal", "fmas", "fmartistlist", "fmartistslist")]
+        [Alias("al", "as", "artistlist", "artistslist")]
         public async Task ArtistsAsync(string time = "weekly", int num = 10, string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
 
             if (userSettings?.UserNameLastFM == null)
             {
@@ -257,7 +262,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        [Command("fmindex", RunMode = RunMode.Async)]
+        [Command("index", RunMode = RunMode.Async)]
         [Summary("Indexes top 2000 artists for every user in your server.")]
         public async Task IndexGuildAsync()
         {
@@ -360,9 +365,9 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        [Command("fmwhoknows", RunMode = RunMode.Async)]
+        [Command("whoknows", RunMode = RunMode.Async)]
         [Summary("Shows what other users listen to the same artist in your server")]
-        [Alias("fmw", "fmwk")]
+        [Alias("w", "wk")]
         public async Task WhoKnowsAsync(params string[] artistValues)
         {
             if (this._guildService.CheckIfDM(this.Context))
@@ -439,7 +444,6 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var serverUsers = ArtistsService.ArtistWithUserToStringList(usersWithArtist, artist, userSettings.UserId);
-
                 if (usersWithArtist.Count == 0)
                 {
                     serverUsers = "Nobody in this server (not even you) has listened to this artist.";

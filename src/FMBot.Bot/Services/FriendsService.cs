@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
-using FMBot.Data;
-using FMBot.Domain.DatabaseModels;
+using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services

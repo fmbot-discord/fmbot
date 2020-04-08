@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
-using FMBot.Domain.BotModels;
+using FMBot.Bot.Models;
 
 namespace FMBot.Bot
 {
