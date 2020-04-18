@@ -68,7 +68,8 @@ namespace FMBot.Bot.Commands.LastFM
             var queryParams = new Dictionary<string, string>
             {
                 {"artist", artist },
-                {"username", userSettings.UserNameLastFM }
+                {"username", userSettings.UserNameLastFM },
+                {"autocorrect", "1"}
             };
 
             var artistCall = await this._lastfmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
@@ -410,7 +411,8 @@ namespace FMBot.Bot.Commands.LastFM
             var queryParams = new Dictionary<string, string>
             {
                 {"artist", artistQuery },
-                {"username", userSettings.UserNameLastFM }
+                {"username", userSettings.UserNameLastFM },
+                {"autocorrect", "1"}
             };
 
             var artistCall = await this._lastfmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);

@@ -72,6 +72,14 @@ namespace FMBot.Bot.Services
                        : $" | *{track.AlbumName}*\n");
         }
 
+        public static string TrackToOneLinedString(LastTrack track)
+        {
+            return $"{track.Name} By **{track.ArtistName}**" +
+                   (string.IsNullOrWhiteSpace(track.AlbumName)
+                       ? "\n"
+                       : $" | *{track.AlbumName}*\n");
+        }
+
         public string TagsToLinkedString(Tags tags)
         {
             var tagString = "";

@@ -77,6 +77,7 @@ namespace FMBot.Bot.Commands
                 this._embed.WithAuthor(this._embedAuthor);
 
                 var totalPlaycount = 0;
+                var embedDescription = "";
                 await friends.ParallelForEachAsync(async friend =>
                 {
                     var tracks = await this._lastFmService.GetRecentScrobblesAsync(friend, 1);
@@ -90,16 +91,14 @@ namespace FMBot.Bot.Commands
                     else
                     {
                         var lastTrack = tracks.Content[0];
-                        track = LastFMService.TrackToLinkedString(lastTrack);
+                        track = LastFMService.TrackToOneLinedString(lastTrack);
                         if (lastTrack.IsNowPlaying == true)
                         {
                             friendTitle += " (Now Playing)";
                         }
                     }
 
-                    this._embed.AddField(
-                        $"{friendTitle}:",
-                        track);
+                    embedDescription += $"[{friendTitle}]({Constants.LastFMUserUrl}{friend}) - {track}";
 
                     if (friends.Count <= 5)
                     {
@@ -113,6 +112,8 @@ namespace FMBot.Bot.Commands
                     this._embedFooter.WithText(embedFooterText + totalPlaycount.ToString("0"));
                     this._embed.WithFooter(this._embedFooter);
                 }
+
+                this._embed.WithDescription(embedDescription);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,

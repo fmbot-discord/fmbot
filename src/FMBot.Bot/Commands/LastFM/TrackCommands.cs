@@ -7,7 +7,6 @@ using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -73,6 +72,13 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(replyString);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                return;
+            }
+
+            if (user.Length > 0 && user.First() == "set")
+            {
+                await ReplyAsync(
+                    "Please remove the space between `.fm` and `set` to set your last.fm username.");
                 return;
             }
 
@@ -145,8 +151,6 @@ namespace FMBot.Bot.Commands.LastFM
                     default:
                         var albumImagesTask =
                             this._lastFmService.GetAlbumImagesAsync(currentTrack.ArtistName, currentTrack.AlbumName);
-                        var trackInfoTask =
-                            this._lastFmService.GetTrackInfoAsync(currentTrack.Name, currentTrack.ArtistName, lastFMUserName);
 
                         if (!this._guildService.CheckIfDM(this.Context))
                         {
@@ -183,10 +187,8 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                         headerText += embedTitle;
 
-                        await trackInfoTask;
-                        var trackInfo = trackInfoTask.Result;
                         var footerText =
-                            $"{userInfo.Content.Name} has {trackInfo.Userplaycount} scrobbles on this track | {userInfo.Content.Playcount} total scrobbles";
+                            $"{userInfo.Content.Name} has {userInfo.Content.Playcount} total scrobbles";
 
                         if (currentTrack.IsNowPlaying != true && currentTrack.TimePlayed.HasValue)
                         {

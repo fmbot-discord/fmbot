@@ -141,7 +141,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("set", RunMode = RunMode.Async)]
         [Summary(
             "Sets your Last.FM name and FM mode. Please note that users in shared servers will be able to see and request your Last.FM username.")]
-        [Alias("setname", "setmode")]
+        [Alias("setname", "setmode", "fm set")]
         public async Task SetAsync([Summary("Your Last.FM name")] string lastFMUserName = null,
             [Summary("The mode you want to use.")] string chartType = null)
         {

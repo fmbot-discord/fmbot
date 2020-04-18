@@ -54,8 +54,7 @@ namespace FMBot.Bot.Handlers
 
             var argPos = 0; // Check if the message has a valid command prefix
             var customPrefix = this._prefixService.GetPrefix(context.Guild?.Id);
-            if (msg.HasStringPrefix(ConfigData.Data.CommandPrefix, ref argPos) && customPrefix == null ||
-                msg.HasMentionPrefix(this._discord.CurrentUser, ref argPos))
+            if (msg.HasStringPrefix(ConfigData.Data.CommandPrefix, ref argPos) && customPrefix == null || msg.HasMentionPrefix(this._discord.CurrentUser, ref argPos))
             {
                 await ExecuteCommand(msg, context, argPos);
             }
@@ -89,15 +88,14 @@ namespace FMBot.Bot.Handlers
             var searchResult = this._commands.Search(context, argPos);
 
             // If no command were found, return.
-            if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && msg.Content != customPrefix)
+            if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && customPrefix != null && !msg.Content.StartsWith(customPrefix))
             {
                 return;
             }
 
-            if ((searchResult.Commands == null || searchResult.Commands.Count == 0) &&
-                msg.Content == ConfigData.Data.CommandPrefix && customPrefix == null)
+            if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && msg.Content.StartsWith(ConfigData.Data.CommandPrefix))
             {
-                var commandPrefixResult = await this._commands.ExecuteAsync(context, "fm", this._provider);
+                var commandPrefixResult = await this._commands.ExecuteAsync(context, msg.Content.Remove(0, 1), this._provider);
 
                 if (commandPrefixResult.IsSuccess)
                 {

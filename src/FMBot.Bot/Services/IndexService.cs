@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Discord;
-using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -49,7 +47,7 @@ namespace FMBot.Bot.Services
 
         private async Task StoreArtistsForUser(User user)
         {
-            Thread.Sleep(1400);
+            Thread.Sleep(1300);
 
             Console.WriteLine($"Starting artist store for {user.UserNameLastFM}");
 
@@ -58,8 +56,16 @@ namespace FMBot.Bot.Services
             var amountOfPages = Constants.ArtistsToIndex / 1000;
             for (int i = 1; i < amountOfPages + 1; i++)
             {
-                topArtists.AddRange(await this._lastFMClient.User.GetTopArtists(user.UserNameLastFM,
-                    LastStatsTimeSpan.Overall, i, 1000));
+                var artistResult = await this._lastFMClient.User.GetTopArtists(user.UserNameLastFM,
+                    LastStatsTimeSpan.Overall, i, 1000);
+
+                topArtists.AddRange(artistResult);
+
+                if (artistResult.Count() < 1000)
+                {
+                    break;
+                }
+
                 Statistics.LastfmApiCalls.Inc();
             }
 

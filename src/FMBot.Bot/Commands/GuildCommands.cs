@@ -243,7 +243,8 @@ namespace FMBot.Bot.Commands
                                         $"- `{prefix}chart 8x8 monthly`\n" +
                                         $"- `{prefix}whoknows` \n \n" +
                                         "Reminder that you can always ping the bot followed by your command. \n" +
-                                        $"The [.fmbot docs]({Constants.DocsUrl}) will still have the `.fm` prefix everywhere. \n\n" +
+                                        $"The [.fmbot docs]({Constants.DocsUrl}) will still have the `.fm` prefix everywhere. " +
+                                        $"Custom prefixes are still in the testing phase so please note that some error messages and other places might not show your prefix yet.\n\n" +
                                         $"To remove the custom prefix, do `{prefix}prefix remove`");
 
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);

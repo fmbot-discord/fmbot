@@ -172,7 +172,7 @@ namespace FMBot.Bot.Services
                     Statistics.RegisteredUsers.Set(await this._userService.GetTotalUserCountAsync());
                     Statistics.RegisteredGuilds.Set(await this._guildService.GetTotalGuildCountAsync());
 
-                    await client.SetGameAsync($"{ConfigData.Data.CommandPrefix}fm | {client.Guilds.Count} servers | fmbot.xyz");
+                    await client.SetGameAsync($"{ConfigData.Data.CommandPrefix} | {client.Guilds.Count} servers | fmbot.xyz");
                 },
                 null,
                 TimeSpan.FromSeconds(Constants.BotWarmupTimeInSeconds + 10),
