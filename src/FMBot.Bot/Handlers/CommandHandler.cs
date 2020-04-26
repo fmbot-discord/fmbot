@@ -54,13 +54,21 @@ namespace FMBot.Bot.Handlers
 
             var argPos = 0; // Check if the message has a valid command prefix
             var customPrefix = this._prefixService.GetPrefix(context.Guild?.Id);
-            if (msg.HasStringPrefix(ConfigData.Data.CommandPrefix, ref argPos) && customPrefix == null || msg.HasMentionPrefix(this._discord.CurrentUser, ref argPos))
+            if (msg.HasStringPrefix(ConfigData.Data.CommandPrefix, ref argPos, StringComparison.CurrentCultureIgnoreCase) && customPrefix == null || msg.HasMentionPrefix(this._discord.CurrentUser, ref argPos))
             {
                 await ExecuteCommand(msg, context, argPos);
             }
             else if (msg.HasStringPrefix(customPrefix, ref argPos, StringComparison.CurrentCultureIgnoreCase))
             {
                 await ExecuteCommand(msg, context, argPos, customPrefix);
+            }
+            else if(msg.HasStringPrefix(".np", ref argPos, StringComparison.CurrentCultureIgnoreCase))
+            {
+                await ExecuteCommand(msg, context, argPos, ".np");
+            }
+            else if(msg.HasStringPrefix(".mm", ref argPos, StringComparison.CurrentCultureIgnoreCase))
+            {
+                await ExecuteCommand(msg, context, argPos, ".mm");
             }
         }
 
@@ -87,7 +95,7 @@ namespace FMBot.Bot.Handlers
 
             var searchResult = this._commands.Search(context, argPos);
 
-            // If no command were found, return.
+            // If custom prefix is enabled, no commands found and message does not start with custom prefix, return
             if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && customPrefix != null && !msg.Content.StartsWith(customPrefix))
             {
                 return;
