@@ -90,7 +90,11 @@ namespace FMBot.Bot.Commands
 
                     string track;
                     string friendTitle = friend;
-                    if (tracks?.Any() != true)
+                    if (!tracks.Success)
+                    {
+                        track = "Friend could not be retrieved";
+                    }
+                    else if (tracks?.Any() != true)
                     {
                         track = "No scrobbles found.";
                     }
