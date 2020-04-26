@@ -69,7 +69,7 @@ namespace FMBot.Bot.Handlers
                 var searchResult = this._commands.Search(context, argPos);
                 if (searchResult.IsSuccess && searchResult.Commands.FirstOrDefault().Command.Name == "fm")
                 {
-                    await ExecuteCommand(msg, context, argPos, customPrefix);
+                    await ExecuteCommand(msg, context, argPos);
                 }
             }
         }
