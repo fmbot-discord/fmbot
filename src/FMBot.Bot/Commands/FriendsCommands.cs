@@ -104,15 +104,13 @@ namespace FMBot.Bot.Commands
                         }
                     }
 
-                    embedDescription += $"[{friendTitle}]({Constants.LastFMUserUrl}{friend}) - {track}";
+                    embedDescription += $"[{friendTitle}]({Constants.LastFMUserUrl}{friend}) - {track} \n";
 
                     if (friends.Count <= 5)
                     {
                         var userInfo = await this._lastFmService.GetUserInfoAsync(friend);
                         totalPlaycount += userInfo.Content.Playcount;
                     }
-
-                    embedDescription += "\n";
                 });
 
                 if (friends.Count <= 5)
