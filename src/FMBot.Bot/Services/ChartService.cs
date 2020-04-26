@@ -43,6 +43,7 @@ namespace FMBot.Bot.Services
                     if (File.Exists(localPath))
                     {
                         chartImage = new Bitmap(localPath);
+                        Statistics.LastfmCachedImageCalls.Inc();
                     }
                     else
                     {
@@ -53,7 +54,6 @@ namespace FMBot.Bot.Services
 
                         if (albumImages?.Large != null)
                         {
-
                             var url = albumImages.Large.AbsoluteUri;
 
                             Bitmap bitmap;
@@ -62,6 +62,8 @@ namespace FMBot.Bot.Services
                                 var request = WebRequest.Create(url);
                                 using var response = await request.GetResponseAsync();
                                 await using var responseStream = response.GetResponseStream();
+
+                                Statistics.LastfmImageCalls.Inc();
 
                                 bitmap = new Bitmap(responseStream);
                             }
