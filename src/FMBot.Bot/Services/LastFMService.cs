@@ -76,8 +76,8 @@ namespace FMBot.Bot.Services
         {
             return $"{track.Name} By **{track.ArtistName}**" +
                    (string.IsNullOrWhiteSpace(track.AlbumName)
-                       ? "\n"
-                       : $" | *{track.AlbumName}*\n");
+                       ? ""
+                       : $" | *{track.AlbumName}*");
         }
 
         public string TagsToLinkedString(Tags tags)

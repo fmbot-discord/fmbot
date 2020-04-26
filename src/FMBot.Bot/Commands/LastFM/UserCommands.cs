@@ -23,10 +23,14 @@ namespace FMBot.Bot.Commands.LastFM
 
         private readonly UserService _userService = new UserService();
 
-        public UserCommands(TimerService timer, Logger.Logger logger)
+        private readonly IPrefixService _prefixService;
+
+
+        public UserCommands(TimerService timer, Logger.Logger logger, IPrefixService prefixService)
         {
             this._timer = timer;
             this._logger = logger;
+            this._prefixService = prefixService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -38,10 +42,12 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task StatsAsync(string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
 
             if (userSettings?.UserNameLastFM == null)
             {
-                await UsernameNotSetErrorResponseAsync();
+                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
+                await ReplyAsync("", false, this._embed.Build());
                 return;
             }
 
@@ -255,25 +261,25 @@ namespace FMBot.Bot.Commands.LastFM
                 else
                 {
                 */
-                var client = this.Context.Client as DiscordSocketClient;
+                
+
+                
+
+                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+                this._embedAuthor.WithName(this.Context.User.ToString());
+                this._embed.WithAuthor(this._embedAuthor);
+
+                this._embed.WithTitle(this.Context.User.Username + "'s suggestion:");
+                this._embed.WithDescription(suggestion);
+                this._embed.WithTimestamp(DateTimeOffset.UtcNow);
 
                 var BroadcastServerID = Convert.ToUInt64(ConfigData.Data.BaseServer);
                 var BroadcastChannelID = Convert.ToUInt64(ConfigData.Data.SuggestionsChannel);
 
-                var guild = client.GetGuild(BroadcastServerID);
-                var channel = guild.GetTextChannel(BroadcastChannelID);
+                var guild = await this.Context.Client.GetGuildAsync(BroadcastServerID);
+                var channel = await guild.GetChannelAsync(BroadcastChannelID);
 
-                var builder = new EmbedBuilder();
-                var eab = new EmbedAuthorBuilder
-                {
-                    IconUrl = this.Context.User.GetAvatarUrl(),
-                    Name = this.Context.User.Username
-                };
-                builder.WithAuthor(eab);
-                builder.WithTitle(this.Context.User.Username + "'s suggestion:");
-                builder.WithDescription(suggestion);
 
-                await channel.SendMessageAsync("", false, builder.Build());
 
                 await ReplyAsync("Your suggestion has been sent to the .fmbot server!");
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
@@ -286,12 +292,6 @@ namespace FMBot.Bot.Commands.LastFM
                 this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
                     this.Context.Guild?.Name, this.Context.Guild?.Id);
             }
-        }
-
-        private async Task UsernameNotSetErrorResponseAsync()
-        {
-            this._embed.UsernameNotSetErrorResponse(this.Context, this._logger);
-            await ReplyAsync("", false, this._embed.Build());
         }
 
         private async Task<string> FindUser(string user)

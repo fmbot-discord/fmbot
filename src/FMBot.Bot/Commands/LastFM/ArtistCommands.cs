@@ -53,7 +53,8 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (userSettings?.UserNameLastFM == null)
             {
-                await UsernameNotSetErrorResponseAsync();
+                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
+                await ReplyAsync("", false, this._embed.Build());
                 return;
             }
 
@@ -163,7 +164,8 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (userSettings?.UserNameLastFM == null)
             {
-                await UsernameNotSetErrorResponseAsync();
+                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
+                await ReplyAsync("", false, this._embed.Build());
                 return;
             }
 
@@ -378,10 +380,13 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
+
 
             if (userSettings?.UserNameLastFM == null)
             {
-                await UsernameNotSetErrorResponseAsync();
+                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
+                await ReplyAsync("", false, this._embed.Build());
                 return;
             }
 
@@ -390,13 +395,13 @@ namespace FMBot.Bot.Commands.LastFM
             if (lastIndex == null)
             {
                 await ReplyAsync("This server hasn't been indexed yet.\n" +
-                                 "Please run `.fmindex` to index this server.");
+                                 $"Please run `{prfx}index` to index this server.");
                 return;
             }
             if (lastIndex < DateTime.UtcNow.AddDays(-60))
             {
                 await ReplyAsync("Server index data is out of date, it was last updated over 60 days ago.\n" +
-                                 "Please run `.fmindex` to re-index this server.");
+                                 $"Please run `{prfx}index` to re-index this server.");
                 return;
             }
 
@@ -458,7 +463,7 @@ namespace FMBot.Bot.Commands.LastFM
                 footer += $"Last updated {(int)timeTillIndex.TotalHours}h{timeTillIndex:mm}m ago";
                 if (lastIndex < DateTime.UtcNow.Add(-Constants.GuildIndexCooldown))
                 {
-                    footer += " - Update data with `.fmindex`";
+                    footer += $" - Update data with {prfx}index";
                 }
 
                 if (guildUsers.Count < 100)
@@ -473,7 +478,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else if (guildUsers.Count < 125)
                 {
-                    footer += "\nView server artist averages in `.fmartist`";
+                    footer += $"\nView server artist averages in `{prfx}artist`";
                 }
 
                 this._embed.WithTitle($"Who knows {artist.Artist.Name} in {Context.Guild.Name}");
@@ -503,7 +508,7 @@ namespace FMBot.Bot.Commands.LastFM
                 if (artistValues.First() == "help")
                 {
                     await ReplyAsync(
-                        $"Usage: `.{command} 'name'\n" +
+                        $"Usage: `.fm{command} 'name'\n" +
                         "If you don't enter any artists name, it will get the info from the artist you're currently listening to.");
                     return null;
                 }
@@ -525,12 +530,6 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             return artist;
-        }
-
-        private async Task UsernameNotSetErrorResponseAsync()
-        {
-            this._embed.UsernameNotSetErrorResponse(this.Context, this._logger);
-            await ReplyAsync("", false, this._embed.Build());
         }
 
         private async Task<string> FindUser(string user)

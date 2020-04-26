@@ -98,7 +98,8 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (userSettings?.UserNameLastFM == null)
             {
-                await UsernameNotSetErrorResponseAsync();
+                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
+                await ReplyAsync("", false, this._embed.Build());
                 return;
             }
 
@@ -273,12 +274,6 @@ namespace FMBot.Bot.Commands.LastFM
                 await ReplyAsync(
                     "Sorry, but I was unable to generate a FMChart due to an internal error. Make sure you have scrobbles and Last.FM isn't having issues, and try again later.");
             }
-        }
-
-        private async Task UsernameNotSetErrorResponseAsync()
-        {
-            this._embed.UsernameNotSetErrorResponse(this.Context, this._logger);
-            await ReplyAsync("", false, this._embed.Build());
         }
 
         private async Task<string> FindUser(string user)

@@ -41,16 +41,17 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task FMAsync(params string[] user)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
 
             if (userSettings?.UserNameLastFM == null)
             {
-                await UsernameNotSetErrorResponseAsync();
+                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
+                await ReplyAsync("", false, this._embed.Build());
                 return;
             }
 
             if (user.Length > 0 && user.First() == "help")
             {
-                var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
                 var fmString = "fm";
                 if (prfx == ".fm")
                 {
@@ -240,14 +241,15 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task RecentAsync(string amount = "5", string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
+            
             if (userSettings?.UserNameLastFM == null)
             {
-                await UsernameNotSetErrorResponseAsync();
+                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
+                await ReplyAsync("", false, this._embed.Build());
                 return;
             }
 
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
             if (user == "help")
             {
                 await ReplyAsync($"{prfx}recent 'number of items (max 10)' 'lastfm username/discord user'");
@@ -363,13 +365,6 @@ namespace FMBot.Bot.Commands.LastFM
                 await ReplyAsync(
                     "Unable to show your recent tracks on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
-        }
-
-        private async Task UsernameNotSetErrorResponseAsync()
-        {
-            this._embed.WithUrl($"{Constants.DocsUrl}/commands/");
-            this._embed.UsernameNotSetErrorResponse(this.Context, this._logger);
-            await ReplyAsync("", false, this._embed.Build());
         }
 
         private async Task<string> FindUser(string user)

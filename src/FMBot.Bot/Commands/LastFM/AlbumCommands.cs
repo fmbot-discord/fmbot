@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.LastFM.Domain.Models;
@@ -26,10 +27,13 @@ namespace FMBot.Bot.Commands.LastFM
 
         private readonly UserService _userService = new UserService();
 
-        public AlbumCommands(Logger.Logger logger, ILastfmApi lastfmApi)
+        private readonly IPrefixService _prefixService;
+
+        public AlbumCommands(Logger.Logger logger, ILastfmApi lastfmApi, IPrefixService prefixService)
         {
             this._logger = logger;
             this._lastfmApi = lastfmApi;
+            this._prefixService = prefixService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -42,10 +46,11 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task AlbumAsync()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
 
             if (userSettings?.UserNameLastFM == null)
             {
-                this._embed.UsernameNotSetErrorResponse(this.Context, this._logger);
+                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
                 await ReplyAsync("", false, this._embed.Build());
                 return;
             }
@@ -119,10 +124,11 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task AlbumCoverAsync()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
 
             if (userSettings?.UserNameLastFM == null)
             {
-                this._embed.UsernameNotSetErrorResponse(this.Context, this._logger);
+                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
                 await ReplyAsync("", false, this._embed.Build());
                 return;
             }

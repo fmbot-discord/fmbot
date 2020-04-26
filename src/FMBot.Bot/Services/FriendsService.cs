@@ -20,7 +20,9 @@ namespace FMBot.Bot.Services
                 .ThenInclude(i => i.FriendUser)
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
-            var friends = user.Friends.Select(
+            var friends = user.Friends
+                .Where(w => w.LastFMUserName != null || w.FriendUser.UserNameLastFM != null)
+                .Select(
                     s => s.LastFMUserName ?? s.FriendUser.UserNameLastFM)
                 .ToList();
 

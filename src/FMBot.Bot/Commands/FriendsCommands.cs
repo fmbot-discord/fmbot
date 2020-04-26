@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Dasync.Collections;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 
@@ -22,9 +23,12 @@ namespace FMBot.Bot.Commands
         private readonly Logger.Logger _logger;
         private readonly UserService _userService = new UserService();
 
-        public FriendsCommands(Logger.Logger logger)
+        private readonly IPrefixService _prefixService;
+
+        public FriendsCommands(Logger.Logger logger, IPrefixService prefixService)
         {
             this._logger = logger;
+            this._prefixService = prefixService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -37,10 +41,12 @@ namespace FMBot.Bot.Commands
         public async Task FriendsAsync()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
 
             if (userSettings?.UserNameLastFM == null)
             {
-                await UsernameNotSetErrorResponseAsync();
+                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
+                await ReplyAsync("", false, this._embed.Build());
                 return;
             }
 
@@ -105,6 +111,8 @@ namespace FMBot.Bot.Commands
                         var userInfo = await this._lastFmService.GetUserInfoAsync(friend);
                         totalPlaycount += userInfo.Content.Playcount;
                     }
+
+                    embedDescription += "\n";
                 });
 
                 if (friends.Count <= 5)
@@ -135,10 +143,12 @@ namespace FMBot.Bot.Commands
         public async Task AddFriends([Summary("Friend names")] params string[] friends)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
 
             if (userSettings?.UserNameLastFM == null)
             {
-                await UsernameNotSetErrorResponseAsync();
+                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
+                await ReplyAsync("", false, this._embed.Build());
                 return;
             }
 
@@ -256,10 +266,12 @@ namespace FMBot.Bot.Commands
         public async Task RemoveFriends([Summary("Friend names")] params string[] friends)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
 
             if (userSettings?.UserNameLastFM == null)
             {
-                await UsernameNotSetErrorResponseAsync();
+                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
+                await ReplyAsync("", false, this._embed.Build());
                 return;
             }
 
@@ -324,10 +336,12 @@ namespace FMBot.Bot.Commands
         public async Task RemoveAllFriends()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
 
             if (userSettings?.UserNameLastFM == null)
             {
-                await UsernameNotSetErrorResponseAsync();
+                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
+                await ReplyAsync("", false, this._embed.Build());
                 return;
             }
 
@@ -346,12 +360,6 @@ namespace FMBot.Bot.Commands
 
                 await ReplyAsync("Unable to remove all friends due to an internal error.");
             }
-        }
-
-        private async Task UsernameNotSetErrorResponseAsync()
-        {
-            this._embed.UsernameNotSetErrorResponse(this.Context, this._logger);
-            await ReplyAsync("", false, this._embed.Build());
         }
     }
 }
