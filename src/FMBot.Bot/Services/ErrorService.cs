@@ -12,9 +12,9 @@ namespace FMBot.Bot.Services
         {
             embed.WithTitle("Error while attempting get Last.FM information");
             embed.WithDescription("Your Last.FM username has not been set. \n" +
-                                        "Please use the `.fmset` command to connect your Last.FM account to .fmbot. \n" +
+                                        $"Please use the `{prfx}set` command to connect your Last.FM account to .fmbot. \n" +
                                         $"Example: `{prfx}set lastfmusername`\n \n" +
-                                        "For more info, use `.fmset help`.");
+                                        $"For more info, use `{prfx}set help`.");
 
             embed.WithUrl($"{Constants.DocsUrl}/commands/");
 

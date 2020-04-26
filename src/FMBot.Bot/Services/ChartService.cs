@@ -11,6 +11,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using IF.Lastfm.Core.Api;
+using IF.Lastfm.Core.Api.Enums;
 using Microsoft.EntityFrameworkCore.Internal;
 
 namespace FMBot.Bot.Services
@@ -31,7 +32,7 @@ namespace FMBot.Bot.Services
                 // Album mode
                 await chart.Albums.ParallelForEachAsync(async album =>
                 {
-                    var encodedId = ReplaceInvalidChars(album.Url.LocalPath.Replace("/music/",""));
+                    var encodedId = ReplaceInvalidChars(album.Url.LocalPath.Replace("/music/", ""));
                     var localAlbumId = TruncateLongString(encodedId, 60);
 
                     Bitmap chartImage;
@@ -96,7 +97,7 @@ namespace FMBot.Bot.Services
                             validImage = false;
                         }
                     }
-                    
+
                     if (chart.TitlesEnabled)
                     {
                         try
@@ -162,7 +163,7 @@ namespace FMBot.Bot.Services
             return str.Substring(0, Math.Min(str.Length, maxLength));
         }
 
-        public ChartSettings SetExtraSettings(ChartSettings currentChartSettings, string[] extraOptions)
+        public ChartSettings SetSettings(ChartSettings currentChartSettings, string[] extraOptions)
         {
             var chartSettings = currentChartSettings;
 
@@ -178,6 +179,83 @@ namespace FMBot.Bot.Services
                 extraOptions.Contains("s"))
             {
                 chartSettings.SkipArtistsWithoutImage = true;
+            }
+
+            // chart size
+            if (extraOptions.Contains("2x2"))
+            {
+                chartSettings.ImagesNeeded = 4;
+                chartSettings.Height = 2;
+                chartSettings.Width = 2;
+            }
+            else if (extraOptions.Contains("4x4"))
+            {
+                chartSettings.ImagesNeeded = 16;
+                chartSettings.Height = 4;
+                chartSettings.Width = 4;
+            }
+            else if (extraOptions.Contains("5x5"))
+            {
+                chartSettings.ImagesNeeded = 25;
+                chartSettings.Height = 5;
+                chartSettings.Width = 5;
+            }
+            else if (extraOptions.Contains("6x6"))
+            {
+                chartSettings.ImagesNeeded = 36;
+                chartSettings.Height = 6;
+                chartSettings.Width = 6;
+            }
+            else if (extraOptions.Contains("7x7"))
+            {
+                chartSettings.ImagesNeeded = 49;
+                chartSettings.Height = 7;
+                chartSettings.Width = 7;
+            }
+            else if (extraOptions.Contains("8x8"))
+            {
+                chartSettings.ImagesNeeded = 64;
+                chartSettings.Height = 8;
+                chartSettings.Width = 8;
+            }
+            else
+            {
+                chartSettings.ImagesNeeded = 9;
+                chartSettings.Height = 3;
+                chartSettings.Width = 3;
+            }
+
+            // time period
+            if (extraOptions.Contains("weekly") || extraOptions.Contains("week") || extraOptions.Contains("w"))
+            {
+                chartSettings.TimeSpan = LastStatsTimeSpan.Week;
+                chartSettings.TimespanString = "Weekly Chart";
+                chartSettings.TimespanUrlString = "LAST_7_DAYS";
+            }
+            else if (extraOptions.Contains("monthly") || extraOptions.Contains("month") || extraOptions.Contains("m"))
+            {
+                chartSettings.TimeSpan = LastStatsTimeSpan.Month;
+                chartSettings.TimespanString = "Monthly Chart";
+                chartSettings.TimespanUrlString = "LAST_30_DAYS";
+            }
+            else if (extraOptions.Contains("yearly") || extraOptions.Contains("year") || extraOptions.Contains("y"))
+            {
+                chartSettings.TimeSpan = LastStatsTimeSpan.Year;
+                chartSettings.TimespanString = "Yearly Chart";
+                chartSettings.TimespanUrlString = "LAST_365_DAYS";
+            }
+            else if (extraOptions.Contains("overall") || extraOptions.Contains("alltime") || extraOptions.Contains("o") || extraOptions.Contains("at") ||
+                     extraOptions.Contains("a"))
+            {
+                chartSettings.TimeSpan = LastStatsTimeSpan.Overall;
+                chartSettings.TimespanString = "Overall Chart";
+                chartSettings.TimespanUrlString = "ALL";
+            }
+            else
+            {
+                chartSettings.TimeSpan = LastStatsTimeSpan.Week;
+                chartSettings.TimespanString = "Chart";
+                chartSettings.TimespanUrlString = "LAST_7_DAYS";
             }
 
             return chartSettings;

@@ -237,26 +237,5 @@ namespace FMBot.Bot.Services
                     return LastStatsTimeSpan.Week;
             }
         }
-
-        public LastStatsTimeSpan StringToLastStatsTimeSpan(string timespan)
-        {
-            if (timespan.Equals("monthly") || timespan.Equals("month") || timespan.Equals("m"))
-            {
-                return LastStatsTimeSpan.Month;
-            }
-
-            if (timespan.Equals("yearly") || timespan.Equals("year") || timespan.Equals("y"))
-            {
-                return LastStatsTimeSpan.Year;
-            }
-
-            if (timespan.Equals("overall") || timespan.Equals("alltime") || timespan.Equals("o") ||
-                timespan.Equals("at") || timespan.Equals("a"))
-            {
-                return LastStatsTimeSpan.Overall;
-            }
-
-            return LastStatsTimeSpan.Week;
-        }
     }
 }

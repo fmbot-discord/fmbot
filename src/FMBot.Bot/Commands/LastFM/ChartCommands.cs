@@ -58,10 +58,10 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("chart", RunMode = RunMode.Async)]
         [Summary("Generates a chart based on a user's parameters.")]
         [Alias("c")]
-        public async Task ChartAsync(string chartSize = "3x3", string time = "weekly", params string[] otherSettings)
+        public async Task ChartAsync(params string[] otherSettings)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
-            if (chartSize == "help")
+            if (otherSettings.Any() && otherSettings.First() == "help")
             {
                 await ReplyAsync($"{prfx}chart '2x2-8x8' 'weekly/monthly/yearly/overall' \n" +
                                  "Optional extra settings: 'notitles', 'nt', 'skipemptyimages', 's'\n" +
@@ -117,72 +117,29 @@ namespace FMBot.Bot.Commands.LastFM
                 }
             }
 
-            // @TODO: change to intparse or the likes
             try
             {
-                int albumCount;
-                int chartRows;
-
-                switch (chartSize)
-                {
-                    case "2x2":
-                        albumCount = 4;
-                        chartRows = 2;
-                        break;
-                    case "3x3":
-                        albumCount = 9;
-                        chartRows = 3;
-                        break;
-                    case "4x4":
-                        albumCount = 16;
-                        chartRows = 4;
-                        break;
-                    case "5x5":
-                        albumCount = 25;
-                        chartRows = 5;
-                        break;
-                    case "6x6":
-                        albumCount = 36;
-                        chartRows = 6;
-                        break;
-                    case "7x7":
-                        albumCount = 49;
-                        chartRows = 7;
-                        break;
-                    case "8x8":
-                        albumCount = 64;
-                        chartRows = 8;
-                        break;
-                    default:
-                        await ReplyAsync("Your chart's size isn't valid. Sizes supported: 2x2-8x8. \n" +
-                                         $"Example: `{prfx}fmchart 5x5 monthly notitles skipemptyimages`. For more info, use `{prfx}chart help`");
-                        return;
-                }
-
                 _ = this.Context.Channel.TriggerTypingAsync();
 
                 // Generating image
-                var timespan = this._lastFmService.StringToLastStatsTimeSpan(time);
+                var chartSettings = new ChartSettings(this.Context.User);
 
-                var chartSettings = new ChartSettings(chartRows, 0, this.Context.User);
-
-                chartSettings = this._chartService.SetExtraSettings(chartSettings, otherSettings);
-                chartSettings.ImagesNeeded = albumCount;
+                chartSettings = this._chartService.SetSettings(chartSettings, otherSettings);
 
                 var extraAlbums = 0;
                 if (chartSettings.SkipArtistsWithoutImage)
                 {
-                    extraAlbums = chartRows * 2 + (chartRows > 5 ? 8 : 2);
+                    extraAlbums = chartSettings.Height * 2 + (chartSettings.Height > 5 ? 8 : 2);
                 }
 
-                albumCount += extraAlbums;
+                var imagesToRequest = chartSettings.ImagesNeeded + extraAlbums;
 
-                var albums = await this._lastFmService.GetTopAlbumsAsync(lastFMUserName, timespan, albumCount);
+                var albums = await this._lastFmService.GetTopAlbumsAsync(lastFMUserName, chartSettings.TimeSpan, imagesToRequest);
 
-                if (albums.Count() < albumCount)
+                if (albums.Count() < chartSettings.ImagesNeeded)
                 {
                     var reply =
-                        $"User hasn't listened to enough albums ({albums.Count()} of required {albumCount}) for a chart this size. " +
+                        $"User hasn't listened to enough albums ({albums.Count()} of required {chartSettings.ImagesNeeded}) for a chart this size. " +
                         "Please try a smaller chart or a bigger time period (weekly/monthly/yearly/overall)'.";
 
                     if (chartSettings.SkipArtistsWithoutImage)
@@ -199,49 +156,21 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this._userService.ResetChartTimerAsync(userSettings);
 
-                string chartDescription;
-                string datePreset;
-                if (time.Equals("weekly") || time.Equals("week") || time.Equals("w"))
-                {
-                    chartDescription = chartSize + " Weekly Chart";
-                    datePreset = "LAST_7_DAYS";
-                }
-                else if (time.Equals("monthly") || time.Equals("month") || time.Equals("m"))
-                {
-                    chartDescription = chartSize + " Monthly Chart";
-                    datePreset = "LAST_30_DAYS";
-                }
-                else if (time.Equals("yearly") || time.Equals("year") || time.Equals("y"))
-                {
-                    chartDescription = chartSize + " Yearly Chart";
-                    datePreset = "LAST_365_DAYS";
-                }
-                else if (time.Equals("overall") || time.Equals("alltime") || time.Equals("o") || time.Equals("at") ||
-                         time.Equals("a"))
-                {
-                    chartDescription = chartSize + " Overall Chart";
-                    datePreset = "ALL";
-                }
-                else
-                {
-                    chartDescription = chartSize + " Chart";
-                    datePreset = "LAST_7_DAYS";
-                }
 
                 if (self)
                 {
-                    this._embedAuthor.WithName(chartDescription + " for " +
+                    this._embedAuthor.WithName($"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} for " +
                                                await this._userService.GetUserTitleAsync(this.Context));
                 }
                 else
                 {
                     this._embedAuthor.WithName(
-                        $"{chartDescription} for {lastFMUserName}, requested by {await this._userService.GetUserTitleAsync(this.Context)}");
+                        $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} for {lastFMUserName}, requested by {await this._userService.GetUserTitleAsync(this.Context)}");
                 }
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 this._embedAuthor.WithUrl(
-                    $"{Constants.LastFMUserUrl}{lastFMUserName}/library/albums?date_preset={datePreset}");
+                    $"{Constants.LastFMUserUrl}{lastFMUserName}/library/albums?date_preset={chartSettings.TimespanUrlString}");
 
                 this._embed.WithAuthor(this._embedAuthor);
                 var userInfo = await this._lastFmService.GetUserInfoAsync(lastFMUserName);

@@ -158,19 +158,19 @@ namespace FMBot.Bot.Commands.LastFM
                 var replyString = ".fmset is the command you use to set your last.fm username in the bot, so it knows who you are on the last.fm website. \n" +
                                   "Don't have a last.fm account yet? Register here: https://www.last.fm/join \n \n" +
                                   "Sets your username and mode for the `.fm` command:\n \n" +
-                                  $"`{prfx}fmset 'Last.FM Username' 'embedmini/embedfull/textmini/textfull'` \n \n";
+                                  $"`{prfx}set 'Last.FM Username' 'embedmini/embedfull/textmini/textfull'` \n \n";
 
                 var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
                 if (userSettings?.UserNameLastFM != null)
                 {
                     var differentMode = userSettings.ChartType == ChartType.embedmini ? "embedfull" : "embedmini";
                     replyString += "Example of picking a different mode: \n" +
-                                   $"`{prfx}fmset {userSettings.UserNameLastFM} {differentMode}`";
+                                   $"`{prfx}set {userSettings.UserNameLastFM} {differentMode}`";
                 }
                 else
                 {
                     replyString += "Example of picking a mode: \n" +
-                                   $"`{prfx}fmset lastfmusername embedfull`";
+                                   $"`{prfx}set lastfmusername embedfull`";
                 }
 
                 this._embed.WithTitle("Changing your .fmbot settings");
@@ -202,7 +202,7 @@ namespace FMBot.Bot.Commands.LastFM
             if (chartType == null)
             {
                 setReply += $" and your .fm mode has been set to '{chartTypeEnum}', which is the default mode. \n" +
-                            $"Want more info about the different modes? Use `{prfx}fmset help`";
+                            $"Want more info about the different modes? Use `{prfx}set help`";
             }
             else
             {

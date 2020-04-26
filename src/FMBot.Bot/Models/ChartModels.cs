@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using Discord;
+using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
 
@@ -8,10 +9,8 @@ namespace FMBot.Bot.Models
 {
     public class ChartSettings
     {
-        public ChartSettings(int height, int width, IUser discordUser)
+        public ChartSettings(IUser discordUser)
         {
-            this.Height = height;
-            this.Width = width;
             this.DiscordUser = discordUser;
 
             this.ChartImages = new List<ChartImage>();
@@ -30,7 +29,13 @@ namespace FMBot.Bot.Models
 
         public List<ChartImage> ChartImages { get; set; }
 
+        public LastStatsTimeSpan TimeSpan { get; set; }
+
         public IUser DiscordUser { get; set; }
+
+        public string TimespanString { get; set; }
+
+        public string TimespanUrlString { get; set; }
 
         public bool TitlesEnabled { get; set; }
 
