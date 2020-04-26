@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using Microsoft.EntityFrameworkCore.Internal;
 
 namespace FMBot.Bot.Handlers
 {
@@ -58,22 +60,21 @@ namespace FMBot.Bot.Handlers
             {
                 await ExecuteCommand(msg, context, argPos);
             }
-            else if (msg.HasStringPrefix(customPrefix, ref argPos, StringComparison.CurrentCultureIgnoreCase))
+            if (customPrefix != null && msg.HasStringPrefix(customPrefix, ref argPos, StringComparison.CurrentCultureIgnoreCase))
             {
                 await ExecuteCommand(msg, context, argPos, customPrefix);
             }
-            else if(msg.HasStringPrefix(".np", ref argPos, StringComparison.CurrentCultureIgnoreCase))
+            if (msg.HasStringPrefix(".", ref argPos))
             {
-                await ExecuteCommand(msg, context, argPos, ".np");
-            }
-            else if(msg.HasStringPrefix(".mm", ref argPos, StringComparison.CurrentCultureIgnoreCase))
-            {
-                await ExecuteCommand(msg, context, argPos, ".mm");
+                var searchResult = this._commands.Search(context, argPos);
+                if (searchResult.IsSuccess && searchResult.Commands.FirstOrDefault().Command.Name == "fm")
+                {
+                    await ExecuteCommand(msg, context, argPos, customPrefix);
+                }
             }
         }
 
-        private async Task ExecuteCommand(SocketUserMessage msg, ShardedCommandContext context, int argPos,
-            string customPrefix = null)
+        private async Task ExecuteCommand(SocketUserMessage msg, ShardedCommandContext context, int argPos, string customPrefix = null)
         {
             if (StackCooldownTarget.Contains(msg.Author))
             {
