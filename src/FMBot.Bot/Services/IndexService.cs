@@ -90,12 +90,12 @@ namespace FMBot.Bot.Services
                 connection.Open();
 
                 await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.artists WHERE user_id = {user.UserId};", connection);
-                await deleteCurrentArtists.ExecuteNonQueryAsync();
+                await deleteCurrentArtists.ExecuteNonQueryAsync().ConfigureAwait(false);
 
-                copyHelper.SaveAll(connection, artists);
+                await copyHelper.SaveAllAsync(connection, artists).ConfigureAwait(false);
 
                 await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_indexed='{now.ToString("u")}' WHERE user_id = {user.UserId};", connection);
-                await setIndexTime.ExecuteNonQueryAsync();
+                await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
         }
 
