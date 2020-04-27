@@ -159,7 +159,6 @@ namespace FMBot.Bot.Commands
             {
                 var serverUsers = await this._guildService.FindAllUsersFromGuildAsync(this.Context);
 
-
                 if (serverUsers.Count == 0)
                 {
                     await ReplyAsync("No members found on this server.");

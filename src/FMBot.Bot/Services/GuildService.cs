@@ -71,8 +71,7 @@ namespace FMBot.Bot.Services
                 .Where(w => userIds.Contains(w.DiscordUserId))
                 .Select(s =>
                     new UserExportModel(
-                        s.DiscordUserId,
-                        "Username temporarily not visible", //users.First(f => f.Id.ToString() == s.DiscordUserID).ToString() https://github.com/dotnet/efcore/issues/18179
+                        s.DiscordUserId.ToString(),
                         s.UserNameLastFM));
 
             return usersObject.ToList();
