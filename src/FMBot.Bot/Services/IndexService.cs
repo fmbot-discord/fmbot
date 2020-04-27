@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Discord;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Persistence.Domain.Models;
@@ -19,7 +20,7 @@ using PostgreSQLCopyHelper;
 
 namespace FMBot.Bot.Services
 {
-    public class IndexService
+    public class IndexService : IIndexService
     {
         private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
 

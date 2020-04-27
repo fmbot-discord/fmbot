@@ -6,6 +6,7 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using IF.Lastfm.Core.Api;
 using Prometheus;

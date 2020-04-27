@@ -5,6 +5,7 @@ using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.LastFM.Services;
@@ -21,14 +22,12 @@ namespace FMBot.Bot.Commands
         private readonly YoutubeService _youtubeService = new YoutubeService();
 
         private readonly IPrefixService _prefixService;
-        private readonly ILastfmApi _lastfmApi;
 
         public YoutubeCommands(Logger.Logger logger, IPrefixService prefixService, ILastfmApi lastfmApi)
         {
             this._logger = logger;
             this._prefixService = prefixService;
-            this._lastfmApi = lastfmApi;
-            this._lastFmService = new LastFMService(this._lastfmApi);
+            this._lastFmService = new LastFMService(lastfmApi);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
         }

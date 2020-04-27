@@ -4,6 +4,7 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.LastFM.Services;
@@ -17,8 +18,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly FriendsService _friendsService = new FriendsService();
-        private readonly GuildService _guildService = new GuildService();
-        private readonly ILastfmApi _lastfmApi;
+        private readonly IGuildService _guildService;
         private readonly LastFMService _lastFmService;
         private readonly Logger.Logger _logger;
         private readonly TimerService _timer;
@@ -28,13 +28,17 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly IPrefixService _prefixService;
 
 
-        public UserCommands(TimerService timer, Logger.Logger logger, IPrefixService prefixService, ILastfmApi lastfmApi)
+        public UserCommands(TimerService timer,
+            Logger.Logger logger,
+            IPrefixService prefixService,
+            ILastfmApi lastfmApi,
+            IGuildService guildService)
         {
             this._timer = timer;
             this._logger = logger;
             this._prefixService = prefixService;
-            this._lastfmApi = lastfmApi;
-            this._lastFmService = new LastFMService(this._lastfmApi);
+            this._guildService = guildService;
+            this._lastFmService = new LastFMService(lastfmApi);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();

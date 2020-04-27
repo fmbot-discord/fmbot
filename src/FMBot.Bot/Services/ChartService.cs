@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Dasync.Collections;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using IF.Lastfm.Core.Api;
@@ -16,7 +17,7 @@ using Microsoft.EntityFrameworkCore.Internal;
 
 namespace FMBot.Bot.Services
 {
-    public class ChartService
+    public class ChartService : IChartService
     {
         private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
 

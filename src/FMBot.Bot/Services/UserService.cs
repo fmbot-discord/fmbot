@@ -3,10 +3,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using FMBot.Bot.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using IF.Lastfm.Core.Api.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services
@@ -14,13 +12,6 @@ namespace FMBot.Bot.Services
     public class UserService
     {
         private readonly FMBotDbContext db = new FMBotDbContext();
-
-        private readonly string connString;
-
-        public UserService()
-        {
-            this.connString = this.db.Database.GetDbConnection().ConnectionString;
-        }
 
         // User settings
         public async Task<User> GetUserSettingsAsync(IUser discordUser)

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -12,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services
 {
-    public class GuildService
+    public class GuildService : IGuildService
     {
         private readonly FMBotDbContext db = new FMBotDbContext();
 

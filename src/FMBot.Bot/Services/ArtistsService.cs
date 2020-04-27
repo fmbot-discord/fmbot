@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.LastFM.Domain.Models;
@@ -12,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services
 {
-    public class ArtistsService
+    public class ArtistsService : IArtistsService
     {
         private readonly FMBotDbContext _db = new FMBotDbContext();
 

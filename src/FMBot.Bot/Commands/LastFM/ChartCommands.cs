@@ -6,6 +6,7 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
@@ -18,21 +19,27 @@ namespace FMBot.Bot.Commands.LastFM
     {
         private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
         private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
-        private readonly ChartService _chartService = new ChartService();
+        private readonly IChartService _chartService;
         private readonly EmbedBuilder _embed;
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
-        private readonly GuildService _guildService = new GuildService();
+        private readonly IGuildService _guildService;
         private readonly LastFMService _lastFmService;
         private readonly IPrefixService _prefixService;
         private readonly Logger.Logger _logger;
 
         private readonly UserService _userService = new UserService();
 
-        public ChartCommands(Logger.Logger logger, IPrefixService prefixService, ILastfmApi lastfmApi)
+        public ChartCommands(Logger.Logger logger,
+            IPrefixService prefixService,
+            ILastfmApi lastfmApi,
+            IChartService chartService,
+            IGuildService guildService)
         {
             this._logger = logger;
             this._prefixService = prefixService;
+            this._chartService = chartService;
+            this._guildService = guildService;
             this._lastFmService = new LastFMService(lastfmApi);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
