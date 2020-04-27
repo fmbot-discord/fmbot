@@ -23,7 +23,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly GuildService _guildService = new GuildService();
         private readonly IndexService _indexService;
         private readonly ArtistsService _artistsService = new ArtistsService();
-        private readonly LastFMService _lastFmService = new LastFMService();
+        private readonly LastFMService _lastFmService;
         private readonly SpotifyService _spotifyService = new SpotifyService();
         private readonly IPrefixService _prefixService;
         private readonly ILastfmApi _lastfmApi;
@@ -36,6 +36,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._logger = logger;
             this._indexService = indexService;
             this._lastfmApi = lastfmApi;
+            this._lastFmService = new LastFMService(lastfmApi);
             this._prefixService = prefixService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);

@@ -8,6 +8,7 @@ using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.LastFM.Services;
 
 namespace FMBot.Bot.Commands
 {
@@ -19,16 +20,17 @@ namespace FMBot.Bot.Commands
 
         private readonly FriendsService _friendsService = new FriendsService();
         private readonly GuildService _guildService = new GuildService();
-        private readonly LastFMService _lastFmService = new LastFMService();
+        private readonly LastFMService _lastFmService;
         private readonly Logger.Logger _logger;
         private readonly UserService _userService = new UserService();
 
         private readonly IPrefixService _prefixService;
 
-        public FriendsCommands(Logger.Logger logger, IPrefixService prefixService)
+        public FriendsCommands(Logger.Logger logger, IPrefixService prefixService, ILastfmApi lastfmApi)
         {
             this._logger = logger;
             this._prefixService = prefixService;
+            this._lastFmService = new LastFMService(lastfmApi);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();

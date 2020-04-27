@@ -1,6 +1,6 @@
 ﻿namespace FMBot.Persistence.Domain.Models
 {
-    public enum ChartType
+    public enum FmEmbedType
     {
         embedmini = 0,
 

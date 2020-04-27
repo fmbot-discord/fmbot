@@ -113,7 +113,7 @@ namespace FMBot.DbMigration
                     {
                         Blacklisted = s.Blacklisted,
                         ChartTimePeriod = s.ChartTimePeriod,
-                        ChartType = s.ChartType,
+                        FmEmbedType = s.FmEmbedType,
                         DiscordUserId = ulong.Parse(s.DiscordUserID),
                         Featured = s.Featured,
                         LastGeneratedChartDateTimeUtc = s.LastGeneratedChartDateTimeUtc,
@@ -154,7 +154,7 @@ namespace FMBot.DbMigration
                     .Select(s => new Friend.Guild
                     {
                         ChartTimePeriod = s.ChartTimePeriod,
-                        ChartType = s.ChartType,
+                        FmEmbedType = s.FmEmbedType,
                         TitlesEnabled = s.TitlesEnabled,
                         Blacklisted = s.Blacklisted,
                         DiscordGuildId = ulong.Parse(s.DiscordGuildID),

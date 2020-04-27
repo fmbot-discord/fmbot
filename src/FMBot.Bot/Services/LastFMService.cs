@@ -7,13 +7,13 @@ using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
 using FMBot.LastFM.Domain.Models;
+using FMBot.LastFM.Domain.Types;
+using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
-using Microsoft.AspNetCore.WebUtilities;
-using Newtonsoft.Json;
 
 namespace FMBot.Bot.Services
 {
@@ -21,14 +21,12 @@ namespace FMBot.Bot.Services
     {
         private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
 
-        private readonly HttpClient _client = new HttpClient();
+        private readonly ILastfmApi _lastfmApi;
 
-        Dictionary<string, string> queryParams = new Dictionary<string, string>
+        public LastFMService(ILastfmApi lastfmApi)
         {
-            {"api_key", ConfigData.Data.FMKey },
-            {"api_secret", ConfigData.Data.FMSecret },
-            {"format", "json" }
-        };
+            this._lastfmApi = lastfmApi;
+        }
 
         // Last scrobble
         public async Task<LastTrack> GetLastScrobbleAsync(string lastFMUserName)
@@ -124,38 +122,48 @@ namespace FMBot.Bot.Services
         // Track info
         public async Task<Track> GetTrackInfoAsync(string trackName, string artistName, string username = null)
         {
-            this.queryParams.Add("method", "track.getInfo");
-            this.queryParams.Add("artist", artistName);
-            this.queryParams.Add("track", trackName);
-
-            if (!string.IsNullOrEmpty(username))
+            var queryParams = new Dictionary<string, string>
             {
-                this.queryParams.Add("username", username);
-            }
+                {"artist", artistName },
+                {"track", trackName },
+                {"username", username },
+                {"autocorrect", "1"}
+            };
 
-            var url = QueryHelpers.AddQueryString("http://ws.audioscrobbler.com/2.0/", queryParams);
-
-            var httpResponse = await _client.GetAsync(url);
+            var trackCall = await this._lastfmApi.CallApiAsync<TrackResponse>(queryParams, Call.TrackInfo);
             Statistics.LastfmApiCalls.Inc();
 
-            if (!httpResponse.IsSuccessStatusCode)
-            {
-                throw new Exception("Cannot retrieve tasks");
-            }
-
-            var content = await httpResponse.Content.ReadAsStringAsync();
-            var track = JsonConvert.DeserializeObject<TrackResponse>(content);
-
-            return track.Track;
+            return !trackCall.Success ? null : trackCall.Content.Track;
         }
 
-        // Album info
-        public async Task<LastResponse<LastAlbum>> GetAlbumInfoAsync(string artistName, string albumName, string username = null)
+        public async Task<Response<ArtistResponse>> GetArtistInfoAsync(string artistName, string username = null)
         {
-            var albumInfo = await this._lastFMClient.Album.GetInfoAsync(artistName, albumName);
+            var queryParams = new Dictionary<string, string>
+            {
+                {"artist", artistName },
+                {"username", username },
+                {"autocorrect", "1"}
+            };
+
+            var artistCall = await this._lastfmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+            Statistics.LastfmApiCalls.Inc();
+            
+            return artistCall;
+        }
+
+        public async Task<Response<AlbumResponse>> GetAlbumInfoAsync(string artistName, string albumName, string username = null)
+        {
+            var queryParams = new Dictionary<string, string>
+            {
+                {"artist", artistName },
+                {"album", albumName },
+                {"username", username }
+            };
+
+            var albumCall = await this._lastfmApi.CallApiAsync<AlbumResponse>(queryParams, Call.AlbumInfo);
             Statistics.LastfmApiCalls.Inc();
 
-            return albumInfo;
+            return albumCall;
         }
 
         // Album images
@@ -190,15 +198,6 @@ namespace FMBot.Bot.Services
             Statistics.LastfmApiCalls.Inc();
 
             return topAlbums;
-        }
-
-        // Artist info
-        public async Task<LastResponse<LastArtist>> GetArtistInfoAsync(string artistName, string userName = null)
-        {
-            var artistInfo = await this._lastFMClient.Artist.GetInfoAsync(artistName);
-            Statistics.LastfmApiCalls.Inc();
-
-            return artistInfo;
         }
 
 

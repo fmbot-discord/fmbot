@@ -78,7 +78,7 @@ namespace FMBot.Bot.Services
             return usersObject.ToList();
         }
 
-        public async Task ChangeGuildSettingAsync(IGuild guild, ChartTimePeriod chartTimePeriod, ChartType chartType)
+        public async Task ChangeGuildSettingAsync(IGuild guild, ChartTimePeriod chartTimePeriod, FmEmbedType fmEmbedType)
         {
             var existingGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
 
@@ -88,7 +88,7 @@ namespace FMBot.Bot.Services
                 {
                     DiscordGuildId = guild.Id,
                     ChartTimePeriod = chartTimePeriod,
-                    ChartType = chartType,
+                    FmEmbedType = fmEmbedType,
                     Name = guild.Name,
                     TitlesEnabled = true
                 };
@@ -110,7 +110,7 @@ namespace FMBot.Bot.Services
                     DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
                     ChartTimePeriod = ChartTimePeriod.Monthly,
-                    ChartType = ChartType.embedmini,
+                    FmEmbedType = FmEmbedType.embedmini,
                     EmoteReactions = reactions,
                     Name = guild.Name
                 };
@@ -141,7 +141,7 @@ namespace FMBot.Bot.Services
                     DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
                     ChartTimePeriod = ChartTimePeriod.Monthly,
-                    ChartType = ChartType.embedmini,
+                    FmEmbedType = FmEmbedType.embedmini,
                     Name = guild.Name,
                     Prefix = prefix
                 };
@@ -178,7 +178,7 @@ namespace FMBot.Bot.Services
                 {
                     DiscordGuildId = guild.Id,
                     ChartTimePeriod = ChartTimePeriod.Monthly,
-                    ChartType = ChartType.embedmini,
+                    FmEmbedType = FmEmbedType.embedmini,
                     Name = guild.Name,
                     TitlesEnabled = true,
                     LastIndexed = timestamp ?? DateTime.UtcNow
@@ -265,7 +265,7 @@ namespace FMBot.Bot.Services
             {
                 DiscordGuildId = guild.Id,
                 ChartTimePeriod = ChartTimePeriod.Monthly,
-                ChartType = ChartType.embedmini,
+                FmEmbedType = FmEmbedType.embedmini,
                 Name = guild.Name,
                 TitlesEnabled = true
             };

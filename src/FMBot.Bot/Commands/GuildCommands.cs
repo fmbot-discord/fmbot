@@ -65,7 +65,7 @@ namespace FMBot.Bot.Commands
             }
 
 
-            if (!Enum.TryParse(chartType, true, out ChartType chartTypeEnum))
+            if (!Enum.TryParse(chartType, true, out FmEmbedType chartTypeEnum))
             {
                 await ReplyAsync("Invalid mode. Please use 'embedmini', 'embedfull', 'textfull', or 'textmini'.");
                 return;

@@ -65,7 +65,7 @@ namespace FMBot.DbMigration.OldDatabase.Migrations
                     b.Property<int>("ChartTimePeriod")
                         .HasColumnType("int");
 
-                    b.Property<int>("ChartType")
+                    b.Property<int>("FmEmbedType")
                         .HasColumnType("int");
 
                     b.Property<string>("DiscordGuildID")
@@ -123,7 +123,7 @@ namespace FMBot.DbMigration.OldDatabase.Migrations
                     b.Property<int>("ChartTimePeriod")
                         .HasColumnType("int");
 
-                    b.Property<int>("ChartType")
+                    b.Property<int>("FmEmbedType")
                         .HasColumnType("int");
 
                     b.Property<string>("DiscordUserID")

@@ -6,6 +6,7 @@ using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.LastFM.Services;
 
 namespace FMBot.Bot.Commands
 {
@@ -14,7 +15,7 @@ namespace FMBot.Bot.Commands
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        private readonly LastFMService _lastFmService = new LastFMService();
+        private readonly LastFMService _lastFmService;
         private readonly Logger.Logger _logger;
         private readonly GeniusService _geniusService = new GeniusService();
 
@@ -22,10 +23,11 @@ namespace FMBot.Bot.Commands
 
         private readonly IPrefixService _prefixService;
 
-        public GeniusCommands(Logger.Logger logger, IPrefixService prefixService)
+        public GeniusCommands(Logger.Logger logger, IPrefixService prefixService, ILastfmApi lastfmApi)
         {
             this._logger = logger;
             this._prefixService = prefixService;
+            this._lastFmService = new LastFMService(lastfmApi);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedFooter = new EmbedFooterBuilder();

@@ -16,7 +16,7 @@ namespace FMBot.Persistence.Domain.Models
 
         public bool? TitlesEnabled { get; set; }
 
-        public ChartType ChartType { get; set; }
+        public FmEmbedType FmEmbedType { get; set; }
 
         public ChartTimePeriod ChartTimePeriod { get; set; }
 
