@@ -167,10 +167,12 @@ namespace FMBot.Bot.Services
         public ChartSettings SetSettings(ChartSettings currentChartSettings, string[] extraOptions)
         {
             var chartSettings = currentChartSettings;
+            chartSettings.CustomOptionsEnabled = false;
 
             if (extraOptions.Contains("notitles") || extraOptions.Contains("nt"))
             {
                 chartSettings.TitlesEnabled = false;
+                chartSettings.CustomOptionsEnabled = true;
             }
 
             if (extraOptions.Contains("skipemptyimages") ||
@@ -180,6 +182,7 @@ namespace FMBot.Bot.Services
                 extraOptions.Contains("s"))
             {
                 chartSettings.SkipArtistsWithoutImage = true;
+                chartSettings.CustomOptionsEnabled = true;
             }
 
             // chart size
