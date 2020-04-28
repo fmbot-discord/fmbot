@@ -24,7 +24,6 @@ namespace FMBot.Bot.Services
         {
             try
             {
-                // Album mode
                 await chart.Albums.ParallelForEachAsync(async album =>
                 {
                     var encodedId = ReplaceInvalidChars(album.Url.LocalPath.Replace("/music/", ""));
