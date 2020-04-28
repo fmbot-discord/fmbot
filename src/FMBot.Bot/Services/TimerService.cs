@@ -10,6 +10,7 @@ using DiscordBotsList.Api;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.LastFM.Services;
 using IF.Lastfm.Core.Api.Enums;
 using static FMBot.Bot.FMBotUtil;
 using Image = Discord.Image;
@@ -22,7 +23,8 @@ namespace FMBot.Bot.Services
         private readonly Timer _timer;
         private readonly Timer _internalStatsTimer;
         private readonly Timer _externalStatsTimer;
-        private readonly LastFMService _lastFMService = new LastFMService();
+        private readonly ILastfmApi _lastfmApi;
+        private readonly LastFMService _lastFMService;
         private readonly UserService _userService = new UserService();
         private readonly GuildService _guildService = new GuildService();
 
@@ -30,9 +32,11 @@ namespace FMBot.Bot.Services
 
         private string _trackString = "";
 
-        public TimerService(DiscordShardedClient client, Logger.Logger logger)
+        public TimerService(DiscordShardedClient client, Logger.Logger logger, ILastfmApi lastfmApi)
         {
             this._logger = logger;
+            this._lastfmApi = lastfmApi;
+            this._lastFMService = new LastFMService(this._lastfmApi);
 
             this._timer = new Timer(async _ =>
                 {

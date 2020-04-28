@@ -4,8 +4,10 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -16,8 +18,8 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly FriendsService _friendsService = new FriendsService();
-        private readonly GuildService _guildService = new GuildService();
-        private readonly LastFMService _lastFmService = new LastFMService();
+        private readonly IGuildService _guildService;
+        private readonly LastFMService _lastFmService;
         private readonly Logger.Logger _logger;
         private readonly TimerService _timer;
 
@@ -26,11 +28,17 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly IPrefixService _prefixService;
 
 
-        public UserCommands(TimerService timer, Logger.Logger logger, IPrefixService prefixService)
+        public UserCommands(TimerService timer,
+            Logger.Logger logger,
+            IPrefixService prefixService,
+            ILastfmApi lastfmApi,
+            IGuildService guildService)
         {
             this._timer = timer;
             this._logger = logger;
             this._prefixService = prefixService;
+            this._guildService = guildService;
+            this._lastFmService = new LastFMService(lastfmApi);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -103,7 +111,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.AddField("Total scrobbles", userInfo.Content.Playcount, true);
                 this._embed.AddField("Country", userInfo.Content.Country, true);
                 this._embed.AddField("Is subscriber?", userInfo.Content.IsSubscriber.ToString(), true);
-                this._embed.AddField("Bot Chart Mode", userSettings.ChartType, true);
+                this._embed.AddField("Bot Chart Mode", userSettings.FmEmbedType, true);
                 this._embed.AddField("Bot user type", userSettings.UserType, true);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
@@ -149,7 +157,7 @@ namespace FMBot.Bot.Commands.LastFM
             "Sets your Last.FM name and FM mode. Please note that users in shared servers will be able to see and request your Last.FM username.")]
         [Alias("setname", "setmode", "fm set")]
         public async Task SetAsync([Summary("Your Last.FM name")] string lastFMUserName = null,
-            [Summary("The mode you want to use.")] string chartType = null)
+            params string[] otherSettings)
         {
             var prfx = ConfigData.Data.CommandPrefix;
 
@@ -157,20 +165,20 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 var replyString = ".fmset is the command you use to set your last.fm username in the bot, so it knows who you are on the last.fm website. \n" +
                                   "Don't have a last.fm account yet? Register here: https://www.last.fm/join \n \n" +
-                                  "Sets your username and mode for the `.fm` command:\n \n" +
-                                  $"`{prfx}set 'Last.FM Username' 'embedmini/embedfull/textmini/textfull'` \n \n";
+                                  "Sets your username, mode and playcount for the `.fm` command:\n \n" +
+                                  $"`{prfx}set 'Last.FM Username' 'embedmini/embedfull/textmini/textfull' 'artist/album/track'` \n \n";
 
                 var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
                 if (userSettings?.UserNameLastFM != null)
                 {
-                    var differentMode = userSettings.ChartType == ChartType.embedmini ? "embedfull" : "embedmini";
+                    var differentMode = userSettings.FmEmbedType == FmEmbedType.embedmini ? "embedfull" : "embedmini";
                     replyString += "Example of picking a different mode: \n" +
-                                   $"`{prfx}set {userSettings.UserNameLastFM} {differentMode}`";
+                                   $"`{prfx}set {userSettings.UserNameLastFM} {differentMode} album`";
                 }
                 else
                 {
-                    replyString += "Example of picking a mode: \n" +
-                                   $"`{prfx}set lastfmusername embedfull`";
+                    replyString += "Example of picking a mode and playcount: \n" +
+                                   $"`{prfx}set lastfmusername embedfull artist`";
                 }
 
                 this._embed.WithTitle("Changing your .fmbot settings");
@@ -188,25 +196,24 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var chartTypeEnum = ChartType.embedmini;
-            if (chartType != null && !Enum.TryParse(chartType.Replace("'", ""), true, out chartTypeEnum))
+            var newUserSettings = new User
             {
-                await ReplyAsync("Invalid mode. Please use 'embedmini', 'embedfull', 'textfull', or 'textmini'.");
-                return;
+                UserNameLastFM = lastFMUserName
+            };
+
+            newUserSettings = this._userService.SetSettings(newUserSettings, otherSettings);
+
+            this._userService.SetLastFM(this.Context.User, newUserSettings);
+
+            var setReply = $"Your Last.FM name has been set to '{lastFMUserName}' and your .fm mode to '{newUserSettings.FmEmbedType}'";
+            if (newUserSettings.FmCountType != null)
+            {
+                setReply += $" with the '{newUserSettings.FmCountType.ToString().ToLower()}' playcount.";
             }
 
-            this._userService.SetLastFM(this.Context.User, lastFMUserName, chartTypeEnum);
-
-            var setReply = $"Your Last.FM name has been set to '{lastFMUserName}'";
-
-            if (chartType == null)
+            if (otherSettings.Length < 1)
             {
-                setReply += $" and your .fm mode has been set to '{chartTypeEnum}', which is the default mode. \n" +
-                            $"Want more info about the different modes? Use `{prfx}set help`";
-            }
-            else
-            {
-                setReply += $" and your .fm mode has been set to '{chartTypeEnum}.'";
+                setReply += $". \nWant more info about the different modes? Use `{prfx}set help`";
             }
 
             await ReplyAsync(setReply);

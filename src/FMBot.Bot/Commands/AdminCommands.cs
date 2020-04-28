@@ -39,7 +39,7 @@ namespace FMBot.Bot.Commands
                 }
 
                 await ReplyAsync("The user's Last.FM name is '" + userSettings.UserNameLastFM +
-                                 "'. Their mode is set to '" + userSettings.ChartType + "'.");
+                                 "'. Their mode is set to '" + userSettings.FmEmbedType + "'.");
             }
             else
             {

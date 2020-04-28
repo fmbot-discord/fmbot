@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.LastFM.Domain.Models;
@@ -20,10 +21,10 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedBuilder _embed;
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
-        private readonly GuildService _guildService = new GuildService();
-        private readonly IndexService _indexService;
-        private readonly ArtistsService _artistsService = new ArtistsService();
-        private readonly LastFMService _lastFmService = new LastFMService();
+        private readonly IGuildService _guildService;
+        private readonly IIndexService _indexService;
+        private readonly IArtistsService _artistsService;
+        private readonly LastFMService _lastFmService;
         private readonly SpotifyService _spotifyService = new SpotifyService();
         private readonly IPrefixService _prefixService;
         private readonly ILastfmApi _lastfmApi;
@@ -31,12 +32,20 @@ namespace FMBot.Bot.Commands.LastFM
 
         private readonly UserService _userService = new UserService();
 
-        public ArtistCommands(Logger.Logger logger, IndexService indexService, ILastfmApi lastfmApi, IPrefixService prefixService)
+        public ArtistCommands(Logger.Logger logger,
+            IIndexService indexService,
+            ILastfmApi lastfmApi,
+            IPrefixService prefixService,
+            IArtistsService artistsService,
+            IGuildService guildService)
         {
             this._logger = logger;
             this._indexService = indexService;
             this._lastfmApi = lastfmApi;
+            this._lastFmService = new LastFMService(lastfmApi);
             this._prefixService = prefixService;
+            this._artistsService = artistsService;
+            this._guildService = guildService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();

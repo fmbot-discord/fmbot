@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Dasync.Collections;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using IF.Lastfm.Core.Api;
@@ -15,7 +16,7 @@ using SkiaSharp;
 
 namespace FMBot.Bot.Services
 {
-    public class ChartService
+    public class ChartService : IChartService
     {
         private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
 
@@ -212,10 +213,12 @@ namespace FMBot.Bot.Services
         public ChartSettings SetSettings(ChartSettings currentChartSettings, string[] extraOptions)
         {
             var chartSettings = currentChartSettings;
+            chartSettings.CustomOptionsEnabled = false;
 
             if (extraOptions.Contains("notitles") || extraOptions.Contains("nt"))
             {
                 chartSettings.TitlesEnabled = false;
+                chartSettings.CustomOptionsEnabled = true;
             }
 
             if (extraOptions.Contains("skipemptyimages") ||
@@ -225,6 +228,7 @@ namespace FMBot.Bot.Services
                 extraOptions.Contains("s"))
             {
                 chartSettings.SkipArtistsWithoutImage = true;
+                chartSettings.CustomOptionsEnabled = true;
             }
 
             // chart size

@@ -5,6 +5,7 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Handlers;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.LastFM.Services;
@@ -68,9 +69,12 @@ namespace FMBot.Bot
                 .AddSingleton<CommandHandler>()
                 .AddSingleton<StartupService>()
                 .AddSingleton<TimerService>()
-                .AddSingleton<IUserIndexQueue, UserIndexQueue>()
                 .AddSingleton<IPrefixService, PrefixService>()
-                .AddSingleton<IndexService>()
+                .AddSingleton<IUserIndexQueue, UserIndexQueue>()
+                .AddSingleton<IArtistsService, ArtistsService>()
+                .AddSingleton<IChartService, ChartService>()
+                .AddSingleton<IIndexService, IndexService>()
+                .AddSingleton<IGuildService, GuildService>()
                 .AddSingleton(logger)
                 .AddSingleton<Random>() // Add random to the collection
                 .AddSingleton(this.Configuration) // Add the configuration to the collection

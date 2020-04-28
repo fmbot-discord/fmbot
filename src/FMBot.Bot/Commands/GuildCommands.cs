@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Persistence.Domain.Models;
@@ -15,7 +16,7 @@ namespace FMBot.Bot.Commands
     public class GuildCommands : ModuleBase
     {
         private readonly AdminService _adminService = new AdminService();
-        private readonly GuildService _guildService = new GuildService();
+        private readonly IGuildService _guildService;
 
         private readonly IPrefixService _prefixService;
 
@@ -25,10 +26,11 @@ namespace FMBot.Bot.Commands
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        public GuildCommands(IPrefixService prefixService, Logger.Logger logger)
+        public GuildCommands(IPrefixService prefixService, Logger.Logger logger, IGuildService guildService)
         {
             this._prefixService = prefixService;
             this._logger = logger;
+            this._guildService = guildService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -65,7 +67,7 @@ namespace FMBot.Bot.Commands
             }
 
 
-            if (!Enum.TryParse(chartType, true, out ChartType chartTypeEnum))
+            if (!Enum.TryParse(chartType, true, out FmEmbedType chartTypeEnum))
             {
                 await ReplyAsync("Invalid mode. Please use 'embedmini', 'embedfull', 'textfull', or 'textmini'.");
                 return;
@@ -158,7 +160,6 @@ namespace FMBot.Bot.Commands
             try
             {
                 var serverUsers = await this._guildService.FindAllUsersFromGuildAsync(this.Context);
-
 
                 if (serverUsers.Count == 0)
                 {

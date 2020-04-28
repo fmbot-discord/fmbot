@@ -5,8 +5,10 @@ using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -16,18 +18,23 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedBuilder _embed;
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
-        private readonly GuildService _guildService = new GuildService();
-        private readonly LastFMService _lastFmService = new LastFMService();
+        private readonly IGuildService _guildService;
+        private readonly LastFMService _lastFmService;
         private readonly Logger.Logger _logger;
 
         private readonly UserService _userService = new UserService();
 
         private readonly IPrefixService _prefixService;
 
-        public TrackCommands(Logger.Logger logger, IPrefixService prefixService)
+        public TrackCommands(Logger.Logger logger,
+            IPrefixService prefixService,
+            ILastfmApi lastfmApi,
+            IGuildService guildService)
         {
             this._logger = logger;
             this._prefixService = prefixService;
+            this._guildService = guildService;
+            this._lastFmService = new LastFMService(lastfmApi);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -63,7 +70,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                                   "You can set your username and you can change the mode with the `.fmset` command.\n";
 
-                var differentMode = userSettings.ChartType == ChartType.embedmini ? "embedfull" : "embedmini";
+                var differentMode = userSettings.FmEmbedType == FmEmbedType.embedmini ? "embedfull" : "embedmini";
                 replyString += $"`{prfx}set {userSettings.UserNameLastFM} {differentMode}` \n \n" +
                                $"For more info, use `{prfx}set help`.";
 
@@ -124,11 +131,47 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var fmText = "";
 
-                switch (userSettings.ChartType)
+                string footerText = "";
+
+                footerText +=
+                    $"{userInfo.Content.Name} has ";
+
+                switch (userSettings.FmCountType)
                 {
-                    case ChartType.textmini:
-                    case ChartType.textfull:
-                        if (userSettings.ChartType == ChartType.textmini)
+                    case FmCountType.Track:
+                        var trackInfo = await this._lastFmService.GetTrackInfoAsync(currentTrack.Name,
+                            currentTrack.ArtistName, lastFMUserName);
+                        if (trackInfo != null)
+                        {
+                            footerText += $"{trackInfo.Userplaycount} scrobbles on this track | ";
+                        }
+                        break;
+                    case FmCountType.Album:
+                        if (!string.IsNullOrEmpty(currentTrack.AlbumName))
+                        {
+                            var albumInfo = await this._lastFmService.GetAlbumInfoAsync(currentTrack.ArtistName, currentTrack.AlbumName, lastFMUserName);
+                            if (albumInfo.Success)
+                            {
+                                footerText += $"{albumInfo.Content.Album.Userplaycount} scrobbles on this album | ";
+                            }
+                        }
+                        break;
+                    case FmCountType.Artist:
+                        var artistInfo = await this._lastFmService.GetArtistInfoAsync(currentTrack.ArtistName, lastFMUserName);
+                        if (artistInfo.Success)
+                        {
+                            footerText += $"{artistInfo.Content.Artist.Stats.Userplaycount} scrobbles on this artist | ";
+                        }
+                        break;
+                }
+
+                footerText += $"{userInfo.Content.Playcount} total scrobbles";
+
+                switch (userSettings.FmEmbedType)
+                {
+                    case FmEmbedType.textmini:
+                    case FmEmbedType.textfull:
+                        if (userSettings.FmEmbedType == FmEmbedType.textmini)
                         {
                             fmText += $"Last track for {embedTitle}: \n";
 
@@ -164,7 +207,7 @@ namespace FMBot.Bot.Commands.LastFM
                             }
                         }
 
-                        if (userSettings.ChartType == ChartType.embedmini)
+                        if (userSettings.FmEmbedType == FmEmbedType.embedmini)
                         {
                             fmText += LastFMService.TrackToLinkedString(currentTrack);
                             this._embed.WithDescription(fmText);
@@ -182,14 +225,12 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                         else
                         {
-                            headerText = userSettings.ChartType == ChartType.embedmini
+                            headerText = userSettings.FmEmbedType == FmEmbedType.embedmini
                                 ? "Last track for "
                                 : "Last tracks for ";
                         }
                         headerText += embedTitle;
 
-                        var footerText =
-                            $"{userInfo.Content.Name} has {userInfo.Content.Playcount} total scrobbles";
 
                         if (currentTrack.IsNowPlaying != true && currentTrack.TimePlayed.HasValue)
                         {
@@ -242,7 +283,7 @@ namespace FMBot.Bot.Commands.LastFM
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
-            
+
             if (userSettings?.UserNameLastFM == null)
             {
                 this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);

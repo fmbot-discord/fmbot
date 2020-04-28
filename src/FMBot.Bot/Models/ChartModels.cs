@@ -41,6 +41,8 @@ namespace FMBot.Bot.Models
         public bool TitlesEnabled { get; set; }
 
         public bool SkipArtistsWithoutImage { get; set; }
+
+        public bool CustomOptionsEnabled { get; set; }
     }
 
     public class ChartImage

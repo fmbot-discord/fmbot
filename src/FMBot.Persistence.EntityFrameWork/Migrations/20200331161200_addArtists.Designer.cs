@@ -101,7 +101,7 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnName("chart_time_period")
                         .HasColumnType("integer");
 
-                    b.Property<int>("ChartType")
+                    b.Property<int>("FmEmbedType")
                         .HasColumnName("chart_type")
                         .HasColumnType("integer");
 
@@ -151,7 +151,7 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnName("chart_time_period")
                         .HasColumnType("integer");
 
-                    b.Property<int>("ChartType")
+                    b.Property<int>("FmEmbedType")
                         .HasColumnName("chart_type")
                         .HasColumnType("integer");
 

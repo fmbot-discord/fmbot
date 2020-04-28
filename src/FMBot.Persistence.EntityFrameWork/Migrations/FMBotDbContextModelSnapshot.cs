@@ -100,10 +100,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnName("chart_time_period")
                         .HasColumnType("integer");
 
-                    b.Property<int>("ChartType")
-                        .HasColumnName("chart_type")
-                        .HasColumnType("integer");
-
                     b.Property<decimal>("DiscordGuildId")
                         .HasColumnName("discord_guild_id")
                         .HasColumnType("numeric(20,0)");
@@ -111,6 +107,10 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Property<string>("EmoteReactions")
                         .HasColumnName("emote_reactions")
                         .HasColumnType("text");
+
+                    b.Property<int>("FmEmbedType")
+                        .HasColumnName("fm_embed_type")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("LastIndexed")
                         .HasColumnName("last_indexed")
@@ -154,10 +154,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnName("chart_time_period")
                         .HasColumnType("integer");
 
-                    b.Property<int>("ChartType")
-                        .HasColumnName("chart_type")
-                        .HasColumnType("integer");
-
                     b.Property<decimal>("DiscordUserId")
                         .HasColumnName("discord_user_id")
                         .HasColumnType("numeric(20,0)");
@@ -169,6 +165,14 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Property<bool?>("FeaturedNotificationsEnabled")
                         .HasColumnName("featured_notifications_enabled")
                         .HasColumnType("boolean");
+
+                    b.Property<int?>("FmCountType")
+                        .HasColumnName("fm_count_type")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("FmEmbedType")
+                        .HasColumnName("fm_embed_type")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("LastGeneratedChartDateTimeUtc")
                         .HasColumnName("last_generated_chart_date_time_utc")

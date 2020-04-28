@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Dasync.Collections;
+using FMBot.Bot.Interfaces;
 using FMBot.Persistence.EntityFrameWork;
 
 namespace FMBot.Bot.Services

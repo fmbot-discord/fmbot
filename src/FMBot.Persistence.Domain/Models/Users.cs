@@ -21,7 +21,9 @@ namespace FMBot.Persistence.Domain.Models
 
         public string UserNameLastFM { get; set; }
 
-        public ChartType ChartType { get; set; }
+        public FmEmbedType FmEmbedType { get; set; }
+
+        public FmCountType? FmCountType { get; set; }
 
         public ChartTimePeriod ChartTimePeriod { get; set; }
 

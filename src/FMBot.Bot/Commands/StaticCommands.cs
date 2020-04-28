@@ -8,6 +8,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using static FMBot.Bot.FMBotUtil;

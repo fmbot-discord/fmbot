@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace FMBot.Bot.Services
+namespace FMBot.Bot.Interfaces
 {
     public interface IPrefixService
     {

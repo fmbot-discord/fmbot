@@ -13,13 +13,6 @@ namespace FMBot.Bot.Services
     {
         private readonly FMBotDbContext db = new FMBotDbContext();
 
-        private readonly string connString;
-
-        public UserService()
-        {
-            this.connString = this.db.Database.GetDbConnection().ConnectionString;
-        }
-
         // User settings
         public async Task<User> GetUserSettingsAsync(IUser discordUser)
         {
@@ -142,7 +135,7 @@ namespace FMBot.Bot.Services
         }
 
         // Set LastFM Name
-        public void SetLastFM(IUser discordUser, string lastFMName, ChartType chartType)
+        public void SetLastFM(IUser discordUser, User userSettings)
         {
             var user = this.db.Users.FirstOrDefault(f => f.DiscordUserId == discordUser.Id);
 
@@ -152,10 +145,11 @@ namespace FMBot.Bot.Services
                 {
                     DiscordUserId = discordUser.Id,
                     UserType = UserType.User,
-                    UserNameLastFM = lastFMName,
+                    UserNameLastFM = userSettings.UserNameLastFM,
                     TitlesEnabled = true,
                     ChartTimePeriod = ChartTimePeriod.Monthly,
-                    ChartType = chartType
+                    FmEmbedType = userSettings.FmEmbedType,
+                    FmCountType = userSettings.FmCountType
                 };
 
                 this.db.Users.Add(newUser);
@@ -164,13 +158,55 @@ namespace FMBot.Bot.Services
             }
             else
             {
-                user.UserNameLastFM = lastFMName;
-                user.ChartType = chartType;
+                user.UserNameLastFM = userSettings.UserNameLastFM;
+                user.FmEmbedType = userSettings.FmEmbedType;
+                user.FmCountType = userSettings.FmCountType;
 
                 this.db.Entry(user).State = EntityState.Modified;
 
                 this.db.SaveChanges();
             }
+        }
+
+        public User SetSettings(User userSettings, string[] extraOptions)
+        {
+
+            if (extraOptions.Contains("embedfull") || extraOptions.Contains("ef"))
+            {
+                userSettings.FmEmbedType = FmEmbedType.embedfull;
+            }
+            else if (extraOptions.Contains("textmini") || extraOptions.Contains("tm"))
+            {
+                userSettings.FmEmbedType = FmEmbedType.textmini;
+            }
+            else if (extraOptions.Contains("textfull") || extraOptions.Contains("tf"))
+            {
+                userSettings.FmEmbedType = FmEmbedType.textfull;
+            }
+            else
+            {
+                userSettings.FmEmbedType = FmEmbedType.embedmini;
+            }
+
+
+            if (extraOptions.Contains("artist"))
+            {
+                userSettings.FmCountType = FmCountType.Artist;
+            }
+            else if (extraOptions.Contains("album"))
+            {
+                userSettings.FmCountType = FmCountType.Album;
+            }
+            else if (extraOptions.Contains("track"))
+            {
+                userSettings.FmCountType = FmCountType.Track;
+            }
+            else
+            {
+                userSettings.FmCountType = null;
+            }
+
+            return userSettings;
         }
 
 

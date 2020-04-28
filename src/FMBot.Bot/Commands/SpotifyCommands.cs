@@ -5,8 +5,10 @@ using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.LastFM.Services;
 
 namespace FMBot.Bot.Commands
 {
@@ -14,7 +16,7 @@ namespace FMBot.Bot.Commands
     {
         private readonly EmbedBuilder _embed;
 
-        private readonly LastFMService _lastFmService = new LastFMService();
+        private readonly LastFMService _lastFmService;
         private readonly Logger.Logger _logger;
         private readonly SpotifyService _spotifyService = new SpotifyService();
 
@@ -22,10 +24,11 @@ namespace FMBot.Bot.Commands
 
         private readonly IPrefixService _prefixService;
 
-        public SpotifyCommands(Logger.Logger logger, IPrefixService prefixService)
+        public SpotifyCommands(Logger.Logger logger, IPrefixService prefixService, ILastfmApi lastfmApi)
         {
             this._logger = logger;
             this._prefixService = prefixService;
+            this._lastFmService = new LastFMService(lastfmApi);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
         }
