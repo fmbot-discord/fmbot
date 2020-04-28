@@ -224,7 +224,7 @@ namespace FMBot.Bot.Commands
 
             builder.AddField("Setting your username",
                 "Use `" + prefix +
-                "fmset 'username' 'embedfull/embedmini/textfull/textmini'` to set your global LastFM username. " +
+                "set 'username' 'embedfull/embedmini/textfull/textmini'` to set your global LastFM username. " +
                 "The last parameter means the mode that your embed will be");
 
             builder.AddField("Making album charts",
@@ -236,7 +236,7 @@ namespace FMBot.Bot.Commands
             builder.AddField("Setting the default server settings",
                 "Please note that server defaults are a planned feature. \n" +
                 "Only users with the 'Ban Members' permission or admins can use this command. \n" +
-                "`" + prefix + "fmserverset 'embedfull/embedmini/textfull/textmini' 'Weekly/Monthly/Yearly/AllTime'`");
+                "`" + prefix + "serverset 'embedfull/embedmini/textfull/textmini' 'Weekly/Monthly/Yearly/AllTime'`");
 
             builder.WithFooter("Still need help? Join the FMBot Discord Server: https://discord.gg/srmpCaa");
 

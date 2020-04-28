@@ -1,9 +1,6 @@
 using System;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using Dasync.Collections;
 using FMBot.Bot.Configurations;
@@ -12,7 +9,9 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
+using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore.Internal;
+using SkiaSharp;
 
 namespace FMBot.Bot.Services
 {
@@ -20,22 +19,17 @@ namespace FMBot.Bot.Services
     {
         private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
 
-        public async Task GenerateChartAsync(ChartSettings chart)
+        public async Task<SKImage> GenerateChartAsync(ChartSettings chart)
         {
             try
             {
-                if (!Directory.Exists(FMBotUtil.GlobalVars.CacheFolder))
-                {
-                    Directory.CreateDirectory(FMBotUtil.GlobalVars.CacheFolder);
-                }
-
                 // Album mode
                 await chart.Albums.ParallelForEachAsync(async album =>
                 {
                     var encodedId = ReplaceInvalidChars(album.Url.LocalPath.Replace("/music/", ""));
                     var localAlbumId = TruncateLongString(encodedId, 60);
 
-                    Bitmap chartImage;
+                    SKBitmap chartImage;
                     var validImage = true;
 
                     var fileName = localAlbumId + ".png";
@@ -43,7 +37,7 @@ namespace FMBot.Bot.Services
 
                     if (File.Exists(localPath))
                     {
-                        chartImage = new Bitmap(localPath);
+                        chartImage = SKBitmap.Decode(localPath);
                         Statistics.LastfmCachedImageCalls.Inc();
                     }
                     else
@@ -57,20 +51,21 @@ namespace FMBot.Bot.Services
                         {
                             var url = albumImages.Large.AbsoluteUri;
 
-                            Bitmap bitmap;
+                            SKBitmap bitmap;
                             try
                             {
-                                var request = WebRequest.Create(url);
-                                using var response = await request.GetResponseAsync();
-                                await using var responseStream = response.GetResponseStream();
+                                var httpClient = new System.Net.Http.HttpClient();
+                                var bytes = await httpClient.GetByteArrayAsync(url);
 
                                 Statistics.LastfmImageCalls.Inc();
 
-                                bitmap = new Bitmap(responseStream);
+                                var stream = new MemoryStream(bytes);
+
+                                bitmap = SKBitmap.Decode(stream);
                             }
                             catch
                             {
-                                bitmap = new Bitmap(FMBotUtil.GlobalVars.ImageFolder + "loading-error.png");
+                                bitmap = SKBitmap.Decode(FMBotUtil.GlobalVars.ImageFolder + "loading-error.png");
                                 validImage = false;
                             }
 
@@ -78,22 +73,15 @@ namespace FMBot.Bot.Services
 
                             if (validImage)
                             {
-                                await using var memoryStream = new MemoryStream();
-                                await using var fileStream = new FileStream(
-                                    localPath,
-                                    FileMode.Create,
-                                    FileAccess.ReadWrite);
-
-                                bitmap.Save(memoryStream, ImageFormat.Png);
-
-                                var bytes = memoryStream.ToArray();
-                                await fileStream.WriteAsync(bytes, 0, bytes.Length);
-                                await fileStream.DisposeAsync();
+                                using var image = SKImage.FromBitmap(bitmap);
+                                using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+                                await using var stream = File.OpenWrite(localPath);
+                                data.SaveTo(stream);
                             }
                         }
                         else
                         {
-                            chartImage = new Bitmap(FMBotUtil.GlobalVars.ImageFolder + "unknown.png");
+                            chartImage = SKBitmap.Decode(FMBotUtil.GlobalVars.ImageFolder + "unknown.png");
                             validImage = false;
                         }
                     }
@@ -102,19 +90,7 @@ namespace FMBot.Bot.Services
                     {
                         try
                         {
-                            using var graphics = Graphics.FromImage(chartImage);
-
-                            graphics.DrawColorString(
-                                chartImage,
-                                album.ArtistName,
-                                new Font("Arial", 8.0f, FontStyle.Bold),
-                                new PointF(2.0f, 2.0f));
-
-                            graphics.DrawColorString(
-                                chartImage,
-                                album.Name,
-                                new Font("Arial", 8.0f, FontStyle.Bold),
-                                new PointF(2.0f, 12.0f));
+                            AddTitleToChartImage(chartImage, album);
                         }
                         catch (Exception e)
                         {
@@ -124,33 +100,103 @@ namespace FMBot.Bot.Services
 
                     chart.ChartImages.Add(new ChartImage(chartImage, chart.Albums.IndexOf(album), validImage));
                 });
-            }
-            finally
-            {
-                var imageList =
-                    FMBotUtil.GlobalVars.splitBitmapList(
-                        chart.ChartImages
+
+
+                SKImage finalImage = null;
+
+                using (var tempSurface = SKSurface.Create(new SKImageInfo(chart.ChartImages.First().Image.Width * chart.Width, chart.ChartImages.First().Image.Height * chart.Height)))
+                {
+                    var canvas = tempSurface.Canvas;
+
+                    var offset = 0;
+                    var offsetTop = 0;
+                    var heightRow = 0;
+
+                    for (var i = 0; i < chart.ImagesNeeded; i++)
+                    {
+                        var image = chart.ChartImages
                             .OrderBy(o => o.Index)
                             .Where(w => !chart.SkipArtistsWithoutImage || w.ValidImage)
-                            .Take(chart.ImagesNeeded)
-                            .Select(s => s.Image)
-                            .ToList(),
-                        chart.Height);
+                            .ElementAt(i).Image;
 
-                var bitmapList = imageList.Select(list => FMBotUtil.GlobalVars.Combine(list)).ToList();
+                        canvas.DrawBitmap(image, SKRect.Create(offset, offsetTop, image.Width, image.Height));
 
-                lock (FMBotUtil.GlobalVars.charts.SyncRoot)
-                {
-                    FMBotUtil.GlobalVars.charts[FMBotUtil.GlobalVars.GetChartFileName(chart.DiscordUser.Id)] =
-                        FMBotUtil.GlobalVars.Combine(bitmapList, true);
+                        if (i == (chart.Width - 1) || i - (chart.Width) * heightRow == chart.Width - 1)
+                        {
+                            offsetTop += image.Height;
+                            heightRow += 1;
+                            offset = 0;
+                        }
+                        else
+                        {
+                            offset += image.Width;
+                        }
+                    }
+
+                    finalImage = tempSurface.Snapshot();
                 }
 
-                foreach (var image in bitmapList.ToArray())
+                return finalImage;
+            }
+
+            finally
+            {
+                foreach (var image in chart.ChartImages.Select(s => s.Image))
                 {
                     image.Dispose();
                 }
             }
         }
+
+        private static void AddTitleToChartImage(SKBitmap chartImage, LastAlbum album)
+        {
+            var textColor = chartImage.GetTextColor();
+            var rectangleColor = textColor == SKColors.Black ? SKColors.White : SKColors.Black;
+
+            using var textPaint = new SKPaint
+            {
+                TextSize = 11,
+                IsAntialias = true,
+                TextAlign = SKTextAlign.Center,
+                Color = textColor,
+            };
+
+            if (textPaint.MeasureText(album.Name) > chartImage.Width ||
+                textPaint.MeasureText(album.ArtistName) > chartImage.Width)
+            {
+                textPaint.TextSize = 9;
+            }
+
+            using var rectanglePaint = new SKPaint
+            {
+                TextAlign = SKTextAlign.Center,
+                Color = rectangleColor.WithAlpha(140),
+                IsAntialias = true,
+            };
+
+            var artistBounds = new SKRect();
+            var albumBounds = new SKRect();
+
+            using var bitmapCanvas = new SKCanvas(chartImage);
+
+            textPaint.MeasureText(album.ArtistName, ref artistBounds);
+            textPaint.MeasureText(album.Name, ref albumBounds);
+
+            var rectangleLeft = (chartImage.Width - Math.Max(albumBounds.Width, artistBounds.Width)) / 2 - 3;
+            var rectangleRight = (chartImage.Width + Math.Max(albumBounds.Width, artistBounds.Width)) / 2 + 3;
+            var rectangleTop = chartImage.Height - 28;
+            var rectangleBottom = chartImage.Height - 1;
+
+            var backgroundRectangle = new SKRect(rectangleLeft, rectangleTop, rectangleRight, rectangleBottom);
+
+            bitmapCanvas.DrawRoundRect(backgroundRectangle, 4, 4, rectanglePaint);
+
+            bitmapCanvas.DrawText(album.ArtistName, (float)chartImage.Width / 2, -artistBounds.Top + chartImage.Height - 24,
+                textPaint);
+            bitmapCanvas.DrawText(album.Name, (float)chartImage.Width / 2, -albumBounds.Top + chartImage.Height - 12,
+                textPaint);
+        }
+
         private string ReplaceInvalidChars(string filename)
         {
             return string.Join("_", filename.Split(Path.GetInvalidFileNameChars()));

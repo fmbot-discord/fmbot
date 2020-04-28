@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -59,6 +60,8 @@ namespace FMBot.Bot.Services
                     Assembly.GetEntryAssembly(),
                     this._provider); // Load commands and modules into the command service
 
+            PrepareCacheFolder();
+
             await StartMetricsServer();
         }
 
@@ -109,6 +112,14 @@ namespace FMBot.Bot.Services
 
             this._logger.Log($"Prometheus running on localhost:{prometheusPort}/metrics");
             return Task.CompletedTask;
+        }
+
+        private static void PrepareCacheFolder()
+        {
+            if (!Directory.Exists(FMBotUtil.GlobalVars.CacheFolder))
+            {
+                Directory.CreateDirectory(FMBotUtil.GlobalVars.CacheFolder);
+            }
         }
     }
 }

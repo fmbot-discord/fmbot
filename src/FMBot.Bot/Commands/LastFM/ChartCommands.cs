@@ -9,7 +9,7 @@ using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using static FMBot.Bot.FMBotUtil;
+using SkiaSharp;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -36,23 +36,6 @@ namespace FMBot.Bot.Commands.LastFM
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embedFooter = new EmbedFooterBuilder();
-        }
-
-        private async Task SendChartMessage(ChartSettings chartSettings, Embed embed)
-        {
-            await this._chartService.GenerateChartAsync(chartSettings);
-
-            // Send chart memory stream, remove when finished
-            using (var memory = await GlobalVars.GetChartStreamAsync(chartSettings.DiscordUser.Id))
-            {
-                await this.Context.Channel.SendFileAsync(memory, "chart.png", null, false, embed);
-            }
-
-            lock (GlobalVars.charts.SyncRoot)
-            {
-                // @TODO: remove only once in a while to keep it cached
-                GlobalVars.charts.Remove(GlobalVars.GetChartFileName(chartSettings.DiscordUser.Id));
-            }
         }
 
         [Command("chart", RunMode = RunMode.Async)]
@@ -191,7 +174,17 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithFooter(this._embedFooter);
 
-                await SendChartMessage(chartSettings, this._embed.Build());
+                var chart = await this._chartService.GenerateChartAsync(chartSettings);
+
+                var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
+                var stream = encoded.AsStream();
+
+                await this.Context.Channel.SendFileAsync(
+                    stream,
+                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSpan.ToString()}-{lastFMUserName}.png",
+                    null,
+                    false,
+                    this._embed.Build());
 
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
                     this.Context.Message.Content);

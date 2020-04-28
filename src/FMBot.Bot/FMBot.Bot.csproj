@@ -31,6 +31,7 @@
     <PackageReference Include="NLog.Web.AspNetCore" Version="4.9.1" />
     <PackageReference Include="PostgreSQLCopyHelper" Version="2.6.3" />
     <PackageReference Include="prometheus-net" Version="3.5.0" />
+    <PackageReference Include="SkiaSharp" Version="1.68.1.1" />
     <PackageReference Include="SpotifyAPI.Web" Version="5.1.0" />
     <PackageReference Include="SpotifyAPI.Web.Auth" Version="5.1.0" />
     <PackageReference Include="System.Drawing.Common" Version="4.7.0" />

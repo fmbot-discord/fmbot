@@ -4,6 +4,7 @@ using Discord;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
+using SkiaSharp;
 
 namespace FMBot.Bot.Models
 {
@@ -44,14 +45,14 @@ namespace FMBot.Bot.Models
 
     public class ChartImage
     {
-        public ChartImage(Bitmap image, int indexOf, bool validImage)
+        public ChartImage(SKBitmap image, int indexOf, bool validImage)
         {
             this.Image = image;
             this.Index = indexOf;
             this.ValidImage = validImage;
         }
 
-        public Bitmap Image { get; }
+        public SKBitmap Image { get; }
 
         public int Index { get; }
 

@@ -38,7 +38,7 @@ indent_style = space
 indent_size = 4
 
 # S1643: Strings should not be concatenated using '+' in a loop
-dotnet_diagnostic.S1643.severity = none
+dotnet_diagnostic.S1643.severity = silent
 
 [**.cshtml]
 charset = utf-8-bom
