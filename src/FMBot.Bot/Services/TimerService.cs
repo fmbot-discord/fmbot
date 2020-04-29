@@ -176,8 +176,16 @@ namespace FMBot.Bot.Services
                 { 
                     logger.Log("Updating metrics and status");
                     Statistics.DiscordServerCount.Set(client.Guilds.Count);
-                    Statistics.RegisteredUsers.Set(await this._userService.GetTotalUserCountAsync());
-                    Statistics.RegisteredGuilds.Set(await this._guildService.GetTotalGuildCountAsync());
+
+                    try
+                    {
+                        Statistics.RegisteredUsers.Set(await this._userService.GetTotalUserCountAsync());
+                        Statistics.RegisteredGuilds.Set(await this._guildService.GetTotalGuildCountAsync());
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                    }
 
                     await client.SetGameAsync($"{ConfigData.Data.CommandPrefix} | {client.Guilds.Count} servers | fmbot.xyz");
                 },
