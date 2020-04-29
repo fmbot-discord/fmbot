@@ -174,15 +174,31 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embedFooter.Text = $"{lastFMUserName} has {playCount} scrobbles.";
 
+                string embedDescription = "";
+                if (chartSettings.CustomOptionsEnabled)
+                {
+                    embedDescription += "Chart options:\n";
+                }
                 if (chartSettings.SkipArtistsWithoutImage)
                 {
-                    this._embed.AddField("Skip albums without images?", "Enabled");
+                    embedDescription += "- Albums without images skipped\n";
+                }
+                if (chartSettings.TitleSetting == TitleSetting.TitlesDisabled)
+                {
+                    embedDescription += "- Album titles disabled\n";
+                }
+                if (chartSettings.TitleSetting == TitleSetting.ClassicTitles)
+                {
+                    embedDescription += "- Classic titles enabled\n";
                 }
 
-                if (!chartSettings.TitlesEnabled)
+                var rnd = new Random();
+                if (rnd.Next(0, 12) == 1)
                 {
-                    this._embed.AddField("Titles enabled?", "False");
+                    embedDescription += "*Enjoying .fmbot? Please consider upvoting us on [top.gg](https://top.gg/bot/356268235697553409/vote)*";
                 }
+
+                this._embed.WithDescription(embedDescription);
 
                 this._embed.WithFooter(this._embedFooter);
 

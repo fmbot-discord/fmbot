@@ -16,7 +16,7 @@ namespace FMBot.Bot.Models
 
             this.ChartImages = new List<ChartImage>();
 
-            this.TitlesEnabled = true;
+            this.TitleSetting = TitleSetting.Titles;
             this.SkipArtistsWithoutImage = false;
         }
 
@@ -38,7 +38,7 @@ namespace FMBot.Bot.Models
 
         public string TimespanUrlString { get; set; }
 
-        public bool TitlesEnabled { get; set; }
+        public TitleSetting TitleSetting { get; set; }
 
         public bool SkipArtistsWithoutImage { get; set; }
 
@@ -59,5 +59,12 @@ namespace FMBot.Bot.Models
         public int Index { get; }
 
         public bool ValidImage { get; }
+    }
+
+    public enum TitleSetting
+    {
+        Titles = 1,
+        TitlesDisabled = 2,
+        ClassicTitles = 3
     }
 }
