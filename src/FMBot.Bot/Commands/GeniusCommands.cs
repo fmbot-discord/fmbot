@@ -8,6 +8,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.LastFM.Services;
+using FMBot.Persistence.EntityFrameWork;
 
 namespace FMBot.Bot.Commands
 {
@@ -20,14 +21,15 @@ namespace FMBot.Bot.Commands
         private readonly Logger.Logger _logger;
         private readonly GeniusService _geniusService = new GeniusService();
 
-        private readonly UserService _userService = new UserService();
+        private readonly UserService _userService;
 
         private readonly IPrefixService _prefixService;
 
-        public GeniusCommands(Logger.Logger logger, IPrefixService prefixService, ILastfmApi lastfmApi)
+        public GeniusCommands(Logger.Logger logger, IPrefixService prefixService, ILastfmApi lastfmApi, FMBotDbContext db)
         {
             this._logger = logger;
             this._prefixService = prefixService;
+            this._userService = new UserService(db);
             this._lastFmService = new LastFMService(lastfmApi);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);

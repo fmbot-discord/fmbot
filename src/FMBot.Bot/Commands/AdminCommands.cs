@@ -5,22 +5,25 @@ using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Services;
 using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
 
 namespace FMBot.Bot.Commands
 {
     [Summary("FMBot Admins Only")]
     public class AdminCommands : ModuleBase
     {
-        private readonly AdminService _adminService = new AdminService();
+        private readonly AdminService _adminService;
         private readonly Logger.Logger _logger;
         private readonly TimerService _timer;
 
-        private readonly UserService _userService = new UserService();
+        private readonly UserService _userService;
 
-        public AdminCommands(TimerService timer, Logger.Logger logger)
+        public AdminCommands(TimerService timer, Logger.Logger logger, FMBotDbContext db)
         {
             this._timer = timer;
             this._logger = logger;
+            this._userService = new UserService(db);
+            this._adminService = new AdminService(db);
         }
 
         [Command("dbcheck")]

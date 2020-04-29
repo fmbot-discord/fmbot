@@ -9,13 +9,14 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
 
 namespace FMBot.Bot.Commands
 {
     [Summary("Server Staff Only")]
     public class GuildCommands : ModuleBase
     {
-        private readonly AdminService _adminService = new AdminService();
+        private readonly AdminService _adminService;
         private readonly IGuildService _guildService;
 
         private readonly IPrefixService _prefixService;
@@ -26,11 +27,12 @@ namespace FMBot.Bot.Commands
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        public GuildCommands(IPrefixService prefixService, Logger.Logger logger, IGuildService guildService)
+        public GuildCommands(IPrefixService prefixService, Logger.Logger logger, IGuildService guildService, FMBotDbContext db)
         {
             this._prefixService = prefixService;
             this._logger = logger;
             this._guildService = guildService;
+            this._adminService = new AdminService(db);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();

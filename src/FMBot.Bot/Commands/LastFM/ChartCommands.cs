@@ -11,6 +11,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.LastFM.Services;
+using FMBot.Persistence.EntityFrameWork;
 using SkiaSharp;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -28,18 +29,20 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly IPrefixService _prefixService;
         private readonly Logger.Logger _logger;
 
-        private readonly UserService _userService = new UserService();
+        private readonly UserService _userService;
 
         public ChartCommands(Logger.Logger logger,
             IPrefixService prefixService,
             ILastfmApi lastfmApi,
             IChartService chartService,
-            IGuildService guildService)
+            IGuildService guildService,
+            FMBotDbContext db)
         {
             this._logger = logger;
             this._prefixService = prefixService;
             this._chartService = chartService;
             this._guildService = guildService;
+            this._userService = new UserService(db);
             this._lastFmService = new LastFMService(lastfmApi);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);

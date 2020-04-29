@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Services;
 using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
@@ -17,11 +18,12 @@ namespace FMBot.Bot.Commands
     {
         private readonly Logger.Logger _logger;
 
-        private readonly AdminService _adminService = new AdminService();
+        private readonly AdminService _adminService;
 
-        public OwnerCommands(Logger.Logger logger)
+        public OwnerCommands(Logger.Logger logger, FMBotDbContext db)
         {
             _logger = logger;
+            this._adminService = new AdminService(db);
         }
 
         [Command("setusertype"), Summary("Sets usertype for other users")]

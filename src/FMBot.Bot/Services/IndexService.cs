@@ -24,13 +24,14 @@ namespace FMBot.Bot.Services
     {
         private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
 
-        private readonly FMBotDbContext _db = new FMBotDbContext();
+        private readonly FMBotDbContext _db;
 
         private readonly IUserIndexQueue _userIndexQueue;
 
-        public IndexService(IUserIndexQueue userIndexQueue)
+        public IndexService(IUserIndexQueue userIndexQueue, FMBotDbContext db)
         {
             this._userIndexQueue = userIndexQueue;
+            this._db = db;
             this._userIndexQueue.UsersToIndex.SubscribeAsync(OnNextAsync);
         }
 

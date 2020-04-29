@@ -10,6 +10,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.LastFM.Services;
+using FMBot.Persistence.EntityFrameWork;
 
 namespace FMBot.Bot.Commands
 {
@@ -19,22 +20,25 @@ namespace FMBot.Bot.Commands
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        private readonly FriendsService _friendsService = new FriendsService();
+        private readonly FriendsService _friendsService;
         private readonly IGuildService _guildService;
         private readonly LastFMService _lastFmService;
         private readonly Logger.Logger _logger;
-        private readonly UserService _userService = new UserService();
+        private readonly UserService _userService;
 
         private readonly IPrefixService _prefixService;
 
         public FriendsCommands(Logger.Logger logger,
             IPrefixService prefixService,
             ILastfmApi lastfmApi,
-            IGuildService guildService)
+            IGuildService guildService,
+            FMBotDbContext db)
         {
             this._logger = logger;
             this._prefixService = prefixService;
             this._guildService = guildService;
+            this._userService = new UserService(db);
+            this._friendsService = new FriendsService(db);
             this._lastFmService = new LastFMService(lastfmApi);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);

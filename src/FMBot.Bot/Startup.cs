@@ -78,6 +78,7 @@ namespace FMBot.Bot
                 .AddSingleton(logger)
                 .AddSingleton<Random>() // Add random to the collection
                 .AddSingleton(this.Configuration) // Add the configuration to the collection
+                .AddDbContext<FMBotDbContext>()
                 .AddHttpClient();
 
             services

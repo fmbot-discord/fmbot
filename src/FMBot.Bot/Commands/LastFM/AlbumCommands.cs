@@ -12,6 +12,7 @@ using FMBot.Bot.Services;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
+using FMBot.Persistence.EntityFrameWork;
 using ImageFormat = System.Drawing.Imaging.ImageFormat;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -25,16 +26,17 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly ILastfmApi _lastfmApi;
         private readonly Logger.Logger _logger;
 
-        private readonly UserService _userService = new UserService();
+        private readonly UserService _userService;
 
         private readonly IPrefixService _prefixService;
 
-        public AlbumCommands(Logger.Logger logger, ILastfmApi lastfmApi, IPrefixService prefixService)
+        public AlbumCommands(Logger.Logger logger, ILastfmApi lastfmApi, IPrefixService prefixService, FMBotDbContext db)
         {
             this._logger = logger;
             this._lastfmApi = lastfmApi;
             this._lastFmService = new LastFMService(lastfmApi);
             this._prefixService = prefixService;
+            this._userService = new UserService(db);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();

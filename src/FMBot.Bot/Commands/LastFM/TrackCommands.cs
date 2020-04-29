@@ -10,6 +10,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -22,18 +23,20 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly LastFMService _lastFmService;
         private readonly Logger.Logger _logger;
 
-        private readonly UserService _userService = new UserService();
+        private readonly UserService _userService;
 
         private readonly IPrefixService _prefixService;
 
         public TrackCommands(Logger.Logger logger,
             IPrefixService prefixService,
             ILastfmApi lastfmApi,
-            IGuildService guildService)
+            IGuildService guildService,
+            FMBotDbContext db)
         {
             this._logger = logger;
             this._prefixService = prefixService;
             this._guildService = guildService;
+            this._userService = new UserService(db);
             this._lastFmService = new LastFMService(lastfmApi);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);

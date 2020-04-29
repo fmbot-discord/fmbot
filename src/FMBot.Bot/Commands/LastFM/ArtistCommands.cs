@@ -12,6 +12,7 @@ using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
 using SpotifyAPI.Web.Enums;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -30,14 +31,15 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly ILastfmApi _lastfmApi;
         private readonly Logger.Logger _logger;
 
-        private readonly UserService _userService = new UserService();
+        private readonly UserService _userService;
 
         public ArtistCommands(Logger.Logger logger,
             IIndexService indexService,
             ILastfmApi lastfmApi,
             IPrefixService prefixService,
             IArtistsService artistsService,
-            IGuildService guildService)
+            IGuildService guildService,
+            FMBotDbContext db)
         {
             this._logger = logger;
             this._indexService = indexService;
@@ -46,6 +48,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._prefixService = prefixService;
             this._artistsService = artistsService;
             this._guildService = guildService;
+            this._userService = new UserService(db);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();

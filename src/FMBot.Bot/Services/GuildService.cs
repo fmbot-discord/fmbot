@@ -15,7 +15,12 @@ namespace FMBot.Bot.Services
 {
     public class GuildService : IGuildService
     {
-        private readonly FMBotDbContext db = new FMBotDbContext();
+        private readonly FMBotDbContext _db;
+
+        public GuildService(FMBotDbContext db)
+        {
+            this._db = db;
+        }
 
         // Message is in dm?
         public bool CheckIfDM(ICommandContext context)
@@ -68,7 +73,7 @@ namespace FMBot.Bot.Services
 
             var userIds = users.Select(s => s.Id).ToList();
 
-            var usersObject = this.db.Users
+            var usersObject = this._db.Users
                 .Where(w => userIds.Contains(w.DiscordUserId))
                 .Select(s =>
                     new UserExportModel(
@@ -80,7 +85,7 @@ namespace FMBot.Bot.Services
 
         public async Task ChangeGuildSettingAsync(IGuild guild, ChartTimePeriod chartTimePeriod, FmEmbedType fmEmbedType)
         {
-            var existingGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+            var existingGuild = await this._db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
 
             if (existingGuild == null)
             {
@@ -93,15 +98,15 @@ namespace FMBot.Bot.Services
                     TitlesEnabled = true
                 };
 
-                this.db.Guilds.Add(newGuild);
+                this._db.Guilds.Add(newGuild);
 
-                await this.db.SaveChangesAsync();
+                await this._db.SaveChangesAsync();
             }
         }
 
         public async Task SetGuildReactionsAsync(IGuild guild, string[] reactions)
         {
-            var existingGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+            var existingGuild = await this._db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
 
             if (existingGuild == null)
             {
@@ -115,24 +120,24 @@ namespace FMBot.Bot.Services
                     Name = guild.Name
                 };
 
-                this.db.Guilds.Add(newGuild);
+                this._db.Guilds.Add(newGuild);
 
-                await this.db.SaveChangesAsync();
+                await this._db.SaveChangesAsync();
             }
             else
             {
                 existingGuild.EmoteReactions = reactions;
                 existingGuild.Name = guild.Name;
 
-                this.db.Entry(existingGuild).State = EntityState.Modified;
+                this._db.Entry(existingGuild).State = EntityState.Modified;
 
-                await this.db.SaveChangesAsync();
+                await this._db.SaveChangesAsync();
             }
         }
 
         public async Task SetGuildPrefixAsync(IGuild guild, string prefix)
         {
-            var existingGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+            var existingGuild = await this._db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
 
             if (existingGuild == null)
             {
@@ -146,31 +151,31 @@ namespace FMBot.Bot.Services
                     Prefix = prefix
                 };
 
-                this.db.Guilds.Add(newGuild);
+                this._db.Guilds.Add(newGuild);
 
-                await this.db.SaveChangesAsync();
+                await this._db.SaveChangesAsync();
             }
             else
             {
                 existingGuild.Prefix = prefix;
                 existingGuild.Name = guild.Name;
 
-                this.db.Entry(existingGuild).State = EntityState.Modified;
+                this._db.Entry(existingGuild).State = EntityState.Modified;
 
-                await this.db.SaveChangesAsync();
+                await this._db.SaveChangesAsync();
             }
         }
 
         public async Task<DateTime?> GetGuildIndexTimestampAsync(IGuild guild)
         {
-            var existingGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+            var existingGuild = await this._db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
 
             return existingGuild?.LastIndexed;
         }
 
         public async Task UpdateGuildIndexTimestampAsync(IGuild guild, DateTime? timestamp = null)
         {
-            var existingGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+            var existingGuild = await this._db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
 
             if (existingGuild == null)
             {
@@ -184,18 +189,18 @@ namespace FMBot.Bot.Services
                     LastIndexed = timestamp ?? DateTime.UtcNow
                 };
 
-                this.db.Guilds.Add(newGuild);
+                this._db.Guilds.Add(newGuild);
 
-                await this.db.SaveChangesAsync();
+                await this._db.SaveChangesAsync();
             }
             else
             {
                 existingGuild.LastIndexed = timestamp ?? DateTime.UtcNow;
                 existingGuild.Name = guild.Name;
 
-                this.db.Entry(existingGuild).State = EntityState.Modified;
+                this._db.Entry(existingGuild).State = EntityState.Modified;
 
-                await this.db.SaveChangesAsync();
+                await this._db.SaveChangesAsync();
             }
         }
 
@@ -235,7 +240,7 @@ namespace FMBot.Bot.Services
         {
             var guildId = guild.Id.ToString();
 
-            var dbGuild = await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+            var dbGuild = await this._db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
 
             if (dbGuild?.EmoteReactions == null || !dbGuild.EmoteReactions.Any())
             {
@@ -270,19 +275,19 @@ namespace FMBot.Bot.Services
                 TitlesEnabled = true
             };
 
-            this.db.Guilds.Add(newGuild);
+            this._db.Guilds.Add(newGuild);
 
-            await this.db.SaveChangesAsync();
+            await this._db.SaveChangesAsync();
         }
 
         public async Task<bool> GuildExistsAsync(SocketGuild guild)
         {
-            return await this.db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id) != null;
+            return await this._db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id) != null;
         }
 
         public async Task<int> GetTotalGuildCountAsync()
         {
-            return await this.db.Guilds.CountAsync();
+            return await this._db.Guilds.CountAsync();
         }
     }
 }
