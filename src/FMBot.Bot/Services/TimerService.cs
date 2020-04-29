@@ -38,6 +38,7 @@ namespace FMBot.Bot.Services
             this._logger = logger;
             this._lastfmApi = lastfmApi;
             this._lastFMService = new LastFMService(this._lastfmApi);
+            this._userService = new UserService(dbContext);
             this._guildService = new GuildService(dbContext);
 
             this._timer = new Timer(async _ =>
