@@ -191,7 +191,7 @@ namespace FMBot.Bot.Services
                 },
                 null,
                 TimeSpan.FromSeconds(Constants.BotWarmupTimeInSeconds + 10),
-                TimeSpan.FromMinutes(1));
+                TimeSpan.FromMinutes(2));
 
             this._externalStatsTimer = new Timer(async _ =>
                 {
