@@ -22,6 +22,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public string[] EmoteReactions { get; set; }
 
+        public string[] DisabledCommands { get; set; }
+
         public DateTime? LastIndexed { get; set; }
 
         public bool? SpecialGuild { get; set; }

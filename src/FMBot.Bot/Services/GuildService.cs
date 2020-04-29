@@ -166,6 +166,60 @@ namespace FMBot.Bot.Services
             }
         }
 
+        public async Task<string[]> GetDisabledCommandsForGuild(IGuild guild)
+        {
+            var existingGuild = await this._db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+
+            return existingGuild?.DisabledCommands;
+        }
+
+        public async Task AddDisabledCommandAsync(IGuild guild, string command)
+        {
+            var existingGuild = await this._db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+
+            if (existingGuild == null)
+            {
+                var newGuild = new Guild
+                {
+                    DiscordGuildId = guild.Id,
+                    TitlesEnabled = true,
+                    ChartTimePeriod = ChartTimePeriod.Monthly,
+                    FmEmbedType = FmEmbedType.embedmini,
+                    Name = guild.Name,
+                    DisabledCommands = new[] { command }
+                };
+
+                this._db.Guilds.Add(newGuild);
+
+                await this._db.SaveChangesAsync();
+            }
+            else
+            {
+                var newDisabledCommands = existingGuild.DisabledCommands;
+                Array.Resize(ref newDisabledCommands, newDisabledCommands.Length + 1);
+                newDisabledCommands[^1] = command;
+
+                existingGuild.Name = guild.Name;
+
+                this._db.Entry(existingGuild).State = EntityState.Modified;
+
+                await this._db.SaveChangesAsync();
+            }
+        }
+
+        public async Task RemoveDisabledCommandAsync(IGuild guild, string command)
+        {
+            var existingGuild = await this._db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+
+            existingGuild.DisabledCommands = existingGuild.DisabledCommands.Where(w => !w.Contains(command)).ToArray();
+
+            existingGuild.Name = guild.Name;
+
+            this._db.Entry(existingGuild).State = EntityState.Modified;
+
+            await this._db.SaveChangesAsync();
+        }
+
         public async Task<DateTime?> GetGuildIndexTimestampAsync(IGuild guild)
         {
             var existingGuild = await this._db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);

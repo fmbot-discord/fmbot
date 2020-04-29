@@ -19,6 +19,9 @@ namespace FMBot.Bot.Interfaces
         Task ChangeGuildSettingAsync(IGuild guild, ChartTimePeriod chartTimePeriod, FmEmbedType fmEmbedType);
         Task SetGuildReactionsAsync(IGuild guild, string[] reactions);
         Task SetGuildPrefixAsync(IGuild guild, string prefix);
+        Task<string[]> GetDisabledCommandsForGuild(IGuild guild);
+        Task AddDisabledCommandAsync(IGuild guild, string command);
+        Task RemoveDisabledCommandAsync(IGuild guild, string command);
         Task<DateTime?> GetGuildIndexTimestampAsync(IGuild guild);
         Task UpdateGuildIndexTimestampAsync(IGuild guild, DateTime? timestamp = null);
         bool ValidateReactions(string[] emoteString);

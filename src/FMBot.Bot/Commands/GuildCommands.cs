@@ -10,6 +10,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using FMBot.Persistence.EntityFrameWork.Migrations;
 
 namespace FMBot.Bot.Commands
 {
@@ -249,6 +250,50 @@ namespace FMBot.Bot.Commands
                                         $"The [.fmbot docs]({Constants.DocsUrl}) will still have the `.fm` prefix everywhere. " +
                                         $"Custom prefixes are still in the testing phase so please note that some error messages and other places might not show your prefix yet.\n\n" +
                                         $"To remove the custom prefix, do `{prefix}prefix remove`");
+
+            await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id, this.Context.Message.Content);
+        }
+
+
+        /// <summary>
+        /// Changes the prefix for the server.
+        /// </summary>
+        /// <param name="prefix">The desired prefix.</param>
+        [Command("togglecommand", RunMode = RunMode.Async)]
+        public async Task ToggleCommand(string command = null)
+        {
+            if (this._guildService.CheckIfDM(this.Context))
+            {
+                await ReplyAsync("Command is not supported in DMs.");
+                return;
+            }
+
+            var serverUser = (IGuildUser)this.Context.Message.Author;
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
+                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync(
+                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(command) || command.ToLower() == "togglecommand")
+            {
+                await this._guildService.SetGuildPrefixAsync(this.Context.Guild, null);
+                this._prefixService.RemovePrefix(Context.Guild.Id);
+                await ReplyAsync("Please enter a valid command to disable. Remember to remove the `.fm` prefix.");
+                return;
+            }
+
+            var disabledCommands = await this._guildService.GetDisabledCommandsForGuild(Context.Guild);
+
+            if (disabledCommands.Contains(command.ToLower()))
+            {
+                
+            }
+
+            // WIP
 
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
             this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id, this.Context.Message.Content);

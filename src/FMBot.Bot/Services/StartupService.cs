@@ -48,6 +48,9 @@ namespace FMBot.Bot.Services
 
             await TestLastFmApi();
 
+            this._logger.Log("Loading all prefixes");
+            await this._prefixService.LoadAllPrefixes();
+
             this._logger.Log("Logging into Discord");
             await this._client.LoginAsync(TokenType.Bot, discordToken);
 
@@ -88,15 +91,17 @@ namespace FMBot.Bot.Services
             {
                 this._logger.Log("Last.FM API test successful");
             }
-
-            this._logger.Log("Loading all prefixes");
-            await this._prefixService.LoadAllPrefixes();
         }
 
 
         private Task StartMetricsServer()
         {
             Thread.Sleep(TimeSpan.FromSeconds(Constants.BotWarmupTimeInSeconds));
+            if (this._client == null || this._client.CurrentUser == null)
+            {
+                this._logger.Log("Delaying metric server startup");
+                Thread.Sleep(TimeSpan.FromSeconds(Constants.BotWarmupTimeInSeconds));
+            }
             this._logger.Log("Starting metrics server");
 
             var prometheusPort = 4444;
