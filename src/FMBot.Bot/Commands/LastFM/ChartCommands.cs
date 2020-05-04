@@ -146,9 +146,6 @@ namespace FMBot.Bot.Commands.LastFM
 
                 chartSettings.Albums = albums;
 
-                await this._userService.ResetChartTimerAsync(userSettings);
-
-
                 if (self)
                 {
                     this._embedAuthor.WithName($"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} for " +
