@@ -86,17 +86,16 @@ namespace FMBot.Bot.Services
                         }
                     }
 
-                    if (chart.TitlesEnabled)
+                    switch (chart.TitleSetting)
                     {
-                        try
-                        {
+                        case TitleSetting.Titles:
                             AddTitleToChartImage(chartImage, album);
-                        }
-                        catch (Exception e)
-                        {
-                            // TODO: Find out why this bugs on certain album images (rare)
-                        }
+                            break;
+                        case TitleSetting.ClassicTitles:
+                            AddClassicTitleToChartImage(chartImage, album);
+                            break;
                     }
+
 
                     chart.ChartImages.Add(new ChartImage(chartImage, chart.Albums.IndexOf(album), validImage));
                 });
@@ -197,6 +196,30 @@ namespace FMBot.Bot.Services
                 textPaint);
         }
 
+        private static void AddClassicTitleToChartImage(SKBitmap chartImage, LastAlbum album)
+        {
+            var textColor = chartImage.GetTextColor();
+
+            using var textPaint = new SKPaint
+            {
+                TextSize = 11,
+                IsAntialias = true,
+                Color = textColor,
+                Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright)
+            };
+
+            var artistBounds = new SKRect();
+            var albumBounds = new SKRect();
+
+            using var bitmapCanvas = new SKCanvas(chartImage);
+
+            textPaint.MeasureText(album.ArtistName, ref artistBounds);
+            textPaint.MeasureText(album.Name, ref albumBounds);
+
+            bitmapCanvas.DrawText(album.ArtistName, 4, 12, textPaint);
+            bitmapCanvas.DrawText(album.Name, 4, 22, textPaint);
+        }
+
         private string ReplaceInvalidChars(string filename)
         {
             return string.Join("_", filename.Split(Path.GetInvalidFileNameChars()));
@@ -216,7 +239,13 @@ namespace FMBot.Bot.Services
 
             if (extraOptions.Contains("notitles") || extraOptions.Contains("nt"))
             {
-                chartSettings.TitlesEnabled = false;
+                chartSettings.TitleSetting = TitleSetting.TitlesDisabled;
+                chartSettings.CustomOptionsEnabled = true;
+            }
+
+            if (extraOptions.Contains("classictitles") || extraOptions.Contains("ct"))
+            {
+                chartSettings.TitleSetting = TitleSetting.ClassicTitles;
                 chartSettings.CustomOptionsEnabled = true;
             }
 

@@ -15,7 +15,12 @@ namespace FMBot.Bot.Services
 {
     public class ArtistsService : IArtistsService
     {
-        private readonly FMBotDbContext _db = new FMBotDbContext();
+        private readonly FMBotDbContext _db;
+
+        public ArtistsService(FMBotDbContext db)
+        {
+            this._db = db;
+        }
 
         public static IList<ArtistWithUser> AddUserToIndexList(IList<ArtistWithUser> artists, User userSettings, IGuildUser user, ArtistResponse artist)
         {

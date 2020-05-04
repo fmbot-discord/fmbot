@@ -11,7 +11,7 @@ namespace FMBot.Bot.Services
     {
         private readonly Logger.Logger _logger;
 
-        private readonly FMBotDbContext db = new FMBotDbContext();
+        private readonly FMBotDbContext _db;
 
         /// <summary>
         ///     The <see cref="ConcurrentDictionary{TKey,TValue}" /> that contains all the custom prefixes.
@@ -19,9 +19,10 @@ namespace FMBot.Bot.Services
         private static readonly ConcurrentDictionary<ulong, string> ServerPrefixes =
             new ConcurrentDictionary<ulong, string>();
 
-        public PrefixService(Logger.Logger logger)
+        public PrefixService(Logger.Logger logger, FMBotDbContext db)
         {
             this._logger = logger;
+            this._db = db;
         }
 
         /// <inheritdoc />
@@ -75,7 +76,7 @@ namespace FMBot.Bot.Services
         /// <inheritdoc />
         public async Task LoadAllPrefixes()
         {
-            var servers = await this.db.Guilds.Where(w => w.Prefix != null).ToListAsync();
+            var servers = await this._db.Guilds.Where(w => w.Prefix != null).ToListAsync();
             foreach (var server in servers)
             {
                 StorePrefix(server.Prefix, server.DiscordGuildId);

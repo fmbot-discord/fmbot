@@ -11,6 +11,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.LastFM.Services;
+using FMBot.Persistence.EntityFrameWork;
 using SkiaSharp;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -28,18 +29,20 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly IPrefixService _prefixService;
         private readonly Logger.Logger _logger;
 
-        private readonly UserService _userService = new UserService();
+        private readonly UserService _userService;
 
         public ChartCommands(Logger.Logger logger,
             IPrefixService prefixService,
             ILastfmApi lastfmApi,
             IChartService chartService,
-            IGuildService guildService)
+            IGuildService guildService,
+            FMBotDbContext db)
         {
             this._logger = logger;
             this._prefixService = prefixService;
             this._chartService = chartService;
             this._guildService = guildService;
+            this._userService = new UserService(db);
             this._lastFmService = new LastFMService(lastfmApi);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
@@ -168,15 +171,31 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embedFooter.Text = $"{lastFMUserName} has {playCount} scrobbles.";
 
+                string embedDescription = "";
+                if (chartSettings.CustomOptionsEnabled)
+                {
+                    embedDescription += "Chart options:\n";
+                }
                 if (chartSettings.SkipArtistsWithoutImage)
                 {
-                    this._embed.AddField("Skip albums without images?", "Enabled");
+                    embedDescription += "- Albums without images skipped\n";
+                }
+                if (chartSettings.TitleSetting == TitleSetting.TitlesDisabled)
+                {
+                    embedDescription += "- Album titles disabled\n";
+                }
+                if (chartSettings.TitleSetting == TitleSetting.ClassicTitles)
+                {
+                    embedDescription += "- Classic titles enabled\n";
                 }
 
-                if (!chartSettings.TitlesEnabled)
+                var rnd = new Random();
+                if (rnd.Next(0, 12) == 1)
                 {
-                    this._embed.AddField("Titles enabled?", "False");
+                    embedDescription += "*Enjoying .fmbot? Please consider upvoting us on [top.gg](https://top.gg/bot/356268235697553409/vote)*";
                 }
+
+                this._embed.WithDescription(embedDescription);
 
                 this._embed.WithFooter(this._embedFooter);
 

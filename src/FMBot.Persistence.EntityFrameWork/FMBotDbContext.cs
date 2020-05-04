@@ -54,6 +54,11 @@ namespace FMBot.Persistence.EntityFrameWork
             {
                 entity.HasKey(e => e.GuildId);
 
+                entity.Property(e => e.DisabledCommands)
+                    .HasConversion(
+                        v => string.Join(',', v),
+                        v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
+
                 entity.Property(e => e.EmoteReactions)
                     .HasConversion(
                         v => string.Join(',', v),

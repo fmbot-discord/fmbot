@@ -11,6 +11,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Persistence.EntityFrameWork;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
@@ -19,17 +20,20 @@ namespace FMBot.Bot.Commands
     {
         private readonly EmbedBuilder _embed;
         private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly GuildService _guildService = new GuildService();
+        private readonly GuildService _guildService;
 
         private readonly CommandService _service;
         private readonly IPrefixService _prefixService;
-        private readonly UserService _userService = new UserService();
-        private readonly FriendsService _friendService = new FriendsService();
+        private readonly UserService _userService;
+        private readonly FriendsService _friendService;
 
-        public StaticCommands(CommandService service, IPrefixService prefixService)
+        public StaticCommands(CommandService service, IPrefixService prefixService, FMBotDbContext db)
         {
             this._service = service;
             this._prefixService = prefixService;
+            this._userService = new UserService(db);
+            this._friendService = new FriendsService(db);
+            this._guildService = new GuildService(db);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();

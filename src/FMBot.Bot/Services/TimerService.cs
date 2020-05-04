@@ -11,6 +11,7 @@ using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.LastFM.Services;
+using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Api.Enums;
 using static FMBot.Bot.FMBotUtil;
 using Image = Discord.Image;
@@ -21,22 +22,24 @@ namespace FMBot.Bot.Services
     {
         private readonly Logger.Logger _logger;
         private readonly Timer _timer;
-        private readonly Timer _internalStatsTimer;
         private readonly Timer _externalStatsTimer;
+        private readonly Timer _internalStatsTimer;
         private readonly ILastfmApi _lastfmApi;
         private readonly LastFMService _lastFMService;
-        private readonly UserService _userService = new UserService();
-        private readonly GuildService _guildService = new GuildService();
+        private readonly UserService _userService;
+        private readonly GuildService _guildService;
 
         private bool _timerEnabled;
 
         private string _trackString = "";
 
-        public TimerService(DiscordShardedClient client, Logger.Logger logger, ILastfmApi lastfmApi)
+        public TimerService(DiscordShardedClient client, Logger.Logger logger, ILastfmApi lastfmApi, FMBotDbContext dbContext)
         {
             this._logger = logger;
             this._lastfmApi = lastfmApi;
             this._lastFMService = new LastFMService(this._lastfmApi);
+            this._userService = new UserService(dbContext);
+            this._guildService = new GuildService(dbContext);
 
             this._timer = new Timer(async _ =>
                 {
@@ -173,14 +176,22 @@ namespace FMBot.Bot.Services
                 { 
                     logger.Log("Updating metrics and status");
                     Statistics.DiscordServerCount.Set(client.Guilds.Count);
-                    Statistics.RegisteredUsers.Set(await this._userService.GetTotalUserCountAsync());
-                    Statistics.RegisteredGuilds.Set(await this._guildService.GetTotalGuildCountAsync());
+
+                    try
+                    {
+                        Statistics.RegisteredUsers.Set(await this._userService.GetTotalUserCountAsync());
+                        Statistics.RegisteredGuilds.Set(await this._guildService.GetTotalGuildCountAsync());
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                    }
 
                     await client.SetGameAsync($"{ConfigData.Data.CommandPrefix} | {client.Guilds.Count} servers | fmbot.xyz");
                 },
                 null,
                 TimeSpan.FromSeconds(Constants.BotWarmupTimeInSeconds + 10),
-                TimeSpan.FromMinutes(1));
+                TimeSpan.FromMinutes(2));
 
             this._externalStatsTimer = new Timer(async _ =>
                 {
