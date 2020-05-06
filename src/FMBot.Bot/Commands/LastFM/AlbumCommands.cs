@@ -94,6 +94,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             this._embed.AddField("Listeners", albumInfo.Listeners, true);
             this._embed.AddField("Global playcount", albumInfo.Playcount, true);
+
             if (albumInfo.Userplaycount.HasValue)
             {
                 this._embed.AddField("Your playcount", albumInfo.Userplaycount, true);
