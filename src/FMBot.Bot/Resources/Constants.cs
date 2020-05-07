@@ -11,7 +11,7 @@ namespace FMBot.Bot.Resources
 
         public const int InviteLinkPermissions = 52288;
 
-        public const int BotWarmupTimeInSeconds = 180;
+        public const int BotWarmupTimeInSeconds = 240;
 
         public const ulong BotProductionId = 356268235697553409;
 
