@@ -18,19 +18,19 @@ namespace FMBot.Bot.Commands
 
         private readonly UserService _userService;
 
-        public AdminCommands(TimerService timer, Logger.Logger logger, FMBotDbContext db)
+        public AdminCommands(TimerService timer, Logger.Logger logger)
         {
             this._timer = timer;
             this._logger = logger;
-            this._userService = new UserService(db);
-            this._adminService = new AdminService(db);
+            this._userService = new UserService();
+            this._adminService = new AdminService();
         }
 
         [Command("dbcheck")]
         [Summary("Checks if an entry is in the database.")]
         public async Task DbCheckAsync(IUser user = null)
         {
-            if (await this._adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 var chosenUser = user ?? this.Context.Message.Author;
                 var userSettings = await this._userService.GetUserSettingsAsync(chosenUser);
@@ -56,10 +56,10 @@ namespace FMBot.Bot.Commands
         [Alias("restart")]
         public async Task BotRestartAsync()
         {
-            if (await this._adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync("Restarting bot...");
-                await (Context.Client as DiscordSocketClient).SetStatusAsync(UserStatus.Invisible);
+                await (this.Context.Client as DiscordSocketClient).SetStatusAsync(UserStatus.Invisible);
                 Environment.Exit(1);
             }
             else
@@ -170,7 +170,7 @@ namespace FMBot.Bot.Commands
         [Alias("starttimer", "timerstart", "timerrestart")]
         public async Task RestartTimerAsync()
         {
-            if (await this._adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 try
                 {
@@ -191,7 +191,7 @@ namespace FMBot.Bot.Commands
         [Alias("timerstop")]
         public async Task StopTimerAsync()
         {
-            if (await this._adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 try
                 {
@@ -211,7 +211,7 @@ namespace FMBot.Bot.Commands
         [Summary("Checks the status of the timer.")]
         public async Task TimerStatusAsync()
         {
-            if (await this._adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 try
                 {
@@ -240,7 +240,7 @@ namespace FMBot.Bot.Commands
         {
             try
             {
-                if (await this._adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+                if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
                 {
                     if (user == null)
                     {
@@ -289,7 +289,7 @@ namespace FMBot.Bot.Commands
         {
             try
             {
-                if (await this._adminService.HasCommandAccessAsync(Context.User, UserType.Admin))
+                if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
                 {
                     if (user == null)
                     {

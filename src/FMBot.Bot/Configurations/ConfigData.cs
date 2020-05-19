@@ -18,7 +18,10 @@ namespace FMBot.Bot.Configurations
         /// </summary>
         static ConfigData()
         {
-            if (!Directory.Exists(ConfigFolder)) Directory.CreateDirectory(ConfigFolder);
+            if (!Directory.Exists(ConfigFolder))
+            {
+                Directory.CreateDirectory(ConfigFolder);
+            }
 
             if (!File.Exists(ConfigFolder + "/" + ConfigFile))
             {
@@ -31,6 +34,7 @@ namespace FMBot.Bot.Configurations
                     NumMessages = "5",
                     InBetweenTime = "10"
                 };
+
                 var json = JsonConvert.SerializeObject(Data, Formatting.Indented);
                 File.WriteAllText(ConfigFolder + "/" + ConfigFile, json);
 

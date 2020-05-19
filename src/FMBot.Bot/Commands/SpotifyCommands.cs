@@ -25,11 +25,11 @@ namespace FMBot.Bot.Commands
 
         private readonly IPrefixService _prefixService;
 
-        public SpotifyCommands(Logger.Logger logger, IPrefixService prefixService, ILastfmApi lastfmApi, FMBotDbContext db)
+        public SpotifyCommands(Logger.Logger logger, IPrefixService prefixService, ILastfmApi lastfmApi)
         {
             this._logger = logger;
             this._prefixService = prefixService;
-            this._userService = new UserService(db);
+            this._userService = new UserService();
             this._lastFmService = new LastFMService(lastfmApi);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);

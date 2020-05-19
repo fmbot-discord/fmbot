@@ -11,17 +11,11 @@ namespace FMBot.Bot.Services
 {
     public class UserService
     {
-        private readonly FMBotDbContext _db;
-
-        public UserService(FMBotDbContext db)
-        {
-            this._db = db;
-        }
-
         // User settings
         public async Task<User> GetUserSettingsAsync(IUser discordUser)
         {
-            return await this._db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+            using var db = new FMBotDbContext();
+            return await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
         }
 
         // Discord nickname/username
@@ -40,7 +34,8 @@ namespace FMBot.Bot.Services
         // Rank
         public async Task<UserType> GetRankAsync(IUser discordUser)
         {
-            var user = await this._db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+            using var db = new FMBotDbContext();
+            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
             if (user == null)
             {
@@ -53,7 +48,8 @@ namespace FMBot.Bot.Services
         // Featured
         public async Task<bool?> GetFeaturedAsync(IUser discordUser)
         {
-            var user = await this._db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+            using var db = new FMBotDbContext();
+            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
             if (user == null)
             {
@@ -66,29 +62,31 @@ namespace FMBot.Bot.Services
         // Featured
         public async Task<User> GetFeaturedUserAsync()
         {
-            return await this._db.Users.FirstOrDefaultAsync(f => f.Featured == true);
+            using var db = new FMBotDbContext();
+            return await db.Users.FirstOrDefaultAsync(f => f.Featured == true);
         }
 
         // Random user
         public async Task<string> GetRandomLastFMUserAsync()
         {
-            var featuredUser = await this._db.Users.FirstOrDefaultAsync(f => f.Featured == true);
+            using var db = new FMBotDbContext();
+            var featuredUser = await db.Users.FirstOrDefaultAsync(f => f.Featured == true);
             if (featuredUser != null)
             {
                 featuredUser.Featured = false;
 
-                this._db.Entry(featuredUser).State = EntityState.Modified;
+                db.Entry(featuredUser).State = EntityState.Modified;
             }
 
-            var users = this._db.Users.Where(w => w.Blacklisted != true).ToList();
+            var users = db.Users.Where(w => w.Blacklisted != true).ToList();
 
             var rand = new Random();
             var user = users[rand.Next(users.Count)];
 
             user.Featured = true;
 
-            this._db.Entry(user).State = EntityState.Modified;
-            this._db.SaveChanges();
+            db.Entry(user).State = EntityState.Modified;
+            db.SaveChanges();
 
             return user.UserNameLastFM;
         }
@@ -97,7 +95,8 @@ namespace FMBot.Bot.Services
         // Server Blacklisting
         public async Task<bool> GetBlacklistedAsync(IUser discordUser)
         {
-            var user = await this._db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+            using var db = new FMBotDbContext();
+            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
             if (user == null)
             {
@@ -142,7 +141,8 @@ namespace FMBot.Bot.Services
         // Set LastFM Name
         public void SetLastFM(IUser discordUser, User userSettings)
         {
-            var user = this._db.Users.FirstOrDefault(f => f.DiscordUserId == discordUser.Id);
+            using var db = new FMBotDbContext();
+            var user = db.Users.FirstOrDefault(f => f.DiscordUserId == discordUser.Id);
 
             if (user == null)
             {
@@ -157,9 +157,9 @@ namespace FMBot.Bot.Services
                     FmCountType = userSettings.FmCountType
                 };
 
-                this._db.Users.Add(newUser);
+                db.Users.Add(newUser);
 
-                this._db.SaveChanges();
+                db.SaveChanges();
             }
             else
             {
@@ -167,9 +167,9 @@ namespace FMBot.Bot.Services
                 user.FmEmbedType = userSettings.FmEmbedType;
                 user.FmCountType = userSettings.FmCountType;
 
-                this._db.Entry(user).State = EntityState.Modified;
+                db.Entry(user).State = EntityState.Modified;
 
-                this._db.SaveChanges();
+                db.SaveChanges();
             }
         }
 
@@ -217,27 +217,29 @@ namespace FMBot.Bot.Services
 
         public async Task ResetChartTimerAsync(User user)
         {
+            using var db = new FMBotDbContext();
             user.LastGeneratedChartDateTimeUtc = DateTime.Now;
 
-            this._db.Entry(user).State = EntityState.Modified;
+            db.Entry(user).State = EntityState.Modified;
 
-            await this._db.SaveChangesAsync();
+            await db.SaveChangesAsync();
         }
 
         // Remove user
         public async Task DeleteUser(int userID)
         {
-            var user = await this._db.Users.FirstOrDefaultAsync(f => f.UserId == userID);
+            using var db = new FMBotDbContext();
+            var user = await db.Users.FirstOrDefaultAsync(f => f.UserId == userID);
 
-            this._db.Users.Remove(user);
+            db.Users.Remove(user);
 
-            await this._db.SaveChangesAsync();
+            await db.SaveChangesAsync();
         }
 
         public async Task<int> GetTotalUserCountAsync()
         {
-
-            return await this._db.Users.CountAsync();
+            using var db = new FMBotDbContext();
+            return await db.Users.CountAsync();
         }
     }
 }

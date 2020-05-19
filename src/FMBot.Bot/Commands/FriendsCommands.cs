@@ -31,14 +31,13 @@ namespace FMBot.Bot.Commands
         public FriendsCommands(Logger.Logger logger,
             IPrefixService prefixService,
             ILastfmApi lastfmApi,
-            IGuildService guildService,
-            FMBotDbContext db)
+            IGuildService guildService)
         {
             this._logger = logger;
             this._prefixService = prefixService;
             this._guildService = guildService;
-            this._userService = new UserService(db);
-            this._friendsService = new FriendsService(db);
+            this._userService = new UserService();
+            this._friendsService = new FriendsService();
             this._lastFmService = new LastFMService(lastfmApi);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);

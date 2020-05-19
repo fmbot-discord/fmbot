@@ -24,7 +24,7 @@ namespace FMBot.Bot
         {
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory() + "/configs")
-                .AddJsonFile("ConfigData.json");
+                .AddJsonFile("ConfigData.json", true);
 
             this.Configuration = builder.Build(); // Build the configuration
         }

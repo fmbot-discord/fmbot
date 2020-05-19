@@ -9,7 +9,6 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.LastFM.Services;
-using FMBot.Persistence.EntityFrameWork;
 
 namespace FMBot.Bot.Commands
 {
@@ -24,11 +23,11 @@ namespace FMBot.Bot.Commands
 
         private readonly IPrefixService _prefixService;
 
-        public YoutubeCommands(Logger.Logger logger, IPrefixService prefixService, ILastfmApi lastfmApi, FMBotDbContext db)
+        public YoutubeCommands(Logger.Logger logger, IPrefixService prefixService, ILastfmApi lastfmApi)
         {
             this._logger = logger;
             this._prefixService = prefixService;
-            this._userService = new UserService(db);
+            this._userService = new UserService();
             this._lastFmService = new LastFMService(lastfmApi);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
@@ -95,13 +94,13 @@ namespace FMBot.Bot.Commands
                 }
                 catch (Exception e)
                 {
-                    this._logger.LogException(Context.Message.Content, e);
+                    this._logger.LogException(this.Context.Message.Content, e);
                     await ReplyAsync("No results have been found for this query.");
                 }
             }
             catch (Exception e)
             {
-                this._logger.LogException(Context.Message.Content, e);
+                this._logger.LogException(this.Context.Message.Content, e);
                 await ReplyAsync(
                     "Unable to show Last.FM info via YouTube due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }

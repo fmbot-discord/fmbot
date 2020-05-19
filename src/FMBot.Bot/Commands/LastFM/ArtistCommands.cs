@@ -38,8 +38,7 @@ namespace FMBot.Bot.Commands.LastFM
             ILastfmApi lastfmApi,
             IPrefixService prefixService,
             IArtistsService artistsService,
-            IGuildService guildService,
-            FMBotDbContext db)
+            IGuildService guildService)
         {
             this._logger = logger;
             this._indexService = indexService;
@@ -48,7 +47,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._prefixService = prefixService;
             this._artistsService = artistsService;
             this._guildService = guildService;
-            this._userService = new UserService(db);
+            this._userService = new UserService();
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -402,7 +401,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(Context.Guild);
+            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
             if (lastIndex == null)
             {
@@ -451,13 +450,13 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (usersWithArtist.Count == 0 && artist.Artist.Stats.Userplaycount != 0)
                 {
-                    var guildUser = await Context.Guild.GetUserAsync(Context.User.Id);
+                    var guildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
                     usersWithArtist =
                         ArtistsService.AddUserToIndexList(usersWithArtist, userSettings, guildUser, artist);
                 }
                 if (!usersWithArtist.Select(s => s.UserId).Contains(userSettings.UserId) && usersWithArtist.Count != 14 && artist.Artist.Stats.Userplaycount != 0)
                 {
-                    var guildUser = await Context.Guild.GetUserAsync(Context.User.Id);
+                    var guildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
                     usersWithArtist =
                         ArtistsService.AddUserToIndexList(usersWithArtist, userSettings, guildUser, artist);
                 }
@@ -493,7 +492,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $"\nView server artist averages in `{prfx}artist`";
                 }
 
-                this._embed.WithTitle($"Who knows {artist.Artist.Name} in {Context.Guild.Name}");
+                this._embed.WithTitle($"Who knows {artist.Artist.Name} in {this.Context.Guild.Name}");
                 this._embed.WithUrl(artist.Artist.Url);
 
                 this._embedFooter.WithText(footer);

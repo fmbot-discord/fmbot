@@ -24,14 +24,11 @@ namespace FMBot.Bot.Services
     {
         private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
 
-        private readonly FMBotDbContext _db;
-
         private readonly IUserIndexQueue _userIndexQueue;
 
-        public IndexService(IUserIndexQueue userIndexQueue, FMBotDbContext db)
+        public IndexService(IUserIndexQueue userIndexQueue)
         {
             this._userIndexQueue = userIndexQueue;
-            this._db = db;
             this._userIndexQueue.UsersToIndex.SubscribeAsync(OnNextAsync);
         }
 
@@ -80,7 +77,8 @@ namespace FMBot.Bot.Services
                 UserId = user.UserId
             }).ToList();
 
-            var connString = this._db.Database.GetDbConnection().ConnectionString;
+            using var db = new FMBotDbContext();
+            var connString = db.Database.GetDbConnection().ConnectionString;
             var copyHelper = new PostgreSQLCopyHelper<Artist>("public", "artists")
                 .MapText("name", x => x.Name)
                 .MapInteger("user_id", x => x.UserId)
@@ -106,7 +104,9 @@ namespace FMBot.Bot.Services
             var userIds = guildUsers.Select(s => s.Id).ToList();
 
             var tooRecent = DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
-            return await this._db.Users
+
+            using var db = new FMBotDbContext();
+            return await db.Users
                 .Include(i => i.Artists)
                 .Where(w => userIds.Contains(w.DiscordUserId)
                 && (w.LastIndexed == null || w.LastIndexed <= tooRecent))
@@ -119,7 +119,8 @@ namespace FMBot.Bot.Services
 
             var indexCooldown = DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
 
-            return await this._db.Users
+            using var db = new FMBotDbContext();
+            return await db.Users
                 .Where(w => userIds.Contains(w.DiscordUserId)
                     && w.LastIndexed != null && w.LastIndexed >= indexCooldown)
                 .CountAsync();

@@ -30,13 +30,13 @@ namespace FMBot.Bot.Commands.LastFM
 
         private readonly IPrefixService _prefixService;
 
-        public AlbumCommands(Logger.Logger logger, ILastfmApi lastfmApi, IPrefixService prefixService, FMBotDbContext db)
+        public AlbumCommands(Logger.Logger logger, ILastfmApi lastfmApi, IPrefixService prefixService)
         {
             this._logger = logger;
             this._lastfmApi = lastfmApi;
             this._lastFmService = new LastFMService(lastfmApi);
             this._prefixService = prefixService;
-            this._userService = new UserService(db);
+            this._userService = new UserService();
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();

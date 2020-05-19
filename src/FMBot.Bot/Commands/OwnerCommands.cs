@@ -20,17 +20,17 @@ namespace FMBot.Bot.Commands
 
         private readonly AdminService _adminService;
 
-        public OwnerCommands(Logger.Logger logger, FMBotDbContext db)
+        public OwnerCommands(Logger.Logger logger)
         {
-            _logger = logger;
-            this._adminService = new AdminService(db);
+            this._logger = logger;
+            this._adminService = new AdminService();
         }
 
         [Command("setusertype"), Summary("Sets usertype for other users")]
         [Alias("setperms")]
         public async Task SetUserTypeAsync(string userId = null, string userType = null)
         {
-            if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
             {
                 if (userId == null || userType == null || userId == "help")
                 {
@@ -44,7 +44,7 @@ namespace FMBot.Bot.Commands
                     return;
                 }
 
-                if (await _adminService.SetUserTypeAsync(ulong.Parse(userId), userTypeEnum))
+                if (await this._adminService.SetUserTypeAsync(ulong.Parse(userId), userTypeEnum))
                 {
                     await ReplyAsync("You got it. User perms changed.");
                 }
@@ -65,7 +65,7 @@ namespace FMBot.Bot.Commands
         [Alias("readonlyfix")]
         public async Task RemoveReadOnlyAsync()
         {
-            if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
             {
                 try
                 {
@@ -79,7 +79,7 @@ namespace FMBot.Bot.Commands
                 }
                 catch (Exception e)
                 {
-                    _logger.LogException(Context.Message.Content, e);
+                    this._logger.LogException(this.Context.Message.Content, e);
                     await ReplyAsync("Unable to remove read only on all directories due to an internal error.");
                 }
             }
@@ -89,7 +89,7 @@ namespace FMBot.Bot.Commands
         [Alias("checkstorage", "storage")]
         public async Task StorageCheckAsync()
         {
-            if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
             {
                 try
                 {
@@ -103,11 +103,11 @@ namespace FMBot.Bot.Commands
                         builder.AddField(drive.Name + " - " + drive.VolumeLabel + ":", drive.AvailableFreeSpace.ToFormattedByteString() + " free of " + drive.TotalSize.ToFormattedByteString());
                     }
 
-                    await Context.Channel.SendMessageAsync("", false, builder.Build());
+                    await this.Context.Channel.SendMessageAsync("", false, builder.Build());
                 }
                 catch (Exception e)
                 {
-                    _logger.LogException(Context.Message.Content, e);
+                    this._logger.LogException(this.Context.Message.Content, e);
                     await ReplyAsync("Unable to delete server drive info due to an internal error.");
                 }
             }
@@ -116,7 +116,7 @@ namespace FMBot.Bot.Commands
         [Command("serverlist"), Summary("Displays a list showing information related to every server the bot has joined.")]
         public async Task ServerListAsync()
         {
-            if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
             {
                 var client = this.Context.Client as DiscordShardedClient;
                 string desc = null;
@@ -131,11 +131,11 @@ namespace FMBot.Bot.Commands
                     string[] descChunks = desc.SplitByMessageLength().ToArray();
                     foreach (string chunk in descChunks)
                     {
-                        await Context.User.SendMessageAsync(chunk);
+                        await this.Context.User.SendMessageAsync(chunk);
                     }
                 }
 
-                await Context.Channel.SendMessageAsync("Check your DMs!");
+                await this.Context.Channel.SendMessageAsync("Check your DMs!");
             }
         }
 
@@ -143,17 +143,17 @@ namespace FMBot.Bot.Commands
         [Alias("setbotname")]
         public async Task NameOverrideAsync(string name = ".fmbot")
         {
-            if (await _adminService.HasCommandAccessAsync(Context.User, UserType.Owner))
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
             {
                 try
                 {
-                    DiscordSocketClient client = Context.Client as DiscordSocketClient;
+                    DiscordSocketClient client = this.Context.Client as DiscordSocketClient;
                     await client.CurrentUser.ModifyAsync(u => u.Username = name);
                     await ReplyAsync("Set name to '" + name + "'");
                 }
                 catch (Exception e)
                 {
-                    _logger.LogException(Context.Message.Content, e);
+                    this._logger.LogException(this.Context.Message.Content, e);
                     await ReplyAsync("Unable to set the name of the bot due to an internal error.");
                 }
             }

@@ -15,13 +15,6 @@ namespace FMBot.Bot.Services
 {
     public class ArtistsService : IArtistsService
     {
-        private readonly FMBotDbContext _db;
-
-        public ArtistsService(FMBotDbContext db)
-        {
-            this._db = db;
-        }
-
         public static IList<ArtistWithUser> AddUserToIndexList(IList<ArtistWithUser> artists, User userSettings, IGuildUser user, ArtistResponse artist)
         {
             artists.Add(new ArtistWithUser
@@ -96,7 +89,8 @@ namespace FMBot.Bot.Services
         {
             var userIds = guildUsers.Select(s => s.Id);
 
-            var artists = await this._db.Artists
+            using var db = new FMBotDbContext();
+            var artists = await db.Artists
                 .Include(i => i.User)
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
                             && userIds.Contains(w.User.DiscordUserId))
@@ -125,7 +119,8 @@ namespace FMBot.Bot.Services
         {
             var userIds = guildUsers.Select(s => s.Id);
 
-            return await this._db.Artists
+            using var db = new FMBotDbContext();
+            return await db.Artists
                 .Include(i => i.User)
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
                             && userIds.Contains(w.User.DiscordUserId))
@@ -136,7 +131,8 @@ namespace FMBot.Bot.Services
         {
             var userIds = guildUsers.Select(s => s.Id);
 
-            var query = this._db.Artists
+            using var db = new FMBotDbContext();
+            var query = db.Artists
                 .Include(i => i.User)
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
                             && userIds.Contains(w.User.DiscordUserId));
@@ -157,7 +153,8 @@ namespace FMBot.Bot.Services
         {
             var userIds = guildUsers.Select(s => s.Id);
 
-            var query = this._db.Artists
+            using var db = new FMBotDbContext();
+            var query = db.Artists
                 .Include(i => i.User)
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
                             && userIds.Contains(w.User.DiscordUserId));

@@ -11,7 +11,6 @@ using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.LastFM.Services;
-using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Api.Enums;
 using static FMBot.Bot.FMBotUtil;
 using Image = Discord.Image;
@@ -33,13 +32,13 @@ namespace FMBot.Bot.Services
 
         private string _trackString = "";
 
-        public TimerService(DiscordShardedClient client, Logger.Logger logger, ILastfmApi lastfmApi, FMBotDbContext dbContext)
+        public TimerService(DiscordShardedClient client, Logger.Logger logger, ILastfmApi lastfmApi)
         {
             this._logger = logger;
             this._lastfmApi = lastfmApi;
             this._lastFMService = new LastFMService(this._lastfmApi);
-            this._userService = new UserService(dbContext);
-            this._guildService = new GuildService(dbContext);
+            this._userService = new UserService();
+            this._guildService = new GuildService();
 
             this._timer = new Timer(async _ =>
                 {

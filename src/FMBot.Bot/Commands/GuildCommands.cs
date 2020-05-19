@@ -28,12 +28,12 @@ namespace FMBot.Bot.Commands
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        public GuildCommands(IPrefixService prefixService, Logger.Logger logger, IGuildService guildService, FMBotDbContext db)
+        public GuildCommands(IPrefixService prefixService, Logger.Logger logger, IGuildService guildService)
         {
             this._prefixService = prefixService;
             this._logger = logger;
             this._guildService = guildService;
-            this._adminService = new AdminService(db);
+            this._adminService = new AdminService();
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -136,7 +136,7 @@ namespace FMBot.Bot.Commands
 
             var message = await ReplyAsync("Emote reactions have been set! \n" +
                                            "Please check if all reactions have been applied to this message correctly. If not, you might have used an emote from a different server.");
-            await this._guildService.AddReactionsAsync(message, Context.Guild);
+            await this._guildService.AddReactionsAsync(message, this.Context.Guild);
             this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id, this.Context.Message.Content);
         }
 
@@ -215,14 +215,14 @@ namespace FMBot.Bot.Commands
             if (string.IsNullOrEmpty(prefix) || prefix.ToLower() == "remove" || prefix.ToLower() == "delete")
             {
                 await this._guildService.SetGuildPrefixAsync(this.Context.Guild, null);
-                this._prefixService.RemovePrefix(Context.Guild.Id);
+                this._prefixService.RemovePrefix(this.Context.Guild.Id);
                 await ReplyAsync("Removed prefix!");
                 return;
             }
             if (prefix.ToLower() == ".fm")
             {
                 await this._guildService.SetGuildPrefixAsync(this.Context.Guild, null);
-                this._prefixService.RemovePrefix(Context.Guild.Id);
+                this._prefixService.RemovePrefix(this.Context.Guild.Id);
                 await ReplyAsync("Reset to default prefix `.fm`!");
                 return;
             }
@@ -239,7 +239,7 @@ namespace FMBot.Bot.Commands
             }
 
             await this._guildService.SetGuildPrefixAsync(this.Context.Guild, prefix);
-            this._prefixService.StorePrefix(prefix, Context.Guild.Id);
+            this._prefixService.StorePrefix(prefix, this.Context.Guild.Id);
 
             this._embed.WithTitle("Successfully added custom prefix!");
             this._embed.WithDescription("Examples:\n" +
@@ -281,12 +281,12 @@ namespace FMBot.Bot.Commands
             if (string.IsNullOrEmpty(command) || command.ToLower() == "togglecommand")
             {
                 await this._guildService.SetGuildPrefixAsync(this.Context.Guild, null);
-                this._prefixService.RemovePrefix(Context.Guild.Id);
+                this._prefixService.RemovePrefix(this.Context.Guild.Id);
                 await ReplyAsync("Please enter a valid command to disable. Remember to remove the `.fm` prefix.");
                 return;
             }
 
-            var disabledCommands = await this._guildService.GetDisabledCommandsForGuild(Context.Guild);
+            var disabledCommands = await this._guildService.GetDisabledCommandsForGuild(this.Context.Guild);
 
             if (disabledCommands.Contains(command.ToLower()))
             {
