@@ -294,6 +294,11 @@ namespace FMBot.Bot.Commands
                         description += $"- {disabledCommand}\n";
                     }
                 }
+                else
+                {
+                    description = "This server currently has all commands enabled. \n" +
+                                  "To disable a command, enter the command name like this: `.fmtogglecommand chart`";
+                }
                 
                 this._embed.WithDescription(description);
                 await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
