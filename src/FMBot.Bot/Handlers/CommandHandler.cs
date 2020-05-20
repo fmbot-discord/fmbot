@@ -7,8 +7,6 @@ using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
-using FMBot.Bot.Services;
-using Microsoft.EntityFrameworkCore.Internal;
 
 namespace FMBot.Bot.Handlers
 {

@@ -9,8 +9,6 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Persistence.Domain.Models;
-using FMBot.Persistence.EntityFrameWork;
-using FMBot.Persistence.EntityFrameWork.Migrations;
 
 namespace FMBot.Bot.Commands
 {
@@ -22,17 +20,20 @@ namespace FMBot.Bot.Commands
 
         private readonly IPrefixService _prefixService;
 
+        private readonly CommandService _commands;
+
         private readonly Logger.Logger _logger;
 
         private readonly EmbedBuilder _embed;
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        public GuildCommands(IPrefixService prefixService, Logger.Logger logger, IGuildService guildService)
+        public GuildCommands(IPrefixService prefixService, Logger.Logger logger, IGuildService guildService, CommandService commands)
         {
             this._prefixService = prefixService;
             this._logger = logger;
             this._guildService = guildService;
+            this._commands = commands;
             this._adminService = new AdminService();
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
@@ -261,6 +262,7 @@ namespace FMBot.Bot.Commands
         /// </summary>
         /// <param name="prefix">The desired prefix.</param>
         [Command("togglecommand", RunMode = RunMode.Async)]
+        [Alias("togglecommands")]
         public async Task ToggleCommand(string command = null)
         {
             if (this._guildService.CheckIfDM(this.Context))
@@ -278,22 +280,45 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            if (string.IsNullOrEmpty(command) || command.ToLower() == "togglecommand")
+            var disabledCommands = await this._guildService.GetDisabledCommandsForGuild(this.Context.Guild);
+
+            if (string.IsNullOrEmpty(command))
             {
-                await this._guildService.SetGuildPrefixAsync(this.Context.Guild, null);
-                this._prefixService.RemovePrefix(this.Context.Guild.Id);
-                await ReplyAsync("Please enter a valid command to disable. Remember to remove the `.fm` prefix.");
+                var description = "";
+                if (disabledCommands != null)
+                {
+                    description += "Currently disabled commands in this guild:\n";
+                    foreach (var disabledCommand in disabledCommands)
+                    {
+                        description += $"- {disabledCommand}\n";
+                    }
+                }
+                
+                this._embed.WithDescription(description);
+                await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
                 return;
             }
 
-            var disabledCommands = await this._guildService.GetDisabledCommandsForGuild(this.Context.Guild);
+            var searchResult = this._commands.Search(command.ToLower());
 
-            if (disabledCommands.Contains(command.ToLower()))
+            if (searchResult.Commands == null || command.ToLower() == "togglecommand")
             {
-                
+                this._embed.WithDescription("No commands found or command can't be disabled.\n" +
+                                            "Remember to remove the `.fm` prefix.");
+                await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+                return;
             }
 
-            // WIP
+            if (disabledCommands != null && disabledCommands.Contains(command.ToLower()))
+            {
+                await this._guildService.RemoveDisabledCommandAsync(this.Context.Guild, command.ToLower());
+                this._embed.WithDescription($"Re-enabled command `{command.ToLower()}` for this server.");
+            }
+            else
+            {
+                await this._guildService.AddDisabledCommandAsync(this.Context.Guild, command.ToLower());
+                this._embed.WithDescription($"Disabled command `{command.ToLower()}` for this server.");
+            }
 
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
             this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id, this.Context.Message.Content);

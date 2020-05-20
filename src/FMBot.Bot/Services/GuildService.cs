@@ -194,9 +194,17 @@ namespace FMBot.Bot.Services
             }
             else
             {
-                var newDisabledCommands = existingGuild.DisabledCommands;
-                Array.Resize(ref newDisabledCommands, newDisabledCommands.Length + 1);
-                newDisabledCommands[^1] = command;
+                if (existingGuild.DisabledCommands != null && existingGuild.DisabledCommands.Length > 0)
+                {
+                    var newDisabledCommands = existingGuild.DisabledCommands;
+                    Array.Resize(ref newDisabledCommands, newDisabledCommands.Length + 1);
+                    newDisabledCommands[^1] = command;
+                    existingGuild.DisabledCommands = newDisabledCommands;
+                }
+                else
+                {
+                    existingGuild.DisabledCommands = new[] {command};
+                }
 
                 existingGuild.Name = guild.Name;
 
