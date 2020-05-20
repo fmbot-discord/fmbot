@@ -18,6 +18,17 @@ namespace FMBot.Bot.Services
             return await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
         }
 
+        // User settings
+        public async Task<User> GetFullUserAsync(IUser discordUser)
+        {
+            using var db = new FMBotDbContext();
+            return await db.Users
+                .Include(i => i.Artists)
+                .Include(i => i.Friends)
+                .Include(i => i.FriendedByUsers)
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+        }
+
         // Discord nickname/username
         public async Task<string> GetNameAsync(ICommandContext context)
         {

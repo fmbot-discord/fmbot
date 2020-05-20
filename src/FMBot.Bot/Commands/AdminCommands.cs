@@ -1,11 +1,14 @@
 using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using FMBot.Bot.Interfaces;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Persistence.Domain.Models;
-using FMBot.Persistence.EntityFrameWork;
 
 namespace FMBot.Bot.Commands
 {
@@ -16,40 +19,123 @@ namespace FMBot.Bot.Commands
         private readonly Logger.Logger _logger;
         private readonly TimerService _timer;
 
-        private readonly UserService _userService;
+        private readonly EmbedBuilder _embed;
 
-        public AdminCommands(TimerService timer, Logger.Logger logger)
+        private readonly UserService _userService;
+        private readonly IGuildService _guildService;
+
+        public AdminCommands(TimerService timer, Logger.Logger logger, IGuildService guildService)
         {
             this._timer = timer;
             this._logger = logger;
+            this._guildService = guildService;
             this._userService = new UserService();
             this._adminService = new AdminService();
+            this._embed = new EmbedBuilder()
+                .WithColor(Constants.LastFMColorRed);
         }
 
-        [Command("dbcheck")]
-        [Summary("Checks if an entry is in the database.")]
-        public async Task DbCheckAsync(IUser user = null)
+        [Command("debug")]
+        [Summary("Returns user data")]
+        [Alias("dbcheck")]
+        public async Task DebugAsync(IUser user = null)
         {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
-            {
-                var chosenUser = user ?? this.Context.Message.Author;
-                var userSettings = await this._userService.GetUserSettingsAsync(chosenUser);
+            var chosenUser = user ?? this.Context.Message.Author;
+            var userSettings = await this._userService.GetFullUserAsync(chosenUser);
 
-                if (userSettings?.UserNameLastFM == null)
+            if (userSettings?.UserNameLastFM == null)
+            {
+                await ReplyAsync("The user's Last.FM name has not been set.");
+                return;
+            }
+
+            this._embed.WithTitle($"Debug for {chosenUser.ToString()}");
+
+            var description = "";
+            foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(userSettings))
+            {
+                var name = descriptor.Name;
+                var value = descriptor.GetValue(userSettings);
+
+                if (descriptor.PropertyType.Name == "ICollection`1")
                 {
-                    await ReplyAsync("The user's Last.FM name has not been set.");
-                    return;
+                    continue;
                 }
 
-                await ReplyAsync("The user's Last.FM name is '" + userSettings.UserNameLastFM +
-                                 "'. Their mode is set to '" + userSettings.FmEmbedType + "'.");
+                if (value != null)
+                {
+                    description += $"{name}: `{value}` \n";
+                }
+                else
+                {
+                    description += $"{name}: null \n";
+                }
             }
-            else
-            {
-                await ReplyAsync("Error: Insufficient rights. Only FMBot admins can do a dbcheck.");
-            }
+
+            description += $"Friends: `{userSettings.Friends.Count}`\n";
+            description += $"Befriended by: `{userSettings.FriendedByUsers.Count}`\n";
+            description += $"Indexed artists: `{userSettings.Artists.Count}`";
+
+            this._embed.WithDescription(description);
+            await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
         }
 
+
+        [Command("serverdebug")]
+        [Summary("Returns server data")]
+        [Alias("guilddebug", "debugserver", "debugguild")]
+        public async Task DebugGuildAsync(ulong? guildId = null)
+        {
+            var chosenGuild = guildId ?? this.Context.Guild.Id;
+            var guild = await this._guildService.GetGuildAsync(chosenGuild);
+
+            if (guild == null)
+            {
+                await ReplyAsync("Guild does not exist in database");
+                return;
+            }
+
+            this._embed.WithTitle($"Debug for guild with id {chosenGuild}");
+
+            var description = "";
+            foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(guild))
+            {
+                var name = descriptor.Name;
+                var value = descriptor.GetValue(guild);
+
+                if (value == null)
+                {
+                    description += $"{name}: null \n";
+                    continue;
+                }
+
+                if (descriptor.PropertyType.Name == "String[]")
+                {
+                    var a = (Array)descriptor.GetValue(guild);
+                    var arrayValue = "";
+                    for (var i = 0; i < a.Length; i++)
+                    {
+                        arrayValue += $"{a.GetValue(i)} - ";
+                    }
+
+                    if (a.Length > 0)
+                    {
+                        description += $"{name}: `{arrayValue}` \n";
+                    }
+                    else
+                    {
+                        description += $"{name}: null \n";
+                    }
+                }
+                else
+                {
+                    description += $"{name}: `{value}` \n";
+                }
+            }
+
+            this._embed.WithDescription(description);
+            await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+        }
 
         [Command("botrestart")]
         [Summary("Reboots the bot.")]
@@ -322,6 +408,11 @@ namespace FMBot.Bot.Commands
 
                 await ReplyAsync("Unable to remove " + user.Username + " from the blacklist due to an internal error.");
             }
+        }
+
+        private bool IsTAnEnumerable<T>(T x)
+        {
+            return null != typeof(T).GetInterface("IEnumerable`1");
         }
     }
 }

@@ -12,6 +12,7 @@ namespace FMBot.Bot.Interfaces
     public interface IGuildService
     {
         bool CheckIfDM(ICommandContext context);
+        Task<Guild> GetGuildAsync(ulong guildId);
         Task<IGuildUser> FindUserFromGuildAsync(ICommandContext context, ulong id);
         Task<GuildPermissions> CheckSufficientPermissionsAsync(ICommandContext context);
         Task<IGuildUser> FindUserFromGuildAsync(ICommandContext context, string searchValue);

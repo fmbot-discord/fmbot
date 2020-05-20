@@ -21,6 +21,12 @@ namespace FMBot.Bot.Services
             return context.Guild == null;
         }
 
+        public async Task<Guild> GetGuildAsync(ulong guildId)
+        {
+            using var db = new FMBotDbContext();
+            return await db.Guilds
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == guildId);
+        }
 
         // Get user from guild with ID
         public async Task<IGuildUser> FindUserFromGuildAsync(ICommandContext context, ulong id)
