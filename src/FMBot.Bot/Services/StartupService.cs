@@ -17,6 +17,7 @@ namespace FMBot.Bot.Services
     public class StartupService
     {
         private readonly CommandService _commands;
+        private readonly IDisabledCommandService _disabledCommands;
         private readonly DiscordShardedClient _client;
         private readonly IPrefixService _prefixService;
         private readonly IServiceProvider _provider;
@@ -27,13 +28,15 @@ namespace FMBot.Bot.Services
             DiscordShardedClient discord,
             CommandService commands,
             Logger.Logger logger,
-            IPrefixService prefixService)
+            IPrefixService prefixService,
+            IDisabledCommandService disabledCommands)
         {
             this._provider = provider;
             this._client = discord;
             this._commands = commands;
             this._logger = logger;
             this._prefixService = prefixService;
+            this._disabledCommands = disabledCommands;
         }
 
         public async Task StartAsync()
@@ -51,19 +54,25 @@ namespace FMBot.Bot.Services
             this._logger.Log("Loading all prefixes");
             await this._prefixService.LoadAllPrefixes();
 
+            this._logger.Log("Loading all disabled commands");
+            await this._disabledCommands.LoadAllDisabledCommands();
+
             this._logger.Log("Logging into Discord");
             await this._client.LoginAsync(TokenType.Bot, discordToken);
 
             this._logger.Log("Starting connection between Discord and the client");
             await this._client.StartAsync();
 
+            this._logger.Log("Setting Discord user status");
             await this._client.SetStatusAsync(UserStatus.DoNotDisturb);
 
+            this._logger.Log("Loading command modules");
             await this._commands
                 .AddModulesAsync(
                     Assembly.GetEntryAssembly(),
                     this._provider); // Load commands and modules into the command service
 
+            this._logger.Log("Preparing cache folder");
             PrepareCacheFolder();
 
             await StartMetricsServer();

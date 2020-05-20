@@ -20,8 +20,8 @@ namespace FMBot.Bot.Interfaces
         Task SetGuildReactionsAsync(IGuild guild, string[] reactions);
         Task SetGuildPrefixAsync(IGuild guild, string prefix);
         Task<string[]> GetDisabledCommandsForGuild(IGuild guild);
-        Task AddDisabledCommandAsync(IGuild guild, string command);
-        Task RemoveDisabledCommandAsync(IGuild guild, string command);
+        Task<string[]> AddDisabledCommandAsync(IGuild guild, string command);
+        Task<string[]> RemoveDisabledCommandAsync(IGuild guild, string command);
         Task<DateTime?> GetGuildIndexTimestampAsync(IGuild guild);
         Task UpdateGuildIndexTimestampAsync(IGuild guild, DateTime? timestamp = null);
         bool ValidateReactions(string[] emoteString);

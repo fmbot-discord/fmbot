@@ -19,6 +19,7 @@ namespace FMBot.Bot.Commands
         private readonly IGuildService _guildService;
 
         private readonly IPrefixService _prefixService;
+        private readonly IDisabledCommandService _disabledCommandService;
 
         private readonly CommandService _commands;
 
@@ -28,12 +29,13 @@ namespace FMBot.Bot.Commands
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        public GuildCommands(IPrefixService prefixService, Logger.Logger logger, IGuildService guildService, CommandService commands)
+        public GuildCommands(IPrefixService prefixService, Logger.Logger logger, IGuildService guildService, CommandService commands, IDisabledCommandService disabledCommandService)
         {
             this._prefixService = prefixService;
             this._logger = logger;
             this._guildService = guildService;
             this._commands = commands;
+            this._disabledCommandService = disabledCommandService;
             this._adminService = new AdminService();
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
@@ -260,9 +262,8 @@ namespace FMBot.Bot.Commands
         /// <summary>
         /// Changes the prefix for the server.
         /// </summary>
-        /// <param name="prefix">The desired prefix.</param>
         [Command("togglecommand", RunMode = RunMode.Async)]
-        [Alias("togglecommands")]
+        [Alias("togglecommands", "toggle")]
         public async Task ToggleCommand(string command = null)
         {
             if (this._guildService.CheckIfDM(this.Context))
@@ -311,12 +312,18 @@ namespace FMBot.Bot.Commands
 
             if (disabledCommands != null && disabledCommands.Contains(command.ToLower()))
             {
-                await this._guildService.RemoveDisabledCommandAsync(this.Context.Guild, command.ToLower());
+                var newDisabledCommands = await this._guildService.RemoveDisabledCommandAsync(this.Context.Guild, command.ToLower());
+
+                this._disabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Guild.Id);
+
                 this._embed.WithDescription($"Re-enabled command `{command.ToLower()}` for this server.");
             }
             else
             {
-                await this._guildService.AddDisabledCommandAsync(this.Context.Guild, command.ToLower());
+                var newDisabledCommands = await this._guildService.AddDisabledCommandAsync(this.Context.Guild, command.ToLower());
+
+                this._disabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Guild.Id);
+
                 this._embed.WithDescription($"Disabled command `{command.ToLower()}` for this server.");
             }
 

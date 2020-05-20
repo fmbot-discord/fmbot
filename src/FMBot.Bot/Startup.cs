@@ -70,6 +70,7 @@ namespace FMBot.Bot
                 .AddSingleton<StartupService>()
                 .AddSingleton<TimerService>()
                 .AddSingleton<IPrefixService, PrefixService>()
+                .AddSingleton<IDisabledCommandService, DisabledCommandService>()
                 .AddSingleton<IUserIndexQueue, UserIndexQueue>()
                 .AddSingleton<IArtistsService, ArtistsService>()
                 .AddSingleton<IChartService, ChartService>()

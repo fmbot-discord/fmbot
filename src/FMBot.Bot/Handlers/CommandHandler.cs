@@ -17,18 +17,22 @@ namespace FMBot.Bot.Handlers
         private readonly CommandService _commands;
         private readonly DiscordShardedClient _discord;
         private readonly IPrefixService _prefixService;
+        private readonly IDisabledCommandService _disabledCommandService;
         private readonly IServiceProvider _provider;
 
         // DiscordSocketClient, CommandService, IConfigurationRoot, and IServiceProvider are injected automatically from the IServiceProvider
         public CommandHandler(
             DiscordShardedClient discord,
             CommandService commands,
-            IServiceProvider provider, IPrefixService prefixService)
+            IServiceProvider provider,
+            IPrefixService prefixService,
+            IDisabledCommandService disabledCommandService)
         {
             this._discord = discord;
             this._commands = commands;
             this._provider = provider;
             this._prefixService = prefixService;
+            this._disabledCommandService = disabledCommandService;
 
             this._discord.MessageReceived += OnMessageReceivedAsync;
         }
@@ -98,6 +102,15 @@ namespace FMBot.Bot.Handlers
             // If custom prefix is enabled, no commands found and message does not start with custom prefix, return
             if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && customPrefix != null && !msg.Content.StartsWith(customPrefix))
             {
+                return;
+            }
+
+            var disabledCommands = this._disabledCommandService.GetDisabledCommands(context.Guild?.Id);
+            if (searchResult.Commands != null &&
+                disabledCommands != null &&
+                disabledCommands.Any(searchResult.Commands.First().Command.Name.Contains))
+            {
+                await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this server.");
                 return;
             }
 

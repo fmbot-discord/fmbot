@@ -171,7 +171,7 @@ namespace FMBot.Bot.Services
             return existingGuild?.DisabledCommands;
         }
 
-        public async Task AddDisabledCommandAsync(IGuild guild, string command)
+        public async Task<string[]> AddDisabledCommandAsync(IGuild guild, string command)
         {
             using var db = new FMBotDbContext();
             var existingGuild = await db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
@@ -191,6 +191,8 @@ namespace FMBot.Bot.Services
                 db.Guilds.Add(newGuild);
 
                 await db.SaveChangesAsync();
+
+                return newGuild.DisabledCommands;
             }
             else
             {
@@ -211,10 +213,12 @@ namespace FMBot.Bot.Services
                 db.Entry(existingGuild).State = EntityState.Modified;
 
                 await db.SaveChangesAsync();
+
+                return existingGuild.DisabledCommands;
             }
         }
 
-        public async Task RemoveDisabledCommandAsync(IGuild guild, string command)
+        public async Task<string[]> RemoveDisabledCommandAsync(IGuild guild, string command)
         {
             using var db = new FMBotDbContext();
             var existingGuild = await db.Guilds.FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
@@ -226,6 +230,8 @@ namespace FMBot.Bot.Services
             db.Entry(existingGuild).State = EntityState.Modified;
 
             await db.SaveChangesAsync();
+
+            return existingGuild.DisabledCommands;
         }
 
         public async Task<DateTime?> GetGuildIndexTimestampAsync(IGuild guild)
