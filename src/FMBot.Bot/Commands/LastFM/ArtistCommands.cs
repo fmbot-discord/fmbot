@@ -12,8 +12,6 @@ using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
-using FMBot.Persistence.EntityFrameWork;
-using SpotifyAPI.Web.Enums;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -85,7 +83,7 @@ namespace FMBot.Bot.Commands.LastFM
             };
 
             var artistCall = await this._lastfmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
-            var spotifyArtistResultsTask = this._spotifyService.GetSearchResultAsync(artist, SearchType.Artist);
+            var spotifyImageSearchTask = this._spotifyService.GetArtistImageAsync(artist);
 
             if (!artistCall.Success)
             {
@@ -95,17 +93,13 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var artistInfo = artistCall.Content.Artist;
-            var spotifyResults = await spotifyArtistResultsTask;
+            var spotifyImage = await spotifyImageSearchTask;
 
-            if (spotifyResults.Artists?.Items?.Any() == true)
+            if (spotifyImage != null)
             {
-                var spotifyArtist = spotifyResults.Artists.Items.FirstOrDefault();
-                if (spotifyArtist.Images.Any() && spotifyArtist.Name.ToLower() == artistInfo.Name.ToLower())
-                {
-                    this._embed.WithThumbnailUrl(spotifyArtist.Images.OrderByDescending(o => o.Height).FirstOrDefault().Url);
-                    this._embedFooter.WithText("Image source: Spotify");
-                    this._embed.WithFooter(this._embedFooter);
-                }
+                this._embed.WithThumbnailUrl(spotifyImage);
+                this._embedFooter.WithText("Image source: Spotify");
+                this._embed.WithFooter(this._embedFooter);
             }
 
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
@@ -277,7 +271,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("index", RunMode = RunMode.Async)]
-        [Summary("Indexes top 2000 artists for every user in your server.")]
+        [Summary("Indexes top 4000 artists for every user in your server.")]
         public async Task IndexGuildAsync()
         {
             if (this._guildService.CheckIfDM(this.Context))
@@ -432,6 +426,7 @@ namespace FMBot.Bot.Commands.LastFM
             };
 
             var artistCall = await this._lastfmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+            var spotifyArtistResultsTask = this._spotifyService.GetArtistImageAsync(artistQuery);
 
             if (!artistCall.Success)
             {
@@ -442,6 +437,12 @@ namespace FMBot.Bot.Commands.LastFM
             Statistics.LastfmApiCalls.Inc();
 
             var artist = artistCall.Content;
+            var spotifyImage = await spotifyArtistResultsTask;
+
+            if (spotifyImage != null)
+            {
+                this._embed.WithThumbnailUrl(spotifyImage);
+            }
 
             try
             {
