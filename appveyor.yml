@@ -3,11 +3,12 @@ pull_requests:
   do_not_increment_build_number: true
 image: Visual Studio 2019
 configuration: Release
+init:
+- ps: $branch = $env:APPVEYOR_REPO_BRANCH -replace '\W', '-'; $env:ASSEMBLY_INFORMATIONAL_VERSION = if ($branch -eq "master") { $env:APPVEYOR_BUILD_VERSION } else { "$env:APPVEYOR_BUILD_VERSION-$branch" }
 dotnet_csproj:
   patch: true
   file: '**\*.csproj'
   version: '{version}'
-  version_prefix: '{version}'
   package_version: '{version}'
   assembly_version: '{version}'
   file_version: '{version}'
