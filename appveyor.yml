@@ -13,7 +13,6 @@ dotnet_csproj:
   assembly_version: '{version}'
   file_version: '{version}'
   informational_version: '{version}'
-  product_version: '{version}'
 nuget:
   account_feed: true
   project_feed: true
