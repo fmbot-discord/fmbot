@@ -9,7 +9,6 @@
     <Authors>Bitl#3305 &amp; Frikandel#0001</Authors>
     <PackageId>FMBot</PackageId>
     <PackageProjectUrl>https://fmbot.xyz/</PackageProjectUrl>
-    <Version>1.0.0</Version>
     <RepositoryUrl>https://github.com/fmbot-discord/fmbot</RepositoryUrl>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
