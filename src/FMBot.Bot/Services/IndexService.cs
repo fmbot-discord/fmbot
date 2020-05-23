@@ -77,7 +77,7 @@ namespace FMBot.Bot.Services
                 UserId = user.UserId
             }).ToList();
 
-            using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext();
             var connString = db.Database.GetDbConnection().ConnectionString;
             var copyHelper = new PostgreSQLCopyHelper<Artist>("public", "artists")
                 .MapText("name", x => x.Name)
@@ -85,18 +85,16 @@ namespace FMBot.Bot.Services
                 .MapInteger("playcount", x => x.Playcount)
                 .MapTimeStamp("last_updated", x => x.LastUpdated);
 
-            await using (var connection = new NpgsqlConnection(connString))
-            {
-                connection.Open();
+            await using var connection = new NpgsqlConnection(connString);
+            connection.Open();
 
-                await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.artists WHERE user_id = {user.UserId};", connection);
-                await deleteCurrentArtists.ExecuteNonQueryAsync().ConfigureAwait(false);
+            await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.artists WHERE user_id = {user.UserId};", connection);
+            await deleteCurrentArtists.ExecuteNonQueryAsync().ConfigureAwait(false);
 
-                await copyHelper.SaveAllAsync(connection, artists).ConfigureAwait(false);
+            await copyHelper.SaveAllAsync(connection, artists).ConfigureAwait(false);
 
-                await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_indexed='{now.ToString("u")}' WHERE user_id = {user.UserId};", connection);
-                await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
-            }
+            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_indexed='{now.ToString("u")}' WHERE user_id = {user.UserId};", connection);
+            await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
         public async Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> guildUsers)
@@ -105,7 +103,7 @@ namespace FMBot.Bot.Services
 
             var tooRecent = DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
 
-            using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext();
             return await db.Users
                 .Include(i => i.Artists)
                 .Where(w => userIds.Contains(w.DiscordUserId)
@@ -119,8 +117,9 @@ namespace FMBot.Bot.Services
 
             var indexCooldown = DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
 
-            using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext();
             return await db.Users
+                .AsQueryable()
                 .Where(w => userIds.Contains(w.DiscordUserId)
                     && w.LastIndexed != null && w.LastIndexed >= indexCooldown)
                 .CountAsync();

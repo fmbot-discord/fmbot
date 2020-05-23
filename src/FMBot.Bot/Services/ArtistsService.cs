@@ -89,7 +89,7 @@ namespace FMBot.Bot.Services
         {
             var userIds = guildUsers.Select(s => s.Id);
 
-            using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext();
             var artists = await db.Artists
                 .Include(i => i.User)
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
@@ -119,7 +119,7 @@ namespace FMBot.Bot.Services
         {
             var userIds = guildUsers.Select(s => s.Id);
 
-            using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext();
             return await db.Artists
                 .Include(i => i.User)
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
@@ -131,7 +131,7 @@ namespace FMBot.Bot.Services
         {
             var userIds = guildUsers.Select(s => s.Id);
 
-            using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext();
             var query = db.Artists
                 .Include(i => i.User)
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
@@ -153,7 +153,7 @@ namespace FMBot.Bot.Services
         {
             var userIds = guildUsers.Select(s => s.Id);
 
-            using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext();
             var query = db.Artists
                 .Include(i => i.User)
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
