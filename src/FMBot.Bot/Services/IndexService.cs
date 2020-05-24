@@ -68,6 +68,11 @@ namespace FMBot.Bot.Services
                 Statistics.LastfmApiCalls.Inc();
             }
 
+            if (topArtists.Count == 0)
+            {
+                return;
+            }
+
             var now = DateTime.UtcNow;
             var artists = topArtists.Select(a => new Artist
             {

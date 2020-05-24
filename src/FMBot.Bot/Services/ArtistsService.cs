@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -112,6 +113,26 @@ namespace FMBot.Bot.Services
                         UserId = s.UserId,
                     };
                 }).ToList();
+        }
+
+        public async Task<IList<ListArtist>> GetTopArtistsForGuild(IReadOnlyCollection<IGuildUser> guildUsers)
+        {
+            var userIds = guildUsers.Select(s => s.Id);
+
+            await using var db = new FMBotDbContext();
+            return await db.Artists
+                .Include(i => i.User)
+                .Where(w => userIds.Contains(w.User.DiscordUserId))
+                .GroupBy(o => o.Name)
+                .OrderByDescending(o => o.Sum(s => s.Playcount))
+                .Take(14)
+                .Select(s => new ListArtist
+                {
+                    ArtistName = s.Key,
+                    Playcount = s.Sum(s => s.Playcount),
+                    ListenerCount = s.Count()
+                })
+                .ToListAsync();
         }
 
 

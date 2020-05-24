@@ -11,5 +11,6 @@ namespace FMBot.Bot.Interfaces
         Task<int> GetArtistListenerCountForServer(IEnumerable<IGuildUser> guildUsers, string artistName);
         Task<int> GetArtistPlayCountForServer(IEnumerable<IGuildUser> guildUsers, string artistName);
         Task<double> GetArtistAverageListenerPlaycountForServer(IEnumerable<IGuildUser> guildUsers, string artistName);
+        Task<IList<ListArtist>> GetTopArtistsForGuild(IReadOnlyCollection<IGuildUser> guildUsers);
     }
 }

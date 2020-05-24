@@ -55,7 +55,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("artist", RunMode = RunMode.Async)]
         [Summary("Displays current artist.")]
         [Alias("a")]
-        public async Task ArtistsAsync(params string[] artistValues)
+        public async Task ArtistAsync(params string[] artistValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
@@ -495,6 +495,78 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithTitle($"Who knows {artist.Artist.Name} in {this.Context.Guild.Name}");
                 this._embed.WithUrl(artist.Artist.Url);
+
+                this._embedFooter.WithText(footer);
+                this._embed.WithFooter(this._embedFooter);
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
+                    this.Context.Message.Content);
+            }
+            catch (Exception e)
+            {
+                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
+                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                await ReplyAsync(
+                    "Something went wrong while using whoknows. Please let us know as this feature is in beta.");
+            }
+        }
+
+
+        [Command("serverartists", RunMode = RunMode.Async)]
+        [Summary("Shows top artists for your server")]
+        [Alias("sa")]
+        public async Task ServerArtistsAsync(params string[] artistValues)
+        {
+            if (this._guildService.CheckIfDM(this.Context))
+            {
+                await ReplyAsync("This command is not supported in DMs.");
+                return;
+            }
+
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
+
+            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
+
+            if (lastIndex == null)
+            {
+                await ReplyAsync("This server hasn't been indexed yet.\n" +
+                                 $"Please run `{prfx}index` to index this server.");
+                return;
+            }
+            if (lastIndex < DateTime.UtcNow.AddDays(-60))
+            {
+                await ReplyAsync("Server index data is out of date, it was last updated over 60 days ago.\n" +
+                                 $"Please run `{prfx}index` to re-index this server.");
+                return;
+            }
+
+            _ = this.Context.Channel.TriggerTypingAsync();
+            try
+            {
+                var guildUsers = await this.Context.Guild.GetUsersAsync();
+                var topGuildArtists = await this._artistsService.GetTopArtistsForGuild(guildUsers);
+
+                var description = "";
+                for (var i = 0; i < topGuildArtists.Count(); i++)
+                {
+                    var artist = topGuildArtists[i];
+
+                    description += $"{i + 1}. {artist.ArtistName} - `{artist.Playcount}` plays - `{artist.ListenerCount}` listeners -  \n";
+                }
+
+                this._embed.WithDescription(description);
+
+                var footer = "";
+
+                var timeTillIndex = DateTime.UtcNow - lastIndex.Value;
+                footer += $"Last updated {(int)timeTillIndex.TotalHours}h{timeTillIndex:mm}m ago";
+                if (lastIndex < DateTime.UtcNow.Add(-Constants.GuildIndexCooldown))
+                {
+                    footer += $" - Update data with {prfx}index";
+                }
+
+                this._embed.WithTitle($"Top artists in {this.Context.Guild.Name}");
 
                 this._embedFooter.WithText(footer);
                 this._embed.WithFooter(this._embedFooter);
