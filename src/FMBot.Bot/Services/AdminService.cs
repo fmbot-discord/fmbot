@@ -10,7 +10,7 @@ namespace FMBot.Bot.Services
     {
         public async Task<bool> HasCommandAccessAsync(IUser discordUser, UserType userType)
         {
-            using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext();
             var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
             if (user == null)
@@ -54,7 +54,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> SetUserTypeAsync(ulong discordUserID, UserType userType)
         {
-            using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext();
             var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
 
             if (user == null)
@@ -71,10 +71,9 @@ namespace FMBot.Bot.Services
             return true;
         }
 
-
         public async Task<bool> AddUserToBlacklistAsync(ulong discordUserID)
         {
-            using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext();
             var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
 
             if (user == null)
@@ -91,10 +90,9 @@ namespace FMBot.Bot.Services
             return true;
         }
 
-
         public async Task<bool> RemoveUserFromBlacklistAsync(ulong discordUserID)
         {
-            using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext();
             var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
 
             if (user == null)
@@ -113,15 +111,15 @@ namespace FMBot.Bot.Services
 
         public string FormatBytes(long bytes)
         {
-            string[] Suffix = {"B", "KB", "MB", "GB", "TB"};
+            string[] suffix = {"B", "KB", "MB", "GB", "TB"};
             int i;
             double dblSByte = bytes;
-            for (i = 0; i < Suffix.Length && bytes >= 1024; i++, bytes /= 1024)
+            for (i = 0; i < suffix.Length && bytes >= 1024; i++, bytes /= 1024)
             {
                 dblSByte = bytes / 1024.0;
             }
 
-            return string.Format("{0:0.##} {1}", dblSByte, Suffix[i]);
+            return string.Format("{0:0.##} {1}", dblSByte, suffix[i]);
         }
     }
 }

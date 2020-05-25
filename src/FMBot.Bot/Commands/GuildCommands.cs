@@ -272,15 +272,6 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            var serverUser = (IGuildUser)this.Context.Message.Author;
-            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
-            {
-                await ReplyAsync(
-                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
-                return;
-            }
-
             var disabledCommands = await this._guildService.GetDisabledCommandsForGuild(this.Context.Guild);
 
             if (string.IsNullOrEmpty(command))
@@ -288,7 +279,7 @@ namespace FMBot.Bot.Commands
                 var description = "";
                 if (disabledCommands != null)
                 {
-                    description += "Currently disabled commands in this guild:\n";
+                    description += "Currently disabled commands in this server:\n";
                     foreach (var disabledCommand in disabledCommands)
                     {
                         description += $"- {disabledCommand}\n";
@@ -299,9 +290,18 @@ namespace FMBot.Bot.Commands
                     description = "This server currently has all commands enabled. \n" +
                                   "To disable a command, enter the command name like this: `.fmtogglecommand chart`";
                 }
-                
+
                 this._embed.WithDescription(description);
                 await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+                return;
+            }
+
+            var serverUser = (IGuildUser)this.Context.Message.Author;
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
+                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync(
+                    "You are not authorized to toggle commands. Only users with the 'Ban Members' permission, server admins or FMBot admins disable/enable commands.");
                 return;
             }
 
@@ -335,7 +335,6 @@ namespace FMBot.Bot.Commands
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
             this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id, this.Context.Message.Content);
         }
-
 
         private static Stream StringToStream(string str)
         {
