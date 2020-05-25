@@ -42,6 +42,7 @@ namespace FMBot.Bot.Services
                     break;
             }
 
+            embed.WithThumbnailUrl("https://www.last.fm/static/images/marvin.e51495403de9.png");
             embed.WithColor(Constants.WarningColorOrange);
             logger.LogError($"No scrobbles found for user, error code {apiResponse}", context.Message.Content, context.User.Username, context.Guild?.Name, context.Guild?.Id);
         }
