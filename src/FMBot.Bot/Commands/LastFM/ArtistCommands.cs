@@ -552,7 +552,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     var artist = topGuildArtists[i];
 
-                    description += $"{i + 1}. {artist.ArtistName} - `{artist.Playcount}` plays - `{artist.ListenerCount}` listeners -  \n";
+                    description += $"{i + 1}. {artist.ArtistName} - **{artist.Playcount}** plays - **{artist.ListenerCount}** listeners\n";
                 }
 
                 this._embed.WithDescription(description);
@@ -566,7 +566,9 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $" - Update data with {prfx}index";
                 }
 
-                this._embed.WithTitle($"Top artists in {this.Context.Guild.Name}");
+                footer += "\nView specific artist info with .fmartist";
+
+                this._embed.WithTitle($"Top alltime artists in {this.Context.Guild.Name}");
 
                 this._embedFooter.WithText(footer);
                 this._embed.WithFooter(this._embedFooter);
@@ -580,7 +582,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
                     this.Context.Guild?.Name, this.Context.Guild?.Id);
                 await ReplyAsync(
-                    "Something went wrong while using whoknows. Please let us know as this feature is in beta.");
+                    "Something went wrong while using fmserverartists. Please let us know as this feature is in beta.");
             }
         }
 
