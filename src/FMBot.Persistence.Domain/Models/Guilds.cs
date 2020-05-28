@@ -29,6 +29,6 @@ namespace FMBot.Persistence.Domain.Models
 
         public bool? SpecialGuild { get; set; }
 
-        public ICollection<User> Users { get; set; }
+        public ICollection<GuildUser> Users { get; set; }
     }
 }

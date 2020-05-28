@@ -19,7 +19,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<Guild> Guilds { get; set; }
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<Artist> Artists { get; set; }
-        
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
@@ -67,8 +67,16 @@ namespace FMBot.Persistence.EntityFrameWork
 
             modelBuilder.Entity<GuildUser>(entity =>
             {
-                entity.HasKey(e => new {e.GuildId, e.UserId});
-            })
+                entity.HasKey(e => new { e.GuildId, e.UserId });
+
+                entity.HasOne(sc => sc.Guild)
+                    .WithMany(s => s.Users)
+                    .HasForeignKey(sc => sc.GuildId);
+
+                entity.HasOne(sc => sc.User)
+                    .WithMany(s => s.Guilds)
+                    .HasForeignKey(sc => sc.UserId);
+            });
 
             modelBuilder.Entity<User>(entity =>
             {
