@@ -65,6 +65,11 @@ namespace FMBot.Persistence.EntityFrameWork
                         v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
             });
 
+            modelBuilder.Entity<GuildUser>(entity =>
+            {
+                entity.HasKey(e => new {e.GuildId, e.UserId});
+            })
+
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.UserId);
@@ -78,6 +83,7 @@ namespace FMBot.Persistence.EntityFrameWork
                     .WithMany(a => a.Artists)
                     .HasForeignKey(f => f.UserId);
             });
+
         }
     }
 }
