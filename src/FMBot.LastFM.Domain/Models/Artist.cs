@@ -12,7 +12,6 @@ namespace FMBot.LastFM.Domain.Models
         public string Name { get; set; }
         public Guid Mbid { get; set; }
         public string Url { get; set; }
-        public Image[] Image { get; set; }
         public long Streamable { get; set; }
         public long Ontour { get; set; }
         public Stats Stats { get; set; }
