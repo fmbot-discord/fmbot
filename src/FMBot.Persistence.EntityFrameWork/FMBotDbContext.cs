@@ -17,6 +17,7 @@ namespace FMBot.Persistence.EntityFrameWork
 
         public virtual DbSet<Friend> Friends { get; set; }
         public virtual DbSet<Guild> Guilds { get; set; }
+        public virtual DbSet<GuildUser> GuildUsers { get; set; }
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<Artist> Artists { get; set; }
 

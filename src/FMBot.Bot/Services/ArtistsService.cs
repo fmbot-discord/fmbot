@@ -4,6 +4,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Commands;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -86,33 +87,37 @@ namespace FMBot.Bot.Services
             return artistPlaycount == 1 ? "play" : "plays";
         }
 
-        public async Task<IList<ArtistWithUser>> GetIndexedUsersForArtist(IReadOnlyCollection<IGuildUser> guildUsers, string artistName)
+        public async Task<IList<ArtistWithUser>> GetIndexedUsersForArtist(ICommandContext context,
+            IReadOnlyList<User> guildUsers, string artistName)
         {
-            var userIds = guildUsers.Select(s => s.Id);
+            var userIds = guildUsers.Select(s => s.UserId);
 
             await using var db = new FMBotDbContext();
             var artists = await db.Artists
                 .Include(i => i.User)
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
-                            && userIds.Contains(w.User.DiscordUserId))
+                            && userIds.Contains(w.UserId))
                 .OrderByDescending(o => o.Playcount)
                 .Take(14)
                 .ToListAsync();
 
-            return artists
-                .Select(s =>
+            var returnArtists = new List<ArtistWithUser>();
+
+            foreach (var artist in artists)
+            {
+                var discordUser = await context.Guild.GetUserAsync(artist.User.DiscordUserId);
+                returnArtists.Add(new ArtistWithUser
                 {
-                    var discordUser = guildUsers.First(f => f.Id == s.User.DiscordUserId);
-                    return new ArtistWithUser
-                    {
-                        ArtistName = s.Name,
-                        DiscordName = discordUser.Nickname ?? discordUser.Username,
-                        Playcount = s.Playcount,
-                        DiscordUserId = s.User.DiscordUserId,
-                        LastFMUsername = s.User.UserNameLastFM,
-                        UserId = s.UserId,
-                    };
-                }).ToList();
+                    ArtistName = artist.Name,
+                    DiscordName = discordUser.Nickname ?? discordUser.Username,
+                    Playcount = artist.Playcount,
+                    DiscordUserId = artist.User.DiscordUserId,
+                    LastFMUsername = artist.User.UserNameLastFM,
+                    UserId = artist.UserId,
+                });
+            }
+
+            return returnArtists;
         }
 
         public async Task<IList<ListArtist>> GetTopArtistsForGuild(IReadOnlyCollection<IGuildUser> guildUsers)

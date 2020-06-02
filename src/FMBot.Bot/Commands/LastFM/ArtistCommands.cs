@@ -294,7 +294,7 @@ namespace FMBot.Bot.Commands.LastFM
                     lastIndex != null && lastIndex > DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
 
                 var guildRecentlyIndexed =
-                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(6));
+                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(1));
 
                 if (guildRecentlyIndexed)
                 {
@@ -361,6 +361,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
                     this.Context.Message.Content);
 
+                await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
                 this._indexService.IndexGuild(users);
             }
             catch (Exception e)
@@ -410,6 +411,8 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var artistQuery = await GetArtistOrHelp(artistValues, userSettings, "fmartist");
@@ -446,8 +449,8 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var guildUsers = await this.Context.Guild.GetUsersAsync();
-                var usersWithArtist = await this._artistsService.GetIndexedUsersForArtist(guildUsers, artist.Artist.Name);
+                var users = guild.Users.Select(s => s.User).ToList();
+                var usersWithArtist = await this._artistsService.GetIndexedUsersForArtist(this.Context, users, artist.Artist.Name);
 
                 if (usersWithArtist.Count == 0 && artist.Artist.Stats.Userplaycount != 0)
                 {
@@ -478,17 +481,17 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $" - Update data with {prfx}index";
                 }
 
-                if (guildUsers.Count < 100)
+                if (guild.Users.Count < 100)
                 {
-                    var serverListeners = await this._artistsService.GetArtistListenerCountForServer(guildUsers, artist.Artist.Name);
-                    var serverPlaycount = await this._artistsService.GetArtistPlayCountForServer(guildUsers, artist.Artist.Name);
-                    var avgServerListenerPlaycount = await this._artistsService.GetArtistAverageListenerPlaycountForServer(guildUsers, artist.Artist.Name);
+                    //var serverListeners = await this._artistsService.GetArtistListenerCountForServer(guildUsers, artist.Artist.Name);
+                    //var serverPlaycount = await this._artistsService.GetArtistPlayCountForServer(guildUsers, artist.Artist.Name);
+                    //var avgServerListenerPlaycount = await this._artistsService.GetArtistAverageListenerPlaycountForServer(guildUsers, artist.Artist.Name);
 
-                    footer += $"\n{serverListeners} listeners - ";
-                    footer += $"{serverPlaycount} total plays - ";
-                    footer += $"{(int)avgServerListenerPlaycount} median plays";
+                    //footer += $"\n{serverListeners} listeners - ";
+                    //footer += $"{serverPlaycount} total plays - ";
+                    //footer += $"{(int)avgServerListenerPlaycount} median plays";
                 }
-                else if (guildUsers.Count < 125)
+                else if (guild.Users.Count < 125)
                 {
                     footer += $"\nView server artist averages in `{prfx}artist`";
                 }
