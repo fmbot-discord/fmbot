@@ -152,12 +152,15 @@ namespace FMBot.Bot.Services
             var textColor = chartImage.GetTextColor();
             var rectangleColor = textColor == SKColors.Black ? SKColors.White : SKColors.Black;
 
+            var typeface = SKFontManager.Default.MatchCharacter(album.ArtistName[0]);
+
             using var textPaint = new SKPaint
             {
                 TextSize = 11,
                 IsAntialias = true,
                 TextAlign = SKTextAlign.Center,
                 Color = textColor,
+                Typeface = typeface
             };
 
             if (textPaint.MeasureText(album.Name) > chartImage.Width ||
