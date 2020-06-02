@@ -27,6 +27,7 @@ namespace FMBot.Bot.Services
         private readonly LastFMService _lastFMService;
         private readonly UserService _userService;
         private readonly GuildService _guildService;
+        private readonly DiscordShardedClient _client;
 
         private bool _timerEnabled;
 
@@ -36,6 +37,7 @@ namespace FMBot.Bot.Services
         {
             this._logger = logger;
             this._lastfmApi = lastfmApi;
+            this._client = client;
             this._lastFMService = new LastFMService(this._lastfmApi);
             this._userService = new UserService();
             this._guildService = new GuildService();
@@ -172,7 +174,7 @@ namespace FMBot.Bot.Services
                 TimeSpan.FromMinutes(Convert.ToDouble(ConfigData.Data.TimerRepeat))); // 5) Time after which message should repeat (use `Timeout.Infinite` for no repeat)
 
             this._internalStatsTimer = new Timer(async _ =>
-                { 
+                {
                     logger.Log("Updating metrics and status");
                     Statistics.DiscordServerCount.Set(client.Guilds.Count);
 
@@ -275,7 +277,7 @@ namespace FMBot.Bot.Services
 
                 var guild = client.GetGuild(broadcastServerId);
                 var channel = guild.GetTextChannel(broadcastChannelId);
-                 
+
                 var builder = new EmbedBuilder();
                 var selfUser = client.CurrentUser;
                 builder.WithThumbnailUrl(selfUser.GetAvatarUrl());
@@ -339,28 +341,23 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async void UseCustomAvatarFromLink(DiscordShardedClient client, string link, string desc, bool important)
+        public async void SetFeatured(string link, string desc, bool stopTimer)
         {
-            if (important && IsTimerActive())
+            if (stopTimer && IsTimerActive())
             {
                 Stop();
             }
-            else if (!important && !IsTimerActive())
+            else if (!stopTimer && !IsTimerActive())
             {
                 Restart();
             }
 
-            GlobalVars.FeaturedUserID = "";
-
             try
             {
-                this._trackString = desc;
-                this._logger.Log("Changed avatar to: " + this._trackString);
+                ChangeToNewAvatar(this._client, link);
 
-                if (!string.IsNullOrWhiteSpace(link))
-                {
-                    ChangeToNewAvatar(client, link);
-                }
+                this._trackString = desc;
+                this._logger.Log("Changed featured to: " + this._trackString);
             }
             catch (Exception e)
             {
