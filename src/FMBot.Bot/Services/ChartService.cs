@@ -152,7 +152,7 @@ namespace FMBot.Bot.Services
             var textColor = chartImage.GetTextColor();
             var rectangleColor = textColor == SKColors.Black ? SKColors.White : SKColors.Black;
 
-            var typeface = SKFontManager.Default.MatchCharacter(album.ArtistName[0]);
+            var typeface = SKTypeface.FromFile(FMBotUtil.GlobalVars.FontFolder + "arial-unicode-ms.ttf");
 
             using var textPaint = new SKPaint
             {
@@ -195,12 +195,6 @@ namespace FMBot.Bot.Services
 
             bitmapCanvas.DrawText(album.ArtistName, (float)chartImage.Width / 2, -artistBounds.Top + chartImage.Height - 24,
                 textPaint);
-
-            if (!string.IsNullOrEmpty(album.Name))
-            {
-                var albumTypeface = SKFontManager.Default.MatchCharacter(album.Name[0]);
-                textPaint.Typeface = albumTypeface;
-            }
 
             bitmapCanvas.DrawText(album.Name, (float)chartImage.Width / 2, -albumBounds.Top + chartImage.Height - 12,
                 textPaint);

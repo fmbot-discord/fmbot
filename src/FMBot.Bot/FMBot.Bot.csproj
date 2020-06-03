@@ -52,6 +52,9 @@
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="Resources\Fonts\arial-unicode-ms.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Resources\Images\avatar.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
