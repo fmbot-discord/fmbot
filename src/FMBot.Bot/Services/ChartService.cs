@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -31,6 +34,7 @@ namespace FMBot.Bot.Services
 
                     SKBitmap chartImage;
                     var validImage = true;
+                    Color? primaryColor = null;
 
                     var fileName = localAlbumId + ".png";
                     var localPath = FMBotUtil.GlobalVars.CacheFolder + fileName;
@@ -96,8 +100,12 @@ namespace FMBot.Bot.Services
                             break;
                     }
 
+                    if (chart.RainbowSortingEnabled)
+                    {
+                        primaryColor = GetAverageRgbColor(SkiaSharp.Views.Desktop.Extensions.ToBitmap(chartImage));
+                    }
 
-                    chart.ChartImages.Add(new ChartImage(chartImage, chart.Albums.IndexOf(album), validImage));
+                    chart.ChartImages.Add(new ChartImage(chartImage, chart.Albums.IndexOf(album), validImage, primaryColor));
                 });
 
 
@@ -113,8 +121,20 @@ namespace FMBot.Bot.Services
 
                     for (var i = 0; i < chart.ImagesNeeded; i++)
                     {
-                        var image = chart.ChartImages
-                            .OrderBy(o => o.Index)
+                        IOrderedEnumerable<ChartImage> imageList;
+                        if (!chart.RainbowSortingEnabled)
+                        {
+                            imageList = chart.ChartImages.OrderBy(o => o.Index);
+                        }
+                        else
+                        {
+                            imageList = chart.ChartImages
+                                .OrderBy(o => o.PrimaryColor.Value.GetHue())
+                                .ThenBy(o => (o.PrimaryColor.Value.R * 3 + o.PrimaryColor.Value.G * 2 + o.PrimaryColor.Value.B * 1));
+                        }
+
+
+                        var image = imageList
                             .Where(w => !chart.SkipArtistsWithoutImage || w.ValidImage)
                             .ElementAt(i).Image;
 
@@ -144,6 +164,51 @@ namespace FMBot.Bot.Services
                 {
                     image.Dispose();
                 }
+            }
+        }
+
+        internal static unsafe Color GetAverageRgbColor(Bitmap bmp)
+        {
+            int totalRed = 0;
+            int totalGreen = 0;
+            int totalBlue = 0;
+
+            BitmapData bData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadWrite, bmp.PixelFormat);
+            byte bitsPerPixel = GetBitsPerPixel(bData.PixelFormat);
+            byte* scan0 = (byte*)bData.Scan0.ToPointer();
+            for (int i = 0; i < bData.Height; ++i)
+            {
+                for (int j = 0; j < bData.Width; ++j)
+                {
+                    byte* data = scan0 + i * bData.Stride + j * bitsPerPixel / 8;
+                    Color clr = Color.FromArgb(data[3], data[2], data[1], data[0]);
+                    totalRed += clr.R;
+                    totalGreen += clr.G;
+                    totalBlue += clr.B;
+                }
+            }
+            bmp.UnlockBits(bData);
+
+            int totalPixels = bData.Width * bData.Height;
+            byte avgRed = (byte)(totalRed / totalPixels);
+            byte avgGreen = (byte)(totalGreen / totalPixels);
+            byte avgBlue = (byte)(totalBlue / totalPixels);
+            return Color.FromArgb(avgRed, avgGreen, avgBlue);
+        }
+
+        internal static byte GetBitsPerPixel(PixelFormat pixelFormat)
+        {
+            switch (pixelFormat)
+            {
+                case PixelFormat.Format24bppRgb:
+                    return 24;
+                case PixelFormat.Format32bppArgb:
+                case PixelFormat.Format32bppPArgb:
+                case PixelFormat.Format32bppRgb:
+                    return 32;
+                default:
+                    throw new ArgumentException("Only 24 and 32 bit images are supported");
+
             }
         }
 
@@ -259,6 +324,15 @@ namespace FMBot.Bot.Services
                 extraOptions.Contains("skip") ||
                 extraOptions.Contains("s"))
             {
+                chartSettings.SkipArtistsWithoutImage = true;
+                chartSettings.CustomOptionsEnabled = true;
+            }
+
+            if (extraOptions.Contains("rainbow") ||
+                extraOptions.Contains("pride") ||
+                extraOptions.Contains("r"))
+            {
+                chartSettings.RainbowSortingEnabled = true;
                 chartSettings.SkipArtistsWithoutImage = true;
                 chartSettings.CustomOptionsEnabled = true;
             }

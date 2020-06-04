@@ -60,5 +60,10 @@ namespace FMBot.Bot.Extensions
         {
             return (PerceivedBrightness(MostDifferent(AverageColor(bmp))) > 130 ? SKColors.White : SKColors.Black);
         }
+
+        public static Color GetPrimaryColor(this SKBitmap bmp)
+        {
+            return AverageColor(bmp);
+        }
     }
 }

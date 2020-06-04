@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
@@ -32,6 +32,7 @@
     <PackageReference Include="PostgreSQLCopyHelper" Version="2.6.3" />
     <PackageReference Include="prometheus-net" Version="3.5.0" />
     <PackageReference Include="SkiaSharp" Version="1.68.3" />
+    <PackageReference Include="SkiaSharp.Views.Desktop.Common" Version="1.68.3" />
     <PackageReference Include="SpotifyAPI.Web" Version="5.1.1" />
     <PackageReference Include="SpotifyAPI.Web.Auth" Version="5.1.1" />
     <PackageReference Include="System.Drawing.Common" Version="4.7.0" />
