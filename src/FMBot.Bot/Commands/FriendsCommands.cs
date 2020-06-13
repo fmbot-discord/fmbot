@@ -190,34 +190,33 @@ namespace FMBot.Bot.Commands
                     var friendGuildUser = await this._guildService.FindUserFromGuildAsync(this.Context, friend);
 
                     Persistence.Domain.Models.User friendUserSettings;
-                    string username;
+                    string friendUsername;
 
                     if (friendGuildUser != null) {
                         friendUserSettings = await this._userService.GetUserSettingsAsync(friendGuildUser);
-                        username = friendUserSettings?.UserNameLastFM ?? friend;
+                        friendUsername = friendUserSettings?.UserNameLastFM ?? friend;
                     } else {
-                        username = friend;
+                        friendUsername = friend;
                         friendUserSettings = null;
                     }
 
-                    if (!existingFriends.Select(s => s.ToLower()).Contains(username))
+                    if (!existingFriends.Select(s => s.ToLower()).Contains(friendUsername))
                     {
-                        if (await this._lastFmService.LastFMUserExistsAsync(username))
+                        if (await this._lastFmService.LastFMUserExistsAsync(friendUsername))
                         {
-                            await this._friendsService.AddLastFMFriendAsync(this.Context.User.Id, username, friendUserSettings?.UserId);
+                            await this._friendsService.AddLastFMFriendAsync(this.Context.User.Id, friendUsername, friendUserSettings?.UserId);
                             addedFriendsCount++;
                         } else {
-                            friendNotFoundList.Add(username);
+                            friendNotFoundList.Add(friendUsername);
                         }
                     } else {
-                        duplicateFriendsList.Add(username);
+                        duplicateFriendsList.Add(friendUsername);
                     }
                 }
 
                 if (addedFriendsCount > 1)
                 {
-                    await ReplyAsync("Succesfully added " + addedFriendsCount + " friend" + 
-                        (addedFriendsCount == 1 ? "s." : ".")
+                    await ReplyAsync("Succesfully added " + addedFriendsCount + " friends."
                     );
                 }
                 else if (addedFriendsCount == 1)

@@ -37,7 +37,7 @@ namespace FMBot.Bot.Services
                 var newUser = new User
                 {
                     DiscordUserId = discordSenderId,
-                    UserType = UserType.User,
+                    UserType = UserType.User
                 };
 
                 await db.Users.AddAsync(newUser);
