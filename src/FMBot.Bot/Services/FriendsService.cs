@@ -27,16 +27,16 @@ namespace FMBot.Bot.Services
             return friends;
         }
 
-        public async Task AddLastFMFriendAsync(ulong discordUserId, string lastfmusername)
+        public async Task AddLastFMFriendAsync(ulong discordSenderId, string lastfmusername, int? discordFriendId)
         {
             await using var db = new FMBotDbContext();
-            var user = db.Users.FirstOrDefault(f => f.DiscordUserId == discordUserId);
+            var user = db.Users.FirstOrDefault(f => f.DiscordUserId == discordSenderId);
 
             if (user == null)
             {
                 var newUser = new User
                 {
-                    DiscordUserId = discordUserId,
+                    DiscordUserId = discordSenderId,
                     UserType = UserType.User
                 };
 
@@ -47,7 +47,8 @@ namespace FMBot.Bot.Services
             var friend = new Friend
             {
                 User = user,
-                LastFMUserName = lastfmusername
+                LastFMUserName = lastfmusername,
+                FriendUserId = discordFriendId
             };
 
             await db.Friends.AddAsync(friend);
