@@ -8,7 +8,7 @@ method with the owners of this repository before making a change.
 
 1. When a new change is made, please create a PR to the dev branch.
 2. The change will be tested on the develop version of the bot, and if everything 
-goes smoothly it will be released onto the main bot and merged to master.
+goes smoothly it will be released onto the main bot and merged to main.
 
 Note: Since most of the time only 1 developer is working on the bot, changes get 
 committed directly to the 'dev' branch. If more developers are willing to help 
