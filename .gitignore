@@ -24,6 +24,7 @@ ipch
 
 bin/
 obj/
+Logs/
 
 packages/
 src/.vs/

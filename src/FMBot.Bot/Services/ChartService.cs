@@ -1,4 +1,6 @@
 using System;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -31,6 +33,7 @@ namespace FMBot.Bot.Services
 
                     SKBitmap chartImage;
                     var validImage = true;
+                    Color? primaryColor = null;
 
                     var fileName = localAlbumId + ".png";
                     var localPath = FMBotUtil.GlobalVars.CacheFolder + fileName;
@@ -96,8 +99,12 @@ namespace FMBot.Bot.Services
                             break;
                     }
 
+                    if (chart.RainbowSortingEnabled)
+                    {
+                        primaryColor = chartImage.GetAverageRgbColor();
+                    }
 
-                    chart.ChartImages.Add(new ChartImage(chartImage, chart.Albums.IndexOf(album), validImage));
+                    chart.ChartImages.Add(new ChartImage(chartImage, chart.Albums.IndexOf(album), validImage, primaryColor));
                 });
 
 
@@ -113,8 +120,19 @@ namespace FMBot.Bot.Services
 
                     for (var i = 0; i < chart.ImagesNeeded; i++)
                     {
-                        var image = chart.ChartImages
-                            .OrderBy(o => o.Index)
+                        IOrderedEnumerable<ChartImage> imageList;
+                        if (!chart.RainbowSortingEnabled)
+                        {
+                            imageList = chart.ChartImages.OrderBy(o => o.Index);
+                        }
+                        else
+                        {
+                            imageList = chart.ChartImages
+                                .OrderBy(o => o.PrimaryColor.Value.GetHue())
+                                .ThenBy(o => (o.PrimaryColor.Value.R * 3 + o.PrimaryColor.Value.G * 2 + o.PrimaryColor.Value.B * 1));
+                        }
+
+                        var image = imageList
                             .Where(w => !chart.SkipArtistsWithoutImage || w.ValidImage)
                             .ElementAt(i).Image;
 
@@ -147,12 +165,14 @@ namespace FMBot.Bot.Services
             }
         }
 
+
+
         private static void AddTitleToChartImage(SKBitmap chartImage, LastAlbum album)
         {
             var textColor = chartImage.GetTextColor();
             var rectangleColor = textColor == SKColors.Black ? SKColors.White : SKColors.Black;
 
-            var typeface = SKFontManager.Default.MatchCharacter(album.ArtistName[0]);
+            var typeface = SKTypeface.FromFile(FMBotUtil.GlobalVars.FontFolder + "arial-unicode-ms.ttf");
 
             using var textPaint = new SKPaint
             {
@@ -195,12 +215,6 @@ namespace FMBot.Bot.Services
 
             bitmapCanvas.DrawText(album.ArtistName, (float)chartImage.Width / 2, -artistBounds.Top + chartImage.Height - 24,
                 textPaint);
-
-            if (!string.IsNullOrEmpty(album.Name))
-            {
-                var albumTypeface = SKFontManager.Default.MatchCharacter(album.Name[0]);
-                textPaint.Typeface = albumTypeface;
-            }
 
             bitmapCanvas.DrawText(album.Name, (float)chartImage.Width / 2, -albumBounds.Top + chartImage.Height - 12,
                 textPaint);
@@ -269,8 +283,23 @@ namespace FMBot.Bot.Services
                 chartSettings.CustomOptionsEnabled = true;
             }
 
+            if (extraOptions.Contains("rainbow") ||
+                extraOptions.Contains("pride") ||
+                extraOptions.Contains("r"))
+            {
+                chartSettings.RainbowSortingEnabled = true;
+                chartSettings.SkipArtistsWithoutImage = true;
+                chartSettings.CustomOptionsEnabled = true;
+            }
+
             // chart size
-            if (extraOptions.Contains("2x2"))
+            if (extraOptions.Contains("1x1"))
+            {
+                chartSettings.ImagesNeeded = 1;
+                chartSettings.Height = 1;
+                chartSettings.Width = 1;
+            }
+            else if (extraOptions.Contains("2x2"))
             {
                 chartSettings.ImagesNeeded = 4;
                 chartSettings.Height = 2;
@@ -305,6 +334,18 @@ namespace FMBot.Bot.Services
                 chartSettings.ImagesNeeded = 64;
                 chartSettings.Height = 8;
                 chartSettings.Width = 8;
+            }
+            else if (extraOptions.Contains("9x9"))
+            {
+                chartSettings.ImagesNeeded = 81;
+                chartSettings.Height = 9;
+                chartSettings.Width = 9;
+            }
+            else if (extraOptions.Contains("10x10"))
+            {
+                chartSettings.ImagesNeeded = 100;
+                chartSettings.Height = 10;
+                chartSettings.Width = 10;
             }
             else
             {

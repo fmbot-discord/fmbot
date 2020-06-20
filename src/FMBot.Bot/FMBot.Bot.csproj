@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
@@ -12,6 +12,9 @@
     <RepositoryUrl>https://github.com/fmbot-discord/fmbot</RepositoryUrl>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
@@ -32,6 +35,7 @@
     <PackageReference Include="PostgreSQLCopyHelper" Version="2.6.3" />
     <PackageReference Include="prometheus-net" Version="3.5.0" />
     <PackageReference Include="SkiaSharp" Version="1.68.3" />
+    <PackageReference Include="SkiaSharp.Views.Desktop.Common" Version="1.68.3" />
     <PackageReference Include="SpotifyAPI.Web" Version="5.1.1" />
     <PackageReference Include="SpotifyAPI.Web.Auth" Version="5.1.1" />
     <PackageReference Include="System.Drawing.Common" Version="4.7.0" />
@@ -52,6 +56,9 @@
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="Resources\Fonts\arial-unicode-ms.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Resources\Images\avatar.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -50,7 +50,7 @@ namespace FMBot.Bot.Services
             {
                 var id = searchValue.Trim('@', '!', '<', '>');
                 var filteredUsers = users.Where(f =>
-                    f.Id.ToString() == id || f.Nickname == searchValue || f.Username == searchValue);
+                    f.Id.ToString() == id || f.Nickname == searchValue.ToLower() || f.Username.ToLower() == searchValue.ToLower());
 
                 var user = filteredUsers.FirstOrDefault();
 

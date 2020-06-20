@@ -43,6 +43,7 @@ namespace FMBot.Bot
             private static readonly string BasePath = AppDomain.CurrentDomain.BaseDirectory;
             public static readonly string CacheFolder = BasePath + "cache/";
             public static string ImageFolder = BasePath + "resources/images/";
+            public static string FontFolder = BasePath + "resources/fonts/";
             public static string FeaturedUserID = "";
             public static Hashtable charts = new Hashtable();
 

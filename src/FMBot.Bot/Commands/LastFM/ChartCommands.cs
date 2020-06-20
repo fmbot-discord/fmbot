@@ -57,9 +57,9 @@ namespace FMBot.Bot.Commands.LastFM
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
             if (otherSettings.Any() && otherSettings.First() == "help")
             {
-                await ReplyAsync($"{prfx}chart '2x2-8x8' 'weekly/monthly/yearly/overall' \n" +
+                await ReplyAsync($"{prfx}chart '2x2-10x10' 'weekly/monthly/yearly/overall' \n" +
                                  "Optional extra settings: 'notitles', 'nt', 'skipemptyimages', 's'\n" +
-                                 "Size and time period are always required before any other parameters.");
+                                 "Options can be used in any order..");
                 return;
             }
 
@@ -189,6 +189,10 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var rnd = new Random();
+                if (chartSettings.ImagesNeeded == 1 && rnd.Next(0, 3) == 1)
+                {
+                    embedDescription += "*Linus Tech Tip: If you want the cover of the album you're currently listening to, use `.fmcover` or `.fmco`.*\n";
+                }
                 if (rnd.Next(0, 12) == 1)
                 {
                     embedDescription += "*Enjoying .fmbot? Please consider upvoting us on [top.gg](https://top.gg/bot/356268235697553409/vote)*";

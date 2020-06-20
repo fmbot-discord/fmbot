@@ -5,6 +5,7 @@ using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
 using SkiaSharp;
+using Color = System.Drawing.Color;
 
 namespace FMBot.Bot.Models
 {
@@ -43,15 +44,18 @@ namespace FMBot.Bot.Models
         public bool SkipArtistsWithoutImage { get; set; }
 
         public bool CustomOptionsEnabled { get; set; }
+
+        public bool RainbowSortingEnabled { get; set; }
     }
 
     public class ChartImage
     {
-        public ChartImage(SKBitmap image, int indexOf, bool validImage)
+        public ChartImage(SKBitmap image, int indexOf, bool validImage, Color? primaryColor)
         {
             this.Image = image;
             this.Index = indexOf;
             this.ValidImage = validImage;
+            this.PrimaryColor = primaryColor;
         }
 
         public SKBitmap Image { get; }
@@ -59,6 +63,10 @@ namespace FMBot.Bot.Models
         public int Index { get; }
 
         public bool ValidImage { get; }
+
+        public Color? PrimaryColor { get; }
+
+        public int? ColorSortValue { get; set;  }
     }
 
     public enum TitleSetting

@@ -173,6 +173,7 @@ namespace FMBot.Bot.Commands
             try
             {
                 var friendNotFoundList = new List<string>();
+                var duplicateFriendsList = new List<string>();
 
                 var addedFriendsCount = 0;
 
@@ -180,58 +181,50 @@ namespace FMBot.Bot.Commands
 
                 if (existingFriends.Count + friends.Length > 10)
                 {
-                    await ReplyAsync("Sorry, but you can't have more then 10 friends.");
+                    await ReplyAsync("Sorry, but you can't have more than 10 friends.");
                     return;
                 }
 
                 foreach (var friend in friends)
                 {
-                    if (!existingFriends.Select(s => s.ToLower()).Contains(friend.ToLower()))
+                    var friendGuildUser = await this._guildService.FindUserFromGuildAsync(this.Context, friend);
+
+                    Persistence.Domain.Models.User friendUserSettings;
+                    string friendUsername;
+
+                    if (friendGuildUser != null)
                     {
-                        var friendUser = await this._guildService.FindUserFromGuildAsync(this.Context, friend);
+                        friendUserSettings = await this._userService.GetUserSettingsAsync(friendGuildUser);
+                        friendUsername = friendUserSettings?.UserNameLastFM ?? friend;
+                    }
+                    else
+                    {
+                        friendUsername = friend;
+                        friendUserSettings = null;
+                    }
 
-                        if (friendUser != null)
+                    if (!existingFriends.Select(s => s.ToLower()).Contains(friendUsername))
+                    {
+                        if (await this._lastFmService.LastFMUserExistsAsync(friendUsername))
                         {
-                            var friendUserSettings = await this._userService.GetUserSettingsAsync(friendUser);
-
-                            if (friendUserSettings == null || friendUserSettings.UserNameLastFM == null)
-                            {
-                                if (await this._lastFmService.LastFMUserExistsAsync(friend))
-                                {
-                                    await this._friendsService.AddLastFMFriendAsync(this.Context.User.Id,
-                                        friend);
-                                    addedFriendsCount++;
-                                }
-                                else
-                                {
-                                    friendNotFoundList.Add(friend);
-                                }
-                            }
-                            else
-                            {
-                                await this._friendsService.AddDiscordFriendAsync(this.Context.User.Id, friendUser.Id);
-                                addedFriendsCount++;
-                            }
+                            await this._friendsService.AddLastFMFriendAsync(this.Context.User.Id, friendUsername, friendUserSettings?.UserId);
+                            addedFriendsCount++;
                         }
                         else
                         {
-                            if (await this._lastFmService.LastFMUserExistsAsync(friend))
-                            {
-                                await this._friendsService.AddLastFMFriendAsync(this.Context.User.Id,
-                                    friend);
-                                addedFriendsCount++;
-                            }
-                            else
-                            {
-                                friendNotFoundList.Add(friend);
-                            }
+                            friendNotFoundList.Add(friendUsername);
                         }
+                    }
+                    else
+                    {
+                        duplicateFriendsList.Add(friendUsername);
                     }
                 }
 
                 if (addedFriendsCount > 1)
                 {
-                    await ReplyAsync("Succesfully added " + addedFriendsCount + " friends.");
+                    await ReplyAsync("Succesfully added " + addedFriendsCount + " friends."
+                    );
                 }
                 else if (addedFriendsCount == 1)
                 {
@@ -249,6 +242,11 @@ namespace FMBot.Bot.Commands
                     {
                         await ReplyAsync("Could not find 1 friend. Please ensure that you spelled the name correctly.");
                     }
+                }
+
+                if (duplicateFriendsList.Count > 0)
+                {
+                    await ReplyAsync("Couldn't add " + duplicateFriendsList.Count + " duplicate friends.");
                 }
 
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
@@ -289,11 +287,11 @@ namespace FMBot.Bot.Commands
 
             if (friends.Length == 0)
             {
-                await ReplyAsync("Please enter at least one friend to remove. Please use their last.fm usernames.");
+                await ReplyAsync("Please enter at least one friend to remove. Please use their last.fm usernames or discord id.");
                 return;
             }
 
-            var removedfriendcount = 0;
+            var removedFriendsCount = 0;
 
             try
             {
@@ -301,20 +299,37 @@ namespace FMBot.Bot.Commands
 
                 foreach (var friend in friends)
                 {
-                    if (existingFriends.Select(s => s.ToLower()).Contains(friend.ToLower()))
+                    var friendGuildUser = await this._guildService.FindUserFromGuildAsync(this.Context, friend);
+
+                    string username;
+
+                    if (friendGuildUser != null)
                     {
-                        await this._friendsService.RemoveLastFMFriendAsync(userSettings.UserId, friend);
-                        removedfriendcount++;
+                        var friendUserSettings = await this._userService.GetUserSettingsAsync(friendGuildUser);
+                        username = friendUserSettings?.UserNameLastFM ?? friend;
+                    }
+                    else
+                    {
+                        username = friend;
+                    }
+
+                    if (existingFriends.Select(s => s.ToLower()).Contains(username.ToLower()))
+                    {
+                        var friendSuccesfullyRemoved = await this._friendsService.RemoveLastFMFriendAsync(userSettings.UserId, username);
+                        if (friendSuccesfullyRemoved)
+                        {
+                            removedFriendsCount++;
+                        }
                     }
                 }
 
-                if (removedfriendcount > 1)
+                if (removedFriendsCount > 1)
                 {
-                    await ReplyAsync("Succesfully removed " + removedfriendcount + " friends.");
+                    await ReplyAsync("Succesfully removed " + removedFriendsCount + " friends.");
                 }
-                else if (removedfriendcount < 1)
+                else if (removedFriendsCount < 1)
                 {
-                    await ReplyAsync("Couldn't remove " + removedfriendcount +
+                    await ReplyAsync("Couldn't remove " + removedFriendsCount +
                                      " friends. Please check if you spelled that all Last.FM names correct.");
                 }
                 else
