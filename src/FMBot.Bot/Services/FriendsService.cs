@@ -59,7 +59,7 @@ namespace FMBot.Bot.Services
         }
 
 
-        public async Task RemoveLastFMFriendAsync(int userID, string lastfmusername)
+        public async Task<bool> RemoveLastFMFriendAsync(int userID, string lastfmusername)
         {
             await using var db = new FMBotDbContext();
             var friend = db.Friends.FirstOrDefault(f => f.UserId == userID && f.LastFMUserName.ToLower() == lastfmusername.ToLower());
@@ -70,7 +70,11 @@ namespace FMBot.Bot.Services
 
                 await db.SaveChangesAsync();
 
-                await Task.CompletedTask;
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 

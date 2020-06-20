@@ -192,10 +192,13 @@ namespace FMBot.Bot.Commands
                     Persistence.Domain.Models.User friendUserSettings;
                     string friendUsername;
 
-                    if (friendGuildUser != null) {
+                    if (friendGuildUser != null)
+                    {
                         friendUserSettings = await this._userService.GetUserSettingsAsync(friendGuildUser);
                         friendUsername = friendUserSettings?.UserNameLastFM ?? friend;
-                    } else {
+                    }
+                    else
+                    {
                         friendUsername = friend;
                         friendUserSettings = null;
                     }
@@ -206,10 +209,14 @@ namespace FMBot.Bot.Commands
                         {
                             await this._friendsService.AddLastFMFriendAsync(this.Context.User.Id, friendUsername, friendUserSettings?.UserId);
                             addedFriendsCount++;
-                        } else {
+                        }
+                        else
+                        {
                             friendNotFoundList.Add(friendUsername);
                         }
-                    } else {
+                    }
+                    else
+                    {
                         duplicateFriendsList.Add(friendUsername);
                     }
                 }
@@ -237,7 +244,8 @@ namespace FMBot.Bot.Commands
                     }
                 }
 
-                if (duplicateFriendsList.Count > 0) {
+                if (duplicateFriendsList.Count > 0)
+                {
                     await ReplyAsync("Couldn't add " + duplicateFriendsList.Count + " duplicate friends.");
                 }
 
@@ -283,7 +291,7 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            var removedfriendcount = 0;
+            var removedFriendsCount = 0;
 
             try
             {
@@ -292,30 +300,36 @@ namespace FMBot.Bot.Commands
                 foreach (var friend in friends)
                 {
                     var friendGuildUser = await this._guildService.FindUserFromGuildAsync(this.Context, friend);
-                    
+
                     string username;
 
-                    if (friendGuildUser != null) {
+                    if (friendGuildUser != null)
+                    {
                         var friendUserSettings = await this._userService.GetUserSettingsAsync(friendGuildUser);
                         username = friendUserSettings?.UserNameLastFM ?? friend;
-                    } else {
+                    }
+                    else
+                    {
                         username = friend;
                     }
 
-                    if (existingFriends.Select(s => s.ToLower()).Contains(username))
+                    if (existingFriends.Select(s => s.ToLower()).Contains(username.ToLower()))
                     {
-                        await this._friendsService.RemoveLastFMFriendAsync(userSettings.UserId, username);
-                        removedfriendcount++;
+                        var friendSuccesfullyRemoved = await this._friendsService.RemoveLastFMFriendAsync(userSettings.UserId, username);
+                        if (friendSuccesfullyRemoved)
+                        {
+                            removedFriendsCount++;
+                        }
                     }
                 }
 
-                if (removedfriendcount > 1)
+                if (removedFriendsCount > 1)
                 {
-                    await ReplyAsync("Succesfully removed " + removedfriendcount + " friends.");
+                    await ReplyAsync("Succesfully removed " + removedFriendsCount + " friends.");
                 }
-                else if (removedfriendcount < 1)
+                else if (removedFriendsCount < 1)
                 {
-                    await ReplyAsync("Couldn't remove " + removedfriendcount +
+                    await ReplyAsync("Couldn't remove " + removedFriendsCount +
                                      " friends. Please check if you spelled that all Last.FM names correct.");
                 }
                 else
