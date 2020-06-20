@@ -347,18 +347,6 @@ namespace FMBot.Bot.Services
                 chartSettings.Height = 10;
                 chartSettings.Width = 10;
             }
-            else if (extraOptions.Contains("11x11"))
-            {
-                chartSettings.ImagesNeeded = 121;
-                chartSettings.Height = 11;
-                chartSettings.Width = 11;
-            }
-            else if (extraOptions.Contains("12x12"))
-            {
-                chartSettings.ImagesNeeded = 144;
-                chartSettings.Height = 12;
-                chartSettings.Width = 12;
-            }
             else
             {
                 chartSettings.ImagesNeeded = 9;
