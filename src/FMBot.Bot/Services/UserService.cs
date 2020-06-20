@@ -12,6 +12,15 @@ namespace FMBot.Bot.Services
     public class UserService
     {
         // User settings
+        public async Task<bool> UserRegisteredAsync(IUser discordUser)
+        {
+            await using var db = new FMBotDbContext();
+            return await db.Users
+                .AsQueryable()
+                .AnyAsync(f => f.DiscordUserId == discordUser.Id);
+        }
+
+        // User settings
         public async Task<User> GetUserSettingsAsync(IUser discordUser)
         {
             await using var db = new FMBotDbContext();

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
@@ -12,7 +13,6 @@ using FMBot.Bot.Services;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
-using FMBot.Persistence.EntityFrameWork;
 using ImageFormat = System.Drawing.Imaging.ImageFormat;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -46,17 +46,11 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("album", RunMode = RunMode.Async)]
         [Summary("Displays current album.")]
         [Alias("ab")]
+        [LoginRequired]
         public async Task AlbumAsync()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
-
-            if (userSettings?.UserNameLastFM == null)
-            {
-                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
 
             var track = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
 
@@ -125,17 +119,11 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("cover", RunMode = RunMode.Async)]
         [Summary("Displays current album cover.")]
         [Alias("abc","co", "albumcover")]
+        [LoginRequired]
         public async Task AlbumCoverAsync()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
-
-            if (userSettings?.UserNameLastFM == null)
-            {
-                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
 
             var tracks = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
 

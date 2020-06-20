@@ -91,13 +91,6 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            if (userSettings?.UserNameLastFM == null)
-            {
-                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
-
             var lastFMUserName = userSettings.UserNameLastFM;
             var self = true;
 

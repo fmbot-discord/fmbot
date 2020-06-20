@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -28,6 +29,7 @@ namespace FMBot.Bot.Commands
 
         [Command("setusertype"), Summary("Sets usertype for other users")]
         [Alias("setperms")]
+        [LoginRequired]
         public async Task SetUserTypeAsync(string userId = null, string userType = null)
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
@@ -63,6 +65,7 @@ namespace FMBot.Bot.Commands
 
         [Command("removereadonly"), Summary("Removes read only on all directories.")]
         [Alias("readonlyfix")]
+        [LoginRequired]
         public async Task RemoveReadOnlyAsync()
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
@@ -87,6 +90,7 @@ namespace FMBot.Bot.Commands
 
         [Command("storagecheck"), Summary("Checks how much storage is left on the server.")]
         [Alias("checkstorage", "storage")]
+        [LoginRequired]
         public async Task StorageCheckAsync()
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
@@ -136,26 +140,6 @@ namespace FMBot.Bot.Commands
                 }
 
                 await this.Context.Channel.SendMessageAsync("Check your DMs!");
-            }
-        }
-
-        [Command("nameoverride"), Summary("Changes the bot's name.")]
-        [Alias("setbotname")]
-        public async Task NameOverrideAsync(string name = ".fmbot")
-        {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
-            {
-                try
-                {
-                    DiscordSocketClient client = this.Context.Client as DiscordSocketClient;
-                    await client.CurrentUser.ModifyAsync(u => u.Username = name);
-                    await ReplyAsync("Set name to '" + name + "'");
-                }
-                catch (Exception e)
-                {
-                    this._logger.LogException(this.Context.Message.Content, e);
-                    await ReplyAsync("Unable to set the name of the bot due to an internal error.");
-                }
             }
         }
     }

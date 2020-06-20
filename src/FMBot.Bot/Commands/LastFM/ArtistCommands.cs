@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
@@ -55,17 +56,11 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("artist", RunMode = RunMode.Async)]
         [Summary("Displays current artist.")]
         [Alias("a")]
+        [LoginRequired]
         public async Task ArtistAsync(params string[] artistValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
-
-            if (userSettings?.UserNameLastFM == null)
-            {
-                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
 
             var artist = await GetArtistOrHelp(artistValues, userSettings, "fmartist");
             if (artist == null)
@@ -162,17 +157,11 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("artists", RunMode = RunMode.Async)]
         [Summary("Displays top artists.")]
         [Alias("al", "as", "artistlist", "artistslist")]
+        [LoginRequired]
         public async Task ArtistsAsync(string time = "weekly", int num = 10, string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
-
-            if (userSettings?.UserNameLastFM == null)
-            {
-                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
 
             if (time == "help")
             {
@@ -377,6 +366,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("whoknows", RunMode = RunMode.Async)]
         [Summary("Shows what other users listen to the same artist in your server")]
         [Alias("w", "wk")]
+        [LoginRequired]
         public async Task WhoKnowsAsync(params string[] artistValues)
         {
             if (this._guildService.CheckIfDM(this.Context))
@@ -387,14 +377,6 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
-
-
-            if (userSettings?.UserNameLastFM == null)
-            {
-                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
 
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
