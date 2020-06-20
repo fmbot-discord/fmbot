@@ -188,6 +188,12 @@ namespace FMBot.Bot.Commands.LastFM
                     embedDescription += "- Classic titles enabled\n";
                 }
 
+
+                if (chartSettings.ImagesNeeded == 1)
+                {
+                    embedDescription += "*Linus Tech Tip: Instead of generating a 1x1 chart, you can also use `.fmcover` or `.fmco`.*\n";
+                }
+
                 var rnd = new Random();
                 if (rnd.Next(0, 12) == 1)
                 {
