@@ -361,7 +361,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
                     this.Context.Message.Content);
 
-                await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
+                //await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
                 this._indexService.IndexGuild(users);
             }
             catch (Exception e)

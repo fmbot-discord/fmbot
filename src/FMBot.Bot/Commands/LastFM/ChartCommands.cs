@@ -5,13 +5,13 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.LastFM.Services;
-using FMBot.Persistence.EntityFrameWork;
 using SkiaSharp;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -52,6 +52,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("chart", RunMode = RunMode.Async)]
         [Summary("Generates a chart based on a user's parameters.")]
         [Alias("c")]
+        [LoginRequired]
         public async Task ChartAsync(params string[] otherSettings)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;

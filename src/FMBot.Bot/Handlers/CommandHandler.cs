@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
@@ -129,6 +130,11 @@ namespace FMBot.Bot.Handlers
                 }
 
                 return;
+            }
+
+            if (searchResult.Commands[0].Command.Attributes.OfType<LoginRequiredAttribute>().Any())
+            {
+                
             }
 
             var result = await this._commands.ExecuteAsync(context, argPos, this._provider);
