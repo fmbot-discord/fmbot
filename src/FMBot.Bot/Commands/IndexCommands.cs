@@ -58,8 +58,11 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 if (users.Count == 0 && lastIndex != null)
                 {
+                    await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
+
                     var reply =
-                        $"No new registered .fmbot members found on this server or all users have already been indexed in the last {Constants.GuildIndexCooldown.TotalHours} hours.";
+                        $"No new registered .fmbot members found on this server or all users have already been indexed in the last {Constants.GuildIndexCooldown.TotalHours} hours.\n" +
+                        $"Stored guild users have been updated.";
 
                     if (guildOnCooldown)
                     {
@@ -72,6 +75,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 if (users.Count == 0 && lastIndex == null)
                 {
+                    await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
                     await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow.AddDays(-1));
                     await ReplyAsync("All users on this server have already been indexed or nobody is registered on .fmbot here.\n" +
                                      "The server has now been registered anyway, so you can start using the commands that require indexing.");
