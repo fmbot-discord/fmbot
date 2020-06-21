@@ -26,6 +26,8 @@ namespace FMBot.Bot.Services
             await using var db = new FMBotDbContext();
             return await db.Guilds
                 .AsQueryable()
+                .Include(i => i.GuildUsers)
+                .ThenInclude(t => t.User)
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guildId);
         }
 
@@ -281,7 +283,7 @@ namespace FMBot.Bot.Services
                     LastIndexed = timestamp ?? DateTime.UtcNow
                 };
 
-                db.Guilds.Add(newGuild);
+                await db.Guilds.AddAsync(newGuild);
 
                 await db.SaveChangesAsync();
             }

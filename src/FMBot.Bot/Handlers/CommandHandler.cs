@@ -2,11 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
+using FMBot.Bot.Services;
 
 namespace FMBot.Bot.Handlers
 {
@@ -15,6 +18,7 @@ namespace FMBot.Bot.Handlers
         private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
         private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
         private readonly CommandService _commands;
+        private readonly UserService _userService;
         private readonly DiscordShardedClient _discord;
         private readonly IPrefixService _prefixService;
         private readonly IDisabledCommandService _disabledCommandService;
@@ -26,14 +30,15 @@ namespace FMBot.Bot.Handlers
             CommandService commands,
             IServiceProvider provider,
             IPrefixService prefixService,
-            IDisabledCommandService disabledCommandService)
+            IDisabledCommandService disabledCommandService,
+            UserService userService)
         {
             this._discord = discord;
             this._commands = commands;
             this._provider = provider;
             this._prefixService = prefixService;
             this._disabledCommandService = disabledCommandService;
-
+            _userService = userService;
             this._discord.MessageReceived += OnMessageReceivedAsync;
         }
 
@@ -131,6 +136,20 @@ namespace FMBot.Bot.Handlers
                 return;
             }
 
+            if (searchResult.Commands[0].Command.Attributes.OfType<LoginRequiredAttribute>().Any())
+            {
+                var userRegistered = await this._userService.UserRegisteredAsync(context.User);
+                if (!userRegistered)
+                {
+                    var embed = new EmbedBuilder()
+                        .WithColor(Constants.LastFMColorRed);
+                    var logger = new Logger.Logger();
+                    embed.UsernameNotSetErrorResponse(context, customPrefix ?? ConfigData.Data.CommandPrefix, logger);
+                    await context.Channel.SendMessageAsync("", false, embed.Build());
+                    return;
+                }
+            }
+
             var result = await this._commands.ExecuteAsync(context, argPos, this._provider);
 
             if (result.IsSuccess)
@@ -143,5 +162,6 @@ namespace FMBot.Bot.Handlers
                 logger.LogError(result.ToString(), context.Message.Content);
             }
         }
+
     }
 }

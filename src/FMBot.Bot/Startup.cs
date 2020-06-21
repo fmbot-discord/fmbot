@@ -76,6 +76,7 @@ namespace FMBot.Bot
                 .AddSingleton<IChartService, ChartService>()
                 .AddSingleton<IIndexService, IndexService>()
                 .AddSingleton<IGuildService, GuildService>()
+                .AddSingleton<UserService>()
                 .AddSingleton(logger)
                 .AddSingleton<Random>() // Add random to the collection
                 .AddSingleton(this.Configuration) // Add the configuration to the collection

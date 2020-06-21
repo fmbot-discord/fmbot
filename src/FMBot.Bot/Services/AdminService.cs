@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Discord;
 using FMBot.Persistence.Domain.Models;
@@ -120,6 +121,19 @@ namespace FMBot.Bot.Services
             }
 
             return string.Format("{0:0.##} {1}", dblSByte, suffix[i]);
+        }
+
+        public async Task FixValues()
+        {
+            await using var db = new FMBotDbContext();
+            await db.Database.ExecuteSqlRawAsync("SELECT pg_catalog.setval(pg_get_serial_sequence('users', 'user_id'), (SELECT MAX(user_id) FROM users)+1);");
+            Console.WriteLine("User key value has been fixed.");
+
+            await db.Database.ExecuteSqlRawAsync("SELECT pg_catalog.setval(pg_get_serial_sequence('friends', 'friend_id'), (SELECT MAX(friend_id) FROM friends)+1);");
+            Console.WriteLine("Friend key value has been fixed.");
+
+            await db.Database.ExecuteSqlRawAsync("SELECT pg_catalog.setval(pg_get_serial_sequence('guilds', 'guild_id'), (SELECT MAX(guild_id) FROM guilds)+1);");
+            Console.WriteLine("Guild key value has been fixed.");
         }
     }
 }

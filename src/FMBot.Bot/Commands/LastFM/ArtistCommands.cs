@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
@@ -21,7 +22,6 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly IGuildService _guildService;
-        private readonly IIndexService _indexService;
         private readonly IArtistsService _artistsService;
         private readonly LastFMService _lastFmService;
         private readonly SpotifyService _spotifyService = new SpotifyService();
@@ -32,14 +32,12 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly UserService _userService;
 
         public ArtistCommands(Logger.Logger logger,
-            IIndexService indexService,
             ILastfmApi lastfmApi,
             IPrefixService prefixService,
             IArtistsService artistsService,
             IGuildService guildService)
         {
             this._logger = logger;
-            this._indexService = indexService;
             this._lastfmApi = lastfmApi;
             this._lastFmService = new LastFMService(lastfmApi);
             this._prefixService = prefixService;
@@ -55,17 +53,11 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("artist", RunMode = RunMode.Async)]
         [Summary("Displays current artist.")]
         [Alias("a")]
+        [LoginRequired]
         public async Task ArtistAsync(params string[] artistValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
-
-            if (userSettings?.UserNameLastFM == null)
-            {
-                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
 
             var artist = await GetArtistOrHelp(artistValues, userSettings, "fmartist");
             if (artist == null)
@@ -121,10 +113,11 @@ namespace FMBot.Bot.Commands.LastFM
             if (!this._guildService.CheckIfDM(this.Context))
             {
                 string serverStats = "";
-                var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
-                if (lastIndex != null)
+                var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+                if (guild.LastIndexed != null)
                 {
-                    var guildUsers = await this.Context.Guild.GetUsersAsync();
+                    var guildUsers = guild.GuildUsers.Select(s => s.User).ToList();
                     var serverListeners = await this._artistsService.GetArtistListenerCountForServer(guildUsers, artistInfo.Name);
                     var serverPlaycount = await this._artistsService.GetArtistPlayCountForServer(guildUsers, artistInfo.Name);
                     var avgServerListenerPlaycount = await this._artistsService.GetArtistAverageListenerPlaycountForServer(guildUsers, artistInfo.Name);
@@ -162,17 +155,11 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("artists", RunMode = RunMode.Async)]
         [Summary("Displays top artists.")]
         [Alias("al", "as", "artistlist", "artistslist")]
+        [LoginRequired]
         public async Task ArtistsAsync(string time = "weekly", int num = 10, string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
-
-            if (userSettings?.UserNameLastFM == null)
-            {
-                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
 
             if (time == "help")
             {
@@ -270,112 +257,10 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        [Command("index", RunMode = RunMode.Async)]
-        [Summary("Indexes top 4000 artists for every user in your server.")]
-        public async Task IndexGuildAsync()
-        {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("This command is not supported in DMs.");
-                return;
-            }
-
-            _ = this.Context.Channel.TriggerTypingAsync();
-
-            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
-
-            try
-            {
-                var guildUsers = await this.Context.Guild.GetUsersAsync();
-                var users = await this._indexService.GetUsersToIndex(guildUsers);
-                var indexedUserCount = await this._indexService.GetIndexedUsersCount(guildUsers);
-
-                var guildOnCooldown =
-                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
-
-                var guildRecentlyIndexed =
-                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(6));
-
-                if (guildRecentlyIndexed)
-                {
-                    await ReplyAsync("An index was recently started on this server. Please wait before running this command again.");
-                    return;
-                }
-                if (users.Count == 0 && lastIndex != null)
-                {
-                    var reply =
-                        $"No new registered .fmbot members found on this server or all users have already been indexed in the last {Constants.GuildIndexCooldown.TotalHours} hours.";
-
-                    if (guildOnCooldown)
-                    {
-                        var timeTillIndex = lastIndex.Value.Add(Constants.GuildIndexCooldown) - DateTime.UtcNow;
-                        reply +=
-                            $"\nAll users in this server can be updated again in {(int)timeTillIndex.TotalHours} hours and {timeTillIndex:mm} minutes";
-                    }
-                    await ReplyAsync(reply);
-                    return;
-                }
-                if (users.Count == 0 && lastIndex == null)
-                {
-                    await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow.AddDays(-1));
-                    await ReplyAsync("All users on this server have already been indexed or nobody is registered on .fmbot here.\n" +
-                                     "The server has now been registered anyway, so you can start using the commands that require indexing.");
-                }
-
-                string usersString = "";
-                if (guildOnCooldown)
-                {
-                    usersString = "new ";
-                }
-
-                if (users.Count == 1)
-                {
-                    usersString += "user";
-                }
-                else
-                {
-                    usersString += "users";
-                }
-
-                this._embed.WithTitle($"Added {users.Count} {usersString} to bot indexing queue");
-
-                var expectedTime = TimeSpan.FromSeconds(2 * users.Count);
-                var indexStartedReply =
-                    $"Indexing stores users their all time top {Constants.ArtistsToIndex} artists. \n\n" +
-                    $"`{users.Count}` new users or users with expired artists added to queue.";
-
-                if (expectedTime.TotalMinutes >= 2)
-                {
-                    indexStartedReply += $" This will take approximately {(int)expectedTime.TotalMinutes} minutes.";
-                }
-
-                indexStartedReply += $"\n`{indexedUserCount}` users already indexed on this server.\n \n" +
-                                     "*Note: You will currently not be alerted when the index is finished.*";
-
-                this._embed.WithDescription(indexStartedReply);
-
-                await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild);
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
-
-                this._indexService.IndexGuild(users);
-            }
-            catch (Exception e)
-            {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
-                await ReplyAsync(
-                    "Something went wrong while indexing users. Please let us know as this feature is in beta.");
-                await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
-            }
-        }
-
         [Command("whoknows", RunMode = RunMode.Async)]
         [Summary("Shows what other users listen to the same artist in your server")]
         [Alias("w", "wk")]
+        [LoginRequired]
         public async Task WhoKnowsAsync(params string[] artistValues)
         {
             if (this._guildService.CheckIfDM(this.Context))
@@ -386,14 +271,6 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
-
-
-            if (userSettings?.UserNameLastFM == null)
-            {
-                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
 
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
@@ -409,6 +286,8 @@ namespace FMBot.Bot.Commands.LastFM
                                  $"Please run `{prfx}index` to re-index this server.");
                 return;
             }
+
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -446,8 +325,8 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var guildUsers = await this.Context.Guild.GetUsersAsync();
-                var usersWithArtist = await this._artistsService.GetIndexedUsersForArtist(guildUsers, artist.Artist.Name);
+                var users = guild.GuildUsers.Select(s => s.User).ToList();
+                var usersWithArtist = await this._artistsService.GetIndexedUsersForArtist(this.Context, users, artist.Artist.Name);
 
                 if (usersWithArtist.Count == 0 && artist.Artist.Stats.Userplaycount != 0)
                 {
@@ -478,17 +357,18 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $" - Update data with {prfx}index";
                 }
 
-                if (guildUsers.Count < 100)
+
+                if (guild.GuildUsers.Count < 400)
                 {
-                    var serverListeners = await this._artistsService.GetArtistListenerCountForServer(guildUsers, artist.Artist.Name);
-                    var serverPlaycount = await this._artistsService.GetArtistPlayCountForServer(guildUsers, artist.Artist.Name);
-                    var avgServerListenerPlaycount = await this._artistsService.GetArtistAverageListenerPlaycountForServer(guildUsers, artist.Artist.Name);
+                    var serverListeners = await this._artistsService.GetArtistListenerCountForServer(users, artist.Artist.Name);
+                    var serverPlaycount = await this._artistsService.GetArtistPlayCountForServer(users, artist.Artist.Name);
+                    var avgServerListenerPlaycount = await this._artistsService.GetArtistAverageListenerPlaycountForServer(users, artist.Artist.Name);
 
                     footer += $"\n{serverListeners} listeners - ";
                     footer += $"{serverPlaycount} total plays - ";
                     footer += $"{(int)avgServerListenerPlaycount} median plays";
                 }
-                else if (guildUsers.Count < 125)
+                else if (guild.GuildUsers.Count < 450)
                 {
                     footer += $"\nView server artist averages in `{prfx}artist`";
                 }
@@ -526,15 +406,15 @@ namespace FMBot.Bot.Commands.LastFM
 
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
 
-            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
+            var guild = await this._guildService.GetGuildAsync(Context.Guild.Id);
 
-            if (lastIndex == null)
+            if (guild.LastIndexed == null)
             {
                 await ReplyAsync("This server hasn't been indexed yet.\n" +
                                  $"Please run `{prfx}index` to index this server.");
                 return;
             }
-            if (lastIndex < DateTime.UtcNow.AddDays(-60))
+            if (guild.LastIndexed < DateTime.UtcNow.AddDays(-60))
             {
                 await ReplyAsync("Server index data is out of date, it was last updated over 60 days ago.\n" +
                                  $"Please run `{prfx}index` to re-index this server.");
@@ -544,8 +424,7 @@ namespace FMBot.Bot.Commands.LastFM
             _ = this.Context.Channel.TriggerTypingAsync();
             try
             {
-                var guildUsers = await this.Context.Guild.GetUsersAsync();
-                var topGuildArtists = await this._artistsService.GetTopArtistsForGuild(guildUsers);
+                var topGuildArtists = await this._artistsService.GetTopArtistsForGuild(guild.GuildUsers.Select(s => s.User).ToList());
 
                 var description = "";
                 for (var i = 0; i < topGuildArtists.Count(); i++)
@@ -559,9 +438,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var footer = "";
 
-                var timeTillIndex = DateTime.UtcNow - lastIndex.Value;
+                var timeTillIndex = DateTime.UtcNow - guild.LastIndexed.Value;
                 footer += $"Last updated {(int)timeTillIndex.TotalHours}h{timeTillIndex:mm}m ago";
-                if (lastIndex < DateTime.UtcNow.Add(-Constants.GuildIndexCooldown))
+                if (guild.LastIndexed < DateTime.UtcNow.Add(-Constants.GuildIndexCooldown))
                 {
                     footer += $" - Update data with {prfx}index";
                 }

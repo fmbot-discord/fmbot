@@ -3,15 +3,17 @@ using System;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace FMBot.Persistence.EntityFrameWork.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    partial class FMBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20200602184536_AddGuildUsers")]
+    partial class AddGuildUsers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -153,12 +155,12 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("GuildId", "UserId")
-                        .HasName("pk_guild_users");
+                        .HasName("pk_guild_user");
 
                     b.HasIndex("UserId")
-                        .HasName("ix_guild_users_user_id");
+                        .HasName("ix_guild_user_user_id");
 
-                    b.ToTable("guild_users");
+                    b.ToTable("guild_user");
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.User", b =>
@@ -251,16 +253,16 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.GuildUser", b =>
                 {
                     b.HasOne("FMBot.Persistence.Domain.Models.Guild", "Guild")
-                        .WithMany("GuildUsers")
+                        .WithMany("Users")
                         .HasForeignKey("GuildId")
-                        .HasConstraintName("fk_guild_users_guilds_guild_id")
+                        .HasConstraintName("fk_guild_user_guilds_guild_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("FMBot.Persistence.Domain.Models.User", "User")
-                        .WithMany("GuildUsers")
+                        .WithMany("Guilds")
                         .HasForeignKey("UserId")
-                        .HasConstraintName("fk_guild_users_users_user_id")
+                        .HasConstraintName("fk_guild_user_users_user_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

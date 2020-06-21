@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Discord;
@@ -82,6 +83,11 @@ namespace FMBot.Bot.Services
                 UserId = user.UserId
             }).ToList();
 
+            await InsertArtistsIntoDatabase(artists, user.UserId, now);
+        }
+
+        private static async Task InsertArtistsIntoDatabase(IReadOnlyList<Artist> artists, int userId, DateTime now)
+        {
             await using var db = new FMBotDbContext();
             var connString = db.Database.GetDbConnection().ConnectionString;
             var copyHelper = new PostgreSQLCopyHelper<Artist>("public", "artists")
@@ -93,13 +99,46 @@ namespace FMBot.Bot.Services
             await using var connection = new NpgsqlConnection(connString);
             connection.Open();
 
-            await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.artists WHERE user_id = {user.UserId};", connection);
+            await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.artists WHERE user_id = {userId};", connection);
             await deleteCurrentArtists.ExecuteNonQueryAsync().ConfigureAwait(false);
 
             await copyHelper.SaveAllAsync(connection, artists).ConfigureAwait(false);
 
-            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_indexed='{now.ToString("u")}' WHERE user_id = {user.UserId};", connection);
+            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_indexed='{now:u}' WHERE user_id = {userId};", connection);
             await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+
+        public async Task StoreGuildUsers(IGuild guild, IReadOnlyCollection<IGuildUser> guildUsers)
+        {
+            var userIds = guildUsers.Select(s => s.Id).ToList();
+
+            await using var db = new FMBotDbContext();
+            var existingGuild = await db.Guilds
+                .Include(i => i.GuildUsers)
+                .FirstAsync(f => f.DiscordGuildId == guild.Id);
+
+            var users = await db.Users
+                .Include(i => i.Artists)
+                .Where(w => userIds.Contains(w.DiscordUserId))
+                .Select(s => new GuildUser
+                {
+                    GuildId = existingGuild.GuildId,
+                    UserId = s.UserId
+                })
+                .ToListAsync();
+
+            var connString = db.Database.GetDbConnection().ConnectionString;
+            var copyHelper = new PostgreSQLCopyHelper<GuildUser>("public", "guild_users")
+                .MapInteger("guild_id", x => x.GuildId)
+                .MapInteger("user_id", x => x.UserId);
+
+            await using var connection = new NpgsqlConnection(connString);
+            connection.Open();
+
+            await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.guild_users WHERE guild_id = {existingGuild.GuildId};", connection);
+            await deleteCurrentArtists.ExecuteNonQueryAsync().ConfigureAwait(false);
+
+            await copyHelper.SaveAllAsync(connection, users).ConfigureAwait(false);
         }
 
         public async Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> guildUsers)

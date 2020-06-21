@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -36,17 +37,11 @@ namespace FMBot.Bot.Commands
         [Command("youtube")]
         [Summary("Shares a link to a YouTube video based on what a user is listening to")]
         [Alias("yt", "y", "youtubesearch", "ytsearch", "yts")]
+        [LoginRequired]
         public async Task YoutubeAsync(params string[] searchValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
-
-            if (userSettings?.UserNameLastFM == null)
-            {
-                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
 
             try
             {

@@ -17,9 +17,10 @@ namespace FMBot.Persistence.EntityFrameWork
 
         public virtual DbSet<Friend> Friends { get; set; }
         public virtual DbSet<Guild> Guilds { get; set; }
+        public virtual DbSet<GuildUser> GuildUsers { get; set; }
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<Artist> Artists { get; set; }
-        
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
@@ -65,6 +66,19 @@ namespace FMBot.Persistence.EntityFrameWork
                         v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
             });
 
+            modelBuilder.Entity<GuildUser>(entity =>
+            {
+                entity.HasKey(e => new { e.GuildId, e.UserId });
+
+                entity.HasOne(sc => sc.Guild)
+                    .WithMany(s => s.GuildUsers)
+                    .HasForeignKey(sc => sc.GuildId);
+
+                entity.HasOne(sc => sc.User)
+                    .WithMany(s => s.GuildUsers)
+                    .HasForeignKey(sc => sc.UserId);
+            });
+
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.UserId);
@@ -78,6 +92,7 @@ namespace FMBot.Persistence.EntityFrameWork
                     .WithMany(a => a.Artists)
                     .HasForeignKey(f => f.UserId);
             });
+
         }
     }
 }
