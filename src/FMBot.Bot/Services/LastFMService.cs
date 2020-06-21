@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.ResponseModels;
@@ -14,6 +16,8 @@ using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
+using Microsoft.AspNetCore.Components;
+using Unosquare.Swan;
 using Track = FMBot.LastFM.Domain.Models.Track;
 
 namespace FMBot.Bot.Services
@@ -237,6 +241,42 @@ namespace FMBot.Bot.Services
             Statistics.LastfmApiCalls.Inc();
 
             return lastFMUser.Success;
+        }
+
+
+        // Top artists for 2 users
+        public async Task<TasteModel> GetTasteAsync(PageResponse<LastArtist> leftUserArtists,
+            PageResponse<LastArtist> rightUserArtists, int amount, ChartTimePeriod timePeriod)
+        {
+            var artistsToShow =
+                leftUserArtists
+                    .Where(w => rightUserArtists.Content.Select(s => s.Name).Contains(w.Name))
+                    .OrderByDescending(o => o.PlayCount);
+
+            var left = "";
+            var right = "";
+            foreach (var artist in artistsToShow.Take(amount))
+            {
+                var newLine = false;
+                var name = artist.Name;
+                if (artist.Name.Length > 30)
+                {
+                    name = $"{artist.Name.Substring(0, Math.Min(artist.Name.Length, 30))}\n" +
+                           $"{artist.Name.Substring(30, Math.Min(artist.Name.Length, 60))}";
+                }
+
+                left += $"**{name}** - *{artist.PlayCount.Value}*\n";
+                right += $"*{rightUserArtists.Content.First(f => f.Name.Equals(name)).PlayCount.Value}* - **{name}**\n";
+            }
+
+            var description = $"{artistsToShow.Count()} out of 1000 top {timePeriod} artists match";
+
+            return new TasteModel
+            {
+                Description = description,
+                LeftDescription = left,
+                RightDescription = right
+            };
         }
 
         public static ChartTimePeriod StringToChartTimePeriod(string timeString)
