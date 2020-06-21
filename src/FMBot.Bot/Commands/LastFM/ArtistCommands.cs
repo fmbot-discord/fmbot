@@ -175,6 +175,8 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             if (num > 16)
             {
                 num = 16;
@@ -420,6 +422,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             _ = this.Context.Channel.TriggerTypingAsync();
+
             try
             {
                 var topGuildArtists = await this._artistsService.GetTopArtistsForGuild(guild.GuildUsers.Select(s => s.User).ToList());

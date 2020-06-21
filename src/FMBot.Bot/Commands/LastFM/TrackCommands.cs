@@ -427,6 +427,8 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             if (num > 12)
             {
                 num = 12;
