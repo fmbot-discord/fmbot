@@ -116,10 +116,11 @@ namespace FMBot.Bot.Commands.LastFM
             if (!this._guildService.CheckIfDM(this.Context))
             {
                 string serverStats = "";
-                var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
-                if (lastIndex != null)
+                var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+                if (guild.LastIndexed != null)
                 {
-                    var guildUsers = await this.Context.Guild.GetUsersAsync();
+                    var guildUsers = guild.GuildUsers.Select(s => s.User).ToList();
                     var serverListeners = await this._artistsService.GetArtistListenerCountForServer(guildUsers, artistInfo.Name);
                     var serverPlaycount = await this._artistsService.GetArtistPlayCountForServer(guildUsers, artistInfo.Name);
                     var avgServerListenerPlaycount = await this._artistsService.GetArtistAverageListenerPlaycountForServer(guildUsers, artistInfo.Name);
@@ -283,7 +284,7 @@ namespace FMBot.Bot.Commands.LastFM
                     lastIndex != null && lastIndex > DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
 
                 var guildRecentlyIndexed =
-                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(0));
+                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(3));
 
                 if (guildRecentlyIndexed)
                 {
@@ -463,20 +464,13 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $" - Update data with {prfx}index";
                 }
 
-                if (guild.GuildUsers.Count < 100)
-                {
-                    //var serverListeners = await this._artistsService.GetArtistListenerCountForServer(guildUsers, artist.Artist.Name);
-                    //var serverPlaycount = await this._artistsService.GetArtistPlayCountForServer(guildUsers, artist.Artist.Name);
-                    //var avgServerListenerPlaycount = await this._artistsService.GetArtistAverageListenerPlaycountForServer(guildUsers, artist.Artist.Name);
+                var serverListeners = await this._artistsService.GetArtistListenerCountForServer(users, artist.Artist.Name);
+                var serverPlaycount = await this._artistsService.GetArtistPlayCountForServer(users, artist.Artist.Name);
+                var avgServerListenerPlaycount = await this._artistsService.GetArtistAverageListenerPlaycountForServer(users, artist.Artist.Name);
 
-                    //footer += $"\n{serverListeners} listeners - ";
-                    //footer += $"{serverPlaycount} total plays - ";
-                    //footer += $"{(int)avgServerListenerPlaycount} median plays";
-                }
-                else if (guild.GuildUsers.Count < 125)
-                {
-                    footer += $"\nView server artist averages in `{prfx}artist`";
-                }
+                footer += $"\n{serverListeners} listeners - ";
+                footer += $"{serverPlaycount} total plays - ";
+                footer += $"{(int)avgServerListenerPlaycount} median plays";
 
                 this._embed.WithTitle($"Who knows {artist.Artist.Name} in {this.Context.Guild.Name}");
                 this._embed.WithUrl(artist.Artist.Url);
@@ -511,15 +505,15 @@ namespace FMBot.Bot.Commands.LastFM
 
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
 
-            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
+            var guild = await this._guildService.GetGuildAsync(Context.Guild.Id);
 
-            if (lastIndex == null)
+            if (guild.LastIndexed == null)
             {
                 await ReplyAsync("This server hasn't been indexed yet.\n" +
                                  $"Please run `{prfx}index` to index this server.");
                 return;
             }
-            if (lastIndex < DateTime.UtcNow.AddDays(-60))
+            if (guild.LastIndexed < DateTime.UtcNow.AddDays(-60))
             {
                 await ReplyAsync("Server index data is out of date, it was last updated over 60 days ago.\n" +
                                  $"Please run `{prfx}index` to re-index this server.");
@@ -529,8 +523,7 @@ namespace FMBot.Bot.Commands.LastFM
             _ = this.Context.Channel.TriggerTypingAsync();
             try
             {
-                var guildUsers = await this.Context.Guild.GetUsersAsync();
-                var topGuildArtists = await this._artistsService.GetTopArtistsForGuild(guildUsers);
+                var topGuildArtists = await this._artistsService.GetTopArtistsForGuild(guild.GuildUsers.Select(s => s.User).ToList());
 
                 var description = "";
                 for (var i = 0; i < topGuildArtists.Count(); i++)
@@ -544,9 +537,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var footer = "";
 
-                var timeTillIndex = DateTime.UtcNow - lastIndex.Value;
+                var timeTillIndex = DateTime.UtcNow - guild.LastIndexed.Value;
                 footer += $"Last updated {(int)timeTillIndex.TotalHours}h{timeTillIndex:mm}m ago";
-                if (lastIndex < DateTime.UtcNow.Add(-Constants.GuildIndexCooldown))
+                if (guild.LastIndexed < DateTime.UtcNow.Add(-Constants.GuildIndexCooldown))
                 {
                     footer += $" - Update data with {prfx}index";
                 }

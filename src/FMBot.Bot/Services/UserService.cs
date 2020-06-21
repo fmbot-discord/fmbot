@@ -193,7 +193,15 @@ namespace FMBot.Bot.Services
 
                 db.Users.Add(newUser);
 
-                db.SaveChanges();
+                try
+                {
+                    db.SaveChanges();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
             }
             else
             {

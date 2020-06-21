@@ -142,5 +142,15 @@ namespace FMBot.Bot.Commands
                 await this.Context.Channel.SendMessageAsync("Check your DMs!");
             }
         }
+
+        [Command("fixvalues"), Summary("Fixes postgresql index values")]
+        public async Task FixIndexValuesAsync()
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+            {
+                await _adminService.FixValues();
+                await ReplyAsync("Postgres values have been fixed.");
+            }
+        }
     }
 }
