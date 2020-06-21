@@ -152,11 +152,11 @@ namespace FMBot.Bot.Commands.LastFM
                 this.Context.Message.Content);
         }
 
-        [Command("artists", RunMode = RunMode.Async)]
+        [Command("topartists", RunMode = RunMode.Async)]
         [Summary("Displays top artists.")]
-        [Alias("al", "as", "artistlist", "artistslist")]
+        [Alias("al", "as","ta", "artistlist","artists", "artistslist")]
         [LoginRequired]
-        public async Task ArtistsAsync(string time = "weekly", int num = 10, string user = null)
+        public async Task TopArtistsAsync(string time = "weekly", int num = 10, string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
@@ -164,29 +164,27 @@ namespace FMBot.Bot.Commands.LastFM
             if (time == "help")
             {
                 await ReplyAsync(
-                    "Usage: `.fmartists 'weekly/monthly/yearly/alltime' 'number of artists (max 10)' 'lastfm username/discord user'` \n" +
-                    "You can set your default user and your display mode through the `.fmset 'username' 'embedfull/embedmini/textfull/textmini'` command.");
+                    $"Usage: `{prfx}artists '{Constants.CompactTimePeriodList}' 'number of artists (max 16)' 'lastfm username/discord user'`");
                 return;
             }
 
             if (!Enum.TryParse(time, true, out ChartTimePeriod timePeriod))
             {
-                await ReplyAsync("Invalid time period. Please use 'weekly', 'monthly', 'yearly', or 'alltime'. \n" +
-                                 "Usage: `.fmartists 'weekly/monthly/yearly/alltime' 'number of artists (max 10)' 'lastfm username/discord user'`");
+                await ReplyAsync($"Invalid time period. Please use {Constants.ExpandedTimePeriodList}. \n" +
+                                 $"Usage: `{prfx}artists '{Constants.CompactTimePeriodList}' 'number of artists (max 16)' 'lastfm username/discord user'`");
                 return;
             }
 
-            if (num > 20)
+            if (num > 16)
             {
-                num = 20;
+                num = 16;
             }
-
             if (num < 1)
             {
                 num = 1;
             }
 
-            var timeSpan = this._lastFmService.GetLastStatsTimeSpan(timePeriod);
+            var timeSpan = LastFMService.ChartTimePeriodToLastStatsTimeSpan(timePeriod);
 
             try
             {
@@ -226,7 +224,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 var artistsString = num == 1 ? "artist" : "artists";
                 this._embedAuthor.WithName($"Top {num} {timePeriod} {artistsString} for {userTitle}");
-                this._embedAuthor.WithUrl(Constants.LastFMUserUrl + lastFMUserName + "/library/artists");
+                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{lastFMUserName}/library/artists?date_preset={LastFMService.ChartTimePeriodToSiteTimePeriodUrl(timePeriod)}");
                 this._embed.WithAuthor(this._embedAuthor);
 
                 var description = "";

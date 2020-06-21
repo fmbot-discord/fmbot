@@ -1,4 +1,4 @@
-﻿namespace FMBot.Persistence.Domain.Models
+namespace FMBot.Persistence.Domain.Models
 {
     public enum ChartTimePeriod
     {
@@ -8,6 +8,10 @@
 
         Yearly = 3,
 
-        AllTime = 4
+        AllTime = 4,
+
+        Quarterly = 5,
+
+        Half = 6
     }
 }

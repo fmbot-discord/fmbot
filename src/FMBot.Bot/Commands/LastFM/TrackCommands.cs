@@ -404,6 +404,118 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
+        [Command("toptracks", RunMode = RunMode.Async)]
+        [Summary("Displays top tracks.")]
+        [Alias("tt", "tl", "tracklist", "tracks", "trackslist")]
+        [LoginRequired]
+        public async Task TopTracksAsync(string time = "weekly", int num = 8, string user = null)
+        {
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
+
+            if (time == "help")
+            {
+                await ReplyAsync(
+                    $"Usage: `.fmtoptracks '{Constants.CompactTimePeriodList}' 'number of tracks (max 12)' 'lastfm username/discord user'`");
+                return;
+            }
+
+            if (!Enum.TryParse(time, true, out ChartTimePeriod timePeriod))
+            {
+                await ReplyAsync($"Invalid time period. Please use {Constants.ExpandedTimePeriodList}. \n" +
+                                 $"Usage: `.fmtoptracks '{Constants.CompactTimePeriodList}' 'number of tracks (max 12)' 'lastfm username/discord user'`");
+                return;
+            }
+
+            if (num > 12)
+            {
+                num = 12;
+            }
+            if (num < 1)
+            {
+                num = 1;
+            }
+
+            var timeSpan = LastFMService.ChartTimePeriodToCallTimePeriod(timePeriod);
+
+            try
+            {
+                var lastFMUserName = userSettings.UserNameLastFM;
+                var self = true;
+
+                if (user != null)
+                {
+                    var alternativeLastFmUserName = await FindUser(user);
+                    if (!string.IsNullOrEmpty(alternativeLastFmUserName))
+                    {
+                        lastFMUserName = alternativeLastFmUserName;
+                        self = false;
+                    }
+                }
+
+                var topTracks = await this._lastFmService.GetTopTracksAsync(lastFMUserName, timeSpan, num);
+                var userUrl = $"{Constants.LastFMUserUrl}{lastFMUserName}/library/tracks?date_preset={LastFMService.ChartTimePeriodToSiteTimePeriodUrl(timePeriod)}";
+
+                if (!topTracks.Success )
+                {
+                    this._embed.ErrorResponse(topTracks.Error.Value, topTracks.Message, this.Context, this._logger);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
+                }
+                if (!topTracks.Content.TopTracks.Track.Any())
+                {
+                    this._embed.WithDescription("No top tracks returned for selected time period.\n" +
+                                                $"View [track history here]{userUrl}");
+                    this._embed.WithColor(Constants.WarningColorOrange);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
+                }
+
+                string userTitle;
+                if (self)
+                {
+                    userTitle = await this._userService.GetUserTitleAsync(this.Context);
+                }
+                else
+                {
+                    userTitle =
+                        $"{lastFMUserName}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
+                }
+
+                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+                var artistsString = num == 1 ? "track" : "tracks";
+                this._embedAuthor.WithName($"Top {num} {timePeriod} {artistsString} for {userTitle}");
+                this._embedAuthor.WithUrl(userUrl);
+                this._embed.WithAuthor(this._embedAuthor);
+
+                var description = "";
+                for (var i = 0; i < topTracks.Content.TopTracks.Track.Count; i++)
+                {
+                    var track = topTracks.Content.TopTracks.Track[i];
+
+                    description += $"{i + 1}. [{track.Artist.Name}]({track.Artist.Url}) - [{track.Name}]({track.Url}) ({track.Playcount} plays) \n";
+                }
+
+                this._embed.WithDescription(description);
+
+                var userInfo = await this._lastFmService.GetUserInfoAsync(lastFMUserName);
+
+                this._embedFooter.WithText(lastFMUserName + "'s total scrobbles: " +
+                                           userInfo.Content.Playcount.ToString("N0"));
+                this._embed.WithFooter(this._embedFooter);
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
+                    this.Context.Message.Content);
+            }
+            catch (Exception e)
+            {
+                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
+                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                await ReplyAsync("Unable to show Last.FM info due to an internal error.");
+            }
+        }
+
         private async Task<string> FindUser(string user)
         {
             if (await this._lastFmService.LastFMUserExistsAsync(user))

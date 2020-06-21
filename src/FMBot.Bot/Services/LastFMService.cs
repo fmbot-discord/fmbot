@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Resources;
 using FMBot.LastFM.Domain.Models;
+using FMBot.LastFM.Domain.ResponseModels;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
@@ -14,6 +14,7 @@ using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
+using Track = FMBot.LastFM.Domain.Models.Track;
 
 namespace FMBot.Bot.Services
 {
@@ -211,6 +212,24 @@ namespace FMBot.Bot.Services
             return topArtists;
         }
 
+        // Top tracks
+        public async Task<Response<TopTracksResponse>> GetTopTracksAsync(string lastFMUserName,
+            string period, int count = 2)
+        {
+            var queryParams = new Dictionary<string, string>
+            {
+                {"limit", count.ToString() },
+                {"username", lastFMUserName },
+                {"period", period },
+            };
+
+            var artistCall = await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
+
+            Statistics.LastfmApiCalls.Inc();
+
+            return artistCall;
+        }
+
         // Check if lastfm user exists
         public async Task<bool> LastFMUserExistsAsync(string lastFMUserName)
         {
@@ -220,21 +239,46 @@ namespace FMBot.Bot.Services
             return lastFMUser.Success;
         }
 
-        public LastStatsTimeSpan GetLastStatsTimeSpan(ChartTimePeriod timePeriod)
+        public static LastStatsTimeSpan ChartTimePeriodToLastStatsTimeSpan(ChartTimePeriod timePeriod)
         {
-            switch (timePeriod)
+            return timePeriod switch
             {
-                case ChartTimePeriod.Weekly:
-                    return LastStatsTimeSpan.Week;
-                case ChartTimePeriod.Monthly:
-                    return LastStatsTimeSpan.Month;
-                case ChartTimePeriod.Yearly:
-                    return LastStatsTimeSpan.Year;
-                case ChartTimePeriod.AllTime:
-                    return LastStatsTimeSpan.Overall;
-                default:
-                    return LastStatsTimeSpan.Week;
-            }
+                ChartTimePeriod.Weekly => LastStatsTimeSpan.Week,
+                ChartTimePeriod.Monthly => LastStatsTimeSpan.Month,
+                ChartTimePeriod.Quarterly => LastStatsTimeSpan.Quarter,
+                ChartTimePeriod.Half => LastStatsTimeSpan.Half,
+                ChartTimePeriod.Yearly => LastStatsTimeSpan.Year,
+                ChartTimePeriod.AllTime => LastStatsTimeSpan.Overall,
+                _ => LastStatsTimeSpan.Week
+            };
+        }
+
+        public static string ChartTimePeriodToSiteTimePeriodUrl(ChartTimePeriod timePeriod)
+        {
+            return timePeriod switch
+            {
+                ChartTimePeriod.Weekly => "LAST_7_DAYS",
+                ChartTimePeriod.Monthly => "LAST_30_DAYS",
+                ChartTimePeriod.Quarterly => "LAST_90_DAYS",
+                ChartTimePeriod.Half => "LAST_180_DAYS",
+                ChartTimePeriod.Yearly => "LAST_365_DAYS",
+                ChartTimePeriod.AllTime => "ALL",
+                _ => "LAST_7_DAYS"
+            };
+        }
+
+        public static string ChartTimePeriodToCallTimePeriod(ChartTimePeriod timePeriod)
+        {
+            return timePeriod switch
+            {
+                ChartTimePeriod.Weekly => TimePeriod.Week,
+                ChartTimePeriod.Monthly => TimePeriod.Month,
+                ChartTimePeriod.Quarterly => TimePeriod.Quarter,
+                ChartTimePeriod.Half => TimePeriod.Half,
+                ChartTimePeriod.Yearly => TimePeriod.Year,
+                ChartTimePeriod.AllTime => TimePeriod.Overall,
+                _ => TimePeriod.Week
+            };
         }
     }
 }
