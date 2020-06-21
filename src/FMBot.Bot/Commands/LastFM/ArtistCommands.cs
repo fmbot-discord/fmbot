@@ -168,13 +168,6 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            if (!Enum.TryParse(time, true, out ChartTimePeriod timePeriod))
-            {
-                await ReplyAsync($"Invalid time period. Please use {Constants.ExpandedTimePeriodList}. \n" +
-                                 $"Usage: `{prfx}artists '{Constants.CompactTimePeriodList}' 'number of artists (max 16)' 'lastfm username/discord user'`");
-                return;
-            }
-
             _ = this.Context.Channel.TriggerTypingAsync();
 
             if (num > 16)
@@ -186,6 +179,7 @@ namespace FMBot.Bot.Commands.LastFM
                 num = 1;
             }
 
+            var timePeriod = LastFMService.StringToChartTimePeriod(time);
             var timeSpan = LastFMService.ChartTimePeriodToLastStatsTimeSpan(timePeriod);
 
             try

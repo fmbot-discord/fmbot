@@ -148,7 +148,7 @@ namespace FMBot.Bot.Services
 
             var artistCall = await this._lastfmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
             Statistics.LastfmApiCalls.Inc();
-            
+
             return artistCall;
         }
 
@@ -237,6 +237,26 @@ namespace FMBot.Bot.Services
             Statistics.LastfmApiCalls.Inc();
 
             return lastFMUser.Success;
+        }
+
+        public static ChartTimePeriod StringToChartTimePeriod(string timeString)
+        {
+            if (Enum.TryParse(timeString, true, out ChartTimePeriod timePeriod))
+            {
+                return timePeriod;
+            }
+
+            return timeString switch
+            {
+                "w" => ChartTimePeriod.Weekly,
+                "m" => ChartTimePeriod.Monthly,
+                "q" => ChartTimePeriod.Quarterly,
+                "h" => ChartTimePeriod.Half,
+                "y" => ChartTimePeriod.Yearly,
+                "a" => ChartTimePeriod.AllTime,
+                "overall" => ChartTimePeriod.AllTime,
+                _ => ChartTimePeriod.Weekly
+            };
         }
 
         public static LastStatsTimeSpan ChartTimePeriodToLastStatsTimeSpan(ChartTimePeriod timePeriod)
