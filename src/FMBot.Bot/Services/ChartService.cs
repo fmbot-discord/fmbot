@@ -367,6 +367,18 @@ namespace FMBot.Bot.Services
                 chartSettings.TimespanString = "Monthly Chart";
                 chartSettings.TimespanUrlString = "LAST_30_DAYS";
             }
+            else if (extraOptions.Contains("quarterly") || extraOptions.Contains("quarter") || extraOptions.Contains("q"))
+            {
+                chartSettings.TimeSpan = LastStatsTimeSpan.Quarter;
+                chartSettings.TimespanString = "Quarterly Chart";
+                chartSettings.TimespanUrlString = "LAST_90_DAYS";
+            }
+            else if (extraOptions.Contains("halfyearly") || extraOptions.Contains("half") || extraOptions.Contains("h"))
+            {
+                chartSettings.TimeSpan = LastStatsTimeSpan.Year;
+                chartSettings.TimespanString = "Half-yearly Chart";
+                chartSettings.TimespanUrlString = "LAST_180_DAYS";
+            }
             else if (extraOptions.Contains("yearly") || extraOptions.Contains("year") || extraOptions.Contains("y"))
             {
                 chartSettings.TimeSpan = LastStatsTimeSpan.Year;

@@ -58,7 +58,7 @@ namespace FMBot.Bot.Commands.LastFM
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
             if (otherSettings.Any() && otherSettings.First() == "help")
             {
-                await ReplyAsync($"{prfx}chart '2x2-10x10' 'weekly/monthly/yearly/overall' \n" +
+                await ReplyAsync($"{prfx}chart '2x2-10x10' '{Constants.CompactTimePeriodList}' \n" +
                                  "Optional extra settings: 'notitles', 'nt', 'skipemptyimages', 's'\n" +
                                  "Options can be used in any order..");
                 return;
@@ -128,7 +128,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     var reply =
                         $"User hasn't listened to enough albums ({albums.Count()} of required {chartSettings.ImagesNeeded}) for a chart this size. " +
-                        "Please try a smaller chart or a bigger time period (weekly/monthly/yearly/overall)'.";
+                        $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList})'.";
 
                     if (chartSettings.SkipArtistsWithoutImage)
                     {
