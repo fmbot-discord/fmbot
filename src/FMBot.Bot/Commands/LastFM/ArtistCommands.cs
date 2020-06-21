@@ -283,7 +283,7 @@ namespace FMBot.Bot.Commands.LastFM
                     lastIndex != null && lastIndex > DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
 
                 var guildRecentlyIndexed =
-                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(1));
+                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(0));
 
                 if (guildRecentlyIndexed)
                 {
@@ -350,7 +350,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
                     this.Context.Message.Content);
 
-                //await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
+                await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
                 this._indexService.IndexGuild(users);
             }
             catch (Exception e)
@@ -431,7 +431,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var users = guild.Users.Select(s => s.User).ToList();
+                var users = guild.GuildUsers.Select(s => s.User).ToList();
                 var usersWithArtist = await this._artistsService.GetIndexedUsersForArtist(this.Context, users, artist.Artist.Name);
 
                 if (usersWithArtist.Count == 0 && artist.Artist.Stats.Userplaycount != 0)
@@ -463,7 +463,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $" - Update data with {prfx}index";
                 }
 
-                if (guild.Users.Count < 100)
+                if (guild.GuildUsers.Count < 100)
                 {
                     //var serverListeners = await this._artistsService.GetArtistListenerCountForServer(guildUsers, artist.Artist.Name);
                     //var serverPlaycount = await this._artistsService.GetArtistPlayCountForServer(guildUsers, artist.Artist.Name);
@@ -473,7 +473,7 @@ namespace FMBot.Bot.Commands.LastFM
                     //footer += $"{serverPlaycount} total plays - ";
                     //footer += $"{(int)avgServerListenerPlaycount} median plays";
                 }
-                else if (guild.Users.Count < 125)
+                else if (guild.GuildUsers.Count < 125)
                 {
                     footer += $"\nView server artist averages in `{prfx}artist`";
                 }

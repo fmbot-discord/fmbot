@@ -113,37 +113,32 @@ namespace FMBot.Bot.Services
             var userIds = guildUsers.Select(s => s.Id).ToList();
 
             await using var db = new FMBotDbContext();
+            var existingGuild = await db.Guilds
+                .Include(i => i.GuildUsers)
+                .FirstAsync(f => f.DiscordGuildId == guild.Id);
+
             var users = await db.Users
                 .Include(i => i.Artists)
                 .Where(w => userIds.Contains(w.DiscordUserId))
-                .ToListAsync();
-
-            var existingGuild = await db.Guilds
-                .Include(i => i.Users)
-                .FirstAsync(f => f.DiscordGuildId == guild.Id);
-
-            existingGuild.Name = guild.Name;
-
-            try
-            {
-                db.GuildUsers.RemoveRange(existingGuild.Users);
-                await db.SaveChangesAsync();
-
-                var newUsers = users.Select(s => new GuildUser
+                .Select(s => new GuildUser
                 {
                     GuildId = existingGuild.GuildId,
                     UserId = s.UserId
-                }).ToList();
+                })
+                .ToListAsync();
 
-                await db.GuildUsers.AddRangeAsync(newUsers);
-                await db.SaveChangesAsync();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
-            
+            var connString = db.Database.GetDbConnection().ConnectionString;
+            var copyHelper = new PostgreSQLCopyHelper<GuildUser>("public", "guild_users")
+                .MapInteger("guild_id", x => x.GuildId)
+                .MapInteger("user_id", x => x.UserId);
+
+            await using var connection = new NpgsqlConnection(connString);
+            connection.Open();
+
+            await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.guild_users WHERE guild_id = {existingGuild.GuildId};", connection);
+            await deleteCurrentArtists.ExecuteNonQueryAsync().ConfigureAwait(false);
+
+            await copyHelper.SaveAllAsync(connection, users).ConfigureAwait(false);
         }
 
         public async Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> guildUsers)

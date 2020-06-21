@@ -71,11 +71,11 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasKey(e => new { e.GuildId, e.UserId });
 
                 entity.HasOne(sc => sc.Guild)
-                    .WithMany(s => s.Users)
+                    .WithMany(s => s.GuildUsers)
                     .HasForeignKey(sc => sc.GuildId);
 
                 entity.HasOne(sc => sc.User)
-                    .WithMany(s => s.Guilds)
+                    .WithMany(s => s.GuildUsers)
                     .HasForeignKey(sc => sc.UserId);
             });
 

@@ -26,7 +26,7 @@ namespace FMBot.Bot.Services
             await using var db = new FMBotDbContext();
             return await db.Guilds
                 .AsQueryable()
-                .Include(i => i.Users)
+                .Include(i => i.GuildUsers)
                 .ThenInclude(t => t.User)
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guildId);
         }
