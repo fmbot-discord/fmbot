@@ -357,13 +357,21 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $" - Update data with {prfx}index";
                 }
 
-                var serverListeners = await this._artistsService.GetArtistListenerCountForServer(users, artist.Artist.Name);
-                var serverPlaycount = await this._artistsService.GetArtistPlayCountForServer(users, artist.Artist.Name);
-                var avgServerListenerPlaycount = await this._artistsService.GetArtistAverageListenerPlaycountForServer(users, artist.Artist.Name);
 
-                footer += $"\n{serverListeners} listeners - ";
-                footer += $"{serverPlaycount} total plays - ";
-                footer += $"{(int)avgServerListenerPlaycount} median plays";
+                if (guild.GuildUsers.Count < 400)
+                {
+                    var serverListeners = await this._artistsService.GetArtistListenerCountForServer(users, artist.Artist.Name);
+                    var serverPlaycount = await this._artistsService.GetArtistPlayCountForServer(users, artist.Artist.Name);
+                    var avgServerListenerPlaycount = await this._artistsService.GetArtistAverageListenerPlaycountForServer(users, artist.Artist.Name);
+
+                    footer += $"\n{serverListeners} listeners - ";
+                    footer += $"{serverPlaycount} total plays - ";
+                    footer += $"{(int)avgServerListenerPlaycount} median plays";
+                }
+                else if (guild.GuildUsers.Count < 450)
+                {
+                    footer += $"\nView server artist averages in `{prfx}artist`";
+                }
 
                 this._embed.WithTitle($"Who knows {artist.Artist.Name} in {this.Context.Guild.Name}");
                 this._embed.WithUrl(artist.Artist.Url);
