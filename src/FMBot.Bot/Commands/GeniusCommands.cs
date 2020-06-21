@@ -3,12 +3,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.LastFM.Services;
-using FMBot.Persistence.EntityFrameWork;
 
 namespace FMBot.Bot.Commands
 {
@@ -39,17 +39,11 @@ namespace FMBot.Bot.Commands
         [Command("genius")]
         [Summary("Shares a link to the Genius lyrics based on what a user is listening to or what the user is searching for.")]
         [Alias("lyrics", "g", "lyricsfind", "lyricsearch", "lyricssearch")]
+        [LoginRequired]
         public async Task GeniusAsync(params string[] searchValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
-
-            if (userSettings?.UserNameLastFM == null)
-            {
-                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
 
             try
             {

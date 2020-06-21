@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -10,7 +11,6 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
-using FMBot.Persistence.EntityFrameWork;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -47,6 +47,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays what a user is listening to.")]
         [Alias("np", "qm", "wm", "em", "rm", "tm", "ym", "um", "om", "pm", "dm", "gm", "sm", "am", "hm", "jm", "km",
             "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm")]
+        [LoginRequired]
         public async Task FMAsync(params string[] user)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -58,7 +59,6 @@ namespace FMBot.Bot.Commands.LastFM
                 await ReplyAsync("", false, this._embed.Build());
                 return;
             }
-
             if (user.Length > 0 && user.First() == "help")
             {
                 var fmString = "fm";
@@ -281,17 +281,11 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("recent", RunMode = RunMode.Async)]
         [Summary("Displays a user's recent tracks.")]
         [Alias("recenttracks", "r")]
+        [LoginRequired]
         public async Task RecentAsync(string amount = "5", string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
-
-            if (userSettings?.UserNameLastFM == null)
-            {
-                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
 
             if (user == "help")
             {

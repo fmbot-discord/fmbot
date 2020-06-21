@@ -10,6 +10,7 @@
   <a href="https://discord.gg/srmpCaa"><img src="https://img.shields.io/badge/chat-on%20discord-7289da.svg" alt="Join our server"></a>
   <a href="https://top.gg/bot/356268235697553409"><img src="https://top.gg/api/widget/status/356268235697553409.svg?noavatar=true" alt="Discord bot status"></a>
   <a href="https://top.gg/bot/356268235697553409"><img src="https://top.gg/api/widget/servers/356268235697553409.svg?noavatar=true" alt="Discord bot server amount"></a>
+  <a href="https://www.jetbrains.com/?from=fmbot"><img src="https://img.shields.io/badge/Powered%20by%20JetBrains-gray.svg?logo=resharper" alt="Powered by Resharper"></a>
 </p>
 <hr />
 

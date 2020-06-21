@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace FMBot.Persistence.Domain.Models
 {
@@ -27,5 +28,7 @@ namespace FMBot.Persistence.Domain.Models
         public DateTime? LastIndexed { get; set; }
 
         public bool? SpecialGuild { get; set; }
+
+        public ICollection<GuildUser> GuildUsers { get; set; }
     }
 }
