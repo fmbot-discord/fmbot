@@ -57,7 +57,6 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task ArtistAsync(params string[] artistValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
 
             var artist = await GetArtistOrHelp(artistValues, userSettings, "fmartist");
             if (artist == null)
@@ -316,15 +315,15 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                this._embedAuthor.WithName($"Top {num} artists compared to {lastfmToCompare}");
+                this._embedAuthor.WithName($"Top artist comparison - {ownLastFmUsername} vs {lastfmToCompare}");
                 this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{ownLastFmUsername}/library/artists?date_preset={LastFMService.ChartTimePeriodToSiteTimePeriodUrl(timePeriod)}");
                 this._embed.WithAuthor(this._embedAuthor);
 
                 var taste = await this._lastFmService.GetTasteAsync(ownArtists, otherArtists, num, timePeriod);
 
                 this._embed.WithDescription(taste.Description);
-                this._embed.AddField(ownLastFmUsername + " plays", taste.LeftDescription, true);
-                this._embed.AddField(lastfmToCompare + " plays", taste.RightDescription, true);
+                this._embed.AddField("Artist", taste.LeftDescription, true);
+                this._embed.AddField("Plays", taste.RightDescription, true);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,

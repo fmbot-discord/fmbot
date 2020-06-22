@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Persistence.Domain.Models;
@@ -326,12 +325,9 @@ namespace FMBot.Bot.Commands
                         return;
                     }
 
+                    var blacklistResult = await this._adminService.AddUserToBlacklistAsync(user.Id);
 
-                    var UserID = user.Id.ToString();
-
-                    var blacklistresult = await this._adminService.AddUserToBlacklistAsync(user.Id);
-
-                    if (blacklistresult)
+                    if (blacklistResult)
                     {
                         await ReplyAsync("Added " + user.Username + " to the blacklist.");
                     }
@@ -369,11 +365,9 @@ namespace FMBot.Bot.Commands
                         return;
                     }
 
-                    var UserID = user.Id.ToString();
+                    var blacklistResult = await this._adminService.RemoveUserFromBlacklistAsync(user.Id);
 
-                    var blacklistresult = await this._adminService.RemoveUserFromBlacklistAsync(user.Id);
-
-                    if (blacklistresult)
+                    if (blacklistResult)
                     {
                         await ReplyAsync("Removed " + user.Username + " from the blacklist.");
                     }
@@ -394,11 +388,6 @@ namespace FMBot.Bot.Commands
 
                 await ReplyAsync("Unable to remove " + user.Username + " from the blacklist due to an internal error.");
             }
-        }
-
-        private bool IsTAnEnumerable<T>(T x)
-        {
-            return null != typeof(T).GetInterface("IEnumerable`1");
         }
     }
 }

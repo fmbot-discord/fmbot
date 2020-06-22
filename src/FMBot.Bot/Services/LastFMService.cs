@@ -16,8 +16,6 @@ using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
-using Microsoft.AspNetCore.Components;
-using Unosquare.Swan;
 using Track = FMBot.LastFM.Domain.Models.Track;
 
 namespace FMBot.Bot.Services
@@ -257,19 +255,22 @@ namespace FMBot.Bot.Services
             var right = "";
             foreach (var artist in artistsToShow.Take(amount))
             {
-                var newLine = false;
                 var name = artist.Name;
-                if (artist.Name.Length > 30)
+                if (!string.IsNullOrWhiteSpace(name) && name.Length > 24)
                 {
-                    name = $"{artist.Name.Substring(0, Math.Min(artist.Name.Length, 30))}\n" +
-                           $"{artist.Name.Substring(30, Math.Min(artist.Name.Length, 60))}";
+                    left += $"**{name.Substring(0, 24)}..**\n";
+                }
+                else
+                {
+                    left += $"**{name}**\n";
                 }
 
-                left += $"**{name}** - *{artist.PlayCount.Value}*\n";
-                right += $"*{rightUserArtists.Content.First(f => f.Name.Equals(name)).PlayCount.Value}* - **{name}**\n";
+                right += $"**{artist.PlayCount.Value}** • " +
+                         $"**{rightUserArtists.Content.First(f => f.Name.Equals(name)).PlayCount.Value}**\n";
             }
 
-            var description = $"{artistsToShow.Count()} out of 1000 top {timePeriod} artists match";
+            var percentage = ((double)artistsToShow.Count() / leftUserArtists.Count()) * 100;
+            var description = $"**{artistsToShow.Count()}** ({percentage}%)  out of top **1000** {timePeriod.ToString().ToLower()} artists match";
 
             return new TasteModel
             {

@@ -38,7 +38,7 @@ namespace FMBot.Bot.Handlers
             this._provider = provider;
             this._prefixService = prefixService;
             this._disabledCommandService = disabledCommandService;
-            _userService = userService;
+            this._userService = userService;
             this._discord.MessageReceived += OnMessageReceivedAsync;
         }
 

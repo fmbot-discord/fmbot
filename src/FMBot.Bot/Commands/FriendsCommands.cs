@@ -6,12 +6,10 @@ using Dasync.Collections;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.LastFM.Services;
-using FMBot.Persistence.EntityFrameWork;
 
 namespace FMBot.Bot.Commands
 {
@@ -48,12 +46,11 @@ namespace FMBot.Bot.Commands
 
         [Command("friends", RunMode = RunMode.Async)]
         [Summary("Displays a user's friends and what they are listening to.")]
-        [Alias("recentfriends", "friendsrecent")]
+        [Alias("recentfriends", "friendsrecent", "f")]
         [LoginRequired]
         public async Task FriendsAsync()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
 
             try
             {
@@ -262,7 +259,6 @@ namespace FMBot.Bot.Commands
         public async Task RemoveFriends([Summary("Friend names")] params string[] enteredFriends)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
 
             if (enteredFriends.Length == 0)
             {
@@ -349,7 +345,6 @@ namespace FMBot.Bot.Commands
         public async Task RemoveAllFriends()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
 
             try
             {
