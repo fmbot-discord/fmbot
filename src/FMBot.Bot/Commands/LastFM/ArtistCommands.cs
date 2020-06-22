@@ -7,6 +7,7 @@ using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.LastFM.Domain.Models;
@@ -153,7 +154,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("topartists", RunMode = RunMode.Async)]
         [Summary("Displays top artists.")]
-        [Alias("al", "as","ta", "artistlist","artists", "artistslist")]
+        [Alias("al", "as", "ta", "artistlist", "artists", "artistslist")]
         [LoginRequired]
         public async Task TopArtistsAsync(string time = "weekly", int num = 10, string user = null)
         {
@@ -253,7 +254,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("taste", RunMode = RunMode.Async)]
         [Summary("Compare taste to other user.")]
         [LoginRequired]
-        public async Task TasteAsync(string user = null, string time = "alltime", int num = 15)
+        public async Task TasteAsync(string user = null, string time = "alltime", string type = "table")
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
@@ -267,17 +268,9 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            if (num > 30)
-            {
-                num = 30;
-            }
-            if (num < 1)
-            {
-                num = 1;
-            }
-
             var timePeriod = LastFMService.StringToChartTimePeriod(time);
             var timeSpan = LastFMService.ChartTimePeriodToLastStatsTimeSpan(timePeriod);
+            var tastetype = LastFMService.StringToTasteType(type);
 
             try
             {
@@ -316,14 +309,25 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 this._embedAuthor.WithName($"Top artist comparison - {ownLastFmUsername} vs {lastfmToCompare}");
-                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{ownLastFmUsername}/library/artists?date_preset={LastFMService.ChartTimePeriodToSiteTimePeriodUrl(timePeriod)}");
+                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{lastfmToCompare}/library/artists?date_preset={LastFMService.ChartTimePeriodToSiteTimePeriodUrl(timePeriod)}");
                 this._embed.WithAuthor(this._embedAuthor);
 
-                var taste = await this._lastFmService.GetTasteAsync(ownArtists, otherArtists, num, timePeriod);
+                int amount = 15;
+                if (tastetype == TasteType.FullEmbed)
+                {
+                    var taste = await this._lastFmService.GetEmbedTasteAsync(ownArtists, otherArtists, amount, timePeriod);
 
-                this._embed.WithDescription(taste.Description);
-                this._embed.AddField("Artist", taste.LeftDescription, true);
-                this._embed.AddField("Plays", taste.RightDescription, true);
+                    this._embed.WithDescription(taste.Description);
+                    this._embed.AddField("Artist", taste.LeftDescription, true);
+                    this._embed.AddField("Plays", taste.RightDescription, true);
+                }
+                else
+                {
+                    var taste = await this._lastFmService.GetTableTasteAsync(ownArtists, otherArtists, amount, timePeriod,  ownLastFmUsername, lastfmToCompare);
+
+                    this._embed.WithDescription(taste);
+                }
+
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.LastFM.Domain.Models;
@@ -243,17 +244,14 @@ namespace FMBot.Bot.Services
 
 
         // Top artists for 2 users
-        public async Task<TasteModel> GetTasteAsync(PageResponse<LastArtist> leftUserArtists,
+        public async Task<TasteModels> GetEmbedTasteAsync(PageResponse<LastArtist> leftUserArtists,
             PageResponse<LastArtist> rightUserArtists, int amount, ChartTimePeriod timePeriod)
         {
-            var artistsToShow =
-                leftUserArtists
-                    .Where(w => rightUserArtists.Content.Select(s => s.Name).Contains(w.Name))
-                    .OrderByDescending(o => o.PlayCount);
+            var artistsToShow = ArtistsToShow(leftUserArtists, rightUserArtists);
 
             var left = "";
             var right = "";
-            foreach (var artist in artistsToShow.Take(amount))
+            foreach (var artist in artistsToShow.Take(15))
             {
                 var name = artist.Name;
                 if (!string.IsNullOrWhiteSpace(name) && name.Length > 24)
@@ -272,11 +270,63 @@ namespace FMBot.Bot.Services
             var percentage = ((double)artistsToShow.Count() / leftUserArtists.Count()) * 100;
             var description = $"**{artistsToShow.Count()}** ({percentage}%)  out of top **1000** {timePeriod.ToString().ToLower()} artists match";
 
-            return new TasteModel
+            return new TasteModels
             {
                 Description = description,
                 LeftDescription = left,
                 RightDescription = right
+            };
+        }
+
+        // Top artists for 2 users
+        public async Task<string> GetTableTasteAsync(PageResponse<LastArtist> leftUserArtists,
+            PageResponse<LastArtist> rightUserArtists, int amount, ChartTimePeriod timePeriod, string mainUser, string userToCompare)
+        {
+            var artistsToShow = ArtistsToShow(leftUserArtists, rightUserArtists);
+
+            var artists = artistsToShow.Select(s => new TasteTwoUserModel
+            {
+                Artist = !string.IsNullOrWhiteSpace(s.Name) && s.Name.Length > 18 ? $"{s.Name.Substring(0, 18)}.." : s.Name,
+                OwnPlaycount = s.PlayCount.Value,
+                OtherPlaycount = rightUserArtists.Content.First(f => f.Name.Equals(s.Name)).PlayCount.Value
+            });
+
+            var customTable = artists.Take(15).ToTasteTable(new[] { "Artist", mainUser, userToCompare },
+                u => u.Artist,
+                u => u.OwnPlaycount,
+                u => u.OtherPlaycount
+            );
+
+
+            var percentage = ((double)artistsToShow.Count() / leftUserArtists.Count()) * 100;
+            var description = $"**{artistsToShow.Count()}** ({percentage}%)  out of top **1000** {timePeriod.ToString().ToLower()} artists match\n" +
+                              $"```{customTable}```";
+
+            return description;
+        }
+
+        private IOrderedEnumerable<LastArtist> ArtistsToShow(IEnumerable<LastArtist> pageResponse, IPageResponse<LastArtist> lastArtists)
+        {
+            var artistsToShow =
+                pageResponse
+                    .Where(w => lastArtists.Content.Select(s => s.Name).Contains(w.Name))
+                    .OrderByDescending(o => o.PlayCount);
+            return artistsToShow;
+        }
+
+        public static TasteType StringToTasteType(string tasteTypeString)
+        {
+            if (Enum.TryParse(tasteTypeString, true, out TasteType tasteType))
+            {
+                return tasteType;
+            }
+
+            return tasteTypeString switch
+            {
+                "t" => TasteType.Table,
+                "e" => TasteType.FullEmbed,
+                "embed" => TasteType.FullEmbed,
+                _ => TasteType.Table
             };
         }
 
