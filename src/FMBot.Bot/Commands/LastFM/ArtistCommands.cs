@@ -21,7 +21,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedBuilder _embed;
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
-        private readonly IGuildService _guildService;
+        private readonly GuildService _guildService;
         private readonly IArtistsService _artistsService;
         private readonly LastFMService _lastFmService;
         private readonly SpotifyService _spotifyService = new SpotifyService();
@@ -35,7 +35,7 @@ namespace FMBot.Bot.Commands.LastFM
             ILastfmApi lastfmApi,
             IPrefixService prefixService,
             IArtistsService artistsService,
-            IGuildService guildService)
+            GuildService guildService)
         {
             this._logger = logger;
             this._lastfmApi = lastfmApi;

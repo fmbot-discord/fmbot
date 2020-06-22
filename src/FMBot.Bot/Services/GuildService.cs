@@ -1,20 +1,24 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services
 {
-    public class GuildService : IGuildService
+    public class GuildService
     {
+        private readonly Regex _mentionRegex = new Regex(@"[^<>@]");
+
         // Message is in dm?
         public bool CheckIfDM(ICommandContext context)
         {
@@ -46,25 +50,45 @@ namespace FMBot.Bot.Services
         // Get user from guild with searchvalue
         public async Task<IGuildUser> FindUserFromGuildAsync(ICommandContext context, string searchValue)
         {
-            var users = await context.Guild.GetUsersAsync();
-
-            if (searchValue.Length > 3)
+            if (searchValue.Length > 3 && this._mentionRegex.IsMatch(searchValue))
             {
                 var id = searchValue.Trim('@', '!', '<', '>');
-                var filteredUsers = users.Where(f =>
-                    f.Id.ToString() == id || f.Nickname == searchValue.ToLower() || f.Username.ToLower() == searchValue.ToLower());
 
-                var user = filteredUsers.FirstOrDefault();
-
-                if (user != null)
+                if (ulong.TryParse(id, out var discordUserId))
                 {
-                    return user;
+                    return await context.Guild.GetUserAsync(discordUserId);
                 }
             }
 
             return null;
         }
 
+
+        // Get user from guild with searchvalue
+        public async Task<string> MentionToLastFmUsernameAsync(string searchValue)
+        {
+            if (searchValue.Length > 3)
+            {
+                if (this._mentionRegex.IsMatch(searchValue))
+                {
+                    var id = searchValue.Trim('@', '!', '<', '>');
+
+                    if (ulong.TryParse(id, out ulong discordUserId))
+                    {
+                        await using var db = new FMBotDbContext();
+                        var userSettings = await db.Users
+                            .AsQueryable()
+                            .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+
+                        return userSettings?.UserNameLastFM;
+                    }
+                }
+
+                return searchValue;
+            }
+
+            return null;
+        }
 
         // Get all guild users
         public async Task<List<UserExportModel>> FindAllUsersFromGuildAsync(ICommandContext context)
@@ -223,7 +247,7 @@ namespace FMBot.Bot.Services
                 }
                 else
                 {
-                    existingGuild.DisabledCommands = new[] {command};
+                    existingGuild.DisabledCommands = new[] { command };
                 }
 
                 existingGuild.Name = guild.Name;

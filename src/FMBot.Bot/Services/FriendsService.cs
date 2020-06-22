@@ -62,7 +62,10 @@ namespace FMBot.Bot.Services
         public async Task<bool> RemoveLastFMFriendAsync(int userID, string lastfmusername)
         {
             await using var db = new FMBotDbContext();
-            var friend = db.Friends.FirstOrDefault(f => f.UserId == userID && f.LastFMUserName.ToLower() == lastfmusername.ToLower());
+            var friend = db.Friends
+                .Include(i => i.FriendUser)
+                .FirstOrDefault(f => f.UserId == userID &&
+                                     (f.LastFMUserName.ToLower() == lastfmusername.ToLower() || f.FriendUser != null && f.FriendUser.UserNameLastFM.ToLower() == lastfmusername.ToLower()));
 
             if (friend != null)
             {
@@ -90,56 +93,6 @@ namespace FMBot.Bot.Services
                 db.Friends.RemoveRange(friends);
                 await db.SaveChangesAsync();
             }
-
-            await Task.CompletedTask;
-        }
-
-
-        public async Task AddDiscordFriendAsync(ulong discordUserId, ulong friendDiscordUserId)
-        {
-            await using var db = new FMBotDbContext();
-            var user = await db.Users
-                .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
-
-            if (user == null)
-            {
-                var newUser = new User
-                {
-                    DiscordUserId = discordUserId,
-                    UserType = UserType.User
-                };
-
-                await db.Users.AddAsync(newUser);
-                user = newUser;
-            }
-
-            var friendUser = await db.Users
-                .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordUserId == friendDiscordUserId);
-
-            if (friendUser == null)
-            {
-                return;
-            }
-
-            if (await db.Friends
-                .AsQueryable()
-                .FirstOrDefaultAsync(f =>
-                    f.UserId == user.UserId && f.LastFMUserName == friendUser.UserNameLastFM) != null)
-            {
-                return;
-            }
-
-            var friend = new Friend
-            {
-                User = user,
-                FriendUser = friendUser
-            };
-
-            await db.Friends.AddAsync(friend);
-
-            await db.SaveChangesAsync();
 
             await Task.CompletedTask;
         }

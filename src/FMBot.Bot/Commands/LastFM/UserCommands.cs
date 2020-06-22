@@ -2,14 +2,12 @@ using System;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
-using FMBot.Persistence.EntityFrameWork;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -19,7 +17,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly FriendsService _friendsService;
-        private readonly IGuildService _guildService;
+        private readonly GuildService _guildService;
         private readonly LastFMService _lastFmService;
         private readonly Logger.Logger _logger;
         private readonly TimerService _timer;
@@ -33,7 +31,7 @@ namespace FMBot.Bot.Commands.LastFM
             Logger.Logger logger,
             IPrefixService prefixService,
             ILastfmApi lastfmApi,
-            IGuildService guildService)
+            GuildService guildService)
         {
             this._timer = timer;
             this._logger = logger;

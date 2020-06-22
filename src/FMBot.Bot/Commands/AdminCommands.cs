@@ -21,9 +21,9 @@ namespace FMBot.Bot.Commands
         private readonly EmbedBuilder _embed;
 
         private readonly UserService _userService;
-        private readonly IGuildService _guildService;
+        private readonly GuildService _guildService;
 
-        public AdminCommands(TimerService timer, Logger.Logger logger, IGuildService guildService)
+        public AdminCommands(TimerService timer, Logger.Logger logger, GuildService guildService)
         {
             this._timer = timer;
             this._logger = logger;

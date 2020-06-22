@@ -4,19 +4,20 @@ using Discord;
 using Discord.Commands;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
+using FMBot.Bot.Services;
 
 namespace FMBot.Bot.Commands.LastFM
 {
     public class IndexCommands : ModuleBase
     {
         private readonly EmbedBuilder _embed;
-        private readonly IGuildService _guildService;
+        private readonly GuildService _guildService;
         private readonly IIndexService _indexService;
         private readonly Logger.Logger _logger;
 
         public IndexCommands(Logger.Logger logger,
             IIndexService indexService,
-            IGuildService guildService)
+            GuildService guildService)
         {
             this._logger = logger;
             this._indexService = indexService;
