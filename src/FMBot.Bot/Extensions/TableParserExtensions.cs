@@ -58,20 +58,20 @@ namespace FMBot.Bot.Extensions
 
                         if (rowIndex == 0)
                         {
-                            amountToPad -= 3;
+                            amountToPad -= 1;
                         }
 
                         cell = cell.PadRight(amountToPad);
                     }
                     if (colIndex == 1)
                     {
-                        var amountToPad = maxColumnsWidth[colIndex] - 3;
+                        var amountToPad = maxColumnsWidth[colIndex] - 1;
 
                         cell = cell.PadLeft(amountToPad);
                     }
                     if (colIndex == 2)
                     {
-                        sb.Append(" • ");
+                        //sb.Append(" • ");
                     }
 
                     sb.Append(cell);

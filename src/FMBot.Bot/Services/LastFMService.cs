@@ -251,7 +251,7 @@ namespace FMBot.Bot.Services
 
             var left = "";
             var right = "";
-            foreach (var artist in artistsToShow.Take(15))
+            foreach (var artist in artistsToShow.Take(amount))
             {
                 var name = artist.Name;
                 if (!string.IsNullOrWhiteSpace(name) && name.Length > 24)
@@ -263,11 +263,32 @@ namespace FMBot.Bot.Services
                     left += $"**{name}**\n";
                 }
 
-                right += $"**{artist.PlayCount.Value}** • " +
-                         $"**{rightUserArtists.Content.First(f => f.Name.Equals(name)).PlayCount.Value}**\n";
+                var ownPlaycount = artist.PlayCount.Value;
+                var otherPlaycount = rightUserArtists.Content.First(f => f.Name.Equals(name)).PlayCount.Value;
+
+                if (ownPlaycount > otherPlaycount)
+                {
+                    right += $"**{ownPlaycount}**";
+                }
+                else
+                {
+                    right += $"{ownPlaycount}";
+                }
+
+                right += " • ";
+
+                if (otherPlaycount > ownPlaycount)
+                {
+                    right += $"**{otherPlaycount}**";
+                }
+                else
+                {
+                    right += $"{otherPlaycount}";
+                }
+                right += $"\n";
             }
 
-            var percentage = ((double)artistsToShow.Count() / leftUserArtists.Count()) * 100;
+            var percentage = ((double)artistsToShow.Count() / (double)leftUserArtists.Count()) * 100;
             var description = $"**{artistsToShow.Count()}** ({percentage}%)  out of top **1000** {timePeriod.ToString().ToLower()} artists match";
 
             return new TasteModels
@@ -291,18 +312,24 @@ namespace FMBot.Bot.Services
                 OtherPlaycount = rightUserArtists.Content.First(f => f.Name.Equals(s.Name)).PlayCount.Value
             });
 
-            var customTable = artists.Take(15).ToTasteTable(new[] { "Artist", mainUser, userToCompare },
+            var customTable = artists.Take(amount).ToTasteTable(new[] { "Artist", mainUser, "   ", userToCompare },
                 u => u.Artist,
                 u => u.OwnPlaycount,
+                u => this.GetCompareChar(u.OwnPlaycount, u.OtherPlaycount),
                 u => u.OtherPlaycount
             );
 
 
             var percentage = ((double)artistsToShow.Count() / leftUserArtists.Count()) * 100;
-            var description = $"**{artistsToShow.Count()}** ({percentage}%)  out of top **1000** {timePeriod.ToString().ToLower()} artists match\n" +
+            var description = $"**{artistsToShow.Count()}** ({percentage}%)  out of top **{Math.Min(leftUserArtists.Content.Count, rightUserArtists.Content.Count)}** {timePeriod.ToString().ToLower()} artists match\n" +
                               $"```{customTable}```";
 
             return description;
+        }
+
+        private string GetCompareChar(int ownPlaycount, int otherPlaycount)
+        {
+            return ownPlaycount == otherPlaycount ? " • " : ownPlaycount > otherPlaycount ? " > " : " < ";
         }
 
         private IOrderedEnumerable<LastArtist> ArtistsToShow(IEnumerable<LastArtist> pageResponse, IPageResponse<LastArtist> lastArtists)

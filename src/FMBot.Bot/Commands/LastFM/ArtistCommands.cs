@@ -254,15 +254,16 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("taste", RunMode = RunMode.Async)]
         [Summary("Compare taste to other user.")]
         [LoginRequired]
+        [Alias("t")]
         public async Task TasteAsync(string user = null, string time = "alltime", string type = "table")
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
 
-            if (time == "help")
+            if (user == "help")
             {
                 await ReplyAsync(
-                    $"Usage: `{prfx}taste '{Constants.CompactTimePeriodList}' 'number of artists (max 16)' 'lastfm username/discord user'`");
+                    $"Usage: `{prfx}taste 'last.fm username/ discord mention' '{Constants.CompactTimePeriodList}' 'table/embed'`");
                 return;
             }
 
@@ -290,6 +291,14 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     await ReplyAsync(
                         $"Please enter a valid user to compare yourself to.");
+                    return;
+                }
+                if (lastfmToCompare.ToLower() == userSettings.UserNameLastFM.ToLower())
+                {
+                    await ReplyAsync(
+                        $"This is where I should put some funny reply because you just tried comparing your own taste with yourself.\n" +
+                        $"Don't you ever wonder what your own tongue tastes like?");
+                    return;
                 }
 
                 var ownArtistsTask = this._lastFmService.GetTopArtistsAsync(ownLastFmUsername, timeSpan, 1000);
@@ -312,7 +321,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{lastfmToCompare}/library/artists?date_preset={LastFMService.ChartTimePeriodToSiteTimePeriodUrl(timePeriod)}");
                 this._embed.WithAuthor(this._embedAuthor);
 
-                int amount = 15;
+                int amount = 14;
                 if (tastetype == TasteType.FullEmbed)
                 {
                     var taste = await this._lastFmService.GetEmbedTasteAsync(ownArtists, otherArtists, amount, timePeriod);
@@ -327,7 +336,6 @@ namespace FMBot.Bot.Commands.LastFM
 
                     this._embed.WithDescription(taste);
                 }
-
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
