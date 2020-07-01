@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -97,7 +98,8 @@ namespace FMBot.Bot.Extensions
             for (var colIndex = 0; colIndex < arrValues.GetLength(1); colIndex++)
                 for (var rowIndex = 0; rowIndex < arrValues.GetLength(0); rowIndex++)
                 {
-                    var newLength = arrValues[rowIndex, colIndex].Length;
+                    var si = new StringInfo(arrValues[rowIndex, colIndex]);
+                    var newLength = si.LengthInTextElements;
                     var oldLength = maxColumnsWidth[colIndex];
 
                     if (newLength > oldLength) maxColumnsWidth[colIndex] = newLength;
@@ -114,14 +116,14 @@ namespace FMBot.Bot.Extensions
             return ToTasteTable(values, headers, selectors);
         }
 
-        private static PropertyInfo GetProperty<T>(Expression<Func<T, object>> expresstion)
+        private static PropertyInfo GetProperty<T>(Expression<Func<T, object>> expression)
         {
-            if (expresstion.Body is UnaryExpression)
-                if ((expresstion.Body as UnaryExpression).Operand is MemberExpression)
-                    return ((expresstion.Body as UnaryExpression).Operand as MemberExpression).Member as PropertyInfo;
+            if (expression.Body is UnaryExpression)
+                if ((expression.Body as UnaryExpression).Operand is MemberExpression)
+                    return ((expression.Body as UnaryExpression).Operand as MemberExpression).Member as PropertyInfo;
 
-            if (expresstion.Body is MemberExpression)
-                return (expresstion.Body as MemberExpression).Member as PropertyInfo;
+            if (expression.Body is MemberExpression)
+                return (expression.Body as MemberExpression).Member as PropertyInfo;
             return null;
         }
     }
