@@ -296,8 +296,8 @@ namespace FMBot.Bot.Commands.LastFM
                 if (lastfmToCompare.ToLower() == userSettings.UserNameLastFM.ToLower())
                 {
                     await ReplyAsync(
-                        $"This is where I should put some funny reply because you just tried comparing your own taste with yourself.\n" +
-                        $"Don't you ever wonder what your own tongue tastes like?");
+                        $"You can't compare your own taste with yourself. For viewing your top artists, use `fmtopartists`\n" +
+                        $"Please enter a last.fm username or mention another user.");
                     return;
                 }
 

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using SkiaSharp;
 
 namespace FMBot.Bot.Extensions
 {
@@ -57,22 +58,13 @@ namespace FMBot.Bot.Extensions
                     {
                         var amountToPad = maxColumnsWidth[colIndex];
 
-                        if (rowIndex == 0)
-                        {
-                            amountToPad -= 1;
-                        }
-
-                        cell = cell.PadRight(amountToPad);
+                        cell = cell.PadRightUnicode(amountToPad);
                     }
                     if (colIndex == 1)
                     {
-                        var amountToPad = maxColumnsWidth[colIndex] - 1;
+                        var amountToPad = maxColumnsWidth[colIndex];
 
-                        cell = cell.PadLeft(amountToPad);
-                    }
-                    if (colIndex == 2)
-                    {
-                        //sb.Append(" • ");
+                        cell = cell.PadLeftUnicode(amountToPad);
                     }
 
                     sb.Append(cell);
@@ -92,17 +84,53 @@ namespace FMBot.Bot.Extensions
             return sb.ToString();
         }
 
+        private static string PadRightUnicode(this string text, int width)
+        {
+            var si = new StringInfo(text);
+
+            while (si.LengthInTextElements < width)
+            {
+                text += ' ';
+                si = new StringInfo(text);
+            }
+            return text;
+        }
+
+        private static string PadLeftUnicode(this string text, int width)
+        {
+            var si = new StringInfo(text);
+
+            while (si.LengthInTextElements < width)
+            {
+                text = ' ' + text;
+                si = new StringInfo(text);
+            }
+            return text;
+        }
+
         private static int[] GetMaxColumnsWidth(string[,] arrValues)
         {
             var maxColumnsWidth = new int[arrValues.GetLength(1)];
             for (var colIndex = 0; colIndex < arrValues.GetLength(1); colIndex++)
                 for (var rowIndex = 0; rowIndex < arrValues.GetLength(0); rowIndex++)
                 {
-                    var si = new StringInfo(arrValues[rowIndex, colIndex]);
-                    var newLength = si.LengthInTextElements;
-                    var oldLength = maxColumnsWidth[colIndex];
+                    if (colIndex == 0)
+                    {
+                        var si = new StringInfo(arrValues[rowIndex, colIndex]);
+                        var newLength = si.LengthInTextElements;
 
-                    if (newLength > oldLength) maxColumnsWidth[colIndex] = newLength;
+                        maxColumnsWidth[colIndex] = newLength;
+                    }
+                    else
+                    {
+                        var newLength = arrValues[rowIndex, colIndex].Length;
+                        var oldLength = maxColumnsWidth[colIndex];
+
+                        if (newLength > oldLength)
+                        {
+                            maxColumnsWidth[colIndex] = newLength;
+                        }
+                    }
                 }
 
             return maxColumnsWidth;
