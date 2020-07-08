@@ -354,52 +354,14 @@ namespace FMBot.Bot.Services
                 chartSettings.Width = 3;
             }
 
-            // time period
-            if (extraOptions.Contains("weekly") || extraOptions.Contains("week") || extraOptions.Contains("w"))
-            {
-                chartSettings.TimeSpan = LastStatsTimeSpan.Week;
-                chartSettings.TimespanString = "Weekly Chart";
-                chartSettings.TimespanUrlString = "LAST_7_DAYS";
-            }
-            else if (extraOptions.Contains("monthly") || extraOptions.Contains("month") || extraOptions.Contains("m"))
-            {
-                chartSettings.TimeSpan = LastStatsTimeSpan.Month;
-                chartSettings.TimespanString = "Monthly Chart";
-                chartSettings.TimespanUrlString = "LAST_30_DAYS";
-            }
-            else if (extraOptions.Contains("quarterly") || extraOptions.Contains("quarter") || extraOptions.Contains("q"))
-            {
-                chartSettings.TimeSpan = LastStatsTimeSpan.Quarter;
-                chartSettings.TimespanString = "Quarterly Chart";
-                chartSettings.TimespanUrlString = "LAST_90_DAYS";
-            }
-            else if (extraOptions.Contains("halfyearly") || extraOptions.Contains("half") || extraOptions.Contains("h"))
-            {
-                chartSettings.TimeSpan = LastStatsTimeSpan.Year;
-                chartSettings.TimespanString = "Half-yearly Chart";
-                chartSettings.TimespanUrlString = "LAST_180_DAYS";
-            }
-            else if (extraOptions.Contains("yearly") || extraOptions.Contains("year") || extraOptions.Contains("y"))
-            {
-                chartSettings.TimeSpan = LastStatsTimeSpan.Year;
-                chartSettings.TimespanString = "Yearly Chart";
-                chartSettings.TimespanUrlString = "LAST_365_DAYS";
-            }
-            else if (extraOptions.Contains("overall") || extraOptions.Contains("alltime") || extraOptions.Contains("o") || extraOptions.Contains("at") ||
-                     extraOptions.Contains("a"))
-            {
-                chartSettings.TimeSpan = LastStatsTimeSpan.Overall;
-                chartSettings.TimespanString = "Overall Chart";
-                chartSettings.TimespanUrlString = "ALL";
-            }
-            else
-            {
-                chartSettings.TimeSpan = LastStatsTimeSpan.Week;
-                chartSettings.TimespanString = "Chart";
-                chartSettings.TimespanUrlString = "LAST_7_DAYS";
-            }
+            var timeSettings = LastFMService.OptionsToTimeModel(extraOptions);
+
+            chartSettings.TimeSpan = timeSettings.LastStatsTimeSpan;
+            chartSettings.TimespanString = $"{timeSettings.Description} Chart";
+            chartSettings.TimespanUrlString = timeSettings.UrlParameter;
 
             return chartSettings;
         }
+
     }
 }

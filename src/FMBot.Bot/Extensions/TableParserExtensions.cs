@@ -88,6 +88,10 @@ namespace FMBot.Bot.Extensions
         {
             var si = new StringInfo(text);
 
+            if (StringExtensions.ContainsUnicodeCharacter(text))
+            {
+                width -= si.LengthInTextElements;
+            }
             while (si.LengthInTextElements < width)
             {
                 text += ' ';
@@ -112,26 +116,14 @@ namespace FMBot.Bot.Extensions
         {
             var maxColumnsWidth = new int[arrValues.GetLength(1)];
             for (var colIndex = 0; colIndex < arrValues.GetLength(1); colIndex++)
-                for (var rowIndex = 0; rowIndex < arrValues.GetLength(0); rowIndex++)
-                {
-                    if (colIndex == 0)
-                    {
-                        var si = new StringInfo(arrValues[rowIndex, colIndex]);
-                        var newLength = si.LengthInTextElements;
+            for (var rowIndex = 0; rowIndex < arrValues.GetLength(0); rowIndex++)
+            {
+                var text = arrValues[rowIndex, colIndex];
+                var newLength = new StringInfo(text).LengthInTextElements;
+                var oldLength = maxColumnsWidth[colIndex];
 
-                        maxColumnsWidth[colIndex] = newLength;
-                    }
-                    else
-                    {
-                        var newLength = arrValues[rowIndex, colIndex].Length;
-                        var oldLength = maxColumnsWidth[colIndex];
-
-                        if (newLength > oldLength)
-                        {
-                            maxColumnsWidth[colIndex] = newLength;
-                        }
-                    }
-                }
+                if (newLength > oldLength) maxColumnsWidth[colIndex] = newLength;
+            }
 
             return maxColumnsWidth;
         }

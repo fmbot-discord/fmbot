@@ -1,5 +1,16 @@
+using FMBot.Persistence.Domain.Models;
+
 namespace FMBot.Bot.Models
 {
+    public class TasteSettings
+    {
+        public string OtherUserLastFmUsername { get; set; }
+
+        public TasteType TasteType { get; set; }
+
+        public ChartTimePeriod ChartTimePeriod { get; set; }
+    }
+
     public class TasteModels
     {
         public string Description { get; set; }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace FMBot.Bot.Extensions
@@ -37,6 +38,18 @@ namespace FMBot.Bot.Extensions
             }
 
             return false;
+        }
+
+        public static bool ContainsUnicodeCharacter(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                return false;
+            }
+
+            const int MaxAnsiCode = 255;
+
+            return input.Any(c => c > MaxAnsiCode);
         }
     }
 }

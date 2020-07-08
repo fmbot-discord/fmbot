@@ -243,130 +243,6 @@ namespace FMBot.Bot.Services
             return lastFMUser.Success;
         }
 
-
-        // Top artists for 2 users
-        public async Task<TasteModels> GetEmbedTasteAsync(PageResponse<LastArtist> leftUserArtists,
-            PageResponse<LastArtist> rightUserArtists, int amount, ChartTimePeriod timePeriod)
-        {
-            var matchedArtists = ArtistsToShow(leftUserArtists, rightUserArtists);
-
-            var left = "";
-            var right = "";
-            foreach (var artist in matchedArtists.Take(amount))
-            {
-                var name = artist.Name;
-                if (!string.IsNullOrWhiteSpace(name) && name.Length > 24)
-                {
-                    left += $"**{name.Substring(0, 24)}..**\n";
-                }
-                else
-                {
-                    left += $"**{name}**\n";
-                }
-
-                var ownPlaycount = artist.PlayCount.Value;
-                var otherPlaycount = rightUserArtists.Content.First(f => f.Name.Equals(name)).PlayCount.Value;
-
-                if (ownPlaycount > otherPlaycount)
-                {
-                    right += $"**{ownPlaycount}**";
-                }
-                else
-                {
-                    right += $"{ownPlaycount}";
-                }
-
-                right += " • ";
-
-                if (otherPlaycount > ownPlaycount)
-                {
-                    right += $"**{otherPlaycount}**";
-                }
-                else
-                {
-                    right += $"{otherPlaycount}";
-                }
-                right += $"\n";
-            }
-
-            var description = Description(leftUserArtists, timePeriod, matchedArtists);
-
-            return new TasteModels
-            {
-                Description = description,
-                LeftDescription = left,
-                RightDescription = right
-            };
-
-            
-        }
-
-        // Top artists for 2 users
-        public async Task<string> GetTableTasteAsync(PageResponse<LastArtist> leftUserArtists,
-            PageResponse<LastArtist> rightUserArtists, int amount, ChartTimePeriod timePeriod, string mainUser, string userToCompare)
-        {
-            var artistsToShow = ArtistsToShow(leftUserArtists, rightUserArtists);
-
-            var artists = artistsToShow.Select(s => new TasteTwoUserModel
-            {
-                Artist = !string.IsNullOrWhiteSpace(s.Name) && new StringInfo(s.Name).LengthInTextElements > 15 ? $"{s.Name.Substring(0, 14)}.." : s.Name,
-                OwnPlaycount = s.PlayCount.Value,
-                OtherPlaycount = rightUserArtists.Content.First(f => f.Name.Equals(s.Name)).PlayCount.Value
-            });
-
-            var customTable = artists.Take(amount).ToTasteTable(new[] { "Artist", mainUser, "   ", userToCompare },
-                u => u.Artist,
-                u => u.OwnPlaycount,
-                u => this.GetCompareChar(u.OwnPlaycount, u.OtherPlaycount),
-                u => u.OtherPlaycount
-            );
-
-
-            var description = $"{Description(leftUserArtists, timePeriod, artistsToShow)}\n" +
-                              $"```{customTable}```";
-
-            return description;
-        }
-
-        private static string Description(IEnumerable<LastArtist> mainUserArtists, ChartTimePeriod chartTimePeriod, IOrderedEnumerable<LastArtist> matchedArtists)
-        {
-            var percentage = ((decimal)matchedArtists.Count() / (decimal)mainUserArtists.Count()) * 100;
-            var description =
-                $"**{matchedArtists.Count()}** ({percentage:0.0}%)  out of top **{mainUserArtists.Count()}** {chartTimePeriod.ToString().ToLower()} artists match";
-
-            return description;
-        }
-
-        private string GetCompareChar(int ownPlaycount, int otherPlaycount)
-        {
-            return ownPlaycount == otherPlaycount ? " • " : ownPlaycount > otherPlaycount ? " > " : " < ";
-        }
-
-        private IOrderedEnumerable<LastArtist> ArtistsToShow(IEnumerable<LastArtist> pageResponse, IPageResponse<LastArtist> lastArtists)
-        {
-            var artistsToShow =
-                pageResponse
-                    .Where(w => lastArtists.Content.Select(s => s.Name).Contains(w.Name))
-                    .OrderByDescending(o => o.PlayCount);
-            return artistsToShow;
-        }
-
-        public static TasteType StringToTasteType(string tasteTypeString)
-        {
-            if (Enum.TryParse(tasteTypeString, true, out TasteType tasteType))
-            {
-                return tasteType;
-            }
-
-            return tasteTypeString switch
-            {
-                "t" => TasteType.Table,
-                "e" => TasteType.FullEmbed,
-                "embed" => TasteType.FullEmbed,
-                _ => TasteType.Table
-            };
-        }
-
         public static ChartTimePeriod StringToChartTimePeriod(string timeString)
         {
             if (Enum.TryParse(timeString, true, out ChartTimePeriod timePeriod))
@@ -427,6 +303,71 @@ namespace FMBot.Bot.Services
                 ChartTimePeriod.AllTime => TimePeriod.Overall,
                 _ => TimePeriod.Week
             };
+        }
+
+
+        public static TimeModel OptionsToTimeModel(
+            string[] extraOptions,
+            LastStatsTimeSpan defaultLastStatsTimeSpan = LastStatsTimeSpan.Week,
+            ChartTimePeriod defaultChartTimePeriod = ChartTimePeriod.Weekly,
+            string defaultUrlParameter = "LAST_7_DAYS")
+        {
+            var timeModel = new TimeModel();
+
+            // time period
+            if (extraOptions.Contains("weekly") || extraOptions.Contains("week") || extraOptions.Contains("w"))
+            {
+                timeModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;
+                timeModel.ChartTimePeriod = ChartTimePeriod.Weekly;
+                timeModel.Description = "Weekly";
+                timeModel.UrlParameter = "LAST_7_DAYS";
+            }
+            else if (extraOptions.Contains("monthly") || extraOptions.Contains("month") || extraOptions.Contains("m"))
+            {
+                timeModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;
+                timeModel.ChartTimePeriod = ChartTimePeriod.Monthly;
+                timeModel.Description = "Monthly";
+                timeModel.UrlParameter = "LAST_30_DAYS";
+            }
+            else if (extraOptions.Contains("quarterly") || extraOptions.Contains("quarter") || extraOptions.Contains("q"))
+            {
+                timeModel.LastStatsTimeSpan = LastStatsTimeSpan.Quarter;
+                timeModel.ChartTimePeriod = ChartTimePeriod.Quarterly;
+                timeModel.Description = "Quarterly";
+                timeModel.UrlParameter = "LAST_90_DAYS";
+            }
+            else if (extraOptions.Contains("halfyearly") || extraOptions.Contains("half") || extraOptions.Contains("h"))
+            {
+                timeModel.LastStatsTimeSpan = LastStatsTimeSpan.Half;
+                timeModel.ChartTimePeriod = ChartTimePeriod.Half;
+                timeModel.Description = "Half-yearly";
+                timeModel.UrlParameter = "LAST_180_DAYS";
+            }
+            else if (extraOptions.Contains("yearly") || extraOptions.Contains("year") || extraOptions.Contains("y"))
+            {
+                timeModel.LastStatsTimeSpan = LastStatsTimeSpan.Year;
+                timeModel.ChartTimePeriod = ChartTimePeriod.Yearly;
+                timeModel.Description = "Yearly";
+                timeModel.UrlParameter = "LAST_365_DAYS";
+            }
+            else if (extraOptions.Contains("overall") || extraOptions.Contains("alltime") || extraOptions.Contains("o") ||
+                     extraOptions.Contains("at") ||
+                     extraOptions.Contains("a"))
+            {
+                timeModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;
+                timeModel.ChartTimePeriod = ChartTimePeriod.AllTime;
+                timeModel.Description = "Overall";
+                timeModel.UrlParameter = "ALL";
+            }
+            else
+            {
+                timeModel.LastStatsTimeSpan = defaultLastStatsTimeSpan;
+                timeModel.ChartTimePeriod = defaultChartTimePeriod;
+                timeModel.Description = "";
+                timeModel.UrlParameter = defaultUrlParameter;
+            }
+
+            return timeModel;
         }
     }
 }
