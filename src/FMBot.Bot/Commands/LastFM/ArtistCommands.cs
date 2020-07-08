@@ -332,7 +332,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else
                 {
-                    var taste = await this._lastFmService.GetTableTasteAsync(ownArtists, otherArtists, amount, timePeriod,  ownLastFmUsername, lastfmToCompare);
+                    var taste = await this._lastFmService.GetTableTasteAsync(ownArtists, otherArtists, amount, timePeriod, ownLastFmUsername, lastfmToCompare);
 
                     this._embed.WithDescription(taste);
                 }
@@ -477,8 +477,8 @@ namespace FMBot.Bot.Commands.LastFM
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                this._logger.LogError($"{e.Message} \n{e.StackTrace}", this.Context.Message.Content, this.Context.User.Username,
+                        this.Context.Guild?.Name, this.Context.Guild?.Id);
                 await ReplyAsync(
                     "Something went wrong while using whoknows. Please let us know as this feature is in beta.");
             }

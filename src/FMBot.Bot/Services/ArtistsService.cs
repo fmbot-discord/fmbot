@@ -106,15 +106,18 @@ namespace FMBot.Bot.Services
             foreach (var artist in artists)
             {
                 var discordUser = await context.Guild.GetUserAsync(artist.User.DiscordUserId);
-                returnArtists.Add(new ArtistWithUser
+                if (discordUser != null)
                 {
-                    ArtistName = artist.Name,
-                    DiscordName = discordUser.Nickname ?? discordUser.Username,
-                    Playcount = artist.Playcount,
-                    DiscordUserId = artist.User.DiscordUserId,
-                    LastFMUsername = artist.User.UserNameLastFM,
-                    UserId = artist.UserId,
-                });
+                    returnArtists.Add(new ArtistWithUser
+                    {
+                        ArtistName = artist.Name,
+                        DiscordName = discordUser.Nickname ?? discordUser.Username,
+                        Playcount = artist.Playcount,
+                        DiscordUserId = artist.User.DiscordUserId,
+                        LastFMUsername = artist.User.UserNameLastFM,
+                        UserId = artist.UserId,
+                    });
+                }
             }
 
             return returnArtists;
