@@ -300,14 +300,15 @@ namespace FMBot.Bot.Commands.LastFM
                 if (lastfmToCompare == null)
                 {
                     await ReplyAsync(
-                        $"Please enter a valid user to compare yourself to.");
+                        $"Please enter a valid user to compare your top artists to. \n" +
+                        $"Example: `{prfx}taste lastfmusername` or `{prfx}taste @user`");
                     return;
                 }
                 if (lastfmToCompare.ToLower() == userSettings.UserNameLastFM.ToLower())
                 {
                     await ReplyAsync(
                         $"You can't compare your own taste with yourself. For viewing your top artists, use `fmtopartists`\n" +
-                        $"Please enter a last.fm username or mention another user.");
+                        $"Please enter a different last.fm username or mention another user.");
                     return;
                 }
 
