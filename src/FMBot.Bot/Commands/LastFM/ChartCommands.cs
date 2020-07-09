@@ -24,7 +24,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedBuilder _embed;
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
-        private readonly IGuildService _guildService;
+        private readonly GuildService _guildService;
         private readonly LastFMService _lastFmService;
         private readonly IPrefixService _prefixService;
         private readonly Logger.Logger _logger;
@@ -35,7 +35,7 @@ namespace FMBot.Bot.Commands.LastFM
             IPrefixService prefixService,
             ILastfmApi lastfmApi,
             IChartService chartService,
-            IGuildService guildService)
+            GuildService guildService)
         {
             this._logger = logger;
             this._prefixService = prefixService;

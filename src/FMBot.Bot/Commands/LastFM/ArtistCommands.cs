@@ -7,12 +7,14 @@ using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
+using IF.Lastfm.Core.Api.Enums;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -21,8 +23,8 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedBuilder _embed;
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
-        private readonly IGuildService _guildService;
-        private readonly IArtistsService _artistsService;
+        private readonly GuildService _guildService;
+        private readonly ArtistsService _artistsService;
         private readonly LastFMService _lastFmService;
         private readonly SpotifyService _spotifyService = new SpotifyService();
         private readonly IPrefixService _prefixService;
@@ -34,8 +36,8 @@ namespace FMBot.Bot.Commands.LastFM
         public ArtistCommands(Logger.Logger logger,
             ILastfmApi lastfmApi,
             IPrefixService prefixService,
-            IArtistsService artistsService,
-            IGuildService guildService)
+            ArtistsService artistsService,
+            GuildService guildService)
         {
             this._logger = logger;
             this._lastfmApi = lastfmApi;
@@ -57,7 +59,6 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task ArtistAsync(params string[] artistValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
 
             var artist = await GetArtistOrHelp(artistValues, userSettings, "fmartist");
             if (artist == null)
@@ -154,7 +155,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("topartists", RunMode = RunMode.Async)]
         [Summary("Displays top artists.")]
-        [Alias("al", "as","ta", "artistlist","artists", "artistslist")]
+        [Alias("al", "as", "ta", "artistlist", "artists", "artistslist")]
         [LoginRequired]
         public async Task TopArtistsAsync(string time = "weekly", int num = 10, string user = null)
         {
@@ -238,6 +239,116 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embedFooter.WithText(lastFMUserName + "'s total scrobbles: " +
                                            userInfo.Content.Playcount.ToString("N0"));
                 this._embed.WithFooter(this._embedFooter);
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
+                    this.Context.Message.Content);
+            }
+            catch (Exception e)
+            {
+                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
+                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                await ReplyAsync("Unable to show Last.FM info due to an internal error.");
+            }
+        }
+
+        [Command("taste", RunMode = RunMode.Async)]
+        [Summary("Compare taste to other user.")]
+        [LoginRequired]
+        [Alias("t")]
+        public async Task TasteAsync(string user = null, params string[] extraOptions)
+        {
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
+
+            if (user == "help")
+            {
+                await ReplyAsync(
+                    $"Usage: `{prfx}taste 'last.fm username/ discord mention' '{Constants.CompactTimePeriodList}' 'table/embed'`");
+                return;
+            }
+
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            var timeType = LastFMService.OptionsToTimeModel(
+                extraOptions,
+                LastStatsTimeSpan.Overall,
+                ChartTimePeriod.AllTime,
+                "ALL");
+
+            var tasteSettings = new TasteSettings
+            {
+                ChartTimePeriod = timeType.ChartTimePeriod
+            };
+
+            tasteSettings = this._artistsService.SetTasteSettings(tasteSettings, extraOptions);
+
+            try
+            {
+                var ownLastFmUsername = userSettings.UserNameLastFM;
+                string lastfmToCompare = null;
+
+                if (user != null)
+                {
+                    var alternativeLastFmUserName = await FindUser(user);
+                    if (!string.IsNullOrEmpty(alternativeLastFmUserName))
+                    {
+                        lastfmToCompare = alternativeLastFmUserName;
+                    }
+                }
+
+                if (lastfmToCompare == null)
+                {
+                    await ReplyAsync(
+                        $"Please enter a valid user to compare your top artists to. \n" +
+                        $"Example: `{prfx}taste lastfmusername` or `{prfx}taste @user`");
+                    return;
+                }
+                if (lastfmToCompare.ToLower() == userSettings.UserNameLastFM.ToLower())
+                {
+                    await ReplyAsync(
+                        $"You can't compare your own taste with yourself. For viewing your top artists, use `fmtopartists`\n" +
+                        $"Please enter a different last.fm username or mention another user.");
+                    return;
+                }
+
+                tasteSettings.OtherUserLastFmUsername = lastfmToCompare;
+
+                var ownArtistsTask = this._lastFmService.GetTopArtistsAsync(ownLastFmUsername, timeType.LastStatsTimeSpan, 1000);
+                var otherArtistsTask = this._lastFmService.GetTopArtistsAsync(lastfmToCompare, timeType.LastStatsTimeSpan, 1000);
+
+                Task.WaitAll(ownArtistsTask, otherArtistsTask);
+
+                var ownArtists = await ownArtistsTask;
+                var otherArtists = await otherArtistsTask;
+
+                if (ownArtists?.Any() != true || otherArtists?.Any() != true)
+                {
+                    await ReplyAsync(
+                        $"You or the other user don't have any artist plays in the selected time period.");
+                    return;
+                }
+
+                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+                this._embedAuthor.WithName($"Top artist comparison - {ownLastFmUsername} vs {lastfmToCompare}");
+                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{lastfmToCompare}/library/artists?date_preset={timeType.UrlParameter}");
+                this._embed.WithAuthor(this._embedAuthor);
+
+                int amount = 14;
+                if (tasteSettings.TasteType == TasteType.FullEmbed)
+                {
+                    var taste = await this._artistsService.GetEmbedTasteAsync(ownArtists, otherArtists, amount, timeType.ChartTimePeriod);
+
+                    this._embed.WithDescription(taste.Description);
+                    this._embed.AddField("Artist", taste.LeftDescription, true);
+                    this._embed.AddField("Plays", taste.RightDescription, true);
+                }
+                else
+                {
+                    var taste = await this._artistsService.GetTableTasteAsync(ownArtists, otherArtists, amount, timeType.ChartTimePeriod, ownLastFmUsername, lastfmToCompare);
+
+                    this._embed.WithDescription(taste);
+                }
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
@@ -368,7 +479,11 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 this._embed.WithTitle($"Who knows {artist.Artist.Name} in {this.Context.Guild.Name}");
-                this._embed.WithUrl(artist.Artist.Url);
+
+                if (Uri.IsWellFormedUriString(artist.Artist.Url, UriKind.Absolute))
+                {
+                    this._embed.WithUrl(artist.Artist.Url);
+                }
 
                 this._embedFooter.WithText(footer);
                 this._embed.WithFooter(this._embedFooter);
@@ -379,13 +494,12 @@ namespace FMBot.Bot.Commands.LastFM
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                this._logger.LogError($"{e.Message} \n{e.StackTrace}", this.Context.Message.Content, this.Context.User.Username,
+                        this.Context.Guild?.Name, this.Context.Guild?.Id);
                 await ReplyAsync(
                     "Something went wrong while using whoknows. Please let us know as this feature is in beta.");
             }
         }
-
 
         [Command("serverartists", RunMode = RunMode.Async)]
         [Summary("Shows top artists for your server")]

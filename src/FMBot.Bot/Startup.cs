@@ -72,10 +72,10 @@ namespace FMBot.Bot
                 .AddSingleton<IPrefixService, PrefixService>()
                 .AddSingleton<IDisabledCommandService, DisabledCommandService>()
                 .AddSingleton<IUserIndexQueue, UserIndexQueue>()
-                .AddSingleton<IArtistsService, ArtistsService>()
+                .AddSingleton<ArtistsService>()
                 .AddSingleton<IChartService, ChartService>()
                 .AddSingleton<IIndexService, IndexService>()
-                .AddSingleton<IGuildService, GuildService>()
+                .AddSingleton<GuildService>()
                 .AddSingleton<UserService>()
                 .AddSingleton(logger)
                 .AddSingleton<Random>() // Add random to the collection

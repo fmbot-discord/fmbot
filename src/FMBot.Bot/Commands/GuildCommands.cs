@@ -16,7 +16,7 @@ namespace FMBot.Bot.Commands
     public class GuildCommands : ModuleBase
     {
         private readonly AdminService _adminService;
-        private readonly IGuildService _guildService;
+        private readonly GuildService _guildService;
 
         private readonly IPrefixService _prefixService;
         private readonly IDisabledCommandService _disabledCommandService;
@@ -29,7 +29,7 @@ namespace FMBot.Bot.Commands
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        public GuildCommands(IPrefixService prefixService, Logger.Logger logger, IGuildService guildService, CommandService commands, IDisabledCommandService disabledCommandService)
+        public GuildCommands(IPrefixService prefixService, Logger.Logger logger, GuildService guildService, CommandService commands, IDisabledCommandService disabledCommandService)
         {
             this._prefixService = prefixService;
             this._logger = logger;

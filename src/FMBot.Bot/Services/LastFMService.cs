@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.ResponseModels;
@@ -299,6 +303,71 @@ namespace FMBot.Bot.Services
                 ChartTimePeriod.AllTime => TimePeriod.Overall,
                 _ => TimePeriod.Week
             };
+        }
+
+
+        public static TimeModel OptionsToTimeModel(
+            string[] extraOptions,
+            LastStatsTimeSpan defaultLastStatsTimeSpan = LastStatsTimeSpan.Week,
+            ChartTimePeriod defaultChartTimePeriod = ChartTimePeriod.Weekly,
+            string defaultUrlParameter = "LAST_7_DAYS")
+        {
+            var timeModel = new TimeModel();
+
+            // time period
+            if (extraOptions.Contains("weekly") || extraOptions.Contains("week") || extraOptions.Contains("w"))
+            {
+                timeModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;
+                timeModel.ChartTimePeriod = ChartTimePeriod.Weekly;
+                timeModel.Description = "Weekly";
+                timeModel.UrlParameter = "LAST_7_DAYS";
+            }
+            else if (extraOptions.Contains("monthly") || extraOptions.Contains("month") || extraOptions.Contains("m"))
+            {
+                timeModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;
+                timeModel.ChartTimePeriod = ChartTimePeriod.Monthly;
+                timeModel.Description = "Monthly";
+                timeModel.UrlParameter = "LAST_30_DAYS";
+            }
+            else if (extraOptions.Contains("quarterly") || extraOptions.Contains("quarter") || extraOptions.Contains("q"))
+            {
+                timeModel.LastStatsTimeSpan = LastStatsTimeSpan.Quarter;
+                timeModel.ChartTimePeriod = ChartTimePeriod.Quarterly;
+                timeModel.Description = "Quarterly";
+                timeModel.UrlParameter = "LAST_90_DAYS";
+            }
+            else if (extraOptions.Contains("halfyearly") || extraOptions.Contains("half") || extraOptions.Contains("h"))
+            {
+                timeModel.LastStatsTimeSpan = LastStatsTimeSpan.Half;
+                timeModel.ChartTimePeriod = ChartTimePeriod.Half;
+                timeModel.Description = "Half-yearly";
+                timeModel.UrlParameter = "LAST_180_DAYS";
+            }
+            else if (extraOptions.Contains("yearly") || extraOptions.Contains("year") || extraOptions.Contains("y"))
+            {
+                timeModel.LastStatsTimeSpan = LastStatsTimeSpan.Year;
+                timeModel.ChartTimePeriod = ChartTimePeriod.Yearly;
+                timeModel.Description = "Yearly";
+                timeModel.UrlParameter = "LAST_365_DAYS";
+            }
+            else if (extraOptions.Contains("overall") || extraOptions.Contains("alltime") || extraOptions.Contains("o") ||
+                     extraOptions.Contains("at") ||
+                     extraOptions.Contains("a"))
+            {
+                timeModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;
+                timeModel.ChartTimePeriod = ChartTimePeriod.AllTime;
+                timeModel.Description = "Overall";
+                timeModel.UrlParameter = "ALL";
+            }
+            else
+            {
+                timeModel.LastStatsTimeSpan = defaultLastStatsTimeSpan;
+                timeModel.ChartTimePeriod = defaultChartTimePeriod;
+                timeModel.Description = "";
+                timeModel.UrlParameter = defaultUrlParameter;
+            }
+
+            return timeModel;
         }
     }
 }

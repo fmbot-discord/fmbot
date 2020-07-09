@@ -55,6 +55,12 @@ namespace FMBot.Bot.Models
         [JsonProperty("dblapitoken")]
         public string DblApiToken { get; private set; }
 
+        [JsonProperty("botsfordiscordtoken")]
+        public string BotsForDiscordToken { get; private set; }
+
+        [JsonProperty("connectionstring")]
+        public string ConnectionString { get; private set; }
+
         [JsonProperty("geniusaccesstoken")]
         public string GeniusAccessToken { get; private set; }
     }
