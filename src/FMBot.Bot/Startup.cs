@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Handlers;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -22,9 +23,10 @@ namespace FMBot.Bot
 
         public Startup(string[] args)
         {
+            var config = ConfigData.Data.Bot.FeaturedTimerRepeatInMinutes;
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory() + "/configs")
-                .AddJsonFile("ConfigData.json", true);
+                .AddJsonFile("config.json", true);
 
             this.Configuration = builder.Build(); // Build the configuration
         }
@@ -39,7 +41,7 @@ namespace FMBot.Bot
         private async Task RunAsync()
         {
             var services = new ServiceCollection(); // Create a new instance of a service collection
-            ConfigureServices(services);
+            this.ConfigureServices(services);
 
             var provider = services.BuildServiceProvider(); // Build the service provider
             //provider.GetRequiredService<LoggingService>();      // Start the logging service
@@ -80,13 +82,12 @@ namespace FMBot.Bot
                 .AddSingleton(logger)
                 .AddSingleton<Random>() // Add random to the collection
                 .AddSingleton(this.Configuration) // Add the configuration to the collection
-                .AddDbContext<FMBotDbContext>(ServiceLifetime.Transient)
                 .AddHttpClient();
 
             services
                 .AddTransient<ILastfmApi, LastfmApi>();
 
-            using (var context = new FMBotDbContext())
+            using (var context = new FMBotDbContext(ConfigData.Data.Database.ConnectionString))
             {
                 try
                 {

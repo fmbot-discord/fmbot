@@ -43,7 +43,7 @@ namespace FMBot.Bot.Services
         {
             this._logger.Log("Starting bot");
 
-            var discordToken = ConfigData.Data.Token; // Get the discord token from the config file
+            var discordToken = ConfigData.Data.Discord.Token; // Get the discord token from the config file
             if (string.IsNullOrWhiteSpace(discordToken))
             {
                 throw new Exception("Please enter your bots token into the `/Configs/ConfigData.json` file.");
@@ -66,6 +66,14 @@ namespace FMBot.Bot.Services
             this._logger.Log("Setting Discord user status");
             await this._client.SetStatusAsync(UserStatus.DoNotDisturb);
 
+            if (!string.IsNullOrEmpty(ConfigData.Data.Bot.Status))
+            {
+                await this._client.SetGameAsync(ConfigData.Data.Bot.Status);
+            }
+
+            this._logger.Log("Setting Discord user status");
+            await this._client.SetStatusAsync(UserStatus.DoNotDisturb);
+
             this._logger.Log("Loading command modules");
             await this._commands
                 .AddModulesAsync(
@@ -75,14 +83,13 @@ namespace FMBot.Bot.Services
             this._logger.Log("Preparing cache folder");
             PrepareCacheFolder();
 
-            await StartMetricsServer();
+            await this.StartMetricsServer();
         }
-
 
 
         private async Task TestLastFmApi()
         {
-            var fmClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
+            var fmClient = new LastfmClient(ConfigData.Data.LastFm.Key, ConfigData.Data.LastFm.Secret);
 
             this._logger.Log("Testing Last.FM API");
             var lastFMUser = await fmClient.User.GetInfoAsync("Lastfmsupport");

@@ -24,7 +24,7 @@ namespace FMBot.Bot.Services
 {
     internal class LastFMService
     {
-        private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
+        private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.LastFm.Key, ConfigData.Data.LastFm.Secret);
 
         private readonly ILastfmApi _lastfmApi;
 

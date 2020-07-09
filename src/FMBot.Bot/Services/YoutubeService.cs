@@ -9,9 +9,9 @@ namespace FMBot.Bot.Services
 
         public VideoInformation GetSearchResult(string searchValue)
         {
-            VideoInformation result = this._videoSearch.SearchQuery(searchValue, 1).ElementAt(0);
+            var result = this._videoSearch.SearchQuery(searchValue, 1);
 
-            return result;
+            return result.ElementAt(0);
         }
     }
 }

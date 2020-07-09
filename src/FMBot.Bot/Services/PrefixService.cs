@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Dasync.Collections;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Persistence.EntityFrameWork;
 
@@ -73,7 +74,7 @@ namespace FMBot.Bot.Services
         /// <inheritdoc />
         public async Task LoadAllPrefixes()
         {
-            using var db = new FMBotDbContext();
+            using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var servers = await db.Guilds.Where(w => w.Prefix != null).ToListAsync();
             foreach (var server in servers)
             {

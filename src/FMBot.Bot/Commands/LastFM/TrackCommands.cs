@@ -51,7 +51,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task FMAsync(params string[] user)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
 
             if (userSettings?.UserNameLastFM == null)
             {
@@ -285,7 +285,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task RecentAsync(string amount = "5", string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
 
             if (user == "help")
             {
@@ -411,7 +411,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task TopTracksAsync(string time = "weekly", int num = 8, string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
 
             if (time == "help")
             {

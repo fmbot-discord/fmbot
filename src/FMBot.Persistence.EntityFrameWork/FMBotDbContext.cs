@@ -1,18 +1,22 @@
 using System;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace FMBot.Persistence.EntityFrameWork
 {
     public class FMBotDbContext : DbContext
     {
-        public FMBotDbContext()
-        {
-        }
-
         public FMBotDbContext(DbContextOptions<FMBotDbContext> options)
             : base(options)
         {
+        }
+
+        private readonly string _connectionString;
+
+        public FMBotDbContext(string connectionString)
+        {
+            this._connectionString = connectionString;
         }
 
         public virtual DbSet<Friend> Friends { get; set; }
@@ -25,7 +29,7 @@ namespace FMBot.Persistence.EntityFrameWork
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseNpgsql("Host=localhost;Port=5433;Username=postgres;Password=password;Database=fmbot;Command Timeout=15;Timeout=30;Persist Security Info=True");
+                optionsBuilder.UseNpgsql(this._connectionString);
                 optionsBuilder.UseSnakeCaseNamingConvention();
             }
         }

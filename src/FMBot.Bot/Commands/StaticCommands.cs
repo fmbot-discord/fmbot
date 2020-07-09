@@ -136,7 +136,7 @@ namespace FMBot.Bot.Commands
             var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             if (prefix == null)
             {
-                prefix = ConfigData.Data.CommandPrefix;
+                prefix = ConfigData.Data.Bot.Prefix;
                 customPrefix = false;
             }
 
@@ -171,7 +171,7 @@ namespace FMBot.Bot.Commands
         [Summary("Displays this list.")]
         public async Task FullHelpAsync()
         {
-            var prefix = ConfigData.Data.CommandPrefix;
+            var prefix = ConfigData.Data.Bot.Prefix;
 
             string description = null;
             var length = 0;

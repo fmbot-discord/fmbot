@@ -13,7 +13,7 @@ namespace FMBot.Bot.Services
         public async Task<SearchItem> GetSearchResultAsync(string searchValue, SearchType searchType = SearchType.Track)
         {
             //Create the auth object
-            var auth = new CredentialsAuth(ConfigData.Data.SpotifyKey, ConfigData.Data.SpotifySecret);
+            var auth = new CredentialsAuth(ConfigData.Data.Spotify.Key, ConfigData.Data.Spotify.Secret);
 
             var token = await auth.GetToken();
 
@@ -30,7 +30,7 @@ namespace FMBot.Bot.Services
         public async Task<string> GetArtistImageAsync(string artistName)
         {
             //Create the auth object
-            var auth = new CredentialsAuth(ConfigData.Data.SpotifyKey, ConfigData.Data.SpotifySecret);
+            var auth = new CredentialsAuth(ConfigData.Data.Spotify.Key, ConfigData.Data.Spotify.Secret);
 
             var token = await auth.GetToken();
 

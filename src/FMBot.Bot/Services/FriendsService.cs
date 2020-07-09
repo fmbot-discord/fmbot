@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using FMBot.Bot.Configurations;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +13,7 @@ namespace FMBot.Bot.Services
     {
         public async Task<IReadOnlyList<string>> GetFMFriendsAsync(IUser discordUser)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var user = await db.Users
                 .Include(i => i.Friends)
                 .ThenInclude(i => i.FriendUser)
@@ -29,7 +30,7 @@ namespace FMBot.Bot.Services
 
         public async Task AddLastFMFriendAsync(ulong discordSenderId, string lastfmusername, int? discordFriendId)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var user = db.Users.FirstOrDefault(f => f.DiscordUserId == discordSenderId);
 
             if (user == null)
@@ -61,7 +62,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> RemoveLastFMFriendAsync(int userID, string lastfmusername)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var friend = db.Friends
                 .Include(i => i.FriendUser)
                 .FirstOrDefault(f => f.UserId == userID &&
@@ -83,7 +84,7 @@ namespace FMBot.Bot.Services
 
         public async Task RemoveAllLastFMFriendsAsync(int userID)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var friends = db.Friends
                 .AsQueryable()
                 .Where(f => f.UserId == userID || f.FriendUserId == userID).ToList();
@@ -99,7 +100,7 @@ namespace FMBot.Bot.Services
 
         public async Task<int> GetTotalFriendCountAsync()
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Friends.AsQueryable().CountAsync();
         }
     }

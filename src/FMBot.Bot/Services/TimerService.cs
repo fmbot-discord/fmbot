@@ -171,7 +171,7 @@ namespace FMBot.Bot.Services
                 },
                 null,
                 TimeSpan.FromSeconds(Convert.ToDouble(Constants.BotWarmupTimeInSeconds)), // 4) Time that message should fire after the timer is created
-                TimeSpan.FromMinutes(Convert.ToDouble(ConfigData.Data.TimerRepeat))); // 5) Time after which message should repeat (use `Timeout.Infinite` for no repeat)
+                TimeSpan.FromMinutes(Convert.ToDouble(ConfigData.Data.Bot.FeaturedTimerRepeatInMinutes))); // 5) Time after which message should repeat (use `Timeout.Infinite` for no repeat)
 
             this._internalStatsTimer = new Timer(async _ =>
                 {
@@ -188,7 +188,7 @@ namespace FMBot.Bot.Services
                         Console.WriteLine(e);
                     }
 
-                    await client.SetGameAsync($"{ConfigData.Data.CommandPrefix} | {client.Guilds.Count} servers | fmbot.xyz");
+                    await client.SetGameAsync($"{ConfigData.Data.Bot.Prefix} | {client.Guilds.Count} servers | fmbot.xyz");
                 },
                 null,
                 TimeSpan.FromSeconds(Constants.BotWarmupTimeInSeconds + 10),
@@ -196,10 +196,10 @@ namespace FMBot.Bot.Services
 
             this._externalStatsTimer = new Timer(async _ =>
                 {
-                    if (client.CurrentUser.Id.Equals(Constants.BotProductionId) && !string.IsNullOrEmpty(ConfigData.Data.DblApiToken))
+                    if (client.CurrentUser.Id.Equals(Constants.BotProductionId) && ConfigData.Data.BotLists != null && !string.IsNullOrEmpty(ConfigData.Data.BotLists.TopGgApiToken))
                     {
                         logger.Log("Updating top.gg server count");
-                        var dblApi = new AuthDiscordBotListApi(Constants.BotProductionId, ConfigData.Data.DblApiToken);
+                        var dblApi = new AuthDiscordBotListApi(Constants.BotProductionId, ConfigData.Data.BotLists.TopGgApiToken);
 
                         try
                         {
@@ -237,8 +237,8 @@ namespace FMBot.Bot.Services
         {
             if (!IsTimerActive())
             {
-                this._timer.Change(TimeSpan.FromSeconds(Convert.ToDouble(ConfigData.Data.TimerInit)),
-                    TimeSpan.FromMinutes(Convert.ToDouble(ConfigData.Data.TimerRepeat)));
+                this._timer.Change(TimeSpan.FromSeconds(Convert.ToDouble(ConfigData.Data.Bot.FeaturedTimerStartupDelayInSeconds)),
+                    TimeSpan.FromMinutes(Convert.ToDouble(ConfigData.Data.Bot.FeaturedTimerRepeatInMinutes)));
                 this._timerEnabled = true;
             }
         }
@@ -272,8 +272,8 @@ namespace FMBot.Bot.Services
 
                 await Task.Delay(2000);
 
-                var broadcastServerId = Convert.ToUInt64(ConfigData.Data.BaseServer);
-                var broadcastChannelId = Convert.ToUInt64(ConfigData.Data.FeaturedChannel);
+                var broadcastServerId = ConfigData.Data.Bot.BaseServerId;
+                var broadcastChannelId = ConfigData.Data.Bot.FeaturedChannelId;
 
                 var guild = client.GetGuild(broadcastServerId);
                 var channel = guild.GetTextChannel(broadcastChannelId);
@@ -322,8 +322,8 @@ namespace FMBot.Bot.Services
 
                 await Task.Delay(5000);
 
-                var BroadcastServerID = Convert.ToUInt64(ConfigData.Data.BaseServer);
-                var BroadcastChannelID = Convert.ToUInt64(ConfigData.Data.FeaturedChannel);
+                var BroadcastServerID = ConfigData.Data.Bot.BaseServerId;
+                var BroadcastChannelID = ConfigData.Data.Bot.FeaturedChannelId;
 
                 var guild = client.GetGuild(BroadcastServerID);
                 var channel = guild.GetTextChannel(BroadcastChannelID);

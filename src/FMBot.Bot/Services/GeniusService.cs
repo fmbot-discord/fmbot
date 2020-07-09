@@ -12,7 +12,7 @@ namespace FMBot.Bot.Services
     {
         public async Task<SongResult> GetUrlAsync(string searchValue)
         {
-            var client = new GeniusClient(ConfigData.Data.GeniusAccessToken);
+            var client = new GeniusClient(ConfigData.Data.Genius.AccessToken);
 
             var result = await client.SearchClient.Search(TextFormat.Dom, searchValue);
 
