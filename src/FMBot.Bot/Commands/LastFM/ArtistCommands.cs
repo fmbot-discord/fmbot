@@ -478,7 +478,11 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 this._embed.WithTitle($"Who knows {artist.Artist.Name} in {this.Context.Guild.Name}");
-                this._embed.WithUrl(artist.Artist.Url);
+
+                if (Uri.IsWellFormedUriString(artist.Artist.Url, UriKind.Absolute))
+                {
+                    this._embed.WithUrl(artist.Artist.Url);
+                }
 
                 this._embedFooter.WithText(footer);
                 this._embed.WithFooter(this._embedFooter);

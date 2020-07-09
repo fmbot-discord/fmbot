@@ -90,7 +90,8 @@ namespace FMBot.Bot.Extensions
 
             if (StringExtensions.ContainsUnicodeCharacter(text))
             {
-                width -= si.LengthInTextElements;
+                var widthToReduce = (int)Math.Ceiling(si.LengthInTextElements * 0.75);
+                width -= widthToReduce;
             }
             while (si.LengthInTextElements < width)
             {
