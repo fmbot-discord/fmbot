@@ -51,7 +51,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task StatsAsync(string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.CommandPrefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
 
             if (userSettings?.UserNameLastFM == null)
             {
@@ -160,7 +160,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task SetAsync([Summary("Your Last.FM name")] string lastFMUserName = null,
             params string[] otherSettings)
         {
-            var prfx = ConfigData.Data.CommandPrefix;
+            var prfx = ConfigData.Data.Bot.Prefix;
 
             if (lastFMUserName == null || lastFMUserName == "help")
             {
@@ -263,7 +263,7 @@ namespace FMBot.Bot.Commands.LastFM
                 /*
                 if (string.IsNullOrWhiteSpace(suggestion))
                 {
-                    await ReplyAsync(cfgjson.CommandPrefix + "fmsuggest 'text in quotes'");
+                    await ReplyAsync(cfgjson.Prefix + "fmsuggest 'text in quotes'");
                     return;
                 }
                 else
@@ -281,8 +281,8 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(suggestion);
                 this._embed.WithTimestamp(DateTimeOffset.UtcNow);
 
-                var BroadcastServerID = Convert.ToUInt64(ConfigData.Data.BaseServer);
-                var BroadcastChannelID = Convert.ToUInt64(ConfigData.Data.SuggestionsChannel);
+                var BroadcastServerID = ConfigData.Data.Bot.BaseServerId;
+                var BroadcastChannelID = ConfigData.Data.Bot.SuggestionChannelId;
 
                 var guild = await this.Context.Client.GetGuildAsync(BroadcastServerID);
                 var channel = await guild.GetChannelAsync(BroadcastChannelID);

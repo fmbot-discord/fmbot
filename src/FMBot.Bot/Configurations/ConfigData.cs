@@ -9,7 +9,7 @@ namespace FMBot.Bot.Configurations
     public static class ConfigData
     {
         private const string ConfigFolder = "configs";
-        private const string ConfigFile = "ConfigData.json";
+        private const string ConfigFile = "config.json";
 
         public static ConfigModel Data { get; }
 
@@ -25,14 +25,27 @@ namespace FMBot.Bot.Configurations
 
             if (!File.Exists(ConfigFolder + "/" + ConfigFile))
             {
+                // Default config template
                 Data = new ConfigModel
                 {
-                    CommandPrefix = ".fm",
-                    TimerInit = "20",
-                    TimerRepeat = "60",
-                    Cooldown = "10",
-                    NumMessages = "5",
-                    InBetweenTime = "10"
+                    Database = new DatabaseConfig
+                    {
+                        ConnectionString = "Host=localhost;Port=5433;Username=postgres;Password=password;Database=fmbot;Command Timeout=15;Timeout=30;Persist Security Info=True"
+                    },
+                    Bot = new BotConfig
+                    {
+                        Prefix = ".fm",
+                        FeaturedEnabled = true,
+                        BotWarmupTimeInSeconds = 30,
+                        FeaturedTimerStartupDelayInSeconds = 20,
+                        FeaturedTimerRepeatInMinutes = 60,
+                        Status = ".fmbot starting up...",
+                    },
+                    BotLists = new BotListConfig(),
+                    Discord = new DiscordConfig(),
+                    LastFm = new LastFmConfig(),
+                    Genius = new GeniusConfig(),
+                    Spotify = new SpotifyConfig()
                 };
 
                 var json = JsonConvert.SerializeObject(Data, Formatting.Indented);

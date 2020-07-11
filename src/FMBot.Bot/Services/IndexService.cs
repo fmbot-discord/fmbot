@@ -23,7 +23,7 @@ namespace FMBot.Bot.Services
 {
     public class IndexService : IIndexService
     {
-        private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
+        private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.LastFm.Key, ConfigData.Data.LastFm.Secret);
 
         private readonly IUserIndexQueue _userIndexQueue;
 
@@ -88,7 +88,7 @@ namespace FMBot.Bot.Services
 
         private static async Task InsertArtistsIntoDatabase(IReadOnlyList<Artist> artists, int userId, DateTime now)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var connString = db.Database.GetDbConnection().ConnectionString;
             var copyHelper = new PostgreSQLCopyHelper<Artist>("public", "artists")
                 .MapText("name", x => x.Name)
@@ -112,7 +112,7 @@ namespace FMBot.Bot.Services
         {
             var userIds = guildUsers.Select(s => s.Id).ToList();
 
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var existingGuild = await db.Guilds
                 .Include(i => i.GuildUsers)
                 .FirstAsync(f => f.DiscordGuildId == guild.Id);
@@ -147,7 +147,7 @@ namespace FMBot.Bot.Services
 
             var tooRecent = DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
 
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Users
                 .Include(i => i.Artists)
                 .Where(w => userIds.Contains(w.DiscordUserId)
@@ -161,7 +161,7 @@ namespace FMBot.Bot.Services
 
             var indexCooldown = DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
 
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Users
                 .AsQueryable()
                 .Where(w => userIds.Contains(w.DiscordUserId)

@@ -4,64 +4,79 @@ namespace FMBot.Bot.Models
 {
     public class ConfigModel
     {
-        [JsonProperty("token")]
-        public string Token { get; private set; }
+        public DiscordConfig Discord { get; set; }
 
-        [JsonProperty("fmkey")]
-        public string FMKey { get; private set; }
+        public DatabaseConfig Database { get; set; }
 
-        [JsonProperty("fmsecret")]
-        public string FMSecret { get; private set; }
+        public BotConfig Bot { get; set; }
 
-        [JsonProperty("prefix")]
-        public string CommandPrefix { get; set; }
+        public LastFmConfig LastFm { get; set; }
 
-        [JsonProperty("baseserver")]
-        public string BaseServer { get; private set; }
+        public SpotifyConfig Spotify { get; set; }
 
-        [JsonProperty("announcementchannel")]
-        public string AnnouncementChannel { get; private set; }
+        public GeniusConfig Genius { get; set; }
 
-        [JsonProperty("featuredchannel")]
-        public string FeaturedChannel { get; private set; }
+        public BotListConfig BotLists { get; set; }
+    }
 
-        [JsonProperty("timerinit")]
-        public string TimerInit { get; set; }
+    public class DiscordConfig
+    {
+        public string Token { get; set; }
+    }
 
-        [JsonProperty("timerrepeat")]
-        public string TimerRepeat { get; set; }
+    public class DatabaseConfig
+    {
+        public string ConnectionString { get; set; }
+    }
 
-        [JsonProperty("spotifykey")]
-        public string SpotifyKey { get; private set; }
+    public class BotConfig
+    {
+        public string Prefix { get; set; }
 
-        [JsonProperty("spotifysecret")]
-        public string SpotifySecret { get; private set; }
+        public ulong BaseServerId { get; set; }
 
-        [JsonProperty("exceptionchannel")]
-        public string ExceptionChannel { get; private set; }
+        public ulong AnnouncementChannelId { get; set; }
 
-        [JsonProperty("cooldown")]
-        public string Cooldown { get; set; }
+        public ulong FeaturedChannelId { get; set; }
 
-        [JsonProperty("nummessages")]
-        public string NumMessages { get; set; }
+        public ulong SuggestionChannelId { get; set; }
 
-        [JsonProperty("inbetweentime")]
-        public string InBetweenTime { get; set; }
+        public ulong ExceptionChannelId { get; set; }
 
-        [JsonProperty("suggestionschannel")]
-        public string SuggestionsChannel { get; private set; }
+        public string Status { get; set; }
 
-        [JsonProperty("dblapitoken")]
-        public string DblApiToken { get; private set; }
+        public int BotWarmupTimeInSeconds { get; set; }
 
-        [JsonProperty("botsfordiscordtoken")]
-        public string BotsForDiscordToken { get; private set; }
+        public bool FeaturedEnabled { get; set; }
 
-        [JsonProperty("connectionstring")]
-        public string ConnectionString { get; private set; }
+        public int FeaturedTimerStartupDelayInSeconds { get; set; }
 
-        [JsonProperty("geniusaccesstoken")]
-        public string GeniusAccessToken { get; private set; }
+        public int FeaturedTimerRepeatInMinutes { get; set; }
+    }
+
+    public class LastFmConfig
+    {
+        public string Key { get; set; }
+
+        public string Secret { get; set; }
+    }
+
+    public class SpotifyConfig
+    {
+        public string Key { get; set; }
+
+        public string Secret { get; set; }
+    }
+
+    public class GeniusConfig
+    {
+        public string AccessToken { get; set; }
+    }
+
+    public class BotListConfig
+    {
+        public string TopGgApiToken { get; set; }
+
+        public string BotsForDiscordToken { get; set; }
     }
 }

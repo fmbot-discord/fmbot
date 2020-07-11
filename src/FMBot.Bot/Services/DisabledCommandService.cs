@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Dasync.Collections;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Persistence.EntityFrameWork;
 
@@ -78,7 +79,7 @@ namespace FMBot.Bot.Services
         /// <inheritdoc />
         public async Task LoadAllDisabledCommands()
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var servers = await db.Guilds.Where(w => w.DisabledCommands != null).ToListAsync();
             foreach (var server in servers)
             {

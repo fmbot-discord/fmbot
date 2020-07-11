@@ -188,7 +188,7 @@ namespace FMBot.Bot.Commands
 
         //        if (link == "help")
         //        {
-        //            await ReplyAsync(cfgjson.CommandPrefix + "fmavataroverride <image link> [message in quotation marks] [event 0 or 1]");
+        //            await ReplyAsync(cfgjson.Prefix + "fmavataroverride <image link> [message in quotation marks] [event 0 or 1]");
         //            return;
         //        }
 

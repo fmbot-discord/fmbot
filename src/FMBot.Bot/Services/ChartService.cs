@@ -20,7 +20,7 @@ namespace FMBot.Bot.Services
 {
     public class ChartService : IChartService
     {
-        private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.FMKey, ConfigData.Data.FMSecret);
+        private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.LastFm.Key, ConfigData.Data.LastFm.Secret);
 
         public async Task<SKImage> GenerateChartAsync(ChartSettings chart)
         {

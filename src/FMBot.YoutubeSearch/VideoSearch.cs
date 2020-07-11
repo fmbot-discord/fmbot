@@ -28,7 +28,7 @@ namespace FMBot.YoutubeSearch
     {
         //constants for easier maintainability
         private const string Pattern =
-            "<div class=\"yt-lockup-content\">.*?title=\"(?<NAME>.*?)\".*?</div></div></div></li>";
+            "<div id=\"title-wrapper\">.*?title=\"(?<NAME>.*?)\".*?</div></div></ytd-video-meta-block>";
 
         private const string YtQueryUrl = "https://www.youtube.com/results?search_query=";
         private const string YtThumbnailUrl = "https://i.ytimg.com/vi/";

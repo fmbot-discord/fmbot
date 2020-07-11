@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -25,7 +26,7 @@ namespace FMBot.Bot.Services
 
         public async Task<Guild> GetGuildAsync(ulong guildId)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Guilds
                 .AsQueryable()
                 .Include(i => i.GuildUsers)
@@ -73,7 +74,7 @@ namespace FMBot.Bot.Services
 
                     if (ulong.TryParse(id, out ulong discordUserId))
                     {
-                        await using var db = new FMBotDbContext();
+                        await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
                         var userSettings = await db.Users
                             .AsQueryable()
                             .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
@@ -95,7 +96,7 @@ namespace FMBot.Bot.Services
 
             var userIds = users.Select(s => s.Id).ToList();
 
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var usersObject = db.Users
                 .AsQueryable()
                 .Where(w => userIds.Contains(w.DiscordUserId))
@@ -109,7 +110,7 @@ namespace FMBot.Bot.Services
 
         public async Task ChangeGuildSettingAsync(IGuild guild, ChartTimePeriod chartTimePeriod, FmEmbedType fmEmbedType)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var existingGuild = await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
@@ -133,7 +134,7 @@ namespace FMBot.Bot.Services
 
         public async Task SetGuildReactionsAsync(IGuild guild, string[] reactions)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var existingGuild = await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
@@ -167,7 +168,7 @@ namespace FMBot.Bot.Services
 
         public async Task SetGuildPrefixAsync(IGuild guild, string prefix)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var existingGuild = await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
@@ -201,7 +202,7 @@ namespace FMBot.Bot.Services
 
         public async Task<string[]> GetDisabledCommandsForGuild(IGuild guild)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var existingGuild = await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
@@ -211,7 +212,7 @@ namespace FMBot.Bot.Services
 
         public async Task<string[]> AddDisabledCommandAsync(IGuild guild, string command)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var existingGuild = await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
@@ -260,7 +261,7 @@ namespace FMBot.Bot.Services
 
         public async Task<string[]> RemoveDisabledCommandAsync(IGuild guild, string command)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var existingGuild = await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
@@ -278,7 +279,7 @@ namespace FMBot.Bot.Services
 
         public async Task<DateTime?> GetGuildIndexTimestampAsync(IGuild guild)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var existingGuild = await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
@@ -288,7 +289,7 @@ namespace FMBot.Bot.Services
 
         public async Task UpdateGuildIndexTimestampAsync(IGuild guild, DateTime? timestamp = null)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var existingGuild = await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
@@ -354,7 +355,7 @@ namespace FMBot.Bot.Services
 
         public async Task AddReactionsAsync(IUserMessage message, IGuild guild)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var dbGuild = await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
@@ -390,7 +391,7 @@ namespace FMBot.Bot.Services
                 TitlesEnabled = true
             };
 
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             await db.Guilds.AddAsync(newGuild);
 
             await db.SaveChangesAsync();
@@ -398,7 +399,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> GuildExistsAsync(SocketGuild guild)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id) != null;
@@ -406,7 +407,7 @@ namespace FMBot.Bot.Services
 
         public async Task<int> GetTotalGuildCountAsync()
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Guilds
                 .AsQueryable()
                 .CountAsync();

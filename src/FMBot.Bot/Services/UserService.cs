@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Configurations;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +15,7 @@ namespace FMBot.Bot.Services
         // User settings
         public async Task<bool> UserRegisteredAsync(IUser discordUser)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Users
                 .AsQueryable()
                 .AnyAsync(f => f.DiscordUserId == discordUser.Id);
@@ -23,7 +24,7 @@ namespace FMBot.Bot.Services
         // User settings
         public async Task<User> GetUserSettingsAsync(IUser discordUser)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
@@ -32,7 +33,7 @@ namespace FMBot.Bot.Services
         // User settings
         public async Task<User> GetFullUserAsync(IUser discordUser)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Users
                 .Include(i => i.Artists)
                 .Include(i => i.Friends)
@@ -56,7 +57,7 @@ namespace FMBot.Bot.Services
         // Rank
         public async Task<UserType> GetRankAsync(IUser discordUser)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var user = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
@@ -72,7 +73,7 @@ namespace FMBot.Bot.Services
         // Featured
         public async Task<bool?> GetFeaturedAsync(IUser discordUser)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var user = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
@@ -88,7 +89,7 @@ namespace FMBot.Bot.Services
         // Featured
         public async Task<User> GetFeaturedUserAsync()
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.Featured == true);
@@ -97,7 +98,7 @@ namespace FMBot.Bot.Services
         // Random user
         public async Task<string> GetRandomLastFMUserAsync()
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var featuredUser = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.Featured == true);
@@ -127,7 +128,7 @@ namespace FMBot.Bot.Services
         // Server Blacklisting
         public async Task<bool> GetBlacklistedAsync(IUser discordUser)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var user = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
@@ -175,7 +176,7 @@ namespace FMBot.Bot.Services
         // Set LastFM Name
         public void SetLastFM(IUser discordUser, User userSettings)
         {
-            using var db = new FMBotDbContext();
+            using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var user = db.Users.FirstOrDefault(f => f.DiscordUserId == discordUser.Id);
 
             if (user == null)
@@ -259,7 +260,7 @@ namespace FMBot.Bot.Services
 
         public async Task ResetChartTimerAsync(User user)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             user.LastGeneratedChartDateTimeUtc = DateTime.Now;
 
             db.Entry(user).State = EntityState.Modified;
@@ -270,7 +271,7 @@ namespace FMBot.Bot.Services
         // Remove user
         public async Task DeleteUser(int userID)
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var user = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.UserId == userID);
@@ -282,7 +283,7 @@ namespace FMBot.Bot.Services
 
         public async Task<int> GetTotalUserCountAsync()
         {
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Users
                 .AsQueryable()
                 .CountAsync();

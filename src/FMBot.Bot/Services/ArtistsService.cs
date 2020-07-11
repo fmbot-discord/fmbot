@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -93,7 +94,7 @@ namespace FMBot.Bot.Services
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var artists = await db.Artists
                 .Include(i => i.User)
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
@@ -128,7 +129,7 @@ namespace FMBot.Bot.Services
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Artists
                 .AsQueryable()
                 .Where(w => userIds.Contains(w.UserId))
@@ -149,7 +150,7 @@ namespace FMBot.Bot.Services
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Artists
                 .AsQueryable()
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
@@ -161,7 +162,7 @@ namespace FMBot.Bot.Services
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var query = db.Artists
                 .AsQueryable()
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
@@ -183,7 +184,7 @@ namespace FMBot.Bot.Services
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext();
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var query = db.Artists
                 .AsQueryable()
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
