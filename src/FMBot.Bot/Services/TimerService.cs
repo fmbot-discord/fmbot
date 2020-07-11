@@ -44,6 +44,13 @@ namespace FMBot.Bot.Services
 
             this._timer = new Timer(async _ =>
                 {
+                    if (!ConfigData.Data.Bot.FeaturedEnabled)
+                    {
+                        this._logger.Log("Featured mode disabled, cancelling featured timer");
+                        this.Stop();
+                        return;
+                    }
+
                     var random = new Random();
                     var randomAvatarMode = random.Next(1, 4);
                     var randomAvatarModeDesc = "";
@@ -170,8 +177,8 @@ namespace FMBot.Bot.Services
                     }
                 },
                 null,
-                TimeSpan.FromSeconds(Convert.ToDouble(Constants.BotWarmupTimeInSeconds)), // 4) Time that message should fire after the timer is created
-                TimeSpan.FromMinutes(Convert.ToDouble(ConfigData.Data.Bot.FeaturedTimerRepeatInMinutes))); // 5) Time after which message should repeat (use `Timeout.Infinite` for no repeat)
+                TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds + ConfigData.Data.Bot.FeaturedTimerStartupDelayInSeconds), // 4) Time that message should fire after the timer is created
+                TimeSpan.FromMinutes(ConfigData.Data.Bot.FeaturedTimerRepeatInMinutes)); // 5) Time after which message should repeat (use `Timeout.Infinite` for no repeat)
 
             this._internalStatsTimer = new Timer(async _ =>
                 {
@@ -191,7 +198,7 @@ namespace FMBot.Bot.Services
                     await client.SetGameAsync($"{ConfigData.Data.Bot.Prefix} | {client.Guilds.Count} servers | fmbot.xyz");
                 },
                 null,
-                TimeSpan.FromSeconds(Constants.BotWarmupTimeInSeconds + 10),
+                TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds + 5),
                 TimeSpan.FromMinutes(2));
 
             this._externalStatsTimer = new Timer(async _ =>
@@ -218,7 +225,7 @@ namespace FMBot.Bot.Services
                     }
                 },
                 null,
-                TimeSpan.FromSeconds(Constants.BotWarmupTimeInSeconds + 20),
+                TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds + 10),
                 TimeSpan.FromMinutes(5));
 
             this._timerEnabled = true;

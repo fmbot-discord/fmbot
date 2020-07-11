@@ -25,7 +25,7 @@ namespace FMBot.Bot.Configurations
 
             if (!File.Exists(ConfigFolder + "/" + ConfigFile))
             {
-
+                // Default config template
                 Data = new ConfigModel
                 {
                     Database = new DatabaseConfig
@@ -36,6 +36,7 @@ namespace FMBot.Bot.Configurations
                     {
                         Prefix = ".fm",
                         FeaturedEnabled = true,
+                        BotWarmupTimeInSeconds = 30,
                         FeaturedTimerStartupDelayInSeconds = 20,
                         FeaturedTimerRepeatInMinutes = 60,
                         Status = ".fmbot starting up...",

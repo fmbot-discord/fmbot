@@ -45,6 +45,8 @@ namespace FMBot.Bot.Models
 
         public string Status { get; set; }
 
+        public int BotWarmupTimeInSeconds { get; set; }
+
         public bool FeaturedEnabled { get; set; }
 
         public int FeaturedTimerStartupDelayInSeconds { get; set; }

@@ -55,6 +55,15 @@ namespace FMBot.Bot.Commands
 
             this._embed.AddField("Please upvote us on Discord Bots if you enjoy the bot:",
                 "https://discordbots.org/bot/356268235697553409");
+            
+            this._embed.AddField("Please upvote us on Discord Bots if you enjoy the bot:",
+                "https://discordbots.org/bot/356268235697553409");
+
+            if (IsBotSelfHosted(this.Context.Client.CurrentUser.Id))
+            {
+                this._embed.AddField("Note:",
+                    "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot.");
+            }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         }
@@ -86,6 +95,12 @@ namespace FMBot.Bot.Commands
             this._embed.AddField("Join the FMBot server for support and updates:",
                 "https://discord.gg/srmpCaa");
 
+            if (IsBotSelfHosted(this.Context.Client.CurrentUser.Id))
+            {
+                this._embed.AddField("Note:",
+                    "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot.");
+            }
+
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         }
 
@@ -111,18 +126,22 @@ namespace FMBot.Bot.Commands
 
             var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
-            this._embed.AddField("Bot Uptime: ", startTime.ToReadableString(), true);
-            this._embed.AddField("Server Uptime: ", GlobalVars.SystemUpTime().ToReadableString(), true);
-            this._embed.AddField("Usercount: ", (await this._userService.GetTotalUserCountAsync()).ToString(), true);
-            this._embed.AddField("Friendcount: ", (await this._friendService.GetTotalFriendCountAsync()).ToString(), true);
-            this._embed.AddField("Discord usercount: ", client.Guilds.Select(s => s.MemberCount).Sum(), true);
-            this._embed.AddField("Servercount: ", client.Guilds.Count, true);
-            this._embed.AddField("Commands used: ", Statistics.CommandsExecuted.Value, true);
-            this._embed.AddField("Last.FM API calls: ", Statistics.LastfmApiCalls.Value, true);
-            this._embed.AddField("Memory usage: ", $"{currentMemoryUsage.ToFormattedByteString()} (Peak: {peakMemoryUsage.ToFormattedByteString()})", true);
-            this._embed.AddField("Average latency: ", Math.Round(client.Shards.Select(s => s.Latency).Average(), 2) + "ms", true);
-            this._embed.AddField("Shards: ", client.Shards.Count, true);
-            this._embed.AddField("Bot version: ", assemblyVersion, true);
+            var description = "";
+            description += $"**Bot Uptime:** `{startTime.ToReadableString()}`\n";
+            description += $"**Server Uptime:** `{GlobalVars.SystemUpTime().ToReadableString()}`\n";
+            description += $"**Usercount:** `{(await this._userService.GetTotalUserCountAsync()).ToString()}`\n";
+            description += $"**Friendcount:** `{await this._friendService.GetTotalFriendCountAsync()}`\n";
+            description += $"**Discord usercount:** `{client.Guilds.Select(s => s.MemberCount).Sum()}`\n";
+            description += $"**Servercount:** `{client.Guilds.Count}`\n";
+            description += $"**Commands used:** `{Statistics.CommandsExecuted.Value}`\n";
+            description += $"**Last.FM API calls:** `{Statistics.LastfmApiCalls.Value}`\n";
+            description += $"**Memory usage:** `{currentMemoryUsage.ToFormattedByteString()}` (Peak: `{peakMemoryUsage.ToFormattedByteString()}`)\n";
+            description += $"**Average latency:** `{Math.Round(client.Shards.Select(s => s.Latency).Average(), 2) + "ms`"}\n";
+            description += $"**Shards:** `{client.Shards.Count}`\n";
+            description += $"**Bot version:** `{assemblyVersion}`\n";
+            description += $"**Self-hosted:** `{IsBotSelfHosted(this.Context.Client.CurrentUser.Id).ToString()}`\n";
+
+            this._embed.WithDescription(description);
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         }
@@ -157,11 +176,18 @@ namespace FMBot.Bot.Commands
             if (customPrefix)
             {
                 this._embed.AddField("Custom prefix:",
-                    $"This server has the `{prefix}` prefix.");
+                    $"This server has the `{prefix}` prefix.\n" +
+                    $"Note that the documentation has the `.fm` prefix everywhere.");
             }
 
             this._embed.AddField("For more commands and info, please read the documentation here:",
                 "https://fmbot.xyz/");
+
+            if (IsBotSelfHosted(this.Context.Client.CurrentUser.Id))
+            {
+                this._embed.AddField("Note:",
+                    "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot. \nKeep in mind that the instance might not be fully up to date or other users might not be registered.");
+            }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         }
@@ -251,6 +277,11 @@ namespace FMBot.Bot.Commands
             {
                 await this.Context.Channel.SendMessageAsync("Check your DMs!");
             }
+        }
+
+        private static bool IsBotSelfHosted(ulong botId)
+        {
+            return !botId.Equals(Constants.BotProductionId) && !botId.Equals(Constants.BotStagingId);
         }
     }
 }

@@ -46,7 +46,7 @@ namespace FMBot.Bot.Services
             var discordToken = ConfigData.Data.Discord.Token; // Get the discord token from the config file
             if (string.IsNullOrWhiteSpace(discordToken))
             {
-                throw new Exception("Please enter your bots token into the `/Configs/ConfigData.json` file.");
+                throw new Exception("Please enter your bots token into the `/configs/config.json` file.");
             }
 
             await TestLastFmApi();
@@ -112,11 +112,11 @@ namespace FMBot.Bot.Services
 
         private Task StartMetricsServer()
         {
-            Thread.Sleep(TimeSpan.FromSeconds(Constants.BotWarmupTimeInSeconds));
+            Thread.Sleep(TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds));
             if (this._client == null || this._client.CurrentUser == null)
             {
                 this._logger.Log("Delaying metric server startup");
-                Thread.Sleep(TimeSpan.FromSeconds(Constants.BotWarmupTimeInSeconds));
+                Thread.Sleep(TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds));
             }
             this._logger.Log("Starting metrics server");
 
