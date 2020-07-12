@@ -15,8 +15,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.DbMigration", "FMBot.
 		{769E7FD4-97EB-447C-92FB-11ED991EDAEF} = {769E7FD4-97EB-447C-92FB-11ED991EDAEF}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.YoutubeSearch", "FMBot.YoutubeSearch\FMBot.YoutubeSearch.csproj", "{2443BEF2-4453-4C69-9154-8186396E66A3}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Logger", "FMBot.Logger\FMBot.Logger.csproj", "{731BFA7E-4B16-4FB6-A10F-8482DFE67CEA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.BotLists", "FMBot.BotLists\FMBot.BotLists.csproj", "{88AE10AA-CFAC-44E3-BBFA-D6C86D81B323}"
@@ -25,9 +23,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.LastFM", "FMBot.LastF
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Persistence", "FMBot.Persistence\FMBot.Persistence.csproj", "{2A6ECC70-CF19-408F-B092-9530EE6DD06F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FMBot.Persistence.Domain", "FMBot.Persistence.Domain\FMBot.Persistence.Domain.csproj", "{BE7C2F06-785E-4BCE-9413-3197ECBD9790}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.Persistence.Domain", "FMBot.Persistence.Domain\FMBot.Persistence.Domain.csproj", "{BE7C2F06-785E-4BCE-9413-3197ECBD9790}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FMBot.LastFM.Domain", "FMBot.LastFM.Domain\FMBot.LastFM.Domain.csproj", "{FE7500D8-093E-405A-B767-2A9C49D8DE7F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FMBot.LastFM.Domain", "FMBot.LastFM.Domain\FMBot.LastFM.Domain.csproj", "{FE7500D8-093E-405A-B767-2A9C49D8DE7F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,10 +45,6 @@ Global
 		{49E3B52B-8020-4714-8FE4-8C8BE223525F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{49E3B52B-8020-4714-8FE4-8C8BE223525F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{49E3B52B-8020-4714-8FE4-8C8BE223525F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2443BEF2-4453-4C69-9154-8186396E66A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2443BEF2-4453-4C69-9154-8186396E66A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2443BEF2-4453-4C69-9154-8186396E66A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2443BEF2-4453-4C69-9154-8186396E66A3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{731BFA7E-4B16-4FB6-A10F-8482DFE67CEA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{731BFA7E-4B16-4FB6-A10F-8482DFE67CEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{731BFA7E-4B16-4FB6-A10F-8482DFE67CEA}.Release|Any CPU.ActiveCfg = Release|Any CPU

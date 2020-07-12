@@ -1,17 +1,38 @@
 using System.Linq;
-using FMBot.YoutubeSearch;
+using System.Threading.Tasks;
+using FMBot.Bot.Configurations;
+using Google.Apis.Services;
+using Google.Apis.YouTube.v3;
+using Google.Apis.YouTube.v3.Data;
 
 namespace FMBot.Bot.Services
 {
     internal class YoutubeService
     {
-        private readonly VideoSearch _videoSearch = new VideoSearch();
-
-        public VideoInformation GetSearchResult(string searchValue)
+        public async Task<SearchResult> GetSearchResult(string searchValue)
         {
-            var result = this._videoSearch.SearchQuery(searchValue, 1);
+            var youtubeService = new YouTubeService(new BaseClientService.Initializer()
+            {
+                ApiKey = ConfigData.Data.Google.ApiKey,
+                ApplicationName = this.GetType().ToString()
+            });
 
-            return result.ElementAt(0);
+            var searchListRequest = youtubeService.Search.List("snippet");
+            searchListRequest.Q = searchValue;
+            searchListRequest.MaxResults = 1;
+
+            var searchListResponse = await searchListRequest.ExecuteAsync();
+
+            var results = searchListResponse.Items
+                .Where(w => w.Kind == "youtube#searchResult")
+                .ToList();
+
+            if (results.Any())
+            {
+                return results.First();
+            }
+
+            return null;
         }
     }
 }

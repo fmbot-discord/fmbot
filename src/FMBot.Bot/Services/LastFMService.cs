@@ -33,19 +33,10 @@ namespace FMBot.Bot.Services
             this._lastfmApi = lastfmApi;
         }
 
-        // Last scrobble
-        public async Task<LastTrack> GetLastScrobbleAsync(string lastFMUserName)
-        {
-            var tracks = await this._lastFMClient.User.GetRecentScrobbles(lastFMUserName, null, 1, 1);
-            Statistics.LastfmApiCalls.Inc();
-
-            return tracks.Content[0];
-        }
-
         // Recent scrobbles
         public async Task<PageResponse<LastTrack>> GetRecentScrobblesAsync(string lastFMUserName, int count = 2)
         {
-            var recentScrobbles = await this._lastFMClient.User.GetRecentScrobbles(lastFMUserName, null, 1, count);
+            var recentScrobbles = await this._lastFMClient.User.GetRecentScrobbles(lastFMUserName, null, count: count);
             Statistics.LastfmApiCalls.Inc();
 
             return recentScrobbles;

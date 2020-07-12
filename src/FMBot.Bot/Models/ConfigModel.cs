@@ -16,6 +16,8 @@ namespace FMBot.Bot.Models
 
         public GeniusConfig Genius { get; set; }
 
+        public GoogleConfig Google { get; set; }
+
         public BotListConfig BotLists { get; set; }
     }
 
@@ -69,6 +71,11 @@ namespace FMBot.Bot.Models
     public class GeniusConfig
     {
         public string AccessToken { get; set; }
+    }
+
+    public class GoogleConfig
+    {
+        public string ApiKey { get; set; }
     }
 
     public class BotListConfig

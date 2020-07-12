@@ -38,12 +38,13 @@ namespace FMBot.Bot.Configurations
                         BotWarmupTimeInSeconds = 30,
                         FeaturedTimerStartupDelayInSeconds = 20,
                         FeaturedTimerRepeatInMinutes = 60,
-                    },
+                    }, 
                     BotLists = new BotListConfig(),
                     Discord = new DiscordConfig(),
                     LastFm = new LastFmConfig(),
                     Genius = new GeniusConfig(),
-                    Spotify = new SpotifyConfig()
+                    Spotify = new SpotifyConfig(),
+                    Google = new GoogleConfig()
                 };
 
                 var json = JsonConvert.SerializeObject(Data, Formatting.Indented);
