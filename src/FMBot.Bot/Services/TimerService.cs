@@ -44,13 +44,6 @@ namespace FMBot.Bot.Services
 
             this._timer = new Timer(async _ =>
                 {
-                    if (!ConfigData.Data.Bot.FeaturedEnabled)
-                    {
-                        this._logger.Log("Featured mode disabled, cancelling featured timer");
-                        this.Stop();
-                        return;
-                    }
-
                     var random = new Random();
                     var randomAvatarMode = random.Next(1, 4);
                     var randomAvatarModeDesc = "";
@@ -182,7 +175,7 @@ namespace FMBot.Bot.Services
 
             this._internalStatsTimer = new Timer(async _ =>
                 {
-                    logger.Log("Updating metrics and status");
+                    logger.Log("Updating metrics");
                     Statistics.DiscordServerCount.Set(client.Guilds.Count);
 
                     try
@@ -195,7 +188,11 @@ namespace FMBot.Bot.Services
                         Console.WriteLine(e);
                     }
 
-                    await client.SetGameAsync($"{ConfigData.Data.Bot.Prefix} | {client.Guilds.Count} servers | fmbot.xyz");
+                    if (string.IsNullOrEmpty(ConfigData.Data.Bot.Status))
+                    {
+                        logger.Log("Updating status");
+                        await client.SetGameAsync($"{ConfigData.Data.Bot.Prefix} | {client.Guilds.Count} servers | fmbot.xyz");
+                    }
                 },
                 null,
                 TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds + 5),

@@ -68,11 +68,9 @@ namespace FMBot.Bot.Services
 
             if (!string.IsNullOrEmpty(ConfigData.Data.Bot.Status))
             {
+                this._logger.Log($"Setting custom status to '{ConfigData.Data.Bot.Status}'");
                 await this._client.SetGameAsync(ConfigData.Data.Bot.Status);
             }
-
-            this._logger.Log("Setting Discord user status");
-            await this._client.SetStatusAsync(UserStatus.DoNotDisturb);
 
             this._logger.Log("Loading command modules");
             await this._commands
