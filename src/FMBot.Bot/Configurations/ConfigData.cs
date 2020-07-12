@@ -35,11 +35,9 @@ namespace FMBot.Bot.Configurations
                     Bot = new BotConfig
                     {
                         Prefix = ".fm",
-                        FeaturedEnabled = true,
                         BotWarmupTimeInSeconds = 30,
                         FeaturedTimerStartupDelayInSeconds = 20,
                         FeaturedTimerRepeatInMinutes = 60,
-                        Status = ".fmbot starting up...",
                     },
                     BotLists = new BotListConfig(),
                     Discord = new DiscordConfig(),

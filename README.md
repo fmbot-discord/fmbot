@@ -1,5 +1,5 @@
 <p align="center">
-   <img src="https://raw.githubusercontent.com/Bitl/FMBot_Discord/1.1.4/fmbotlogo.png" width="350" alt=".fmbot logo">
+   <img src="https://raw.githubusercontent.com/fmbot-discord/fmbot/main/fmbotlogo.png" width="350" alt=".fmbot logo">
 </p>
 <h3 align="center">
    <a href="https://fmbot.xyz/">An open sourced last.fm Discord bot.</a>
