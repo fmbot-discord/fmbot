@@ -50,24 +50,58 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays current album.")]
         [Alias("ab")]
         [LoginRequired]
-        public async Task AlbumAsync()
+        public async Task AlbumAsync(params string[] albumValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            var track = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
-
-            if (track == null)
+            if (albumValues.Any() && albumValues.First() == "help")
             {
-                this._embed.NoScrobblesFoundErrorResponse(track.Status, this.Context, this._logger);
-                await ReplyAsync("", false, this._embed.Build());
+                await ReplyAsync(
+                    $"Usage: `{prfx}album 'artist and album name'`\n" +
+                    "If you don't enter any album name, it will get the info from the album you're currently listening to.");
                 return;
+            }
+
+            var artist = "";
+            var album = "";
+
+            if (albumValues.Any())
+            {
+                var result = await this._lastFmService.SearchAlbumAsync(string.Join(" ", albumValues));
+
+                if (result.Success && result.Content.Any())
+                {
+                    artist = result.Content[0].ArtistName;
+                    album = result.Content[0].Name;
+                }
+                else
+                {
+                    this._embed.WithDescription($"Album could not be found, please check your search values and try again.\n" +
+                                                $"Last.fm response: {result.Status}");
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
+                }
+            }
+            else
+            {
+                var track = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
+
+                if (track == null)
+                {
+                    this._embed.NoScrobblesFoundErrorResponse(track.Status, this.Context, this._logger);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
+                }
+
+                artist = track.Content.First().ArtistName;
+                album = track.Content.First().AlbumName;
             }
 
             var queryParams = new Dictionary<string, string>
             {
-                {"artist", track.Content.First().ArtistName },
-                {"album", track.Content.First().AlbumName },
+                {"artist", artist },
+                {"album", album },
                 {"username", userSettings.UserNameLastFM }
             };
 
@@ -86,7 +120,10 @@ namespace FMBot.Bot.Commands.LastFM
 
             this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
             this._embedAuthor.WithName($"Album info about {albumInfo.Name} for {userTitle}");
-            this._embedAuthor.WithUrl(albumInfo.Url);
+            if (Uri.IsWellFormedUriString(albumInfo.Url, UriKind.Absolute))
+            {
+                this._embed.WithUrl(albumInfo.Url);
+            }
             this._embed.WithAuthor(this._embedAuthor);
 
             this._embed.AddField("Listeners", albumInfo.Listeners, true);

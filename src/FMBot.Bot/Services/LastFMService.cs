@@ -162,6 +162,14 @@ namespace FMBot.Bot.Services
             return albumCall;
         }
 
+        public async Task<PageResponse<LastAlbum>> SearchAlbumAsync(string searchQuery)
+        {
+            var albumSearch = await this._lastFMClient.Album.SearchAsync(searchQuery, itemsPerPage: 1);
+            Statistics.LastfmApiCalls.Inc();
+
+            return albumSearch;
+        }
+
         // Album images
         public async Task<LastImageSet> GetAlbumImagesAsync(string artistName, string albumName)
         {
