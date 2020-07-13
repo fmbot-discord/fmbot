@@ -14,6 +14,7 @@ using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 
 namespace FMBot.Bot
 {
@@ -23,7 +24,8 @@ namespace FMBot.Bot
 
         public Startup(string[] args)
         {
-            var config = ConfigData.Data.Bot.FeaturedTimerRepeatInMinutes;
+            var config = ConfigData.Data;
+
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory() + "/configs")
                 .AddJsonFile("config.json", true);
@@ -33,7 +35,15 @@ namespace FMBot.Bot
 
         public static async Task RunAsync(string[] args)
         {
-            AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionTrapper;
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .WriteTo.Seq("http://localhost:5341")
+                .CreateLogger();
+
+            AppDomain.CurrentDomain.UnhandledException += AppUnhandledException;
+
+            Log.Information("Hello, {Name}!", Environment.UserName);
+
             var startup = new Startup(args);
             await startup.RunAsync();
         }
@@ -102,12 +112,22 @@ namespace FMBot.Bot
             }
         }
 
-        static void UnhandledExceptionTrapper(object sender, UnhandledExceptionEventArgs e)
+        private static void AppUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            Console.WriteLine("Unhandled exception! \n \n" + e.ExceptionObject + "\n", ConsoleColor.Red);
+            if (Log.Logger != null && e.ExceptionObject is Exception exception)
+            {
+                UnhandledExceptions(exception);
 
-            var logger = new Logger.Logger();
-            logger.Log("UnhandledException! \n \n" + e.ExceptionObject + "\n");
+                if (e.IsTerminating)
+                {
+                    Log.CloseAndFlush();
+                }
+            }
+        }
+
+        private static void UnhandledExceptions(Exception e)
+        {
+            Log.Logger?.Error(e, ".fmbot crashed");
         }
     }
 }

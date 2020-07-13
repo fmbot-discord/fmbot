@@ -36,6 +36,8 @@
     <PackageReference Include="NLog.Web.AspNetCore" Version="4.9.2" />
     <PackageReference Include="PostgreSQLCopyHelper" Version="2.6.3" />
     <PackageReference Include="prometheus-net" Version="3.6.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
+    <PackageReference Include="Serilog.Sinks.Seq" Version="4.0.0" />
     <PackageReference Include="SkiaSharp" Version="2.80.0" />
     <PackageReference Include="SkiaSharp.Views.Desktop.Common" Version="2.80.0" />
     <PackageReference Include="SpotifyAPI.Web" Version="5.1.1" />

@@ -1,5 +1,3 @@
-using Newtonsoft.Json;
-
 namespace FMBot.Bot.Models
 {
     public class ConfigModel
