@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -50,6 +51,11 @@ namespace FMBot.Bot.Extensions
             const int MaxAnsiCode = 255;
 
             return input.Any(c => c > MaxAnsiCode);
+        }
+
+        public static string ReplaceInvalidChars(string filename)
+        {
+            return string.Join("_", filename.Split(Path.GetInvalidFileNameChars()));
         }
     }
 }

@@ -7,6 +7,7 @@ using Discord;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
@@ -69,16 +70,20 @@ namespace FMBot.Bot.Commands.LastFM
             if (albumValues.Any())
             {
                 var result = await this._lastFmService.SearchAlbumAsync(string.Join(" ", albumValues));
-
                 if (result.Success && result.Content.Any())
                 {
                     artist = result.Content[0].ArtistName;
                     album = result.Content[0].Name;
                 }
+                else if(result.Success)
+                {
+                    this._embed.WithDescription($"Album could not be found, please check your search values and try again.");
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
+                }
                 else
                 {
-                    this._embed.WithDescription($"Album could not be found, please check your search values and try again.\n" +
-                                                $"Last.fm response: {result.Status}");
+                    this._embed.WithDescription($"Last.fm returned an error: {result.Status}");
                     await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
@@ -134,6 +139,11 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.AddField("Your playcount", albumInfo.Userplaycount, true);
             }
 
+            if (albumInfo.Image.Any() && albumInfo.Image != null)
+            {
+                this._embed.WithThumbnailUrl(albumInfo.Image.First(f => f.Size == "mega").Text.ToString());
+            }
+
             if (!string.IsNullOrWhiteSpace(albumInfo.Wiki?.Summary))
             {
                 var linktext = $"<a href=\"{albumInfo.Url.Replace("https", "http")}\">Read more on Last.fm</a>";
@@ -160,28 +170,64 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays current album cover.")]
         [Alias("abc","co", "albumcover")]
         [LoginRequired]
-        public async Task AlbumCoverAsync()
+        public async Task AlbumCoverAsync(params string[] albumValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            var tracks = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
+            string artist;
+            string album;
+            string url;
 
-            if (tracks?.Any() != true)
+            if (albumValues.Any())
             {
-                this._embed.NoScrobblesFoundErrorResponse(tracks.Status, this.Context, this._logger);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
+                var result = await this._lastFmService.SearchAlbumAsync(string.Join(" ", albumValues));
+                if (result.Success && result.Content.Any())
+                {
+                    artist = result.Content[0].ArtistName;
+                    album = result.Content[0].Name;
+                    url = result.Content[0].Url.ToString();
+                }
+                else if (result.Success)
+                {
+                    this._embed.WithDescription($"Album could not be found, please check your search values and try again.");
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
+                }
+                else
+                {
+                    this._embed.WithDescription($"Last.fm returned an error: {result.Status}");
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
+                }
 
-            var currentTrack = tracks.Content[0];
-            var albumInfo = await this._lastFmService.GetAlbumImagesAsync(currentTrack.ArtistName, currentTrack.AlbumName);
+
+                this._embed.WithDescription($"[**{artist}**]({result.Content[0].Url}) - [**{album}**]({url})");
+            }
+            else
+            {
+                var track = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
+
+                if (track == null)
+                {
+                    this._embed.NoScrobblesFoundErrorResponse(track.Status, this.Context, this._logger);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
+                }
+
+                artist = track.Content.First().ArtistName;
+                album = track.Content.First().AlbumName;
+                url = track.Content.First().Url.ToString();
+
+                this._embed.WithDescription(LastFMService.TrackToLinkedString(track.Content.First()));
+            }
+            var albumInfo = await this._lastFmService.GetAlbumImagesAsync(artist, album);
 
             if (albumInfo.Largest == null)
             {
                 this._embed.WithDescription("Sorry, no album cover found for this album: \n" +
-                                            $"{currentTrack.ArtistName} - {currentTrack.AlbumName}\n" +
-                                            $"[View on last.fm]({currentTrack.Url})");
+                                            $"{artist} - {album}\n" +
+                                            $"[View on last.fm]({url})");
                 await ReplyAsync("", false, this._embed.Build());
                 return;
             }
@@ -190,13 +236,12 @@ namespace FMBot.Bot.Commands.LastFM
             if (image == null)
             {
                 this._embed.WithDescription("Sorry, something went wrong while getting album cover for this album: \n" +
-                                            $"{currentTrack.ArtistName} - {currentTrack.AlbumName}\n" +
-                                            $"[View on last.fm]({currentTrack.Url})");
+                                            $"{artist} - {album}\n" +
+                                            $"[View on last.fm]({url})");
                 await ReplyAsync("", false, this._embed.Build());
                 return;
             }
 
-            this._embed.WithDescription(LastFMService.TrackToLinkedString(currentTrack));
 
             this._embedFooter.WithText(
                 $"Album cover requested by {await this._userService.GetUserTitleAsync(this.Context)}");
@@ -208,7 +253,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             await this.Context.Channel.SendFileAsync(
                 imageMemoryStream,
-                $"cover-{currentTrack.Mbid}.png",
+                $"cover-{StringExtensions.ReplaceInvalidChars($"{artist}_{album}")}.png",
                 null,
                 false,
                 this._embed.Build());
