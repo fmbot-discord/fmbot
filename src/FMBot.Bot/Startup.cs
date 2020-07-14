@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using CXuesong.Uel.Serilog.Sinks.Discord;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -15,6 +16,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using Serilog.Events;
 
 namespace FMBot.Bot
 {
@@ -36,13 +38,18 @@ namespace FMBot.Bot
         public static async Task RunAsync(string[] args)
         {
             Log.Logger = new LoggerConfiguration()
+                .Enrich.WithProperty("Environment", !string.IsNullOrEmpty(ConfigData.Data.Environment) ? ConfigData.Data.Environment : "unknown")
+                .Enrich.WithProperty("BotUserId", ConfigData.Data.Discord.BotUserId ?? 0)
                 .WriteTo.Console()
                 .WriteTo.Seq("http://localhost:5341")
+                .WriteTo.Conditional(evt =>
+                        !string.IsNullOrEmpty(ConfigData.Data.Bot.ExceptionChannelWebhookUrl),
+                        wt => wt.Discord(new DiscordWebhookMessenger(ConfigData.Data.Bot.ExceptionChannelWebhookUrl)))
                 .CreateLogger();
 
             AppDomain.CurrentDomain.UnhandledException += AppUnhandledException;
 
-            Log.Information("Hello, {Name}!", Environment.UserName);
+            Log.Information(".fmbot starting up...");
 
             var startup = new Startup(args);
             await startup.RunAsync();
@@ -97,18 +104,16 @@ namespace FMBot.Bot
             services
                 .AddTransient<ILastfmApi, LastfmApi>();
 
-            using (var context = new FMBotDbContext(ConfigData.Data.Database.ConnectionString))
+            using var context = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            try
             {
-                try
-                {
-                    logger.Log("Ensuring database is up to date");
-                    context.Database.Migrate();
-                }
-                catch (Exception e)
-                {
-                    logger.LogError("Migrations", $"Something went wrong while creating/updating the database! \n{e.Message}");
-                    throw;
-                }
+                Log.Information("Ensuring database is up to date");
+                context.Database.Migrate();
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "Something went wrong while creating/updating the database!");
+                throw;
             }
         }
 

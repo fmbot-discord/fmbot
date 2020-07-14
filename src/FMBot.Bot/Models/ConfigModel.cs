@@ -2,6 +2,8 @@ namespace FMBot.Bot.Models
 {
     public class ConfigModel
     {
+        public string Environment { get; set; }
+
         public DiscordConfig Discord { get; set; }
 
         public DatabaseConfig Database { get; set; }
@@ -22,6 +24,8 @@ namespace FMBot.Bot.Models
     public class DiscordConfig
     {
         public string Token { get; set; }
+
+        public ulong? BotUserId { get; set; }
     }
 
     public class DatabaseConfig
@@ -41,7 +45,7 @@ namespace FMBot.Bot.Models
 
         public ulong SuggestionChannelId { get; set; }
 
-        public ulong ExceptionChannelId { get; set; }
+        public string ExceptionChannelWebhookUrl { get; set; }
 
         public string Status { get; set; }
 
