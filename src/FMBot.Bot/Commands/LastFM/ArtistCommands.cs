@@ -392,7 +392,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guildTask = this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -409,29 +409,27 @@ namespace FMBot.Bot.Commands.LastFM
                 {"autocorrect", "1"}
             };
 
-            var artistCall = await this._lastfmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
-            var spotifyArtistResultsTask = this._spotifyService.GetArtistImageAsync(artistQuery);
-
-            if (!artistCall.Success)
-            {
-                this._embed.ErrorResponse(artistCall.Error.Value, artistCall.Message, this.Context, this._logger);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
-            Statistics.LastfmApiCalls.Inc();
-
-            var artist = artistCall.Content;
-            var spotifyImage = await spotifyArtistResultsTask;
-
-            if (spotifyImage != null)
-            {
-                this._embed.WithThumbnailUrl(spotifyImage);
-            }
-
             try
             {
+                var artistCallTask = this._lastfmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+                var spotifyArtistResultsTask = this._spotifyService.GetArtistImageAsync(artistQuery);
+
+                var guild = await guildTask;
                 var users = guild.GuildUsers.Select(s => s.User).ToList();
+
+                var artistCall = await artistCallTask;
+                if (!artistCall.Success)
+                {
+                    this._embed.ErrorResponse(artistCall.Error.Value, artistCall.Message, this.Context, this._logger);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
+                }
+
+                var artist = artistCall.Content;
+
                 var usersWithArtist = await this._artistsService.GetIndexedUsersForArtist(this.Context, users, artist.Artist.Name);
+
+                Statistics.LastfmApiCalls.Inc();
 
                 if (usersWithArtist.Count == 0 && artist.Artist.Stats.Userplaycount != 0)
                 {
@@ -462,7 +460,6 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $" - Update data with {prfx}index";
                 }
 
-
                 if (guild.GuildUsers.Count < 400)
                 {
                     var serverListeners = await this._artistsService.GetArtistListenerCountForServer(users, artist.Artist.Name);
@@ -487,6 +484,12 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embedFooter.WithText(footer);
                 this._embed.WithFooter(this._embedFooter);
+
+                var spotifyImage = await spotifyArtistResultsTask;
+                if (spotifyImage != null)
+                {
+                    this._embed.WithThumbnailUrl(spotifyImage);
+                }
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,

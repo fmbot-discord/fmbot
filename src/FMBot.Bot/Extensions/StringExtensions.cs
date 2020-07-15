@@ -57,5 +57,12 @@ namespace FMBot.Bot.Extensions
         {
             return string.Join("_", filename.Split(Path.GetInvalidFileNameChars()));
         }
+
+        public static string TruncateLongString(string str, int maxLength)
+        {
+            if (string.IsNullOrEmpty(str))
+                return str;
+            return str.Substring(0, Math.Min(str.Length, maxLength));
+        }
     }
 }

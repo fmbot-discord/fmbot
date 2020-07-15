@@ -23,7 +23,7 @@ namespace FMBot.Bot.Services
                 await chart.Albums.ParallelForEachAsync(async album =>
                 {
                     var encodedId = StringExtensions.ReplaceInvalidChars(album.Url.LocalPath.Replace("/music/", ""));
-                    var localAlbumId = TruncateLongString(encodedId, 60);
+                    var localAlbumId = StringExtensions.TruncateLongString(encodedId, 60);
 
                     SKBitmap chartImage;
                     var validImage = true;
@@ -234,13 +234,6 @@ namespace FMBot.Bot.Services
 
             bitmapCanvas.DrawText(album.ArtistName, 4, 12, textPaint);
             bitmapCanvas.DrawText(album.Name, 4, 22, textPaint);
-        }
-
-        private static string TruncateLongString(string str, int maxLength)
-        {
-            if (string.IsNullOrEmpty(str))
-                return str;
-            return str.Substring(0, Math.Min(str.Length, maxLength));
         }
 
         public ChartSettings SetSettings(ChartSettings currentChartSettings, string[] extraOptions)
