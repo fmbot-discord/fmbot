@@ -52,9 +52,6 @@ namespace FMBot.Bot.Commands
             this._embed.AddField("Join the FMBot server for support and updates:",
                 "https://discord.gg/srmpCaa");
 
-            this._embed.AddField("Please upvote us on Discord Bots if you enjoy the bot:",
-                "https://discordbots.org/bot/356268235697553409");
-
             this._embed.AddField("Support us on OpenCollective:",
                 "https://opencollective.com/fmbot");
 

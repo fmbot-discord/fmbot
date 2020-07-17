@@ -187,10 +187,6 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     embedDescription += "*Linus Tech Tip: If you want the cover of the album you're currently listening to, use `.fmcover` or `.fmco`.*\n";
                 }
-                if (rnd.Next(0, 12) == 1)
-                {
-                    embedDescription += "*Enjoying .fmbot? Please consider upvoting us on [top.gg](https://top.gg/bot/356268235697553409/vote)*";
-                }
 
                 this._embed.WithDescription(embedDescription);
 
