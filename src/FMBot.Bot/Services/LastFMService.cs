@@ -115,6 +115,14 @@ namespace FMBot.Bot.Services
             return user;
         }
 
+        public async Task<PageResponse<LastTrack>> SearchTrackAsync(string searchQuery)
+        {
+            var trackSearch = await this._lastFMClient.Track.SearchAsync(searchQuery, itemsPerPage: 1);
+            Statistics.LastfmApiCalls.Inc();
+
+            return trackSearch;
+        }
+
         // Track info
         public async Task<Track> GetTrackInfoAsync(string trackName, string artistName, string username = null)
         {

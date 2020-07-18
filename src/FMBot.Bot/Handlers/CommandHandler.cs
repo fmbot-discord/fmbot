@@ -50,7 +50,7 @@ namespace FMBot.Bot.Handlers
                 return;
             }
 
-            if (msg.Author.Id == this._discord.CurrentUser.Id)
+            if (this._discord?.CurrentUser != null && (msg.Author.Id == this._discord.CurrentUser.Id))
             {
                 return; // Ignore self when checking commands
             }

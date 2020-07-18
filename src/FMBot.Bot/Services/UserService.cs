@@ -152,7 +152,7 @@ namespace FMBot.Bot.Services
 
             if (featured == true)
             {
-                title = name + " - Featured";
+                title = name + " (Currently Featured)";
             }
 
             if (rank == UserType.Owner)
