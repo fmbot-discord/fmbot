@@ -92,7 +92,7 @@ namespace FMBot.Bot.Services
                     db.Entry(artist).State = EntityState.Modified;
                 }
 
-                if (artist.SpotifyImageUrl == null || artist.SpotifyImageDate > DateTime.UtcNow.AddMonths(-3))
+                if (artist.SpotifyImageUrl == null || artist.SpotifyImageDate < DateTime.UtcNow.AddMonths(-3))
                 {
                     var spotifyArtist = await GetArtistFromSpotify(lastFmArtist.Artist.Name);
 
@@ -134,9 +134,11 @@ namespace FMBot.Bot.Services
 
             if (results.Artists?.Items?.Any() == true)
             {
-                var spotifyArtist = results.Artists.Items.First();
+                var spotifyArtist = results.Artists.Items
+                    .OrderByDescending(o => o.Popularity)
+                    .FirstOrDefault(w => w.Name.ToLower() == artistName.ToLower());
 
-                if (spotifyArtist.Name.ToLower() == artistName.ToLower())
+                if (spotifyArtist != null)
                 {
                     return spotifyArtist;
                 }
