@@ -35,12 +35,13 @@ namespace FMBot.Bot.Commands.LastFM
         public TrackCommands(Logger.Logger logger,
             IPrefixService prefixService,
             ILastfmApi lastfmApi,
-            GuildService guildService)
+            GuildService guildService,
+            UserService userService)
         {
             this._logger = logger;
             this._prefixService = prefixService;
             this._guildService = guildService;
-            this._userService = new UserService();
+            this._userService = userService;
             this._lastFmService = new LastFMService(lastfmApi);
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
