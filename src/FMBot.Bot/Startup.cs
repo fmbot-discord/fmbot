@@ -92,6 +92,7 @@ namespace FMBot.Bot
                 .AddSingleton<IDisabledCommandService, DisabledCommandService>()
                 .AddSingleton<IUserIndexQueue, UserIndexQueue>()
                 .AddSingleton<ArtistsService>()
+                .AddSingleton<WhoKnowsService>()
                 .AddSingleton<IChartService, ChartService>()
                 .AddSingleton<IIndexService, IndexService>()
                 .AddSingleton<GuildService>()

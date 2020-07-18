@@ -10,7 +10,7 @@ namespace FMBot.LastFM.Domain.Models
     public class Artist
     {
         public string Name { get; set; }
-        public Guid Mbid { get; set; }
+        public Guid? Mbid { get; set; }
         public string Url { get; set; }
         public long Streamable { get; set; }
         public long Ontour { get; set; }
