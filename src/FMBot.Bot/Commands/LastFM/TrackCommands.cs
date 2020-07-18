@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -7,10 +8,14 @@ using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.LastFM.Domain.Models;
+using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
+using IF.Lastfm.Core.Objects;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -404,6 +409,138 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
+        [Command("track", RunMode = RunMode.Async)]
+        [Summary("Displays track info and stats.")]
+        [Alias("tr", "ti", "ts", "trackinfo")]
+        [LoginRequired]
+        public async Task TrackAsync(params string[] trackValues)
+        {
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            if (trackValues.Any() && trackValues.First() == "help")
+            {
+                await ReplyAsync(
+                    $"Usage: `{prfx}track 'artist and track name'`\n" +
+                    "If you don't enter any track name, it will get the info from the track you're currently listening to.");
+                return;
+            }
+
+            var track = await this.SearchTrack(trackValues, userSettings);
+            if (track == null)
+            {
+                return;
+            }
+
+            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+
+            this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+            this._embedAuthor.WithName($"Info about {track.Artist.Name} - {track.Name} for {userTitle}");
+            this._embed.WithUrl(track.Url);
+            this._embed.WithAuthor(this._embedAuthor);
+
+            this._embed.AddField("Listeners", track.Listeners, true);
+            this._embed.AddField("Global playcount", track.Playcount, true);
+            this._embed.AddField("Your playcount", track.Userplaycount, true);
+
+            if (!string.IsNullOrWhiteSpace(track.Wiki?.Summary))
+            {
+                var linktext = $"<a href=\"{track.Url.Replace("https", "http")}\">Read more on Last.fm</a>";
+                this._embed.AddField("Summary", track.Wiki.Summary.Replace(linktext, ""));
+            }
+
+            if (track.Toptags.Tag.Any())
+            {
+                var tags = this._lastFmService.TopTagsToString(track.Toptags);
+
+                this._embed.AddField("Tags", tags);
+            }
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
+                this.Context.Message.Content);
+        }
+
+        [Command("trackplays", RunMode = RunMode.Async)]
+        [Summary("Displays track info and stats.")]
+        [Alias("tp", "trackplay", "tplays", "trackp")]
+        [LoginRequired]
+        public async Task TrackPlaysAsync(params string[] trackValues)
+        {
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            if (trackValues.Any() && trackValues.First() == "help")
+            {
+                await ReplyAsync(
+                    $"Usage: `{prfx}trackplays 'artist and track name'`\n" +
+                    "If you don't enter any track name, it will get the info from the track you're currently listening to.");
+                return;
+            }
+
+            var track = await this.SearchTrack(trackValues, userSettings);
+            if (track == null)
+            {
+                return;
+            }
+
+            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+
+            this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+            var playString = track.Userplaycount == 1 ? "play" : "plays";
+            this._embedAuthor.WithName($"{userTitle} has {track.Userplaycount} {playString} for {track.Name} by {track.Artist.Name}");
+            this._embed.WithUrl(track.Url);
+            this._embed.WithAuthor(this._embedAuthor);
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
+                this.Context.Message.Content);
+        }
+
+        private async Task<Track> SearchTrack(string[] trackValues, User userSettings)
+        {
+            string searchValue;
+            if (trackValues.Any())
+            {
+                searchValue = string.Join(" ", trackValues);
+            }
+            else
+            {
+                var track = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
+
+                if (!track.Content.Any())
+                {
+                    this._embed.NoScrobblesFoundErrorResponse(track.Status, this.Context, this._logger);
+                    await this.ReplyAsync("", false, this._embed.Build());
+                    return null;
+                }
+
+                var trackResult = track.Content.First();
+                searchValue = $"{trackResult.Name} {trackResult.ArtistName}";
+            }
+
+            var result = await this._lastFmService.SearchTrackAsync(searchValue);
+            if (result.Success && result.Content.Any())
+            {
+                var track = result.Content[0];
+
+                return await this._lastFmService.GetTrackInfoAsync(track.Name, track.ArtistName,
+                    userSettings.UserNameLastFM);
+            }
+            else if (result.Success)
+            {
+                this._embed.WithDescription($"Track could not be found, please check your search values and try again.");
+                await this.ReplyAsync("", false, this._embed.Build());
+                return null;
+            }
+            else
+            {
+                this._embed.WithDescription($"Last.fm returned an error: {result.Status}");
+                await this.ReplyAsync("", false, this._embed.Build());
+                return null;
+            }
+        }
+
         [Command("toptracks", RunMode = RunMode.Async)]
         [Summary("Displays top tracks.")]
         [Alias("tt", "tl", "tracklist", "tracks", "trackslist")]
@@ -452,7 +589,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var topTracks = await this._lastFmService.GetTopTracksAsync(lastFMUserName, timeSpan, num);
                 var userUrl = $"{Constants.LastFMUserUrl}{lastFMUserName}/library/tracks?date_preset={LastFMService.ChartTimePeriodToSiteTimePeriodUrl(timePeriod)}";
 
-                if (!topTracks.Success )
+                if (!topTracks.Success)
                 {
                     this._embed.ErrorResponse(topTracks.Error.Value, topTracks.Message, this.Context, this._logger);
                     await ReplyAsync("", false, this._embed.Build());

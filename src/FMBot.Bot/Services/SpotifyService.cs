@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Auth;
 using SpotifyAPI.Web.Enums;
@@ -29,6 +30,9 @@ namespace FMBot.Bot.Services
 
         public async Task<string> GetArtistImageAsync(string artistName)
         {
+            var encodedId = StringExtensions.ReplaceInvalidChars(artistName);
+            var localArtistId = StringExtensions.TruncateLongString(encodedId, 60);
+
             //Create the auth object
             var auth = new CredentialsAuth(ConfigData.Data.Spotify.Key, ConfigData.Data.Spotify.Secret);
 

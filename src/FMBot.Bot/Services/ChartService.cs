@@ -1,17 +1,13 @@
 using System;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Dasync.Collections;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
-using IF.Lastfm.Core.Api;
-using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore.Internal;
 using SkiaSharp;
@@ -20,16 +16,14 @@ namespace FMBot.Bot.Services
 {
     public class ChartService : IChartService
     {
-        private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.LastFm.Key, ConfigData.Data.LastFm.Secret);
-
         public async Task<SKImage> GenerateChartAsync(ChartSettings chart)
         {
             try
             {
                 await chart.Albums.ParallelForEachAsync(async album =>
                 {
-                    var encodedId = ReplaceInvalidChars(album.Url.LocalPath.Replace("/music/", ""));
-                    var localAlbumId = TruncateLongString(encodedId, 60);
+                    var encodedId = StringExtensions.ReplaceInvalidChars(album.Url.LocalPath.Replace("/music/", ""));
+                    var localAlbumId = StringExtensions.TruncateLongString(encodedId, 60);
 
                     SKBitmap chartImage;
                     var validImage = true;
@@ -45,14 +39,9 @@ namespace FMBot.Bot.Services
                     }
                     else
                     {
-                        var albumInfo = await this._lastFMClient.Album.GetInfoAsync(album.ArtistName, album.Name);
-                        Statistics.LastfmApiCalls.Inc();
-
-                        var albumImages = albumInfo?.Content?.Images;
-
-                        if (albumImages?.Large != null)
+                        if (album.Images.Any() && album.Images.Large != null)
                         {
-                            var url = albumImages.Large.AbsoluteUri;
+                            var url = album.Images.Large.AbsoluteUri;
 
                             SKBitmap bitmap;
                             try
@@ -118,18 +107,21 @@ namespace FMBot.Bot.Services
                     var offsetTop = 0;
                     var heightRow = 0;
 
-                    for (var i = 0; i < chart.ImagesNeeded; i++)
+                    for (var i = 0; i < Math.Min(chart.ImagesNeeded, chart.ChartImages.Count); i++)
                     {
                         IOrderedEnumerable<ChartImage> imageList;
-                        if (!chart.RainbowSortingEnabled)
-                        {
-                            imageList = chart.ChartImages.OrderBy(o => o.Index);
-                        }
-                        else
+                        if (chart.RainbowSortingEnabled)
                         {
                             imageList = chart.ChartImages
                                 .OrderBy(o => o.PrimaryColor.Value.GetHue())
-                                .ThenBy(o => (o.PrimaryColor.Value.R * 3 + o.PrimaryColor.Value.G * 2 + o.PrimaryColor.Value.B * 1));
+                                .ThenBy(o =>
+                                    (o.PrimaryColor.Value.R * 3 +
+                                     o.PrimaryColor.Value.G * 2 +
+                                     o.PrimaryColor.Value.B * 1));
+                        }
+                        else
+                        {
+                            imageList = chart.ChartImages.OrderBy(o => o.Index);
                         }
 
                         var image = imageList
@@ -242,18 +234,6 @@ namespace FMBot.Bot.Services
 
             bitmapCanvas.DrawText(album.ArtistName, 4, 12, textPaint);
             bitmapCanvas.DrawText(album.Name, 4, 22, textPaint);
-        }
-
-        private string ReplaceInvalidChars(string filename)
-        {
-            return string.Join("_", filename.Split(Path.GetInvalidFileNameChars()));
-        }
-
-        private static string TruncateLongString(string str, int maxLength)
-        {
-            if (string.IsNullOrEmpty(str))
-                return str;
-            return str.Substring(0, Math.Min(str.Length, maxLength));
         }
 
         public ChartSettings SetSettings(ChartSettings currentChartSettings, string[] extraOptions)

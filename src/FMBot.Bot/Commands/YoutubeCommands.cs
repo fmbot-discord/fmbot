@@ -69,12 +69,12 @@ namespace FMBot.Bot.Commands
 
                 try
                 {
-                    var youtubeResult = this._youtubeService.GetSearchResult(querystring);
+                    var youtubeResult = await this._youtubeService.GetSearchResult(querystring);
 
                     var name = await this._userService.GetNameAsync(this.Context);
 
                     var reply = $"{name} searched for: `{querystring}`" +
-                                $"\n{youtubeResult.Url}";
+                                $"\nhttps://www.youtube.com/watch?v={youtubeResult.Id.VideoId}";
 
                     var rnd = new Random();
                     if (rnd.Next(0, 5) == 1 && searchValues.Length < 1)

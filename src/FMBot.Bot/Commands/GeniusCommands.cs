@@ -69,16 +69,16 @@ namespace FMBot.Bot.Commands
                     querystring = $"{currentTrack.ArtistName} {currentTrack.Name}";
                 }
 
-                var songResult = await this._geniusService.GetUrlAsync(querystring);
+                var songResult = await this._geniusService.SearchGeniusAsync(querystring);
 
                 if (songResult != null)
                 {
-                    this._embed.WithTitle(songResult.Url);
-                    this._embed.WithThumbnailUrl(songResult.SongArtImageThumbnailUrl);
+                    this._embed.WithTitle(songResult.Result.Url);
+                    this._embed.WithThumbnailUrl(songResult.Result.SongArtImageThumbnailUrl);
 
                     this._embed.AddField(
-                        $"{songResult.TitleWithFeatured}",
-                        $"By **[{songResult.PrimaryArtist.Name}]({songResult.PrimaryArtist.Url})**");
+                        $"{songResult.Result.TitleWithFeatured}",
+                        $"By **[{songResult.Result.PrimaryArtist.Name}]({songResult.Result.PrimaryArtist.Url})**");
 
                     var rnd = new Random();
                     if (rnd.Next(0, 5) == 1 && searchValues.Length < 1)

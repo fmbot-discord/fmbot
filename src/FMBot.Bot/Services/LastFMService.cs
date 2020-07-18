@@ -33,19 +33,10 @@ namespace FMBot.Bot.Services
             this._lastfmApi = lastfmApi;
         }
 
-        // Last scrobble
-        public async Task<LastTrack> GetLastScrobbleAsync(string lastFMUserName)
-        {
-            var tracks = await this._lastFMClient.User.GetRecentScrobbles(lastFMUserName, null, 1, 1);
-            Statistics.LastfmApiCalls.Inc();
-
-            return tracks.Content[0];
-        }
-
         // Recent scrobbles
         public async Task<PageResponse<LastTrack>> GetRecentScrobblesAsync(string lastFMUserName, int count = 2)
         {
-            var recentScrobbles = await this._lastFMClient.User.GetRecentScrobbles(lastFMUserName, null, 1, count);
+            var recentScrobbles = await this._lastFMClient.User.GetRecentScrobbles(lastFMUserName, null, count: count);
             Statistics.LastfmApiCalls.Inc();
 
             return recentScrobbles;
@@ -124,6 +115,14 @@ namespace FMBot.Bot.Services
             return user;
         }
 
+        public async Task<PageResponse<LastTrack>> SearchTrackAsync(string searchQuery)
+        {
+            var trackSearch = await this._lastFMClient.Track.SearchAsync(searchQuery, itemsPerPage: 1);
+            Statistics.LastfmApiCalls.Inc();
+
+            return trackSearch;
+        }
+
         // Track info
         public async Task<Track> GetTrackInfoAsync(string trackName, string artistName, string username = null)
         {
@@ -169,6 +168,14 @@ namespace FMBot.Bot.Services
             Statistics.LastfmApiCalls.Inc();
 
             return albumCall;
+        }
+
+        public async Task<PageResponse<LastAlbum>> SearchAlbumAsync(string searchQuery)
+        {
+            var albumSearch = await this._lastFMClient.Album.SearchAsync(searchQuery, itemsPerPage: 1);
+            Statistics.LastfmApiCalls.Inc();
+
+            return albumSearch;
         }
 
         // Album images

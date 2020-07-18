@@ -87,7 +87,7 @@ namespace FMBot.Bot.Services
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var friends = db.Friends
                 .AsQueryable()
-                .Where(f => f.UserId == userID || f.FriendUserId == userID).ToList();
+                .Where(f => f.UserId == userID).ToList();
 
             if (friends.Count > 0)
             {

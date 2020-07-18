@@ -11,7 +11,6 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Persistence.EntityFrameWork;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
@@ -53,11 +52,8 @@ namespace FMBot.Bot.Commands
             this._embed.AddField("Join the FMBot server for support and updates:",
                 "https://discord.gg/srmpCaa");
 
-            this._embed.AddField("Please upvote us on Discord Bots if you enjoy the bot:",
-                "https://discordbots.org/bot/356268235697553409");
-            
-            this._embed.AddField("Please upvote us on Discord Bots if you enjoy the bot:",
-                "https://discordbots.org/bot/356268235697553409");
+            this._embed.AddField("Support us on OpenCollective:",
+                "https://opencollective.com/fmbot");
 
             if (IsBotSelfHosted(this.Context.Client.CurrentUser.Id))
             {
@@ -73,15 +69,14 @@ namespace FMBot.Bot.Commands
         [Alias("donate", "github", "gitlab", "issues", "bugs")]
         public async Task InfoAsync()
         {
-            var SelfID = this.Context.Client.CurrentUser.Id.ToString();
+            var selfId = this.Context.Client.CurrentUser.Id.ToString();
 
             this._embed.AddField("Invite the bot to your own server with the link below:",
-                "https://discordapp.com/oauth2/authorize?client_id=" + SelfID + "&scope=bot&permissions=" +
+                "https://discordapp.com/oauth2/authorize?client_id=" + selfId + "&scope=bot&permissions=" +
                 Constants.InviteLinkPermissions);
 
-            this._embed.AddField("Support the developers",
-                "Frikandel: https://www.paypal.me/th0m \n" +
-                "Bitl: https://www.paypal.me/Bitl");
+            this._embed.AddField("Support the bot development and hosting:",
+                "https://opencollective.com/fmbot");
 
             this._embed.AddField("Post issues and feature requests here:",
                 "https://github.com/fmbot-discord/fmbot/issues/new/choose");
@@ -181,12 +176,13 @@ namespace FMBot.Bot.Commands
             }
 
             this._embed.AddField("For more commands and info, please read the documentation here:",
-                "https://fmbot.xyz/");
+                "https://fmbot.xyz/commands/");
 
             if (IsBotSelfHosted(this.Context.Client.CurrentUser.Id))
             {
                 this._embed.AddField("Note:",
-                    "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot. \nKeep in mind that the instance might not be fully up to date or other users might not be registered.");
+                    "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot. \n" +
+                    "Keep in mind that the instance might not be fully up to date or other users might not be registered.");
             }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
@@ -242,36 +238,6 @@ namespace FMBot.Bot.Commands
                     length = 0;
                 }
             }
-
-            builder = new EmbedBuilder
-            {
-                Title = "Additional information"
-            };
-
-            builder.AddField("Quick tips",
-                "- Be sure to use 'help' after a command name to see the parameters. \n" +
-                "- Chart sizes range from 3x3 to 10x10 \n" +
-                "- Most commands have no required parameters");
-
-            builder.AddField("Setting your username",
-                "Use `" + prefix +
-                "set 'username' 'embedfull/embedmini/textfull/textmini'` to set your global LastFM username. " +
-                "The last parameter means the mode that your embed will be");
-
-            builder.AddField("Making album charts",
-                "`" + prefix + "fmchart '3x3-10x10' 'weekly/monthly/yearly/overall' 'notitles/titles' 'user'`");
-
-            builder.AddField("Making artist charts",
-                "`" + prefix + "fmartistchart '3x3-10x10' 'weekly/monthly/yearly/overall' 'notitles/titles' 'user'`");
-
-            builder.AddField("Setting the default server settings",
-                "Please note that server defaults are a planned feature. \n" +
-                "Only users with the 'Ban Members' permission or admins can use this command. \n" +
-                "`" + prefix + "serverset 'embedfull/embedmini/textfull/textmini' 'Weekly/Monthly/Yearly/AllTime'`");
-
-            builder.WithFooter("Still need help? Join the FMBot Discord Server: https://discord.gg/srmpCaa");
-
-            await this.Context.User.SendMessageAsync("", false, builder.Build());
 
             if (!this._guildService.CheckIfDM(this.Context))
             {

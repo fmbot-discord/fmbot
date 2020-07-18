@@ -35,7 +35,7 @@ namespace FMBot.Persistence.Domain.Models
 
         public ICollection<Friend> Friends { get; set; }
 
-        public ICollection<Artist> Artists { get; set; }
+        public ICollection<UserArtist> Artists { get; set; }
 
         public ICollection<GuildUser> GuildUsers { get; set; }
     }

@@ -10,20 +10,18 @@ namespace FMBot.Bot.Services
 {
     internal class GeniusService
     {
-        public async Task<SongResult> GetUrlAsync(string searchValue)
+        public async Task<SearchHit> SearchGeniusAsync(string searchValue)
         {
             var client = new GeniusClient(ConfigData.Data.Genius.AccessToken);
 
-            var result = await client.SearchClient.Search(TextFormat.Dom, searchValue);
+            var result = await client.SearchClient.Search(searchValue);
 
-            if (!result.Response.Any())
+            if (!result.Response.Hits.Any())
             {
                 return null;
             }
 
-            var songObject = result.Response[0].Result as JObject;
-
-            return songObject?.ToObject<SongResult>();
+            return result.Response.Hits[0];
         }
     }
 }

@@ -1,10 +1,11 @@
-using System;
+using Newtonsoft.Json;
 
 namespace FMBot.LastFM.Domain.Models
 {
     public class Image
     {
-        public Uri Text { get; set; }
+        [JsonProperty("#text")]
+        public string Text { get; set; }
         public string Size { get; set; }
     }
 }

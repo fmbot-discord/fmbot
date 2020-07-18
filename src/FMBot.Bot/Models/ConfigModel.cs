@@ -1,9 +1,9 @@
-using Newtonsoft.Json;
-
 namespace FMBot.Bot.Models
 {
     public class ConfigModel
     {
+        public string Environment { get; set; }
+
         public DiscordConfig Discord { get; set; }
 
         public DatabaseConfig Database { get; set; }
@@ -16,12 +16,16 @@ namespace FMBot.Bot.Models
 
         public GeniusConfig Genius { get; set; }
 
+        public GoogleConfig Google { get; set; }
+
         public BotListConfig BotLists { get; set; }
     }
 
     public class DiscordConfig
     {
         public string Token { get; set; }
+
+        public ulong? BotUserId { get; set; }
     }
 
     public class DatabaseConfig
@@ -41,7 +45,7 @@ namespace FMBot.Bot.Models
 
         public ulong SuggestionChannelId { get; set; }
 
-        public ulong ExceptionChannelId { get; set; }
+        public string ExceptionChannelWebhookUrl { get; set; }
 
         public string Status { get; set; }
 
@@ -69,6 +73,11 @@ namespace FMBot.Bot.Models
     public class GeniusConfig
     {
         public string AccessToken { get; set; }
+    }
+
+    public class GoogleConfig
+    {
+        public string ApiKey { get; set; }
     }
 
     public class BotListConfig

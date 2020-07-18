@@ -2,7 +2,7 @@ using System;
 
 namespace FMBot.Persistence.Domain.Models
 {
-    public class Artist
+    public class UserArtist
     {
         public int ArtistId { get; set; }
 

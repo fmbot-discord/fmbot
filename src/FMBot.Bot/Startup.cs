@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using CXuesong.Uel.Serilog.Sinks.Discord;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -14,6 +15,8 @@ using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
+using Serilog.Events;
 
 namespace FMBot.Bot
 {
@@ -23,7 +26,8 @@ namespace FMBot.Bot
 
         public Startup(string[] args)
         {
-            var config = ConfigData.Data.Bot.FeaturedTimerRepeatInMinutes;
+            var config = ConfigData.Data;
+
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory() + "/configs")
                 .AddJsonFile("config.json", true);
@@ -33,7 +37,20 @@ namespace FMBot.Bot
 
         public static async Task RunAsync(string[] args)
         {
-            AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionTrapper;
+            Log.Logger = new LoggerConfiguration()
+                .Enrich.WithProperty("Environment", !string.IsNullOrEmpty(ConfigData.Data.Environment) ? ConfigData.Data.Environment : "unknown")
+                .Enrich.WithProperty("BotUserId", ConfigData.Data.Discord.BotUserId ?? 0)
+                .WriteTo.Console()
+                .WriteTo.Seq("http://localhost:5341")
+                //.WriteTo.Conditional(evt =>
+                //        string.IsNullOrEmpty(ConfigData.Data.Bot.ExceptionChannelWebhookUrl),
+                //        wt => wt.Discord(new DiscordWebhookMessenger(ConfigData.Data.Bot.ExceptionChannelWebhookUrl)))
+                .CreateLogger();
+
+            AppDomain.CurrentDomain.UnhandledException += AppUnhandledException;
+
+            Log.Information(".fmbot starting up...");
+
             var startup = new Startup(args);
             await startup.RunAsync();
         }
@@ -87,27 +104,35 @@ namespace FMBot.Bot
             services
                 .AddTransient<ILastfmApi, LastfmApi>();
 
-            using (var context = new FMBotDbContext(ConfigData.Data.Database.ConnectionString))
+            using var context = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            try
             {
-                try
+                Log.Information("Ensuring database is up to date");
+                context.Database.Migrate();
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "Something went wrong while creating/updating the database!");
+                throw;
+            }
+        }
+
+        private static void AppUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            if (Log.Logger != null && e.ExceptionObject is Exception exception)
+            {
+                UnhandledExceptions(exception);
+
+                if (e.IsTerminating)
                 {
-                    logger.Log("Ensuring database is up to date");
-                    context.Database.Migrate();
-                }
-                catch (Exception e)
-                {
-                    logger.LogError("Migrations", $"Something went wrong while creating/updating the database! \n{e.Message}");
-                    throw;
+                    Log.CloseAndFlush();
                 }
             }
         }
 
-        static void UnhandledExceptionTrapper(object sender, UnhandledExceptionEventArgs e)
+        private static void UnhandledExceptions(Exception e)
         {
-            Console.WriteLine("Unhandled exception! \n \n" + e.ExceptionObject + "\n", ConsoleColor.Red);
-
-            var logger = new Logger.Logger();
-            logger.Log("UnhandledException! \n \n" + e.ExceptionObject + "\n");
+            Log.Logger?.Error(e, ".fmbot crashed");
         }
     }
 }
