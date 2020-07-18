@@ -95,7 +95,7 @@ namespace FMBot.Bot.Services
             var userIds = guildUsers.Select(s => s.UserId);
 
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            var artists = await db.Artists
+            var artists = await db.UserArtists
                 .Include(i => i.User)
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
                             && userIds.Contains(w.UserId))
@@ -130,7 +130,7 @@ namespace FMBot.Bot.Services
             var userIds = guildUsers.Select(s => s.UserId);
 
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            return await db.Artists
+            return await db.UserArtists
                 .AsQueryable()
                 .Where(w => userIds.Contains(w.UserId))
                 .GroupBy(o => o.Name)
@@ -151,7 +151,7 @@ namespace FMBot.Bot.Services
             var userIds = guildUsers.Select(s => s.UserId);
 
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            return await db.Artists
+            return await db.UserArtists
                 .AsQueryable()
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
                             && userIds.Contains(w.UserId))
@@ -163,7 +163,7 @@ namespace FMBot.Bot.Services
             var userIds = guildUsers.Select(s => s.UserId);
 
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            var query = db.Artists
+            var query = db.UserArtists
                 .AsQueryable()
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
                             && userIds.Contains(w.UserId));
@@ -185,7 +185,7 @@ namespace FMBot.Bot.Services
             var userIds = guildUsers.Select(s => s.UserId);
 
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            var query = db.Artists
+            var query = db.UserArtists
                 .AsQueryable()
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
                             && userIds.Contains(w.UserId));

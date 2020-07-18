@@ -19,17 +19,22 @@ namespace FMBot.Persistence.EntityFrameWork
             this._connectionString = connectionString;
         }
 
+        public FMBotDbContext()
+        {
+        }
+
         public virtual DbSet<Friend> Friends { get; set; }
         public virtual DbSet<Guild> Guilds { get; set; }
         public virtual DbSet<GuildUser> GuildUsers { get; set; }
         public virtual DbSet<User> Users { get; set; }
-        public virtual DbSet<Artist> Artists { get; set; }
+        public virtual DbSet<UserArtist> UserArtists { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseNpgsql(this._connectionString);
+                // When creating migrations, make sure to enter the connection string below.
+                optionsBuilder.UseNpgsql("Host=localhost;Port=5433;Username=postgres;Password=password;Database=fmbot;Command Timeout=15;Timeout=30;Persist Security Info=True");
                 optionsBuilder.UseSnakeCaseNamingConvention();
             }
         }
@@ -88,7 +93,7 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasKey(e => e.UserId);
             });
 
-            modelBuilder.Entity<Artist>(entity =>
+            modelBuilder.Entity<UserArtist>(entity =>
             {
                 entity.HasKey(a => a.ArtistId);
 

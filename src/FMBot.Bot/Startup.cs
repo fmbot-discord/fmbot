@@ -42,9 +42,9 @@ namespace FMBot.Bot
                 .Enrich.WithProperty("BotUserId", ConfigData.Data.Discord.BotUserId ?? 0)
                 .WriteTo.Console()
                 .WriteTo.Seq("http://localhost:5341")
-                .WriteTo.Conditional(evt =>
-                        !string.IsNullOrEmpty(ConfigData.Data.Bot.ExceptionChannelWebhookUrl),
-                        wt => wt.Discord(new DiscordWebhookMessenger(ConfigData.Data.Bot.ExceptionChannelWebhookUrl)))
+                //.WriteTo.Conditional(evt =>
+                //        string.IsNullOrEmpty(ConfigData.Data.Bot.ExceptionChannelWebhookUrl),
+                //        wt => wt.Discord(new DiscordWebhookMessenger(ConfigData.Data.Bot.ExceptionChannelWebhookUrl)))
                 .CreateLogger();
 
             AppDomain.CurrentDomain.UnhandledException += AppUnhandledException;

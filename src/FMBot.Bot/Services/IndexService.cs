@@ -75,7 +75,7 @@ namespace FMBot.Bot.Services
             }
 
             var now = DateTime.UtcNow;
-            var artists = topArtists.Select(a => new Artist
+            var artists = topArtists.Select(a => new UserArtist
             {
                 LastUpdated = now,
                 Name = a.Name,
@@ -86,11 +86,11 @@ namespace FMBot.Bot.Services
             await InsertArtistsIntoDatabase(artists, user.UserId, now);
         }
 
-        private static async Task InsertArtistsIntoDatabase(IReadOnlyList<Artist> artists, int userId, DateTime now)
+        private static async Task InsertArtistsIntoDatabase(IReadOnlyList<UserArtist> artists, int userId, DateTime now)
         {
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var connString = db.Database.GetDbConnection().ConnectionString;
-            var copyHelper = new PostgreSQLCopyHelper<Artist>("public", "artists")
+            var copyHelper = new PostgreSQLCopyHelper<UserArtist>("public", "user_artists")
                 .MapText("name", x => x.Name)
                 .MapInteger("user_id", x => x.UserId)
                 .MapInteger("playcount", x => x.Playcount)
@@ -99,7 +99,7 @@ namespace FMBot.Bot.Services
             await using var connection = new NpgsqlConnection(connString);
             connection.Open();
 
-            await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.artists WHERE user_id = {userId};", connection);
+            await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.user_artists WHERE user_id = {userId};", connection);
             await deleteCurrentArtists.ExecuteNonQueryAsync().ConfigureAwait(false);
 
             await copyHelper.SaveAllAsync(connection, artists).ConfigureAwait(false);

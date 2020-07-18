@@ -98,7 +98,7 @@ namespace FMBot.Bot.Commands.LastFM
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
             this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            this._embedAuthor.WithName($"Artist info about {artistInfo.Name} for {userTitle}");
+            this._embedAuthor.WithName($"UserArtist info about {artistInfo.Name} for {userTitle}");
             this._embedAuthor.WithUrl(artistInfo.Url);
             this._embed.WithAuthor(this._embedAuthor);
 
@@ -340,7 +340,7 @@ namespace FMBot.Bot.Commands.LastFM
                     var taste = await this._artistsService.GetEmbedTasteAsync(ownArtists, otherArtists, amount, timeType.ChartTimePeriod);
 
                     this._embed.WithDescription(taste.Description);
-                    this._embed.AddField("Artist", taste.LeftDescription, true);
+                    this._embed.AddField("UserArtist", taste.LeftDescription, true);
                     this._embed.AddField("Plays", taste.RightDescription, true);
                 }
                 else
