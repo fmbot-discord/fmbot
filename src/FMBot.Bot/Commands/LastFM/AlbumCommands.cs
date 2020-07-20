@@ -16,6 +16,7 @@ using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.VisualBasic;
+using Serilog;
 using Constants = FMBot.Bot.Resources.Constants;
 using ImageFormat = System.Drawing.Imaging.ImageFormat;
 
@@ -213,7 +214,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var albumInfo = await this._lastFmService.GetAlbumImagesAsync(searchResult.Artist, searchResult.Name);
 
-            if (albumInfo.Largest == null)
+            if (albumInfo == null || albumInfo.Largest == null)
             {
                 this._embed.WithDescription("Sorry, no album cover found for this album: \n" +
                                             $"{searchResult.Artist} - {searchResult.Name}\n" +
@@ -241,15 +242,14 @@ namespace FMBot.Bot.Commands.LastFM
             image.Save(imageMemoryStream, ImageFormat.Png);
             imageMemoryStream.Position = 0;
 
+            Log.Information("CommandUsed", this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
+                this.Context.Message.Content);
             await this.Context.Channel.SendFileAsync(
                 imageMemoryStream,
                 $"cover-{StringExtensions.ReplaceInvalidChars($"{searchResult.Artist}_{searchResult.Name}")}.png",
                 null,
                 false,
                 this._embed.Build());
-
-            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                this.Context.Message.Content);
         }
 
         private async Task<AlbumSearchModel> SearchAlbum(string[] albumValues, User userSettings)

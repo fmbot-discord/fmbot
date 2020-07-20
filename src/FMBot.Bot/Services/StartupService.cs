@@ -11,6 +11,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using IF.Lastfm.Core.Api;
 using Prometheus;
+using Serilog;
 
 namespace FMBot.Bot.Services
 {
@@ -22,6 +23,9 @@ namespace FMBot.Bot.Services
         private readonly IPrefixService _prefixService;
         private readonly IServiceProvider _provider;
         private readonly Logger.Logger _logger;
+
+        private readonly ILogger logger = Log.ForContext<StartupService>();
+
 
         public StartupService(
             IServiceProvider provider,
@@ -41,7 +45,7 @@ namespace FMBot.Bot.Services
 
         public async Task StartAsync()
         {
-            this._logger.Log("Starting bot");
+            Log.Information("Starting bot");
 
             var discordToken = ConfigData.Data.Discord.Token; // Get the discord token from the config file
             if (string.IsNullOrWhiteSpace(discordToken))
@@ -51,34 +55,34 @@ namespace FMBot.Bot.Services
 
             await TestLastFmApi();
 
-            this._logger.Log("Loading all prefixes");
+            Log.Information("Loading all prefixes");
             await this._prefixService.LoadAllPrefixes();
 
-            this._logger.Log("Loading all disabled commands");
+            Log.Information("Loading all disabled commands");
             await this._disabledCommands.LoadAllDisabledCommands();
 
-            this._logger.Log("Logging into Discord");
+            Log.Information("Logging into Discord");
             await this._client.LoginAsync(TokenType.Bot, discordToken);
 
-            this._logger.Log("Starting connection between Discord and the client");
+            Log.Information("Starting connection between Discord and the client");
             await this._client.StartAsync();
 
-            this._logger.Log("Setting Discord user status");
+            Log.Information("Setting Discord user status");
             await this._client.SetStatusAsync(UserStatus.DoNotDisturb);
 
             if (!string.IsNullOrEmpty(ConfigData.Data.Bot.Status))
             {
-                this._logger.Log($"Setting custom status to '{ConfigData.Data.Bot.Status}'");
+                Log.Information($"Setting custom status to '{ConfigData.Data.Bot.Status}'");
                 await this._client.SetGameAsync(ConfigData.Data.Bot.Status);
             }
 
-            this._logger.Log("Loading command modules");
+            Log.Information("Loading command modules");
             await this._commands
                 .AddModulesAsync(
                     Assembly.GetEntryAssembly(),
                     this._provider); // Load commands and modules into the command service
 
-            this._logger.Log("Preparing cache folder");
+            Log.Information("Preparing cache folder");
             PrepareCacheFolder();
 
             await this.StartMetricsServer();
@@ -89,12 +93,12 @@ namespace FMBot.Bot.Services
         {
             var fmClient = new LastfmClient(ConfigData.Data.LastFm.Key, ConfigData.Data.LastFm.Secret);
 
-            this._logger.Log("Testing Last.FM API");
+            Log.Information("Testing Last.FM API");
             var lastFMUser = await fmClient.User.GetInfoAsync("Lastfmsupport");
 
             if (lastFMUser.Status.ToString().Equals("BadApiKey"))
             {
-                this._logger.LogError("BadLastfmApiKey",
+                Log.Fatal("BadLastfmApiKey",
                     "Warning! Invalid API key for Last.FM! Please set the proper API keys in the `/Configs/ConfigData.json`! \n \n" +
                     "Exiting in 5 seconds...");
 
@@ -103,7 +107,7 @@ namespace FMBot.Bot.Services
             }
             else
             {
-                this._logger.Log("Last.FM API test successful");
+                Log.Information("Last.FM API test successful");
             }
         }
 
@@ -113,24 +117,24 @@ namespace FMBot.Bot.Services
             Thread.Sleep(TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds));
             if (this._client == null || this._client.CurrentUser == null)
             {
-                this._logger.Log("Delaying metric server startup");
+                Log.Information("Delaying metric server startup");
                 Thread.Sleep(TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds));
             }
-            this._logger.Log("Starting metrics server");
+            Log.Information("Starting metrics server");
 
             var prometheusPort = 4444;
             if (!this._client.CurrentUser.Id.Equals(Constants.BotProductionId))
             {
-                this._logger.Log("Prometheus port selected is non-production");
+                Log.Information("Prometheus port selected is non-production");
                 prometheusPort = 4422;
             }
 
-            this._logger.Log($"Prometheus starting on port {prometheusPort}");
+            Log.Information($"Prometheus starting on port {prometheusPort}");
 
             var server = new MetricServer("localhost", prometheusPort);
             server.Start();
 
-            this._logger.Log($"Prometheus running on localhost:{prometheusPort}/metrics");
+            Log.Information($"Prometheus running on localhost:{prometheusPort}/metrics");
             return Task.CompletedTask;
         }
 
