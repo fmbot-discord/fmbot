@@ -252,7 +252,7 @@ namespace FMBot.Bot.Services
 
         public static ChartTimePeriod StringToChartTimePeriod(string timeString)
         {
-            if (Enum.TryParse(timeString, true, out ChartTimePeriod timePeriod))
+            if (Enum.TryParse(timeString, true, out ChartTimePeriod timePeriod) && Enum.IsDefined(typeof(ChartTimePeriod), timePeriod))
             {
                 return timePeriod;
             }
