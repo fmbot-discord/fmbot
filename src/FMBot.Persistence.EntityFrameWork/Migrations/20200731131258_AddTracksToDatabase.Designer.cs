@@ -3,15 +3,17 @@ using System;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace FMBot.Persistence.EntityFrameWork.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    partial class FMBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20200731131258_AddTracksToDatabase")]
+    partial class AddTracksToDatabase
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -190,11 +192,11 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnName("artist_name")
                         .HasColumnType("text");
 
-                    b.Property<int?>("DurationMs")
+                    b.Property<int>("DurationMs")
                         .HasColumnName("duration_ms")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("Key")
+                    b.Property<int>("Key")
                         .HasColumnName("key")
                         .HasColumnType("integer");
 
@@ -210,7 +212,7 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnName("spotify_last_updated")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<float?>("Tempo")
+                    b.Property<float>("Tempo")
                         .HasColumnName("tempo")
                         .HasColumnType("real");
 

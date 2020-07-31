@@ -33,6 +33,8 @@ namespace FMBot.Bot.Services
             return await spotify.SearchItemsAsync(searchValue, searchType);
         }
 
+        
+
         public async Task<string> GetOrStoreArtistImageAsync(ArtistResponse lastFmArtist, string artistNameBeforeCorrect)
         {
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
@@ -153,6 +155,76 @@ namespace FMBot.Bot.Services
                 if (spotifyArtist != null && !spotifyArtist.HasError())
                 {
                     return spotifyArtist;
+                }
+            }
+
+            return null;
+        }
+
+        public async Task<AudioFeatures> GetOrStoreTrackAsync(Track track)
+        {
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            var dbTrack = await db.Tracks
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.Name.ToLower() == track.Name.ToLower() && f.ArtistName.ToLower() == track.Artist.Name.ToLower());
+
+            if (dbTrack == null)
+            {
+                var trackToAdd = new FMBot.Persistence.Domain.Models.Track
+                {
+                    Name = track.Name,
+                    AlbumName = track.Album?.Title,
+                    ArtistName = track.Artist?.Name
+                };
+
+                var artist = await db.Artists
+                    .AsQueryable()
+                    .FirstOrDefaultAsync(f => f.Name.ToLower() == track.Artist.Name.ToLower());
+
+                if (artist != null)
+                {
+                    trackToAdd.Artist = artist;
+                }
+
+                var spotifyTrack = await GetTrackFromSpotify(track.Name, track.Artist.Name.ToLower());
+
+                if (spotifyTrack != null)
+                {
+                    trackToAdd.SpotifyId = spotifyTrack.Id;
+                }
+
+
+
+            }
+
+            return await spotify.GetAudioFeaturesAsync("sadas");
+        }
+
+        private static async Task<FullTrack> GetTrackFromSpotify(string trackName, string artistName)
+        {
+            //Create the auth object
+            var auth = new CredentialsAuth(ConfigData.Data.Spotify.Key, ConfigData.Data.Spotify.Secret);
+
+            var token = await auth.GetToken();
+
+            var spotify = new SpotifyWebAPI
+            {
+                TokenType = token.TokenType,
+                AccessToken = token.AccessToken,
+                UseAuth = true
+            };
+
+            var results = await spotify.SearchItemsAsync($"{trackName} {artistName}", SearchType.Track);
+
+            if (results.Tracks?.Items?.Any() == true)
+            {
+                var spotifyTrack = results.Tracks.Items
+                    .OrderByDescending(o => o.Popularity)
+                    .FirstOrDefault(w => w.Name.ToLower() == trackName.ToLower() && w.Artists.Select(s => s.Name).Contains(artistName));
+
+                if (spotifyTrack != null && !spotifyTrack.HasError())
+                {
+                    return spotifyTrack;
                 }
             }
 
