@@ -4,10 +4,10 @@ namespace FMBot.LastFM.Domain.Models
 {
     public class TrackResponse
     {
-        public Track Track { get; set; }
+        public ResponseTrack Track { get; set; }
     }
 
-    public class Track
+    public class ResponseTrack
     {
         public string Name { get; set; }
         public Guid Mbid { get; set; }

@@ -30,6 +30,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<UserArtist> UserArtists { get; set; }
 
         public virtual DbSet<Artist> Artists { get; set; }
+        public virtual DbSet<Track> Tracks { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -117,6 +118,14 @@ namespace FMBot.Persistence.EntityFrameWork
                         v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
             });
 
+            modelBuilder.Entity<Track>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+
+                entity.HasOne(d => d.Artist)
+                    .WithMany(p => p.Tracks)
+                    .HasForeignKey(d => d.ArtistId);
+            });
         }
     }
 }
