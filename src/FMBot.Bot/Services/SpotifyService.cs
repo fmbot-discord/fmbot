@@ -18,17 +18,7 @@ namespace FMBot.Bot.Services
     {
         public async Task<SearchItem> GetSearchResultAsync(string searchValue, SearchType searchType = SearchType.Track)
         {
-            //Create the auth object
-            var auth = new CredentialsAuth(ConfigData.Data.Spotify.Key, ConfigData.Data.Spotify.Secret);
-
-            var token = await auth.GetToken();
-
-            var spotify = new SpotifyWebAPI
-            {
-                TokenType = token.TokenType,
-                AccessToken = token.AccessToken,
-                UseAuth = true
-            };
+            var spotify = await GetSpotifyWebApi();
 
             return await spotify.SearchItemsAsync(searchValue, searchType);
         }
@@ -132,17 +122,7 @@ namespace FMBot.Bot.Services
 
         private static async Task<FullArtist> GetArtistFromSpotify(string artistName)
         {
-            //Create the auth object
-            var auth = new CredentialsAuth(ConfigData.Data.Spotify.Key, ConfigData.Data.Spotify.Secret);
-
-            var token = await auth.GetToken();
-
-            var spotify = new SpotifyWebAPI
-            {
-                TokenType = token.TokenType,
-                AccessToken = token.AccessToken,
-                UseAuth = true
-            };
+            var spotify = await GetSpotifyWebApi();
 
             var results = await spotify.SearchItemsAsync(artistName, SearchType.Artist);
 
@@ -161,7 +141,7 @@ namespace FMBot.Bot.Services
             return null;
         }
 
-        public async Task<AudioFeatures> GetOrStoreTrackAsync(Track track)
+        public async Task<Persistence.Domain.Models.Track> GetOrStoreTrackAsync(ResponseTrack track)
         {
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var dbTrack = await db.Tracks
@@ -191,28 +171,70 @@ namespace FMBot.Bot.Services
                 if (spotifyTrack != null)
                 {
                     trackToAdd.SpotifyId = spotifyTrack.Id;
+                    trackToAdd.DurationMs = spotifyTrack.DurationMs;
+
+                    var audioFeatures = await GetAudioFeaturesFromSpotify(spotifyTrack.Id);
+
+                    if (audioFeatures != null)
+                    {
+                        trackToAdd.Key = audioFeatures.Key;
+                        trackToAdd.Tempo = audioFeatures.Tempo;
+                    }
                 }
 
+                trackToAdd.SpotifyLastUpdated = DateTime.UtcNow;
 
+                await db.Tracks.AddAsync(trackToAdd);
+                await db.SaveChangesAsync();
 
+                return trackToAdd;
             }
+            else
+            {
+                if (dbTrack.Artist == null)
+                {
+                    var artist = await db.Artists
+                        .AsQueryable()
+                        .FirstOrDefaultAsync(f => f.Name.ToLower() == track.Artist.Name.ToLower());
 
-            return await spotify.GetAudioFeaturesAsync("sadas");
+                    if (artist != null)
+                    {
+                        dbTrack.Artist = artist;
+                        db.Entry(dbTrack).State = EntityState.Modified;
+                    }
+                }
+                if (string.IsNullOrEmpty(dbTrack.SpotifyId) && dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddMonths(-2))
+                {
+                    var spotifyTrack = await GetTrackFromSpotify(track.Name, track.Artist.Name.ToLower());
+
+                    if (spotifyTrack != null)
+                    {
+                        dbTrack.SpotifyId = spotifyTrack.Id;
+                        dbTrack.DurationMs = spotifyTrack.DurationMs;
+
+                        var audioFeatures = await GetAudioFeaturesFromSpotify(spotifyTrack.Id);
+
+                        if (audioFeatures != null)
+                        {
+                            dbTrack.Key = audioFeatures.Key;
+                            dbTrack.Tempo = audioFeatures.Tempo;
+                        }
+                    }
+
+                    dbTrack.SpotifyLastUpdated = DateTime.UtcNow;
+                    db.Entry(dbTrack).State = EntityState.Modified;
+                }
+
+                await db.SaveChangesAsync();
+
+                return dbTrack;
+            }
         }
 
         private static async Task<FullTrack> GetTrackFromSpotify(string trackName, string artistName)
         {
             //Create the auth object
-            var auth = new CredentialsAuth(ConfigData.Data.Spotify.Key, ConfigData.Data.Spotify.Secret);
-
-            var token = await auth.GetToken();
-
-            var spotify = new SpotifyWebAPI
-            {
-                TokenType = token.TokenType,
-                AccessToken = token.AccessToken,
-                UseAuth = true
-            };
+            var spotify = await GetSpotifyWebApi();
 
             var results = await spotify.SearchItemsAsync($"{trackName} {artistName}", SearchType.Track);
 
@@ -220,7 +242,7 @@ namespace FMBot.Bot.Services
             {
                 var spotifyTrack = results.Tracks.Items
                     .OrderByDescending(o => o.Popularity)
-                    .FirstOrDefault(w => w.Name.ToLower() == trackName.ToLower() && w.Artists.Select(s => s.Name).Contains(artistName));
+                    .FirstOrDefault(w => w.Name.ToLower() == trackName.ToLower() && w.Artists.Select(s => s.Name.ToLower()).Contains(artistName.ToLower()));
 
                 if (spotifyTrack != null && !spotifyTrack.HasError())
                 {
@@ -230,5 +252,34 @@ namespace FMBot.Bot.Services
 
             return null;
         }
+
+        private static async Task<AudioFeatures> GetAudioFeaturesFromSpotify(string spotifyId)
+        {
+            //Create the auth object
+            var spotify = await GetSpotifyWebApi();
+
+            var result = await spotify.GetAudioFeaturesAsync(spotifyId);
+
+            if (!result.HasError())
+            {
+                return result;
+            }
+
+            return null;
+        }
+
+        private static async Task<SpotifyWebAPI> GetSpotifyWebApi()
+        {
+            var auth = new CredentialsAuth(ConfigData.Data.Spotify.Key, ConfigData.Data.Spotify.Secret);
+
+            var token = await auth.GetToken();
+
+            return new SpotifyWebAPI
+            {
+                TokenType = token.TokenType,
+                AccessToken = token.AccessToken,
+                UseAuth = true
+            };
+    }
     }
 }

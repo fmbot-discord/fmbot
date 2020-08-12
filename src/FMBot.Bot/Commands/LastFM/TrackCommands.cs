@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -26,6 +27,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly GuildService _guildService;
         private readonly LastFMService _lastFmService;
+        private readonly SpotifyService _spotifyService = new SpotifyService();
         private readonly Logger.Logger _logger;
 
         private readonly UserService _userService;
@@ -440,9 +442,36 @@ namespace FMBot.Bot.Commands.LastFM
             this._embed.WithUrl(track.Url);
             this._embed.WithAuthor(this._embedAuthor);
 
-            this._embed.AddField("Listeners", track.Listeners, true);
-            this._embed.AddField("Global playcount", track.Playcount, true);
-            this._embed.AddField("Your playcount", track.Userplaycount, true);
+            var spotifyTrack = await this._spotifyService.GetOrStoreTrackAsync(track);
+
+            if (spotifyTrack != null && !string.IsNullOrEmpty(spotifyTrack.SpotifyId))
+            {
+                var playString = track.Userplaycount == 1 ? "play" : "plays";
+                this._embed.AddField("Stats",
+                    $"`{track.Listeners}` listeners\n" +
+                    $"`{track.Playcount}` global plays\n" +
+                    $"`{track.Userplaycount}` {playString} by you\n",
+                    true);
+
+                var trackLength = TimeSpan.FromMilliseconds(spotifyTrack.DurationMs.GetValueOrDefault());
+                var formattedTrackLength = string.Format("{0}:{1:D2}",
+                    trackLength.Minutes,
+                    trackLength.Seconds);
+
+                var pitch = StringExtensions.KeyIntToPitchString(spotifyTrack.Key.GetValueOrDefault());
+
+                this._embed.AddField("Info",
+                    $"`{formattedTrackLength}` duration\n" +
+                    $"`{pitch}` key\n" +
+                    $"`{spotifyTrack.Tempo.GetValueOrDefault()}` bpm\n",
+                    true);
+            }
+            else
+            {
+                this._embed.AddField("Listeners", track.Listeners, true);
+                this._embed.AddField("Global playcount", track.Playcount, true);
+                this._embed.AddField("Your playcount", track.Userplaycount, true);
+            }
 
             if (!string.IsNullOrWhiteSpace(track.Wiki?.Summary))
             {
@@ -498,7 +527,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this.Context.Message.Content);
         }
 
-        private async Task<Track> SearchTrack(string[] trackValues, User userSettings)
+        private async Task<ResponseTrack> SearchTrack(string[] trackValues, User userSettings)
         {
             string searchValue;
             if (trackValues.Any())
@@ -525,8 +554,9 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 var track = result.Content[0];
 
-                return await this._lastFmService.GetTrackInfoAsync(track.Name, track.ArtistName,
+                var trackInfo = await this._lastFmService.GetTrackInfoAsync(track.Name, track.ArtistName,
                     userSettings.UserNameLastFM);
+                return trackInfo;
             }
             else if (result.Success)
             {

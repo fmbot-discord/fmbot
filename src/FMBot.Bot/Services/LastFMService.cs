@@ -18,7 +18,6 @@ using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
-using Track = FMBot.LastFM.Domain.Models.Track;
 
 namespace FMBot.Bot.Services
 {
@@ -124,7 +123,7 @@ namespace FMBot.Bot.Services
         }
 
         // Track info
-        public async Task<Track> GetTrackInfoAsync(string trackName, string artistName, string username = null)
+        public async Task<ResponseTrack> GetTrackInfoAsync(string trackName, string artistName, string username = null)
         {
             var queryParams = new Dictionary<string, string>
             {
