@@ -70,7 +70,7 @@ namespace FMBot.Bot.Commands
                     var artistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? null : currentTrack.ArtistName;
                     var albumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? null : currentTrack.AlbumName;
 
-                    querystring = trackName + " - " + artistName + " " + albumName;
+                    querystring = $"{trackName} {artistName} {albumName}";
                 }
 
                 var item = await this._spotifyService.GetSearchResultAsync(querystring);
