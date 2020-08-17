@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
@@ -249,131 +250,103 @@ namespace FMBot.Bot.Services
             return lastFMUser.Success;
         }
 
-        public static ChartTimePeriod StringToChartTimePeriod(string timeString)
-        {
-            if (Enum.TryParse(timeString, true, out ChartTimePeriod timePeriod) && Enum.IsDefined(typeof(ChartTimePeriod), timePeriod))
-            {
-                return timePeriod;
-            }
-
-            return timeString switch
-            {
-                "w" => ChartTimePeriod.Weekly,
-                "m" => ChartTimePeriod.Monthly,
-                "q" => ChartTimePeriod.Quarterly,
-                "h" => ChartTimePeriod.Half,
-                "y" => ChartTimePeriod.Yearly,
-                "a" => ChartTimePeriod.AllTime,
-                "overall" => ChartTimePeriod.AllTime,
-                _ => ChartTimePeriod.Weekly
-            };
-        }
-
-        public static LastStatsTimeSpan ChartTimePeriodToLastStatsTimeSpan(ChartTimePeriod timePeriod)
-        {
-            return timePeriod switch
-            {
-                ChartTimePeriod.Weekly => LastStatsTimeSpan.Week,
-                ChartTimePeriod.Monthly => LastStatsTimeSpan.Month,
-                ChartTimePeriod.Quarterly => LastStatsTimeSpan.Quarter,
-                ChartTimePeriod.Half => LastStatsTimeSpan.Half,
-                ChartTimePeriod.Yearly => LastStatsTimeSpan.Year,
-                ChartTimePeriod.AllTime => LastStatsTimeSpan.Overall,
-                _ => LastStatsTimeSpan.Week
-            };
-        }
-
-        public static string ChartTimePeriodToSiteTimePeriodUrl(ChartTimePeriod timePeriod)
-        {
-            return timePeriod switch
-            {
-                ChartTimePeriod.Weekly => "LAST_7_DAYS",
-                ChartTimePeriod.Monthly => "LAST_30_DAYS",
-                ChartTimePeriod.Quarterly => "LAST_90_DAYS",
-                ChartTimePeriod.Half => "LAST_180_DAYS",
-                ChartTimePeriod.Yearly => "LAST_365_DAYS",
-                ChartTimePeriod.AllTime => "ALL",
-                _ => "LAST_7_DAYS"
-            };
-        }
-
-        public static string ChartTimePeriodToCallTimePeriod(ChartTimePeriod timePeriod)
-        {
-            return timePeriod switch
-            {
-                ChartTimePeriod.Weekly => TimePeriod.Week,
-                ChartTimePeriod.Monthly => TimePeriod.Month,
-                ChartTimePeriod.Quarterly => TimePeriod.Quarter,
-                ChartTimePeriod.Half => TimePeriod.Half,
-                ChartTimePeriod.Yearly => TimePeriod.Year,
-                ChartTimePeriod.AllTime => TimePeriod.Overall,
-                _ => TimePeriod.Week
-            };
-        }
-
-
-        public static TimeModel OptionsToTimeModel(
+        public static SettingsModel StringOptionsToSettings(
             string[] extraOptions,
             LastStatsTimeSpan defaultLastStatsTimeSpan = LastStatsTimeSpan.Week,
             ChartTimePeriod defaultChartTimePeriod = ChartTimePeriod.Weekly,
-            string defaultUrlParameter = "LAST_7_DAYS")
+            string defaultUrlParameter = "LAST_7_DAYS",
+            string defaultApiParameter = "7day")
         {
-            var timeModel = new TimeModel();
+            var settingsModel = new SettingsModel();
 
             // time period
             if (extraOptions.Contains("weekly") || extraOptions.Contains("week") || extraOptions.Contains("w"))
             {
-                timeModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;
-                timeModel.ChartTimePeriod = ChartTimePeriod.Weekly;
-                timeModel.Description = "Weekly";
-                timeModel.UrlParameter = "LAST_7_DAYS";
+                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;
+                settingsModel.ChartTimePeriod = ChartTimePeriod.Weekly;
+                settingsModel.Description = "Weekly";
+                settingsModel.UrlParameter = "LAST_7_DAYS";
+                settingsModel.ApiParameter = "7day";
             }
             else if (extraOptions.Contains("monthly") || extraOptions.Contains("month") || extraOptions.Contains("m"))
             {
-                timeModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;
-                timeModel.ChartTimePeriod = ChartTimePeriod.Monthly;
-                timeModel.Description = "Monthly";
-                timeModel.UrlParameter = "LAST_30_DAYS";
+                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;
+                settingsModel.ChartTimePeriod = ChartTimePeriod.Monthly;
+                settingsModel.Description = "Monthly";
+                settingsModel.UrlParameter = "LAST_30_DAYS";
+                settingsModel.ApiParameter = "1month";
             }
             else if (extraOptions.Contains("quarterly") || extraOptions.Contains("quarter") || extraOptions.Contains("q"))
             {
-                timeModel.LastStatsTimeSpan = LastStatsTimeSpan.Quarter;
-                timeModel.ChartTimePeriod = ChartTimePeriod.Quarterly;
-                timeModel.Description = "Quarterly";
-                timeModel.UrlParameter = "LAST_90_DAYS";
+                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Quarter;
+                settingsModel.ChartTimePeriod = ChartTimePeriod.Quarterly;
+                settingsModel.Description = "Quarterly";
+                settingsModel.UrlParameter = "LAST_90_DAYS";
+                settingsModel.ApiParameter = "3month";
             }
             else if (extraOptions.Contains("halfyearly") || extraOptions.Contains("half") || extraOptions.Contains("h"))
             {
-                timeModel.LastStatsTimeSpan = LastStatsTimeSpan.Half;
-                timeModel.ChartTimePeriod = ChartTimePeriod.Half;
-                timeModel.Description = "Half-yearly";
-                timeModel.UrlParameter = "LAST_180_DAYS";
+                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Half;
+                settingsModel.ChartTimePeriod = ChartTimePeriod.Half;
+                settingsModel.Description = "Half-yearly";
+                settingsModel.UrlParameter = "LAST_180_DAYS";
+                settingsModel.ApiParameter = "6month";
             }
             else if (extraOptions.Contains("yearly") || extraOptions.Contains("year") || extraOptions.Contains("y"))
             {
-                timeModel.LastStatsTimeSpan = LastStatsTimeSpan.Year;
-                timeModel.ChartTimePeriod = ChartTimePeriod.Yearly;
-                timeModel.Description = "Yearly";
-                timeModel.UrlParameter = "LAST_365_DAYS";
+                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Year;
+                settingsModel.ChartTimePeriod = ChartTimePeriod.Yearly;
+                settingsModel.Description = "Yearly";
+                settingsModel.UrlParameter = "LAST_365_DAYS";
+                settingsModel.ApiParameter = "12month";
             }
             else if (extraOptions.Contains("overall") || extraOptions.Contains("alltime") || extraOptions.Contains("o") ||
                      extraOptions.Contains("at") ||
                      extraOptions.Contains("a"))
             {
-                timeModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;
-                timeModel.ChartTimePeriod = ChartTimePeriod.AllTime;
-                timeModel.Description = "Overall";
-                timeModel.UrlParameter = "ALL";
+                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;
+                settingsModel.ChartTimePeriod = ChartTimePeriod.AllTime;
+                settingsModel.Description = "Overall";
+                settingsModel.UrlParameter = "ALL";
+                settingsModel.ApiParameter = "overall";
             }
             else
             {
-                timeModel.LastStatsTimeSpan = defaultLastStatsTimeSpan;
-                timeModel.ChartTimePeriod = defaultChartTimePeriod;
-                timeModel.Description = "";
-                timeModel.UrlParameter = defaultUrlParameter;
+                settingsModel.LastStatsTimeSpan = defaultLastStatsTimeSpan;
+                settingsModel.ChartTimePeriod = defaultChartTimePeriod;
+                settingsModel.Description = "";
+                settingsModel.UrlParameter = defaultUrlParameter;
+                settingsModel.ApiParameter = defaultApiParameter;
             }
 
-            return timeModel;
+            settingsModel.Amount = 10;
+            foreach (var extraOption in extraOptions)
+            {
+                if (int.TryParse(extraOption, out var result))
+                {
+                    if (result > 0 && result <= 50)
+                    {
+                        if (result > 16)
+                        {
+                            result = 16;
+                        }
+
+                        settingsModel.Amount = result;
+                    }
+                }
+
+                if (extraOption.Contains("<@") || extraOption.Length == 18)
+                {
+                    var id = extraOption.Trim('@', '!', '<', '>');
+
+                    if (ulong.TryParse(id, out var discordUserId))
+                    {
+                        settingsModel.OtherDiscordUserId = discordUserId;
+                    }
+                }
+            }
+
+            return settingsModel;
         }
     }
 }
