@@ -459,11 +459,12 @@ namespace FMBot.Bot.Commands.LastFM
                     trackLength.Seconds);
 
                 var pitch = StringExtensions.KeyIntToPitchString(spotifyTrack.Key.GetValueOrDefault());
+                var bpm = $"{spotifyTrack.Tempo.GetValueOrDefault():0.0}";
 
                 this._embed.AddField("Info",
                     $"`{formattedTrackLength}` duration\n" +
                     $"`{pitch}` key\n" +
-                    $"`{spotifyTrack.Tempo.GetValueOrDefault()}` bpm\n",
+                    $"`{bpm}` bpm\n",
                     true);
             }
             else
