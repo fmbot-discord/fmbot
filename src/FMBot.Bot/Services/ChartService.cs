@@ -334,7 +334,7 @@ namespace FMBot.Bot.Services
                 chartSettings.Width = 3;
             }
 
-            var timeSettings = LastFMService.OptionsToTimeModel(extraOptions);
+            var timeSettings = LastFMService.StringOptionsToSettings(extraOptions);
 
             chartSettings.TimeSpan = timeSettings.LastStatsTimeSpan;
             chartSettings.TimespanString = $"{timeSettings.Description} Chart";

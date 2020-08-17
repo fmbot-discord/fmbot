@@ -12,6 +12,7 @@ using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.LastFM.Services;
 using IF.Lastfm.Core.Api.Enums;
+using Serilog;
 using static FMBot.Bot.FMBotUtil;
 using Image = Discord.Image;
 
@@ -28,6 +29,8 @@ namespace FMBot.Bot.Services
         private readonly UserService _userService;
         private readonly GuildService _guildService;
         private readonly DiscordShardedClient _client;
+
+        private readonly ILogger logger = Log.ForContext<TimerService>();
 
         private bool _timerEnabled;
 
@@ -64,12 +67,12 @@ namespace FMBot.Bot.Services
                             break;
                     }
 
-                    this._logger.Log($"Featured: Picked mode {randomAvatarMode} - {randomAvatarModeDesc}");
+                    Log.Information($"Featured: Picked mode {randomAvatarMode} - {randomAvatarModeDesc}");
 
                     try
                     {
                         var lastFMUserName = await this._userService.GetRandomLastFMUserAsync();
-                        this._logger.Log($"Featured: Picked user {lastFMUserName}");
+                        Log.Information($"Featured: Picked user {lastFMUserName}");
 
                         switch (randomAvatarMode)
                         {
@@ -90,7 +93,7 @@ namespace FMBot.Bot.Services
                                                    $"by {currentTrack.ArtistName} \n \n" +
                                                    $"{randomAvatarModeDesc} from {lastFMUserName}";
 
-                                this._logger.Log("Featured: Changing avatar to: " + this._trackString);
+                                Log.Information("Featured: Changing avatar to: " + this._trackString);
 
                                 if (albumImages?.Large != null)
                                 {
@@ -98,7 +101,7 @@ namespace FMBot.Bot.Services
                                 }
                                 else
                                 {
-                                    this._logger.Log("Featured: Album had no image, switching to alternative avatar mode");
+                                    Log.Information("Featured: Album had no image, switching to alternative avatar mode");
                                     goto case 3;
                                 }
 
@@ -122,7 +125,7 @@ namespace FMBot.Bot.Services
 
                                 if (!albums.Any())
                                 {
-                                    this._logger.Log($"Featured: User {lastFMUserName} had no albums, switching to different user.");
+                                    Log.Information($"Featured: User {lastFMUserName} had no albums, switching to different user.");
                                     lastFMUserName = await this._userService.GetRandomLastFMUserAsync();
                                     albums = await this._lastFMService.GetTopAlbumsAsync(lastFMUserName, timespan, 10);
                                 }
@@ -148,7 +151,7 @@ namespace FMBot.Bot.Services
 
                                     if (albumImage?.Large != null)
                                     {
-                                        this._logger.Log($"Featured: Album {i} success, changing avatar to: \n" +
+                                        Log.Information($"Featured: Album {i} success, changing avatar to: \n" +
                                                          $"{this._trackString}");
 
                                         ChangeToNewAvatar(client, albumImage.Large.AbsoluteUri);
@@ -156,7 +159,7 @@ namespace FMBot.Bot.Services
                                     }
                                     else
                                     {
-                                        this._logger.Log($"Featured: Album {i} had no image, switching to alternative album");
+                                        Log.Information($"Featured: Album {i} had no image, switching to alternative album");
                                         i++;
                                     }
                                 }
@@ -166,7 +169,7 @@ namespace FMBot.Bot.Services
                     }
                     catch (Exception e)
                     {
-                        this._logger.LogException("ChangeFeaturedAvatar", e);
+                        Log.Error("ChangeFeaturedAvatar", e);
                     }
                 },
                 null,
@@ -175,7 +178,7 @@ namespace FMBot.Bot.Services
 
             this._internalStatsTimer = new Timer(async _ =>
                 {
-                    logger.Log("Updating metrics");
+                    Log.Information("Updating metrics");
                     Statistics.DiscordServerCount.Set(client.Guilds.Count);
 
                     try
@@ -190,7 +193,7 @@ namespace FMBot.Bot.Services
 
                     if (string.IsNullOrEmpty(ConfigData.Data.Bot.Status))
                     {
-                        logger.Log("Updating status");
+                        Log.Information("Updating status");
                         await client.SetGameAsync($"{ConfigData.Data.Bot.Prefix} | {client.Guilds.Count} servers | fmbot.xyz");
                     }
                 },
@@ -202,7 +205,7 @@ namespace FMBot.Bot.Services
                 {
                     if (client.CurrentUser.Id.Equals(Constants.BotProductionId) && ConfigData.Data.BotLists != null && !string.IsNullOrEmpty(ConfigData.Data.BotLists.TopGgApiToken))
                     {
-                        logger.Log("Updating top.gg server count");
+                        Log.Information("Updating top.gg server count");
                         var dblApi = new AuthDiscordBotListApi(Constants.BotProductionId, ConfigData.Data.BotLists.TopGgApiToken);
 
                         try
@@ -212,12 +215,12 @@ namespace FMBot.Bot.Services
                         }
                         catch (Exception e)
                         {
-                            logger.LogException("Exception while updating top.gg count!", e);
+                            Log.Error("Exception while updating top.gg count!", e);
                         }
                     }
                     else
                     {
-                        logger.Log("Non-production bot found or top.gg token not entered, cancelling top.gg server count updater");
+                        Log.Information("Non-production bot found or top.gg token not entered, cancelling top.gg server count updater");
                         this._externalStatsTimer.Change(Timeout.Infinite, Timeout.Infinite);
                     }
                 },
@@ -263,7 +266,7 @@ namespace FMBot.Bot.Services
                     }
 
                     output.Close();
-                    this._logger.Log("New avatar downloaded");
+                    Log.Information("New avatar downloaded");
                 }
 
                 if (File.Exists(GlobalVars.ImageFolder + "newavatar.png"))
@@ -271,27 +274,24 @@ namespace FMBot.Bot.Services
                     var fileStream = new FileStream(GlobalVars.ImageFolder + "newavatar.png", FileMode.Open);
                     await client.CurrentUser.ModifyAsync(u => u.Avatar = new Image(fileStream));
                     fileStream.Close();
-                    this._logger.Log("Avatar succesfully changed");
+                    Log.Information("Avatar succesfully changed");
                 }
 
-                await Task.Delay(2000);
-
-                var broadcastServerId = ConfigData.Data.Bot.BaseServerId;
-                var broadcastChannelId = ConfigData.Data.Bot.FeaturedChannelId;
-
-                var guild = client.GetGuild(broadcastServerId);
-                var channel = guild.GetTextChannel(broadcastChannelId);
+                await Task.Delay(2500);
 
                 var builder = new EmbedBuilder();
                 var selfUser = client.CurrentUser;
                 builder.WithThumbnailUrl(selfUser.GetAvatarUrl());
                 builder.AddField("Featured:", this._trackString);
 
+                var guild = client.GetGuild(ConfigData.Data.Bot.BaseServerId);
+                var channel = guild.GetTextChannel(ConfigData.Data.Bot.FeaturedChannelId);
+
                 await channel.SendMessageAsync("", false, builder.Build());
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                this._logger.LogException("ChangeToNewAvatar", e);
+                Log.Error(exception, nameof(ChangeToNewAvatar));
             }
         }
 
@@ -300,7 +300,7 @@ namespace FMBot.Bot.Services
             try
             {
                 this._trackString = "FMBot Default Avatar";
-                this._logger.Log("Changed avatar to: " + this._trackString);
+                Log.Information("Changed avatar to: " + this._trackString);
                 var fileStream = new FileStream(GlobalVars.ImageFolder + "avatar.png", FileMode.Open);
                 var image = new Image(fileStream);
                 await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
@@ -308,7 +308,7 @@ namespace FMBot.Bot.Services
             }
             catch (Exception e)
             {
-                this._logger.LogException("UseDefaultAvatar", e);
+                Log.Error("UseDefaultAvatar", e);
             }
         }
 
@@ -317,8 +317,7 @@ namespace FMBot.Bot.Services
             try
             {
                 this._trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                this._logger.Log("Changed avatar to: " + this._trackString);
-                //FileStream fileStream = new FileStream(GlobalVars.CoversFolder + ArtistName + " - " + AlbumName + ".png", FileMode.Open);
+                Log.Information("Changed avatar to: " + this._trackString);
                 var fileStream = new FileStream(GlobalVars.ImageFolder + "censored.png", FileMode.Open);
                 var image = new Image(fileStream);
                 await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
@@ -326,11 +325,8 @@ namespace FMBot.Bot.Services
 
                 await Task.Delay(5000);
 
-                var BroadcastServerID = ConfigData.Data.Bot.BaseServerId;
-                var BroadcastChannelID = ConfigData.Data.Bot.FeaturedChannelId;
-
-                var guild = client.GetGuild(BroadcastServerID);
-                var channel = guild.GetTextChannel(BroadcastChannelID);
+                var guild = client.GetGuild(ConfigData.Data.Bot.BaseServerId);
+                var channel = guild.GetTextChannel(ConfigData.Data.Bot.FeaturedChannelId);
 
                 var builder = new EmbedBuilder();
                 var SelfUser = client.CurrentUser;
@@ -341,7 +337,7 @@ namespace FMBot.Bot.Services
             }
             catch (Exception e)
             {
-                this._logger.LogException("UseLocalAvatar", e);
+                Log.Error("UseLocalAvatar", e);
             }
         }
 
@@ -361,11 +357,11 @@ namespace FMBot.Bot.Services
                 ChangeToNewAvatar(this._client, link);
 
                 this._trackString = desc;
-                this._logger.Log("Changed featured to: " + this._trackString);
+                Log.Information("Changed featured to: " + this._trackString);
             }
             catch (Exception e)
             {
-                this._logger.LogException("UseCustomAvatarFromLink", e);
+                Log.Error("UseCustomAvatarFromLink", e);
             }
         }
 

@@ -103,7 +103,7 @@ namespace FMBot.Bot.Commands.LastFM
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
             this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            this._embedAuthor.WithName($"UserArtist info about {artistInfo.Name} for {userTitle}");
+            this._embedAuthor.WithName($"Artist info about {artistInfo.Name} for {userTitle}");
             this._embedAuthor.WithUrl(artistInfo.Url);
             this._embed.WithAuthor(this._embedAuthor);
 
@@ -207,40 +207,39 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays top artists.")]
         [Alias("al", "as", "ta", "artistlist", "artists", "artistslist")]
         [LoginRequired]
-        public async Task TopArtistsAsync(string time = "weekly", int num = 10, string user = null)
+        public async Task TopArtistsAsync(params string[] extraOptions)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (time == "help")
+            if (extraOptions.Any() && extraOptions.First() == "help")
             {
-                await ReplyAsync(
-                    $"Usage: `{prfx}artists '{Constants.CompactTimePeriodList}' 'number of artists (max 16)' 'lastfm username/discord user'`");
+                this._embed.WithTitle($"{prfx}topartists options");
+                this._embed.WithDescription($"- `{Constants.CompactTimePeriodList}`\n" +
+                                            $"- `number of artists (max 16)`\n" +
+                                            $"- `user mention/id`");
+
+                this._embed.AddField("Example",
+                    $"`{prfx}topartists @drasil alltime 11`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
+                    this.Context.Message.Content);
                 return;
             }
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            if (num > 16)
-            {
-                num = 16;
-            }
-            if (num < 1)
-            {
-                num = 1;
-            }
-
-            var timePeriod = LastFMService.StringToChartTimePeriod(time);
-            var timeSpan = LastFMService.ChartTimePeriodToLastStatsTimeSpan(timePeriod);
+            var settings = LastFMService.StringOptionsToSettings(extraOptions);
 
             try
             {
                 var lastFMUserName = userSettings.UserNameLastFM;
                 var self = true;
 
-                if (user != null)
+                if (settings.OtherDiscordUserId.HasValue)
                 {
-                    var alternativeLastFmUserName = await FindUser(user);
+                    var alternativeLastFmUserName = await FindUserFromId(settings.OtherDiscordUserId.Value);
                     if (!string.IsNullOrEmpty(alternativeLastFmUserName))
                     {
                         lastFMUserName = alternativeLastFmUserName;
@@ -248,7 +247,7 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                 }
 
-                var artists = await this._lastFmService.GetTopArtistsAsync(lastFMUserName, timeSpan, num);
+                var artists = await this._lastFmService.GetTopArtistsAsync(lastFMUserName, settings.LastStatsTimeSpan, settings.Amount);
 
                 if (artists?.Any() != true)
                 {
@@ -269,9 +268,9 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                var artistsString = num == 1 ? "artist" : "artists";
-                this._embedAuthor.WithName($"Top {num} {timePeriod} {artistsString} for {userTitle}");
-                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{lastFMUserName}/library/artists?date_preset={LastFMService.ChartTimePeriodToSiteTimePeriodUrl(timePeriod)}");
+                var artistsString = settings.Amount == 1 ? "artist" : "artists";
+                this._embedAuthor.WithName($"Top {settings.Amount} {settings.Description.ToLower()} {artistsString} for {userTitle}");
+                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{lastFMUserName}/library/artists?date_preset={settings.UrlParameter}");
                 this._embed.WithAuthor(this._embedAuthor);
 
                 var description = "";
@@ -320,11 +319,12 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var timeType = LastFMService.OptionsToTimeModel(
+            var timeType = LastFMService.StringOptionsToSettings(
                 extraOptions,
                 LastStatsTimeSpan.Overall,
                 ChartTimePeriod.AllTime,
-                "ALL");
+                "ALL",
+                "overall");
 
             var tasteSettings = new TasteSettings
             {
@@ -390,7 +390,7 @@ namespace FMBot.Bot.Commands.LastFM
                     var taste = await this._artistsService.GetEmbedTasteAsync(ownArtists, otherArtists, amount, timeType.ChartTimePeriod);
 
                     this._embed.WithDescription(taste.Description);
-                    this._embed.AddField("UserArtist", taste.LeftDescription, true);
+                    this._embed.AddField("Artist", taste.LeftDescription, true);
                     this._embed.AddField("Plays", taste.RightDescription, true);
                 }
                 else
@@ -669,6 +669,23 @@ namespace FMBot.Bot.Commands.LastFM
             if (!this._guildService.CheckIfDM(this.Context))
             {
                 var guildUser = await this._guildService.FindUserFromGuildAsync(this.Context, user);
+
+                if (guildUser != null)
+                {
+                    var guildUserLastFm = await this._userService.GetUserSettingsAsync(guildUser);
+
+                    return guildUserLastFm?.UserNameLastFM;
+                }
+            }
+
+            return null;
+        }
+
+        private async Task<string> FindUserFromId(ulong userId)
+        {
+            if (!this._guildService.CheckIfDM(this.Context))
+            {
+                var guildUser = await this._guildService.FindUserFromGuildAsync(this.Context, userId);
 
                 if (guildUser != null)
                 {

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace FMBot.Persistence.Domain.Models
 {
@@ -19,5 +20,7 @@ namespace FMBot.Persistence.Domain.Models
         public string SpotifyId { get; set; }
 
         public string[] Aliases { get; set; }
+
+        public ICollection<Track> Tracks { get; set; }
     }
 }

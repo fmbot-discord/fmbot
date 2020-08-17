@@ -16,6 +16,7 @@ using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.VisualBasic;
+using Serilog;
 using Constants = FMBot.Bot.Resources.Constants;
 using ImageFormat = System.Drawing.Imaging.ImageFormat;
 
@@ -213,7 +214,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var albumInfo = await this._lastFmService.GetAlbumImagesAsync(searchResult.Artist, searchResult.Name);
 
-            if (albumInfo.Largest == null)
+            if (albumInfo == null || albumInfo.Largest == null)
             {
                 this._embed.WithDescription("Sorry, no album cover found for this album: \n" +
                                             $"{searchResult.Artist} - {searchResult.Name}\n" +
@@ -241,15 +242,14 @@ namespace FMBot.Bot.Commands.LastFM
             image.Save(imageMemoryStream, ImageFormat.Png);
             imageMemoryStream.Position = 0;
 
+            Log.Information("CommandUsed", this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
+                this.Context.Message.Content);
             await this.Context.Channel.SendFileAsync(
                 imageMemoryStream,
                 $"cover-{StringExtensions.ReplaceInvalidChars($"{searchResult.Artist}_{searchResult.Name}")}.png",
                 null,
                 false,
                 this._embed.Build());
-
-            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                this.Context.Message.Content);
         }
 
         private async Task<AlbumSearchModel> SearchAlbum(string[] albumValues, User userSettings)
@@ -297,40 +297,39 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays top albums.")]
         [Alias("abl", "abs", "tab", "albumlist", "albums", "albumslist")]
         [LoginRequired]
-        public async Task ArtistsAsync(string time = "weekly", int num = 8, string user = null)
+        public async Task TopAlbumsAsync(params string[] extraOptions)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (time == "help")
+            if (extraOptions.Any() && extraOptions.First() == "help")
             {
-                await ReplyAsync(
-                    $"Usage: `{prfx}topalbums '{Constants.CompactTimePeriodList}' 'number of albums (max 12)' 'lastfm username/discord user'`");
+                this._embed.WithTitle($"{prfx}topalbums options");
+                this._embed.WithDescription($"- `{Constants.CompactTimePeriodList}`\n" +
+                                            $"- `number of albums (max 16)`\n" +
+                                            $"- `user mention/id`");
+
+                this._embed.AddField("Example",
+                    $"`{prfx}topalbums alltime 9 @slipper`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
+                    this.Context.Message.Content);
                 return;
             }
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            if (num > 12)
-            {
-                num = 12;
-            }
-            if (num < 1)
-            {
-                num = 1;
-            }
-
-            var timePeriod = LastFMService.StringToChartTimePeriod(time);
-            var timeSpan = LastFMService.ChartTimePeriodToLastStatsTimeSpan(timePeriod);
+            var settings = LastFMService.StringOptionsToSettings(extraOptions);
 
             try
             {
                 var lastFMUserName = userSettings.UserNameLastFM;
                 var self = true;
 
-                if (user != null)
+                if (settings.OtherDiscordUserId.HasValue)
                 {
-                    var alternativeLastFmUserName = await FindUser(user);
+                    var alternativeLastFmUserName = await FindUserFromId(settings.OtherDiscordUserId.Value);
                     if (!string.IsNullOrEmpty(alternativeLastFmUserName))
                     {
                         lastFMUserName = alternativeLastFmUserName;
@@ -338,7 +337,7 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                 }
 
-                var albums = await this._lastFmService.GetTopAlbumsAsync(lastFMUserName, timeSpan, num);
+                var albums = await this._lastFmService.GetTopAlbumsAsync(lastFMUserName, settings.LastStatsTimeSpan, settings.Amount);
 
                 if (albums?.Any() != true)
                 {
@@ -359,9 +358,9 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                var artistsString = num == 1 ? "album" : "albums";
-                this._embedAuthor.WithName($"Top {num} {timePeriod} {artistsString} for {userTitle}");
-                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{lastFMUserName}/library/albums?date_preset={LastFMService.ChartTimePeriodToSiteTimePeriodUrl(timePeriod)}");
+                var artistsString = settings.Amount == 1 ? "album" : "albums";
+                this._embedAuthor.WithName($"Top {settings.Amount} {settings.Description.ToLower()} {artistsString} for {userTitle}");
+                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{lastFMUserName}/library/albums?date_preset={settings.UrlParameter}");
                 this._embed.WithAuthor(this._embedAuthor);
 
                 var description = "";
@@ -392,16 +391,11 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        private async Task<string> FindUser(string user)
+        private async Task<string> FindUserFromId(ulong userId)
         {
-            if (await this._lastFmService.LastFMUserExistsAsync(user))
-            {
-                return user;
-            }
-
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                var guildUser = await this._guildService.FindUserFromGuildAsync(this.Context, user);
+                var guildUser = await this._guildService.FindUserFromGuildAsync(this.Context, userId);
 
                 if (guildUser != null)
                 {
