@@ -104,8 +104,10 @@ namespace FMBot.Bot
                 .AddSingleton(this.Configuration) // Add the configuration to the collection
                 .AddHttpClient();
 
+            // These services can only be added after the config is loaded
             services
-                .AddTransient<ILastfmApi, LastfmApi>();
+                .AddTransient<ILastfmApi, LastfmApi>()
+                .AddSingleton<UpdateService>();
 
             using var context = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             try

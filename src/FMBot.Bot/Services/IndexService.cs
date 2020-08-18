@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using FMBot.Bot.Configurations;
@@ -10,11 +8,9 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using IF.Lastfm.Core.Api;
-using IF.Lastfm.Core.Api.Enums;
-using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using PostgreSQLCopyHelper;
@@ -23,19 +19,19 @@ namespace FMBot.Bot.Services
 {
     public class IndexService : IIndexService
     {
-        private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.LastFm.Key, ConfigData.Data.LastFm.Secret);
-
         private readonly IUserIndexQueue _userIndexQueue;
+        private readonly UpdateService _updateService;
 
-        public IndexService(IUserIndexQueue userIndexQueue)
+        public IndexService(IUserIndexQueue userIndexQueue, UpdateService updateService)
         {
             this._userIndexQueue = userIndexQueue;
             this._userIndexQueue.UsersToIndex.SubscribeAsync(OnNextAsync);
+            this._updateService = updateService;
         }
 
-        private async Task OnNextAsync(User obj)
+        private async Task OnNextAsync(User user)
         {
-            await StoreArtistsForUser(obj);
+            await this._updateService.InitialUserIndex(user);
         }
 
         public void IndexGuild(IReadOnlyList<User> users)
@@ -45,68 +41,6 @@ namespace FMBot.Bot.Services
             this._userIndexQueue.Publish(users.ToList());
         }
 
-        private async Task StoreArtistsForUser(User user)
-        {
-            Thread.Sleep(1300);
-
-            Console.WriteLine($"Starting artist store for {user.UserNameLastFM}");
-
-            var topArtists = new List<LastArtist>();
-
-            var amountOfPages = Constants.ArtistsToIndex / 1000;
-            for (int i = 1; i < amountOfPages + 1; i++)
-            {
-                var artistResult = await this._lastFMClient.User.GetTopArtists(user.UserNameLastFM,
-                    LastStatsTimeSpan.Overall, i, 1000);
-
-                topArtists.AddRange(artistResult);
-
-                if (artistResult.Count() < 1000)
-                {
-                    break;
-                }
-
-                Statistics.LastfmApiCalls.Inc();
-            }
-
-            if (topArtists.Count == 0)
-            {
-                return;
-            }
-
-            var now = DateTime.UtcNow;
-            var artists = topArtists.Select(a => new UserArtist
-            {
-                LastUpdated = now,
-                Name = a.Name,
-                Playcount = a.PlayCount.Value,
-                UserId = user.UserId
-            }).ToList();
-
-            await InsertArtistsIntoDatabase(artists, user.UserId, now);
-        }
-
-        private static async Task InsertArtistsIntoDatabase(IReadOnlyList<UserArtist> artists, int userId, DateTime now)
-        {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            var connString = db.Database.GetDbConnection().ConnectionString;
-            var copyHelper = new PostgreSQLCopyHelper<UserArtist>("public", "user_artists")
-                .MapText("name", x => x.Name)
-                .MapInteger("user_id", x => x.UserId)
-                .MapInteger("playcount", x => x.Playcount)
-                .MapTimeStamp("last_updated", x => x.LastUpdated);
-
-            await using var connection = new NpgsqlConnection(connString);
-            connection.Open();
-
-            await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.user_artists WHERE user_id = {userId};", connection);
-            await deleteCurrentArtists.ExecuteNonQueryAsync().ConfigureAwait(false);
-
-            await copyHelper.SaveAllAsync(connection, artists).ConfigureAwait(false);
-
-            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_indexed='{now:u}' WHERE user_id = {userId};", connection);
-            await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
-        }
 
         public async Task StoreGuildUsers(IGuild guild, IReadOnlyCollection<IGuildUser> guildUsers)
         {
