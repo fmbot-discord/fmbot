@@ -18,6 +18,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public int? Key { get; set; }
 
+        public int? Popularity { get; set; }
+
         public float? Tempo { get; set; }
 
         public int? DurationMs { get; set; }

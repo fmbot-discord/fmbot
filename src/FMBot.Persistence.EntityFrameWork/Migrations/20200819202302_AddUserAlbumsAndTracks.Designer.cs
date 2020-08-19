@@ -3,15 +3,17 @@ using System;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace FMBot.Persistence.EntityFrameWork.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    partial class FMBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20200819202302_AddUserAlbumsAndTracks")]
+    partial class AddUserAlbumsAndTracks
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -72,12 +74,12 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id")
-                        .HasName("pk_albums");
+                        .HasName("pk_album");
 
                     b.HasIndex("ArtistId")
-                        .HasName("ix_albums_artist_id");
+                        .HasName("ix_album_artist_id");
 
-                    b.ToTable("albums");
+                    b.ToTable("album");
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.Artist", b =>
@@ -398,12 +400,12 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("UserAlbumId")
-                        .HasName("pk_user_albums");
+                        .HasName("pk_user_album");
 
                     b.HasIndex("UserId")
-                        .HasName("ix_user_albums_user_id");
+                        .HasName("ix_user_album_user_id");
 
-                    b.ToTable("user_albums");
+                    b.ToTable("user_album");
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserArtist", b =>
@@ -468,12 +470,12 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("UserTrackId")
-                        .HasName("pk_user_tracks");
+                        .HasName("pk_user_track");
 
                     b.HasIndex("UserId")
-                        .HasName("ix_user_tracks_user_id");
+                        .HasName("ix_user_track_user_id");
 
-                    b.ToTable("user_tracks");
+                    b.ToTable("user_track");
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.Album", b =>
@@ -481,7 +483,7 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.HasOne("FMBot.Persistence.Domain.Models.Artist", "Artist")
                         .WithMany("Albums")
                         .HasForeignKey("ArtistId")
-                        .HasConstraintName("fk_albums_artists_artist_id")
+                        .HasConstraintName("fk_album_artists_artist_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -523,7 +525,7 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.HasOne("FMBot.Persistence.Domain.Models.Album", null)
                         .WithMany("Tracks")
                         .HasForeignKey("AlbumId")
-                        .HasConstraintName("fk_tracks_albums_album_id");
+                        .HasConstraintName("fk_tracks_album_album_id");
 
                     b.HasOne("FMBot.Persistence.Domain.Models.Artist", "Artist")
                         .WithMany("Tracks")
@@ -536,7 +538,7 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.HasOne("FMBot.Persistence.Domain.Models.User", "User")
                         .WithMany("Albums")
                         .HasForeignKey("UserId")
-                        .HasConstraintName("fk_user_albums_users_user_id")
+                        .HasConstraintName("fk_user_album_users_user_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -556,7 +558,7 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.HasOne("FMBot.Persistence.Domain.Models.User", "User")
                         .WithMany("Tracks")
                         .HasForeignKey("UserId")
-                        .HasConstraintName("fk_user_tracks_users_user_id")
+                        .HasConstraintName("fk_user_track_users_user_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

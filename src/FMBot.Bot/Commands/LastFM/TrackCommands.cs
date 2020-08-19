@@ -429,6 +429,8 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var track = await this.SearchTrack(trackValues, userSettings);
             if (track == null)
             {

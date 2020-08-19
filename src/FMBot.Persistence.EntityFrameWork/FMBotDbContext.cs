@@ -27,9 +27,13 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<Guild> Guilds { get; set; }
         public virtual DbSet<GuildUser> GuildUsers { get; set; }
         public virtual DbSet<User> Users { get; set; }
+
         public virtual DbSet<UserArtist> UserArtists { get; set; }
+        public virtual DbSet<UserAlbum> UserAlbums { get; set; }
+        public virtual DbSet<UserTrack> UserTracks { get; set; }
 
         public virtual DbSet<Artist> Artists { get; set; }
+        public virtual DbSet<Album> Albums { get; set; }
         public virtual DbSet<Track> Tracks { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -101,10 +105,28 @@ namespace FMBot.Persistence.EntityFrameWork
 
             modelBuilder.Entity<UserArtist>(entity =>
             {
-                entity.HasKey(a => a.ArtistId);
+                entity.HasKey(a => a.UserArtistId);
 
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Artists)
+                    .HasForeignKey(f => f.UserId);
+            });
+
+            modelBuilder.Entity<UserAlbum>(entity =>
+            {
+                entity.HasKey(a => a.UserAlbumId);
+
+                entity.HasOne(u => u.User)
+                    .WithMany(a => a.Albums)
+                    .HasForeignKey(f => f.UserId);
+            });
+
+            modelBuilder.Entity<UserTrack>(entity =>
+            {
+                entity.HasKey(a => a.UserTrackId);
+
+                entity.HasOne(u => u.User)
+                    .WithMany(a => a.Tracks)
                     .HasForeignKey(f => f.UserId);
             });
 
@@ -116,6 +138,21 @@ namespace FMBot.Persistence.EntityFrameWork
                     .HasConversion(
                         v => string.Join(',', v),
                         v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
+
+                entity.Property(e => e.Genres)
+                    .HasConversion(
+                        v => string.Join(',', v),
+                        v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
+            });
+
+
+            modelBuilder.Entity<Album>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+
+                entity.HasOne(d => d.Artist)
+                    .WithMany(p => p.Albums)
+                    .HasForeignKey(d => d.ArtistId);
             });
 
             modelBuilder.Entity<Track>(entity =>

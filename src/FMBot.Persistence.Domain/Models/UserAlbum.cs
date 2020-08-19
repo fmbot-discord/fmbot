@@ -10,6 +10,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public string Name { get; set; }
 
+        public string ArtistName { get; set; }
+
         public int Playcount { get; set; }
 
         public DateTime LastUpdated { get; set; }
