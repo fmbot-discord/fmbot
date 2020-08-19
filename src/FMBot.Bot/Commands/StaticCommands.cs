@@ -166,7 +166,7 @@ namespace FMBot.Bot.Commands
                 "Displays last scrobbles, and looks different depending on the mode you've set.");
 
             this._embed.AddField("Setting up: `.fmset lastfmusername`",
-                $"For more settings, please use `{prefix}fmset help`.");
+                $"For more settings, please use `{prefix}set help`.");
 
             if (customPrefix)
             {
