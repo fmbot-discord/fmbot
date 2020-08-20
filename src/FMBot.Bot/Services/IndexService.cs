@@ -31,7 +31,7 @@ namespace FMBot.Bot.Services
 
         private async Task OnNextAsync(User user)
         {
-            await this._updateService.InitialUserIndex(user);
+            await this._updateService.IndexUser(user);
         }
 
         public void IndexGuild(IReadOnlyList<User> users)
@@ -39,6 +39,13 @@ namespace FMBot.Bot.Services
             Console.WriteLine($"Starting artist update for {users.Count} users");
 
             this._userIndexQueue.Publish(users.ToList());
+        }
+
+        public async Task UpdateUser(User user)
+        {
+            Console.WriteLine($"Starting update for {user.UserNameLastFM}");
+
+            await this._updateService.UpdateUser(user);
         }
 
 
@@ -73,6 +80,8 @@ namespace FMBot.Bot.Services
             await deleteCurrentArtists.ExecuteNonQueryAsync().ConfigureAwait(false);
 
             await copyHelper.SaveAllAsync(connection, users).ConfigureAwait(false);
+
+            Console.WriteLine($"Stored guild users");
         }
 
         public async Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> guildUsers)

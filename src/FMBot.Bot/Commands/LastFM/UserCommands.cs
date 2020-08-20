@@ -31,7 +31,8 @@ namespace FMBot.Bot.Commands.LastFM
             Logger.Logger logger,
             IPrefixService prefixService,
             ILastfmApi lastfmApi,
-            GuildService guildService)
+            GuildService guildService,
+            LastFMService lastFmService)
         {
             this._timer = timer;
             this._logger = logger;
@@ -39,7 +40,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._guildService = guildService;
             this._friendsService = new FriendsService();
             this._userService = new UserService();
-            this._lastFmService = new LastFMService(lastfmApi);
+            this._lastFmService = lastFmService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();

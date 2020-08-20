@@ -36,14 +36,15 @@ namespace FMBot.Bot.Commands.LastFM
             ILastfmApi lastfmApi,
             IChartService chartService,
             GuildService guildService,
-            UserService userService)
+            UserService userService,
+            LastFMService lastFmService)
         {
             this._logger = logger;
             this._prefixService = prefixService;
             this._chartService = chartService;
             this._guildService = guildService;
             this._userService = userService;
-            this._lastFmService = new LastFMService(lastfmApi);
+            this._lastFmService = lastFmService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 using CXuesong.Uel.Serilog.Sinks.Discord;
 using Discord;
@@ -107,6 +108,7 @@ namespace FMBot.Bot
             // These services can only be added after the config is loaded
             services
                 .AddTransient<ILastfmApi, LastfmApi>()
+                .AddTransient<LastFMService>()
                 .AddSingleton<UpdateService>();
 
             using var context = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);

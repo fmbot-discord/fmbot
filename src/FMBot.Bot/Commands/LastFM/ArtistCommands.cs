@@ -10,6 +10,8 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
@@ -40,11 +42,12 @@ namespace FMBot.Bot.Commands.LastFM
             ArtistsService artistsService,
             WhoKnowsService whoKnowsService,
             GuildService guildService,
-            UserService userService)
+            UserService userService,
+            LastFMService lastFmService)
         {
             this._logger = logger;
             this._lastfmApi = lastfmApi;
-            this._lastFmService = new LastFMService(lastfmApi);
+            this._lastFmService = lastFmService;
             this._prefixService = prefixService;
             this._artistsService = artistsService;
             this._whoKnowsService = whoKnowsService;

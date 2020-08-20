@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;

@@ -8,6 +8,8 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.Domain;
+using FMBot.LastFM.Services;
 using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore.Internal;
 using SkiaSharp;

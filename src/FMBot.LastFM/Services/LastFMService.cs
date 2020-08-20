@@ -1,35 +1,37 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Globalization;
 using System.Linq;
 using System.Net;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using FMBot.Bot.Configurations;
-using FMBot.Bot.Extensions;
-using FMBot.Bot.Models;
-using FMBot.Bot.Resources;
+using FMBot.Domain;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.ResponseModels;
 using FMBot.LastFM.Domain.Types;
-using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
+using Microsoft.Extensions.Configuration;
 
-namespace FMBot.Bot.Services
+namespace FMBot.LastFM.Services
 {
-    internal class LastFMService
+    public class LastFMService
     {
-        private readonly LastfmClient _lastFMClient = new LastfmClient(ConfigData.Data.LastFm.Key, ConfigData.Data.LastFm.Secret);
+        private readonly LastfmClient _lastFMClient;
 
         private readonly ILastfmApi _lastfmApi;
 
-        public LastFMService(ILastfmApi lastfmApi)
+        private readonly string _key;
+        private readonly string _secret;
+
+        public LastFMService(IConfigurationRoot configuration, ILastfmApi lastfmApi)
         {
+            this._key = configuration.GetSection("LastFm:Key").Value;
+            this._secret = configuration.GetSection("LastFm:Secret").Value;
+            this._lastFMClient = new LastfmClient(this._key, this._secret);
             this._lastfmApi = lastfmApi;
         }
 
@@ -225,7 +227,7 @@ namespace FMBot.Bot.Services
 
         // Top tracks
         public async Task<Response<TopTracksResponse>> GetTopTracksAsync(string lastFMUserName,
-            string period, int count = 2)
+            string period, int count = 2, int amountOfPages = 1)
         {
             var queryParams = new Dictionary<string, string>
             {
@@ -234,11 +236,40 @@ namespace FMBot.Bot.Services
                 {"period", period },
             };
 
-            var artistCall = await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
+            if (amountOfPages == 1)
+            {
+                Statistics.LastfmApiCalls.Inc();
+                return await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
+            }
+            else
+            {
+                var response = await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
+                if (response.Success && response.Content.TopTracks.Track.Count == 1000)
+                {
+                    for (var i = 1; i < amountOfPages; i++)
+                    {
+                        queryParams.Remove("page");
+                        queryParams.Add("page", (i + 1).ToString());
 
-            Statistics.LastfmApiCalls.Inc();
+                        var pageResponse = await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
 
-            return artistCall;
+                        if (pageResponse.Success)
+                        {
+                            response.Content.TopTracks.Track.AddRange(pageResponse.Content.TopTracks.Track);
+                            if (pageResponse.Content.TopTracks.Track.Count < 1000)
+                            {
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                return response;
+            }
         }
 
         // Check if lastfm user exists

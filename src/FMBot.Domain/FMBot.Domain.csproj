@@ -5,7 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FMBot.Domain\FMBot.Domain.csproj" />
+    <PackageReference Include="Inflatable.Lastfm" Version="1.2.0" />
+    <PackageReference Include="prometheus-net" Version="3.6.0" />
   </ItemGroup>
 
 </Project>

@@ -2,26 +2,30 @@ using System;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 
-namespace FMBot.Bot.Commands.LastFM
+namespace FMBot.Bot.Commands
 {
     public class IndexCommands : ModuleBase
     {
         private readonly EmbedBuilder _embed;
         private readonly GuildService _guildService;
+        private readonly UserService _userService;
         private readonly IIndexService _indexService;
         private readonly Logger.Logger _logger;
 
         public IndexCommands(Logger.Logger logger,
             IIndexService indexService,
-            GuildService guildService)
+            GuildService guildService,
+            UserService userService)
         {
             this._logger = logger;
             this._indexService = indexService;
             this._guildService = guildService;
+            this._userService = userService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
         }
@@ -132,6 +136,19 @@ namespace FMBot.Bot.Commands.LastFM
                     "Something went wrong while indexing users. Please let us know as this feature is in beta.");
                 await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
             }
+        }
+
+        [Command("update", RunMode = RunMode.Async)]
+        [Summary("Update user.")]
+        [LoginRequired]
+        public async Task UpdateUserAsync()
+        {
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            await this._indexService.UpdateUser(userSettings);
+
+            await ReplyAsync("You have been updated");
+
         }
     }
 }

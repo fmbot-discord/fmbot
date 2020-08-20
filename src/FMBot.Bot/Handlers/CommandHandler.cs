@@ -10,6 +10,7 @@ using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain;
 
 namespace FMBot.Bot.Handlers
 {

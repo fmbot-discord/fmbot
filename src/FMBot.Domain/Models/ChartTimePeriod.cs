@@ -1,4 +1,4 @@
-namespace FMBot.Persistence.Domain.Models
+namespace FMBot.Domain.Models
 {
     public enum ChartTimePeriod
     {

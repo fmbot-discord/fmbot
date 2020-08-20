@@ -10,6 +10,7 @@ using DiscordBotsList.Api;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.Domain;
 using FMBot.LastFM.Services;
 using IF.Lastfm.Core.Api.Enums;
 using Serilog;
@@ -20,7 +21,6 @@ namespace FMBot.Bot.Services
 {
     public class TimerService
     {
-        private readonly Logger.Logger _logger;
         private readonly Timer _timer;
         private readonly Timer _externalStatsTimer;
         private readonly Timer _internalStatsTimer;
@@ -36,12 +36,11 @@ namespace FMBot.Bot.Services
 
         private string _trackString = "";
 
-        public TimerService(DiscordShardedClient client, Logger.Logger logger, ILastfmApi lastfmApi)
+        public TimerService(DiscordShardedClient client, ILastfmApi lastfmApi, LastFMService lastFmService)
         {
-            this._logger = logger;
             this._lastfmApi = lastfmApi;
             this._client = client;
-            this._lastFMService = new LastFMService(this._lastfmApi);
+            this._lastFMService = lastFmService;
             this._userService = new UserService();
             this._guildService = new GuildService();
 

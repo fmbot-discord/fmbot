@@ -39,11 +39,12 @@ namespace FMBot.Bot.Commands.LastFM
         public AlbumCommands(Logger.Logger logger,
             ILastfmApi lastfmApi,
             IPrefixService prefixService,
-            UserService userService)
+            UserService userService,
+            LastFMService lastFmService)
         {
             this._logger = logger;
             this._lastfmApi = lastfmApi;
-            this._lastFmService = new LastFMService(lastfmApi);
+            this._lastFmService = lastFmService;
             this._prefixService = prefixService;
             this._guildService = new GuildService();
             this._userService = userService;
