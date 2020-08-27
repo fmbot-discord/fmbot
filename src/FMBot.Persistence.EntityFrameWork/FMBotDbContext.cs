@@ -113,7 +113,8 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Artists)
-                    .HasForeignKey(f => f.UserId);
+                    .HasForeignKey(f => f.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<UserAlbum>(entity =>
@@ -122,7 +123,8 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Albums)
-                    .HasForeignKey(f => f.UserId);
+                    .HasForeignKey(f => f.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<UserTrack>(entity =>
@@ -131,7 +133,8 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Tracks)
-                    .HasForeignKey(f => f.UserId);
+                    .HasForeignKey(f => f.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<Artist>(entity =>
@@ -169,7 +172,8 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.ArtistAliases)
-                    .HasForeignKey(d => d.ArtistId);
+                    .HasForeignKey(d => d.ArtistId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<ArtistGenre>(entity =>
@@ -178,7 +182,8 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.ArtistGenres)
-                    .HasForeignKey(d => d.ArtistId);
+                    .HasForeignKey(d => d.ArtistId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }
