@@ -155,10 +155,24 @@ namespace FMBot.Bot.Commands
             }
             else
             {
+                this._embed.WithDescription($"<a:loading:748652128502939778> Updating user {userSettings.UserNameLastFM}...");
+                var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
                 await this._updateService.UpdateUser(userSettings);
+
+
+                await message.ModifyAsync(m =>
+                {
+                    m.Embed = new EmbedBuilder()
+                        .WithDescription($"✔️ {userSettings.UserNameLastFM} has been updated.")
+                        .WithColor(Constants.SuccessColorGreen)
+                        .Build();
+                });
+
+
+                Console.WriteLine("Test");
             }
 
-            await ReplyAsync("You have been updated");
         }
     }
 }

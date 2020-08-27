@@ -33,7 +33,7 @@ namespace FMBot.LastFM.Services
         }
 
 
-        public async Task UpdateUser(User user)
+        public async Task<int> UpdateUser(User user)
         {
             Thread.Sleep(1000);
 
@@ -42,7 +42,7 @@ namespace FMBot.LastFM.Services
             var recentTracks = await this._lastFMClient.User.GetRecentScrobbles(user.UserNameLastFM, count: 1000);
             if (!recentTracks.Success || !recentTracks.Content.Any())
             {
-                return;
+                return 0;
             }
 
             var newScrobbles = recentTracks.Content
@@ -52,7 +52,7 @@ namespace FMBot.LastFM.Services
             if (!newScrobbles.Any())
             {
                 Console.WriteLine($"No new scrobbles for {user.UserNameLastFM}");
-                return;
+                return 0;
             }
 
             await UpdateArtistsForUser(user, newScrobbles);
@@ -63,6 +63,8 @@ namespace FMBot.LastFM.Services
 
             var latestScrobbleDate = recentTracks.Content.OrderByDescending(o => o.TimePlayed.Value.DateTime).First().TimePlayed.Value.DateTime;
             await SetUserUpdateTime(user.UserId, DateTime.UtcNow, latestScrobbleDate);
+
+            return newScrobbles.Count;
         }
 
         private async Task UpdateArtistsForUser(User user, IEnumerable<LastTrack> newScrobbles)
