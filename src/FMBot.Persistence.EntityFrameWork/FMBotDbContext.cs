@@ -36,13 +36,17 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<Album> Albums { get; set; }
         public virtual DbSet<Track> Tracks { get; set; }
 
+        public virtual DbSet<ArtistGenre> ArtistGenres { get; set; }
+        public virtual DbSet<ArtistAlias> ArtistAliases { get; set; }
+
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
                 // When creating migrations, make sure to enter the connection string below.
                 optionsBuilder.UseNpgsql(string.IsNullOrEmpty(this._connectionString)
-                    ? "Host=localhost;Port=5433;Username=postgres;Password=password;Database=fmbot;Command Timeout=15;Timeout=30;Persist Security Info=True"
+                    ? "Host=localhost;Port=5433;Username=postgres;Password=password;Database=fmbot;Command Timeout=120;Timeout=120;Persist Security Info=True"
                     : this._connectionString);
 
                 optionsBuilder.UseSnakeCaseNamingConvention();
@@ -138,11 +142,6 @@ namespace FMBot.Persistence.EntityFrameWork
                     .HasConversion(
                         v => string.Join(',', v),
                         v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
-
-                entity.Property(e => e.Genres)
-                    .HasConversion(
-                        v => string.Join(',', v),
-                        v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
             });
 
 
@@ -161,6 +160,24 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.Tracks)
+                    .HasForeignKey(d => d.ArtistId);
+            });
+
+            modelBuilder.Entity<ArtistAlias>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+
+                entity.HasOne(d => d.Artist)
+                    .WithMany(p => p.ArtistAliases)
+                    .HasForeignKey(d => d.ArtistId);
+            });
+
+            modelBuilder.Entity<ArtistGenre>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+
+                entity.HasOne(d => d.Artist)
+                    .WithMany(p => p.ArtistGenres)
                     .HasForeignKey(d => d.ArtistId);
             });
         }

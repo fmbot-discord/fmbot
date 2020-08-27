@@ -4,18 +4,16 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FMBot.Persistence.Domain.Models;
-using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Objects;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using PostgreSQLCopyHelper;
 
 namespace FMBot.LastFM.Services
 {
-    public class UpdateService
+    public class GlobalIndexService
     {
         private readonly LastfmClient _lastFMClient;
 
@@ -26,7 +24,7 @@ namespace FMBot.LastFM.Services
 
         private readonly LastFMService lastFmService;
 
-        public UpdateService(
+        public GlobalIndexService(
             IConfigurationRoot configuration,
             LastFMService lastFmService)
         {
@@ -53,7 +51,8 @@ namespace FMBot.LastFM.Services
             var tracks = await GetTracksForUserFromLastFm(user);
             await InsertTracksIntoDatabase(tracks, user.UserId, now);
 
-            await SetUserIndexTime(user.UserId, now);
+            var latestScrobbleDate = await GetLatestScrobbleDate(user);
+            await SetUserIndexTime(user.UserId, now, latestScrobbleDate);
         }
 
         private async Task<IReadOnlyList<UserArtist>> GetArtistsForUserFromLastFm(User user)
@@ -206,125 +205,24 @@ namespace FMBot.LastFM.Services
 
         }
 
-        private async Task SetUserIndexTime(int userId, DateTime now)
+        private async Task SetUserIndexTime(int userId, DateTime now, DateTime lastScrobble)
         {
             await using var connection = new NpgsqlConnection(this._connectionString);
             connection.Open();
 
-            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_indexed='{now:u}', last_scrobble_update = '{now:u}' WHERE user_id = {userId};", connection);
+            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_indexed='{now:u}', last_scrobble_update = '{lastScrobble:u}' WHERE user_id = {userId};", connection);
             await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
-        public async Task UpdateUser(User user)
+        private async Task<DateTime> GetLatestScrobbleDate(User user)
         {
-            Thread.Sleep(1000);
-
-            Console.WriteLine($"Updating {user.UserNameLastFM}");
-
-            var recentTracks = await this._lastFMClient.User.GetRecentScrobbles(user.UserNameLastFM, count: 1000);
-            if (!recentTracks.Success || !recentTracks.Content.Any())
+            var recentTracks = await this._lastFMClient.User.GetRecentScrobbles(user.UserNameLastFM, count: 1);
+            if (!recentTracks.Success || !recentTracks.Content.Any() || !recentTracks.Content.First().TimePlayed.HasValue)
             {
-                return;
+                return DateTime.UtcNow;
             }
 
-            var newScrobbles = recentTracks.Content
-                .Where(w => w.TimePlayed.Value.DateTime > user.LastScrobbleUpdate)
-                .ToList();
-
-            if (!newScrobbles.Any())
-            {
-                Console.WriteLine($"No new scrobbles for {user.UserNameLastFM}");
-                return;
-            }
-
-            await UpdateArtistsForUser(user, newScrobbles);
-
-            await UpdateAlbumsForUser(user, newScrobbles);
-
-            await UpdateTracksForUser(user, newScrobbles);
-        }
-
-
-        private async Task UpdateArtistsForUser(User user, IEnumerable<LastTrack> newScrobbles)
-        {
-            await using var db = new FMBotDbContext(this._connectionString);
-            foreach (var artist in newScrobbles.GroupBy(g => g.ArtistName))
-            {
-                var correctedArtist = await db.Artists.FirstOrDefaultAsync(f =>
-                        f.Name.ToLower() == artist.Key.ToLower() ||
-                        f.Aliases.Select(s => s.ToLower()).Contains(artist.Key.ToLower());
-
-
-                var artistName = correctedArtist != null ? correctedArtist.Name : artist.Key;
-
-                await using var connection = new NpgsqlConnection(this._connectionString);
-                connection.Open();
-
-                await using var updateArtistPlaycount = new NpgsqlCommand($"UPDATE public.user_artists SET playcount = playcount + @playcountToAdd WHERE user_id = @userId AND UPPER(name) = UPPER(@name);", connection);
-
-                updateArtistPlaycount.Parameters.AddWithValue("playcountToAdd", artist.Count());
-                updateArtistPlaycount.Parameters.AddWithValue("userId", user.UserId);
-                updateArtistPlaycount.Parameters.AddWithValue("name", artistName);
-
-                await updateArtistPlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
-                Console.WriteLine($"Adding {artist.Count()} plays to {artistName} for {user.UserNameLastFM}");
-            }
-
-            Console.WriteLine($"Updated artists for {user.UserNameLastFM}");
-        }
-
-        private async Task UpdateAlbumsForUser(User user, IEnumerable<LastTrack> newScrobbles)
-        {
-            await using var db = new FMBotDbContext(this._connectionString);
-            foreach (var album in newScrobbles.GroupBy(x => new { x.ArtistName, x.AlbumName }))
-            {
-                var correctedArtist = await db.Artists.FirstOrDefaultAsync(f =>
-                    f.Name.ToLower() == album.Key.ArtistName.ToLower() ||
-                    f.Aliases.Select(s => s.ToLower()).Contains(album.Key.ArtistName.ToLower()));
-
-                var artistName = correctedArtist != null ? correctedArtist.Name : album.Key.ArtistName;
-
-                await using var connection = new NpgsqlConnection(this._connectionString);
-                connection.Open();
-
-                await using var setIndexTime = new NpgsqlCommand($"UPDATE public.user_albums SET playcount = playcount + @playcountToAdd WHERE user_id = @userId AND UPPER(name) = UPPER(@name) AND UPPER(artist_name) = UPPER(@artistName) ;", connection);
-
-                setIndexTime.Parameters.AddWithValue("playcountToAdd", album.Count());
-                setIndexTime.Parameters.AddWithValue("userId", user.UserId);
-                setIndexTime.Parameters.AddWithValue("name", album.Key.AlbumName);
-                setIndexTime.Parameters.AddWithValue("artistName", artistName);
-
-                await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
-            }
-
-            Console.WriteLine($"Updated albums for {user.UserNameLastFM}");
-        }
-
-        private async Task UpdateTracksForUser(User user, IEnumerable<LastTrack> newScrobbles)
-        {
-            await using var db = new FMBotDbContext(this._connectionString);
-            foreach (var track in newScrobbles.GroupBy(x => new { x.ArtistName, x.Name }))
-            {
-                var correctedArtist = await db.Artists.FirstOrDefaultAsync(f =>
-                    f.Name.ToLower() == track.Key.ArtistName.ToLower() ||
-                    f.Aliases.Select(s => s.ToLower()).Contains(track.Key.ArtistName.ToLower()));
-
-                var artistName = correctedArtist != null ? correctedArtist.Name : track.Key.ArtistName;
-
-                await using var connection = new NpgsqlConnection(this._connectionString);
-                connection.Open();
-
-                await using var setIndexTime = new NpgsqlCommand($"UPDATE public.user_artists SET playcount = playcount + @playcountToAdd WHERE user_id = @userId AND UPPER(name) = UPPER(@name) AND UPPER(artist_name) = UPPER(@artistName);", connection);
-
-                setIndexTime.Parameters.AddWithValue("playcountToAdd", track.Count());
-                setIndexTime.Parameters.AddWithValue("userId", user.UserId);
-                setIndexTime.Parameters.AddWithValue("name", track.Key.Name);
-                setIndexTime.Parameters.AddWithValue("artistName", artistName);
-
-                await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
-            }
-
-            Console.WriteLine($"Updated tracks for {user.UserNameLastFM}");
+            return recentTracks.Content.First().TimePlayed.Value.DateTime;
         }
     }
 }

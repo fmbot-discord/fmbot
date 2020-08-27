@@ -98,6 +98,7 @@ namespace FMBot.Bot
                 .AddSingleton<WhoKnowsService>()
                 .AddSingleton<IChartService, ChartService>()
                 .AddSingleton<IIndexService, IndexService>()
+                .AddSingleton<IUpdateService, UpdateService>()
                 .AddSingleton<GuildService>()
                 .AddSingleton<UserService>()
                 .AddSingleton(logger)
@@ -109,7 +110,8 @@ namespace FMBot.Bot
             services
                 .AddTransient<ILastfmApi, LastfmApi>()
                 .AddTransient<LastFMService>()
-                .AddSingleton<UpdateService>();
+                .AddSingleton<GlobalUpdateService>()
+                .AddSingleton<GlobalIndexService>();
 
             using var context = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             try

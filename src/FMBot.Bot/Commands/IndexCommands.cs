@@ -15,15 +15,18 @@ namespace FMBot.Bot.Commands
         private readonly GuildService _guildService;
         private readonly UserService _userService;
         private readonly IIndexService _indexService;
+        private readonly IUpdateService _updateService;
         private readonly Logger.Logger _logger;
 
         public IndexCommands(Logger.Logger logger,
             IIndexService indexService,
+            IUpdateService updateService,
             GuildService guildService,
             UserService userService)
         {
             this._logger = logger;
             this._indexService = indexService;
+            this._updateService = updateService;
             this._guildService = guildService;
             this._userService = userService;
             this._embed = new EmbedBuilder()
@@ -31,7 +34,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("index", RunMode = RunMode.Async)]
-        [Summary("Indexes top 4000 artists for every user in your server.")]
+        [Summary("Indexes top artists, albums and tracks for every user in your server.")]
         public async Task IndexGuildAsync()
         {
             if (this._guildService.CheckIfDM(this.Context))
@@ -141,14 +144,21 @@ namespace FMBot.Bot.Commands
         [Command("update", RunMode = RunMode.Async)]
         [Summary("Update user.")]
         [LoginRequired]
-        public async Task UpdateUserAsync()
+        public async Task UpdateUserAsync(string force = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            await this._indexService.UpdateUser(userSettings);
+
+            if (force != null && (force.ToLower() == "f" || force.ToLower() == "force"))
+            {
+                await this._indexService.IndexUser(userSettings);
+            }
+            else
+            {
+                await this._updateService.UpdateUser(userSettings);
+            }
 
             await ReplyAsync("You have been updated");
-
         }
     }
 }

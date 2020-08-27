@@ -20,18 +20,18 @@ namespace FMBot.Bot.Services
     public class IndexService : IIndexService
     {
         private readonly IUserIndexQueue _userIndexQueue;
-        private readonly UpdateService _updateService;
+        private readonly GlobalIndexService _globalIndexService;
 
-        public IndexService(IUserIndexQueue userIndexQueue, UpdateService updateService)
+        public IndexService(IUserIndexQueue userIndexQueue, GlobalIndexService indexService)
         {
             this._userIndexQueue = userIndexQueue;
             this._userIndexQueue.UsersToIndex.SubscribeAsync(OnNextAsync);
-            this._updateService = updateService;
+            this._globalIndexService = indexService;
         }
 
         private async Task OnNextAsync(User user)
         {
-            await this._updateService.IndexUser(user);
+            await this._globalIndexService.IndexUser(user);
         }
 
         public void IndexGuild(IReadOnlyList<User> users)
@@ -41,13 +41,12 @@ namespace FMBot.Bot.Services
             this._userIndexQueue.Publish(users.ToList());
         }
 
-        public async Task UpdateUser(User user)
+        public async Task IndexUser(User user)
         {
-            Console.WriteLine($"Starting update for {user.UserNameLastFM}");
+            Console.WriteLine($"Starting index for {user.UserNameLastFM}");
 
-            await this._updateService.UpdateUser(user);
+            await this._globalIndexService.IndexUser(user);
         }
-
 
         public async Task StoreGuildUsers(IGuild guild, IReadOnlyCollection<IGuildUser> guildUsers)
         {
