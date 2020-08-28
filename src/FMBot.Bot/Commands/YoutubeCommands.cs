@@ -77,8 +77,19 @@ namespace FMBot.Bot.Commands
 
                     var name = await this._userService.GetNameAsync(this.Context);
 
-                    var reply = $"{name} searched for: `{querystring}`" +
-                                $"\nhttps://www.youtube.com/watch?v={youtubeResult.Id.VideoId}";
+
+                    var reply = $"{name} searched for: `{querystring}`";
+
+                    var user = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
+                    if (user.GuildPermissions.EmbedLinks)
+                    {
+                        reply += $"\nhttps://www.youtube.com/watch?v={youtubeResult.Id.VideoId}";
+                    }
+                    else
+                    {
+                        reply += $"\n<https://www.youtube.com/watch?v={youtubeResult.Id.VideoId}>" +
+                                 $"\n*Embed disabled because user that requested link is not allowed to embed links.*";
+                    }
 
                     var rnd = new Random();
                     if (rnd.Next(0, 5) == 1 && searchValues.Length < 1)
