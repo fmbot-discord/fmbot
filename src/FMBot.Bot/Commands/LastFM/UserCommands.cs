@@ -47,7 +47,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._friendsService = new FriendsService();
             this._userService = new UserService();
             this._lastFmService = lastFmService;
-            _indexService = indexService;
+            this._indexService = indexService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();

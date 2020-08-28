@@ -12,6 +12,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
@@ -91,6 +92,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(replyString);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
 
@@ -98,6 +100,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 await ReplyAsync(
                     "Please remove the space between `.fm` and `set` to set your last.fm username.");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
 
@@ -264,13 +267,11 @@ namespace FMBot.Bot.Commands.LastFM
                         break;
                 }
 
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                this.Context.LogCommandUsed();
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                this.Context.LogCommandException(e);
                 await ReplyAsync(
                     "Unable to show Last.FM info due to an internal error. Try scrobbling something then use the command again.");
             }
@@ -288,6 +289,7 @@ namespace FMBot.Bot.Commands.LastFM
             if (user == "help")
             {
                 await ReplyAsync($"{prfx}recent 'number of items (max 10)' 'lastfm username/discord user'");
+                this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
 
@@ -296,6 +298,7 @@ namespace FMBot.Bot.Commands.LastFM
                 await ReplyAsync("Please enter a valid amount. \n" +
                                  $"`{prfx}recent 'number of items (max 10)' 'lastfm username/discord user'` \n" +
                                  $"Example: `{prfx}recent 8`");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
 
@@ -390,13 +393,11 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithFooter(this._embedFooter);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                this.Context.LogCommandUsed();
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                this.Context.LogCommandException(e);
                 await ReplyAsync(
                     "Unable to show your recent tracks on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
@@ -416,6 +417,7 @@ namespace FMBot.Bot.Commands.LastFM
                 await ReplyAsync(
                     $"Usage: `{prfx}track 'artist and track name'`\n" +
                     "If you don't enter any track name, it will get the info from the track you're currently listening to.");
+                this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
 
@@ -480,8 +482,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                this.Context.Message.Content);
+            this.Context.LogCommandUsed();
         }
 
         [Command("trackplays", RunMode = RunMode.Async)]
@@ -498,6 +499,7 @@ namespace FMBot.Bot.Commands.LastFM
                 await ReplyAsync(
                     $"Usage: `{prfx}trackplays 'artist and track name'`\n" +
                     "If you don't enter any track name, it will get the info from the track you're currently listening to.");
+                this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
 
@@ -516,8 +518,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._embed.WithAuthor(this._embedAuthor);
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                this.Context.Message.Content);
+            this.Context.LogCommandUsed();
         }
 
         private async Task<ResponseTrack> SearchTrack(string[] trackValues, User userSettings)
@@ -535,6 +536,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     this._embed.NoScrobblesFoundErrorResponse(track.Status, this.Context, this._logger);
                     await this.ReplyAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     return null;
                 }
 
@@ -555,12 +557,14 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this._embed.WithDescription($"Track could not be found, please check your search values and try again.");
                 await this.ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return null;
             }
             else
             {
                 this._embed.WithDescription($"Last.fm returned an error: {result.Status}");
                 await this.ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Error);
                 return null;
             }
         }
@@ -624,6 +628,7 @@ namespace FMBot.Bot.Commands.LastFM
                                                 $"View [track history here]{userUrl}");
                     this._embed.WithColor(Constants.WarningColorOrange);
                     await ReplyAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     return;
                 }
 
@@ -661,13 +666,11 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithFooter(this._embedFooter);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                this.Context.LogCommandUsed();
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                this.Context.LogCommandException(e);
                 await ReplyAsync("Unable to show Last.FM info due to an internal error.");
             }
         }

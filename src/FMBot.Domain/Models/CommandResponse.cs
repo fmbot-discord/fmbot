@@ -14,6 +14,8 @@ namespace FMBot.Domain.Models
 
         NotSupportedInDm = 6,
 
-        Error = 7
+        Error = 7,
+
+        NoScrobbles = 8
     }
 }
