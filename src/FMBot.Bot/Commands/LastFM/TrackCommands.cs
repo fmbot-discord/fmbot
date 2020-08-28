@@ -207,17 +207,6 @@ namespace FMBot.Bot.Commands.LastFM
                         var albumImagesTask =
                             this._lastFmService.GetAlbumImagesAsync(currentTrack.ArtistName, currentTrack.AlbumName);
 
-                        if (!this._guildService.CheckIfDM(this.Context))
-                        {
-                            var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
-                            if (!perms.EmbedLinks)
-                            {
-                                await ReplyAsync(
-                                    "Insufficient permissions, I need to the 'Embed links' permission to show you your scrobbles.");
-                                break;
-                            }
-                        }
-
                         if (userSettings.FmEmbedType == FmEmbedType.embedmini)
                         {
                             fmText += LastFMService.TrackToLinkedString(currentTrack);
