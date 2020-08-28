@@ -149,9 +149,22 @@ namespace FMBot.Bot.Commands
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
 
-            if (force != null && (force.ToLower() == "f" || force.ToLower() == "force"))
+            if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full"))
             {
+                this._embed.WithDescription($"<a:loading:748652128502939778> Fully indexing user {userSettings.UserNameLastFM}..." +
+                                            $"\nThis can take a while. Please don't fully update too often, if you have any issues with the normal update feel free to let us know.");
+
+                var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
                 await this._indexService.IndexUser(userSettings);
+
+                await message.ModifyAsync(m =>
+                {
+                    m.Embed = new EmbedBuilder()
+                        .WithDescription($"✅ {userSettings.UserNameLastFM} has been fully indexed.")
+                        .WithColor(Constants.SuccessColorGreen)
+                        .Build();
+                });
             }
             else
             {
@@ -167,9 +180,6 @@ namespace FMBot.Bot.Commands
                         .WithColor(Constants.SuccessColorGreen)
                         .Build();
                 });
-
-
-                Console.WriteLine("Test");
             }
 
         }

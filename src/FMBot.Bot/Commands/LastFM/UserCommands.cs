@@ -3,10 +3,12 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 
@@ -27,13 +29,16 @@ namespace FMBot.Bot.Commands.LastFM
 
         private readonly IPrefixService _prefixService;
 
+        private readonly IIndexService _indexService;
+
 
         public UserCommands(TimerService timer,
             Logger.Logger logger,
             IPrefixService prefixService,
             ILastfmApi lastfmApi,
             GuildService guildService,
-            LastFMService lastFmService)
+            LastFMService lastFmService,
+            IIndexService indexService)
         {
             this._timer = timer;
             this._logger = logger;
@@ -42,6 +47,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._friendsService = new FriendsService();
             this._userService = new UserService();
             this._lastFmService = lastFmService;
+            _indexService = indexService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -59,6 +65,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
                 await ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return;
             }
 
@@ -118,13 +125,11 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.AddField("Bot user type", userSettings.UserType, true);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                this.Context.LogCommandUsed();
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                this.Context.LogCommandException(e);
                 await ReplyAsync(
                     "Unable to show your stats on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
@@ -153,8 +158,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                this.Context.LogCommandException(e);
                 await ReplyAsync(
                     "Unable to show the featured avatar on FMBot due to an internal error. \n" +
                     "The bot might not have changed its avatar since its last startup. Please wait until a new featured user is chosen.");
@@ -187,7 +191,8 @@ namespace FMBot.Bot.Commands.LastFM
                 else
                 {
                     replyString += "Example of picking a mode and playcount: \n" +
-                                   $"`{prfx}set lastfmusername embedfull artist`";
+                                   $"`{prfx}set lastfmusername embedfull artist`\n" +
+                                   $"*Replace `lastfmusername` with your own last.fm username*";
                 }
 
                 this._embed.WithTitle("Changing your .fmbot settings");
@@ -195,6 +200,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(replyString);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
 
@@ -202,6 +208,14 @@ namespace FMBot.Bot.Commands.LastFM
             if (!await this._lastFmService.LastFMUserExistsAsync(lastFMUserName))
             {
                 await ReplyAsync("LastFM user could not be found. Please check if the name you entered is correct.");
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            if (lastFMUserName == "lastfmusername")
+            {
+                await ReplyAsync("Please enter your own last.fm username and not `lastfmusername`.\n");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
 
@@ -226,11 +240,16 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             await ReplyAsync(setReply);
-            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                this.Context.Message.Content);
+
+            this.Context.LogCommandUsed();
+
+            var freshUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            await this._indexService.IndexUser(freshUserSettings);
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
+                await this._indexService.AddUserToGuild(Context.Guild, freshUserSettings);
+
                 var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
                 if (!perms.EmbedLinks || !perms.AttachFiles)
                 {
@@ -250,6 +269,7 @@ namespace FMBot.Bot.Commands.LastFM
             if (userSettings == null)
             {
                 await ReplyAsync("Sorry, but we don't have any data from you in our database.");
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
 
@@ -257,8 +277,7 @@ namespace FMBot.Bot.Commands.LastFM
             await this._userService.DeleteUser(userSettings.UserId);
 
             await ReplyAsync("Your settings, friends and any other data have been successfully deleted.");
-            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                this.Context.Message.Content);
+            this.Context.LogCommandUsed();
         }
 
         [Command("suggest", RunMode = RunMode.Async)]
@@ -298,15 +317,13 @@ namespace FMBot.Bot.Commands.LastFM
 
 
                 await ReplyAsync("Your suggestion has been sent to the .fmbot server!");
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                this.Context.LogCommandUsed();
 
                 //}
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                this.Context.LogCommandException(e);
             }
         }
 

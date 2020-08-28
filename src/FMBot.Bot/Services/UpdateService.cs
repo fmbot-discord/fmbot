@@ -1,8 +1,8 @@
-using System;
 using System.Threading.Tasks;
 using FMBot.Bot.Interfaces;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
+using Serilog;
 
 namespace FMBot.Bot.Services
 {
@@ -17,7 +17,7 @@ namespace FMBot.Bot.Services
 
         public async Task<int> UpdateUser(User user)
         {
-            Console.WriteLine($"Starting update for {user.UserNameLastFM}");
+            Log.Information("Starting index for {UserNameLastFM}", user.UserNameLastFM);
 
             return await this._globalUpdateService.UpdateUser(user);
         }

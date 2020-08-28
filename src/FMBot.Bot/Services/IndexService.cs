@@ -8,12 +8,14 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using PostgreSQLCopyHelper;
+using Serilog;
 
 namespace FMBot.Bot.Services
 {
@@ -36,14 +38,14 @@ namespace FMBot.Bot.Services
 
         public void IndexGuild(IReadOnlyList<User> users)
         {
-            Console.WriteLine($"Starting artist update for {users.Count} users");
+            Log.Information($"Starting artist update for {users.Count} users");
 
             this._userIndexQueue.Publish(users.ToList());
         }
 
         public async Task IndexUser(User user)
         {
-            Console.WriteLine($"Starting index for {user.UserNameLastFM}");
+            Log.Information("Starting index for {UserNameLastFM}", user.UserNameLastFM);
 
             await this._globalIndexService.IndexUser(user);
         }
@@ -80,7 +82,55 @@ namespace FMBot.Bot.Services
 
             await copyHelper.SaveAllAsync(connection, users).ConfigureAwait(false);
 
-            Console.WriteLine($"Stored guild users");
+            Log.Information("Stored guild users for guild with id {guildId}", existingGuild.GuildId);
+        }
+
+        public async Task AddUserToGuild(IGuild guild, User user)
+        {
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            var existingGuild = await db.Guilds
+                .Include(i => i.GuildUsers)
+                .FirstAsync(f => f.DiscordGuildId == guild.Id);
+
+            if (existingGuild == null)
+            {
+                var newGuild = new Guild
+                {
+                    DiscordGuildId = guild.Id,
+                    ChartTimePeriod = ChartTimePeriod.Monthly,
+                    FmEmbedType = FmEmbedType.embedmini,
+                    Name = guild.Name,
+                    TitlesEnabled = true,
+                };
+
+                await db.Guilds.AddAsync(newGuild);
+
+                await db.SaveChangesAsync();
+
+                Log.Information("Added guild {guildName} to database", guild.Name);
+
+                var guildId = db.Guilds.First(f => f.DiscordGuildId == guild.Id).GuildId;
+
+                await db.GuildUsers.AddAsync(new GuildUser
+                {
+                    GuildId = guildId,
+                    UserId = user.UserId
+                });
+
+                Log.Information("Added user {userId} to guild {guildName}", user.UserId, guild.Name);
+            }
+            else if (!existingGuild.GuildUsers.Select(g => g.UserId).Contains(user.UserId))
+            {
+                await db.GuildUsers.AddAsync(new GuildUser
+                {
+                    GuildId = existingGuild.GuildId,
+                    UserId = user.UserId
+                });
+
+                Log.Information("Added user {userId} to guild {guildName}", user.UserId, guild.Name);
+            }
+
+            await db.SaveChangesAsync();
         }
 
         public async Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> guildUsers)

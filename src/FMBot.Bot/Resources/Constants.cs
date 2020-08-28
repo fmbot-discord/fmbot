@@ -29,7 +29,7 @@ namespace FMBot.Bot.Resources
         /// <summary>The Discord color for a warning embed.</summary>
         public static Color WarningColorOrange = new Color(255, 174, 66);
 
-        public static Color SuccessColorGreen = new Color(96, 2, 238);
+        public static Color SuccessColorGreen = new Color(50, 205, 50);
     }
 }
 
