@@ -36,6 +36,8 @@ namespace FMBot.Bot
                 new CensoredAlbum("Last Days Of Humanity", "In Advanced Haemorrhaging Conditions"),
                 new CensoredAlbum("Last Days Of Humanity", "Extreme Experience Of Inhuman Motivations"),
                 new CensoredAlbum("Cannibal Corpse", "Tomb of the Mutilated"),
+                new CensoredAlbum("Cannibal Corpse", "Tomb of the Mutilated"),
+                new CensoredAlbum("Cannibal Corpse", "Tomb of the Mutilated"),
                 new CensoredAlbum("Regurgitate", "Carnivorous Erection")
             };
 

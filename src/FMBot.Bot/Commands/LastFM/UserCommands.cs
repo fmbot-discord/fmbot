@@ -6,6 +6,7 @@ using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 
@@ -140,6 +141,12 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithThumbnailUrl(selfUser.GetAvatarUrl());
                 this._embed.AddField("Featured:", this._timer.GetTrackString());
 
+                if (PublicProperties.IssuesAtLastFM)
+                {
+                    this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues");
+                }
+
+
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
                     this.Context.Message.Content);
@@ -270,9 +277,9 @@ namespace FMBot.Bot.Commands.LastFM
                 else
                 {
                 */
-                
 
-                
+
+
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 this._embedAuthor.WithName(this.Context.User.ToString());

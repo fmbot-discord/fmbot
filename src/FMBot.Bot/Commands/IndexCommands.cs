@@ -158,13 +158,12 @@ namespace FMBot.Bot.Commands
                 this._embed.WithDescription($"<a:loading:748652128502939778> Updating user {userSettings.UserNameLastFM}...");
                 var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
-                await this._updateService.UpdateUser(userSettings);
-
+                var scrobblesUsed = await this._updateService.UpdateUser(userSettings);
 
                 await message.ModifyAsync(m =>
                 {
                     m.Embed = new EmbedBuilder()
-                        .WithDescription($"✔️ {userSettings.UserNameLastFM} has been updated.")
+                        .WithDescription($"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new scrobbles.")
                         .WithColor(Constants.SuccessColorGreen)
                         .Build();
                 });

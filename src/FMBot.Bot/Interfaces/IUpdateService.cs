@@ -5,6 +5,6 @@ namespace FMBot.Bot.Interfaces
 {
     public interface IUpdateService
     {
-        Task UpdateUser(User user);
+        Task<int> UpdateUser(User user);
     }
 }

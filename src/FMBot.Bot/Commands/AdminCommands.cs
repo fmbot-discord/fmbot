@@ -6,6 +6,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands
@@ -149,6 +150,30 @@ namespace FMBot.Bot.Commands
             else
             {
                 await ReplyAsync("Error: Insufficient rights. Only FMBot admins can restart the bot.");
+            }
+        }
+
+        [Command("issues")]
+        [Summary("Toggles issue mode")]
+        public async Task IssuesAsync()
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                if (!PublicProperties.IssuesAtLastFM)
+                {
+                    PublicProperties.IssuesAtLastFM = true;
+                    await ReplyAsync("Enabled issue mode");
+
+                }
+                else
+                {
+                    PublicProperties.IssuesAtLastFM = false;
+                    await ReplyAsync("Disabled issue mode");
+                }
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only FMBot admins can change issue mode.");
             }
         }
 

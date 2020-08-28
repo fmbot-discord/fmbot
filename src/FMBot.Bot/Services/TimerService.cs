@@ -193,7 +193,14 @@ namespace FMBot.Bot.Services
                     if (string.IsNullOrEmpty(ConfigData.Data.Bot.Status))
                     {
                         Log.Information("Updating status");
-                        await client.SetGameAsync($"{ConfigData.Data.Bot.Prefix} | {client.Guilds.Count} servers | fmbot.xyz");
+                        if (!PublicProperties.IssuesAtLastFM)
+                        {
+                            await client.SetGameAsync($"{ConfigData.Data.Bot.Prefix} | {client.Guilds.Count} servers | fmbot.xyz");
+                        }
+                        else
+                        {
+                            await client.SetGameAsync($"⚠️ Last.fm is currently experiencing issues -> twitter.com/lastfmstatus");
+                        }
                     }
                 },
                 null,
