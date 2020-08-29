@@ -7,17 +7,17 @@ using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Models
 {
-    public class UserIndexQueue : IUserIndexQueue
+    public class UserUpdateQueue : IUserUpdateQueue
     {
         private readonly Subject<IReadOnlyList<User>> _subject;
 
-        public UserIndexQueue()
+        public UserUpdateQueue()
         {
             this._subject = new Subject<IReadOnlyList<User>>();
-            this.UsersToIndex = this._subject.SelectMany(q => q);
+            this.UsersToUpdate = this._subject.SelectMany(q => q);
         }
 
-        public IObservable<User> UsersToIndex { get; }
+        public IObservable<User> UsersToUpdate { get; }
 
         public void Publish(IReadOnlyList<User> users)
         {

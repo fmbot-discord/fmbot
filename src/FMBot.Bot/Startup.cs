@@ -94,11 +94,11 @@ namespace FMBot.Bot
                 .AddSingleton<IPrefixService, PrefixService>()
                 .AddSingleton<IDisabledCommandService, DisabledCommandService>()
                 .AddSingleton<IUserIndexQueue, UserIndexQueue>()
+                .AddSingleton<IUserUpdateQueue, UserUpdateQueue>()
                 .AddSingleton<ArtistsService>()
                 .AddSingleton<WhoKnowsService>()
                 .AddSingleton<IChartService, ChartService>()
                 .AddSingleton<IIndexService, IndexService>()
-                .AddSingleton<IUpdateService, UpdateService>()
                 .AddSingleton<GuildService>()
                 .AddSingleton<UserService>()
                 .AddSingleton(logger)
@@ -111,7 +111,8 @@ namespace FMBot.Bot
                 .AddTransient<ILastfmApi, LastfmApi>()
                 .AddTransient<LastFMService>()
                 .AddSingleton<GlobalUpdateService>()
-                .AddSingleton<GlobalIndexService>();
+                .AddSingleton<GlobalIndexService>()
+                .AddSingleton<IUpdateService, UpdateService>();
 
             using var context = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             try

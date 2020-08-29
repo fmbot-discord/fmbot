@@ -6,7 +6,6 @@ using Discord;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
-using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
@@ -33,6 +32,7 @@ namespace FMBot.Bot.Services
 
         private async Task OnNextAsync(User user)
         {
+            Log.Verbose("User next up for index is {UserNameLastFM}", user.UserNameLastFM);
             await this._globalIndexService.IndexUser(user);
         }
 

@@ -41,7 +41,10 @@ namespace FMBot.Bot.Configurations
                     }, 
                     BotLists = new BotListConfig(),
                     Discord = new DiscordConfig(),
-                    LastFm = new LastFmConfig(),
+                    LastFm = new LastFmConfig
+                    {
+                        UserUpdateFrequencyInHours = 24
+                    },
                     Genius = new GeniusConfig(),
                     Spotify = new SpotifyConfig(),
                     Google = new GoogleConfig()

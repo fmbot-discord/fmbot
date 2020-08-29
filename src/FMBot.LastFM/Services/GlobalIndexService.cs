@@ -95,7 +95,7 @@ namespace FMBot.LastFM.Services
 
             var topAlbums = new List<LastAlbum>();
 
-            const int amountOfApiCalls = 4000 / 1000;
+            const int amountOfApiCalls = 5000 / 1000;
             for (var i = 1; i < amountOfApiCalls + 1; i++)
             {
                 var albumResult = await this._lastFMClient.User.GetTopAlbums(user.UserNameLastFM,
@@ -128,7 +128,7 @@ namespace FMBot.LastFM.Services
         {
             Console.WriteLine($"Getting tracks for user {user.UserNameLastFM}");
 
-            var trackResult = await this.lastFmService.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, 5);
+            var trackResult = await this.lastFmService.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, 6);
 
             if (!trackResult.Success || trackResult.Content.TopTracks.Track.Count == 0)
             {
@@ -210,7 +210,7 @@ namespace FMBot.LastFM.Services
             await using var connection = new NpgsqlConnection(this._connectionString);
             connection.Open();
 
-            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_indexed='{now:u}', last_scrobble_update = '{lastScrobble:u}' WHERE user_id = {userId};", connection);
+            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_indexed='{now:u}', last_updated='{now:u}', last_scrobble_update = '{lastScrobble:u}' WHERE user_id = {userId};", connection);
             await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
