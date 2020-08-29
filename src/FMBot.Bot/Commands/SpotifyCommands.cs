@@ -9,6 +9,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 
 namespace FMBot.Bot.Commands
@@ -91,17 +92,17 @@ namespace FMBot.Bot.Commands
                     }
 
                     await ReplyAsync(reply);
-                    this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                        this.Context.Message.Content);
+                    this.Context.LogCommandUsed();
                 }
                 else
                 {
                     await ReplyAsync("No results have been found for this track. Querystring: `" + querystring.FilterOutMentions() + "`");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
                 }
             }
             catch (Exception e)
             {
-                this._logger.LogException(this.Context.Message.Content, e);
+                this.Context.LogCommandException(e);
                 await ReplyAsync(
                     "Unable to show Last.FM info via Spotify due to an internal error. " +
                     "Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");

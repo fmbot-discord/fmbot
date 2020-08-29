@@ -589,8 +589,7 @@ namespace FMBot.Bot.Commands.LastFM
                     $"`{prfx}toptracks alltime @john 11`");
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
 

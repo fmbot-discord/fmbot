@@ -11,6 +11,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
@@ -68,12 +69,14 @@ namespace FMBot.Bot.Commands.LastFM
                 await ReplyAsync(
                     $"Usage: `{prfx}album 'artist and album name'`\n" +
                     "If you don't enter any album name, it will get the info from the album you're currently listening to.");
+                this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
 
             var searchResult = await this.SearchAlbum(albumValues, userSettings);
             if (!searchResult.AlbumFound)
             {
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
 
@@ -90,6 +93,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this._embed.ErrorResponse(albumCall.Error.Value, albumCall.Message, this.Context, this._logger);
                 await ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Error);
                 return;
             }
 
@@ -136,8 +140,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._embed.WithDescription(description);
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                this.Context.Message.Content);
+            this.Context.LogCommandUsed();
         }
 
         [Command("albumplays", RunMode = RunMode.Async)]
@@ -154,12 +157,14 @@ namespace FMBot.Bot.Commands.LastFM
                 await ReplyAsync(
                     $"Usage: `{prfx}albumplays 'artist and album name'`\n" +
                     "If you don't enter any album name, it will get the plays from the album you're currently listening to.");
+                this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
 
             var searchResult = await this.SearchAlbum(albumValues, userSettings);
             if (!searchResult.AlbumFound)
             {
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
 
@@ -176,6 +181,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this._embed.ErrorResponse(albumCall.Error.Value, albumCall.Message, this.Context, this._logger);
                 await ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Error);
                 return;
             }
 
@@ -193,23 +199,32 @@ namespace FMBot.Bot.Commands.LastFM
             this._embed.WithAuthor(this._embedAuthor);
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                this.Context.Message.Content);
+            this.Context.LogCommandUsed();
         }
 
 
         [Command("cover", RunMode = RunMode.Async)]
         [Summary("Displays current album cover.")]
-        [Alias("abc","co", "albumcover")]
+        [Alias("abc", "co", "albumcover")]
         [LoginRequired]
         public async Task AlbumCoverAsync(params string[] albumValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
-            
+
+            if (albumValues.Any() && albumValues.First() == "help")
+            {
+                await ReplyAsync(
+                    $"Usage: `{prfx}cover 'artist and album name'`\n" +
+                    "If you don't enter any album name, it will get the cover from the album you're currently listening to.");
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
             var searchResult = await this.SearchAlbum(albumValues, userSettings);
             if (!searchResult.AlbumFound)
             {
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
 
@@ -221,6 +236,7 @@ namespace FMBot.Bot.Commands.LastFM
                                             $"{searchResult.Artist} - {searchResult.Name}\n" +
                                             $"[View on last.fm]({searchResult.Url})");
                 await this.ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
 
@@ -231,6 +247,7 @@ namespace FMBot.Bot.Commands.LastFM
                                             $"{searchResult.Artist} - {searchResult.Name}\n" +
                                             $"[View on last.fm]({searchResult.Url})");
                 await this.ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Error);
                 return;
             }
 
@@ -243,14 +260,13 @@ namespace FMBot.Bot.Commands.LastFM
             image.Save(imageMemoryStream, ImageFormat.Png);
             imageMemoryStream.Position = 0;
 
-            Log.Information("CommandUsed", this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                this.Context.Message.Content);
             await this.Context.Channel.SendFileAsync(
                 imageMemoryStream,
                 $"cover-{StringExtensions.ReplaceInvalidChars($"{searchResult.Artist}_{searchResult.Name}")}.png",
                 null,
                 false,
                 this._embed.Build());
+            this.Context.LogCommandUsed();
         }
 
         private async Task<AlbumSearchModel> SearchAlbum(string[] albumValues, User userSettings)
@@ -314,8 +330,7 @@ namespace FMBot.Bot.Commands.LastFM
                     $"`{prfx}topalbums alltime 9 @slipper`");
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
 
@@ -381,13 +396,11 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithFooter(this._embedFooter);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                this.Context.LogCommandUsed();
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                this.Context.LogCommandException(e);
                 await ReplyAsync("Unable to show Last.FM info due to an internal error.");
             }
         }

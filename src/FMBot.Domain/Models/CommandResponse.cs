@@ -16,6 +16,14 @@ namespace FMBot.Domain.Models
 
         Error = 7,
 
-        NoScrobbles = 8
+        NoScrobbles = 8,
+
+        NoPermission = 9,
+
+        Cooldown = 10,
+
+        IndexRequired = 11,
+
+        LastFmError = 12
     }
 }

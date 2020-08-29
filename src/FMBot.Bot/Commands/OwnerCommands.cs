@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Services;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using static FMBot.Bot.FMBotUtil;
@@ -37,28 +38,32 @@ namespace FMBot.Bot.Commands
                 if (userId == null || userType == null || userId == "help")
                 {
                     await ReplyAsync("Please format your command like this: `.fmsetusertype 'discord id' 'User/Admin/Owner'`");
+                    this.Context.LogCommandUsed(CommandResponse.Help);
                     return;
                 }
 
                 if (!Enum.TryParse(userType, true, out UserType userTypeEnum))
                 {
                     await ReplyAsync("Invalid usertype. Please use 'User', 'Contributor', 'Admin', or 'Owner'.");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
 
                 if (await this._adminService.SetUserTypeAsync(ulong.Parse(userId), userTypeEnum))
                 {
                     await ReplyAsync("You got it. User perms changed.");
+                    this.Context.LogCommandUsed();
                 }
                 else
                 {
                     await ReplyAsync("Setting user failed. Are you sure the user exists?");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
                 }
-
             }
             else
             {
                 await ReplyAsync("Error: Insufficient rights. Only FMBot owners can change your usertype.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }
 
@@ -77,12 +82,12 @@ namespace FMBot.Bot.Commands
                         DirectoryInfo users = new DirectoryInfo(GlobalVars.CacheFolder);
                     }
 
-
                     await ReplyAsync("Removed read only on all directories.");
+                    this.Context.LogCommandUsed();
                 }
                 catch (Exception e)
                 {
-                    this._logger.LogException(this.Context.Message.Content, e);
+                    this.Context.LogCommandException(e);
                     await ReplyAsync("Unable to remove read only on all directories due to an internal error.");
                 }
             }
@@ -108,12 +113,18 @@ namespace FMBot.Bot.Commands
                     }
 
                     await this.Context.Channel.SendMessageAsync("", false, builder.Build());
+                    this.Context.LogCommandUsed();
                 }
                 catch (Exception e)
                 {
-                    this._logger.LogException(this.Context.Message.Content, e);
+                    this.Context.LogCommandException(e);
                     await ReplyAsync("Unable to delete server drive info due to an internal error.");
                 }
+            }
+            else
+            {
+                await ReplyAsync("Only .fmbot admins or owners can execute this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }
 
@@ -140,6 +151,12 @@ namespace FMBot.Bot.Commands
                 }
 
                 await this.Context.Channel.SendMessageAsync("Check your DMs!");
+                this.Context.LogCommandUsed();
+            }
+            else
+            {
+                await ReplyAsync("Only .fmbot owners can execute this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }
 
@@ -150,6 +167,12 @@ namespace FMBot.Bot.Commands
             {
                 await _adminService.FixValues();
                 await ReplyAsync("Postgres values have been fixed.");
+                this.Context.LogCommandUsed();
+            }
+            else
+            {
+                await ReplyAsync("Only .fmbot owners can execute this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }
     }

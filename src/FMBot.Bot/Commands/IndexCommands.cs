@@ -3,9 +3,11 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Commands
 {
@@ -40,6 +42,7 @@ namespace FMBot.Bot.Commands
             if (this._guildService.CheckIfDM(this.Context))
             {
                 await ReplyAsync("This command is not supported in DMs.");
+                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
                 return;
             }
 
@@ -79,6 +82,7 @@ namespace FMBot.Bot.Commands
                             $"\nAll users in this server can be updated again in {(int)timeTillIndex.TotalHours} hours and {timeTillIndex:mm} minutes";
                     }
                     await ReplyAsync(reply);
+                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
                     return;
                 }
                 if (users.Count == 0 && lastIndex == null)
@@ -87,6 +91,8 @@ namespace FMBot.Bot.Commands
                     await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow.AddDays(-1));
                     await ReplyAsync("All users on this server have already been indexed or nobody is registered on .fmbot here.\n" +
                                      "The server has now been registered anyway, so you can start using the commands that require indexing.");
+                    this.Context.LogCommandUsed();
+                    return;
                 }
 
                 string usersString = "";
@@ -125,16 +131,13 @@ namespace FMBot.Bot.Commands
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
-
+                this.Context.LogCommandUsed();
                 await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
                 this._indexService.IndexGuild(users);
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                this.Context.LogCommandException(e);
                 await ReplyAsync(
                     "Something went wrong while indexing users. Please let us know as this feature is in beta.");
                 await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
@@ -147,7 +150,6 @@ namespace FMBot.Bot.Commands
         public async Task UpdateUserAsync(string force = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-
 
             if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full"))
             {
@@ -182,6 +184,7 @@ namespace FMBot.Bot.Commands
                 });
             }
 
+            this.Context.LogCommandUsed();
         }
     }
 }

@@ -6,6 +6,7 @@ using Discord;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -70,6 +71,7 @@ namespace FMBot.Bot.Commands.LastFM
             var artist = await GetArtistOrHelp(artistValues, userSettings, "artist");
             if (artist == null)
             {
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
 
@@ -88,6 +90,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this._embed.ErrorResponse(artistCall.Error.Value, artistCall.Message, this.Context, this._logger);
                 await ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandWithLastFmError(artistCall.Error);
                 return;
             }
 
@@ -157,8 +160,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                this.Context.Message.Content);
+            this.Context.LogCommandUsed();
         }
 
         [Command("artistplays", RunMode = RunMode.Async)]
@@ -172,6 +174,7 @@ namespace FMBot.Bot.Commands.LastFM
             var artist = await GetArtistOrHelp(artistValues, userSettings, "artistplays");
             if (artist == null)
             {
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
 
@@ -188,6 +191,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this._embed.ErrorResponse(artistCall.Error.Value, artistCall.Message, this.Context, this._logger);
                 await ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandWithLastFmError(artistCall.Error);
                 return;
             }
 
@@ -202,8 +206,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._embed.WithAuthor(this._embedAuthor);
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                this.Context.Message.Content);
+            this.Context.LogCommandUsed();
         }
 
         [Command("topartists", RunMode = RunMode.Async)]
@@ -226,8 +229,7 @@ namespace FMBot.Bot.Commands.LastFM
                     $"`{prfx}topartists @drasil alltime 11`");
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
 
@@ -293,13 +295,11 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithFooter(this._embedFooter);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                this.Context.LogCommandUsed();
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                this.Context.LogCommandException(e);
                 await ReplyAsync("Unable to show Last.FM info due to an internal error.");
             }
         }
@@ -317,6 +317,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 await ReplyAsync(
                     $"Usage: `{prfx}taste 'last.fm username/ discord mention' '{Constants.CompactTimePeriodList}' 'table/embed'`");
+                this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
 
@@ -355,6 +356,7 @@ namespace FMBot.Bot.Commands.LastFM
                     await ReplyAsync(
                         $"Please enter a valid user to compare your top artists to. \n" +
                         $"Example: `{prfx}taste lastfmusername` or `{prfx}taste @user`");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
                 if (lastfmToCompare.ToLower() == userSettings.UserNameLastFM.ToLower())
@@ -362,6 +364,7 @@ namespace FMBot.Bot.Commands.LastFM
                     await ReplyAsync(
                         $"You can't compare your own taste with yourself. For viewing your top artists, use `fmtopartists`\n" +
                         $"Please enter a different last.fm username or mention another user.");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
 
@@ -379,6 +382,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     await ReplyAsync(
                         $"You or the other user don't have any artist plays in the selected time period.");
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     return;
                 }
 
@@ -404,13 +408,11 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                this.Context.LogCommandUsed();
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                this.Context.LogCommandException(e);
                 await ReplyAsync("Unable to show Last.FM info due to an internal error.");
             }
         }
@@ -424,6 +426,7 @@ namespace FMBot.Bot.Commands.LastFM
             if (this._guildService.CheckIfDM(this.Context))
             {
                 await ReplyAsync("This command is not supported in DMs.");
+                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
                 return;
             }
 
@@ -436,12 +439,14 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 await ReplyAsync("This server hasn't been indexed yet.\n" +
                                  $"Please run `{prfx}index` to index this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
             }
             if (lastIndex < DateTime.UtcNow.AddDays(-60))
             {
                 await ReplyAsync("Server index data is out of date, it was last updated over 60 days ago.\n" +
                                  $"Please run `{prfx}index` to re-index this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
             }
 
@@ -470,6 +475,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     this._embed.ErrorResponse(artistCall.Error.Value, artistCall.Message, this.Context, this._logger);
                     await ReplyAsync("", false, this._embed.Build());
+                    this.Context.LogCommandWithLastFmError(artistCall.Error);
                     return;
                 }
 
@@ -545,13 +551,11 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                this.Context.LogCommandUsed();
             }
             catch (Exception e)
             {
-                this._logger.LogError($"{e.Message} \n{e.StackTrace}", this.Context.Message.Content, this.Context.User.Username,
-                        this.Context.Guild?.Name, this.Context.Guild?.Id);
+                this.Context.LogCommandException(e);
                 await ReplyAsync(
                     "Something went wrong while using whoknows. Please let us know as this feature is in beta.");
             }
@@ -565,23 +569,25 @@ namespace FMBot.Bot.Commands.LastFM
             if (this._guildService.CheckIfDM(this.Context))
             {
                 await ReplyAsync("This command is not supported in DMs.");
+                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
                 return;
             }
 
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
-
-            var guild = await this._guildService.GetGuildAsync(Context.Guild.Id);
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
             if (guild.LastIndexed == null)
             {
                 await ReplyAsync("This server hasn't been indexed yet.\n" +
                                  $"Please run `{prfx}index` to index this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
             }
             if (guild.LastIndexed < DateTime.UtcNow.AddDays(-60))
             {
                 await ReplyAsync("Server index data is out of date, it was last updated over 60 days ago.\n" +
                                  $"Please run `{prfx}index` to re-index this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
             }
 
@@ -618,13 +624,11 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithFooter(this._embedFooter);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                this.Context.LogCommandUsed();
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                this.Context.LogCommandException(e);
                 await ReplyAsync(
                     "Something went wrong while using fmserverartists. Please let us know as this feature is in beta.");
             }
