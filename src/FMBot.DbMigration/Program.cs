@@ -220,7 +220,7 @@ namespace FMBot.DbMigration
                         await NewDatabaseContext.ArtistAliases.AddAsync(new Friend.ArtistAlias
                         {
                             Alias = alias,
-                            ArtistId = artist.ArtistId,
+                            ArtistId = artist.Id,
                             CorrectsInScrobbles = true
                         });
 
