@@ -446,9 +446,9 @@ namespace FMBot.Bot.Commands.LastFM
                 this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
             }
-            if (lastIndex < DateTime.UtcNow.AddDays(-60))
+            if (lastIndex < DateTime.UtcNow.AddDays(-50))
             {
-                await ReplyAsync("Server index data is out of date, it was last updated over 60 days ago.\n" +
+                await ReplyAsync("Server index data is out of date, it was last updated over 50 days ago.\n" +
                                  $"Please run `{prfx}index` to re-index this server.");
                 this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
@@ -461,6 +461,7 @@ namespace FMBot.Bot.Commands.LastFM
             var artistQuery = await GetArtistOrHelp(artistValues, userSettings, "whoknows");
             if (artistQuery == null)
             {
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
 
@@ -511,7 +512,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (lastIndex < DateTime.UtcNow.AddDays(-3))
                 {
-                    footer += $"Missing members? Update with .fmindex";
+                    footer += "Missing members? Update with .fmindex";
                 }
 
                 if (guild.GuildUsers.Count < 400)
@@ -551,8 +552,7 @@ namespace FMBot.Bot.Commands.LastFM
             catch (Exception e)
             {
                 this.Context.LogCommandException(e);
-                await ReplyAsync(
-                    "Something went wrong while using whoknows. Please let us know as this feature is in beta.");
+                await ReplyAsync("Something went wrong while using whoknows. Please let us know as this feature is in beta.");
             }
         }
 

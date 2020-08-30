@@ -40,6 +40,7 @@ namespace FMBot.Bot.Commands
 
         [Command("index", RunMode = RunMode.Async)]
         [Summary("Indexes top artists, albums and tracks for every user in your server.")]
+        [Alias("i")]
         public async Task IndexGuildAsync()
         {
             if (this._guildService.CheckIfDM(this.Context))
@@ -102,18 +103,19 @@ namespace FMBot.Bot.Commands
 
                 this._embed.WithTitle($"Added {users.Count} {usersString} to bot indexing queue");
 
-                var expectedTime = TimeSpan.FromSeconds(4 * users.Count);
+                var expectedTime = TimeSpan.FromSeconds(7 * users.Count);
                 var indexStartedReply =
                     $"Indexing stores which .fmbot members are on your server and stores their initial top artist, albums and tracks. Updating these records happens automatically, but you can also use `.fmupdate` to update your own account.\n\n" +
                     $"`{users.Count}` new users or users that have never been index added to index queue.";
 
-                if (expectedTime.TotalMinutes >= 2)
+                indexStartedReply += $"\n`{indexedUserCount}` users already indexed on this server.\n \n";
+
+                if (expectedTime.TotalMinutes >= 1)
                 {
-                    indexStartedReply += $" This will take approximately {(int)expectedTime.TotalMinutes} minutes.";
+                    indexStartedReply += $"**This will take approximately {(int)expectedTime.TotalMinutes} minutes. Commands might display incomplete results until this process is done.**\n";
                 }
 
-                indexStartedReply += $"\n`{indexedUserCount}` users already indexed on this server.\n \n" +
-                                     "*Note: You will currently not be alerted when the index is finished.*";
+                indexStartedReply += "*Note: You will currently not be alerted when the index is finished.*";
 
                 this._embed.WithDescription(indexStartedReply);
 
@@ -122,7 +124,9 @@ namespace FMBot.Bot.Commands
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
                 this.Context.LogCommandUsed();
+
                 await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
+
                 this._indexService.IndexGuild(users);
             }
             catch (Exception e)
@@ -137,6 +141,7 @@ namespace FMBot.Bot.Commands
         [Command("update", RunMode = RunMode.Async)]
         [Summary("Update user.")]
         [LoginRequired]
+        [Alias("u")]
         public async Task UpdateUserAsync(string force = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -157,7 +162,7 @@ namespace FMBot.Bot.Commands
             }
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-1))
+            if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-3))
             {
                 await ReplyAsync(
                     "You have already been updated recently. Note that this also happens automatically.");
@@ -170,14 +175,14 @@ namespace FMBot.Bot.Commands
                 if (userSettings.LastUpdated < DateTime.UtcNow.AddDays(-2))
                 {
                     await ReplyAsync(
-                        "You can't do a full index too often. Please remember that this command should only be used in case you edited your scrobble history or changed your last.fm username.\n" +
+                        "You can't do a full index too often. Please remember that this command should only be used in case you edited your scrobble history.\n" +
                         "Experiencing issues with the normal update? Please contact us on the .fmbot support server.");
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
                     return;
                 }
 
-                this._embed.WithDescription($"<a:loading:748652128502939778> Fully indexing user {userSettings.UserNameLastFM}..." +
-                                            $"\nThis can take a while. Please don't fully update too often, if you have any issues with the normal update feel free to let us know.");
+                this._embed.WithDescription($"<a:loading:749715170682470461> Fully indexing user {userSettings.UserNameLastFM}..." +
+                                            $"\n\nThis can take a while. Please don't fully update too often, if you have any issues with the normal update feel free to let us know.");
 
                 var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
@@ -193,7 +198,7 @@ namespace FMBot.Bot.Commands
             }
             else
             {
-                this._embed.WithDescription($"<a:loading:748652128502939778> Updating user {userSettings.UserNameLastFM}...");
+                this._embed.WithDescription($"<a:loading:749715170682470461> Updating user {userSettings.UserNameLastFM}...");
                 var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
                 var scrobblesUsed = await this._updateService.UpdateUser(userSettings);

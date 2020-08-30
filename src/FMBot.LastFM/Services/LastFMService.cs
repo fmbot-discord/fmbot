@@ -252,6 +252,7 @@ namespace FMBot.LastFM.Services
                         queryParams.Add("page", (i + 1).ToString());
 
                         var pageResponse = await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
+                        Statistics.LastfmApiCalls.Inc();
 
                         if (pageResponse.Success)
                         {

@@ -99,6 +99,8 @@ namespace FMBot.Bot
                 .AddSingleton<ArtistsService>()
                 .AddSingleton<WhoKnowsService>()
                 .AddSingleton<WhoKnowsArtistService>()
+                .AddSingleton<WhoKnowsAlbumService>()
+                .AddSingleton<WhoKnowsTrackService>()
                 .AddSingleton<IChartService, ChartService>()
                 .AddSingleton<IIndexService, IndexService>()
                 .AddSingleton<GuildService>()

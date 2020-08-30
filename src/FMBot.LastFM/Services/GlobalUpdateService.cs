@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using FMBot.Domain;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Api;
-using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -40,6 +40,8 @@ namespace FMBot.LastFM.Services
             Console.WriteLine($"Updating {user.UserNameLastFM}");
 
             var recentTracks = await this._lastFMClient.User.GetRecentScrobbles(user.UserNameLastFM, count: 1000);
+            Statistics.LastfmApiCalls.Inc();
+
             if (!recentTracks.Success || !recentTracks.Content.Any())
             {
                 Console.WriteLine($"Something went wrong getting recent tracks for {user.UserNameLastFM} | {recentTracks.Status}");

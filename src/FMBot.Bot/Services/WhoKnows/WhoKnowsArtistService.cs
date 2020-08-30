@@ -26,14 +26,14 @@ namespace FMBot.Bot.Services.WhoKnows
                 .Take(14)
                 .ToListAsync();
 
-            var returnArtists = new List<WhoKnowsObjectWithUser>();
+            var whoKnowsArtistList = new List<WhoKnowsObjectWithUser>();
 
             foreach (var artist in artists)
             {
                 var discordUser = await context.Guild.GetUserAsync(artist.User.DiscordUserId);
                 if (discordUser != null)
                 {
-                    returnArtists.Add(new WhoKnowsObjectWithUser
+                    whoKnowsArtistList.Add(new WhoKnowsObjectWithUser
                     {
                         Name = artist.Name,
                         DiscordName = discordUser.Nickname ?? discordUser.Username,
@@ -45,7 +45,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 }
             }
 
-            return returnArtists;
+            return whoKnowsArtistList;
         }
 
         public async Task<IList<ListArtist>> GetTopArtistsForGuild(IReadOnlyList<User> guildUsers)
@@ -67,7 +67,6 @@ namespace FMBot.Bot.Services.WhoKnows
                 })
                 .ToListAsync();
         }
-
 
         public async Task<int> GetArtistListenerCountForServer(IReadOnlyList<User> guildUsers, string artistName)
         {

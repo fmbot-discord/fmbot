@@ -12,6 +12,8 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
@@ -28,6 +30,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly GuildService _guildService;
         private readonly LastFMService _lastFmService;
+        private readonly WhoKnowsTrackService _whoKnowsTrackService;
         private readonly SpotifyService _spotifyService = new SpotifyService();
         private readonly Logger.Logger _logger;
 
@@ -40,13 +43,15 @@ namespace FMBot.Bot.Commands.LastFM
             ILastfmApi lastfmApi,
             GuildService guildService,
             UserService userService,
-            LastFMService lastFmService)
+            LastFMService lastFmService,
+            WhoKnowsTrackService whoKnowsTrackService)
         {
             this._logger = logger;
             this._prefixService = prefixService;
             this._guildService = guildService;
             this._userService = userService;
             this._lastFmService = lastFmService;
+            this._whoKnowsTrackService = whoKnowsTrackService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -521,54 +526,6 @@ namespace FMBot.Bot.Commands.LastFM
             this.Context.LogCommandUsed();
         }
 
-        private async Task<ResponseTrack> SearchTrack(string[] trackValues, User userSettings)
-        {
-            string searchValue;
-            if (trackValues.Any())
-            {
-                searchValue = string.Join(" ", trackValues);
-            }
-            else
-            {
-                var track = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
-
-                if (!track.Content.Any())
-                {
-                    this._embed.NoScrobblesFoundErrorResponse(track.Status, this.Context, this._logger);
-                    await this.ReplyAsync("", false, this._embed.Build());
-                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                    return null;
-                }
-
-                var trackResult = track.Content.First();
-                searchValue = $"{trackResult.Name} {trackResult.ArtistName}";
-            }
-
-            var result = await this._lastFmService.SearchTrackAsync(searchValue);
-            if (result.Success && result.Content.Any())
-            {
-                var track = result.Content[0];
-
-                var trackInfo = await this._lastFmService.GetTrackInfoAsync(track.Name, track.ArtistName,
-                    userSettings.UserNameLastFM);
-                return trackInfo;
-            }
-            else if (result.Success)
-            {
-                this._embed.WithDescription($"Track could not be found, please check your search values and try again.");
-                await this.ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return null;
-            }
-            else
-            {
-                this._embed.WithDescription($"Last.fm returned an error: {result.Status}");
-                await this.ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Error);
-                return null;
-            }
-        }
-
         [Command("toptracks", RunMode = RunMode.Async)]
         [Summary("Displays top tracks.")]
         [Alias("tt", "tl", "tracklist", "tracks", "trackslist")]
@@ -674,6 +631,107 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
+        [Command("whoknowstrack", RunMode = RunMode.Async)]
+        [Summary("Shows what other users listen to the same artist in your server")]
+        [Alias("wt", "wkt", "wktr", "wtr", "wktrack", "wk track", "whoknows track")]
+        [LoginRequired]
+        public async Task WhoKnowsAsync(params string[] trackValues)
+        {
+            if (this._guildService.CheckIfDM(this.Context))
+            {
+                await ReplyAsync("This command is not supported in DMs.");
+                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
+                return;
+            }
+
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
+
+            if (lastIndex == null)
+            {
+                await ReplyAsync("This server hasn't been indexed yet.\n" +
+                                 $"Please run `{prfx}index` to index this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+            if (lastIndex < DateTime.UtcNow.AddDays(-50))
+            {
+                await ReplyAsync("Server index data is out of date, it was last updated over 50 days ago.\n" +
+                                 $"Please run `{prfx}index` to re-index this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+
+            var guildTask = this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+            if (trackValues.Any() && trackValues.First() == "help")
+            {
+                await ReplyAsync(
+                    $"Usage: `{prfx}whoknowstrack 'artist and track name'`\n" +
+                    "If you don't enter any track name, it will get the info from the track you're currently listening to.");
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            var track = await this.SearchTrack(trackValues, userSettings);
+            if (track == null)
+            {
+                return;
+            }
+
+            var trackName = $"{track.Artist.Name} - {track.Name}";
+
+            try
+            {
+                var guild = await guildTask;
+                var users = guild.GuildUsers.Select(s => s.User).ToList();
+
+                var usersWithArtist = await this._whoKnowsTrackService.GetIndexedUsersForTrack(this.Context, users, track.Artist.Name, track.Name);
+
+                if (track.Userplaycount != 0)
+                {
+                    var guildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
+                    usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, userSettings, guildUser, trackName, track.Userplaycount);
+                }
+
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithArtist);
+                if (usersWithArtist.Count == 0)
+                {
+                    serverUsers = "Nobody in this server (not even you) has listened to this track.";
+                }
+
+                this._embed.WithDescription(serverUsers);
+                var footer = "";
+
+                if (lastIndex < DateTime.UtcNow.AddDays(-3))
+                {
+                    footer += "Missing members? Update with .fmindex";
+                }
+
+                this._embed.WithTitle($"Who knows {trackName} in {this.Context.Guild.Name}");
+
+                if (Uri.IsWellFormedUriString(track.Url, UriKind.Absolute))
+                {
+                    this._embed.WithUrl(track.Url);
+                }
+
+                this._embedFooter.WithText(footer);
+                this._embed.WithFooter(this._embedFooter);
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync("Something went wrong while using whoknows track. Please let us know as this feature is in beta.");
+            }
+        }
+
         private async Task<string> FindUser(string user)
         {
             if (await this._lastFmService.LastFMUserExistsAsync(user))
@@ -711,6 +769,54 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             return null;
+        }
+
+        private async Task<ResponseTrack> SearchTrack(string[] trackValues, User userSettings)
+        {
+            string searchValue;
+            if (trackValues.Any())
+            {
+                searchValue = string.Join(" ", trackValues);
+            }
+            else
+            {
+                var track = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
+
+                if (!track.Content.Any())
+                {
+                    this._embed.NoScrobblesFoundErrorResponse(track.Status, this.Context, this._logger);
+                    await this.ReplyAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                    return null;
+                }
+
+                var trackResult = track.Content.First();
+                searchValue = $"{trackResult.Name} {trackResult.ArtistName}";
+            }
+
+            var result = await this._lastFmService.SearchTrackAsync(searchValue);
+            if (result.Success && result.Content.Any())
+            {
+                var track = result.Content[0];
+
+                var trackInfo = await this._lastFmService.GetTrackInfoAsync(track.Name, track.ArtistName,
+                    userSettings.UserNameLastFM);
+                return trackInfo;
+            }
+            else if (result.Success)
+            {
+                this._embed.WithDescription($"Track could not be found, please check your search values and try again.");
+                await this.ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return null;
+            }
+            else
+            {
+                this._embed.WithDescription($"Last.fm returned an error: {result.Status}");
+                await this.ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Error);
+                return null;
+            }
         }
     }
 }

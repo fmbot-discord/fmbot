@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using FMBot.Domain;
 using FMBot.Persistence.Domain.Models;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
@@ -37,7 +38,7 @@ namespace FMBot.LastFM.Services
 
         public async Task IndexUser(User user)
         {
-            Thread.Sleep(5000);
+            Thread.Sleep(6000);
 
             Console.WriteLine($"Starting artist store for {user.UserNameLastFM}");
             var now = DateTime.UtcNow;
@@ -66,6 +67,7 @@ namespace FMBot.LastFM.Services
             {
                 var artistResult = await this._lastFMClient.User.GetTopArtists(user.UserNameLastFM,
                     LastStatsTimeSpan.Overall, i, 1000);
+                Statistics.LastfmApiCalls.Inc();
 
                 topArtists.AddRange(artistResult);
 
@@ -100,6 +102,7 @@ namespace FMBot.LastFM.Services
             {
                 var albumResult = await this._lastFMClient.User.GetTopAlbums(user.UserNameLastFM,
                     LastStatsTimeSpan.Overall, i, 1000);
+                Statistics.LastfmApiCalls.Inc();
 
                 topAlbums.AddRange(albumResult);
 
@@ -128,7 +131,7 @@ namespace FMBot.LastFM.Services
         {
             Console.WriteLine($"Getting tracks for user {user.UserNameLastFM}");
 
-            var trackResult = await this.lastFmService.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, 6);
+            var trackResult = await this.lastFmService.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, 8);
 
             if (!trackResult.Success || trackResult.Content.TopTracks.Track.Count == 0)
             {
@@ -217,8 +220,10 @@ namespace FMBot.LastFM.Services
         private async Task<DateTime> GetLatestScrobbleDate(User user)
         {
             var recentTracks = await this._lastFMClient.User.GetRecentScrobbles(user.UserNameLastFM, count: 1);
+            Statistics.LastfmApiCalls.Inc();
             if (!recentTracks.Success || !recentTracks.Content.Any() || !recentTracks.Content.First().TimePlayed.HasValue)
             {
+                Console.WriteLine("Recent track call to get latest scrobble date failed!");
                 return DateTime.UtcNow;
             }
 
