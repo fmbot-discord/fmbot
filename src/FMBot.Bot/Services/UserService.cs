@@ -8,6 +8,7 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace FMBot.Bot.Services
 {
@@ -273,13 +274,28 @@ namespace FMBot.Bot.Services
         public async Task DeleteUser(int userID)
         {
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            var user = await db.Users
-                .AsQueryable()
-                .FirstOrDefaultAsync(f => f.UserId == userID);
 
-            db.Users.Remove(user);
+            try
+            {
+                var user = await db.Users
+                    .Include(i => i.Artists)
+                    .Include(i => i.Albums)
+                    .Include(i => i.Tracks)
+                    .FirstOrDefaultAsync(f => f.UserId == userID);
 
-            await db.SaveChangesAsync();
+                db.UserArtists.RemoveRange(user.Artists);
+                db.UserAlbums.RemoveRange(user.Albums);
+                db.UserTracks.RemoveRange(user.Tracks);
+                db.Users.Remove(user);
+
+                await db.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "Error while deleting user!");
+                throw;
+            }
+            
         }
 
         public async Task<int> GetTotalUserCountAsync()

@@ -173,6 +173,7 @@ namespace FMBot.Bot.Commands.LastFM
         {
             var prfx = ConfigData.Data.Bot.Prefix;
 
+            var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             if (lastFMUserName == null || lastFMUserName == "help")
             {
                 var replyString = ".fmset is the command you use to set your last.fm username in the bot, so it knows who you are on the last.fm website. \n" +
@@ -180,12 +181,11 @@ namespace FMBot.Bot.Commands.LastFM
                                   "Sets your username, mode and playcount for the `.fm` command:\n \n" +
                                   $"`{prfx}set 'Last.FM Username' 'embedmini/embedfull/textmini/textfull' 'artist/album/track'` \n \n";
 
-                var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-                if (userSettings?.UserNameLastFM != null)
+                if (existingUserSettings?.UserNameLastFM != null)
                 {
-                    var differentMode = userSettings.FmEmbedType == FmEmbedType.embedmini ? "embedfull" : "embedmini";
+                    var differentMode = existingUserSettings.FmEmbedType == FmEmbedType.embedmini ? "embedfull" : "embedmini";
                     replyString += "Example of picking a different mode: \n" +
-                                   $"`{prfx}set {userSettings.UserNameLastFM} {differentMode} album`";
+                                   $"`{prfx}set {existingUserSettings.UserNameLastFM} {differentMode} album`";
                 }
                 else
                 {
@@ -218,19 +218,19 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var newUserSettings = new User
+            var userSettingsToAdd = new User
             {
                 UserNameLastFM = lastFMUserName
             };
 
-            newUserSettings = this._userService.SetSettings(newUserSettings, otherSettings);
+            userSettingsToAdd = this._userService.SetSettings(userSettingsToAdd, otherSettings);
 
-            this._userService.SetLastFM(this.Context.User, newUserSettings);
+            this._userService.SetLastFM(this.Context.User, userSettingsToAdd);
 
-            var setReply = $"Your Last.FM name has been set to '{lastFMUserName}' and your .fm mode to '{newUserSettings.FmEmbedType}'";
-            if (newUserSettings.FmCountType != null)
+            var setReply = $"Your Last.FM name has been set to '{lastFMUserName}' and your .fm mode to '{userSettingsToAdd.FmEmbedType}'";
+            if (userSettingsToAdd.FmCountType != null)
             {
-                setReply += $" with the '{newUserSettings.FmCountType.ToString().ToLower()}' playcount.";
+                setReply += $" with the '{userSettingsToAdd.FmCountType.ToString().ToLower()}' playcount.";
             }
 
             if (otherSettings.Length < 1)
@@ -242,12 +242,16 @@ namespace FMBot.Bot.Commands.LastFM
 
             this.Context.LogCommandUsed();
 
-            var freshUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            await this._indexService.IndexUser(freshUserSettings);
+            var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            if (existingUserSettings == null ||
+                existingUserSettings.UserNameLastFM.ToLower() != newUserSettings.UserNameLastFM.ToLower())
+            {
+                await this._indexService.IndexUser(newUserSettings);
+            }
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                await this._indexService.AddUserToGuild(Context.Guild, freshUserSettings);
+                await this._indexService.AddUserToGuild(Context.Guild, newUserSettings);
 
                 var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
                 if (!perms.EmbedLinks || !perms.AttachFiles)

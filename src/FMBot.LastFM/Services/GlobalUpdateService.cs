@@ -42,6 +42,7 @@ namespace FMBot.LastFM.Services
             var recentTracks = await this._lastFMClient.User.GetRecentScrobbles(user.UserNameLastFM, count: 1000);
             if (!recentTracks.Success || !recentTracks.Content.Any())
             {
+                Console.WriteLine($"Something went wrong getting recent tracks for {user.UserNameLastFM} | {recentTracks.Status}");
                 return 0;
             }
 
@@ -52,6 +53,7 @@ namespace FMBot.LastFM.Services
             if (!newScrobbles.Any())
             {
                 Console.WriteLine($"No new scrobbles for {user.UserNameLastFM}");
+                await SetUserUpdateTime(user.UserId, DateTime.UtcNow);
                 return 0;
             }
 
@@ -62,7 +64,7 @@ namespace FMBot.LastFM.Services
             await UpdateTracksForUser(user, newScrobbles);
 
             var latestScrobbleDate = recentTracks.Content.OrderByDescending(o => o.TimePlayed.Value.DateTime).First().TimePlayed.Value.DateTime;
-            await SetUserUpdateTime(user.UserId, DateTime.UtcNow, latestScrobbleDate);
+            await SetUserUpdateAndScrobbleTime(user.UserId, DateTime.UtcNow, latestScrobbleDate);
 
             return newScrobbles.Count;
         }
@@ -160,12 +162,21 @@ namespace FMBot.LastFM.Services
             Console.WriteLine($"Updated tracks for {user.UserNameLastFM}");
         }
 
-        private async Task SetUserUpdateTime(int userId, DateTime now, DateTime lastScrobble)
+        private async Task SetUserUpdateAndScrobbleTime(int userId, DateTime now, DateTime lastScrobble)
         {
             await using var connection = new NpgsqlConnection(this._connectionString);
             connection.Open();
 
             await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_updated = '{now:u}', last_scrobble_update = '{lastScrobble:u}', WHERE user_id = {userId};", connection);
+            await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+
+        private async Task SetUserUpdateTime(int userId, DateTime now)
+        {
+            await using var connection = new NpgsqlConnection(this._connectionString);
+            connection.Open();
+
+            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_updated = '{now:u}' WHERE user_id = {userId};", connection);
             await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
     }

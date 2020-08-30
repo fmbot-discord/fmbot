@@ -512,11 +512,9 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(serverUsers);
                 var footer = "";
 
-                var timeTillIndex = DateTime.UtcNow - lastIndex.Value;
-                footer += $"Last updated {(int)timeTillIndex.TotalHours}h{timeTillIndex:mm}m ago";
-                if (lastIndex < DateTime.UtcNow.Add(-Constants.GuildIndexCooldown))
+                if (lastIndex < DateTime.UtcNow.AddDays(-3))
                 {
-                    footer += $" - Update data with {prfx}index";
+                    footer += $"Missing members? Update with .fmindex";
                 }
 
                 if (guild.GuildUsers.Count < 400)
@@ -609,11 +607,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var footer = "";
 
-                var timeTillIndex = DateTime.UtcNow - guild.LastIndexed.Value;
-                footer += $"Last updated {(int)timeTillIndex.TotalHours}h{timeTillIndex:mm}m ago";
-                if (guild.LastIndexed < DateTime.UtcNow.Add(-Constants.GuildIndexCooldown))
+                if (guild.LastIndexed < DateTime.UtcNow.AddDays(-3))
                 {
-                    footer += $" - Update data with {prfx}index";
+                    footer += $"Missing members? Update with .fmindex";
                 }
 
                 footer += "\nView specific artist info with .fmartist";

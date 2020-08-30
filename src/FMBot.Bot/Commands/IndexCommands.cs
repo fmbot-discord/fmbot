@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
@@ -18,19 +19,21 @@ namespace FMBot.Bot.Commands
         private readonly UserService _userService;
         private readonly IIndexService _indexService;
         private readonly IUpdateService _updateService;
-        private readonly Logger.Logger _logger;
 
-        public IndexCommands(Logger.Logger logger,
+        private readonly IPrefixService _prefixService;
+
+        public IndexCommands(
             IIndexService indexService,
             IUpdateService updateService,
             GuildService guildService,
-            UserService userService)
+            UserService userService,
+            IPrefixService prefixService)
         {
-            this._logger = logger;
             this._indexService = indexService;
             this._updateService = updateService;
             this._guildService = guildService;
             this._userService = userService;
+            this._prefixService = prefixService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
         }
@@ -56,15 +59,13 @@ namespace FMBot.Bot.Commands
                 var users = await this._indexService.GetUsersToIndex(guildUsers);
                 var indexedUserCount = await this._indexService.GetIndexedUsersCount(guildUsers);
 
-                var guildOnCooldown =
-                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
-
                 var guildRecentlyIndexed =
-                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(3));
+                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(5));
 
                 if (guildRecentlyIndexed)
                 {
                     await ReplyAsync("An index was recently started on this server. Please wait before running this command again.");
+                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
                     return;
                 }
                 if (users.Count == 0 && lastIndex != null)
@@ -72,15 +73,9 @@ namespace FMBot.Bot.Commands
                     await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
 
                     var reply =
-                        $"No new registered .fmbot members found on this server or all users have already been indexed in the last {Constants.GuildIndexCooldown.TotalHours} hours.\n" +
+                        $"No new registered .fmbot members found on this server or all users have already been indexed. Note that updating users happens automatically, but you can also manually update yourself using `.fmupdate`.\n" +
                         $"Stored guild users have been updated.";
 
-                    if (guildOnCooldown)
-                    {
-                        var timeTillIndex = lastIndex.Value.Add(Constants.GuildIndexCooldown) - DateTime.UtcNow;
-                        reply +=
-                            $"\nAll users in this server can be updated again in {(int)timeTillIndex.TotalHours} hours and {timeTillIndex:mm} minutes";
-                    }
                     await ReplyAsync(reply);
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
                     return;
@@ -96,11 +91,6 @@ namespace FMBot.Bot.Commands
                 }
 
                 string usersString = "";
-                if (guildOnCooldown)
-                {
-                    usersString = "new ";
-                }
-
                 if (users.Count == 1)
                 {
                     usersString += "user";
@@ -112,10 +102,10 @@ namespace FMBot.Bot.Commands
 
                 this._embed.WithTitle($"Added {users.Count} {usersString} to bot indexing queue");
 
-                var expectedTime = TimeSpan.FromSeconds(2 * users.Count);
+                var expectedTime = TimeSpan.FromSeconds(4 * users.Count);
                 var indexStartedReply =
-                    $"Indexing stores users their all time top {Constants.ArtistsToIndex} artists. \n\n" +
-                    $"`{users.Count}` new users or users with expired artists added to queue.";
+                    $"Indexing stores which .fmbot members are on your server and stores their initial top artist, albums and tracks. Updating these records happens automatically, but you can also use `.fmupdate` to update your own account.\n\n" +
+                    $"`{users.Count}` new users or users that have never been index added to index queue.";
 
                 if (expectedTime.TotalMinutes >= 2)
                 {
@@ -149,10 +139,43 @@ namespace FMBot.Bot.Commands
         [LoginRequired]
         public async Task UpdateUserAsync(string force = null)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-            if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full"))
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            if (force == "help")
             {
+                this._embed.WithTitle($"{prfx}update");
+                this._embed.WithDescription($"Updates your top artists/albums/genres based on your latest scrobbles.\n" +
+                                            $"Add `full` to fully update your account in case you edited your scrobble history.\n" +
+                                            $"Note that updating also happens automatically.");
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}update\n" +
+                    $"`{prfx}update full`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-1))
+            {
+                await ReplyAsync(
+                    "You have already been updated recently. Note that this also happens automatically.");
+                this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                return;
+            }
+
+            if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full" || force.ToLower() == "-force" || force.ToLower() == "force"))
+            {
+                if (userSettings.LastUpdated < DateTime.UtcNow.AddDays(-2))
+                {
+                    await ReplyAsync(
+                        "You can't do a full index too often. Please remember that this command should only be used in case you edited your scrobble history or changed your last.fm username.\n" +
+                        "Experiencing issues with the normal update? Please contact us on the .fmbot support server.");
+                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                    return;
+                }
+
                 this._embed.WithDescription($"<a:loading:748652128502939778> Fully indexing user {userSettings.UserNameLastFM}..." +
                                             $"\nThis can take a while. Please don't fully update too often, if you have any issues with the normal update feel free to let us know.");
 
