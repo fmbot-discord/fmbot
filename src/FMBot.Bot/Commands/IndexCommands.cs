@@ -198,6 +198,14 @@ namespace FMBot.Bot.Commands
             }
             else
             {
+                if (userSettings.LastIndexed == null)
+                {
+                    await ReplyAsync(
+                        "You have to be indexed before you can update. (`.fmupdate full`)");
+                    this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                    return;
+                }
+
                 this._embed.WithDescription($"<a:loading:749715170682470461> Updating user {userSettings.UserNameLastFM}...");
                 var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
