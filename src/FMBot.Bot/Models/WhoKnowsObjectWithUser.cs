@@ -1,8 +1,8 @@
 namespace FMBot.Bot.Models
 {
-    public class ArtistWithUser
+    public class WhoKnowsObjectWithUser
     {
-        public string ArtistName { get; set; }
+        public string Name { get; set; }
 
         public int Playcount { get; set; }
 

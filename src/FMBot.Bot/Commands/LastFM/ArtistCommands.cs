@@ -11,6 +11,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
@@ -29,6 +30,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly GuildService _guildService;
         private readonly ArtistsService _artistsService;
         private readonly WhoKnowsService _whoKnowsService;
+        private readonly WhoKnowsArtistService _whoKnowArtistService;
         private readonly LastFMService _lastFmService;
         private readonly SpotifyService _spotifyService = new SpotifyService();
         private readonly IPrefixService _prefixService;
@@ -42,6 +44,7 @@ namespace FMBot.Bot.Commands.LastFM
             IPrefixService prefixService,
             ArtistsService artistsService,
             WhoKnowsService whoKnowsService,
+            WhoKnowsArtistService whoKnowsArtistService,
             GuildService guildService,
             UserService userService,
             LastFMService lastFmService)
@@ -52,6 +55,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._prefixService = prefixService;
             this._artistsService = artistsService;
             this._whoKnowsService = whoKnowsService;
+            this._whoKnowArtistService = whoKnowsArtistService;
             this._guildService = guildService;
             this._userService = userService;
             this._embed = new EmbedBuilder()
@@ -130,9 +134,9 @@ namespace FMBot.Bot.Commands.LastFM
                 if (guild.LastIndexed != null)
                 {
                     var guildUsers = guild.GuildUsers.Select(s => s.User).ToList();
-                    var serverListeners = await this._whoKnowsService.GetArtistListenerCountForServer(guildUsers, artistInfo.Name);
-                    var serverPlaycount = await this._whoKnowsService.GetArtistPlayCountForServer(guildUsers, artistInfo.Name);
-                    var avgServerListenerPlaycount = await this._whoKnowsService.GetArtistAverageListenerPlaycountForServer(guildUsers, artistInfo.Name);
+                    var serverListeners = await this._whoKnowArtistService.GetArtistListenerCountForServer(guildUsers, artistInfo.Name);
+                    var serverPlaycount = await this._whoKnowArtistService.GetArtistPlayCountForServer(guildUsers, artistInfo.Name);
+                    var avgServerListenerPlaycount = await this._whoKnowArtistService.GetArtistAverageListenerPlaycountForServer(guildUsers, artistInfo.Name);
 
                     serverStats += $"`{serverListeners}` listeners";
                     serverStats += $"\n`{serverPlaycount}` total plays";
@@ -486,24 +490,17 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var artist = artistCall.Content;
 
-                var usersWithArtist = await this._whoKnowsService.GetIndexedUsersForArtist(this.Context, users, artist.Artist.Name);
+                var usersWithArtist = await this._whoKnowArtistService.GetIndexedUsersForArtist(this.Context, users, artist.Artist.Name);
 
                 Statistics.LastfmApiCalls.Inc();
 
-                if (usersWithArtist.Count == 0 && artist.Artist.Stats.Userplaycount != 0)
+                if (artist.Artist.Stats.Userplaycount != 0)
                 {
                     var guildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
-                    usersWithArtist =
-                        WhoKnowsService.AddUserToIndexList(usersWithArtist, userSettings, guildUser, artist);
-                }
-                if (!usersWithArtist.Select(s => s.UserId).Contains(userSettings.UserId) && usersWithArtist.Count != 14 && artist.Artist.Stats.Userplaycount != 0)
-                {
-                    var guildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
-                    usersWithArtist =
-                        WhoKnowsService.AddUserToIndexList(usersWithArtist, userSettings, guildUser, artist);
+                    usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, userSettings, guildUser, artist.Artist.Name, artist.Artist.Stats.Userplaycount);
                 }
 
-                var serverUsers = WhoKnowsService.ArtistWithUserToStringList(usersWithArtist, artist, userSettings.UserId);
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithArtist);
                 if (usersWithArtist.Count == 0)
                 {
                     serverUsers = "Nobody in this server (not even you) has listened to this artist.";
@@ -519,9 +516,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (guild.GuildUsers.Count < 400)
                 {
-                    var serverListeners = await this._whoKnowsService.GetArtistListenerCountForServer(users, artist.Artist.Name);
-                    var serverPlaycount = await this._whoKnowsService.GetArtistPlayCountForServer(users, artist.Artist.Name);
-                    var avgServerListenerPlaycount = await this._whoKnowsService.GetArtistAverageListenerPlaycountForServer(users, artist.Artist.Name);
+                    var serverListeners = await this._whoKnowArtistService.GetArtistListenerCountForServer(users, artist.Artist.Name);
+                    var serverPlaycount = await this._whoKnowArtistService.GetArtistPlayCountForServer(users, artist.Artist.Name);
+                    var avgServerListenerPlaycount = await this._whoKnowArtistService.GetArtistAverageListenerPlaycountForServer(users, artist.Artist.Name);
 
                     footer += $"\n{serverListeners} listeners - ";
                     footer += $"{serverPlaycount} total plays - ";
@@ -593,7 +590,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var topGuildArtists = await this._whoKnowsService.GetTopArtistsForGuild(guild.GuildUsers.Select(s => s.User).ToList());
+                var topGuildArtists = await this._whoKnowArtistService.GetTopArtistsForGuild(guild.GuildUsers.Select(s => s.User).ToList());
 
                 var description = "";
                 for (var i = 0; i < topGuildArtists.Count(); i++)

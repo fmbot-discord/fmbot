@@ -47,7 +47,7 @@ namespace FMBot.LastFM.Services
             }
 
             var newScrobbles = recentTracks.Content
-                .Where(w => w.TimePlayed.Value.DateTime > user.LastScrobbleUpdate)
+                .Where(w => w.TimePlayed.HasValue && w.TimePlayed.Value.DateTime > user.LastScrobbleUpdate)
                 .ToList();
 
             if (!newScrobbles.Any())
@@ -167,7 +167,7 @@ namespace FMBot.LastFM.Services
             await using var connection = new NpgsqlConnection(this._connectionString);
             connection.Open();
 
-            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_updated = '{now:u}', last_scrobble_update = '{lastScrobble:u}', WHERE user_id = {userId};", connection);
+            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_updated = '{now:u}', last_scrobble_update = '{lastScrobble:u}' WHERE user_id = {userId};", connection);
             await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
