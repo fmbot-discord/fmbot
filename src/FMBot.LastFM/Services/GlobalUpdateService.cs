@@ -35,7 +35,7 @@ namespace FMBot.LastFM.Services
 
         public async Task<int> UpdateUser(User user)
         {
-            Thread.Sleep(1000);
+            Thread.Sleep(500);
 
             Console.WriteLine($"Updating {user.UserNameLastFM}");
 

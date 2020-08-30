@@ -44,13 +44,13 @@ namespace FMBot.LastFM.Services
             var now = DateTime.UtcNow;
 
             var artists = await GetArtistsForUserFromLastFm(user);
-            await InsertArtistsIntoDatabase(artists, user.UserId, now);
+            await InsertArtistsIntoDatabase(artists, user.UserId);
 
             var albums = await GetAlbumsForUserFromLastFm(user);
-            await InsertAlbumsIntoDatabase(albums, user.UserId, now);
+            await InsertAlbumsIntoDatabase(albums, user.UserId);
 
             var tracks = await GetTracksForUserFromLastFm(user);
-            await InsertTracksIntoDatabase(tracks, user.UserId, now);
+            await InsertTracksIntoDatabase(tracks, user.UserId);
 
             var latestScrobbleDate = await GetLatestScrobbleDate(user);
             await SetUserIndexTime(user.UserId, now, latestScrobbleDate);
@@ -82,9 +82,10 @@ namespace FMBot.LastFM.Services
                 return new List<UserArtist>();
             }
 
+            var now = DateTime.UtcNow;
             return topArtists.Select(a => new UserArtist
             {
-                LastUpdated = DateTime.UtcNow,
+                LastUpdated = now,
                 Name = a.Name,
                 Playcount = a.PlayCount.Value,
                 UserId = user.UserId
@@ -117,9 +118,10 @@ namespace FMBot.LastFM.Services
                 return new List<UserAlbum>();
             }
 
+            var now = DateTime.UtcNow;
             return topAlbums.Select(a => new UserAlbum
             {
-                LastUpdated = DateTime.UtcNow,
+                LastUpdated = now,
                 Name = a.Name,
                 ArtistName = a.ArtistName,
                 Playcount = a.PlayCount.Value,
@@ -138,9 +140,10 @@ namespace FMBot.LastFM.Services
                 return new List<UserTrack>();
             }
 
+            var now = DateTime.UtcNow;
             return trackResult.Content.TopTracks.Track.Select(a => new UserTrack
             {
-                LastUpdated = DateTime.UtcNow,
+                LastUpdated = now,
                 Name = a.Name,
                 ArtistName = a.Artist.Name,
                 Playcount = Convert.ToInt32(a.Playcount),
@@ -148,7 +151,7 @@ namespace FMBot.LastFM.Services
             }).ToList();
         }
 
-        private async Task InsertArtistsIntoDatabase(IReadOnlyList<UserArtist> artists, int userId, DateTime now)
+        private async Task InsertArtistsIntoDatabase(IReadOnlyList<UserArtist> artists, int userId)
         {
             Console.WriteLine($"Inserting artists for user {userId}");
 
@@ -167,7 +170,7 @@ namespace FMBot.LastFM.Services
             await copyHelper.SaveAllAsync(connection, artists).ConfigureAwait(false);
         }
 
-        private async Task InsertAlbumsIntoDatabase(IReadOnlyList<UserAlbum> albums, int userId, DateTime now)
+        private async Task InsertAlbumsIntoDatabase(IReadOnlyList<UserAlbum> albums, int userId)
         {
             Console.WriteLine($"Inserting albums for user {userId}");
 
@@ -187,7 +190,7 @@ namespace FMBot.LastFM.Services
             await copyHelper.SaveAllAsync(connection, albums).ConfigureAwait(false);
         }
 
-        private async Task InsertTracksIntoDatabase(IReadOnlyList<UserTrack> artists, int userId, DateTime now)
+        private async Task InsertTracksIntoDatabase(IReadOnlyList<UserTrack> artists, int userId)
         {
             Console.WriteLine($"Inserting tracks for user {userId}");
 
@@ -210,6 +213,8 @@ namespace FMBot.LastFM.Services
 
         private async Task SetUserIndexTime(int userId, DateTime now, DateTime lastScrobble)
         {
+            Console.WriteLine($"Setting user index time for user {userId}");
+
             await using var connection = new NpgsqlConnection(this._connectionString);
             connection.Open();
 
@@ -221,13 +226,13 @@ namespace FMBot.LastFM.Services
         {
             var recentTracks = await this._lastFMClient.User.GetRecentScrobbles(user.UserNameLastFM, count: 1);
             Statistics.LastfmApiCalls.Inc();
-            if (!recentTracks.Success || !recentTracks.Content.Any() || !recentTracks.Content.First().TimePlayed.HasValue)
+            if (!recentTracks.Success || !recentTracks.Content.Any() || !recentTracks.Content.Any(a => a.TimePlayed.HasValue))
             {
                 Console.WriteLine("Recent track call to get latest scrobble date failed!");
                 return DateTime.UtcNow;
             }
 
-            return recentTracks.Content.First().TimePlayed.Value.DateTime;
+            return recentTracks.Content.First(f => f.TimePlayed.HasValue).TimePlayed.Value.DateTime;
         }
     }
 }
