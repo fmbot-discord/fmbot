@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
 using FMBot.LastFM.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -29,6 +31,7 @@ namespace FMBot.Bot.Services
         {
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var dbArtist = await db.Artists
+                .Include(i => i.ArtistAliases)
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.Name.ToLower() == lastFmArtist.Artist.Name.ToLower());
 
@@ -60,7 +63,16 @@ namespace FMBot.Bot.Services
 
                     if (!string.Equals(artistNameBeforeCorrect, lastFmArtist.Artist.Name, StringComparison.CurrentCultureIgnoreCase))
                     {
-                        artistToAdd.Aliases = new[] { artistNameBeforeCorrect };
+                        var aliasList = new List<ArtistAlias>
+                        {
+                            new ArtistAlias
+                            {
+                                Alias = artistNameBeforeCorrect,
+                                CorrectsInScrobbles = true
+                            }
+                        };
+
+                        artistToAdd.ArtistAliases = aliasList;
                     }
 
                     await db.Artists.AddAsync(artistToAdd);
@@ -70,9 +82,7 @@ namespace FMBot.Bot.Services
                 {
                     if (!string.Equals(artistNameBeforeCorrect, lastFmArtist.Artist.Name, StringComparison.CurrentCultureIgnoreCase))
                     {
-                        AddAliasToExistingArtist(artistNameBeforeCorrect, dbArtist);
-
-                        db.Entry(dbArtist).State = EntityState.Modified;
+                        AddAliasToExistingArtist(artistNameBeforeCorrect, dbArtist, db);
                     }
 
                     if (dbArtist.SpotifyImageUrl == null || dbArtist.SpotifyImageDate < DateTime.UtcNow.AddMonths(-2))
@@ -105,18 +115,16 @@ namespace FMBot.Bot.Services
             }
         }
 
-        private static void AddAliasToExistingArtist(string artistNameBeforeCorrect, Artist dbArtist)
+        private static void AddAliasToExistingArtist(string artistNameBeforeCorrect, Artist dbArtist, FMBotDbContext db)
         {
-            if (dbArtist.Aliases != null && dbArtist.Aliases.Length > 0 && !dbArtist.Aliases.Contains(artistNameBeforeCorrect))
+            if (!dbArtist.ArtistAliases.Any() || !dbArtist.ArtistAliases.Select(s => s.Alias.ToLower()).Contains(artistNameBeforeCorrect.ToLower()))
             {
-                var aliases = dbArtist.Aliases;
-                Array.Resize(ref aliases, aliases.Length + 1);
-                aliases[^1] = artistNameBeforeCorrect;
-                dbArtist.Aliases = aliases;
-            }
-            else
-            {
-                dbArtist.Aliases = new[] {artistNameBeforeCorrect};
+                db.ArtistAliases.Add(new ArtistAlias
+                {
+                    ArtistId = dbArtist.Id,
+                    Alias = artistNameBeforeCorrect,
+                    CorrectsInScrobbles = true
+                });
             }
         }
 
@@ -141,7 +149,7 @@ namespace FMBot.Bot.Services
             return null;
         }
 
-        public async Task<Persistence.Domain.Models.Track> GetOrStoreTrackAsync(ResponseTrack track)
+        public async Task<Track> GetOrStoreTrackAsync(ResponseTrack track)
         {
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var dbTrack = await db.Tracks

@@ -21,13 +21,13 @@ namespace FMBot.Bot.Resources
 
         public const string ExpandedTimePeriodList = "'weekly', 'monthly', 'quarterly', 'half', 'yearly', or 'alltime'";
 
-        public static TimeSpan GuildIndexCooldown = TimeSpan.FromDays(2);
-
         /// <summary>Amount of users to index. Should always end with 000</summary>
         public const int ArtistsToIndex = 4000;
 
         /// <summary>The Discord color for a warning embed.</summary>
         public static Color WarningColorOrange = new Color(255, 174, 66);
+
+        public static Color SuccessColorGreen = new Color(50, 205, 50);
     }
 }
 

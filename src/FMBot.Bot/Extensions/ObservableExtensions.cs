@@ -2,6 +2,7 @@ using System;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using Serilog;
 
 namespace FMBot.Bot.Extensions
 {
@@ -19,11 +20,11 @@ namespace FMBot.Bot.Extensions
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine("Error occured in subscription OnNext");
+                        Log.Error(ex, "Error occured in subscription OnNext");
                     }
                 }, ex =>
                 {
-                    Console.WriteLine("Error occured in subscription OnNext");
+                    Log.Error(ex, "Error occured in subscription OnNext");
                 });
         }
     }

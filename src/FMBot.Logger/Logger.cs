@@ -20,11 +20,6 @@ namespace FMBot.Logger
             sw.WriteLine($"{DateTime.Now:T} : {text}");
         }
 
-        public void LogCommandUsed(ulong? id, ulong channelId, ulong userId, string commandName)
-        {
-            Log($"GuildId: {id} || ChannelId: {channelId} || UserId: {userId} || Used: {commandName}");
-        }
-
         public void LogError(string errorReason, string message = null, string username = null, string guildName = null, ulong? guildId = null)
         {
             string error = $"{DateTime.Now:T} : Error - {errorReason} \n" +

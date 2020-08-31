@@ -11,6 +11,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
@@ -62,6 +63,7 @@ namespace FMBot.Bot.Commands
             }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
         }
 
         [Command("info", RunMode = RunMode.Async)]
@@ -97,6 +99,7 @@ namespace FMBot.Bot.Commands
             }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
         }
 
         [Command("status", RunMode = RunMode.Async)]
@@ -139,6 +142,7 @@ namespace FMBot.Bot.Commands
             this._embed.WithDescription(description);
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
         }
 
         [Command("help", RunMode = RunMode.Async)]
@@ -165,14 +169,14 @@ namespace FMBot.Bot.Commands
             this._embed.AddField($"Main command `{prefix}{mainCommand}`",
                 "Displays last scrobbles, and looks different depending on the mode you've set.");
 
-            this._embed.AddField("Setting up: `.fmset lastfmusername`",
+            this._embed.AddField($"Setting up: `{prefix}set lastfmusername`",
                 $"For more settings, please use `{prefix}set help`.");
 
             if (customPrefix)
             {
                 this._embed.AddField("Custom prefix:",
                     $"This server has the `{prefix}` prefix.\n" +
-                    $"Note that the documentation has the `.fm` prefix everywhere.");
+                    $"Note that the documentation has the `.fm` prefix everywhere, so you'll have to replace `.fm` with `{prefix}`.");
             }
 
             this._embed.AddField("For more commands and info, please read the documentation here:",
@@ -186,6 +190,7 @@ namespace FMBot.Bot.Commands
             }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
         }
 
 
@@ -243,6 +248,7 @@ namespace FMBot.Bot.Commands
             {
                 await this.Context.Channel.SendMessageAsync("Check your DMs!");
             }
+            this.Context.LogCommandUsed();
         }
 
         private static bool IsBotSelfHosted(ulong botId)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using FMBot.Domain.Models;
 
 namespace FMBot.Persistence.Domain.Models
 {
@@ -31,11 +32,19 @@ namespace FMBot.Persistence.Domain.Models
 
         public DateTime? LastIndexed { get; set; }
 
+        public DateTime? LastUpdated { get; set; }
+
+        public DateTime? LastScrobbleUpdate { get; set; }
+
         public ICollection<Friend> FriendedByUsers { get; set; }
 
         public ICollection<Friend> Friends { get; set; }
 
         public ICollection<UserArtist> Artists { get; set; }
+
+        public ICollection<UserAlbum> Albums { get; set; }
+
+        public ICollection<UserTrack> Tracks { get; set; }
 
         public ICollection<GuildUser> GuildUsers { get; set; }
     }

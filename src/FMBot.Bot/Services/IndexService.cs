@@ -6,41 +6,49 @@ using Discord;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
-using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using PostgreSQLCopyHelper;
+using Serilog;
 
 namespace FMBot.Bot.Services
 {
     public class IndexService : IIndexService
     {
         private readonly IUserIndexQueue _userIndexQueue;
-        private readonly UpdateService _updateService;
+        private readonly GlobalIndexService _globalIndexService;
 
-        public IndexService(IUserIndexQueue userIndexQueue, UpdateService updateService)
+        public IndexService(IUserIndexQueue userIndexQueue, GlobalIndexService indexService)
         {
             this._userIndexQueue = userIndexQueue;
             this._userIndexQueue.UsersToIndex.SubscribeAsync(OnNextAsync);
-            this._updateService = updateService;
+            this._globalIndexService = indexService;
         }
 
         private async Task OnNextAsync(User user)
         {
-            await this._updateService.InitialUserIndex(user);
+            Log.Verbose("User next up for index is {UserNameLastFM}", user.UserNameLastFM);
+            await this._globalIndexService.IndexUser(user);
         }
 
         public void IndexGuild(IReadOnlyList<User> users)
         {
-            Console.WriteLine($"Starting artist update for {users.Count} users");
+            Log.Information($"Starting artist update for {users.Count} users");
 
             this._userIndexQueue.Publish(users.ToList());
         }
 
+        public async Task IndexUser(User user)
+        {
+            Log.Information("Starting index for {UserNameLastFM}", user.UserNameLastFM);
+
+            await this._globalIndexService.IndexUser(user);
+        }
 
         public async Task StoreGuildUsers(IGuild guild, IReadOnlyCollection<IGuildUser> guildUsers)
         {
@@ -73,19 +81,67 @@ namespace FMBot.Bot.Services
             await deleteCurrentArtists.ExecuteNonQueryAsync().ConfigureAwait(false);
 
             await copyHelper.SaveAllAsync(connection, users).ConfigureAwait(false);
+
+            Log.Information("Stored guild users for guild with id {guildId}", existingGuild.GuildId);
+        }
+
+        public async Task AddUserToGuild(IGuild guild, User user)
+        {
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            var existingGuild = await db.Guilds
+                .Include(i => i.GuildUsers)
+                .FirstAsync(f => f.DiscordGuildId == guild.Id);
+
+            if (existingGuild == null)
+            {
+                var newGuild = new Guild
+                {
+                    DiscordGuildId = guild.Id,
+                    ChartTimePeriod = ChartTimePeriod.Monthly,
+                    FmEmbedType = FmEmbedType.embedmini,
+                    Name = guild.Name,
+                    TitlesEnabled = true,
+                };
+
+                await db.Guilds.AddAsync(newGuild);
+
+                await db.SaveChangesAsync();
+
+                Log.Information("Added guild {guildName} to database", guild.Name);
+
+                var guildId = db.Guilds.First(f => f.DiscordGuildId == guild.Id).GuildId;
+
+                await db.GuildUsers.AddAsync(new GuildUser
+                {
+                    GuildId = guildId,
+                    UserId = user.UserId
+                });
+
+                Log.Information("Added user {userId} to guild {guildName}", user.UserId, guild.Name);
+            }
+            else if (!existingGuild.GuildUsers.Select(g => g.UserId).Contains(user.UserId))
+            {
+                await db.GuildUsers.AddAsync(new GuildUser
+                {
+                    GuildId = existingGuild.GuildId,
+                    UserId = user.UserId
+                });
+
+                Log.Information("Added user {userId} to guild {guildName}", user.UserId, guild.Name);
+            }
+
+            await db.SaveChangesAsync();
         }
 
         public async Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> guildUsers)
         {
             var userIds = guildUsers.Select(s => s.Id).ToList();
 
-            var tooRecent = DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
-
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Users
                 .Include(i => i.Artists)
                 .Where(w => userIds.Contains(w.DiscordUserId)
-                && (w.LastIndexed == null || w.LastIndexed <= tooRecent))
+                && (w.LastIndexed == null || w.LastUpdated == null))
                 .ToListAsync();
         }
 
@@ -93,13 +149,11 @@ namespace FMBot.Bot.Services
         {
             var userIds = guildUsers.Select(s => s.Id).ToList();
 
-            var indexCooldown = DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
-
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Users
                 .AsQueryable()
                 .Where(w => userIds.Contains(w.DiscordUserId)
-                    && w.LastIndexed != null && w.LastIndexed >= indexCooldown)
+                    && w.LastIndexed != null)
                 .CountAsync();
         }
     }

@@ -23,6 +23,7 @@ namespace FMBot.DbMigration
                               "3. Migrate only guilds \n" +
                               "4. Clear new database \n" +
                               "5. Fix key values (use this if you have issues inserting new records) \n" +
+                              "6. Migrate artists aliases to seperate records \n" +
                               "Select an option to continue...");
 
             var key = Console.ReadKey().Key.ToString();
@@ -45,6 +46,11 @@ namespace FMBot.DbMigration
             {
                 await ClearNewDatabase();
                 saveToDatabase = false;
+            }
+            else if (key == "D6")
+            {
+                await MigrateArtistsToRecords();
+                saveToDatabase = true;
             }
             else if (key == "D5")
             {
@@ -105,27 +111,27 @@ namespace FMBot.DbMigration
                 .ToList();
 
             Console.WriteLine($"Inserting {usersToInsert.Count} users that do not yet exist into the new database");
-            await NewDatabaseContext.Users.AddRangeAsync(
-                usersToInsert
-                    .Select(s => new Friend.User
-                    {
-                        Blacklisted = s.Blacklisted,
-                        ChartTimePeriod = s.ChartTimePeriod,
-                        FmEmbedType = s.FmEmbedType,
-                        DiscordUserId = ulong.Parse(s.DiscordUserID),
-                        Featured = s.Featured,
-                        LastGeneratedChartDateTimeUtc = s.LastGeneratedChartDateTimeUtc,
-                        TitlesEnabled = s.TitlesEnabled,
-                        UserNameLastFM = s.UserNameLastFM,
-                        UserType = s.UserType,
-                        UserId = s.UserID,
-                        Friends = s.FriendsUser.Select(se => new Friend.Friend
-                        {
-                            UserId = se.UserID,
-                            LastFMUserName = se.LastFMUserName,
-                            FriendUserId = se.FriendUserID,
-                        }).ToList()
-                    }));
+            //await NewDatabaseContext.Users.AddRangeAsync(
+            //    usersToInsert
+            //        .Select(s => new Friend.User
+            //        {
+            //            Blacklisted = s.Blacklisted,
+            //            ChartTimePeriod = s.ChartTimePeriod,
+            //            FmEmbedType = s.FmEmbedType,
+            //            DiscordUserId = ulong.Parse(s.DiscordUserID),
+            //            Featured = s.Featured,
+            //            LastGeneratedChartDateTimeUtc = s.LastGeneratedChartDateTimeUtc,
+            //            TitlesEnabled = s.TitlesEnabled,
+            //            UserNameLastFM = s.UserNameLastFM,
+            //            UserType = s.UserType,
+            //            UserId = s.UserID,
+            //            Friends = s.FriendsUser.Select(se => new Friend.Friend
+            //            {
+            //                UserId = se.UserID,
+            //                LastFMUserName = se.LastFMUserName,
+            //                FriendUserId = se.FriendUserID,
+            //            }).ToList()
+            //        }));
 
             Console.WriteLine("Users have been inserted.");
         }
@@ -146,19 +152,19 @@ namespace FMBot.DbMigration
                 .Where(w => !w.GuildID.ToString().Contains(newGuilds.Select(s => s.GuildId).ToString()))
                 .ToList();
 
-            Console.WriteLine($"Inserting {guildsToInsert.Count} guilds that do not yet exist into the new database");
-            await NewDatabaseContext.Guilds.AddRangeAsync(
-                guildsToInsert
-                    .Select(s => new Friend.Guild
-                    {
-                        ChartTimePeriod = s.ChartTimePeriod,
-                        FmEmbedType = s.FmEmbedType,
-                        TitlesEnabled = s.TitlesEnabled,
-                        Blacklisted = s.Blacklisted,
-                        DiscordGuildId = ulong.Parse(s.DiscordGuildID),
-                        EmoteReactions = s.EmoteReactions,
-                        Name = s.Name
-                    }));
+            //Console.WriteLine($"Inserting {guildsToInsert.Count} guilds that do not yet exist into the new database");
+            //await NewDatabaseContext.Guilds.AddRangeAsync(
+            //    guildsToInsert
+            //        .Select(s => new Friend.Guild
+            //        {
+            //            ChartTimePeriod = s.ChartTimePeriod,
+            //            FmEmbedType = s.FmEmbedType,
+            //            TitlesEnabled = s.TitlesEnabled,
+            //            Blacklisted = s.Blacklisted,
+            //            DiscordGuildId = ulong.Parse(s.DiscordGuildID),
+            //            EmoteReactions = s.EmoteReactions,
+            //            Name = s.Name
+            //        }));
 
             Console.WriteLine("Guilds have been inserted.");
         }
@@ -188,6 +194,44 @@ namespace FMBot.DbMigration
             NewDatabaseContext.Database.ExecuteSqlRaw("DELETE FROM guilds;");
 
             Console.WriteLine("New database has been cleared");
+        }
+
+        private static async Task MigrateArtistsToRecords()
+        {
+            var artistsWithAliases = await NewDatabaseContext.Artists
+                .Where(w => w.Aliases != null)
+                .ToListAsync();
+
+            Console.WriteLine($"Found {artistsWithAliases.Count} artists with aliases");
+
+            var aliases = await NewDatabaseContext.ArtistAliases
+                .ToListAsync();
+
+            int aliasesAdded = 0;
+
+            Console.WriteLine($"Found {aliases.Count} existing aliases");
+
+            foreach (var artist in artistsWithAliases)
+            {
+                foreach (var alias in artist.Aliases)
+                {
+                    if (!aliases.Select(s => s.Alias.ToLower()).Contains(alias.ToLower()))
+                    {
+                        await NewDatabaseContext.ArtistAliases.AddAsync(new Friend.ArtistAlias
+                        {
+                            Alias = alias,
+                            ArtistId = artist.Id,
+                            CorrectsInScrobbles = true
+                        });
+
+                        aliasesAdded++;
+                        Console.WriteLine($"Added alias {alias} for {artist.Name}");
+                    }
+                }
+            }
+
+            Console.WriteLine($"Added {aliasesAdded} aliases");
+            await Task.Delay(5000);
         }
     }
 }

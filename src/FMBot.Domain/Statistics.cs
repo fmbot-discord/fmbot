@@ -1,6 +1,6 @@
 using Prometheus;
 
-namespace FMBot.Bot.Resources
+namespace FMBot.Domain
 {
     public static class Statistics
     {

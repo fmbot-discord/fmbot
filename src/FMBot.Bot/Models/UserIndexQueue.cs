@@ -9,19 +9,19 @@ namespace FMBot.Bot.Models
 {
     public class UserIndexQueue : IUserIndexQueue
     {
-        private readonly Subject<IReadOnlyList<User>> subject;
+        private readonly Subject<IReadOnlyList<User>> _subject;
 
         public UserIndexQueue()
         {
-            this.subject = new Subject<IReadOnlyList<User>>();
-            this.UsersToIndex = this.subject.SelectMany(q => q);
+            this._subject = new Subject<IReadOnlyList<User>>();
+            this.UsersToIndex = this._subject.SelectMany(q => q);
         }
 
         public IObservable<User> UsersToIndex { get; }
 
         public void Publish(IReadOnlyList<User> users)
         {
-            this.subject.OnNext(users);
+            this._subject.OnNext(users);
         }
     }
 }

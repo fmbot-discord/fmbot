@@ -9,6 +9,10 @@ namespace FMBot.Bot.Interfaces
     {
         void IndexGuild(IReadOnlyList<User> users);
 
+        Task IndexUser(User user);
+
+        Task AddUserToGuild(IGuild guild, User user);
+
         Task StoreGuildUsers(IGuild guild, IReadOnlyCollection<IGuildUser> guildUsers);
 
         Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> guildUsers);

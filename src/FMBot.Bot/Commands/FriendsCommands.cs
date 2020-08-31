@@ -6,9 +6,11 @@ using Dasync.Collections;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 
 namespace FMBot.Bot.Commands
@@ -30,14 +32,15 @@ namespace FMBot.Bot.Commands
         public FriendsCommands(Logger.Logger logger,
             IPrefixService prefixService,
             ILastfmApi lastfmApi,
-            GuildService guildService)
+            GuildService guildService,
+            LastFMService lastFmService)
         {
             this._logger = logger;
             this._prefixService = prefixService;
             this._guildService = guildService;
             this._userService = new UserService();
             this._friendsService = new FriendsService();
-            this._lastFmService = new LastFMService(lastfmApi);
+            this._lastFmService = lastFmService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -60,6 +63,7 @@ namespace FMBot.Bot.Commands
                 {
                     await ReplyAsync("We couldn't find any friends. To add friends:\n" +
                                      "`.fmaddfriends 'lastfmname/discord name'`");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
                     return;
                 }
 
@@ -128,14 +132,11 @@ namespace FMBot.Bot.Commands
                 this._embed.WithDescription(embedDescription);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                this.Context.LogCommandUsed();
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
-
+                this.Context.LogCommandException(e);
                 await ReplyAsync(
                     "Unable to show friends due to an internal error.");
             }
@@ -150,12 +151,14 @@ namespace FMBot.Bot.Commands
             if (this._guildService.CheckIfDM(this.Context))
             {
                 await ReplyAsync("Sorry, but adding friends in dms is not supported.");
+                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
                 return;
             }
 
             if (enteredFriends.Length == 0)
             {
                 await ReplyAsync("Please enter at least one friend to add. You can use their last.fm usernames, discord mention or discord id.");
+                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
                 return;
             }
 
@@ -170,6 +173,7 @@ namespace FMBot.Bot.Commands
                 if (existingFriends.Count + enteredFriends.Length > 10)
                 {
                     await ReplyAsync("Sorry, but you can't have more than 10 friends.");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
 
@@ -239,15 +243,11 @@ namespace FMBot.Bot.Commands
 
                 this._embed.WithDescription(reply);
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                this.Context.LogCommandUsed();
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
-
+                this.Context.LogCommandException(e);
                 await ReplyAsync("Unable to add friend(s) due to an internal error.");
             }
         }
@@ -263,6 +263,7 @@ namespace FMBot.Bot.Commands
             if (enteredFriends.Length == 0)
             {
                 await ReplyAsync("Please enter at least one friend to remove. You can use their last.fm usernames, discord mention or discord id.");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
 
@@ -325,15 +326,11 @@ namespace FMBot.Bot.Commands
 
                 this._embed.WithDescription(reply);
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                this.Context.LogCommandUsed();
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
-
+                this.Context.LogCommandException(e);
                 await ReplyAsync("Unable to remove friend(s) due to an internal error. Please contact .fmbot staff.");
             }
         }
@@ -351,14 +348,11 @@ namespace FMBot.Bot.Commands
                 await this._friendsService.RemoveAllLastFMFriendsAsync(userSettings.UserId);
 
                 await ReplyAsync("Removed all your friends.");
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                this.Context.LogCommandUsed();
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
-
+                this.Context.LogCommandException(e);
                 await ReplyAsync("Unable to remove all friends due to an internal error.");
             }
         }

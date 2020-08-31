@@ -7,10 +7,12 @@ using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using SkiaSharp;
 
@@ -36,14 +38,15 @@ namespace FMBot.Bot.Commands.LastFM
             ILastfmApi lastfmApi,
             IChartService chartService,
             GuildService guildService,
-            UserService userService)
+            UserService userService,
+            LastFMService lastFmService)
         {
             this._logger = logger;
             this._prefixService = prefixService;
             this._chartService = chartService;
             this._guildService = guildService;
             this._userService = userService;
-            this._lastFmService = new LastFMService(lastfmApi);
+            this._lastFmService = lastFmService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -62,6 +65,7 @@ namespace FMBot.Bot.Commands.LastFM
                 await ReplyAsync($"{prfx}chart '2x2-10x10' '{Constants.CompactTimePeriodList}' \n" +
                                  "Optional extra settings: 'notitles', 'nt', 'skipemptyimages', 's'\n" +
                                  "Options can be used in any order..");
+                this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
 
@@ -77,6 +81,7 @@ namespace FMBot.Bot.Commands.LastFM
                     {
                         var secondString = secondsLeft == 1 ? "second" : "seconds";
                         await ReplyAsync($"Please wait {secondsLeft} {secondString} before generating a chart again.");
+                        this.Context.LogCommandUsed(CommandResponse.Cooldown);
                     }
 
                     return;
@@ -102,6 +107,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     await ReplyAsync(
                         "I'm missing the 'Attach files' permission in this server, so I can't post a chart.");
+                    this.Context.LogCommandUsed(CommandResponse.NoPermission);
                     return;
                 }
             }
@@ -138,10 +144,11 @@ namespace FMBot.Bot.Commands.LastFM
                     }
 
                     await ReplyAsync(reply);
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
 
-                chartSettings.Albums = albums;
+                chartSettings.Albums = albums.Content.ToList();
 
                 if (self)
                 {
@@ -205,13 +212,11 @@ namespace FMBot.Bot.Commands.LastFM
                     false,
                     this._embed.Build());
 
-                this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                    this.Context.Message.Content);
+                this.Context.LogCommandUsed();
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                    this.Context.Guild?.Name, this.Context.Guild?.Id);
+                this.Context.LogCommandException(e);
                 await ReplyAsync(
                     "Sorry, but I was unable to generate a FMChart due to an internal error. Make sure you have scrobbles and Last.FM isn't having issues, and try again later.");
             }

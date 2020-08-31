@@ -1,7 +1,6 @@
-using FMBot.Persistence.Domain.Models;
 using IF.Lastfm.Core.Api.Enums;
 
-namespace FMBot.Bot.Models
+namespace FMBot.Domain.Models
 {
     public class SettingsModel
     {

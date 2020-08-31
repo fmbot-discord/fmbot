@@ -27,10 +27,18 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<Guild> Guilds { get; set; }
         public virtual DbSet<GuildUser> GuildUsers { get; set; }
         public virtual DbSet<User> Users { get; set; }
+
         public virtual DbSet<UserArtist> UserArtists { get; set; }
+        public virtual DbSet<UserAlbum> UserAlbums { get; set; }
+        public virtual DbSet<UserTrack> UserTracks { get; set; }
 
         public virtual DbSet<Artist> Artists { get; set; }
+        public virtual DbSet<Album> Albums { get; set; }
         public virtual DbSet<Track> Tracks { get; set; }
+
+        public virtual DbSet<ArtistGenre> ArtistGenres { get; set; }
+        public virtual DbSet<ArtistAlias> ArtistAliases { get; set; }
+
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -38,7 +46,7 @@ namespace FMBot.Persistence.EntityFrameWork
             {
                 // When creating migrations, make sure to enter the connection string below.
                 optionsBuilder.UseNpgsql(string.IsNullOrEmpty(this._connectionString)
-                    ? "Host=localhost;Port=5433;Username=postgres;Password=password;Database=fmbot;Command Timeout=15;Timeout=30;Persist Security Info=True"
+                    ? "Host=localhost;Port=5433;Username=postgres;Password=password;Database=fmbot;Command Timeout=360;Timeout=360;Persist Security Info=True"
                     : this._connectionString);
 
                 optionsBuilder.UseSnakeCaseNamingConvention();
@@ -105,7 +113,28 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Artists)
-                    .HasForeignKey(f => f.UserId);
+                    .HasForeignKey(f => f.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<UserAlbum>(entity =>
+            {
+                entity.HasKey(a => a.UserAlbumId);
+
+                entity.HasOne(u => u.User)
+                    .WithMany(a => a.Albums)
+                    .HasForeignKey(f => f.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<UserTrack>(entity =>
+            {
+                entity.HasKey(a => a.UserTrackId);
+
+                entity.HasOne(u => u.User)
+                    .WithMany(a => a.Tracks)
+                    .HasForeignKey(f => f.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<Artist>(entity =>
@@ -118,6 +147,16 @@ namespace FMBot.Persistence.EntityFrameWork
                         v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
             });
 
+
+            modelBuilder.Entity<Album>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+
+                entity.HasOne(d => d.Artist)
+                    .WithMany(p => p.Albums)
+                    .HasForeignKey(d => d.ArtistId);
+            });
+
             modelBuilder.Entity<Track>(entity =>
             {
                 entity.HasKey(a => a.Id);
@@ -125,6 +164,26 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.Tracks)
                     .HasForeignKey(d => d.ArtistId);
+            });
+
+            modelBuilder.Entity<ArtistAlias>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+
+                entity.HasOne(d => d.Artist)
+                    .WithMany(p => p.ArtistAliases)
+                    .HasForeignKey(d => d.ArtistId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<ArtistGenre>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+
+                entity.HasOne(d => d.Artist)
+                    .WithMany(p => p.ArtistGenres)
+                    .HasForeignKey(d => d.ArtistId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

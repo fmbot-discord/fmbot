@@ -5,9 +5,11 @@ using Discord;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 
 namespace FMBot.Bot.Commands
@@ -25,12 +27,15 @@ namespace FMBot.Bot.Commands
 
         private readonly IPrefixService _prefixService;
 
-        public GeniusCommands(Logger.Logger logger, IPrefixService prefixService, ILastfmApi lastfmApi)
+        public GeniusCommands(Logger.Logger logger,
+            IPrefixService prefixService,
+            ILastfmApi lastfmApi,
+            LastFMService lastFmService)
         {
             this._logger = logger;
             this._prefixService = prefixService;
             this._userService = new UserService();
-            this._lastFmService = new LastFMService(lastfmApi);
+            this._lastFmService = lastFmService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
             this._embedFooter = new EmbedFooterBuilder();
@@ -62,6 +67,7 @@ namespace FMBot.Bot.Commands
                     {
                         this._embed.NoScrobblesFoundErrorResponse(tracks.Status, this.Context, this._logger);
                         await ReplyAsync("", false, this._embed.Build());
+                        this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                         return;
                     }
 
@@ -89,17 +95,17 @@ namespace FMBot.Bot.Commands
 
                     await ReplyAsync("", false, this._embed.Build());
 
-                    this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id,
-                        this.Context.User.Id, this.Context.Message.Content);
+                    this.Context.LogCommandUsed();
                 }
                 else
                 {
                     await ReplyAsync("No results have been found for this track.");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
                 }
             }
             catch (Exception e)
             {
-                this._logger.LogException(this.Context.Message.Content, e);
+                this.Context.LogCommandException(e);
                 await ReplyAsync(
                     "Unable to show Last.FM info via Genius due to an internal error. " +
                     "Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");

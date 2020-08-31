@@ -24,12 +24,16 @@ namespace FMBot.Bot.Commands
 
         private readonly IPrefixService _prefixService;
 
-        public YoutubeCommands(Logger.Logger logger, IPrefixService prefixService, ILastfmApi lastfmApi)
+        public YoutubeCommands(
+            Logger.Logger logger,
+            IPrefixService prefixService,
+            ILastfmApi lastfmApi,
+            LastFMService lastFmService)
         {
             this._logger = logger;
             this._prefixService = prefixService;
             this._userService = new UserService();
-            this._lastFmService = new LastFMService(lastfmApi);
+            this._lastFmService = lastFmService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
         }
@@ -73,8 +77,19 @@ namespace FMBot.Bot.Commands
 
                     var name = await this._userService.GetNameAsync(this.Context);
 
-                    var reply = $"{name} searched for: `{querystring}`" +
-                                $"\nhttps://www.youtube.com/watch?v={youtubeResult.Id.VideoId}";
+                    var reply = $"{name} searched for: `{querystring}`";
+
+                    var user = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
+                    if (user.GuildPermissions.EmbedLinks)
+                    {
+                        reply += $"\nhttps://www.youtube.com/watch?v={youtubeResult.Id.VideoId}";
+                    }
+                    else
+                    {
+                        reply += $"\n<https://www.youtube.com/watch?v={youtubeResult.Id.VideoId}>" +
+                                 $"\n`{youtubeResult.Snippet.Title}`" +
+                                 $"\n*Embed disabled because user that requested link is not allowed to embed links.*";
+                    }
 
                     var rnd = new Random();
                     if (rnd.Next(0, 5) == 1 && searchValues.Length < 1)
@@ -84,18 +99,17 @@ namespace FMBot.Bot.Commands
 
                     await ReplyAsync(reply.FilterOutMentions());
 
-                    this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id,
-                        this.Context.Message.Content);
+                    this.Context.LogCommandUsed();
                 }
                 catch (Exception e)
                 {
-                    this._logger.LogException(this.Context.Message.Content, e);
+                    this.Context.LogCommandException(e);
                     await ReplyAsync("No results have been found for this query.");
                 }
             }
             catch (Exception e)
             {
-                this._logger.LogException(this.Context.Message.Content, e);
+                this.Context.LogCommandException(e);
                 await ReplyAsync(
                     "Unable to show Last.FM info via YouTube due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }

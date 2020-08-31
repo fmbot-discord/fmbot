@@ -16,8 +16,69 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn)
-                .HasAnnotation("ProductVersion", "3.1.6")
+                .HasAnnotation("ProductVersion", "3.1.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
+
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.Album", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("id")
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+
+                    b.Property<int>("ArtistId")
+                        .HasColumnName("artist_id")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ArtistName")
+                        .HasColumnName("artist_name")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Label")
+                        .HasColumnName("label")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LastFmUrl")
+                        .HasColumnName("last_fm_url")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("Mbid")
+                        .HasColumnName("mbid")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .HasColumnName("name")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("Popularity")
+                        .HasColumnName("popularity")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ReleaseDate")
+                        .HasColumnName("release_date")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("SpotifyId")
+                        .HasColumnName("spotify_id")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("SpotifyImageDate")
+                        .HasColumnName("spotify_image_date")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("SpotifyImageUrl")
+                        .HasColumnName("spotify_image_url")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id")
+                        .HasName("pk_albums");
+
+                    b.HasIndex("ArtistId")
+                        .HasName("ix_albums_artist_id");
+
+                    b.ToTable("albums");
+                });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.Artist", b =>
                 {
@@ -43,6 +104,10 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnName("name")
                         .HasColumnType("text");
 
+                    b.Property<int?>("Popularity")
+                        .HasColumnName("popularity")
+                        .HasColumnType("integer");
+
                     b.Property<string>("SpotifyId")
                         .HasColumnName("spotify_id")
                         .HasColumnType("text");
@@ -59,6 +124,60 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasName("pk_artists");
 
                     b.ToTable("artists");
+                });
+
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.ArtistAlias", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("id")
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+
+                    b.Property<string>("Alias")
+                        .HasColumnName("alias")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ArtistId")
+                        .HasColumnName("artist_id")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("CorrectsInScrobbles")
+                        .HasColumnName("corrects_in_scrobbles")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id")
+                        .HasName("pk_artist_aliases");
+
+                    b.HasIndex("ArtistId")
+                        .HasName("ix_artist_aliases_artist_id");
+
+                    b.ToTable("artist_aliases");
+                });
+
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.ArtistGenre", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("id")
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+
+                    b.Property<int>("ArtistId")
+                        .HasColumnName("artist_id")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .HasColumnName("name")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id")
+                        .HasName("pk_artist_genres");
+
+                    b.HasIndex("ArtistId")
+                        .HasName("ix_artist_genres_artist_id");
+
+                    b.ToTable("artist_genres");
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.Friend", b =>
@@ -178,6 +297,10 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnType("integer")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
+                    b.Property<int?>("AlbumId")
+                        .HasColumnName("album_id")
+                        .HasColumnType("integer");
+
                     b.Property<string>("AlbumName")
                         .HasColumnName("album_name")
                         .HasColumnType("text");
@@ -202,6 +325,10 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnName("name")
                         .HasColumnType("text");
 
+                    b.Property<int?>("Popularity")
+                        .HasColumnName("popularity")
+                        .HasColumnType("integer");
+
                     b.Property<string>("SpotifyId")
                         .HasColumnName("spotify_id")
                         .HasColumnType("text");
@@ -216,6 +343,9 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_tracks");
+
+                    b.HasIndex("AlbumId")
+                        .HasName("ix_tracks_album_id");
 
                     b.HasIndex("ArtistId")
                         .HasName("ix_tracks_artist_id");
@@ -267,6 +397,14 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnName("last_indexed")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<DateTime?>("LastScrobbleUpdate")
+                        .HasColumnName("last_scrobble_update")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("LastUpdated")
+                        .HasColumnName("last_updated")
+                        .HasColumnType("timestamp without time zone");
+
                     b.Property<bool?>("TitlesEnabled")
                         .HasColumnName("titles_enabled")
                         .HasColumnType("boolean");
@@ -285,6 +423,39 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.ToTable("users");
                 });
 
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserAlbum", b =>
+                {
+                    b.Property<int>("UserAlbumId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("user_album_id")
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+
+                    b.Property<string>("ArtistName")
+                        .HasColumnName("artist_name")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .HasColumnName("name")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Playcount")
+                        .HasColumnName("playcount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UserId")
+                        .HasColumnName("user_id")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserAlbumId")
+                        .HasName("pk_user_albums");
+
+                    b.HasIndex("UserId")
+                        .HasName("ix_user_albums_user_id");
+
+                    b.ToTable("user_albums");
+                });
+
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserArtist", b =>
                 {
                     b.Property<int>("ArtistId")
@@ -292,10 +463,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnName("artist_id")
                         .HasColumnType("integer")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
-
-                    b.Property<DateTime>("LastUpdated")
-                        .HasColumnName("last_updated")
-                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Name")
                         .HasColumnName("name")
@@ -316,6 +483,69 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasName("ix_user_artists_user_id");
 
                     b.ToTable("user_artists");
+                });
+
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserTrack", b =>
+                {
+                    b.Property<int>("UserTrackId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("user_track_id")
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+
+                    b.Property<string>("ArtistName")
+                        .HasColumnName("artist_name")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .HasColumnName("name")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Playcount")
+                        .HasColumnName("playcount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UserId")
+                        .HasColumnName("user_id")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserTrackId")
+                        .HasName("pk_user_tracks");
+
+                    b.HasIndex("UserId")
+                        .HasName("ix_user_tracks_user_id");
+
+                    b.ToTable("user_tracks");
+                });
+
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.Album", b =>
+                {
+                    b.HasOne("FMBot.Persistence.Domain.Models.Artist", "Artist")
+                        .WithMany("Albums")
+                        .HasForeignKey("ArtistId")
+                        .HasConstraintName("fk_albums_artists_artist_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.ArtistAlias", b =>
+                {
+                    b.HasOne("FMBot.Persistence.Domain.Models.Artist", "Artist")
+                        .WithMany("ArtistAliases")
+                        .HasForeignKey("ArtistId")
+                        .HasConstraintName("fk_artist_aliases_artists_artist_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.ArtistGenre", b =>
+                {
+                    b.HasOne("FMBot.Persistence.Domain.Models.Artist", "Artist")
+                        .WithMany("ArtistGenres")
+                        .HasForeignKey("ArtistId")
+                        .HasConstraintName("fk_artist_genres_artists_artist_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.Friend", b =>
@@ -352,10 +582,25 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.Track", b =>
                 {
+                    b.HasOne("FMBot.Persistence.Domain.Models.Album", null)
+                        .WithMany("Tracks")
+                        .HasForeignKey("AlbumId")
+                        .HasConstraintName("fk_tracks_albums_album_id");
+
                     b.HasOne("FMBot.Persistence.Domain.Models.Artist", "Artist")
                         .WithMany("Tracks")
                         .HasForeignKey("ArtistId")
                         .HasConstraintName("fk_tracks_artists_artist_id");
+                });
+
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserAlbum", b =>
+                {
+                    b.HasOne("FMBot.Persistence.Domain.Models.User", "User")
+                        .WithMany("Albums")
+                        .HasForeignKey("UserId")
+                        .HasConstraintName("fk_user_albums_users_user_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserArtist", b =>
@@ -364,6 +609,16 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .WithMany("Artists")
                         .HasForeignKey("UserId")
                         .HasConstraintName("fk_user_artists_users_user_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserTrack", b =>
+                {
+                    b.HasOne("FMBot.Persistence.Domain.Models.User", "User")
+                        .WithMany("Tracks")
+                        .HasForeignKey("UserId")
+                        .HasConstraintName("fk_user_tracks_users_user_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

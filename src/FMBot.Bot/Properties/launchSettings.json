@@ -1,7 +1,8 @@
 {
   "profiles": {
     "FMBot.Bot": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "sqlDebugging": true
     },
     "Docker": {
       "commandName": "Docker"

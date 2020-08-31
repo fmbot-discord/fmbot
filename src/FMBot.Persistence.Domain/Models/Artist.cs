@@ -19,8 +19,16 @@ namespace FMBot.Persistence.Domain.Models
 
         public string SpotifyId { get; set; }
 
+        public int? Popularity { get; set; }
+
         public string[] Aliases { get; set; }
 
         public ICollection<Track> Tracks { get; set; }
+
+        public ICollection<Album> Albums { get; set; }
+
+        public ICollection<ArtistAlias> ArtistAliases { get; set; }
+
+        public ICollection<ArtistGenre> ArtistGenres { get; set; }
     }
 }
