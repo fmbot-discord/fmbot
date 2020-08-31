@@ -103,16 +103,17 @@ namespace FMBot.Bot.Commands
 
                 this._embed.WithTitle($"Added {users.Count} {usersString} to bot indexing queue");
 
-                var expectedTime = TimeSpan.FromSeconds(7 * users.Count);
+                var expectedTime = TimeSpan.FromSeconds(8 * users.Count);
                 var indexStartedReply =
                     $"Indexing stores which .fmbot members are on your server and stores their initial top artist, albums and tracks. Updating these records happens automatically, but you can also use `.fmupdate` to update your own account.\n\n" +
-                    $"`{users.Count}` new users or users that have never been index added to index queue.";
+                    $"`{users.Count}` new users or users that have never been indexed added to index queue.";
 
                 indexStartedReply += $"\n`{indexedUserCount}` users already indexed on this server.\n \n";
 
                 if (expectedTime.TotalMinutes >= 1)
                 {
-                    indexStartedReply += $"**This will take approximately {(int)expectedTime.TotalMinutes} minutes. Commands might display incomplete results until this process is done.**\n";
+                    indexStartedReply += $"**This will take approximately {(int)expectedTime.TotalMinutes} minutes. \n" +
+                                         $"⚠️ Commands might display incomplete results until this process is done.**\n";
                 }
 
                 indexStartedReply += "*Note: You will currently not be alerted when the index is finished.*";

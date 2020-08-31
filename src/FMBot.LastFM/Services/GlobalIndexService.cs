@@ -38,7 +38,7 @@ namespace FMBot.LastFM.Services
 
         public async Task IndexUser(User user)
         {
-            Thread.Sleep(6000);
+            Thread.Sleep(7500);
 
             Console.WriteLine($"Starting artist store for {user.UserNameLastFM}");
             var now = DateTime.UtcNow;

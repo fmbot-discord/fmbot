@@ -418,9 +418,16 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (trackValues.Any() && trackValues.First() == "help")
             {
-                await ReplyAsync(
-                    $"Usage: `{prfx}track 'artist and track name'`\n" +
-                    "If you don't enter any track name, it will get the info from the track you're currently listening to.");
+                this._embed.WithTitle($"{prfx}track");
+                this._embed.WithDescription($"Shows track info about the track you're currently listening to or searching for.");
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}tr` \n" +
+                    $"`{prfx}track` \n" +
+                    $"`{prfx}track Depeche Mode Enjoy The Silence` \n" +
+                    $"`{prfx}track Crystal Waters | Gypsy Woman (She's Homeless) - Radio Edit`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
@@ -500,9 +507,16 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (trackValues.Any() && trackValues.First() == "help")
             {
-                await ReplyAsync(
-                    $"Usage: `{prfx}trackplays 'artist and track name'`\n" +
-                    "If you don't enter any track name, it will get the info from the track you're currently listening to.");
+                this._embed.WithTitle($"{prfx}trackplays");
+                this._embed.WithDescription($"Shows your total plays from the track you're currently listening to or searching for.");
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}tp` \n" +
+                    $"`{prfx}trackplays` \n" +
+                    $"`{prfx}trackplays Mac DeMarco Here Comes The Cowboy` \n" +
+                    $"`{prfx}trackplays Cocteau Twins | Heaven or Las Vegas`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
@@ -646,6 +660,22 @@ namespace FMBot.Bot.Commands.LastFM
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
 
+            if (trackValues.Any() && trackValues.First() == "help")
+            {
+                this._embed.WithTitle($"{prfx}whoknowstrack");
+                this._embed.WithDescription($"Shows what members in your server listened to the track you're currently listening to or searching for.");
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}wt` \n" +
+                    $"`{prfx}whoknowstrack` \n" +
+                    $"`{prfx}whoknowstrack Hothouse Flowers Don't Go` \n" +
+                    $"`{prfx}whoknowstrack Natasha Bedingfield | Unwritten`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
             if (lastIndex == null)
@@ -778,6 +808,13 @@ namespace FMBot.Bot.Commands.LastFM
             if (trackValues.Any())
             {
                 searchValue = string.Join(" ", trackValues);
+
+                if (searchValue.Contains(" | "))
+                {
+                    var trackInfo = await this._lastFmService.GetTrackInfoAsync(searchValue.Split(" | ")[1], searchValue.Split(" | ")[0],
+                        userSettings.UserNameLastFM);
+                    return trackInfo;
+                }
             }
             else
             {

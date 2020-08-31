@@ -275,7 +275,14 @@ namespace FMBot.Bot.Commands.LastFM
         {
             if (albumValues.Any())
             {
-                var result = await this._lastFmService.SearchAlbumAsync(string.Join(" ", albumValues));
+                var searchValue = string.Join(" ", albumValues);
+
+                if (searchValue.Contains(" | "))
+                {
+                    return new AlbumSearchModel(true, searchValue.Split(" | ")[0], null, searchValue.Split(" | ")[1], null);
+                }
+
+                var result = await this._lastFmService.SearchAlbumAsync(searchValue);
                 if (result.Success && result.Content.Any())
                 {
                     var album = result.Content[0];
@@ -422,6 +429,22 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            if (albumValues.Any() && albumValues.First() == "help")
+            {
+                this._embed.WithTitle($"{prfx}whoknowsalbum");
+                this._embed.WithDescription($"Shows what members in your server listened to the album you're currently listening to or searching for.");
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}wa` \n" +
+                    $"`{prfx}whoknowsalbum` \n" +
+                    $"`{prfx}whoknowsalbum The Beatles Abbey Road` \n" +
+                    $"`{prfx}whoknowsalbum Metallica & Lou Reed | Lulu`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
 
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
