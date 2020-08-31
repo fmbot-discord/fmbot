@@ -148,7 +148,7 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                chartSettings.Albums = albums;
+                chartSettings.Albums = albums.Content.ToList();
 
                 if (self)
                 {

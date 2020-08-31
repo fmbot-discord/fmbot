@@ -36,10 +36,11 @@ namespace FMBot.Bot.Services
         public async Task<User> GetFullUserAsync(IUser discordUser)
         {
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            return await db.Users
-                .Include(i => i.Artists)
+            var query = db.Users
                 .Include(i => i.Friends)
-                .Include(i => i.FriendedByUsers)
+                .Include(i => i.FriendedByUsers);
+
+            return await query
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
         }
 
@@ -295,7 +296,7 @@ namespace FMBot.Bot.Services
                 Log.Error(e, "Error while deleting user!");
                 throw;
             }
-            
+
         }
 
         public async Task<int> GetTotalUserCountAsync()

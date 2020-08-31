@@ -87,6 +87,7 @@ namespace FMBot.Bot.Commands
                     else
                     {
                         reply += $"\n<https://www.youtube.com/watch?v={youtubeResult.Id.VideoId}>" +
+                                 $"\n`{youtubeResult.Snippet.Title}`" +
                                  $"\n*Embed disabled because user that requested link is not allowed to embed links.*";
                     }
 

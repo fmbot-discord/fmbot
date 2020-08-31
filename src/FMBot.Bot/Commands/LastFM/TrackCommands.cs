@@ -132,7 +132,6 @@ namespace FMBot.Bot.Commands.LastFM
                 var recentScrobbles = recentScrobblesTask.Result;
                 var userInfo = userInfoTask.Result;
 
-
                 if (recentScrobbles?.Any() != true)
                 {
                     this._embed.NoScrobblesFoundErrorResponse(recentScrobbles.Status, this.Context, this._logger);
@@ -705,11 +704,13 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 this._embed.WithDescription(serverUsers);
-                var footer = "";
+
+                var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+                var footer = $"WhoKnows track requested by {userTitle}";
 
                 if (lastIndex < DateTime.UtcNow.AddDays(-3))
                 {
-                    footer += "Missing members? Update with .fmindex";
+                    footer += "\nMissing members? Update with .fmindex";
                 }
 
                 this._embed.WithTitle($"Who knows {trackName} in {this.Context.Guild.Name}");

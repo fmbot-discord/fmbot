@@ -501,11 +501,13 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 this._embed.WithDescription(serverUsers);
-                var footer = "";
+
+                var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+                var footer = $"WhoKnows album requested by {userTitle}";
 
                 if (lastIndex < DateTime.UtcNow.AddDays(-3))
                 {
-                    footer += "Missing members? Update with .fmindex";
+                    footer += "\nMissing members? Update with .fmindex";
                 }
 
                 this._embed.WithTitle($"Who knows {albumName} in {this.Context.Guild.Name}");

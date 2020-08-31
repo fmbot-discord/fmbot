@@ -76,7 +76,9 @@ namespace FMBot.Bot.Commands
 
             description += $"Friends: `{userSettings.Friends.Count}`\n";
             description += $"Befriended by: `{userSettings.FriendedByUsers.Count}`\n";
-            description += $"Indexed artists: `{userSettings.Artists.Count}`";
+            //description += $"Indexed artists: `{userSettings.Artists.Count}`";
+            //description += $"Indexed albums: `{userSettings.Albums.Count}`";
+            //description += $"Indexed tracks: `{userSettings.Tracks.Count}`";
 
             this._embed.WithDescription(description);
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);

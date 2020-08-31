@@ -65,7 +65,7 @@ namespace FMBot.LastFM.Services
 
             await UpdateTracksForUser(user, newScrobbles);
 
-            var latestScrobbleDate = recentTracks.Content.OrderByDescending(o => o.TimePlayed.Value.DateTime).First().TimePlayed.Value.DateTime;
+            var latestScrobbleDate = GetLatestScrobbleDate(newScrobbles);
             await SetUserUpdateAndScrobbleTime(user.UserId, DateTime.UtcNow, latestScrobbleDate);
 
             return newScrobbles.Count;
@@ -180,6 +180,17 @@ namespace FMBot.LastFM.Services
 
             await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_updated = '{now:u}' WHERE user_id = {userId};", connection);
             await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+
+        private DateTime GetLatestScrobbleDate(List<LastTrack> newScrobbles)
+        {
+            if (!newScrobbles.Any(a => a.TimePlayed.HasValue))
+            {
+                Console.WriteLine("No recent scrobble date in update!");
+                return DateTime.UtcNow;
+            }
+
+            return newScrobbles.First(f => f.TimePlayed.HasValue).TimePlayed.Value.DateTime;
         }
     }
 }

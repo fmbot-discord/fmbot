@@ -508,11 +508,13 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 this._embed.WithDescription(serverUsers);
-                var footer = "";
+
+                var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+                var footer = $"WhoKnows artist requested by {userTitle}";
 
                 if (lastIndex < DateTime.UtcNow.AddDays(-3))
                 {
-                    footer += "Missing members? Update with .fmindex";
+                    footer += "\nMissing members? Update with .fmindex";
                 }
 
                 if (guild.GuildUsers.Count < 400)

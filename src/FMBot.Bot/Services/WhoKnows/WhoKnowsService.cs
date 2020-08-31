@@ -69,11 +69,6 @@ namespace FMBot.Bot.Services.WhoKnows
                 reply += $"- **{artist.Playcount}** {playString}\n";
             }
 
-            if (user.Count == 1)
-            {
-                reply += $"\nNobody else has this artist in their top {Constants.ArtistsToIndex} artists.";
-            }
-
             return reply;
         }
 

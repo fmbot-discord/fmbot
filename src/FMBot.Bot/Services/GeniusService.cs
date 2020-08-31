@@ -1,10 +1,8 @@
+using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
-using FMBot.Bot.Models;
 using Genius;
 using Genius.Models;
-using Microsoft.EntityFrameworkCore.Internal;
-using Newtonsoft.Json.Linq;
 
 namespace FMBot.Bot.Services
 {
