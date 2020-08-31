@@ -61,7 +61,7 @@ namespace FMBot.Bot.Commands
                 var indexedUserCount = await this._indexService.GetIndexedUsersCount(guildUsers);
 
                 var guildRecentlyIndexed =
-                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(5));
+                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(15));
 
                 if (guildRecentlyIndexed)
                 {
@@ -105,7 +105,9 @@ namespace FMBot.Bot.Commands
 
                 var expectedTime = TimeSpan.FromSeconds(8 * users.Count);
                 var indexStartedReply =
-                    $"Indexing stores which .fmbot members are on your server and stores their initial top artist, albums and tracks. Updating these records happens automatically, but you can also use `.fmupdate` to update your own account.\n\n" +
+                    $"Indexing stores which .fmbot members are on your server and stores their initial top artist, albums and tracks. " +
+                    $"Updating these records happens automatically, but you can also use `.fmupdate` to update your own account.\n" +
+                    $"Confused about how indexing has been changed? [Please read this.](https://fmbot.xyz/commands/whoknows/)\n\n" +
                     $"`{users.Count}` new users or users that have never been indexed added to index queue.";
 
                 indexStartedReply += $"\n`{indexedUserCount}` users already indexed on this server.\n \n";
