@@ -181,6 +181,10 @@ namespace FMBot.Bot.Commands.LastFM
                             footerText += $"{artistInfo.Content.Artist.Stats.Userplaycount} scrobbles on this artist | ";
                         }
                         break;
+                    case null:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
 
                 footerText += $"{userInfo.Content.Playcount} total scrobbles";

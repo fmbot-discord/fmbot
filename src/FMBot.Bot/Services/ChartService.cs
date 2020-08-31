@@ -7,11 +7,9 @@ using Dasync.Collections;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
-using FMBot.Bot.Resources;
 using FMBot.Domain;
 using FMBot.LastFM.Services;
 using IF.Lastfm.Core.Objects;
-using Microsoft.EntityFrameworkCore.Internal;
 using SkiaSharp;
 
 namespace FMBot.Bot.Services
@@ -88,6 +86,10 @@ namespace FMBot.Bot.Services
                         case TitleSetting.ClassicTitles:
                             AddClassicTitleToChartImage(chartImage, album);
                             break;
+                        case TitleSetting.TitlesDisabled:
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
                     }
 
                     if (chart.RainbowSortingEnabled)

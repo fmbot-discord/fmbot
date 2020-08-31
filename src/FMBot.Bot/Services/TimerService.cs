@@ -168,6 +168,8 @@ namespace FMBot.Bot.Services
                                 }
 
                                 break;
+                            default:
+                                break;
                         }
                     }
                     catch (Exception e)
