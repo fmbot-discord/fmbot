@@ -176,7 +176,7 @@ namespace FMBot.Bot.Commands.LastFM
             var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             if (lastFMUserName == null || lastFMUserName == "help")
             {
-                var replyString = ".fmset is the command you use to set your last.fm username in the bot, so it knows who you are on the last.fm website. \n" +
+                var replyString = $"{prfx}set is the command you use to set your last.fm username in the bot, so it knows who you are on the last.fm website. \n" +
                                   "Don't have a last.fm account yet? Register here: https://www.last.fm/join \n \n" +
                                   "Sets your username, mode and playcount for the `.fm` command:\n \n" +
                                   $"`{prfx}set 'Last.FM Username' 'embedmini/embedfull/textmini/textfull' 'artist/album/track'` \n \n";

@@ -85,7 +85,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var replyString = $"`{prfx}{fmString}` shows you your last scrobble(s). \n " +
                                   $"This command can also be used on others, for example `{prfx}{fmString} lastfmusername` or `{prfx}{fmString} @discorduser`\n \n" +
 
-                                  "You can set your username and you can change the mode with the `.fmset` command.\n";
+                                  $"You can set your username and you can change the mode with the `{prfx}set` command.\n";
 
                 var differentMode = userSettings.FmEmbedType == FmEmbedType.embedmini ? "embedfull" : "embedmini";
                 replyString += $"`{prfx}set {userSettings.UserNameLastFM} {differentMode}` \n \n" +
