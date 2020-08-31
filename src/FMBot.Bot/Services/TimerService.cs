@@ -8,6 +8,7 @@ using Discord;
 using Discord.WebSocket;
 using DiscordBotsList.Api;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Domain;
@@ -24,9 +25,11 @@ namespace FMBot.Bot.Services
         private readonly Timer _timer;
         private readonly Timer _externalStatsTimer;
         private readonly Timer _internalStatsTimer;
+        private readonly Timer _userUpdateTimer;
         private readonly ILastfmApi _lastfmApi;
         private readonly LastFMService _lastFMService;
         private readonly UserService _userService;
+        private readonly IUpdateService _updateService;
         private readonly GuildService _guildService;
         private readonly DiscordShardedClient _client;
 
@@ -36,13 +39,14 @@ namespace FMBot.Bot.Services
 
         private string _trackString = "";
 
-        public TimerService(DiscordShardedClient client, ILastfmApi lastfmApi, LastFMService lastFmService)
+        public TimerService(DiscordShardedClient client, ILastfmApi lastfmApi, LastFMService lastFmService, IUpdateService updateService)
         {
             this._lastfmApi = lastfmApi;
             this._client = client;
             this._lastFMService = lastFmService;
             this._userService = new UserService();
             this._guildService = new GuildService();
+            this._updateService = updateService;
 
             this._timer = new Timer(async _ =>
                 {
@@ -233,6 +237,27 @@ namespace FMBot.Bot.Services
                 null,
                 TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds + 10),
                 TimeSpan.FromMinutes(5));
+
+            this._userUpdateTimer = new Timer(async _ =>
+                {
+                    if (ConfigData.Data.LastFm.UserUpdateFrequencyInHours == null)
+                    {
+                        Log.Warning("No user update frequency set, cancelling user update timer");
+                        this._userUpdateTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                        return;
+                    }
+
+                    Log.Information("Getting users to update");
+                    var timeToUpdate = DateTime.UtcNow.AddHours(-ConfigData.Data.LastFm.UserUpdateFrequencyInHours.GetValueOrDefault(24));
+
+                    var usersToUpdate = await this._updateService.GetOutdatedUsers(timeToUpdate);
+                    Log.Information($"Found {usersToUpdate.Count} outdated users, adding them to queue");
+
+                    this._updateService.AddUsersToUpdateQueue(usersToUpdate);
+                },
+                null,
+                TimeSpan.FromMinutes(1),
+                TimeSpan.FromMinutes(60));
 
             this._timerEnabled = true;
         }

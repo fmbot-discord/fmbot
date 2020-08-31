@@ -1,6 +1,7 @@
 using System;
 using Discord.Commands;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Domain.Enums;
 using Serilog;
 
 namespace FMBot.Bot.Extensions
@@ -17,6 +18,12 @@ namespace FMBot.Bot.Extensions
         {
             Log.Error(exception, "CommandUsed: {userName} / {UserId} | {guildName} / {guildId} | {commandResponse} | {messageContent}",
                 context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, CommandResponse.Error, context.Message.Content);
+        }
+
+        public static void LogCommandWithLastFmError(this ICommandContext context, ResponseStatus? responseStatus)
+        {
+            Log.Error("CommandUsed: {userName} / {UserId} | {guildName} / {guildId} | {commandResponse} | {messageContent} | Last.fm error: {responseStatus}",
+                context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, CommandResponse.LastFmError, context.Message.Content, responseStatus);
         }
     }
 }

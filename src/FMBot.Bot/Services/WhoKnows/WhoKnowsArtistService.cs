@@ -1,92 +1,18 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
-using FMBot.Bot.Resources;
-using FMBot.LastFM.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 
-namespace FMBot.Bot.Services
+namespace FMBot.Bot.Services.WhoKnows
 {
-    public class WhoKnowsService
+    public class WhoKnowsArtistService
     {
-        public static IList<ArtistWithUser> AddUserToIndexList(IList<ArtistWithUser> artists, User userSettings, IGuildUser user, ArtistResponse artist)
-        {
-            artists.Add(new ArtistWithUser
-            {
-                UserId = userSettings.UserId,
-                ArtistName = artist.Artist.Name,
-                Playcount = Convert.ToInt32(artist.Artist.Stats.Userplaycount.Value),
-                LastFMUsername = userSettings.UserNameLastFM,
-                DiscordUserId = userSettings.DiscordUserId,
-                DiscordName = user.Nickname ?? user.Username
-            });
-
-            return artists.OrderByDescending(o => o.Playcount).ToList();
-        }
-
-        public static string ArtistWithUserToStringList(IList<ArtistWithUser> artists, ArtistResponse artistResponse, int userId)
-        {
-            var reply = "";
-
-            var artistsCount = artists.Count;
-            if (artistsCount > 14)
-            {
-                artistsCount = 14;
-            }
-
-            for (var index = 0; index < artistsCount; index++)
-            {
-                var artist = artists[index];
-
-                var nameWithLink = NameWithLink(artist);
-                var playString = GetPlaysString(artist.Playcount);
-
-                if (index == 0)
-                {
-                    reply += $"👑  {nameWithLink}";
-                }
-                else
-                {
-                    reply += $" {index + 1}.  {nameWithLink} ";
-                }
-                if (artist.UserId != userId)
-                {
-                    reply += $"- **{artist.Playcount}** {playString}\n";
-                }
-                else
-                {
-                    reply += $"- **{artistResponse.Artist.Stats.Userplaycount}** {playString}\n";
-                }
-            }
-
-            if (artists.Count == 1)
-            {
-                reply += $"\nNobody else has this artist in their top {Constants.ArtistsToIndex} artists.";
-            }
-
-            return reply;
-        }
-
-        private static string NameWithLink(ArtistWithUser artist)
-        {
-            var discordName = artist.DiscordName.Replace("(", "").Replace(")", "").Replace("[", "").Replace("]", "");
-            var nameWithLink = $"[{discordName}]({Constants.LastFMUserUrl}{artist.LastFMUsername})";
-            return nameWithLink;
-        }
-
-        private static string GetPlaysString(int artistPlaycount)
-        {
-            return artistPlaycount == 1 ? "play" : "plays";
-        }
-
-        public async Task<IList<ArtistWithUser>> GetIndexedUsersForArtist(ICommandContext context,
+        public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(ICommandContext context,
             IReadOnlyList<User> guildUsers, string artistName)
         {
             var userIds = guildUsers.Select(s => s.UserId);
@@ -100,16 +26,16 @@ namespace FMBot.Bot.Services
                 .Take(14)
                 .ToListAsync();
 
-            var returnArtists = new List<ArtistWithUser>();
+            var whoKnowsArtistList = new List<WhoKnowsObjectWithUser>();
 
             foreach (var artist in artists)
             {
                 var discordUser = await context.Guild.GetUserAsync(artist.User.DiscordUserId);
                 if (discordUser != null)
                 {
-                    returnArtists.Add(new ArtistWithUser
+                    whoKnowsArtistList.Add(new WhoKnowsObjectWithUser
                     {
-                        ArtistName = artist.Name,
+                        Name = artist.Name,
                         DiscordName = discordUser.Nickname ?? discordUser.Username,
                         Playcount = artist.Playcount,
                         DiscordUserId = artist.User.DiscordUserId,
@@ -119,7 +45,7 @@ namespace FMBot.Bot.Services
                 }
             }
 
-            return returnArtists;
+            return whoKnowsArtistList;
         }
 
         public async Task<IList<ListArtist>> GetTopArtistsForGuild(IReadOnlyList<User> guildUsers)
@@ -141,7 +67,6 @@ namespace FMBot.Bot.Services
                 })
                 .ToListAsync();
         }
-
 
         public async Task<int> GetArtistListenerCountForServer(IReadOnlyList<User> guildUsers, string artistName)
         {

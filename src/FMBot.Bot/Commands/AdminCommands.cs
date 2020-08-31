@@ -4,9 +4,11 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands
@@ -45,6 +47,7 @@ namespace FMBot.Bot.Commands
             if (userSettings?.UserNameLastFM == null)
             {
                 await ReplyAsync("The user's Last.FM name has not been set.");
+                this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return;
             }
 
@@ -77,6 +80,7 @@ namespace FMBot.Bot.Commands
 
             this._embed.WithDescription(description);
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+            this.Context.LogCommandUsed();
         }
 
 
@@ -91,6 +95,7 @@ namespace FMBot.Bot.Commands
             if (guild == null)
             {
                 await ReplyAsync("Guild does not exist in database");
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
 
@@ -134,6 +139,7 @@ namespace FMBot.Bot.Commands
 
             this._embed.WithDescription(description);
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+            this.Context.LogCommandUsed();
         }
 
         [Command("botrestart")]
@@ -144,12 +150,14 @@ namespace FMBot.Bot.Commands
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync("Restarting bot...");
+                this.Context.LogCommandUsed();
                 await (this.Context.Client as DiscordSocketClient).SetStatusAsync(UserStatus.Invisible);
                 Environment.Exit(1);
             }
             else
             {
                 await ReplyAsync("Error: Insufficient rights. Only FMBot admins can restart the bot.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }
 
@@ -170,10 +178,13 @@ namespace FMBot.Bot.Commands
                     PublicProperties.IssuesAtLastFM = false;
                     await ReplyAsync("Disabled issue mode");
                 }
+
+                this.Context.LogCommandUsed();
             }
             else
             {
                 await ReplyAsync("Error: Insufficient rights. Only FMBot admins can change issue mode.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }
 
@@ -186,6 +197,7 @@ namespace FMBot.Bot.Commands
                 if (url == "help")
                 {
                     await ReplyAsync("fmfeaturedoverride <album name> <stoptimer 0 or 1> [message in quotation marks]");
+                    this.Context.LogCommandUsed(CommandResponse.Help);
                     return;
                 }
 
@@ -194,12 +206,18 @@ namespace FMBot.Bot.Commands
                     this._timer.SetFeatured(url, desc, stopTimer);
 
                     await ReplyAsync("Set avatar to '" + url + "' with description '" + desc + "'. Timer stopped: " + stopTimer);
-
+                    this.Context.LogCommandUsed();
                 }
                 catch (Exception e)
                 {
+                    this.Context.LogCommandException(e);
                     await ReplyAsync($"Something went wrong: {e.Message}");
                 }
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only FMBot owners can set featured.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }
 
@@ -272,13 +290,18 @@ namespace FMBot.Bot.Commands
                 {
                     this._timer.Restart();
                     await ReplyAsync("Timer restarted");
+                    this.Context.LogCommandUsed();
                 }
                 catch (Exception e)
                 {
-                    this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                        this.Context.Guild?.Name, this.Context.Guild?.Id);
+                    this.Context.LogCommandException(e);
                     await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
                 }
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only FMBot owners can restart timer.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }
 
@@ -293,13 +316,18 @@ namespace FMBot.Bot.Commands
                 {
                     this._timer.Stop();
                     await ReplyAsync("Timer stopped");
+                    this.Context.LogCommandUsed();
                 }
                 catch (Exception e)
                 {
-                    this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                        this.Context.Guild?.Name, this.Context.Guild?.Id);
+                    this.Context.LogCommandException(e);
                     await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
                 }
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only FMBot owners can stop timer.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }
 
@@ -319,13 +347,18 @@ namespace FMBot.Bot.Commands
                     {
                         await ReplyAsync("Timer is inactive");
                     }
+                    this.Context.LogCommandUsed();
                 }
                 catch (Exception e)
                 {
-                    this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username,
-                        this.Context.Guild?.Name, this.Context.Guild?.Id);
+                    this.Context.LogCommandException(e);
                     await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
                 }
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only FMBot admins can check timer.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }
 
@@ -341,12 +374,14 @@ namespace FMBot.Bot.Commands
                     if (user == null)
                     {
                         await ReplyAsync("Please specify what user you want to add to the blacklist.");
+                        this.Context.LogCommandUsed(CommandResponse.WrongInput);
                         return;
                     }
 
                     if (user == this.Context.Message.Author)
                     {
                         await ReplyAsync("You cannot blacklist yourself!");
+                        this.Context.LogCommandUsed(CommandResponse.WrongInput);
                         return;
                     }
 
@@ -361,17 +396,18 @@ namespace FMBot.Bot.Commands
                         await ReplyAsync("You have already added " + user.Username +
                                          " to the blacklist or the blacklist does not exist for this user.");
                     }
+
+                    this.Context.LogCommandUsed();
                 }
                 else
                 {
                     await ReplyAsync("You are not authorized to use this command.");
+                    this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 }
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username, this.Context.Guild?.Name,
-                    this.Context.Guild?.Id);
-
+                this.Context.LogCommandException(e);
                 await ReplyAsync("Unable to add " + user.Username + " to the blacklist due to an internal error.");
             }
         }
@@ -387,6 +423,7 @@ namespace FMBot.Bot.Commands
                     if (user == null)
                     {
                         await ReplyAsync("Please specify what user you want to remove from the blacklist.");
+                        this.Context.LogCommandUsed(CommandResponse.WrongInput);
                         return;
                     }
 
@@ -400,17 +437,17 @@ namespace FMBot.Bot.Commands
                     {
                         await ReplyAsync("You have already removed " + user.Username + " from the blacklist.");
                     }
+                    this.Context.LogCommandUsed();
                 }
                 else
                 {
                     await ReplyAsync("You are not authorized to use this command.");
+                    this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 }
             }
             catch (Exception e)
             {
-                this._logger.LogError(e.Message, this.Context.Message.Content, this.Context.User.Username, this.Context.Guild?.Name,
-                    this.Context.Guild?.Id);
-
+                this.Context.LogCommandException(e);
                 await ReplyAsync("Unable to remove " + user.Username + " from the blacklist due to an internal error.");
             }
         }

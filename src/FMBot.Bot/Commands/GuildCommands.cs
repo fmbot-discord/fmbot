@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
@@ -54,6 +55,7 @@ namespace FMBot.Bot.Commands
             if (this._guildService.CheckIfDM(this.Context))
             {
                 await ReplyAsync("Command is not supported in DMs.");
+                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
                 return;
             }
 
@@ -63,6 +65,7 @@ namespace FMBot.Bot.Commands
             {
                 await ReplyAsync(
                     "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
 
@@ -70,6 +73,7 @@ namespace FMBot.Bot.Commands
             {
                 await ReplyAsync(
                     "Sets the global default for your server. `.fmserverset 'embedfull/embedmini/textfull/textmini' 'Weekly/Monthly/Yearly/AllTime'` command.");
+                this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
 
@@ -77,6 +81,7 @@ namespace FMBot.Bot.Commands
             if (!Enum.TryParse(chartType, true, out FmEmbedType chartTypeEnum))
             {
                 await ReplyAsync("Invalid mode. Please use 'embedmini', 'embedfull', 'textfull', or 'textmini'.");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
 
@@ -84,6 +89,7 @@ namespace FMBot.Bot.Commands
             if (!Enum.TryParse(chartTimePeriod, true, out ChartTimePeriod chartTimePeriodEnum))
             {
                 await ReplyAsync("Invalid mode. Please use 'weekly', 'monthly', 'yearly', or 'overall'.");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
 
@@ -91,7 +97,7 @@ namespace FMBot.Bot.Commands
 
             await ReplyAsync("The .fmset default chart type for your server has been set to " + chartTypeEnum +
                              " with the time period " + chartTimePeriodEnum + ".");
-            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id, this.Context.Message.Content);
+            this.Context.LogCommandUsed();
         }
 
         [Command("serverreactions", RunMode = RunMode.Async)]
@@ -102,6 +108,7 @@ namespace FMBot.Bot.Commands
             if (this._guildService.CheckIfDM(this.Context))
             {
                 await ReplyAsync("Command is not supported in DMs.");
+                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
                 return;
             }
 
@@ -111,12 +118,14 @@ namespace FMBot.Bot.Commands
             {
                 await ReplyAsync(
                     "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
 
             if (emotes.Count() > 3)
             {
                 await ReplyAsync("Sorry, max amount emote reactions you can set is 3!");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
 
@@ -125,6 +134,7 @@ namespace FMBot.Bot.Commands
                 await this._guildService.SetGuildReactionsAsync(this.Context.Guild, null);
                 await ReplyAsync(
                     "Removed all server reactions!");
+                this.Context.LogCommandUsed();
                 return;
             }
 
@@ -133,6 +143,7 @@ namespace FMBot.Bot.Commands
                 await ReplyAsync(
                     "Sorry, one or multiple of your reactions seems invalid. Please try again.\n" +
                     "Please check if you have a space between every emote.");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
 
@@ -141,7 +152,7 @@ namespace FMBot.Bot.Commands
             var message = await ReplyAsync("Emote reactions have been set! \n" +
                                            "Please check if all reactions have been applied to this message correctly. If not, you might have used an emote from a different server.");
             await this._guildService.AddReactionsAsync(message, this.Context.Guild);
-            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id, this.Context.Message.Content);
+            this.Context.LogCommandUsed();
         }
 
         [Command("export", RunMode = RunMode.Async)]
@@ -152,6 +163,7 @@ namespace FMBot.Bot.Commands
             if (this._guildService.CheckIfDM(this.Context))
             {
                 await ReplyAsync("Command is not supported in DMs.");
+                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
                 return;
             }
 
@@ -161,6 +173,7 @@ namespace FMBot.Bot.Commands
             {
                 await ReplyAsync(
                     "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
 
@@ -171,6 +184,7 @@ namespace FMBot.Bot.Commands
                 if (serverUsers.Count == 0)
                 {
                     await ReplyAsync("No members found on this server.");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
                     return;
                 }
 
@@ -183,15 +197,16 @@ namespace FMBot.Bot.Commands
                 await this.Context.User.SendFileAsync(StringToStream(userJson),
                     $"users_{this.Context.Guild.Name}_UTC-{DateTime.UtcNow:u}.json");
 
+                await ReplyAsync("Check your DMs!");
+                this.Context.LogCommandUsed();
             }
             catch (Exception e)
             {
+                this.Context.LogCommandException(e);
                 await ReplyAsync(
                     "Something went wrong while creating an export.");
             }
 
-            await ReplyAsync("Check your DMs!");
-            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id, this.Context.Message.Content);
         }
 
         /// <summary>
@@ -204,6 +219,7 @@ namespace FMBot.Bot.Commands
             if (this._guildService.CheckIfDM(this.Context))
             {
                 await ReplyAsync("Command is not supported in DMs.");
+                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
                 return;
             }
 
@@ -213,6 +229,7 @@ namespace FMBot.Bot.Commands
             {
                 await ReplyAsync(
                     "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
 
@@ -221,6 +238,7 @@ namespace FMBot.Bot.Commands
                 await this._guildService.SetGuildPrefixAsync(this.Context.Guild, null);
                 this._prefixService.RemovePrefix(this.Context.Guild.Id);
                 await ReplyAsync("Removed prefix!");
+                this.Context.LogCommandUsed();
                 return;
             }
             if (prefix.ToLower() == ".fm")
@@ -228,17 +246,20 @@ namespace FMBot.Bot.Commands
                 await this._guildService.SetGuildPrefixAsync(this.Context.Guild, null);
                 this._prefixService.RemovePrefix(this.Context.Guild.Id);
                 await ReplyAsync("Reset to default prefix `.fm`!");
+                this.Context.LogCommandUsed();
                 return;
             }
 
             if (prefix.Length > 20)
             {
                 await ReplyAsync("Max prefix length is 20 characters...");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
             if (prefix.Contains("*") || prefix.Contains("`") || prefix.Contains("~"))
             {
                 await ReplyAsync("You can't have a custom prefix that contains ** * **or **`** or **~**");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
 
@@ -256,7 +277,7 @@ namespace FMBot.Bot.Commands
                                         $"To remove the custom prefix, do `{prefix}prefix remove`");
 
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
-            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id, this.Context.Message.Content);
+            this.Context.LogCommandUsed();
         }
 
 
@@ -270,6 +291,7 @@ namespace FMBot.Bot.Commands
             if (this._guildService.CheckIfDM(this.Context))
             {
                 await ReplyAsync("Command is not supported in DMs.");
+                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
                 return;
             }
 
@@ -294,6 +316,7 @@ namespace FMBot.Bot.Commands
 
                 this._embed.WithDescription(description);
                 await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+                this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
 
@@ -303,6 +326,7 @@ namespace FMBot.Bot.Commands
             {
                 await ReplyAsync(
                     "You are not authorized to toggle commands. Only users with the 'Ban Members' permission, server admins or FMBot admins disable/enable commands.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
 
@@ -313,6 +337,7 @@ namespace FMBot.Bot.Commands
                 this._embed.WithDescription("No commands found or command can't be disabled.\n" +
                                             "Remember to remove the `.fm` prefix.");
                 await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
 
@@ -334,7 +359,7 @@ namespace FMBot.Bot.Commands
             }
 
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
-            this._logger.LogCommandUsed(this.Context.Guild?.Id, this.Context.Channel.Id, this.Context.User.Id, this.Context.Message.Content);
+            this.Context.LogCommandUsed();
         }
 
         private static Stream StringToStream(string str)

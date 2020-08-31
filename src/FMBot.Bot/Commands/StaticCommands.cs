@@ -63,6 +63,7 @@ namespace FMBot.Bot.Commands
             }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
         }
 
         [Command("info", RunMode = RunMode.Async)]
@@ -98,6 +99,7 @@ namespace FMBot.Bot.Commands
             }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
         }
 
         [Command("status", RunMode = RunMode.Async)]
@@ -140,6 +142,7 @@ namespace FMBot.Bot.Commands
             this._embed.WithDescription(description);
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
         }
 
         [Command("help", RunMode = RunMode.Async)]
@@ -187,6 +190,7 @@ namespace FMBot.Bot.Commands
             }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
         }
 
 
@@ -244,6 +248,7 @@ namespace FMBot.Bot.Commands
             {
                 await this.Context.Channel.SendMessageAsync("Check your DMs!");
             }
+            this.Context.LogCommandUsed();
         }
 
         private static bool IsBotSelfHosted(ulong botId)

@@ -46,7 +46,7 @@ namespace FMBot.Persistence.EntityFrameWork
             {
                 // When creating migrations, make sure to enter the connection string below.
                 optionsBuilder.UseNpgsql(string.IsNullOrEmpty(this._connectionString)
-                    ? "Host=localhost;Port=5433;Username=postgres;Password=password;Database=fmbot;Command Timeout=120;Timeout=120;Persist Security Info=True"
+                    ? "Host=localhost;Port=5433;Username=postgres;Password=password;Database=fmbot;Command Timeout=360;Timeout=360;Persist Security Info=True"
                     : this._connectionString);
 
                 optionsBuilder.UseSnakeCaseNamingConvention();
@@ -109,7 +109,7 @@ namespace FMBot.Persistence.EntityFrameWork
 
             modelBuilder.Entity<UserArtist>(entity =>
             {
-                entity.HasKey(a => a.UserArtistId);
+                entity.HasKey(a => a.ArtistId);
 
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Artists)

@@ -6,7 +6,6 @@ using Discord;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
-using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
@@ -33,6 +32,7 @@ namespace FMBot.Bot.Services
 
         private async Task OnNextAsync(User user)
         {
+            Log.Verbose("User next up for index is {UserNameLastFM}", user.UserNameLastFM);
             await this._globalIndexService.IndexUser(user);
         }
 
@@ -137,13 +137,11 @@ namespace FMBot.Bot.Services
         {
             var userIds = guildUsers.Select(s => s.Id).ToList();
 
-            var tooRecent = DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
-
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Users
                 .Include(i => i.Artists)
                 .Where(w => userIds.Contains(w.DiscordUserId)
-                && (w.LastIndexed == null || w.LastIndexed <= tooRecent))
+                && (w.LastIndexed == null || w.LastUpdated == null))
                 .ToListAsync();
         }
 
@@ -151,13 +149,11 @@ namespace FMBot.Bot.Services
         {
             var userIds = guildUsers.Select(s => s.Id).ToList();
 
-            var indexCooldown = DateTime.UtcNow.Add(-Constants.GuildIndexCooldown);
-
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Users
                 .AsQueryable()
                 .Where(w => userIds.Contains(w.DiscordUserId)
-                    && w.LastIndexed != null && w.LastIndexed >= indexCooldown)
+                    && w.LastIndexed != null)
                 .CountAsync();
         }
     }
