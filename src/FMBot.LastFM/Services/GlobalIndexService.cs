@@ -82,10 +82,8 @@ namespace FMBot.LastFM.Services
                 return new List<UserArtist>();
             }
 
-            var now = DateTime.UtcNow;
             return topArtists.Select(a => new UserArtist
             {
-                LastUpdated = now,
                 Name = a.Name,
                 Playcount = a.PlayCount.Value,
                 UserId = user.UserId
@@ -118,10 +116,8 @@ namespace FMBot.LastFM.Services
                 return new List<UserAlbum>();
             }
 
-            var now = DateTime.UtcNow;
             return topAlbums.Select(a => new UserAlbum
             {
-                LastUpdated = now,
                 Name = a.Name,
                 ArtistName = a.ArtistName,
                 Playcount = a.PlayCount.Value,
@@ -140,10 +136,8 @@ namespace FMBot.LastFM.Services
                 return new List<UserTrack>();
             }
 
-            var now = DateTime.UtcNow;
             return trackResult.Content.TopTracks.Track.Select(a => new UserTrack
             {
-                LastUpdated = now,
                 Name = a.Name,
                 ArtistName = a.Artist.Name,
                 Playcount = Convert.ToInt32(a.Playcount),
@@ -158,8 +152,7 @@ namespace FMBot.LastFM.Services
             var copyHelper = new PostgreSQLCopyHelper<UserArtist>("public", "user_artists")
                 .MapText("name", x => x.Name)
                 .MapInteger("user_id", x => x.UserId)
-                .MapInteger("playcount", x => x.Playcount)
-                .MapTimeStamp("last_updated", x => x.LastUpdated);
+                .MapInteger("playcount", x => x.Playcount);
 
             await using var connection = new NpgsqlConnection(this._connectionString);
             connection.Open();
@@ -178,8 +171,7 @@ namespace FMBot.LastFM.Services
                 .MapText("name", x => x.Name)
                 .MapText("artist_name", x => x.ArtistName)
                 .MapInteger("user_id", x => x.UserId)
-                .MapInteger("playcount", x => x.Playcount)
-                .MapTimeStamp("last_updated", x => x.LastUpdated);
+                .MapInteger("playcount", x => x.Playcount);
 
             await using var connection = new NpgsqlConnection(this._connectionString);
             connection.Open();
@@ -198,8 +190,7 @@ namespace FMBot.LastFM.Services
                 .MapText("name", x => x.Name)
                 .MapText("artist_name", x => x.ArtistName)
                 .MapInteger("user_id", x => x.UserId)
-                .MapInteger("playcount", x => x.Playcount)
-                .MapTimeStamp("last_updated", x => x.LastUpdated);
+                .MapInteger("playcount", x => x.Playcount);
 
             await using var connection = new NpgsqlConnection(this._connectionString);
             connection.Open();

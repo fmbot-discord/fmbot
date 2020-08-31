@@ -14,8 +14,6 @@ namespace FMBot.Persistence.Domain.Models
 
         public int Playcount { get; set; }
 
-        public DateTime LastUpdated { get; set; }
-
         public User User { get; set; }
     }
 }
