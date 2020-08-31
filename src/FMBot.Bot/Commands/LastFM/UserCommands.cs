@@ -109,7 +109,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var userInfo = await this._lastFmService.GetUserInfoAsync(lastFMUserName);
 
                 var userImages = userInfo.Content.Avatar;
-                var userAvatar = userImages?.Large.AbsoluteUri;
+                var userAvatar = userImages?.Large?.AbsoluteUri;
 
                 if (!string.IsNullOrWhiteSpace(userAvatar))
                 {
