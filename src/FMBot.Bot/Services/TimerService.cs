@@ -248,7 +248,7 @@ namespace FMBot.Bot.Services
                     }
 
                     Log.Information("Getting users to update");
-                    var timeToUpdate = DateTime.UtcNow.AddHours(-ConfigData.Data.LastFm.UserUpdateFrequencyInHours.GetValueOrDefault(24));
+                    var timeToUpdate = DateTime.UtcNow.AddHours(-ConfigData.Data.LastFm.UserUpdateFrequencyInHours.GetValueOrDefault(ConfigData.Data.LastFm.UserUpdateFrequencyInHours.Value));
 
                     var usersToUpdate = await this._updateService.GetOutdatedUsers(timeToUpdate);
                     Log.Information($"Found {usersToUpdate.Count} outdated users, adding them to queue");
