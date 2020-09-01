@@ -61,7 +61,7 @@ namespace FMBot.Bot.Commands
                 var indexedUserCount = await this._indexService.GetIndexedUsersCount(guildUsers);
 
                 var guildRecentlyIndexed =
-                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(15));
+                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(45));
 
                 if (guildRecentlyIndexed)
                 {
