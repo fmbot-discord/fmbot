@@ -9,6 +9,7 @@ using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 
@@ -24,8 +25,11 @@ namespace FMBot.LastFM.Services
 
         private readonly string _connectionString;
 
-        public GlobalUpdateService(IConfigurationRoot configuration)
+        private readonly IMemoryCache _cache;
+
+        public GlobalUpdateService(IConfigurationRoot configuration, IMemoryCache cache)
         {
+            this._cache = cache;
             this._key = configuration.GetSection("LastFm:Key").Value;
             this._secret = configuration.GetSection("LastFm:Secret").Value;
             this._connectionString = configuration.GetSection("Database:ConnectionString").Value;
@@ -59,11 +63,13 @@ namespace FMBot.LastFM.Services
                 return 0;
             }
 
-            await UpdateArtistsForUser(user, newScrobbles);
+            var cachedArtistAliases = await GetCachedArtistAliases();
 
-            await UpdateAlbumsForUser(user, newScrobbles);
+            await UpdateArtistsForUser(user, newScrobbles, cachedArtistAliases);
 
-            await UpdateTracksForUser(user, newScrobbles);
+            await UpdateAlbumsForUser(user, newScrobbles, cachedArtistAliases);
+
+            await UpdateTracksForUser(user, newScrobbles, cachedArtistAliases);
 
             var latestScrobbleDate = GetLatestScrobbleDate(newScrobbles);
             await SetUserUpdateAndScrobbleTime(user.UserId, DateTime.UtcNow, latestScrobbleDate);
@@ -71,15 +77,31 @@ namespace FMBot.LastFM.Services
             return newScrobbles.Count;
         }
 
-        private async Task UpdateArtistsForUser(User user, IEnumerable<LastTrack> newScrobbles)
+        private async Task<IReadOnlyList<ArtistAlias>> GetCachedArtistAliases()
         {
+            if (this._cache.TryGetValue("artists", out IReadOnlyList<ArtistAlias> artists))
+            {
+                return artists;
+            }
+
             await using var db = new FMBotDbContext(this._connectionString);
+            artists = await db.ArtistAliases
+                .Include(i => i.Artist)
+                .ToListAsync();
+
+            this._cache.Set("artists", artists, TimeSpan.FromHours(2));
+            Console.WriteLine($"Added {artists.Count} artists to memory cache");
+
+            return artists;
+        }
+
+        private async Task UpdateArtistsForUser(User user, IEnumerable<LastTrack> newScrobbles,
+            IReadOnlyList<ArtistAlias> cachedArtistAliases)
+        {
             foreach (var artist in newScrobbles.GroupBy(g => g.ArtistName))
             {
-                var alias = await db.ArtistAliases
-                    .Include(i => i.Artist)
-                    .FirstOrDefaultAsync(f =>
-                        f.Alias.ToLower() == artist.Key.ToLower());
+                var alias = cachedArtistAliases
+                    .FirstOrDefault(f => f.Alias.ToLower() == artist.Key.ToLower());
 
                 var artistName = alias != null ? alias.Artist.Name : artist.Key;
 
@@ -102,15 +124,13 @@ namespace FMBot.LastFM.Services
             Console.WriteLine($"Updated artists for {user.UserNameLastFM}");
         }
 
-        private async Task UpdateAlbumsForUser(User user, IEnumerable<LastTrack> newScrobbles)
+        private async Task UpdateAlbumsForUser(User user, IEnumerable<LastTrack> newScrobbles,
+            IReadOnlyList<ArtistAlias> cachedArtistAliases)
         {
-            await using var db = new FMBotDbContext(this._connectionString);
             foreach (var album in newScrobbles.GroupBy(x => new { x.ArtistName, x.AlbumName }))
             {
-                var alias = await db.ArtistAliases
-                    .Include(i => i.Artist)
-                    .FirstOrDefaultAsync(f =>
-                        f.Alias.ToLower() == album.Key.ArtistName.ToLower());
+                var alias = cachedArtistAliases
+                    .FirstOrDefault(f => f.Alias.ToLower() == album.Key.ArtistName.ToLower());
 
                 var artistName = alias != null ? alias.Artist.Name : album.Key.ArtistName;
 
@@ -133,15 +153,13 @@ namespace FMBot.LastFM.Services
             Console.WriteLine($"Updated albums for {user.UserNameLastFM}");
         }
 
-        private async Task UpdateTracksForUser(User user, IEnumerable<LastTrack> newScrobbles)
+        private async Task UpdateTracksForUser(User user, IEnumerable<LastTrack> newScrobbles,
+            IReadOnlyList<ArtistAlias> cachedArtistAliases)
         {
-            await using var db = new FMBotDbContext(this._connectionString);
             foreach (var track in newScrobbles.GroupBy(x => new { x.ArtistName, x.Name }))
             {
-                var alias = await db.ArtistAliases
-                    .Include(i => i.Artist)
-                    .FirstOrDefaultAsync(f =>
-                        f.Alias.ToLower() == track.Key.ArtistName.ToLower());
+                var alias = cachedArtistAliases
+                    .FirstOrDefault(f => f.Alias.ToLower() == track.Key.ArtistName.ToLower());
 
                 var artistName = alias != null ? alias.Artist.Name : track.Key.ArtistName;
 

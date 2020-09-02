@@ -117,6 +117,8 @@ namespace FMBot.Bot
                 .AddSingleton<GlobalIndexService>()
                 .AddSingleton<IUpdateService, UpdateService>();
 
+            services.AddMemoryCache();
+
             using var context = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             try
             {
