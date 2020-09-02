@@ -118,7 +118,6 @@ namespace FMBot.LastFM.Services
                 updateArtistPlaycount.Parameters.AddWithValue("name", artistName);
 
                 await updateArtistPlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
-                Console.WriteLine($"Adding {artist.Count()} plays to {artistName} for {user.UserNameLastFM}");
             }
 
             Console.WriteLine($"Updated artists for {user.UserNameLastFM}");
