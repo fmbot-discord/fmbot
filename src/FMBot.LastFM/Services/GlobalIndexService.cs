@@ -130,7 +130,7 @@ namespace FMBot.LastFM.Services
         {
             Log.Information($"Getting tracks for user {user.UserNameLastFM}");
 
-            var trackResult = await this.lastFmService.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, 8);
+            var trackResult = await this.lastFmService.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, 6);
 
             if (!trackResult.Success || trackResult.Content.TopTracks.Track.Count == 0)
             {
