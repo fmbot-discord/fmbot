@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -58,7 +57,7 @@ namespace FMBot.Bot.Services
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
-            this._cache.Set(cacheKey, user, TimeSpan.FromHours(3));
+            this._cache.Set(cacheKey, user, TimeSpan.FromHours(12));
 
             return user;
         }

@@ -20,21 +20,21 @@ namespace FMBot.Bot.Commands
         private readonly EmbedFooterBuilder _embedFooter;
 
         private readonly LastFMService _lastFmService;
-        private readonly Logger.Logger _logger;
-        private readonly GeniusService _geniusService = new GeniusService();
+        private readonly GeniusService _geniusService;
 
         private readonly UserService _userService;
 
         private readonly IPrefixService _prefixService;
 
-        public GeniusCommands(Logger.Logger logger,
+        public GeniusCommands(
             IPrefixService prefixService,
             LastFMService lastFmService,
-            UserService userService)
+            UserService userService,
+            GeniusService geniusService)
         {
-            this._logger = logger;
             this._prefixService = prefixService;
             this._userService = userService;
+            this._geniusService = geniusService;
             this._lastFmService = lastFmService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
@@ -65,7 +65,7 @@ namespace FMBot.Bot.Commands
 
                     if (tracks?.Any() != true)
                     {
-                        this._embed.NoScrobblesFoundErrorResponse(tracks.Status, this.Context, this._logger);
+                        this._embed.NoScrobblesFoundErrorResponse(tracks.Status, prfx);
                         await ReplyAsync("", false, this._embed.Build());
                         this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                         return;

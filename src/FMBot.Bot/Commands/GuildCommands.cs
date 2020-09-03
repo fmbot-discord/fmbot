@@ -25,16 +25,16 @@ namespace FMBot.Bot.Commands
 
         private readonly CommandService _commands;
 
-        private readonly Logger.Logger _logger;
-
         private readonly EmbedBuilder _embed;
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        public GuildCommands(IPrefixService prefixService, Logger.Logger logger, GuildService guildService, CommandService commands, IDisabledCommandService disabledCommandService)
+        public GuildCommands(IPrefixService prefixService,
+            GuildService guildService,
+            CommandService commands,
+            IDisabledCommandService disabledCommandService)
         {
             this._prefixService = prefixService;
-            this._logger = logger;
             this._guildService = guildService;
             this._commands = commands;
             this._disabledCommandService = disabledCommandService;

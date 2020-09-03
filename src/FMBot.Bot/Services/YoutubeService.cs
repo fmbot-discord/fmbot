@@ -7,7 +7,7 @@ using Google.Apis.YouTube.v3.Data;
 
 namespace FMBot.Bot.Services
 {
-    internal class YoutubeService
+    public class YoutubeService
     {
         public async Task<SearchResult> GetSearchResult(string searchValue)
         {

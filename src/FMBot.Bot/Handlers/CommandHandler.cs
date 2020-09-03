@@ -7,10 +7,12 @@ using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
+using FMBot.Domain.Models;
 using Serilog;
 
 namespace FMBot.Bot.Handlers
@@ -144,9 +146,9 @@ namespace FMBot.Bot.Handlers
                 {
                     var embed = new EmbedBuilder()
                         .WithColor(Constants.LastFMColorRed);
-                    var logger = new Logger.Logger();
-                    embed.UsernameNotSetErrorResponse(context, customPrefix ?? ConfigData.Data.Bot.Prefix, logger);
+                    embed.UsernameNotSetErrorResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
                     await context.Channel.SendMessageAsync("", false, embed.Build());
+                    context.LogCommandUsed(CommandResponse.UsernameNotSet);
                     return;
                 }
             }

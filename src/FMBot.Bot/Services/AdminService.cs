@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services
 {
-    internal class AdminService
+    public class AdminService
     {
         public async Task<bool> HasCommandAccessAsync(IUser discordUser, UserType userType)
         {

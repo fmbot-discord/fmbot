@@ -16,7 +16,7 @@ using Artist = FMBot.Persistence.Domain.Models.Artist;
 
 namespace FMBot.Bot.Services
 {
-    internal class SpotifyService
+    public class SpotifyService
     {
         public async Task<SearchItem> GetSearchResultAsync(string searchValue, SearchType searchType = SearchType.Track)
         {

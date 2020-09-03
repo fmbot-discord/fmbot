@@ -18,22 +18,20 @@ namespace FMBot.Bot.Commands
         private readonly EmbedBuilder _embed;
 
         private readonly LastFMService _lastFmService;
-        private readonly Logger.Logger _logger;
         private readonly UserService _userService;
-        private readonly YoutubeService _youtubeService = new YoutubeService();
+        private readonly YoutubeService _youtubeService;
 
         private readonly IPrefixService _prefixService;
 
         public YoutubeCommands(
-            Logger.Logger logger,
             IPrefixService prefixService,
-            ILastfmApi lastfmApi,
             LastFMService lastFmService,
-            UserService userService)
+            UserService userService,
+            YoutubeService youtubeService)
         {
-            this._logger = logger;
             this._prefixService = prefixService;
             this._userService = userService;
+            this._youtubeService = youtubeService;
             this._lastFmService = lastFmService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
@@ -63,7 +61,7 @@ namespace FMBot.Bot.Commands
 
                     if (tracks?.Any() != true)
                     {
-                        this._embed.NoScrobblesFoundErrorResponse(tracks.Status, this.Context, this._logger);
+                        this._embed.NoScrobblesFoundErrorResponse(tracks.Status, prfx);
                         await ReplyAsync("", false, this._embed.Build());
                         return;
                     }
@@ -95,7 +93,7 @@ namespace FMBot.Bot.Commands
                     var rnd = new Random();
                     if (rnd.Next(0, 5) == 1 && searchValues.Length < 1)
                     {
-                        reply += "\n*Tip: Search for other songs or videos by simply adding the searchvalue behind .fmyoutube.*";
+                        reply += $"\n*Tip: Search for other songs or videos by simply adding the searchvalue behind {prfx}youtube.*";
                     }
 
                     await ReplyAsync(reply.FilterOutMentions());
@@ -105,7 +103,8 @@ namespace FMBot.Bot.Commands
                 catch (Exception e)
                 {
                     this.Context.LogCommandException(e);
-                    await ReplyAsync("No results have been found for this query.");
+                    await ReplyAsync("No results have been found for this query.\n" +
+                                     "It could also be that we've currently exceeded the YouTube ratelimits. This is an issue that will be fixed soon.");
                 }
             }
             catch (Exception e)

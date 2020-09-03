@@ -27,12 +27,13 @@ namespace FMBot.Bot.Commands
         public AdminCommands(
             TimerService timer,
             GuildService guildService,
-            UserService userService)
+            UserService userService,
+            AdminService adminService)
         {
             this._timer = timer;
             this._guildService = guildService;
             this._userService = userService;
-            this._adminService = new AdminService();
+            this._adminService = adminService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
         }

@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -57,18 +58,11 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("stats", RunMode = RunMode.Async)]
         [Summary("Displays user stats related to Last.FM and FMBot")]
+        [LoginRequired]
         public async Task StatsAsync(string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
-
-            if (userSettings?.UserNameLastFM == null)
-            {
-                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
-                await ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
-                return;
-            }
 
             try
             {
@@ -104,7 +98,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithTitle("Click here to go to profile");
 
                 this._embedFooter.WithText(
-                    "To see info for other users, use .fmstats 'Discord username/ Last.FM username'");
+                    $"To see info for other users, use {prfx}stats 'Discord username/ Last.FM username'");
                 this._embed.WithFooter(this._embedFooter);
 
                 var userInfo = await this._lastFmService.GetUserInfoAsync(lastFMUserName);

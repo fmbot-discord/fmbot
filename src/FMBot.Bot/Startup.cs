@@ -104,7 +104,11 @@ namespace FMBot.Bot
                 .AddSingleton<IIndexService, IndexService>()
                 .AddSingleton<GuildService>()
                 .AddSingleton<UserService>()
+                .AddSingleton<AdminService>()
                 .AddSingleton<FriendsService>()
+                .AddSingleton<GeniusService>()
+                .AddSingleton<SpotifyService>()
+                .AddSingleton<YoutubeService>()
                 .AddSingleton(logger)
                 .AddSingleton<Random>() // Add random to the collection
                 .AddSingleton(this.Configuration) // Add the configuration to the collection

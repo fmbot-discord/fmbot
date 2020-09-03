@@ -30,7 +30,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly GuildService _guildService;
         private readonly LastFMService _lastFmService;
         private readonly WhoKnowsTrackService _whoKnowsTrackService;
-        private readonly SpotifyService _spotifyService = new SpotifyService();
+        private readonly SpotifyService _spotifyService;
         private readonly Logger.Logger _logger;
 
         private readonly UserService _userService;
@@ -42,6 +42,7 @@ namespace FMBot.Bot.Commands.LastFM
             GuildService guildService,
             UserService userService,
             LastFMService lastFmService,
+            SpotifyService spotifyService,
             WhoKnowsTrackService whoKnowsTrackService)
         {
             this._logger = logger;
@@ -49,6 +50,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._guildService = guildService;
             this._userService = userService;
             this._lastFmService = lastFmService;
+            this._spotifyService = spotifyService;
             this._whoKnowsTrackService = whoKnowsTrackService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
@@ -68,7 +70,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (userSettings?.UserNameLastFM == null)
             {
-                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
+                this._embed.UsernameNotSetErrorResponse(prfx);
                 await ReplyAsync("", false, this._embed.Build());
                 return;
             }
@@ -132,7 +134,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (recentScrobbles?.Any() != true)
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(recentScrobbles.Status, this.Context, this._logger);
+                    this._embed.NoScrobblesFoundErrorResponse(recentScrobbles.Status, prfx);
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
@@ -343,7 +346,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (tracks?.Any() != true)
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(tracks.Status, this.Context, this._logger);
+                    this._embed.NoScrobblesFoundErrorResponse(tracks.Status, prfx);
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
@@ -436,7 +440,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var track = await this.SearchTrack(trackValues, userSettings);
+            var track = await this.SearchTrack(trackValues, userSettings, prfx);
             if (track == null)
             {
                 return;
@@ -523,7 +527,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var track = await this.SearchTrack(trackValues, userSettings);
+            var track = await this.SearchTrack(trackValues, userSettings, prfx);
             if (track == null)
             {
                 return;
@@ -733,7 +737,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var track = await this.SearchTrack(trackValues, userSettings);
+            var track = await this.SearchTrack(trackValues, userSettings, prfx);
             if (track == null)
             {
                 return;
@@ -829,7 +833,7 @@ namespace FMBot.Bot.Commands.LastFM
             return null;
         }
 
-        private async Task<ResponseTrack> SearchTrack(string[] trackValues, User userSettings)
+        private async Task<ResponseTrack> SearchTrack(string[] trackValues, User userSettings, string prfx)
         {
             string searchValue;
             if (trackValues.Any())
@@ -849,7 +853,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (!track.Content.Any())
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(track.Status, this.Context, this._logger);
+                    this._embed.NoScrobblesFoundErrorResponse(track.Status, prfx);
                     await this.ReplyAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     return null;

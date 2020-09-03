@@ -75,7 +75,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var searchResult = await this.SearchAlbum(albumValues, userSettings);
+            var searchResult = await this.SearchAlbum(albumValues, userSettings, prfx);
             if (!searchResult.AlbumFound)
             {
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
@@ -163,7 +163,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var searchResult = await this.SearchAlbum(albumValues, userSettings);
+            var searchResult = await this.SearchAlbum(albumValues, userSettings, prfx);
             if (!searchResult.AlbumFound)
             {
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
@@ -223,7 +223,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var searchResult = await this.SearchAlbum(albumValues, userSettings);
+            var searchResult = await this.SearchAlbum(albumValues, userSettings, prfx);
             if (!searchResult.AlbumFound)
             {
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
@@ -271,7 +271,7 @@ namespace FMBot.Bot.Commands.LastFM
             this.Context.LogCommandUsed();
         }
 
-        private async Task<AlbumSearchModel> SearchAlbum(string[] albumValues, User userSettings)
+        private async Task<AlbumSearchModel> SearchAlbum(string[] albumValues, User userSettings, string prfx)
         {
             if (albumValues.Any())
             {
@@ -308,7 +308,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (track == null)
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(track.Status, this.Context, this._logger);
+                    this._embed.NoScrobblesFoundErrorResponse(track.Status, prfx);
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     await this.ReplyAsync("", false, this._embed.Build());
                     return new AlbumSearchModel(false);
                 }
@@ -366,7 +367,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (albums?.Any() != true)
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(albums.Status, this.Context, this._logger);
+                    this._embed.NoScrobblesFoundErrorResponse(albums.Status, prfx);
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
@@ -476,7 +478,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var searchResult = await this.SearchAlbum(albumValues, userSettings);
+            var searchResult = await this.SearchAlbum(albumValues, userSettings, prfx);
             if (!searchResult.AlbumFound)
             {
                 this.Context.LogCommandUsed(CommandResponse.NotFound);

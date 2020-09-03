@@ -8,7 +8,7 @@ namespace FMBot.Bot.Services
 {
     public static class ErrorService
     {
-        public static void UsernameNotSetErrorResponse(this EmbedBuilder embed, ICommandContext context, string prfx, Logger.Logger logger)
+        public static void UsernameNotSetErrorResponse(this EmbedBuilder embed, string prfx)
         {
             embed.WithTitle("Error while attempting get Last.FM information");
             embed.WithDescription("Your Last.FM username has not been set. \n" +
@@ -19,10 +19,9 @@ namespace FMBot.Bot.Services
             embed.WithUrl($"{Constants.DocsUrl}/commands/");
 
             embed.WithColor(Constants.WarningColorOrange);
-            logger.LogError("Last.FM username not set", context.Message.Content, context.User.Username, context.Guild?.Name, context.Guild?.Id);
         }
 
-        public static void NoScrobblesFoundErrorResponse(this EmbedBuilder embed, LastResponseStatus apiResponse, ICommandContext context, Logger.Logger logger)
+        public static void NoScrobblesFoundErrorResponse(this EmbedBuilder embed, LastResponseStatus apiResponse, string prfx)
         {
             embed.WithTitle("Error while attempting get Last.FM information");
             switch (apiResponse)
@@ -33,8 +32,8 @@ namespace FMBot.Bot.Services
                     break;
                 case LastResponseStatus.MissingParameters:
                     embed.WithDescription("You or the user you're searching for has no scrobbles/artists on their profile, or Last.FM is having issues. Please try again later. \n \n" +
-                                          "Recently changed your Last.FM username? Please change it here too using `.fmset`. \n" +
-                                          "For more info on your settings, use `.fmset help`.");
+                                          $"Recently changed your Last.FM username? Please change it here too using `{prfx}set`. \n" +
+                                          $"For more info on your settings, use `{prfx}set help`.");
                     break;
                 default:
                     embed.WithDescription(
@@ -44,7 +43,6 @@ namespace FMBot.Bot.Services
 
             embed.WithThumbnailUrl("https://www.last.fm/static/images/marvin.e51495403de9.png");
             embed.WithColor(Constants.WarningColorOrange);
-            logger.LogError($"No scrobbles found for user, error code {apiResponse}", context.Message.Content, context.User.Username, context.Guild?.Name, context.Guild?.Id);
         }
 
         public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus apiResponse, string message, ICommandContext context, Logger.Logger logger)
