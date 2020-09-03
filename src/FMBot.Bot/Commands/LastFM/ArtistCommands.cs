@@ -29,7 +29,6 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly GuildService _guildService;
         private readonly ArtistsService _artistsService;
-        private readonly WhoKnowsService _whoKnowsService;
         private readonly WhoKnowsArtistService _whoKnowArtistService;
         private readonly LastFMService _lastFmService;
         private readonly SpotifyService _spotifyService = new SpotifyService();
@@ -43,7 +42,6 @@ namespace FMBot.Bot.Commands.LastFM
             ILastfmApi lastfmApi,
             IPrefixService prefixService,
             ArtistsService artistsService,
-            WhoKnowsService whoKnowsService,
             WhoKnowsArtistService whoKnowsArtistService,
             GuildService guildService,
             UserService userService,
@@ -54,7 +52,6 @@ namespace FMBot.Bot.Commands.LastFM
             this._lastFmService = lastFmService;
             this._prefixService = prefixService;
             this._artistsService = artistsService;
-            this._whoKnowsService = whoKnowsService;
             this._whoKnowArtistService = whoKnowsArtistService;
             this._guildService = guildService;
             this._userService = userService;
@@ -71,8 +68,9 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task ArtistAsync(params string[] artistValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            var artist = await GetArtistOrHelp(artistValues, userSettings, "artist");
+            var artist = await GetArtistOrHelp(artistValues, userSettings, "artist", prfx);
             if (artist == null)
             {
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
@@ -174,8 +172,9 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task ArtistPlaysAsync(params string[] artistValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            var artist = await GetArtistOrHelp(artistValues, userSettings, "artistplays");
+            var artist = await GetArtistOrHelp(artistValues, userSettings, "artistplays", prfx);
             if (artist == null)
             {
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
@@ -260,7 +259,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (artists?.Any() != true)
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(artists.Status, this.Context, this._logger);
+                    this._embed.NoScrobblesFoundErrorResponse(artists.Status, prfx);
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
@@ -458,7 +458,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var artistQuery = await GetArtistOrHelp(artistValues, userSettings, "whoknows");
+            var artistQuery = await GetArtistOrHelp(artistValues, userSettings, "whoknows", prfx);
             if (artistQuery == null)
             {
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
@@ -629,7 +629,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        private async Task<string> GetArtistOrHelp(string[] artistValues, User userSettings, string command)
+        private async Task<string> GetArtistOrHelp(string[] artistValues, User userSettings, string command, string prfx)
         {
             string artist;
             if (artistValues.Length > 0)
@@ -650,7 +650,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (track == null)
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(track.Status, this.Context, this._logger);
+                    this._embed.NoScrobblesFoundErrorResponse(track.Status, prfx);
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     await ReplyAsync("", false, this._embed.Build());
                     return null;
                 }

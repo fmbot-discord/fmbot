@@ -61,7 +61,7 @@ namespace FMBot.Bot.Commands
                 var indexedUserCount = await this._indexService.GetIndexedUsersCount(guildUsers);
 
                 var guildRecentlyIndexed =
-                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(15));
+                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(60));
 
                 if (guildRecentlyIndexed)
                 {
@@ -165,7 +165,7 @@ namespace FMBot.Bot.Commands
             }
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-3))
+            if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-15))
             {
                 await ReplyAsync(
                     "You have already been updated recently. Note that this also happens automatically.");

@@ -27,12 +27,16 @@ namespace FMBot.Bot.Commands
         private readonly UserService _userService;
         private readonly FriendsService _friendService;
 
-        public StaticCommands(CommandService service, IPrefixService prefixService)
+        public StaticCommands(
+            CommandService service,
+            IPrefixService prefixService,
+            UserService userService,
+            FriendsService friendsService)
         {
             this._service = service;
             this._prefixService = prefixService;
-            this._userService = new UserService();
-            this._friendService = new FriendsService();
+            this._userService = userService;
+            this._friendService = friendsService;
             this._guildService = new GuildService();
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);

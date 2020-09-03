@@ -6,11 +6,19 @@ using FMBot.Bot.Configurations;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace FMBot.Bot.Services
 {
     public class FriendsService
     {
+        private readonly IMemoryCache _cache;
+
+        public FriendsService(IMemoryCache cache)
+        {
+            this._cache = cache;
+        }
+
         public async Task<IReadOnlyList<string>> GetFMFriendsAsync(IUser discordUser)
         {
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
@@ -32,6 +40,8 @@ namespace FMBot.Bot.Services
         {
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var user = db.Users.FirstOrDefault(f => f.DiscordUserId == discordSenderId);
+
+            this._cache.Remove($"user-settings-{discordSenderId}");
 
             if (user == null)
             {

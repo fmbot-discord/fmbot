@@ -29,19 +29,16 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly GuildService _guildService;
         private readonly LastFMService _lastFmService;
         private readonly IPrefixService _prefixService;
-        private readonly Logger.Logger _logger;
 
         private readonly UserService _userService;
 
-        public ChartCommands(Logger.Logger logger,
+        public ChartCommands(
             IPrefixService prefixService,
-            ILastfmApi lastfmApi,
             IChartService chartService,
             GuildService guildService,
             UserService userService,
             LastFMService lastFmService)
         {
-            this._logger = logger;
             this._prefixService = prefixService;
             this._chartService = chartService;
             this._guildService = guildService;

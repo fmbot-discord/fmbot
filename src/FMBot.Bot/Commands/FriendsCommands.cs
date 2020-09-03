@@ -24,22 +24,21 @@ namespace FMBot.Bot.Commands
         private readonly FriendsService _friendsService;
         private readonly GuildService _guildService;
         private readonly LastFMService _lastFmService;
-        private readonly Logger.Logger _logger;
         private readonly UserService _userService;
 
         private readonly IPrefixService _prefixService;
 
-        public FriendsCommands(Logger.Logger logger,
+        public FriendsCommands(
             IPrefixService prefixService,
-            ILastfmApi lastfmApi,
             GuildService guildService,
-            LastFMService lastFmService)
+            LastFMService lastFmService,
+            UserService userService,
+            FriendsService friendsService)
         {
-            this._logger = logger;
             this._prefixService = prefixService;
             this._guildService = guildService;
-            this._userService = new UserService();
-            this._friendsService = new FriendsService();
+            this._userService = userService;
+            this._friendsService = friendsService;
             this._lastFmService = lastFmService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
@@ -53,7 +52,7 @@ namespace FMBot.Bot.Commands
         [LoginRequired]
         public async Task FriendsAsync()
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, bypassCache: true);
 
             try
             {
@@ -258,7 +257,7 @@ namespace FMBot.Bot.Commands
         [LoginRequired]
         public async Task RemoveFriends([Summary("Friend names")] params string[] enteredFriends)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, bypassCache: true);
 
             if (enteredFriends.Length == 0)
             {
@@ -341,7 +340,7 @@ namespace FMBot.Bot.Commands
         [LoginRequired]
         public async Task RemoveAllFriends()
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, bypassCache: true);
 
             try
             {

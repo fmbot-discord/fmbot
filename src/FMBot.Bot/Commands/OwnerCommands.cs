@@ -18,14 +18,11 @@ namespace FMBot.Bot.Commands
     [Summary("FMBot Owners Only")]
     public class OwnerCommands : ModuleBase
     {
-        private readonly Logger.Logger _logger;
-
         private readonly AdminService _adminService;
 
-        public OwnerCommands(Logger.Logger logger)
+        public OwnerCommands(AdminService adminService)
         {
-            this._logger = logger;
-            this._adminService = new AdminService();
+            this._adminService = adminService;
         }
 
         [Command("setusertype"), Summary("Sets usertype for other users")]

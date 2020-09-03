@@ -17,7 +17,6 @@ namespace FMBot.Bot.Commands
     public class AdminCommands : ModuleBase
     {
         private readonly AdminService _adminService;
-        private readonly Logger.Logger _logger;
         private readonly TimerService _timer;
 
         private readonly EmbedBuilder _embed;
@@ -25,13 +24,16 @@ namespace FMBot.Bot.Commands
         private readonly UserService _userService;
         private readonly GuildService _guildService;
 
-        public AdminCommands(TimerService timer, Logger.Logger logger, GuildService guildService)
+        public AdminCommands(
+            TimerService timer,
+            GuildService guildService,
+            UserService userService,
+            AdminService adminService)
         {
             this._timer = timer;
-            this._logger = logger;
             this._guildService = guildService;
-            this._userService = new UserService();
-            this._adminService = new AdminService();
+            this._userService = userService;
+            this._adminService = adminService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
         }

@@ -6,7 +6,7 @@ using Genius.Models;
 
 namespace FMBot.Bot.Services
 {
-    internal class GeniusService
+    public class GeniusService
     {
         public async Task<SearchHit> SearchGeniusAsync(string searchValue)
         {

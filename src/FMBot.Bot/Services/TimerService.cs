@@ -26,25 +26,24 @@ namespace FMBot.Bot.Services
         private readonly Timer _externalStatsTimer;
         private readonly Timer _internalStatsTimer;
         private readonly Timer _userUpdateTimer;
-        private readonly ILastfmApi _lastfmApi;
         private readonly LastFMService _lastFMService;
         private readonly UserService _userService;
         private readonly IUpdateService _updateService;
         private readonly GuildService _guildService;
         private readonly DiscordShardedClient _client;
 
-        private readonly ILogger logger = Log.ForContext<TimerService>();
-
         private bool _timerEnabled;
 
         private string _trackString = "";
 
-        public TimerService(DiscordShardedClient client, ILastfmApi lastfmApi, LastFMService lastFmService, IUpdateService updateService)
+        public TimerService(DiscordShardedClient client,
+            LastFMService lastFmService,
+            IUpdateService updateService,
+            UserService userService)
         {
-            this._lastfmApi = lastfmApi;
             this._client = client;
             this._lastFMService = lastFmService;
-            this._userService = new UserService();
+            this._userService = userService;
             this._guildService = new GuildService();
             this._updateService = updateService;
 
@@ -168,6 +167,8 @@ namespace FMBot.Bot.Services
                                 }
 
                                 break;
+                            default:
+                                break;
                         }
                     }
                     catch (Exception e)
@@ -236,7 +237,7 @@ namespace FMBot.Bot.Services
                 },
                 null,
                 TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds + 10),
-                TimeSpan.FromMinutes(5));
+                TimeSpan.FromMinutes(30));
 
             this._userUpdateTimer = new Timer(async _ =>
                 {
@@ -256,8 +257,8 @@ namespace FMBot.Bot.Services
                     this._updateService.AddUsersToUpdateQueue(usersToUpdate);
                 },
                 null,
-                TimeSpan.FromMinutes(1),
-                TimeSpan.FromMinutes(60));
+                TimeSpan.FromMinutes(2),
+                TimeSpan.FromHours(3));
 
             this._timerEnabled = true;
         }

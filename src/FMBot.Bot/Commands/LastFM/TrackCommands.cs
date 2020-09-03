@@ -1,37 +1,36 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
-using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.WhoKnows;
-using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
-using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
-using IF.Lastfm.Core.Objects;
 
 namespace FMBot.Bot.Commands.LastFM
 {
     public class TrackCommands : ModuleBase
     {
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
+        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
+
         private readonly EmbedBuilder _embed;
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly GuildService _guildService;
         private readonly LastFMService _lastFmService;
         private readonly WhoKnowsTrackService _whoKnowsTrackService;
-        private readonly SpotifyService _spotifyService = new SpotifyService();
+        private readonly SpotifyService _spotifyService;
         private readonly Logger.Logger _logger;
 
         private readonly UserService _userService;
@@ -40,10 +39,10 @@ namespace FMBot.Bot.Commands.LastFM
 
         public TrackCommands(Logger.Logger logger,
             IPrefixService prefixService,
-            ILastfmApi lastfmApi,
             GuildService guildService,
             UserService userService,
             LastFMService lastFmService,
+            SpotifyService spotifyService,
             WhoKnowsTrackService whoKnowsTrackService)
         {
             this._logger = logger;
@@ -51,6 +50,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._guildService = guildService;
             this._userService = userService;
             this._lastFmService = lastFmService;
+            this._spotifyService = spotifyService;
             this._whoKnowsTrackService = whoKnowsTrackService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);
@@ -70,7 +70,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (userSettings?.UserNameLastFM == null)
             {
-                this._embed.UsernameNotSetErrorResponse(this.Context, prfx, this._logger);
+                this._embed.UsernameNotSetErrorResponse(prfx);
                 await ReplyAsync("", false, this._embed.Build());
                 return;
             }
@@ -134,7 +134,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (recentScrobbles?.Any() != true)
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(recentScrobbles.Status, this.Context, this._logger);
+                    this._embed.NoScrobblesFoundErrorResponse(recentScrobbles.Status, prfx);
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
@@ -181,6 +182,10 @@ namespace FMBot.Bot.Commands.LastFM
                             footerText += $"{artistInfo.Content.Artist.Stats.Userplaycount} scrobbles on this artist | ";
                         }
                         break;
+                    case null:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
 
                 footerText += $"{userInfo.Content.Playcount} total scrobbles";
@@ -341,7 +346,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (tracks?.Any() != true)
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(tracks.Status, this.Context, this._logger);
+                    this._embed.NoScrobblesFoundErrorResponse(tracks.Status, prfx);
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
@@ -434,7 +440,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var track = await this.SearchTrack(trackValues, userSettings);
+            var track = await this.SearchTrack(trackValues, userSettings, prfx);
             if (track == null)
             {
                 return;
@@ -521,7 +527,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var track = await this.SearchTrack(trackValues, userSettings);
+            var track = await this.SearchTrack(trackValues, userSettings, prfx);
             if (track == null)
             {
                 return;
@@ -657,6 +663,31 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            var msg = this.Context.Message as SocketUserMessage;
+            if (StackCooldownTarget.Contains(this.Context.Message.Author))
+            {
+                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMinutes(4) >= DateTimeOffset.Now)
+                {
+                    var secondsLeft = (int)(StackCooldownTimer[
+                            StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
+                        .AddMinutes(4) - DateTimeOffset.Now).TotalSeconds;
+
+                    var secondString = secondsLeft == 1 ? "second" : "seconds";
+                    await ReplyAsync($"This command temporarily has a 4 minute cooldown to see if this helps with the database issues. Our apologies for any inconvenience.\n" +
+                                     $"{secondsLeft} {secondString} left before you can use this command again.");
+                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
+
+                    return;
+                }
+
+                StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
+            }
+            else
+            {
+                StackCooldownTarget.Add(msg.Author);
+                StackCooldownTimer.Add(DateTimeOffset.Now);
+            }
+
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
 
@@ -706,7 +737,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var track = await this.SearchTrack(trackValues, userSettings);
+            var track = await this.SearchTrack(trackValues, userSettings, prfx);
             if (track == null)
             {
                 return;
@@ -802,7 +833,7 @@ namespace FMBot.Bot.Commands.LastFM
             return null;
         }
 
-        private async Task<ResponseTrack> SearchTrack(string[] trackValues, User userSettings)
+        private async Task<ResponseTrack> SearchTrack(string[] trackValues, User userSettings, string prfx)
         {
             string searchValue;
             if (trackValues.Any())
@@ -822,7 +853,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (!track.Content.Any())
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(track.Status, this.Context, this._logger);
+                    this._embed.NoScrobblesFoundErrorResponse(track.Status, prfx);
                     await this.ReplyAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     return null;

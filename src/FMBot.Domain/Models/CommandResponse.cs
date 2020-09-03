@@ -24,6 +24,8 @@ namespace FMBot.Domain.Models
 
         IndexRequired = 11,
 
-        LastFmError = 12
+        LastFmError = 12,
+
+        Disabled = 13
     }
 }
