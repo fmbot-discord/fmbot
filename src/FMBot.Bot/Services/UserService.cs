@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -8,28 +9,58 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Serilog;
 
 namespace FMBot.Bot.Services
 {
     public class UserService
     {
-        // User settings
-        public async Task<bool> UserRegisteredAsync(IUser discordUser)
+        private readonly IMemoryCache _cache;
+
+        public UserService(IMemoryCache cache)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            return await db.Users
-                .AsQueryable()
-                .AnyAsync(f => f.DiscordUserId == discordUser.Id);
+            this._cache = cache;
         }
 
         // User settings
-        public async Task<User> GetUserSettingsAsync(IUser discordUser)
+        public async Task<bool> UserRegisteredAsync(IUser discordUser)
         {
+            var cacheKey = $"user-isRegistered-{discordUser.Id}";
+
+            if (this._cache.TryGetValue(cacheKey, out bool isRegistered))
+            {
+                return isRegistered;
+            }
+
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            return await db.Users
+            isRegistered = await db.Users
+                .AsQueryable()
+                .AnyAsync(f => f.DiscordUserId == discordUser.Id);
+
+            this._cache.Set(cacheKey, isRegistered, TimeSpan.FromHours(24));
+
+            return isRegistered;
+        }
+
+        // User settings
+        public async Task<User> GetUserSettingsAsync(IUser discordUser, bool bypassCache = false)
+        {
+            var cacheKey = $"user-settings-{discordUser.Id}";
+
+            if (!bypassCache && this._cache.TryGetValue(cacheKey, out User user))
+            {
+                return user;
+            }
+
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            user = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+
+            this._cache.Set(cacheKey, user, TimeSpan.FromHours(3));
+
+            return user;
         }
 
         // User settings
@@ -60,33 +91,23 @@ namespace FMBot.Bot.Services
         // Rank
         public async Task<UserType> GetRankAsync(IUser discordUser)
         {
+            var cacheKey = $"user-userType-{discordUser.Id}";
+
+            if (this._cache.TryGetValue(cacheKey, out UserType rank))
+            {
+                return rank;
+            }
+
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var user = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
-            if (user == null)
-            {
-                return UserType.User;
-            }
+            rank = user?.UserType ?? UserType.User;
 
-            return user.UserType;
-        }
+            this._cache.Set(cacheKey, rank, TimeSpan.FromHours(6));
 
-        // Featured
-        public async Task<bool?> GetFeaturedAsync(IUser discordUser)
-        {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            var user = await db.Users
-                .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
-
-            if (user == null)
-            {
-                return false;
-            }
-
-            return user.Featured;
+            return rank;
         }
 
         // Featured
@@ -149,14 +170,8 @@ namespace FMBot.Bot.Services
         {
             var name = await GetNameAsync(context);
             var rank = await GetRankAsync(context.User);
-            var featured = await GetFeaturedAsync(context.User);
 
             var title = name;
-
-            if (featured == true)
-            {
-                title = name + " (Currently Featured)";
-            }
 
             if (rank == UserType.Owner)
             {
@@ -182,6 +197,8 @@ namespace FMBot.Bot.Services
             using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var user = db.Users.FirstOrDefault(f => f.DiscordUserId == discordUser.Id);
 
+            this._cache.Remove($"user-settings-{discordUser.Id}");
+
             if (user == null)
             {
                 var newUser = new User
@@ -203,7 +220,7 @@ namespace FMBot.Bot.Services
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e);
+                    Log.Error(e, "Error in SetLastFM");
                     throw;
                 }
             }

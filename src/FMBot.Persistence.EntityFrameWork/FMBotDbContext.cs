@@ -1,7 +1,6 @@
 using System;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 
 namespace FMBot.Persistence.EntityFrameWork
 {

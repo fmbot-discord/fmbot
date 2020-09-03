@@ -28,11 +28,12 @@ namespace FMBot.Bot.Commands
             Logger.Logger logger,
             IPrefixService prefixService,
             ILastfmApi lastfmApi,
-            LastFMService lastFmService)
+            LastFMService lastFmService,
+            UserService userService)
         {
             this._logger = logger;
             this._prefixService = prefixService;
-            this._userService = new UserService();
+            this._userService = userService;
             this._lastFmService = lastFmService;
             this._embed = new EmbedBuilder()
                 .WithColor(Constants.LastFMColorRed);

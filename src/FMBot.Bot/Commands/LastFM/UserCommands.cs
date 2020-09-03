@@ -35,17 +35,18 @@ namespace FMBot.Bot.Commands.LastFM
         public UserCommands(TimerService timer,
             Logger.Logger logger,
             IPrefixService prefixService,
-            ILastfmApi lastfmApi,
             GuildService guildService,
             LastFMService lastFmService,
-            IIndexService indexService)
+            IIndexService indexService,
+            UserService userService,
+            FriendsService friendsService)
         {
             this._timer = timer;
             this._logger = logger;
             this._prefixService = prefixService;
             this._guildService = guildService;
-            this._friendsService = new FriendsService();
-            this._userService = new UserService();
+            this._friendsService = friendsService;
+            this._userService = userService;
             this._lastFmService = lastFmService;
             this._indexService = indexService;
             this._embed = new EmbedBuilder()
@@ -173,7 +174,7 @@ namespace FMBot.Bot.Commands.LastFM
         {
             var prfx = ConfigData.Data.Bot.Prefix;
 
-            var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
             if (lastFMUserName == null || lastFMUserName == "help")
             {
                 var replyString = $"{prfx}set is the command you use to set your last.fm username in the bot, so it knows who you are on the last.fm website. \n" +
@@ -242,7 +243,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             this.Context.LogCommandUsed();
 
-            var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
             if (existingUserSettings == null ||
                 existingUserSettings.UserNameLastFM.ToLower() != newUserSettings.UserNameLastFM.ToLower())
             {
@@ -251,7 +252,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                await this._indexService.AddUserToGuild(Context.Guild, newUserSettings);
+                await this._indexService.AddUserToGuild(this.Context.Guild, newUserSettings);
 
                 var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
                 if (!perms.EmbedLinks || !perms.AttachFiles)

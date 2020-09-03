@@ -39,9 +39,9 @@ namespace FMBot.LastFM.Services
 
         public async Task IndexUser(User user)
         {
-            Thread.Sleep(7500);
+            Thread.Sleep(10000);
 
-            Log.Information($"Starting artist store for {user.UserNameLastFM}");
+            Log.Information($"Starting index for {user.UserNameLastFM}");
             var now = DateTime.UtcNow;
 
             var artists = await GetArtistsForUserFromLastFm(user);
@@ -50,8 +50,8 @@ namespace FMBot.LastFM.Services
             var albums = await GetAlbumsForUserFromLastFm(user);
             await InsertAlbumsIntoDatabase(albums, user.UserId);
 
-            //var tracks = await GetTracksForUserFromLastFm(user);
-            //await InsertTracksIntoDatabase(tracks, user.UserId);
+            var tracks = await GetTracksForUserFromLastFm(user);
+            await InsertTracksIntoDatabase(tracks, user.UserId);
 
             var latestScrobbleDate = await GetLatestScrobbleDate(user);
             await SetUserIndexTime(user.UserId, now, latestScrobbleDate);
@@ -159,9 +159,9 @@ namespace FMBot.LastFM.Services
             connection.Open();
 
             await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.user_artists WHERE user_id = {userId};", connection);
-            await deleteCurrentArtists.ExecuteNonQueryAsync().ConfigureAwait(false);
+            await deleteCurrentArtists.ExecuteNonQueryAsync();
 
-            await copyHelper.SaveAllAsync(connection, artists).ConfigureAwait(false);
+            await copyHelper.SaveAllAsync(connection, artists);
         }
 
         private async Task InsertAlbumsIntoDatabase(IReadOnlyList<UserAlbum> albums, int userId)
@@ -178,9 +178,9 @@ namespace FMBot.LastFM.Services
             connection.Open();
 
             await using var deleteCurrentAlbums = new NpgsqlCommand($"DELETE FROM public.user_albums WHERE user_id = {userId};", connection);
-            await deleteCurrentAlbums.ExecuteNonQueryAsync().ConfigureAwait(false);
+            await deleteCurrentAlbums.ExecuteNonQueryAsync();
 
-            await copyHelper.SaveAllAsync(connection, albums).ConfigureAwait(false);
+            await copyHelper.SaveAllAsync(connection, albums);
         }
 
         private async Task InsertTracksIntoDatabase(IReadOnlyList<UserTrack> artists, int userId)
@@ -197,9 +197,9 @@ namespace FMBot.LastFM.Services
             connection.Open();
 
             await using var deleteCurrentTracks = new NpgsqlCommand($"DELETE FROM public.user_tracks WHERE user_id = {userId};", connection);
-            await deleteCurrentTracks.ExecuteNonQueryAsync().ConfigureAwait(false);
+            await deleteCurrentTracks.ExecuteNonQueryAsync();
 
-            await copyHelper.SaveAllAsync(connection, artists).ConfigureAwait(false);
+            await copyHelper.SaveAllAsync(connection, artists);
 
         }
 

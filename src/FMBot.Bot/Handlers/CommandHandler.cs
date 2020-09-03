@@ -11,6 +11,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
+using Serilog;
 
 namespace FMBot.Bot.Handlers
 {
@@ -130,8 +131,7 @@ namespace FMBot.Bot.Handlers
                 }
                 else
                 {
-                    var logger = new Logger.Logger();
-                    logger.LogError(commandPrefixResult.ToString(), context.Message.Content);
+                    Log.Error(commandPrefixResult.ToString(), context.Message.Content);
                 }
 
                 return;
@@ -159,8 +159,7 @@ namespace FMBot.Bot.Handlers
             }
             else
             {
-                var logger = new Logger.Logger();
-                logger.LogError(result.ToString(), context.Message.Content);
+                Log.Error(result.ToString(), context.Message.Content);
             }
         }
 
