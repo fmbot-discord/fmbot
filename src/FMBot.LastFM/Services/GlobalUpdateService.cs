@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
+using Serilog;
 
 namespace FMBot.LastFM.Services
 {
@@ -39,16 +40,16 @@ namespace FMBot.LastFM.Services
 
         public async Task<int> UpdateUser(User user)
         {
-            Thread.Sleep(500);
+            Thread.Sleep(750);
 
-            Console.WriteLine($"Updating {user.UserNameLastFM}");
+            Log.Information($"Updating {user.UserNameLastFM}");
 
             var recentTracks = await this._lastFMClient.User.GetRecentScrobbles(user.UserNameLastFM, count: 1000);
             Statistics.LastfmApiCalls.Inc();
 
             if (!recentTracks.Success || !recentTracks.Content.Any())
             {
-                Console.WriteLine($"Something went wrong getting recent tracks for {user.UserNameLastFM} | {recentTracks.Status}");
+                Log.Warning($"Something went wrong getting recent tracks for {user.UserNameLastFM} | {recentTracks.Status}");
                 return 0;
             }
 
@@ -58,7 +59,7 @@ namespace FMBot.LastFM.Services
 
             if (!newScrobbles.Any())
             {
-                Console.WriteLine($"No new scrobbles for {user.UserNameLastFM}");
+                Log.Information($"No new scrobbles for {user.UserNameLastFM}");
                 await SetUserUpdateTime(user.UserId, DateTime.UtcNow);
                 return 0;
             }
@@ -90,7 +91,7 @@ namespace FMBot.LastFM.Services
                 .ToListAsync();
 
             this._cache.Set("artists", artists, TimeSpan.FromHours(2));
-            Console.WriteLine($"Added {artists.Count} artists to memory cache");
+            Log.Information($"Added {artists.Count} artists to memory cache");
 
             return artists;
         }
@@ -120,7 +121,7 @@ namespace FMBot.LastFM.Services
                 await updateArtistPlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
 
-            Console.WriteLine($"Updated artists for {user.UserNameLastFM}");
+            Log.Information($"Updated artists for {user.UserNameLastFM}");
         }
 
         private async Task UpdateAlbumsForUser(User user, IEnumerable<LastTrack> newScrobbles,
@@ -149,7 +150,7 @@ namespace FMBot.LastFM.Services
                 await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
 
-            Console.WriteLine($"Updated albums for {user.UserNameLastFM}");
+            Log.Information($"Updated albums for {user.UserNameLastFM}");
         }
 
         private async Task UpdateTracksForUser(User user, IEnumerable<LastTrack> newScrobbles,
@@ -178,7 +179,7 @@ namespace FMBot.LastFM.Services
                 await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
 
-            Console.WriteLine($"Updated tracks for {user.UserNameLastFM}");
+            Log.Information($"Updated tracks for {user.UserNameLastFM}");
         }
 
         private async Task SetUserUpdateAndScrobbleTime(int userId, DateTime now, DateTime lastScrobble)
@@ -203,7 +204,7 @@ namespace FMBot.LastFM.Services
         {
             if (!newScrobbles.Any(a => a.TimePlayed.HasValue))
             {
-                Console.WriteLine("No recent scrobble date in update!");
+                Log.Information("No recent scrobble date in update!");
                 return DateTime.UtcNow;
             }
 

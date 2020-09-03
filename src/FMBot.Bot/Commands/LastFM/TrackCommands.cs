@@ -654,6 +654,11 @@ namespace FMBot.Bot.Commands.LastFM
         [LoginRequired]
         public async Task WhoKnowsAsync(params string[] trackValues)
         {
+            await ReplyAsync("Whoknows track has been temporarily disabled due to performance issues that caused the database to slow down and the bot to be unusable.\n" +
+                             "Sorry for the inconvenience, we're hoping to get it back as soon as possible.");
+            this.Context.LogCommandUsed(CommandResponse.Disabled);
+            return;
+
             if (this._guildService.CheckIfDM(this.Context))
             {
                 await ReplyAsync("This command is not supported in DMs.");
