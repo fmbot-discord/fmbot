@@ -257,8 +257,8 @@ namespace FMBot.Bot.Services
                     this._updateService.AddUsersToUpdateQueue(usersToUpdate);
                 },
                 null,
-                TimeSpan.FromMinutes(1),
-                TimeSpan.FromMinutes(60));
+                TimeSpan.FromMinutes(2),
+                TimeSpan.FromHours(3));
 
             this._timerEnabled = true;
         }
