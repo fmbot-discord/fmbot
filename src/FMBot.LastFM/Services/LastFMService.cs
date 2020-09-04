@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 using FMBot.Domain;
 using FMBot.Domain.Models;
@@ -280,6 +281,60 @@ namespace FMBot.LastFM.Services
             Statistics.LastfmApiCalls.Inc();
 
             return lastFMUser.Success;
+        }
+
+        public async Task<Response<TokenResponse>> GetAuthToken()
+        {
+            var queryParams = new Dictionary<string, string>();
+
+            var tokenCall = await this._lastfmApi.CallApiAsync<TokenResponse>(queryParams, Call.GetToken);
+            Statistics.LastfmApiCalls.Inc();
+
+            return tokenCall;
+        }
+
+        public async Task<Response<AuthSessionResponse>> GetSession(string token)
+        {
+            try
+            {
+                var queryParams = new Dictionary<string, string>
+                {
+                    {"token", token}
+                };
+
+                var signature = CreateMD5($"api_key{this._key}" +
+                                          $"methodauth.getSession" +
+                                          $"token{token}" +
+                                          $"{this._secret}");
+
+                queryParams.Add("api_sig", signature);
+
+                var tokenCall = await this._lastfmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.GetToken);
+                Statistics.LastfmApiCalls.Inc();
+
+                return tokenCall;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+
+        public static string CreateMD5(string input)
+        {
+            // Use input string to calculate MD5 hash
+            using var md5 = System.Security.Cryptography.MD5.Create();
+            var inputBytes = Encoding.ASCII.GetBytes(input);
+            var hashBytes = md5.ComputeHash(inputBytes);
+
+            // Convert the byte array to hexadecimal string
+            var sb = new StringBuilder();
+            foreach (var t in hashBytes)
+            {
+                sb.Append(t.ToString("X2"));
+            }
+            return sb.ToString();
         }
 
         public static SettingsModel StringOptionsToSettings(

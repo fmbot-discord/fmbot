@@ -257,6 +257,47 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
+        [Command("fulllogin", RunMode = RunMode.Async)]
+        [Summary(
+            "Logs you in using a link")]
+        public async Task LoginAsync()
+        {
+            var prfx = ConfigData.Data.Bot.Prefix;
+
+            var token = await this._lastFmService.GetAuthToken();
+
+            await this.Context.User.SendMessageAsync($"http://www.last.fm/api/auth/?api_key={ConfigData.Data.LastFm.Key}&token={token.Content.Token}");
+
+            await ReplyAsync("Check your DMs for a link to login!");
+
+            var authSession = await GetAuthSession(token.Content.Token);
+
+            this.Context.LogCommandUsed();
+
+            if (!this._guildService.CheckIfDM(this.Context))
+            {
+                //await this._indexService.AddUserToGuild(this.Context.Guild, newUserSettings);
+
+                var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
+                if (!perms.EmbedLinks || !perms.AttachFiles)
+                {
+                    await ReplyAsync(
+                        "Please note that the bot also needs the 'Attach files' and 'Embed links' permissions for most commands. One or both of these permissions are currently missing.");
+                }
+            }
+        }
+
+        private async Task<string> GetAuthSession(string token)
+        {
+            await Task.Delay(15000);
+
+            var authSession = await this._lastFmService.GetSession(token);
+
+            var test = authSession;
+
+            return "asd";
+        }
+
         [Command("remove", RunMode = RunMode.Async)]
         [Summary("Deletes your FMBot data.")]
         [Alias("delete", "removedata", "deletedata")]

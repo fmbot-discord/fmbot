@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -29,22 +30,25 @@ namespace FMBot.LastFM.Services
             this._client = httpClientFactory.CreateClient();
         }
 
-        public async Task<Response<T>> CallApiAsync<T>(Dictionary<string, string> parameters, string call)
+        public async Task<Response<T>> CallApiAsync<T>(Dictionary<string, string> parameters, string call, bool addDefaultParameters = true)
         {
-            var queryParams = new Dictionary<string, string>
+            if (addDefaultParameters)
             {
-                {"api_key", this._key },
-                {"api_secret", this._secret },
-                {"format", "json" },
-                {"method", call }
-            };
+                var queryParams = new Dictionary<string, string>
+                {
+                    {"api_key", this._key },
+                    {"api_secret", this._secret },
+                    {"format", "json" },
+                    {"method", call }
+                };
 
-            foreach (var (key, value) in parameters)
-            {
-                queryParams.Add(key, value);
+                foreach (var (key, value) in queryParams.Where(w => !parameters.ContainsKey(w.Key.ToLower())))
+                {
+                    parameters.Add(key, value);
+                }
             }
 
-            var url = QueryHelpers.AddQueryString(apiUrl, queryParams);
+            var url = QueryHelpers.AddQueryString(apiUrl, parameters);
 
             var request = new HttpRequestMessage
             {
