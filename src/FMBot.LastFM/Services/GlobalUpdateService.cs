@@ -21,8 +21,7 @@ namespace FMBot.LastFM.Services
     {
         private readonly LastfmClient _lastFMClient;
 
-        private readonly string _key;
-        private readonly string _secret;
+        private static readonly List<string> UserUpdateFailures = new List<string>();
 
         private readonly string _connectionString;
 
@@ -31,10 +30,8 @@ namespace FMBot.LastFM.Services
         public GlobalUpdateService(IConfigurationRoot configuration, IMemoryCache cache)
         {
             this._cache = cache;
-            this._key = configuration.GetSection("LastFm:Key").Value;
-            this._secret = configuration.GetSection("LastFm:Secret").Value;
             this._connectionString = configuration.GetSection("Database:ConnectionString").Value;
-            this._lastFMClient = new LastfmClient(this._key, this._secret);
+            this._lastFMClient = new LastfmClient(configuration.GetSection("LastFm:Key").Value, configuration.GetSection("LastFm:Secret").Value);
         }
 
 
@@ -44,12 +41,19 @@ namespace FMBot.LastFM.Services
 
             Log.Information($"Updating {user.UserNameLastFM}");
 
+            if (UserUpdateFailures.Contains(user.UserNameLastFM))
+            {
+                Log.Information($"Skipped user {user.UserNameLastFM} in updating process");
+                return 0;
+            }
+
             var recentTracks = await this._lastFMClient.User.GetRecentScrobbles(user.UserNameLastFM, count: 1000);
             Statistics.LastfmApiCalls.Inc();
 
             if (!recentTracks.Success || !recentTracks.Content.Any())
             {
-                Log.Warning($"Something went wrong getting recent tracks for {user.UserNameLastFM} | {recentTracks.Status}");
+                Log.Information($"Something went wrong getting recent tracks for {user.UserNameLastFM} | {recentTracks.Status}");
+                UserUpdateFailures.Add(user.UserNameLastFM);
                 return 0;
             }
 

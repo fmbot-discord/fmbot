@@ -21,9 +21,6 @@ namespace FMBot.Bot.Commands.LastFM
 {
     public class TrackCommands : ModuleBase
     {
-        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
-        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
-
         private readonly EmbedBuilder _embed;
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
@@ -663,31 +660,6 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var msg = this.Context.Message as SocketUserMessage;
-            if (StackCooldownTarget.Contains(this.Context.Message.Author))
-            {
-                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMinutes(4) >= DateTimeOffset.Now)
-                {
-                    var secondsLeft = (int)(StackCooldownTimer[
-                            StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
-                        .AddMinutes(4) - DateTimeOffset.Now).TotalSeconds;
-
-                    var secondString = secondsLeft == 1 ? "second" : "seconds";
-                    await ReplyAsync($"This command temporarily has a 4 minute cooldown to see if this helps with the database issues. Our apologies for any inconvenience.\n" +
-                                     $"{secondsLeft} {secondString} left before you can use this command again.");
-                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
-
-                    return;
-                }
-
-                StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
-            }
-            else
-            {
-                StackCooldownTarget.Add(msg.Author);
-                StackCooldownTimer.Add(DateTimeOffset.Now);
-            }
-
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
 
@@ -767,7 +739,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(serverUsers);
 
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-                var footer = $"WhoKnows track requested by {userTitle}";
+                var footer = $"WhoKnows track requested by {userTitle} - Users with 3 plays or higher are shown";
 
                 if (lastIndex < DateTime.UtcNow.AddDays(-3))
                 {
