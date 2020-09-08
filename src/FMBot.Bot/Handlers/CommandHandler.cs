@@ -139,7 +139,7 @@ namespace FMBot.Bot.Handlers
                 return;
             }
 
-            if (searchResult.Commands[0].Command.Attributes.OfType<LoginRequiredAttribute>().Any())
+            if (searchResult.Commands[0].Command.Attributes.OfType<UsernameSetRequired>().Any())
             {
                 var userRegistered = await this._userService.UserRegisteredAsync(context.User);
                 if (!userRegistered)
@@ -147,6 +147,19 @@ namespace FMBot.Bot.Handlers
                     var embed = new EmbedBuilder()
                         .WithColor(Constants.LastFMColorRed);
                     embed.UsernameNotSetErrorResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
+                    await context.Channel.SendMessageAsync("", false, embed.Build());
+                    context.LogCommandUsed(CommandResponse.UsernameNotSet);
+                    return;
+                }
+            }
+            if (searchResult.Commands[0].Command.Attributes.OfType<UserSessionRequired>().Any())
+            {
+                var userSession = await this._userService.UserHasSessionAsync(context.User);
+                if (!userSession)
+                {
+                    var embed = new EmbedBuilder()
+                        .WithColor(Constants.LastFMColorRed);
+                    embed.SessionRequiredResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
                     await context.Channel.SendMessageAsync("", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
                     return;

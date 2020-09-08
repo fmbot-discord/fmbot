@@ -296,21 +296,39 @@ namespace FMBot.LastFM.Services
         public async Task<Response<AuthSessionResponse>> GetAuthSession(string token)
         {
             var queryParams = new Dictionary<string, string>
-                {
-                    {"token", token}
-                };
+            {
+                {"token", token}
+            };
 
-            var signature = CreateMd5($"api_key{this._key}" +
-                                      $"methodauth.getSession" +
-                                      $"token{token}" +
-                                      $"{this._secret}");
-
-            queryParams.Add("api_sig", signature);
+            queryParams.Add("api_sig", GetApiSignature("auth.GetSession", token));
 
             var authSessionCall = await this._lastfmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.GetAuthSession);
             Statistics.LastfmApiCalls.Inc();
 
             return authSessionCall;
+        }
+
+        public async Task<bool> LoveTrackAsync(User user, string artistName, string trackName)
+        {
+            var queryParams = new Dictionary<string, string>
+            {
+                {"artist", artistName},
+                {"track", trackName},
+                {"sk", user.SessionKeyLastFm},
+            };
+
+            var authSessionCall = await this._lastfmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.TrackLove, true);
+            Statistics.LastfmApiCalls.Inc();
+
+            return authSessionCall.Success;
+        }
+
+        public string GetApiSignature(string method, string token)
+        {
+            return CreateMd5($"api_key{this._key}" +
+                                      $"method{method}" +
+                                      $"token{token}" +
+                                      $"{this._secret}");
         }
 
         public static string CreateMd5(string input)

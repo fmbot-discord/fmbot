@@ -49,7 +49,7 @@ namespace FMBot.Bot.Commands
         [Command("friends", RunMode = RunMode.Async)]
         [Summary("Displays a user's friends and what they are listening to.")]
         [Alias("recentfriends", "friendsrecent", "f")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task FriendsAsync()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, bypassCache: true);
@@ -144,7 +144,7 @@ namespace FMBot.Bot.Commands
         [Command("addfriends", RunMode = RunMode.Async)]
         [Summary("Adds your friends' Last.FM names.")]
         [Alias("friendsset", "setfriends", "friendsadd", "addfriend", "setfriend")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task AddFriends([Summary("Friend names")] params string[] enteredFriends)
         {
             if (this._guildService.CheckIfDM(this.Context))
@@ -254,7 +254,7 @@ namespace FMBot.Bot.Commands
         [Command("removefriends", RunMode = RunMode.Async)]
         [Summary("Remove your friends' Last.FM names.")]
         [Alias("friendsremove", "deletefriend", "deletefriends", "removefriend")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task RemoveFriends([Summary("Friend names")] params string[] enteredFriends)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, bypassCache: true);
@@ -337,7 +337,7 @@ namespace FMBot.Bot.Commands
         [Command("removeallfriends", RunMode = RunMode.Async)]
         [Summary("Remove all your friends")]
         [Alias("friendsremoveall")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task RemoveAllFriends()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, bypassCache: true);

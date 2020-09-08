@@ -64,7 +64,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("artist", RunMode = RunMode.Async)]
         [Summary("Displays artist info and stats.")]
         [Alias("a")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task ArtistAsync(params string[] artistValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -168,7 +168,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("artistplays", RunMode = RunMode.Async)]
         [Summary("Displays artist playcount.")]
         [Alias("ap")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task ArtistPlaysAsync(params string[] artistValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -215,7 +215,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("topartists", RunMode = RunMode.Async)]
         [Summary("Displays top artists.")]
         [Alias("al", "as", "ta", "artistlist", "artists", "artistslist")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task TopArtistsAsync(params string[] extraOptions)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -310,7 +310,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("taste", RunMode = RunMode.Async)]
         [Summary("Compare taste to other user.")]
-        [LoginRequired]
+        [UsernameSetRequired]
         [Alias("t")]
         public async Task TasteAsync(string user = null, params string[] extraOptions)
         {
@@ -424,7 +424,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("whoknows", RunMode = RunMode.Async)]
         [Summary("Shows what other users listen to the same artist in your server")]
         [Alias("w", "wk")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task WhoKnowsAsync(params string[] artistValues)
         {
             if (this._guildService.CheckIfDM(this.Context))

@@ -53,7 +53,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("chart", RunMode = RunMode.Async)]
         [Summary("Generates a chart based on a user's parameters.")]
         [Alias("c")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task ChartAsync(params string[] otherSettings)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;

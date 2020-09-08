@@ -48,6 +48,17 @@ namespace FMBot.Bot.Services
         }
 
         // User settings
+        public async Task<bool> UserHasSessionAsync(IUser discordUser)
+        {
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            var user = await db.Users
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+
+            return !string.IsNullOrEmpty(user.SessionKeyLastFm);
+        }
+
+        // User settings
         public async Task<User> GetUserSettingsAsync(IUser discordUser, bool bypassCache = false)
         {
             var cacheKey = $"user-settings-{discordUser.Id}";

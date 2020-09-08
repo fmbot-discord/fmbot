@@ -143,7 +143,7 @@ namespace FMBot.Bot.Commands
 
         [Command("update", RunMode = RunMode.Async)]
         [Summary("Update user.")]
-        [LoginRequired]
+        [UsernameSetRequired]
         [Alias("u")]
         public async Task UpdateUserAsync(string force = null)
         {

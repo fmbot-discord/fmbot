@@ -59,7 +59,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("stats", RunMode = RunMode.Async)]
         [Summary("Displays user stats related to Last.FM and FMBot")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task StatsAsync(string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
