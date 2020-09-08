@@ -788,9 +788,10 @@ namespace FMBot.Bot.Commands.LastFM
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
                 var footer = $"WhoKnows track requested by {userTitle} - Users with 3 plays or higher are shown";
 
-                if (lastIndex < DateTime.UtcNow.AddDays(-3))
+                var rnd = new Random();
+                if (rnd.Next(0, 4) == 1 && lastIndex < DateTime.UtcNow.AddDays(-3))
                 {
-                    footer += "\nMissing members? Update with .fmindex";
+                    footer += $"\nMissing members? Update with {prfx}index";
                 }
 
                 this._embed.WithTitle($"Who knows {trackName} in {this.Context.Guild.Name}");

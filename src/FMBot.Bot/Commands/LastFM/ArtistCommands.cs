@@ -512,9 +512,10 @@ namespace FMBot.Bot.Commands.LastFM
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
                 var footer = $"WhoKnows artist requested by {userTitle}";
 
-                if (lastIndex < DateTime.UtcNow.AddDays(-3))
+                var rnd = new Random();
+                if (rnd.Next(0, 4) == 1 && lastIndex < DateTime.UtcNow.AddDays(-3))
                 {
-                    footer += "\nMissing members? Update with .fmindex";
+                    footer += $"\nMissing members? Update with {prfx}index";
                 }
 
                 if (guild.GuildUsers.Count < 400)
