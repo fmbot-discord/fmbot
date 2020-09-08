@@ -22,6 +22,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public string UserNameLastFM { get; set; }
 
+        public string SessionKeyLastFm { get; set; }
+
         public FmEmbedType FmEmbedType { get; set; }
 
         public FmCountType? FmCountType { get; set; }

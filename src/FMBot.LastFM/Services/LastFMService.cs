@@ -293,42 +293,32 @@ namespace FMBot.LastFM.Services
             return tokenCall;
         }
 
-        public async Task<Response<AuthSessionResponse>> GetSession(string token)
+        public async Task<Response<AuthSessionResponse>> GetAuthSession(string token)
         {
-            try
-            {
-                var queryParams = new Dictionary<string, string>
+            var queryParams = new Dictionary<string, string>
                 {
                     {"token", token}
                 };
 
-                var signature = CreateMD5($"api_key{this._key}" +
-                                          $"methodauth.getSession" +
-                                          $"token{token}" +
-                                          $"{this._secret}");
+            var signature = CreateMd5($"api_key{this._key}" +
+                                      $"methodauth.getSession" +
+                                      $"token{token}" +
+                                      $"{this._secret}");
 
-                queryParams.Add("api_sig", signature);
+            queryParams.Add("api_sig", signature);
 
-                var tokenCall = await this._lastfmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.GetToken);
-                Statistics.LastfmApiCalls.Inc();
+            var authSessionCall = await this._lastfmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.GetAuthSession);
+            Statistics.LastfmApiCalls.Inc();
 
-                return tokenCall;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
+            return authSessionCall;
         }
 
-        public static string CreateMD5(string input)
+        public static string CreateMd5(string input)
         {
-            // Use input string to calculate MD5 hash
             using var md5 = System.Security.Cryptography.MD5.Create();
             var inputBytes = Encoding.ASCII.GetBytes(input);
             var hashBytes = md5.ComputeHash(inputBytes);
 
-            // Convert the byte array to hexadecimal string
             var sb = new StringBuilder();
             foreach (var t in hashBytes)
             {

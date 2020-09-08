@@ -30,22 +30,20 @@ namespace FMBot.LastFM.Services
             this._client = httpClientFactory.CreateClient();
         }
 
-        public async Task<Response<T>> CallApiAsync<T>(Dictionary<string, string> parameters, string call, bool addDefaultParameters = true)
+        public async Task<Response<T>> CallApiAsync<T>(Dictionary<string, string> parameters, string call)
         {
-            if (addDefaultParameters)
+            var queryParams = new Dictionary<string, string>
             {
-                var queryParams = new Dictionary<string, string>
-                {
-                    {"api_key", this._key },
-                    {"api_secret", this._secret },
-                    {"format", "json" },
-                    {"method", call }
-                };
+                {"api_key", this._key },
+                {"format", "json" },
+                {"method", call }
+            };
 
-                foreach (var (key, value) in queryParams.Where(w => !parameters.ContainsKey(w.Key.ToLower())))
-                {
-                    parameters.Add(key, value);
-                }
+            foreach (var (key, value) in queryParams
+                .OrderBy(o => o.Key)
+                .Where(w => !parameters.ContainsKey(w.Key.ToLower())))
+            {
+                parameters.Add(key, value);
             }
 
             var url = QueryHelpers.AddQueryString(apiUrl, parameters);
