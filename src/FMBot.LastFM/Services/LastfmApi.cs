@@ -140,7 +140,7 @@ namespace FMBot.LastFM.Services
         private static string CreateMd5(string input)
         {
             using var md5 = System.Security.Cryptography.MD5.Create();
-            var inputBytes = Encoding.ASCII.GetBytes(input);
+            var inputBytes = Encoding.UTF8.GetBytes(input);
             var hashBytes = md5.ComputeHash(inputBytes);
 
             var sb = new StringBuilder();

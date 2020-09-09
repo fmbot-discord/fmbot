@@ -447,7 +447,12 @@ namespace FMBot.Bot.Commands.LastFM
 
             this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
             this._embedAuthor.WithName($"Info about {track.Artist.Name} - {track.Name} for {userTitle}");
-            this._embed.WithUrl(track.Url);
+
+            if (Uri.IsWellFormedUriString(track.Url, UriKind.Absolute))
+            {
+                this._embed.WithUrl(track.Url);
+            }
+
             this._embed.WithAuthor(this._embedAuthor);
 
             var spotifyTrack = await this._spotifyService.GetOrStoreTrackAsync(track);
@@ -524,6 +529,8 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var track = await this.SearchTrack(trackValues, userSettings, prfx);
             if (track == null)
             {
@@ -546,6 +553,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("love", RunMode = RunMode.Async)]
         [Summary("Add track to loved tracks")]
         [UserSessionRequired]
+        [Alias("l", "heart")]
         public async Task LoveAsync(params string[] trackValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -560,6 +568,8 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var track = await this.SearchTrack(trackValues, userSettings, prfx);
             if (track == null)
             {
@@ -572,15 +582,72 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (trackLoved)
             {
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                this._embedAuthor.WithName($"Added {track.Name} by {track.Artist.Name} to loved tracks for {userTitle}");
-                this._embed.WithUrl(track.Url);
-                this._embed.WithAuthor(this._embedAuthor);
+                this._embed.WithTitle($"❤️ Added loved track for {userTitle}");
+
+                if (Uri.IsWellFormedUriString(track.Url, UriKind.Absolute))
+                {
+                    this._embed.WithUrl(track.Url);
+                }
+
+                this._embed.WithDescription(LastFMService.ResponseTrackToLinkedString(track));
             }
             else
             {
                 await this.Context.Message.Channel.SendMessageAsync(
                     "Something went wrong while adding loved track, pls report to dev tyty");
+                this.Context.LogCommandUsed(CommandResponse.Error);
+                return;
+            }
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
+        }
+
+        [Command("unlove", RunMode = RunMode.Async)]
+        [Summary("Add track to loved tracks")]
+        [UserSessionRequired]
+        [Alias("ul", "unheart", "hate", "fuck")]
+        public async Task UnLoveAsync(params string[] trackValues)
+        {
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            if (trackValues.Any() && trackValues.First() == "help")
+            {
+                this._embed.WithTitle($"{prfx}unlove");
+                this._embed.WithDescription("Unloves the track you're currently listening to or searching for on last.fm.");
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            var track = await this.SearchTrack(trackValues, userSettings, prfx);
+            if (track == null)
+            {
+                return;
+            }
+
+            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+
+            var trackLoved = await this._lastFmService.UnLoveTrackAsync(userSettings, track.Artist.Name, track.Name);
+
+            if (trackLoved)
+            {
+                this._embed.WithTitle($"💔 Unloved track for {userTitle}");
+
+                if (Uri.IsWellFormedUriString(track.Url, UriKind.Absolute))
+                {
+                    this._embed.WithUrl(track.Url);
+                }
+
+                this._embed.WithDescription(LastFMService.ResponseTrackToLinkedString(track));
+            }
+            else
+            {
+                await this.Context.Message.Channel.SendMessageAsync(
+                    "Something went wrong while unloving track, pls report to dev tyty");
                 this.Context.LogCommandUsed(CommandResponse.Error);
                 return;
             }

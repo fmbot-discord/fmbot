@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
@@ -33,6 +36,8 @@ namespace FMBot.Bot.Commands.LastFM
 
         private readonly IIndexService _indexService;
 
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
+        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
 
         public UserCommands(TimerService timer,
             Logger.Logger logger,
@@ -264,6 +269,26 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task LoginAsync()
         {
             var prfx = ConfigData.Data.Bot.Prefix;
+
+            var msg = this.Context.Message as SocketUserMessage;
+            if (StackCooldownTarget.Contains(this.Context.Message.Author))
+            {
+                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMinutes(1) >= DateTimeOffset.Now)
+                {
+                    await ReplyAsync($"A login link has already been sent to your DMs.\n" +
+                                     $"Didn't receive a link? Please check if you have DMs enabled for this server.");
+                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                    return;
+                }
+
+                StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
+            }
+            else
+            {
+                StackCooldownTarget.Add(msg.Author);
+                StackCooldownTimer.Add(DateTimeOffset.Now);
+            }
+
             var token = await this._lastFmService.GetAuthToken();
 
             var replyString =
@@ -272,7 +297,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._embed.WithTitle("Logging into .fmbot...");
             this._embed.WithDescription(replyString);
 
-            this._embedFooter.WithText("Login will expire after 5 minutes.");
+            this._embedFooter.WithText("Login will expire after 2 minutes.");
             this._embed.WithFooter(this._embedFooter);
 
             var authorizeMessage = await this.Context.User.SendMessageAsync("", false, this._embed.Build());
@@ -290,7 +315,7 @@ namespace FMBot.Bot.Commands.LastFM
                 await authorizeMessage.ModifyAsync(m =>
                 {
                     m.Embed = new EmbedBuilder()
-                        .WithDescription($"✅ You have been logged in to .fmbot with the username {newUserSettings.UserNameLastFM}!")
+                        .WithDescription($"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({Constants.LastFMUserUrl}{newUserSettings.UserNameLastFM})!")
                         .WithColor(Constants.SuccessColorGreen)
                         .Build();
                 });
@@ -313,7 +338,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         private async Task<bool> GetAndStoreAuthSession(IUser contextUser, string token)
         {
-            var loginDelay = 20000;
+            var loginDelay = 10000;
             for (var i = 0; i < 7; i++)
             {
                 await Task.Delay(loginDelay);
@@ -340,7 +365,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else if (!authSession.Success)
                 {
-                    loginDelay += 4000;
+                    loginDelay += 3000;
                     Log.Information("Login attempt {attempt} not succeeded yet ({errorCode}), delaying", i, authSession.Message);
                 }
             }

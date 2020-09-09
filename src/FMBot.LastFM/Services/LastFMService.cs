@@ -69,6 +69,29 @@ namespace FMBot.LastFM.Services
                        : $" | *{track.AlbumName}*\n");
         }
 
+        public static string ResponseTrackToLinkedString(ResponseTrack track)
+        {
+            if (track.Url.IndexOfAny(new[] { '(', ')' }) >= 0)
+            {
+                return ResponseTrackToString(track);
+            }
+
+            return $"[{track.Name}]({track.Url})\n" +
+                   $"By **{track.Artist.Name}**" +
+                   (track.Album == null || string.IsNullOrWhiteSpace(track.Album.Title)
+                       ? "\n"
+                       : $" | *{track.Album.Title}*\n");
+        }
+
+        public static string ResponseTrackToString(ResponseTrack track)
+        {
+            return $"{track.Name}\n" +
+                   $"By **{track.Artist.Name}**" +
+                   (track.Album == null || string.IsNullOrWhiteSpace(track.Album.Title)
+                       ? "\n"
+                       : $" | *{track.Album.Title}*\n");
+        }
+
         public static string TrackToOneLinedString(LastTrack track)
         {
             return $"{track.Name} By **{track.ArtistName}**" +
@@ -316,6 +339,21 @@ namespace FMBot.LastFM.Services
             };
 
             var authSessionCall = await this._lastfmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.TrackLove, true);
+            Statistics.LastfmApiCalls.Inc();
+
+            return authSessionCall.Success;
+        }
+
+        public async Task<bool> UnLoveTrackAsync(User user, string artistName, string trackName)
+        {
+            var queryParams = new Dictionary<string, string>
+            {
+                {"artist", artistName},
+                {"track", trackName},
+                {"sk", user.SessionKeyLastFm},
+            };
+
+            var authSessionCall = await this._lastfmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.TrackUnLove, true);
             Statistics.LastfmApiCalls.Inc();
 
             return authSessionCall.Success;
