@@ -8,6 +8,8 @@ namespace FMBot.Persistence.Domain.Models
 
         Owner = 2,
 
-        Contributor = 3
+        Contributor = 3,
+
+        Backer = 4
     }
 }

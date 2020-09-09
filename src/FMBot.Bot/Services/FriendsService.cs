@@ -92,20 +92,32 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async Task RemoveAllLastFMFriendsAsync(int userID)
+        public async Task RemoveAllFriendsAsync(int userId)
         {
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var friends = db.Friends
                 .AsQueryable()
-                .Where(f => f.UserId == userID).ToList();
+                .Where(f => f.UserId == userId).ToList();
 
             if (friends.Count > 0)
             {
                 db.Friends.RemoveRange(friends);
                 await db.SaveChangesAsync();
             }
+        }
 
-            await Task.CompletedTask;
+        public async Task RemoveUserFromOtherFriendsAsync(int userId)
+        {
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            var friends = db.Friends
+                .AsQueryable()
+                .Where(f => f.FriendUserId == userId).ToList();
+
+            if (friends.Count > 0)
+            {
+                db.Friends.RemoveRange(friends);
+                await db.SaveChangesAsync();
+            }
         }
 
         public async Task<int> GetTotalFriendCountAsync()

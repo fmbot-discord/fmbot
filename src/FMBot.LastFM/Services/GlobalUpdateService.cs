@@ -61,24 +61,29 @@ namespace FMBot.LastFM.Services
                 .Where(w => w.TimePlayed.HasValue && w.TimePlayed.Value.DateTime > user.LastScrobbleUpdate)
                 .ToList();
 
+
+            await using var connection = new NpgsqlConnection(this._connectionString);
+            await connection.OpenAsync();
+
             if (!newScrobbles.Any())
             {
                 Log.Information($"No new scrobbles for {user.UserNameLastFM}");
-                await SetUserUpdateTime(user.UserId, DateTime.UtcNow);
+                await SetUserUpdateTime(user.UserId, DateTime.UtcNow, connection);
                 return 0;
             }
 
             var cachedArtistAliases = await GetCachedArtistAliases();
 
-            await UpdateArtistsForUser(user, newScrobbles, cachedArtistAliases);
+            await UpdateArtistsForUser(user, newScrobbles, cachedArtistAliases, connection);
 
-            await UpdateAlbumsForUser(user, newScrobbles, cachedArtistAliases);
+            await UpdateAlbumsForUser(user, newScrobbles, cachedArtistAliases, connection);
 
-            await UpdateTracksForUser(user, newScrobbles, cachedArtistAliases);
+            await UpdateTracksForUser(user, newScrobbles, cachedArtistAliases, connection);
 
             var latestScrobbleDate = GetLatestScrobbleDate(newScrobbles);
-            await SetUserUpdateAndScrobbleTime(user.UserId, DateTime.UtcNow, latestScrobbleDate);
+            await SetUserUpdateAndScrobbleTime(user.UserId, DateTime.UtcNow, latestScrobbleDate, connection);
 
+            await connection.CloseAsync();
             return newScrobbles.Count;
         }
 
@@ -101,7 +106,7 @@ namespace FMBot.LastFM.Services
         }
 
         private async Task UpdateArtistsForUser(User user, IEnumerable<LastTrack> newScrobbles,
-            IReadOnlyList<ArtistAlias> cachedArtistAliases)
+            IReadOnlyList<ArtistAlias> cachedArtistAliases, NpgsqlConnection connection)
         {
             foreach (var artist in newScrobbles.GroupBy(g => g.ArtistName))
             {
@@ -110,26 +115,45 @@ namespace FMBot.LastFM.Services
 
                 var artistName = alias != null ? alias.Artist.Name : artist.Key;
 
-                await using var connection = new NpgsqlConnection(this._connectionString);
-                connection.Open();
 
-                await using var updateArtistPlaycount =
-                    new NpgsqlCommand(
-                        $"UPDATE public.user_artists SET playcount = playcount + @playcountToAdd WHERE user_id = @userId AND UPPER(name) = UPPER(@name);",
-                        connection);
+                await using var db = new FMBotDbContext(this._connectionString);
+                if (await db.UserArtists.AnyAsync(a => a.UserId == user.UserId &&
+                                                       a.Name.ToLower() == artistName.ToLower()))
+                {
+                    await using var updateUserArtist =
+                        new NpgsqlCommand(
+                            "UPDATE public.user_artists SET playcount = playcount + @playcountToAdd " +
+                            "WHERE user_id = @userId AND UPPER(name) = UPPER(@name);",
+                            connection);
 
-                updateArtistPlaycount.Parameters.AddWithValue("playcountToAdd", artist.Count());
-                updateArtistPlaycount.Parameters.AddWithValue("userId", user.UserId);
-                updateArtistPlaycount.Parameters.AddWithValue("name", artistName);
+                    updateUserArtist.Parameters.AddWithValue("playcountToAdd", artist.Count());
+                    updateUserArtist.Parameters.AddWithValue("userId", user.UserId);
+                    updateUserArtist.Parameters.AddWithValue("name", artistName);
 
-                await updateArtistPlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    //Log.Information($"Updated artist {artistName} for {user.UserNameLastFM}");
+                    await updateUserArtist.ExecuteNonQueryAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    await using var addUserArtist =
+                        new NpgsqlCommand("INSERT INTO public.user_artists(user_id, name, playcount)"+
+                                          "VALUES(@userId, @artistName, @artistPlaycount); ",
+                            connection);
+
+                    addUserArtist.Parameters.AddWithValue("userId", user.UserId);
+                    addUserArtist.Parameters.AddWithValue("artistName", artistName);
+                    addUserArtist.Parameters.AddWithValue("artistPlaycount", artist.Count());
+
+                    //Log.Information($"Added artist {artistName} for {user.UserNameLastFM}");
+                    await addUserArtist.ExecuteNonQueryAsync().ConfigureAwait(false);
+                }
             }
 
             Log.Information($"Updated artists for {user.UserNameLastFM}");
         }
 
         private async Task UpdateAlbumsForUser(User user, IEnumerable<LastTrack> newScrobbles,
-            IReadOnlyList<ArtistAlias> cachedArtistAliases)
+            IReadOnlyList<ArtistAlias> cachedArtistAliases, NpgsqlConnection connection)
         {
             foreach (var album in newScrobbles.GroupBy(x => new { x.ArtistName, x.AlbumName }))
             {
@@ -138,27 +162,47 @@ namespace FMBot.LastFM.Services
 
                 var artistName = alias != null ? alias.Artist.Name : album.Key.ArtistName;
 
-                await using var connection = new NpgsqlConnection(this._connectionString);
-                connection.Open();
+                await using var db = new FMBotDbContext(this._connectionString);
+                if (await db.UserAlbums.AnyAsync(a => a.UserId == user.UserId &&
+                                                      a.Name.ToLower() == album.Key.AlbumName.ToLower() &&
+                                                      a.ArtistName.ToLower() == artistName.ToLower()))
+                {
+                    await using var updateUserAlbum =
+                        new NpgsqlCommand(
+                            "UPDATE public.user_albums SET playcount = playcount + @playcountToAdd " +
+                            "WHERE user_id = @userId AND UPPER(name) = UPPER(@name) AND UPPER(artist_name) = UPPER(@artistName) ;",
+                            connection);
 
-                await using var setIndexTime =
-                    new NpgsqlCommand(
-                        $"UPDATE public.user_albums SET playcount = playcount + @playcountToAdd WHERE user_id = @userId AND UPPER(name) = UPPER(@name) AND UPPER(artist_name) = UPPER(@artistName) ;",
-                        connection);
+                    updateUserAlbum.Parameters.AddWithValue("playcountToAdd", album.Count());
+                    updateUserAlbum.Parameters.AddWithValue("userId", user.UserId);
+                    updateUserAlbum.Parameters.AddWithValue("name", album.Key.AlbumName);
+                    updateUserAlbum.Parameters.AddWithValue("artistName", artistName);
 
-                setIndexTime.Parameters.AddWithValue("playcountToAdd", album.Count());
-                setIndexTime.Parameters.AddWithValue("userId", user.UserId);
-                setIndexTime.Parameters.AddWithValue("name", album.Key.AlbumName);
-                setIndexTime.Parameters.AddWithValue("artistName", artistName);
+                    //Log.Information($"Updated album {album.Key.AlbumName} for {user.UserNameLastFM}");
+                    await updateUserAlbum.ExecuteNonQueryAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    await using var addUserAlbum =
+                        new NpgsqlCommand("INSERT INTO public.user_albums(user_id, name, artist_name, playcount)" +
+                                          "VALUES(@userId, @albumName, @artistName, @albumPlaycount); ",
+                            connection);
 
-                await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    addUserAlbum.Parameters.AddWithValue("userId", user.UserId);
+                    addUserAlbum.Parameters.AddWithValue("albumName", album.Key.AlbumName);
+                    addUserAlbum.Parameters.AddWithValue("artistName", artistName);
+                    addUserAlbum.Parameters.AddWithValue("albumPlaycount", album.Count());
+
+                    //Log.Information($"Added album {album.Key.AlbumName} for {user.UserNameLastFM}");
+                    await addUserAlbum.ExecuteNonQueryAsync().ConfigureAwait(false);
+                }
             }
 
             Log.Information($"Updated albums for {user.UserNameLastFM}");
         }
 
         private async Task UpdateTracksForUser(User user, IEnumerable<LastTrack> newScrobbles,
-            IReadOnlyList<ArtistAlias> cachedArtistAliases)
+            IReadOnlyList<ArtistAlias> cachedArtistAliases, NpgsqlConnection connection)
         {
             foreach (var track in newScrobbles.GroupBy(x => new { x.ArtistName, x.Name }))
             {
@@ -167,41 +211,55 @@ namespace FMBot.LastFM.Services
 
                 var artistName = alias != null ? alias.Artist.Name : track.Key.ArtistName;
 
-                await using var connection = new NpgsqlConnection(this._connectionString);
-                connection.Open();
+                await using var db = new FMBotDbContext(this._connectionString);
+                if (await db.UserAlbums.AnyAsync(a => a.UserId == user.UserId &&
+                                                      a.Name.ToLower() == track.Key.Name.ToLower() &&
+                                                      a.ArtistName.ToLower() == artistName.ToLower()))
+                {
+                    await using var updateUserTrack =
+                        new NpgsqlCommand(
+                            "UPDATE public.user_tracks SET playcount = playcount + @playcountToAdd " +
+                            "WHERE user_id = @userId AND UPPER(name) = UPPER(@name) AND UPPER(artist_name) = UPPER(@artistName);",
+                            connection);
 
-                await using var setIndexTime =
-                    new NpgsqlCommand(
-                        $"UPDATE public.user_tracks SET playcount = playcount + @playcountToAdd WHERE user_id = @userId AND UPPER(name) = UPPER(@name) AND UPPER(artist_name) = UPPER(@artistName);",
-                        connection);
+                    updateUserTrack.Parameters.AddWithValue("playcountToAdd", track.Count());
+                    updateUserTrack.Parameters.AddWithValue("userId", user.UserId);
+                    updateUserTrack.Parameters.AddWithValue("name", track.Key.Name);
+                    updateUserTrack.Parameters.AddWithValue("artistName", artistName);
 
-                setIndexTime.Parameters.AddWithValue("playcountToAdd", track.Count());
-                setIndexTime.Parameters.AddWithValue("userId", user.UserId);
-                setIndexTime.Parameters.AddWithValue("name", track.Key.Name);
-                setIndexTime.Parameters.AddWithValue("artistName", artistName);
+                    //Log.Information($"Updated track {track.Key.Name} for {user.UserNameLastFM}");
+                    await updateUserTrack.ExecuteNonQueryAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    await using var addUserTrack =
+                        new NpgsqlCommand("INSERT INTO public.user_tracks(user_id, name, artist_name, playcount)" +
+                                          "VALUES(@userId, @trackName, @artistName, @trackPlaycount); ",
+                            connection);
 
-                await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    addUserTrack.Parameters.AddWithValue("userId", user.UserId);
+                    addUserTrack.Parameters.AddWithValue("trackName", track.Key.Name);
+                    addUserTrack.Parameters.AddWithValue("artistName", artistName);
+                    addUserTrack.Parameters.AddWithValue("trackPlaycount", track.Count());
+
+                    //Log.Information($"Added track {track.Key.Name} for {user.UserNameLastFM}");
+                    await addUserTrack.ExecuteNonQueryAsync().ConfigureAwait(false);
+                }
             }
 
             Log.Information($"Updated tracks for {user.UserNameLastFM}");
         }
 
-        private async Task SetUserUpdateAndScrobbleTime(int userId, DateTime now, DateTime lastScrobble)
+        private async Task SetUserUpdateAndScrobbleTime(int userId, DateTime now, DateTime lastScrobble, NpgsqlConnection connection)
         {
-            await using var connection = new NpgsqlConnection(this._connectionString);
-            connection.Open();
-
             await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_updated = '{now:u}', last_scrobble_update = '{lastScrobble:u}' WHERE user_id = {userId};", connection);
             await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
-        private async Task SetUserUpdateTime(int userId, DateTime now)
+        private async Task SetUserUpdateTime(int userId, DateTime now, NpgsqlConnection connection)
         {
-            await using var connection = new NpgsqlConnection(this._connectionString);
-            connection.Open();
-
-            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_updated = '{now:u}' WHERE user_id = {userId};", connection);
-            await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
+            await using var setUpdateTime = new NpgsqlCommand($"UPDATE public.users SET last_updated = '{now:u}' WHERE user_id = {userId};", connection);
+            await setUpdateTime.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
         private DateTime GetLatestScrobbleDate(List<LastTrack> newScrobbles)

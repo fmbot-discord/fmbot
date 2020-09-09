@@ -63,6 +63,8 @@ namespace FMBot.Bot.Models
         public string Secret { get; set; }
 
         public int? UserUpdateFrequencyInHours { get; set; }
+
+        public int? UserIndexFrequencyInDays { get; set; }
     }
 
     public class SpotifyConfig

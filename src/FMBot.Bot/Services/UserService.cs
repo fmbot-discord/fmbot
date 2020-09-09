@@ -203,6 +203,11 @@ namespace FMBot.Bot.Services
                 title += " 🔥";
             }
 
+            if (rank == UserType.Backer)
+            {
+                title += " ⭐";
+            }
+
             return title;
         }
 
@@ -246,7 +251,11 @@ namespace FMBot.Bot.Services
                 user.UserNameLastFM = newUserSettings.UserNameLastFM;
                 user.FmEmbedType = newUserSettings.FmEmbedType;
                 user.FmCountType = newUserSettings.FmCountType;
-                user.SessionKeyLastFm = newUserSettings.SessionKeyLastFm;
+
+                if (!string.Equals(user.UserNameLastFM, newUserSettings.UserNameLastFM, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    user.SessionKeyLastFm = newUserSettings.SessionKeyLastFm;
+                }
 
                 db.Entry(user).State = EntityState.Modified;
 

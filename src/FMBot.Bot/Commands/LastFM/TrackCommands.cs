@@ -583,18 +583,12 @@ namespace FMBot.Bot.Commands.LastFM
             if (trackLoved)
             {
                 this._embed.WithTitle($"❤️ Added loved track for {userTitle}");
-
-                if (Uri.IsWellFormedUriString(track.Url, UriKind.Absolute))
-                {
-                    this._embed.WithUrl(track.Url);
-                }
-
                 this._embed.WithDescription(LastFMService.ResponseTrackToLinkedString(track));
             }
             else
             {
                 await this.Context.Message.Channel.SendMessageAsync(
-                    "Something went wrong while adding loved track, pls report to dev tyty");
+                    "Something went wrong while adding loved track.");
                 this.Context.LogCommandUsed(CommandResponse.Error);
                 return;
             }
@@ -636,18 +630,12 @@ namespace FMBot.Bot.Commands.LastFM
             if (trackLoved)
             {
                 this._embed.WithTitle($"💔 Unloved track for {userTitle}");
-
-                if (Uri.IsWellFormedUriString(track.Url, UriKind.Absolute))
-                {
-                    this._embed.WithUrl(track.Url);
-                }
-
                 this._embed.WithDescription(LastFMService.ResponseTrackToLinkedString(track));
             }
             else
             {
                 await this.Context.Message.Channel.SendMessageAsync(
-                    "Something went wrong while unloving track, pls report to dev tyty");
+                    "Something went wrong while unloving track.");
                 this.Context.LogCommandUsed(CommandResponse.Error);
                 return;
             }

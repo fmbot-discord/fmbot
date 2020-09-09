@@ -36,9 +36,9 @@ namespace FMBot.Bot.Services
             await this._globalIndexService.IndexUser(user);
         }
 
-        public void IndexGuild(IReadOnlyList<User> users)
+        public void AddUsersToIndexQueue(IReadOnlyList<User> users)
         {
-            Log.Information($"Starting artist update for {users.Count} users");
+            Log.Information($"Starting index for {users.Count} users");
 
             this._userIndexQueue.Publish(users.ToList());
         }
@@ -155,6 +155,17 @@ namespace FMBot.Bot.Services
                 .Where(w => userIds.Contains(w.DiscordUserId)
                     && w.LastIndexed != null)
                 .CountAsync();
+        }
+
+        public async Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeLastIndexed)
+        {
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            return await db.Users
+                .AsQueryable()
+                .Where(f => f.LastIndexed != null &&
+                            f.LastUpdated != null &&
+                            f.LastIndexed <= timeLastIndexed)
+                .ToListAsync();
         }
     }
 }

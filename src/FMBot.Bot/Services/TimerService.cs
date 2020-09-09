@@ -26,9 +26,11 @@ namespace FMBot.Bot.Services
         private readonly Timer _externalStatsTimer;
         private readonly Timer _internalStatsTimer;
         private readonly Timer _userUpdateTimer;
+        private readonly Timer _userIndexTimer;
         private readonly LastFMService _lastFMService;
         private readonly UserService _userService;
         private readonly IUpdateService _updateService;
+        private readonly IIndexService _indexService;
         private readonly GuildService _guildService;
         private readonly DiscordShardedClient _client;
 
@@ -39,11 +41,13 @@ namespace FMBot.Bot.Services
         public TimerService(DiscordShardedClient client,
             LastFMService lastFmService,
             IUpdateService updateService,
-            UserService userService)
+            UserService userService,
+            IIndexService indexService)
         {
             this._client = client;
             this._lastFMService = lastFmService;
             this._userService = userService;
+            this._indexService = indexService;
             this._guildService = new GuildService();
             this._updateService = updateService;
 
@@ -241,7 +245,7 @@ namespace FMBot.Bot.Services
 
             this._userUpdateTimer = new Timer(async _ =>
                 {
-                    if (ConfigData.Data.LastFm.UserUpdateFrequencyInHours == null)
+                    if (ConfigData.Data.LastFm.UserUpdateFrequencyInHours == null || ConfigData.Data.LastFm.UserUpdateFrequencyInHours == 0)
                     {
                         Log.Warning("No user update frequency set, cancelling user update timer");
                         this._userUpdateTimer.Change(Timeout.Infinite, Timeout.Infinite);
@@ -249,7 +253,7 @@ namespace FMBot.Bot.Services
                     }
 
                     Log.Information("Getting users to update");
-                    var timeToUpdate = DateTime.UtcNow.AddHours(-ConfigData.Data.LastFm.UserUpdateFrequencyInHours.GetValueOrDefault(ConfigData.Data.LastFm.UserUpdateFrequencyInHours.Value));
+                    var timeToUpdate = DateTime.UtcNow.AddHours(-ConfigData.Data.LastFm.UserUpdateFrequencyInHours.Value);
 
                     var usersToUpdate = await this._updateService.GetOutdatedUsers(timeToUpdate);
                     Log.Information($"Found {usersToUpdate.Count} outdated users, adding them to queue");
@@ -257,8 +261,38 @@ namespace FMBot.Bot.Services
                     this._updateService.AddUsersToUpdateQueue(usersToUpdate);
                 },
                 null,
-                TimeSpan.FromMinutes(2),
-                TimeSpan.FromHours(3));
+                TimeSpan.FromMinutes(5),
+                TimeSpan.FromHours(4));
+
+            this._userIndexTimer = new Timer(async _ =>
+                {
+                    if (ConfigData.Data.LastFm.UserIndexFrequencyInDays == null || ConfigData.Data.LastFm.UserIndexFrequencyInDays == 0)
+                    {
+                        Log.Warning("No user index frequency set, cancelling user index timer");
+                        this._userUpdateTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                        return;
+                    }
+
+                    if (DateTime.UtcNow.Hour <= 11 || DateTime.UtcNow.Hour >= 14)
+                    {
+                        Log.Information("Skipping index timer - peak hours detected");
+                        return;
+                    }
+
+                    Log.Information("Getting users to index");
+                    var timeToIndex = DateTime.UtcNow.AddDays(-ConfigData.Data.LastFm.UserIndexFrequencyInDays.Value);
+
+                    var usersToUpdate = (await this._indexService.GetOutdatedUsers(timeToIndex))
+                        .Take(400)
+                        .ToList();
+
+                    Log.Information($"Found {usersToUpdate.Count} outdated users, adding them to index queue");
+
+                    this._indexService.AddUsersToIndexQueue(usersToUpdate);
+                },
+                null,
+                TimeSpan.FromMinutes(5),
+                TimeSpan.FromHours(1));
 
             this._timerEnabled = true;
         }

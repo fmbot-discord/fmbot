@@ -130,7 +130,7 @@ namespace FMBot.Bot.Commands
 
                 await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
 
-                this._indexService.IndexGuild(users);
+                this._indexService.AddUsersToIndexQueue(users);
             }
             catch (Exception e)
             {
@@ -164,7 +164,7 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
             if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-15))
             {
                 await ReplyAsync(

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -207,17 +208,20 @@ namespace FMBot.Bot.Commands.LastFM
             lastFMUserName = lastFMUserName.Replace("'", "");
             if (!await this._lastFmService.LastFMUserExistsAsync(lastFMUserName))
             {
-                await ReplyAsync("LastFM user could not be found. Please check if the name you entered is correct.");
+                var reply = $"LastFM user `{lastFMUserName}` could not be found. Please check if the name you entered is correct.";
+                await ReplyAsync(reply.FilterOutMentions());
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
-
             if (lastFMUserName == "lastfmusername")
             {
                 await ReplyAsync("Please enter your own last.fm username and not `lastfmusername`.\n");
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
+
+            var usernameChanged = !(existingUserSettings?.UserNameLastFM != null &&
+                                     string.Equals(existingUserSettings.UserNameLastFM, lastFMUserName, StringComparison.CurrentCultureIgnoreCase));
 
             var userSettingsToAdd = new User
             {
@@ -239,13 +243,12 @@ namespace FMBot.Bot.Commands.LastFM
                 setReply += $". \nWant more info about the different modes? Use `{prfx}set help`";
             }
 
-            await ReplyAsync(setReply);
+            await ReplyAsync(setReply.FilterOutMentions());
 
             this.Context.LogCommandUsed();
 
             var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
-            if (existingUserSettings == null ||
-                existingUserSettings.UserNameLastFM.ToLower() != newUserSettings.UserNameLastFM.ToLower())
+            if (usernameChanged)
             {
                 await this._indexService.IndexUser(newUserSettings);
             }
@@ -289,6 +292,7 @@ namespace FMBot.Bot.Commands.LastFM
                 StackCooldownTimer.Add(DateTimeOffset.Now);
             }
 
+            var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
             var token = await this._lastFmService.GetAuthToken();
 
             var replyString =
@@ -315,12 +319,18 @@ namespace FMBot.Bot.Commands.LastFM
                 await authorizeMessage.ModifyAsync(m =>
                 {
                     m.Embed = new EmbedBuilder()
-                        .WithDescription($"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({Constants.LastFMUserUrl}{newUserSettings.UserNameLastFM})!")
+                        .WithDescription(
+                            $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({Constants.LastFMUserUrl}{newUserSettings.UserNameLastFM})!")
                         .WithColor(Constants.SuccessColorGreen)
                         .Build();
                 });
 
                 this.Context.LogCommandUsed();
+
+                if (!string.Equals(existingUserSettings.UserNameLastFM, newUserSettings.UserNameLastFM, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    await this._indexService.IndexUser(newUserSettings);
+                }
             }
             else
             {
@@ -378,6 +388,53 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("delete", "removedata", "deletedata")]
         public async Task RemoveAsync()
         {
+            var userSettings = await this._userService.GetFullUserAsync(this.Context.User);
+
+            if (userSettings == null)
+            {
+                await ReplyAsync("Sorry, but we don't have any data from you in our database.");
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Are you sure you want to delete all your data from .fmbot?");
+            sb.AppendLine("This will remove the following data:");
+
+            sb.AppendLine("- Your last.fm username");
+            if (userSettings.Friends?.Count > 0)
+            {
+                var friendString = userSettings.Friends?.Count == 1 ? "friend" : "friends";
+                sb.AppendLine($"- `{userSettings.Friends?.Count}` {friendString}");
+            }
+            if (userSettings.FriendedByUsers?.Count > 0)
+            {
+                var friendString = userSettings.FriendedByUsers?.Count == 1 ? "friendlist" : "friendlists";
+                sb.AppendLine($"- You from `{userSettings.FriendedByUsers?.Count}` other {friendString}");
+            }
+
+            sb.AppendLine("- Indexed artists, albums and tracks");
+
+            if (userSettings.UserType != UserType.User)
+            {
+                sb.AppendLine($"- `{userSettings.UserType}` account status");
+                sb.AppendLine("*Account status has to be manually changed back by an .fmbot admin*");
+            }
+
+            sb.AppendLine();
+            sb.AppendLine("Type `.fmremoveconfirm` to confirm deletion.");
+
+            this._embed.WithDescription(sb.ToString());
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
+        }
+
+        [Command("removeconfirm", RunMode = RunMode.Async)]
+        [Summary("Deletes your FMBot data.")]
+        [Alias("deleteconfirm")]
+        public async Task RemoveConfirmAsync()
+        {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             if (userSettings == null)
@@ -387,10 +444,14 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            await this._friendsService.RemoveAllLastFMFriendsAsync(userSettings.UserId);
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            await this._friendsService.RemoveAllFriendsAsync(userSettings.UserId);
+            await this._friendsService.RemoveUserFromOtherFriendsAsync(userSettings.UserId);
+
             await this._userService.DeleteUser(userSettings.UserId);
 
-            await ReplyAsync("Your settings, friends and any other data have been successfully deleted.");
+            await ReplyAsync("Your settings, friends and any other data have been successfully deleted from .fmbot.");
             this.Context.LogCommandUsed();
         }
 
