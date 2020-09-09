@@ -38,54 +38,54 @@ namespace FMBot.Bot.Commands
                 .WithColor(Constants.LastFMColorRed);
         }
 
-        [Command("debug")]
-        [Summary("Returns user data")]
-        [Alias("dbcheck")]
-        public async Task DebugAsync(IUser user = null)
-        {
-            var chosenUser = user ?? this.Context.Message.Author;
-            var userSettings = await this._userService.GetFullUserAsync(chosenUser);
+        //[Command("debug")]
+        //[Summary("Returns user data")]
+        //[Alias("dbcheck")]
+        //public async Task DebugAsync(IUser user = null)
+        //{
+        //    var chosenUser = user ?? this.Context.Message.Author;
+        //    var userSettings = await this._userService.GetFullUserAsync(chosenUser);
 
-            if (userSettings?.UserNameLastFM == null)
-            {
-                await ReplyAsync("The user's Last.FM name has not been set.");
-                this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
-                return;
-            }
+        //    if (userSettings?.UserNameLastFM == null)
+        //    {
+        //        await ReplyAsync("The user's Last.FM name has not been set.");
+        //        this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
+        //        return;
+        //    }
 
-            this._embed.WithTitle($"Debug for {chosenUser.ToString()}");
+        //    this._embed.WithTitle($"Debug for {chosenUser.ToString()}");
 
-            var description = "";
-            foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(userSettings))
-            {
-                var name = descriptor.Name;
-                var value = descriptor.GetValue(userSettings);
+        //    var description = "";
+        //    foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(userSettings))
+        //    {
+        //        var name = descriptor.Name;
+        //        var value = descriptor.GetValue(userSettings);
 
-                if (descriptor.PropertyType.Name == "ICollection`1")
-                {
-                    continue;
-                }
+        //        if (descriptor.PropertyType.Name == "ICollection`1")
+        //        {
+        //            continue;
+        //        }
 
-                if (value != null)
-                {
-                    description += $"{name}: `{value}` \n";
-                }
-                else
-                {
-                    description += $"{name}: null \n";
-                }
-            }
+        //        if (value != null)
+        //        {
+        //            description += $"{name}: `{value}` \n";
+        //        }
+        //        else
+        //        {
+        //            description += $"{name}: null \n";
+        //        }
+        //    }
 
-            description += $"Friends: `{userSettings.Friends.Count}`\n";
-            description += $"Befriended by: `{userSettings.FriendedByUsers.Count}`\n";
-            //description += $"Indexed artists: `{userSettings.Artists.Count}`";
-            //description += $"Indexed albums: `{userSettings.Albums.Count}`";
-            //description += $"Indexed tracks: `{userSettings.Tracks.Count}`";
+        //    description += $"Friends: `{userSettings.Friends.Count}`\n";
+        //    description += $"Befriended by: `{userSettings.FriendedByUsers.Count}`\n";
+        //    //description += $"Indexed artists: `{userSettings.Artists.Count}`";
+        //    //description += $"Indexed albums: `{userSettings.Albums.Count}`";
+        //    //description += $"Indexed tracks: `{userSettings.Tracks.Count}`";
 
-            this._embed.WithDescription(description);
-            await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
-            this.Context.LogCommandUsed();
-        }
+        //    this._embed.WithDescription(description);
+        //    await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+        //    this.Context.LogCommandUsed();
+        //}
 
 
         [Command("serverdebug")]
