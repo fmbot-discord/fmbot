@@ -21,6 +21,17 @@ namespace FMBot.Bot.Services
             embed.WithColor(Constants.WarningColorOrange);
         }
 
+        public static void SessionRequiredResponse(this EmbedBuilder embed, string prfx)
+        {
+            embed.WithTitle("Error while attempting get Last.FM information");
+            embed.WithDescription("You have not authorized .fmbot yet. \n" +
+                                $"Please use the `{prfx}login` command to authorize .fmbot.");
+
+            embed.WithUrl($"{Constants.DocsUrl}/commands/");
+
+            embed.WithColor(Constants.WarningColorOrange);
+        }
+
         public static void NoScrobblesFoundErrorResponse(this EmbedBuilder embed, LastResponseStatus apiResponse, string prfx)
         {
             embed.WithTitle("Error while attempting get Last.FM information");

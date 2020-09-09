@@ -40,7 +40,7 @@ namespace FMBot.Bot.Commands
         [Command("youtube")]
         [Summary("Shares a link to a YouTube video based on what a user is listening to")]
         [Alias("yt", "y", "youtubesearch", "ytsearch", "yts")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task YoutubeAsync(params string[] searchValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);

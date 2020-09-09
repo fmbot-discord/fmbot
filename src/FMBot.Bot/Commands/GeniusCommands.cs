@@ -44,7 +44,7 @@ namespace FMBot.Bot.Commands
         [Command("genius")]
         [Summary("Shares a link to the Genius lyrics based on what a user is listening to or what the user is searching for.")]
         [Alias("lyrics", "g", "lyricsfind", "lyricsearch", "lyricssearch")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task GeniusAsync(params string[] searchValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);

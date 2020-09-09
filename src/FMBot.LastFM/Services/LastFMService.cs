@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 using FMBot.Domain;
 using FMBot.Domain.Models;
@@ -280,6 +281,44 @@ namespace FMBot.LastFM.Services
             Statistics.LastfmApiCalls.Inc();
 
             return lastFMUser.Success;
+        }
+
+        public async Task<Response<TokenResponse>> GetAuthToken()
+        {
+            var queryParams = new Dictionary<string, string>();
+
+            var tokenCall = await this._lastfmApi.CallApiAsync<TokenResponse>(queryParams, Call.GetToken);
+            Statistics.LastfmApiCalls.Inc();
+
+            return tokenCall;
+        }
+
+        public async Task<Response<AuthSessionResponse>> GetAuthSession(string token)
+        {
+            var queryParams = new Dictionary<string, string>
+            {
+                {"token", token}
+            };
+
+            var authSessionCall = await this._lastfmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.GetAuthSession, true);
+            Statistics.LastfmApiCalls.Inc();
+
+            return authSessionCall;
+        }
+
+        public async Task<bool> LoveTrackAsync(User user, string artistName, string trackName)
+        {
+            var queryParams = new Dictionary<string, string>
+            {
+                {"artist", artistName},
+                {"track", trackName},
+                {"sk", user.SessionKeyLastFm},
+            };
+
+            var authSessionCall = await this._lastfmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.TrackLove, true);
+            Statistics.LastfmApiCalls.Inc();
+
+            return authSessionCall.Success;
         }
 
         public static SettingsModel StringOptionsToSettings(

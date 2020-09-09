@@ -42,7 +42,7 @@ namespace FMBot.Bot.Commands
         [Command("spotify")]
         [Summary("Shares a link to a Spotify track based on what a user is listening to")]
         [Alias("sp", "s", "spotifyfind", "spotifysearch")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task SpotifyAsync(params string[] searchValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);

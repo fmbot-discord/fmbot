@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using FMBot.LastFM.Domain.Enums;
 using FMBot.LastFM.Domain.Models;
@@ -29,22 +31,37 @@ namespace FMBot.LastFM.Services
             this._client = httpClientFactory.CreateClient();
         }
 
-        public async Task<Response<T>> CallApiAsync<T>(Dictionary<string, string> parameters, string call)
+        public async Task<Response<T>> CallApiAsync<T>(Dictionary<string, string> parameters, string call, bool generateSignature = false)
         {
             var queryParams = new Dictionary<string, string>
             {
                 {"api_key", this._key },
-                {"api_secret", this._secret },
                 {"format", "json" },
                 {"method", call }
             };
 
-            foreach (var (key, value) in parameters)
+            foreach (var (key, value) in queryParams
+                .OrderBy(o => o.Key)
+                .Where(w => !parameters.ContainsKey(w.Key.ToLower())))
             {
-                queryParams.Add(key, value);
+                parameters.Add(key, value);
             }
 
-            var url = QueryHelpers.AddQueryString(apiUrl, queryParams);
+            if (generateSignature)
+            {
+                var signature = new StringBuilder();
+
+                foreach (var (key, value) in parameters.OrderBy(o => o.Key).Where(w => !w.Key.Contains("format")))
+                {
+                    signature.Append(key);
+                    signature.Append(value);
+                }
+
+                signature.Append(this._secret);
+                parameters.Add("api_sig", CreateMd5(signature.ToString()));
+            }
+
+            var url = QueryHelpers.AddQueryString(apiUrl, parameters);
 
             var request = new HttpRequestMessage
             {
@@ -118,6 +135,20 @@ namespace FMBot.LastFM.Services
             }
 
             return response;
+        }
+
+        private static string CreateMd5(string input)
+        {
+            using var md5 = System.Security.Cryptography.MD5.Create();
+            var inputBytes = Encoding.ASCII.GetBytes(input);
+            var hashBytes = md5.ComputeHash(inputBytes);
+
+            var sb = new StringBuilder();
+            foreach (var t in hashBytes)
+            {
+                sb.Append(t.ToString("X2"));
+            }
+            return sb.ToString();
         }
     }
 }

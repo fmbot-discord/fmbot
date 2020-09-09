@@ -48,6 +48,17 @@ namespace FMBot.Bot.Services
         }
 
         // User settings
+        public async Task<bool> UserHasSessionAsync(IUser discordUser)
+        {
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            var user = await db.Users
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+
+            return !string.IsNullOrEmpty(user.SessionKeyLastFm);
+        }
+
+        // User settings
         public async Task<User> GetUserSettingsAsync(IUser discordUser, bool bypassCache = false)
         {
             var cacheKey = $"user-settings-{discordUser.Id}";
@@ -196,7 +207,7 @@ namespace FMBot.Bot.Services
         }
 
         // Set LastFM Name
-        public void SetLastFM(IUser discordUser, User userSettings)
+        public void SetLastFM(IUser discordUser, User newUserSettings)
         {
             using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var user = db.Users.FirstOrDefault(f => f.DiscordUserId == discordUser.Id);
@@ -210,11 +221,12 @@ namespace FMBot.Bot.Services
                 {
                     DiscordUserId = discordUser.Id,
                     UserType = UserType.User,
-                    UserNameLastFM = userSettings.UserNameLastFM,
+                    UserNameLastFM = newUserSettings.UserNameLastFM,
                     TitlesEnabled = true,
                     ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = userSettings.FmEmbedType,
-                    FmCountType = userSettings.FmCountType
+                    FmEmbedType = newUserSettings.FmEmbedType,
+                    FmCountType = newUserSettings.FmCountType,
+                    SessionKeyLastFm = newUserSettings.SessionKeyLastFm
                 };
 
                 db.Users.Add(newUser);
@@ -231,9 +243,10 @@ namespace FMBot.Bot.Services
             }
             else
             {
-                user.UserNameLastFM = userSettings.UserNameLastFM;
-                user.FmEmbedType = userSettings.FmEmbedType;
-                user.FmCountType = userSettings.FmCountType;
+                user.UserNameLastFM = newUserSettings.UserNameLastFM;
+                user.FmEmbedType = newUserSettings.FmEmbedType;
+                user.FmCountType = newUserSettings.FmCountType;
+                user.SessionKeyLastFm = newUserSettings.SessionKeyLastFm;
 
                 db.Entry(user).State = EntityState.Modified;
 

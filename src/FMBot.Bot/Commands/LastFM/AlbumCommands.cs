@@ -60,7 +60,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("album", RunMode = RunMode.Async)]
         [Summary("Displays current album.")]
         [Alias("ab")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task AlbumAsync(params string[] albumValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -148,7 +148,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("albumplays", RunMode = RunMode.Async)]
         [Summary("Displays album plays.")]
         [Alias("abp", "albumplay", "abplays", "albump")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task AlbumPlaysAsync(params string[] albumValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -208,7 +208,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("cover", RunMode = RunMode.Async)]
         [Summary("Displays current album cover.")]
         [Alias("abc", "co", "albumcover")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task AlbumCoverAsync(params string[] albumValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -323,7 +323,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("topalbums", RunMode = RunMode.Async)]
         [Summary("Displays top albums.")]
         [Alias("abl", "abs", "tab", "albumlist", "albums", "albumslist")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task TopAlbumsAsync(params string[] extraOptions)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -419,7 +419,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("whoknowsalbum", RunMode = RunMode.Async)]
         [Summary("Shows what other users listen to the same album in your server")]
         [Alias("wa", "wka", "wkab", "wab", "wkab", "wk album", "whoknows album")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task WhoKnowsAsync(params string[] albumValues)
         {
             if (this._guildService.CheckIfDM(this.Context))
@@ -530,9 +530,10 @@ namespace FMBot.Bot.Commands.LastFM
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
                 var footer = $"WhoKnows album requested by {userTitle}";
 
-                if (lastIndex < DateTime.UtcNow.AddDays(-3))
+                var rnd = new Random();
+                if (rnd.Next(0, 4) == 1 && lastIndex < DateTime.UtcNow.AddDays(-3))
                 {
-                    footer += "\nMissing members? Update with .fmindex";
+                    footer += $"\nMissing members? Update with {prfx}index";
                 }
 
                 this._embed.WithTitle($"Who knows {albumName} in {this.Context.Guild.Name}");

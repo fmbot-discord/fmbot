@@ -12,6 +12,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
+using Serilog;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -58,7 +59,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("stats", RunMode = RunMode.Async)]
         [Summary("Displays user stats related to Last.FM and FMBot")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task StatsAsync(string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -255,6 +256,96 @@ namespace FMBot.Bot.Commands.LastFM
                         "Please note that the bot also needs the 'Attach files' and 'Embed links' permissions for most commands. One or both of these permissions are currently missing.");
                 }
             }
+        }
+
+        [Command("login", RunMode = RunMode.Async)]
+        [Summary(
+            "Logs you in using a link")]
+        public async Task LoginAsync()
+        {
+            var prfx = ConfigData.Data.Bot.Prefix;
+            var token = await this._lastFmService.GetAuthToken();
+
+            var replyString =
+                $"[Click here authorize .fmbot on last.fm](http://www.last.fm/api/auth/?api_key={ConfigData.Data.LastFm.Key}&token={token.Content.Token})";
+
+            this._embed.WithTitle("Logging into .fmbot...");
+            this._embed.WithDescription(replyString);
+
+            this._embedFooter.WithText("Login will expire after 5 minutes.");
+            this._embed.WithFooter(this._embedFooter);
+
+            var authorizeMessage = await this.Context.User.SendMessageAsync("", false, this._embed.Build());
+
+            if (!this._guildService.CheckIfDM(this.Context))
+            {
+                await ReplyAsync("Check your DMs for a link to login!");
+            }
+
+            var success = await GetAndStoreAuthSession(this.Context.User, token.Content.Token);
+
+            if (success)
+            {
+                var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
+                await authorizeMessage.ModifyAsync(m =>
+                {
+                    m.Embed = new EmbedBuilder()
+                        .WithDescription($"✅ You have been logged in to .fmbot with the username {newUserSettings.UserNameLastFM}!")
+                        .WithColor(Constants.SuccessColorGreen)
+                        .Build();
+                });
+
+                this.Context.LogCommandUsed();
+            }
+            else
+            {
+                await authorizeMessage.ModifyAsync(m =>
+                {
+                    m.Embed = new EmbedBuilder()
+                        .WithDescription($"❌ Login failed.. link expired or something went wrong.")
+                        .WithColor(Constants.WarningColorOrange)
+                        .Build();
+                });
+
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            }
+        }
+
+        private async Task<bool> GetAndStoreAuthSession(IUser contextUser, string token)
+        {
+            var loginDelay = 20000;
+            for (var i = 0; i < 7; i++)
+            {
+                await Task.Delay(loginDelay);
+
+                var authSession = await this._lastFmService.GetAuthSession(token);
+
+                if (authSession.Success)
+                {
+                    var userSettings = new User
+                    {
+                        UserNameLastFM = authSession.Content.Session.Name,
+                        SessionKeyLastFm = authSession.Content.Session.Key
+                    };
+
+                    Log.Information("User {userName} logged in with auth session", authSession.Content.Session.Name);
+                    this._userService.SetLastFM(contextUser, userSettings);
+                    return true;
+                }
+
+                if (!authSession.Success && i == 6)
+                {
+                    Log.Information("Login timed out or auth not successful");
+                    return false;
+                }
+                else if (!authSession.Success)
+                {
+                    loginDelay += 4000;
+                    Log.Information("Login attempt {attempt} not succeeded yet ({errorCode}), delaying", i, authSession.Message);
+                }
+            }
+
+            return false;
         }
 
         [Command("remove", RunMode = RunMode.Async)]
