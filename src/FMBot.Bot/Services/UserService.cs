@@ -1,4 +1,5 @@
 using System;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -9,6 +10,7 @@ using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Npgsql;
 using Serilog;
 
 namespace FMBot.Bot.Services
@@ -37,9 +39,23 @@ namespace FMBot.Bot.Services
                 .AsQueryable()
                 .AnyAsync(f => f.DiscordUserId == discordUser.Id);
 
-            this._cache.Set(cacheKey, isRegistered, TimeSpan.FromHours(24));
+            if (isRegistered)
+            {
+                this._cache.Set(cacheKey, isRegistered, TimeSpan.FromHours(24));
+            }
 
             return isRegistered;
+        }
+
+        // User settings
+        public async Task<bool> UserHasSessionAsync(IUser discordUser)
+        {
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            var user = await db.Users
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+
+            return !string.IsNullOrEmpty(user.SessionKeyLastFm);
         }
 
         // User settings
@@ -187,16 +203,22 @@ namespace FMBot.Bot.Services
                 title += " 🔥";
             }
 
+            if (rank == UserType.Backer)
+            {
+                title += " ⭐";
+            }
+
             return title;
         }
 
         // Set LastFM Name
-        public void SetLastFM(IUser discordUser, User userSettings)
+        public void SetLastFM(IUser discordUser, User newUserSettings)
         {
             using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var user = db.Users.FirstOrDefault(f => f.DiscordUserId == discordUser.Id);
 
             this._cache.Remove($"user-settings-{discordUser.Id}");
+            this._cache.Remove($"user-isRegistered-{discordUser.Id}");
 
             if (user == null)
             {
@@ -204,11 +226,12 @@ namespace FMBot.Bot.Services
                 {
                     DiscordUserId = discordUser.Id,
                     UserType = UserType.User,
-                    UserNameLastFM = userSettings.UserNameLastFM,
+                    UserNameLastFM = newUserSettings.UserNameLastFM,
                     TitlesEnabled = true,
                     ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = userSettings.FmEmbedType,
-                    FmCountType = userSettings.FmCountType
+                    FmEmbedType = newUserSettings.FmEmbedType,
+                    FmCountType = newUserSettings.FmCountType,
+                    SessionKeyLastFm = newUserSettings.SessionKeyLastFm
                 };
 
                 db.Users.Add(newUser);
@@ -225,9 +248,14 @@ namespace FMBot.Bot.Services
             }
             else
             {
-                user.UserNameLastFM = userSettings.UserNameLastFM;
-                user.FmEmbedType = userSettings.FmEmbedType;
-                user.FmCountType = userSettings.FmCountType;
+                user.UserNameLastFM = newUserSettings.UserNameLastFM;
+                user.FmEmbedType = newUserSettings.FmEmbedType;
+                user.FmCountType = newUserSettings.FmCountType;
+
+                if (!string.Equals(user.UserNameLastFM, newUserSettings.UserNameLastFM, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    user.SessionKeyLastFm = newUserSettings.SessionKeyLastFm;
+                }
 
                 db.Entry(user).State = EntityState.Modified;
 
@@ -295,14 +323,24 @@ namespace FMBot.Bot.Services
             try
             {
                 var user = await db.Users
-                    .Include(i => i.Artists)
-                    .Include(i => i.Albums)
-                    .Include(i => i.Tracks)
+                    .AsQueryable()
                     .FirstOrDefaultAsync(f => f.UserId == userID);
 
-                db.UserArtists.RemoveRange(user.Artists);
-                db.UserAlbums.RemoveRange(user.Albums);
-                db.UserTracks.RemoveRange(user.Tracks);
+                this._cache.Remove($"user-settings-{user.DiscordUserId}");
+                this._cache.Remove($"user-isRegistered-{user.DiscordUserId}");
+
+                await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+                connection.Open();
+
+                await using var deleteArtists = new NpgsqlCommand($"DELETE FROM public.user_artists WHERE user_id = {user.UserId};", connection);
+                await deleteArtists.ExecuteNonQueryAsync();
+
+                await using var deleteAlbums = new NpgsqlCommand($"DELETE FROM public.user_albums WHERE user_id = {user.UserId};", connection);
+                await deleteAlbums.ExecuteNonQueryAsync();
+
+                await using var deleteTracks = new NpgsqlCommand($"DELETE FROM public.user_tracks WHERE user_id = {user.UserId};", connection);
+                await deleteTracks.ExecuteNonQueryAsync();
+
                 db.Users.Remove(user);
 
                 await db.SaveChangesAsync();

@@ -72,10 +72,11 @@ namespace FMBot.Bot.Commands
                 if (users.Count == 0 && lastIndex != null)
                 {
                     await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
+                    await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
 
                     var reply =
-                        $"No new registered .fmbot members found on this server or all users have already been indexed. Note that updating users happens automatically, but you can also manually update yourself using `.fmupdate`.\n" +
-                        $"Stored guild users have been updated.";
+                        "Stored guild users have been updated.\n" +
+                        "No new registered .fmbot members found on this server or all users have already been indexed. To update your indexed artist/albums/tracks, use `.fmupdate` (also happens automatically).";
 
                     await ReplyAsync(reply);
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
@@ -130,7 +131,7 @@ namespace FMBot.Bot.Commands
 
                 await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
 
-                this._indexService.IndexGuild(users);
+                this._indexService.AddUsersToIndexQueue(users);
             }
             catch (Exception e)
             {
@@ -143,7 +144,7 @@ namespace FMBot.Bot.Commands
 
         [Command("update", RunMode = RunMode.Async)]
         [Summary("Update user.")]
-        [LoginRequired]
+        [UsernameSetRequired]
         [Alias("u")]
         public async Task UpdateUserAsync(string force = null)
         {
@@ -164,7 +165,7 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
             if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-15))
             {
                 await ReplyAsync(

@@ -1,7 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
@@ -12,6 +16,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
+using Serilog;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -32,6 +37,8 @@ namespace FMBot.Bot.Commands.LastFM
 
         private readonly IIndexService _indexService;
 
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
+        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
 
         public UserCommands(TimerService timer,
             Logger.Logger logger,
@@ -58,7 +65,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("stats", RunMode = RunMode.Async)]
         [Summary("Displays user stats related to Last.FM and FMBot")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task StatsAsync(string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -201,17 +208,20 @@ namespace FMBot.Bot.Commands.LastFM
             lastFMUserName = lastFMUserName.Replace("'", "");
             if (!await this._lastFmService.LastFMUserExistsAsync(lastFMUserName))
             {
-                await ReplyAsync("LastFM user could not be found. Please check if the name you entered is correct.");
+                var reply = $"LastFM user `{lastFMUserName}` could not be found. Please check if the name you entered is correct.";
+                await ReplyAsync(reply.FilterOutMentions());
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
-
             if (lastFMUserName == "lastfmusername")
             {
                 await ReplyAsync("Please enter your own last.fm username and not `lastfmusername`.\n");
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
+
+            var usernameChanged = !(existingUserSettings?.UserNameLastFM != null &&
+                                     string.Equals(existingUserSettings.UserNameLastFM, lastFMUserName, StringComparison.CurrentCultureIgnoreCase));
 
             var userSettingsToAdd = new User
             {
@@ -233,13 +243,12 @@ namespace FMBot.Bot.Commands.LastFM
                 setReply += $". \nWant more info about the different modes? Use `{prfx}set help`";
             }
 
-            await ReplyAsync(setReply);
+            await ReplyAsync(setReply.FilterOutMentions());
 
             this.Context.LogCommandUsed();
 
             var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
-            if (existingUserSettings == null ||
-                existingUserSettings.UserNameLastFM.ToLower() != newUserSettings.UserNameLastFM.ToLower())
+            if (usernameChanged)
             {
                 await this._indexService.IndexUser(newUserSettings);
             }
@@ -257,10 +266,174 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
+        [Command("login", RunMode = RunMode.Async)]
+        [Summary(
+            "Logs you in using a link")]
+        public async Task LoginAsync()
+        {
+            var prfx = ConfigData.Data.Bot.Prefix;
+
+            var msg = this.Context.Message as SocketUserMessage;
+            if (StackCooldownTarget.Contains(this.Context.Message.Author))
+            {
+                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMinutes(1) >= DateTimeOffset.Now)
+                {
+                    await ReplyAsync($"A login link has already been sent to your DMs.\n" +
+                                     $"Didn't receive a link? Please check if you have DMs enabled for this server.");
+                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                    return;
+                }
+
+                StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
+            }
+            else
+            {
+                StackCooldownTarget.Add(msg.Author);
+                StackCooldownTimer.Add(DateTimeOffset.Now);
+            }
+
+            var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
+            var token = await this._lastFmService.GetAuthToken();
+
+            var replyString =
+                $"[Click here authorize .fmbot on last.fm](http://www.last.fm/api/auth/?api_key={ConfigData.Data.LastFm.Key}&token={token.Content.Token})";
+
+            this._embed.WithTitle("Logging into .fmbot...");
+            this._embed.WithDescription(replyString);
+
+            this._embedFooter.WithText("Login will expire after 2 minutes.");
+            this._embed.WithFooter(this._embedFooter);
+
+            var authorizeMessage = await this.Context.User.SendMessageAsync("", false, this._embed.Build());
+
+            if (!this._guildService.CheckIfDM(this.Context))
+            {
+                await ReplyAsync("Check your DMs for a link to login!");
+            }
+
+            var success = await GetAndStoreAuthSession(this.Context.User, token.Content.Token);
+
+            if (success)
+            {
+                var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
+                await authorizeMessage.ModifyAsync(m =>
+                {
+                    m.Embed = new EmbedBuilder()
+                        .WithDescription(
+                            $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({Constants.LastFMUserUrl}{newUserSettings.UserNameLastFM})!")
+                        .WithColor(Constants.SuccessColorGreen)
+                        .Build();
+                });
+
+                this.Context.LogCommandUsed();
+
+                if (!string.Equals(existingUserSettings.UserNameLastFM, newUserSettings.UserNameLastFM, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    await this._indexService.IndexUser(newUserSettings);
+                }
+            }
+            else
+            {
+                await authorizeMessage.ModifyAsync(m =>
+                {
+                    m.Embed = new EmbedBuilder()
+                        .WithDescription($"❌ Login failed.. link expired or something went wrong.")
+                        .WithColor(Constants.WarningColorOrange)
+                        .Build();
+                });
+
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+            }
+        }
+
+        private async Task<bool> GetAndStoreAuthSession(IUser contextUser, string token)
+        {
+            var loginDelay = 10000;
+            for (var i = 0; i < 7; i++)
+            {
+                await Task.Delay(loginDelay);
+
+                var authSession = await this._lastFmService.GetAuthSession(token);
+
+                if (authSession.Success)
+                {
+                    var userSettings = new User
+                    {
+                        UserNameLastFM = authSession.Content.Session.Name,
+                        SessionKeyLastFm = authSession.Content.Session.Key
+                    };
+
+                    Log.Information("User {userName} logged in with auth session", authSession.Content.Session.Name);
+                    this._userService.SetLastFM(contextUser, userSettings);
+                    return true;
+                }
+
+                if (!authSession.Success && i == 6)
+                {
+                    Log.Information("Login timed out or auth not successful");
+                    return false;
+                }
+                else if (!authSession.Success)
+                {
+                    loginDelay += 3000;
+                    Log.Information("Login attempt {attempt} not succeeded yet ({errorCode}), delaying", i, authSession.Message);
+                }
+            }
+
+            return false;
+        }
+
         [Command("remove", RunMode = RunMode.Async)]
         [Summary("Deletes your FMBot data.")]
         [Alias("delete", "removedata", "deletedata")]
         public async Task RemoveAsync()
+        {
+            var userSettings = await this._userService.GetFullUserAsync(this.Context.User);
+
+            if (userSettings == null)
+            {
+                await ReplyAsync("Sorry, but we don't have any data from you in our database.");
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Are you sure you want to delete all your data from .fmbot?");
+            sb.AppendLine("This will remove the following data:");
+
+            sb.AppendLine("- Your last.fm username");
+            if (userSettings.Friends?.Count > 0)
+            {
+                var friendString = userSettings.Friends?.Count == 1 ? "friend" : "friends";
+                sb.AppendLine($"- `{userSettings.Friends?.Count}` {friendString}");
+            }
+            if (userSettings.FriendedByUsers?.Count > 0)
+            {
+                var friendString = userSettings.FriendedByUsers?.Count == 1 ? "friendlist" : "friendlists";
+                sb.AppendLine($"- You from `{userSettings.FriendedByUsers?.Count}` other {friendString}");
+            }
+
+            sb.AppendLine("- Indexed artists, albums and tracks");
+
+            if (userSettings.UserType != UserType.User)
+            {
+                sb.AppendLine($"- `{userSettings.UserType}` account status");
+                sb.AppendLine("*Account status has to be manually changed back by an .fmbot admin*");
+            }
+
+            sb.AppendLine();
+            sb.AppendLine("Type `.fmremoveconfirm` to confirm deletion.");
+
+            this._embed.WithDescription(sb.ToString());
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
+        }
+
+        [Command("removeconfirm", RunMode = RunMode.Async)]
+        [Summary("Deletes your FMBot data.")]
+        [Alias("deleteconfirm")]
+        public async Task RemoveConfirmAsync()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -271,10 +444,14 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            await this._friendsService.RemoveAllLastFMFriendsAsync(userSettings.UserId);
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            await this._friendsService.RemoveAllFriendsAsync(userSettings.UserId);
+            await this._friendsService.RemoveUserFromOtherFriendsAsync(userSettings.UserId);
+
             await this._userService.DeleteUser(userSettings.UserId);
 
-            await ReplyAsync("Your settings, friends and any other data have been successfully deleted.");
+            await ReplyAsync("Your settings, friends and any other data have been successfully deleted from .fmbot.");
             this.Context.LogCommandUsed();
         }
 

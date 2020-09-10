@@ -43,7 +43,8 @@ namespace FMBot.Bot.Configurations
                     Discord = new DiscordConfig(),
                     LastFm = new LastFmConfig
                     {
-                        UserUpdateFrequencyInHours = 24
+                        UserUpdateFrequencyInHours = 24,
+                        UserIndexFrequencyInDays = 120
                     },
                     Genius = new GeniusConfig(),
                     Spotify = new SpotifyConfig(),

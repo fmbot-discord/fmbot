@@ -51,7 +51,12 @@ namespace FMBot.LastFM.Services
             await InsertAlbumsIntoDatabase(albums, user.UserId);
 
             var tracks = await GetTracksForUserFromLastFm(user);
-            await InsertTracksIntoDatabase(tracks, user.UserId);
+
+            var tracksToInsert = tracks
+                .Where(w => w.Playcount >= 3)
+                .ToList();
+
+            await InsertTracksIntoDatabase(tracksToInsert, user.UserId);
 
             var latestScrobbleDate = await GetLatestScrobbleDate(user);
             await SetUserIndexTime(user.UserId, now, latestScrobbleDate);
@@ -130,7 +135,7 @@ namespace FMBot.LastFM.Services
         {
             Log.Information($"Getting tracks for user {user.UserNameLastFM}");
 
-            var trackResult = await this.lastFmService.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, 8);
+            var trackResult = await this.lastFmService.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, 6);
 
             if (!trackResult.Success || trackResult.Content.TopTracks.Track.Count == 0)
             {

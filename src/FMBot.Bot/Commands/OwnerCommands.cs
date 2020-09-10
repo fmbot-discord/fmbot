@@ -27,7 +27,7 @@ namespace FMBot.Bot.Commands
 
         [Command("setusertype"), Summary("Sets usertype for other users")]
         [Alias("setperms")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task SetUserTypeAsync(string userId = null, string userType = null)
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
@@ -67,7 +67,7 @@ namespace FMBot.Bot.Commands
 
         [Command("removereadonly"), Summary("Removes read only on all directories.")]
         [Alias("readonlyfix")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task RemoveReadOnlyAsync()
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
@@ -92,7 +92,7 @@ namespace FMBot.Bot.Commands
 
         [Command("storagecheck"), Summary("Checks how much storage is left on the server.")]
         [Alias("checkstorage", "storage")]
-        [LoginRequired]
+        [UsernameSetRequired]
         public async Task StorageCheckAsync()
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))

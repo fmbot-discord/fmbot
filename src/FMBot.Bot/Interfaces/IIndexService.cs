@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord;
@@ -7,7 +8,7 @@ namespace FMBot.Bot.Interfaces
 {
     public interface IIndexService
     {
-        void IndexGuild(IReadOnlyList<User> users);
+        void AddUsersToIndexQueue(IReadOnlyList<User> users);
 
         Task IndexUser(User user);
 
@@ -18,5 +19,7 @@ namespace FMBot.Bot.Interfaces
         Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> guildUsers);
 
         Task<int> GetIndexedUsersCount(IReadOnlyCollection<IGuildUser> guildUsers);
+
+        Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeLastIndexed);
     }
 }
