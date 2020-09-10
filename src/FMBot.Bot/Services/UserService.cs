@@ -212,7 +212,7 @@ namespace FMBot.Bot.Services
         }
 
         // Set LastFM Name
-        public void SetLastFM(IUser discordUser, User newUserSettings)
+        public void SetLastFM(IUser discordUser, User newUserSettings, bool updateSessionKey = false)
         {
             using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var user = db.Users.FirstOrDefault(f => f.DiscordUserId == discordUser.Id);
@@ -251,8 +251,7 @@ namespace FMBot.Bot.Services
                 user.UserNameLastFM = newUserSettings.UserNameLastFM;
                 user.FmEmbedType = newUserSettings.FmEmbedType;
                 user.FmCountType = newUserSettings.FmCountType;
-
-                if (!string.Equals(user.UserNameLastFM, newUserSettings.UserNameLastFM, StringComparison.CurrentCultureIgnoreCase))
+                if (updateSessionKey)
                 {
                     user.SessionKeyLastFm = newUserSettings.SessionKeyLastFm;
                 }

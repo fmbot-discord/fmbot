@@ -364,7 +364,7 @@ namespace FMBot.Bot.Commands.LastFM
                     };
 
                     Log.Information("User {userName} logged in with auth session", authSession.Content.Session.Name);
-                    this._userService.SetLastFM(contextUser, userSettings);
+                    this._userService.SetLastFM(contextUser, userSettings, true);
                     return true;
                 }
 
