@@ -165,6 +165,7 @@ namespace FMBot.Bot.Services
                 .Where(f => f.LastIndexed != null &&
                             f.LastUpdated != null &&
                             f.LastIndexed <= timeLastIndexed)
+                .OrderBy(o => o.LastUpdated)
                 .ToListAsync();
         }
     }

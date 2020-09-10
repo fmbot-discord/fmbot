@@ -582,7 +582,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (trackLoved)
             {
-                this._embed.WithTitle($"❤️ Added loved track for {userTitle}");
+                this._embed.WithTitle($"❤️ Loved track for {userTitle}");
                 this._embed.WithDescription(LastFMService.ResponseTrackToLinkedString(track));
             }
             else
