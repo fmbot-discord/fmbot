@@ -265,10 +265,20 @@ namespace FMBot.Bot.Commands.LastFM
 
                         var message = await ReplyAsync("", false, this._embed.Build());
 
-                        if (!this._guildService.CheckIfDM(this.Context))
+                        try
                         {
-                            await this._guildService.AddReactionsAsync(message, this.Context.Guild);
+                            if (!this._guildService.CheckIfDM(this.Context))
+                            {
+                                await this._guildService.AddReactionsAsync(message, this.Context.Guild);
+                            }
                         }
+                        catch (Exception e)
+                        {
+                            this.Context.LogCommandException(e);
+                            await ReplyAsync(
+                                "Couldn't add emote reactions to `.fm`. If you have recently changed changed any of the configured emotes please use `.fmserverreactions` to reset the automatic emote reactions.");
+                        }
+                        
 
                         break;
                 }
