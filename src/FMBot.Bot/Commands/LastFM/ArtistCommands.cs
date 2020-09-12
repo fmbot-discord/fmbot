@@ -138,7 +138,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                     serverStats += $"`{serverListeners}` listeners";
                     serverStats += $"\n`{serverPlaycount}` total plays";
-                    serverStats += $"\n`{(int)avgServerListenerPlaycount}` median plays";
+                    serverStats += $"\n`{(int)avgServerListenerPlaycount}` avg plays";
                 }
                 else
                 {
@@ -526,7 +526,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                     footer += $"\n{serverListeners} listeners - ";
                     footer += $"{serverPlaycount} total plays - ";
-                    footer += $"{(int)avgServerListenerPlaycount} median plays";
+                    footer += $"{(int)avgServerListenerPlaycount} avg plays";
                 }
                 else if (guild.GuildUsers.Count < 450)
                 {
