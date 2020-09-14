@@ -269,7 +269,7 @@ namespace FMBot.Bot.Services
                     if (ConfigData.Data.LastFm.UserIndexFrequencyInDays == null || ConfigData.Data.LastFm.UserIndexFrequencyInDays == 0)
                     {
                         Log.Warning("No user index frequency set, cancelling user index timer");
-                        this._userUpdateTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                        this._userIndexTimer.Change(Timeout.Infinite, Timeout.Infinite);
                         return;
                     }
 
