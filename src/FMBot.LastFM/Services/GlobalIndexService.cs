@@ -59,6 +59,9 @@ namespace FMBot.LastFM.Services
             await InsertTracksIntoDatabase(tracksToInsert, user.UserId);
 
             var latestScrobbleDate = await GetLatestScrobbleDate(user);
+
+            Statistics.IndexedUsers.Inc();
+
             await SetUserIndexTime(user.UserId, now, latestScrobbleDate);
         }
 

@@ -40,7 +40,7 @@ namespace FMBot.Bot.Services
 
         public async Task<int> UpdateUser(User user)
         {
-            Log.Information("Starting index for {UserNameLastFM}", user.UserNameLastFM);
+            Log.Information("Starting update for {UserNameLastFM}", user.UserNameLastFM);
 
             return await this._globalUpdateService.UpdateUser(user);
         }

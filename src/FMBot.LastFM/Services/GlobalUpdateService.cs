@@ -212,7 +212,7 @@ namespace FMBot.LastFM.Services
                 var artistName = alias != null ? alias.Artist.Name : track.Key.ArtistName;
 
                 await using var db = new FMBotDbContext(this._connectionString);
-                if (await db.UserAlbums.AnyAsync(a => a.UserId == user.UserId &&
+                if (await db.UserTracks.AnyAsync(a => a.UserId == user.UserId &&
                                                       a.Name.ToLower() == track.Key.Name.ToLower() &&
                                                       a.ArtistName.ToLower() == artistName.ToLower()))
                 {

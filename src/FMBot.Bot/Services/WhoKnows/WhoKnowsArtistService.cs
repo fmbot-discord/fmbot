@@ -40,7 +40,7 @@ namespace FMBot.Bot.Services.WhoKnows
                         Playcount = artist.Playcount,
                         DiscordUserId = artist.User.DiscordUserId,
                         LastFMUsername = artist.User.UserNameLastFM,
-                        UserId = artist.UserId,
+                        UserId = artist.UserId
                     });
                 }
             }
