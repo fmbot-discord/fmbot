@@ -104,6 +104,7 @@ namespace FMBot.Bot
                 .AddSingleton<IIndexService, IndexService>()
                 .AddSingleton<GuildService>()
                 .AddSingleton<UserService>()
+                .AddSingleton<PlayService>()
                 .AddSingleton<AdminService>()
                 .AddSingleton<FriendsService>()
                 .AddSingleton<GeniusService>()

@@ -14,7 +14,7 @@ namespace FMBot.Persistence.Domain.Models
 
         public bool? FeaturedNotificationsEnabled { get; set; }
 
-        public bool? Blacklisted { get; set; }
+        public bool? Blocked { get; set; }
 
         public UserType UserType { get; set; }
 
@@ -47,6 +47,8 @@ namespace FMBot.Persistence.Domain.Models
         public ICollection<UserAlbum> Albums { get; set; }
 
         public ICollection<UserTrack> Tracks { get; set; }
+
+        public ICollection<UserPlay> Plays { get; set; }
 
         public ICollection<GuildUser> GuildUsers { get; set; }
     }

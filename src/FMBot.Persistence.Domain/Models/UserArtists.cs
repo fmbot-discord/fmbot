@@ -1,10 +1,8 @@
-using System;
-
 namespace FMBot.Persistence.Domain.Models
 {
     public class UserArtist
     {
-        public int ArtistId { get; set; }
+        public int UserArtistId { get; set; }
 
         public int UserId { get; set; }
 

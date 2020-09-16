@@ -1,5 +1,3 @@
-using System;
-
 namespace FMBot.Persistence.Domain.Models
 {
     public class UserTrack

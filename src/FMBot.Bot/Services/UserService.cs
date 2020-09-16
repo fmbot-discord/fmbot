@@ -150,7 +150,7 @@ namespace FMBot.Bot.Services
 
             var users = db.Users
                 .AsQueryable()
-                .Where(w => w.Blacklisted != true).ToList();
+                .Where(w => w.Blocked != true).ToList();
 
             var rand = new Random();
             var user = users[rand.Next(users.Count)];
@@ -177,7 +177,7 @@ namespace FMBot.Bot.Services
                 return false;
             }
 
-            return user.Blacklisted ?? false;
+            return user.Blocked ?? false;
         }
 
         // UserTitle

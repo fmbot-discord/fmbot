@@ -6,12 +6,14 @@ using System.Threading.Tasks;
 using FMBot.Domain;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using FMBot.Persistence.EntityFrameWork.Migrations;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
+using PostgreSQLCopyHelper;
 using Serilog;
 
 namespace FMBot.LastFM.Services
@@ -61,9 +63,10 @@ namespace FMBot.LastFM.Services
                 .Where(w => w.TimePlayed.HasValue && w.TimePlayed.Value.DateTime > user.LastScrobbleUpdate)
                 .ToList();
 
-
             await using var connection = new NpgsqlConnection(this._connectionString);
             await connection.OpenAsync();
+
+            await UpdatePlaysForUser(user, recentTracks, connection);
 
             if (!newScrobbles.Any())
             {
@@ -103,6 +106,47 @@ namespace FMBot.LastFM.Services
             Log.Information($"Added {artists.Count} artists to memory cache");
 
             return artists;
+        }
+
+
+        private async Task UpdatePlaysForUser(User user, IEnumerable<LastTrack> newScrobbles,
+            NpgsqlConnection connection)
+        {
+            Log.Information($"Updating plays for user {user.UserId}");
+
+            await using var deleteOldPlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
+                                                               "WHERE user_id = @userId AND time_played < @playExpirationDate;", connection);
+
+            deleteOldPlays.Parameters.AddWithValue("userId", user.UserId);
+            deleteOldPlays.Parameters.AddWithValue("playExpirationDate", DateTime.UtcNow.AddDays(-7));
+
+            await deleteOldPlays.ExecuteNonQueryAsync();
+
+            await using var db = new FMBotDbContext(this._connectionString);
+            var lastPlay = await db.UserPlays
+                .OrderByDescending(o => o.TimePlayed)
+                .FirstOrDefaultAsync(f => f.UserId == user.UserId);
+
+            var userPlays = newScrobbles
+                .Where(w => w.TimePlayed.HasValue &&
+                            w.TimePlayed.Value.DateTime > (lastPlay?.TimePlayed ?? DateTime.UtcNow.AddDays(-7)))
+                .Select(s => new UserPlay
+                {
+                    TrackName = s.Name,
+                    AlbumName = s.AlbumName,
+                    ArtistName = s.ArtistName,
+                    TimePlayed = s.TimePlayed.Value.DateTime,
+                    UserId = user.UserId
+                }).ToList();
+
+            var copyHelper = new PostgreSQLCopyHelper<UserPlay>("public", "user_plays")
+                .MapText("track_name", x => x.TrackName)
+                .MapText("album_name", x => x.AlbumName)
+                .MapText("artist_name", x => x.ArtistName)
+                .MapTimeStamp("time_played", x => x.TimePlayed)
+                .MapInteger("user_id", x => x.UserId);
+
+            await copyHelper.SaveAllAsync(connection, userPlays);
         }
 
         private async Task UpdateArtistsForUser(User user, IEnumerable<LastTrack> newScrobbles,

@@ -83,7 +83,7 @@ namespace FMBot.Bot.Services
                 return false;
             }
 
-            user.Blacklisted = true;
+            user.Blocked = true;
 
             db.Entry(user).State = EntityState.Modified;
 
@@ -102,7 +102,7 @@ namespace FMBot.Bot.Services
                 return false;
             }
 
-            user.Blacklisted = false;
+            user.Blocked = false;
 
             db.Entry(user).State = EntityState.Modified;
 

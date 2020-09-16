@@ -350,10 +350,17 @@ namespace FMBot.Bot.Services
                 builder.WithThumbnailUrl(selfUser.GetAvatarUrl());
                 builder.AddField("Featured:", this._trackString);
 
-                var guild = client.GetGuild(ConfigData.Data.Bot.BaseServerId);
-                var channel = guild.GetTextChannel(ConfigData.Data.Bot.FeaturedChannelId);
+                if (ConfigData.Data.Bot.BaseServerId != 0 && ConfigData.Data.Bot.FeaturedChannelId != 0)
+                {
+                    var guild = client.GetGuild(ConfigData.Data.Bot.BaseServerId);
+                    var channel = guild.GetTextChannel(ConfigData.Data.Bot.FeaturedChannelId);
 
-                await channel.SendMessageAsync("", false, builder.Build());
+                    await channel.SendMessageAsync("", false, builder.Build());
+                }
+                else
+                {
+                    Log.Warning("Featured channel not set, not sending featured message");
+                }
             }
             catch (Exception exception)
             {
