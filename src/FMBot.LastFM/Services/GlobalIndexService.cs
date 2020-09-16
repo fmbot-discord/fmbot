@@ -117,7 +117,7 @@ namespace FMBot.LastFM.Services
             }
 
             return recentPlays
-                .Where(w => w.TimePlayed.HasValue && w.TimePlayed.Value.DateTime > DateTime.UtcNow.AddDays(-7))
+                .Where(w => w.TimePlayed.HasValue && w.TimePlayed.Value.DateTime > DateTime.UtcNow.AddDays(-Constants.DaysToStorePlays))
                 .Select(t => new UserPlay
                 {
                     TrackName = t.Name,

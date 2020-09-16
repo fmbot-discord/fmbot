@@ -8,6 +8,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Commands
@@ -35,7 +36,7 @@ namespace FMBot.Bot.Commands
             this._userService = userService;
             this._prefixService = prefixService;
             this._embed = new EmbedBuilder()
-                .WithColor(Constants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFMColorRed);
         }
 
         [Command("index", RunMode = RunMode.Async)]
@@ -196,7 +197,7 @@ namespace FMBot.Bot.Commands
                 {
                     m.Embed = new EmbedBuilder()
                         .WithDescription($"✅ {userSettings.UserNameLastFM} has been fully indexed.")
-                        .WithColor(Constants.SuccessColorGreen)
+                        .WithColor(DiscordConstants.SuccessColorGreen)
                         .Build();
                 });
             }
@@ -219,7 +220,7 @@ namespace FMBot.Bot.Commands
                 {
                     m.Embed = new EmbedBuilder()
                         .WithDescription($"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new scrobbles.")
-                        .WithColor(Constants.SuccessColorGreen)
+                        .WithColor(DiscordConstants.SuccessColorGreen)
                         .Build();
                 });
             }

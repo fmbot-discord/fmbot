@@ -145,7 +145,7 @@ namespace FMBot.Bot.Handlers
                 if (!userRegistered)
                 {
                     var embed = new EmbedBuilder()
-                        .WithColor(Constants.LastFMColorRed);
+                        .WithColor(DiscordConstants.LastFMColorRed);
                     embed.UsernameNotSetErrorResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
                     await context.Channel.SendMessageAsync("", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
@@ -158,7 +158,7 @@ namespace FMBot.Bot.Handlers
                 if (!userSession)
                 {
                     var embed = new EmbedBuilder()
-                        .WithColor(Constants.LastFMColorRed);
+                        .WithColor(DiscordConstants.LastFMColorRed);
                     embed.SessionRequiredResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
                     await context.Channel.SendMessageAsync("", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);

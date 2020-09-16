@@ -12,6 +12,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using SkiaSharp;
@@ -45,7 +46,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._userService = userService;
             this._lastFmService = lastFmService;
             this._embed = new EmbedBuilder()
-                .WithColor(Constants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embedFooter = new EmbedFooterBuilder();
         }

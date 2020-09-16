@@ -12,9 +12,8 @@ namespace FMBot.Bot.Services
 {
     public class PlayService
     {
-        public async Task<TimeOverview.WeekOverview> GetUserWeekOverview(User user)
+        public async Task<WeekOverview> GetUserWeekOverview(User user)
         {
-            var week = new TimeOverview.WeekOverview();
 
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
 
@@ -23,51 +22,89 @@ namespace FMBot.Bot.Services
 
             var plays = await db.UserPlays
                 .AsQueryable()
-                .Where(w => w.UserId == user.UserId).ToListAsync();
+                .Where(w => w.TimePlayed.Date <= now.Date &&
+                            w.TimePlayed.Date > minDate.Date &&
+                            w.UserId == user.UserId)
+                .ToListAsync();
 
-            var days = plays
-                .OrderByDescending(o => o.TimePlayed)
-                .Where(w => w.TimePlayed.Date <= now.Date && w.TimePlayed.Date > minDate.Date)
-                .GroupBy(g => g.TimePlayed.Date)
-                .Select(s => new TimeOverview.DayOverview
-                {
-                    Date = s.Key,
-                    Playcount = s.Count(),
-                    TopTrack = GetTopTrackForPlays(s.ToList()),
-                    TopAlbum = GetTopAlbumForPlays(s.ToList()),
-                    TopArtist = GetTopArtistForPlays(s.ToList())
-                }).ToList();
-
-            week.Days = days;
+            var week = new WeekOverview
+            {
+                Days = plays
+                    .OrderByDescending(o => o.TimePlayed)
+                    .GroupBy(g => g.TimePlayed.Date)
+                    .Select(s => new DayOverview
+                    {
+                        Date = s.Key,
+                        Playcount = s.Count(),
+                        TopTrack = GetTopTrackForPlays(s.ToList()),
+                        TopAlbum = GetTopAlbumForPlays(s.ToList()),
+                        TopArtist = GetTopArtistForPlays(s.ToList())
+                    }).ToList(),
+                Playcount = plays.Count,
+                Uniques = GetUniqueCount(plays.ToList()),
+                AvgPerDay = GetAvgPerDayCount(plays.ToList()),
+            };
 
             return week;
         }
 
+        private static int GetUniqueCount(IEnumerable<UserPlay> plays)
+        {
+            return plays
+                .GroupBy(x => new { x.ArtistName, x.TrackName })
+                .Count();
+        }
+
+        private static double GetAvgPerDayCount(IEnumerable<UserPlay> plays)
+        {
+            return plays
+                .GroupBy(g => g.TimePlayed.Date)
+                .Average(a => a.Count());
+        }
+
         private static string GetTopTrackForPlays(IEnumerable<UserPlay> plays)
         {
-            var tracks = plays
+            var topTrack = plays
                 .GroupBy(x => new { x.ArtistName, x.TrackName })
                 .OrderByDescending(o => o.Count())
-                .ToList();
-            return $"`{tracks.Count}` {GetPlaysString(tracks.Count)} - {tracks.First().Key.ArtistName} | {tracks.First().Key.TrackName}";
+                .FirstOrDefault();
+
+            if (topTrack == null)
+            {
+                return "No top track for this day";
+            }
+
+            return $"`{topTrack.Count()}` {GetPlaysString(topTrack.Count())} - {topTrack.Key.ArtistName} | {topTrack.Key.TrackName}";
         }
 
         private static string GetTopAlbumForPlays(IEnumerable<UserPlay> plays)
         {
-            var albums = plays
+            var topAlbum = plays
                 .GroupBy(x => new { x.ArtistName, x.AlbumName })
                 .OrderByDescending(o => o.Count())
-                .ToList();
-            return $"`{albums.Count}` {GetPlaysString(albums.Count)} - {albums.First().Key.ArtistName} | {albums.First().Key.AlbumName}";
+                .FirstOrDefault();
+
+            if (topAlbum == null)
+            {
+                return "No top album for this day";
+            }
+
+            return $"`{topAlbum.Count()}` {GetPlaysString(topAlbum.Count())} - {topAlbum.Key.ArtistName} | {topAlbum.Key.AlbumName}";
         }
 
         private static string GetTopArtistForPlays(IEnumerable<UserPlay> plays)
         {
-            var artists = plays
+            var topArtist = plays
                 .GroupBy(x => x.ArtistName)
                 .OrderByDescending(o => o.Count())
-                .ToList();
-            return $"`{artists.Count}` {GetPlaysString(artists.Count)} - {artists.First().Key}";
+                .FirstOrDefault();
+
+            if (topArtist == null)
+            {
+                return "No top ARTIST for this day";
+            }
+
+            return $"`{topArtist.Count()}` {GetPlaysString(topArtist.Count())} - {topArtist.Key}";
         }
 
         private static string GetPlaysString(int playcount)

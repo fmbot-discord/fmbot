@@ -58,7 +58,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._lastFmService = lastFmService;
             this._indexService = indexService;
             this._embed = new EmbedBuilder()
-                .WithColor(Constants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embedFooter = new EmbedFooterBuilder();
         }
@@ -321,7 +321,7 @@ namespace FMBot.Bot.Commands.LastFM
                     m.Embed = new EmbedBuilder()
                         .WithDescription(
                             $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({Constants.LastFMUserUrl}{newUserSettings.UserNameLastFM})!")
-                        .WithColor(Constants.SuccessColorGreen)
+                        .WithColor(DiscordConstants.SuccessColorGreen)
                         .Build();
                 });
 
@@ -338,7 +338,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     m.Embed = new EmbedBuilder()
                         .WithDescription($"❌ Login failed.. link expired or something went wrong.")
-                        .WithColor(Constants.WarningColorOrange)
+                        .WithColor(DiscordConstants.WarningColorOrange)
                         .Build();
                 });
 

@@ -1,10 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
@@ -12,6 +10,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Services;
@@ -50,7 +49,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._spotifyService = spotifyService;
             this._whoKnowsTrackService = whoKnowsTrackService;
             this._embed = new EmbedBuilder()
-                .WithColor(Constants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embedFooter = new EmbedFooterBuilder();
         }
@@ -345,7 +344,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     this._embed.WithDescription("No top tracks returned for selected time period.\n" +
                                                 $"View [track history here]{userUrl}");
-                    this._embed.WithColor(Constants.WarningColorOrange);
+                    this._embed.WithColor(DiscordConstants.WarningColorOrange);
                     await ReplyAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     return;

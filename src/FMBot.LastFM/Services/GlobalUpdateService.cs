@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 using FMBot.Domain;
@@ -118,7 +119,7 @@ namespace FMBot.LastFM.Services
                                                                "WHERE user_id = @userId AND time_played < @playExpirationDate;", connection);
 
             deleteOldPlays.Parameters.AddWithValue("userId", user.UserId);
-            deleteOldPlays.Parameters.AddWithValue("playExpirationDate", DateTime.UtcNow.AddDays(-7));
+            deleteOldPlays.Parameters.AddWithValue("playExpirationDate", DateTime.UtcNow.AddDays(-Constants.DaysToStorePlays));
 
             await deleteOldPlays.ExecuteNonQueryAsync();
 
@@ -129,7 +130,7 @@ namespace FMBot.LastFM.Services
 
             var userPlays = newScrobbles
                 .Where(w => w.TimePlayed.HasValue &&
-                            w.TimePlayed.Value.DateTime > (lastPlay?.TimePlayed ?? DateTime.UtcNow.AddDays(-7)))
+                            w.TimePlayed.Value.DateTime > (lastPlay?.TimePlayed ?? DateTime.UtcNow.AddDays(-Constants.DaysToStorePlays).Date))
                 .Select(s => new UserPlay
                 {
                     TrackName = s.Name,

@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Resources;
+using FMBot.Domain;
 using FMBot.LastFM.Domain.Enums;
 using IF.Lastfm.Core.Api.Enums;
 
@@ -18,7 +19,7 @@ namespace FMBot.Bot.Services
 
             embed.WithUrl($"{Constants.DocsUrl}/commands/");
 
-            embed.WithColor(Constants.WarningColorOrange);
+            embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
         public static void SessionRequiredResponse(this EmbedBuilder embed, string prfx)
@@ -29,7 +30,7 @@ namespace FMBot.Bot.Services
 
             embed.WithUrl($"{Constants.DocsUrl}/commands/");
 
-            embed.WithColor(Constants.WarningColorOrange);
+            embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
         public static void NoScrobblesFoundErrorResponse(this EmbedBuilder embed, LastResponseStatus apiResponse, string prfx)
@@ -53,7 +54,7 @@ namespace FMBot.Bot.Services
             }
 
             embed.WithThumbnailUrl("https://www.last.fm/static/images/marvin.e51495403de9.png");
-            embed.WithColor(Constants.WarningColorOrange);
+            embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
         public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus apiResponse, string message, ICommandContext context, Logger.Logger logger)
@@ -71,7 +72,7 @@ namespace FMBot.Bot.Services
                     break;
             }
 
-            embed.WithColor(Constants.WarningColorOrange);
+            embed.WithColor(DiscordConstants.WarningColorOrange);
             logger.LogError($"Last.fm returned error: {message}, error code {apiResponse}", context.Message.Content, context.User.Username, context.Guild?.Name, context.Guild?.Id);
         }
     }

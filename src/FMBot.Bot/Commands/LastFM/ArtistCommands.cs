@@ -56,7 +56,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._guildService = guildService;
             this._userService = userService;
             this._embed = new EmbedBuilder()
-                .WithColor(Constants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embedFooter = new EmbedFooterBuilder();
         }

@@ -36,7 +36,7 @@ namespace FMBot.Bot.Commands
             this._spotifyService = spotifyService;
             this._lastFmService = lastFmService;
             this._embed = new EmbedBuilder()
-                .WithColor(Constants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFMColorRed);
         }
 
         [Command("spotify")]

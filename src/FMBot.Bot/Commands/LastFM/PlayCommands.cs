@@ -10,6 +10,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
@@ -47,7 +48,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._spotifyService = spotifyService;
             this._playService = playService;
             this._embed = new EmbedBuilder()
-                .WithColor(Constants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embedFooter = new EmbedFooterBuilder();
         }
@@ -422,7 +423,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays a week overview.")]
         [Alias("we")]
         [UsernameSetRequired]
-        public async Task WeekAsync(string user = null)
+        public async Task OverviewAsync(string user = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -434,18 +435,21 @@ namespace FMBot.Bot.Commands.LastFM
                 foreach (var day in week.Days)
                 {
                     this._embed.AddField(
-                        $"{day.Date.DayOfWeek.ToString()} {day.Date.ToShortDateString()} - {day.Playcount} plays",
-                        $"{day.TopTrack}\n" +
+                        $"{day.Date.DayOfWeek} {day.Date.ToShortDateString()} - {day.Playcount} plays",
+                        $"{day.TopArtist}\n" +
                         $"{day.TopAlbum}\n" +
-                        $"{day.TopArtist}\n"
+                        $"{day.TopTrack}\n"
                     );
                 }
 
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
                 this._embedAuthor.WithName($"Week overview for {userTitle}");
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                this._embedAuthor.WithUrl(Constants.LastFMUserUrl + userSettings.UserNameLastFM);
+                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFM}/library?date_preset=LAST_7_DAYS");
                 this._embed.WithAuthor(this._embedAuthor);
+
+                this._embedFooter.WithText($"{week.Uniques} unique tracks - {week.Playcount} total plays - avg {Math.Round(week.AvgPerDay, 2)} per day");
+                this._embed.WithFooter(this._embedFooter);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed();
