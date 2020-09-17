@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace FMBot.Bot.Models
 {
-    public class WeekOverview
+    public class DailyOverview
     {
         public int Uniques { get; set; }
 

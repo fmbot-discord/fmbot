@@ -50,12 +50,23 @@ namespace FMBot.LastFM.Services
                 return 0;
             }
 
-            var recentTracks = await this._lastFMClient.User.GetRecentScrobbles(user.UserNameLastFM, count: 1000);
+            var lastPlay = await GetLastStoredPlay(user);
+            var recentTracks = await this._lastFMClient.User.GetRecentScrobbles(
+                user.UserNameLastFM,
+                count: 1000,
+                from: lastPlay?.TimePlayed ?? DateTime.UtcNow.AddDays(-14));
+
             Statistics.LastfmApiCalls.Inc();
 
             if (!recentTracks.Success || !recentTracks.Content.Any())
             {
                 Log.Information($"Something went wrong getting recent tracks for {user.UserNameLastFM} | {recentTracks.Status}");
+                if (recentTracks.Success)
+                {
+                    return 0;
+                }
+
+                Log.Information($"Added {user.UserNameLastFM} to update failure list");
                 UserUpdateFailures.Add(user.UserNameLastFM);
                 return 0;
             }
@@ -109,6 +120,14 @@ namespace FMBot.LastFM.Services
             return artists;
         }
 
+        private async Task<UserPlay> GetLastStoredPlay(User user)
+        {
+            await using var db = new FMBotDbContext(this._connectionString);
+            return await db.UserPlays
+                .OrderByDescending(o => o.TimePlayed)
+                .FirstOrDefaultAsync(f => f.UserId == user.UserId);
+        }
+
 
         private async Task UpdatePlaysForUser(User user, IEnumerable<LastTrack> newScrobbles,
             NpgsqlConnection connection)
@@ -123,10 +142,7 @@ namespace FMBot.LastFM.Services
 
             await deleteOldPlays.ExecuteNonQueryAsync();
 
-            await using var db = new FMBotDbContext(this._connectionString);
-            var lastPlay = await db.UserPlays
-                .OrderByDescending(o => o.TimePlayed)
-                .FirstOrDefaultAsync(f => f.UserId == user.UserId);
+            var lastPlay = await GetLastStoredPlay(user);
 
             var userPlays = newScrobbles
                 .Where(w => w.TimePlayed.HasValue &&
@@ -181,7 +197,7 @@ namespace FMBot.LastFM.Services
                 else
                 {
                     await using var addUserArtist =
-                        new NpgsqlCommand("INSERT INTO public.user_artists(user_id, name, playcount)"+
+                        new NpgsqlCommand("INSERT INTO public.user_artists(user_id, name, playcount)" +
                                           "VALUES(@userId, @artistName, @artistPlaycount); ",
                             connection);
 
@@ -316,6 +332,13 @@ namespace FMBot.LastFM.Services
             }
 
             return newScrobbles.First(f => f.TimePlayed.HasValue).TimePlayed.Value.DateTime;
+        }
+
+        public static double ConvertToUnixTimestamp(DateTime date)
+        {
+            var origin = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            var diff = date.ToUniversalTime() - origin;
+            return Math.Floor(diff.TotalSeconds);
         }
     }
 }

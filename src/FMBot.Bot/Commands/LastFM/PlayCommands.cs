@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -25,28 +26,27 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly GuildService _guildService;
         private readonly LastFMService _lastFmService;
         private readonly PlayService _playService;
-        private readonly SpotifyService _spotifyService;
-        private readonly Logger.Logger _logger;
+        private readonly IUpdateService _updateService;
+
 
         private readonly UserService _userService;
 
         private readonly IPrefixService _prefixService;
 
-        public PlayCommands(Logger.Logger logger,
+        public PlayCommands(
             IPrefixService prefixService,
             GuildService guildService,
             UserService userService,
             LastFMService lastFmService,
-            SpotifyService spotifyService,
-            PlayService playService)
+            PlayService playService,
+            IUpdateService updateService)
         {
-            this._logger = logger;
             this._prefixService = prefixService;
             this._guildService = guildService;
             this._userService = userService;
             this._lastFmService = lastFmService;
-            this._spotifyService = spotifyService;
             this._playService = playService;
+            this._updateService = updateService;
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -276,7 +276,7 @@ namespace FMBot.Bot.Commands.LastFM
                             await ReplyAsync(
                                 "Couldn't add emote reactions to `.fm`. If you have recently changed changed any of the configured emotes please use `.fmserverreactions` to reset the automatic emote reactions.");
                         }
-                        
+
 
                         break;
                 }
@@ -419,36 +419,77 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
 
-        [Command("week", RunMode = RunMode.Async)]
+        [Command("overview", RunMode = RunMode.Async)]
         [Summary("Displays a week overview.")]
-        [Alias("we")]
+        [Alias("o", "ov")]
         [UsernameSetRequired]
-        public async Task OverviewAsync(string user = null)
+        public async Task OverviewAsync(string amount = "4")
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
 
+            if (amount == "help")
+            {
+                await ReplyAsync($"{prfx}overview 'number of days (max 8)'");
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            if (!int.TryParse(amount, out var amountOfDays))
+            {
+                await ReplyAsync("Please enter a valid amount. \n" +
+                                 $"`{prfx}overview 'number of days (max 8)'` \n" +
+                                 $"Example: `{prfx}overview 8`");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
+
+            if (amountOfDays > 8)
+            {
+                amountOfDays = 8;
+            }
+
+            if (amountOfDays < 1)
+            {
+                amountOfDays = 1;
+            }
+
+            if (userSettings.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
+            {
+                _ = this.Context.Channel.TriggerTypingAsync();
+                await this._updateService.UpdateUser(userSettings);
+            }
+
             try
             {
-                var week = await this._playService.GetUserWeekOverview(userSettings);
+                var week = await this._playService.GetDailyOverview(userSettings, amountOfDays);
 
                 foreach (var day in week.Days)
                 {
                     this._embed.AddField(
-                        $"{day.Date.DayOfWeek} {day.Date.ToShortDateString()} - {day.Playcount} plays",
+                        $"{day.Playcount} plays - {day.Date.ToString("dddd MMMM d", CultureInfo.InvariantCulture)}",
                         $"{day.TopArtist}\n" +
                         $"{day.TopAlbum}\n" +
-                        $"{day.TopTrack}\n"
+                        $"{day.TopTrack}"
                     );
                 }
 
+                var description = $"Top artist, album and track for last {amountOfDays} days";
+
+                if (week.Days.Count < amountOfDays)
+                {
+                    description += $"\n{amountOfDays - week.Days.Count} days not shown because of no plays.";
+                }
+
+                this._embed.WithDescription(description);
+
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-                this._embedAuthor.WithName($"Week overview for {userTitle}");
+                this._embedAuthor.WithName($"Daily overview for {userTitle}");
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFM}/library?date_preset=LAST_7_DAYS");
                 this._embed.WithAuthor(this._embedAuthor);
 
-                this._embedFooter.WithText($"{week.Uniques} unique tracks - {week.Playcount} total plays - avg {Math.Round(week.AvgPerDay, 2)} per day");
+                this._embedFooter.WithText($"{week.Uniques} unique tracks - {week.Playcount} total plays - avg {Math.Round(week.AvgPerDay, 1)} per day");
                 this._embed.WithFooter(this._embedFooter);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
@@ -458,7 +499,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync(
-                    "Unable to show your recent tracks on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
+                    "Unable to show your overview on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
 

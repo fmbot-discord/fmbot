@@ -109,7 +109,10 @@ namespace FMBot.LastFM.Services
         {
             Log.Information($"Getting plays for user {user.UserNameLastFM}");
 
-            var recentPlays = await this._lastFMClient.User.GetRecentScrobbles(user.UserNameLastFM, count: 1000);
+            var recentPlays = await this._lastFMClient.User.GetRecentScrobbles(
+                user.UserNameLastFM,
+                count: 1000,
+                from: DateTime.UtcNow.AddDays(-14));
 
             if (!recentPlays.Success || recentPlays.Content.Count == 0)
             {

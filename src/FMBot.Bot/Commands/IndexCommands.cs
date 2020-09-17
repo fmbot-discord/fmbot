@@ -8,7 +8,6 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Domain;
 using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Commands
@@ -16,6 +15,8 @@ namespace FMBot.Bot.Commands
     public class IndexCommands : ModuleBase
     {
         private readonly EmbedBuilder _embed;
+        private readonly EmbedFooterBuilder _embedFooter;
+
         private readonly GuildService _guildService;
         private readonly UserService _userService;
         private readonly IIndexService _indexService;
@@ -35,6 +36,7 @@ namespace FMBot.Bot.Commands
             this._guildService = guildService;
             this._userService = userService;
             this._prefixService = prefixService;
+            this._embedFooter = new EmbedFooterBuilder();
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFMColorRed);
         }
@@ -167,7 +169,7 @@ namespace FMBot.Bot.Commands
             }
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
-            if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-15))
+            if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-3))
             {
                 await ReplyAsync(
                     "You have already been updated recently. Note that this also happens automatically.");
@@ -218,10 +220,30 @@ namespace FMBot.Bot.Commands
 
                 await message.ModifyAsync(m =>
                 {
-                    m.Embed = new EmbedBuilder()
-                        .WithDescription($"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new scrobbles.")
-                        .WithColor(DiscordConstants.SuccessColorGreen)
-                        .Build();
+                    if (scrobblesUsed == 0)
+                    {
+                        var newEmbed =
+                            new EmbedBuilder()
+                                .WithDescription("No new scrobbles found since last update")
+                                .WithColor(DiscordConstants.SuccessColorGreen);
+
+                        if (userSettings.LastUpdated.HasValue)
+                        {
+                            newEmbed.WithTimestamp(userSettings.LastUpdated.Value);
+                            this._embedFooter.WithText("Last update");
+                            newEmbed.WithFooter(this._embedFooter);
+                        }
+                        m.Embed =  newEmbed.Build();
+                    }
+                    else
+                    {
+                        m.Embed = new EmbedBuilder()
+                            .WithDescription($"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new scrobbles.")
+                            .WithColor(DiscordConstants.SuccessColorGreen)
+                            .Build();
+                    }
+
+                    
                 });
             }
 

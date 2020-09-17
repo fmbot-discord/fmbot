@@ -12,13 +12,13 @@ namespace FMBot.Bot.Services
 {
     public class PlayService
     {
-        public async Task<WeekOverview> GetUserWeekOverview(User user)
+        public async Task<DailyOverview> GetDailyOverview(User user, int amountOfDays)
         {
 
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
 
             var now = DateTime.UtcNow;
-            var minDate = DateTime.UtcNow.AddDays(-7);
+            var minDate = DateTime.UtcNow.AddDays(-amountOfDays);
 
             var plays = await db.UserPlays
                 .AsQueryable()
@@ -27,7 +27,7 @@ namespace FMBot.Bot.Services
                             w.UserId == user.UserId)
                 .ToListAsync();
 
-            var week = new WeekOverview
+            var overview = new DailyOverview
             {
                 Days = plays
                     .OrderByDescending(o => o.TimePlayed)
@@ -45,7 +45,7 @@ namespace FMBot.Bot.Services
                 AvgPerDay = GetAvgPerDayCount(plays.ToList()),
             };
 
-            return week;
+            return overview;
         }
 
         private static int GetUniqueCount(IEnumerable<UserPlay> plays)
