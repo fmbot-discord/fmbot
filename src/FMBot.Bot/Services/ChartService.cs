@@ -8,7 +8,6 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Domain;
-using FMBot.LastFM.Services;
 using IF.Lastfm.Core.Objects;
 using SkiaSharp;
 
@@ -338,7 +337,7 @@ namespace FMBot.Bot.Services
                 chartSettings.Width = 3;
             }
 
-            var timeSettings = LastFMService.StringOptionsToSettings(extraOptions);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions);
 
             chartSettings.TimeSpan = timeSettings.LastStatsTimeSpan;
             chartSettings.TimespanString = $"{timeSettings.Description} Chart";

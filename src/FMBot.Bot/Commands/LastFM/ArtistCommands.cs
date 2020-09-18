@@ -218,7 +218,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         public async Task TopArtistsAsync(params string[] extraOptions)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
 
             if (extraOptions.Any() && extraOptions.First() == "help")
@@ -238,24 +238,13 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var settings = LastFMService.StringOptionsToSettings(extraOptions);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions);
+            var userSettings = await SettingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
+            var amount = SettingService.GetAmount(extraOptions);
 
             try
             {
-                var lastFMUserName = userSettings.UserNameLastFM;
-                var self = true;
-
-                if (settings.OtherDiscordUserId.HasValue)
-                {
-                    var alternativeLastFmUserName = await FindUserFromId(settings.OtherDiscordUserId.Value);
-                    if (!string.IsNullOrEmpty(alternativeLastFmUserName))
-                    {
-                        lastFMUserName = alternativeLastFmUserName;
-                        self = false;
-                    }
-                }
-
-                var artists = await this._lastFmService.GetTopArtistsAsync(lastFMUserName, settings.LastStatsTimeSpan, settings.Amount);
+                var artists = await this._lastFmService.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings.LastStatsTimeSpan, amount);
 
                 if (artists?.Any() != true)
                 {
@@ -266,20 +255,20 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 string userTitle;
-                if (self)
+                if (!userSettings.DifferentUser)
                 {
                     userTitle = await this._userService.GetUserTitleAsync(this.Context);
                 }
                 else
                 {
                     userTitle =
-                        $"{lastFMUserName}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
+                        $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
                 }
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                var artistsString = settings.Amount == 1 ? "artist" : "artists";
-                this._embedAuthor.WithName($"Top {settings.Amount} {settings.Description.ToLower()} {artistsString} for {userTitle}");
-                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{lastFMUserName}/library/artists?date_preset={settings.UrlParameter}");
+                var artistsString = amount == 1 ? "artist" : "artists";
+                this._embedAuthor.WithName($"Top {amount} {timeSettings.Description.ToLower()} {artistsString} for {userTitle}");
+                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/artists?date_preset={timeSettings.UrlParameter}");
                 this._embed.WithAuthor(this._embedAuthor);
 
                 var description = "";
@@ -292,9 +281,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithDescription(description);
 
-                var userInfo = await this._lastFmService.GetUserInfoAsync(lastFMUserName);
+                var userInfo = await this._lastFmService.GetUserInfoAsync(userSettings.UserNameLastFm);
 
-                this._embedFooter.WithText(lastFMUserName + "'s total scrobbles: " +
+                this._embedFooter.WithText(userSettings.UserNameLastFm + "'s total scrobbles: " +
                                            userInfo.Content.Playcount.ToString("N0"));
                 this._embed.WithFooter(this._embedFooter);
 
@@ -327,7 +316,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var timeType = LastFMService.StringOptionsToSettings(
+            var timeType = SettingService.GetTimePeriod(
                 extraOptions,
                 LastStatsTimeSpan.Overall,
                 ChartTimePeriod.AllTime,

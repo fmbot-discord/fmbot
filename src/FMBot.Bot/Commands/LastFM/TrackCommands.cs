@@ -294,7 +294,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         public async Task TopTracksAsync(params string[] extraOptions)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
 
             if (extraOptions.Any() && extraOptions.First() == "help")
@@ -314,25 +314,14 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var settings = LastFMService.StringOptionsToSettings(extraOptions);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions);
+            var userSettings = await SettingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
+            var amount = SettingService.GetAmount(extraOptions);
 
             try
             {
-                var lastFMUserName = userSettings.UserNameLastFM;
-                var self = true;
-
-                if (settings.OtherDiscordUserId.HasValue)
-                {
-                    var alternativeLastFmUserName = await FindUserFromId(settings.OtherDiscordUserId.Value);
-                    if (!string.IsNullOrEmpty(alternativeLastFmUserName))
-                    {
-                        lastFMUserName = alternativeLastFmUserName;
-                        self = false;
-                    }
-                }
-
-                var topTracks = await this._lastFmService.GetTopTracksAsync(lastFMUserName, settings.ApiParameter, settings.Amount);
-                var userUrl = $"{Constants.LastFMUserUrl}{lastFMUserName}/library/tracks?date_preset={settings.UrlParameter}";
+                var topTracks = await this._lastFmService.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings.ApiParameter, amount);
+                var userUrl = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/tracks?date_preset={timeSettings.UrlParameter}";
 
                 if (!topTracks.Success)
                 {
@@ -351,19 +340,19 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 string userTitle;
-                if (self)
+                if (!userSettings.DifferentUser)
                 {
                     userTitle = await this._userService.GetUserTitleAsync(this.Context);
                 }
                 else
                 {
                     userTitle =
-                        $"{lastFMUserName}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
+                        $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
                 }
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                var artistsString = settings.Amount == 1 ? "track" : "tracks";
-                this._embedAuthor.WithName($"Top {settings.Amount} {settings.Description.ToLower()} {artistsString} for {userTitle}");
+                var artistsString = amount == 1 ? "track" : "tracks";
+                this._embedAuthor.WithName($"Top {amount} {timeSettings.Description.ToLower()} {artistsString} for {userTitle}");
                 this._embedAuthor.WithUrl(userUrl);
                 this._embed.WithAuthor(this._embedAuthor);
 
@@ -377,9 +366,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithDescription(description);
 
-                var userInfo = await this._lastFmService.GetUserInfoAsync(lastFMUserName);
+                var userInfo = await this._lastFmService.GetUserInfoAsync(userSettings.UserNameLastFm);
 
-                this._embedFooter.WithText(lastFMUserName + "'s total scrobbles: " +
+                this._embedFooter.WithText(userSettings.UserNameLastFm + "'s total scrobbles: " +
                                            userInfo.Content.Playcount.ToString("N0"));
                 this._embed.WithFooter(this._embedFooter);
 
@@ -513,44 +502,6 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        private async Task<string> FindUser(string user)
-        {
-            if (await this._lastFmService.LastFMUserExistsAsync(user))
-            {
-                return user;
-            }
-
-            if (!this._guildService.CheckIfDM(this.Context))
-            {
-                var guildUser = await this._guildService.FindUserFromGuildAsync(this.Context, user);
-
-                if (guildUser != null)
-                {
-                    var guildUserLastFm = await this._userService.GetUserSettingsAsync(guildUser);
-
-                    return guildUserLastFm?.UserNameLastFM;
-                }
-            }
-
-            return null;
-        }
-
-        private async Task<string> FindUserFromId(ulong userId)
-        {
-            if (!this._guildService.CheckIfDM(this.Context))
-            {
-                var guildUser = await this._guildService.FindUserFromGuildAsync(this.Context, userId);
-
-                if (guildUser != null)
-                {
-                    var guildUserLastFm = await this._userService.GetUserSettingsAsync(guildUser);
-
-                    return guildUserLastFm?.UserNameLastFM;
-                }
-            }
-
-            return null;
-        }
 
         private async Task<ResponseTrack> SearchTrack(string[] trackValues, User userSettings, string prfx)
         {
