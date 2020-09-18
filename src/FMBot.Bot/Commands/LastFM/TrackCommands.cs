@@ -103,11 +103,10 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (spotifyTrack != null && !string.IsNullOrEmpty(spotifyTrack.SpotifyId))
             {
-                var playString = track.Userplaycount == 1 ? "play" : "plays";
                 this._embed.AddField("Stats",
                     $"`{track.Listeners}` listeners\n" +
-                    $"`{track.Playcount}` global plays\n" +
-                    $"`{track.Userplaycount}` {playString} by you\n",
+                    $"`{track.Playcount}` global {StringExtensions.GetPlaysString(track.Playcount)}\n" +
+                    $"`{track.Userplaycount}` {StringExtensions.GetPlaysString(track.Userplaycount)} by you\n",
                     true);
 
                 var trackLength = TimeSpan.FromMilliseconds(spotifyTrack.DurationMs.GetValueOrDefault());
@@ -544,20 +543,19 @@ namespace FMBot.Bot.Commands.LastFM
                     userSettings.UserNameLastFM);
                 return trackInfo;
             }
-            else if (result.Success)
+
+            if (result.Success)
             {
                 this._embed.WithDescription($"Track could not be found, please check your search values and try again.");
                 await this.ReplyAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return null;
             }
-            else
-            {
-                this._embed.WithDescription($"Last.fm returned an error: {result.Status}");
-                await this.ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Error);
-                return null;
-            }
+
+            this._embed.WithDescription($"Last.fm returned an error: {result.Status}");
+            await this.ReplyAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed(CommandResponse.Error);
+            return null;
         }
     }
 }

@@ -66,49 +66,36 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("stats", RunMode = RunMode.Async)]
         [Summary("Displays user stats related to Last.FM and FMBot")]
         [UsernameSetRequired]
-        public async Task StatsAsync(string user = null)
+        public async Task StatsAsync(params string[] userOptions)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var user = await this._userService.GetFullUserAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
 
             try
             {
-                var lastFMUserName = userSettings.UserNameLastFM;
-                var self = true;
-
-                if (user != null)
-                {
-                    var alternativeLastFmUserName = await FindUser(user);
-                    if (!string.IsNullOrEmpty(alternativeLastFmUserName))
-                    {
-                        lastFMUserName = alternativeLastFmUserName;
-                        self = false;
-                    }
-                }
+                var userSettings = await SettingService.GetUser(userOptions, user.UserNameLastFM, this.Context);
 
                 string userTitle;
-                if (self)
+                if (!userSettings.DifferentUser)
                 {
                     userTitle = await this._userService.GetUserTitleAsync(this.Context);
                 }
                 else
                 {
                     userTitle =
-                        $"{lastFMUserName}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
+                        $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
                 }
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                this._embedAuthor.WithName("Last.FM & fmbot user data for " + userTitle);
+                this._embedAuthor.WithName(".fmbot and last.fm stats for " + userTitle);
+                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}");
                 this._embed.WithAuthor(this._embedAuthor);
 
-                this._embed.WithUrl(Constants.LastFMUserUrl + lastFMUserName);
-                this._embed.WithTitle("Click here to go to profile");
-
                 this._embedFooter.WithText(
-                    $"To see info for other users, use {prfx}stats 'Discord username/ Last.FM username'");
+                    $"To see stats for other .fmbot users, use {prfx}stats '@user'");
                 this._embed.WithFooter(this._embedFooter);
 
-                var userInfo = await this._lastFmService.GetUserInfoAsync(lastFMUserName);
+                var userInfo = await this._lastFmService.GetUserInfoAsync(userSettings.UserNameLastFm);
 
                 var userImages = userInfo.Content.Avatar;
                 var userAvatar = userImages?.Large?.AbsoluteUri;
@@ -118,13 +105,40 @@ namespace FMBot.Bot.Commands.LastFM
                     this._embed.WithThumbnailUrl(userAvatar);
                 }
 
-                this._embed.AddField("Last.FM Name", lastFMUserName, true);
-                this._embed.AddField("User Type", userInfo.Content.Type, true);
-                this._embed.AddField("Total scrobbles", userInfo.Content.Playcount, true);
-                this._embed.AddField("Country", userInfo.Content.Country, true);
-                this._embed.AddField("Is subscriber?", userInfo.Content.IsSubscriber.ToString(), true);
-                this._embed.AddField("Bot Chart Mode", userSettings.FmEmbedType, true);
-                this._embed.AddField("Bot user type", userSettings.UserType, true);
+                var fmbotStats = new StringBuilder();
+
+                fmbotStats.AppendLine($"Bot usertype: `{user.UserType}`");
+
+                fmbotStats.AppendLine($".fm embed type: `{user.FmEmbedType}`");
+                fmbotStats.AppendLine($"Last update: `{user.LastUpdated} (UTC)`");
+                fmbotStats.AppendLine($"Last index: `{user.LastIndexed} (UTC)`");
+                if (user.Friends?.Count > 0)
+                {
+                    var friendString = user.Friends?.Count == 1 ? "friend" : "friends";
+                    fmbotStats.AppendLine($"- `{user.Friends?.Count}` {friendString}");
+                }
+                if (user.FriendedByUsers?.Count > 0)
+                {
+                    var friendString = user.FriendedByUsers?.Count == 1 ? "friendlist" : "friendlists";
+                    fmbotStats.AppendLine($"- You from `{user.FriendedByUsers?.Count}` other {friendString}");
+                }
+
+
+                this._embed.AddField(".fmbot info", fmbotStats.ToString(), true);
+
+                var lastFmStats = new StringBuilder();
+
+                lastFmStats.AppendLine($"Username: [`{userSettings.UserNameLastFm}`]({Constants.LastFMUserUrl}{userSettings.UserNameLastFm})");
+                if (!userSettings.DifferentUser)
+                {
+                    var authorized = string.IsNullOrEmpty(user.SessionKeyLastFm) ? "Yes" : "No";
+                    lastFmStats.AppendLine($".fmbot authorized: `{authorized}`");
+                }
+                lastFmStats.AppendLine($"User type: `{userInfo.Content.Type}`");
+                lastFmStats.AppendLine($"Scrobbles: `{userInfo.Content.Playcount}`");
+                lastFmStats.AppendLine($"Country: `{userInfo.Content.Country}`");
+
+                this._embed.AddField("last.fm info", lastFmStats.ToString(), true);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed();
@@ -132,8 +146,7 @@ namespace FMBot.Bot.Commands.LastFM
             catch (Exception e)
             {
                 this.Context.LogCommandException(e);
-                await ReplyAsync(
-                    "Unable to show your stats on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
+                await ReplyAsync("Unable to show your stats due to an internal error.");
             }
         }
 
@@ -500,28 +513,6 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this.Context.LogCommandException(e);
             }
-        }
-
-        private async Task<string> FindUser(string user)
-        {
-            if (await this._lastFmService.LastFMUserExistsAsync(user))
-            {
-                return user;
-            }
-
-            if (!this._guildService.CheckIfDM(this.Context))
-            {
-                var guildUser = await this._guildService.FindUserFromGuildAsync(this.Context, user);
-
-                if (guildUser != null)
-                {
-                    var guildUserLastFm = await this._userService.GetUserSettingsAsync(guildUser);
-
-                    return guildUserLastFm?.UserNameLastFM;
-                }
-            }
-
-            return null;
         }
     }
 }

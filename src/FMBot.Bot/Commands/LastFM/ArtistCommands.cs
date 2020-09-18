@@ -30,6 +30,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly GuildService _guildService;
         private readonly ArtistsService _artistsService;
         private readonly WhoKnowsArtistService _whoKnowArtistService;
+        private readonly PlayService _playService;
         private readonly LastFMService _lastFmService;
         private readonly SpotifyService _spotifyService = new SpotifyService();
         private readonly IPrefixService _prefixService;
@@ -45,11 +46,13 @@ namespace FMBot.Bot.Commands.LastFM
             WhoKnowsArtistService whoKnowsArtistService,
             GuildService guildService,
             UserService userService,
-            LastFMService lastFmService)
+            LastFMService lastFmService,
+            PlayService playService)
         {
             this._logger = logger;
             this._lastfmApi = lastfmApi;
             this._lastFmService = lastFmService;
+            this._playService = playService;
             this._prefixService = prefixService;
             this._artistsService = artistsService;
             this._whoKnowArtistService = whoKnowsArtistService;
@@ -116,11 +119,12 @@ namespace FMBot.Bot.Commands.LastFM
             this._embed.WithAuthor(this._embedAuthor);
 
             string globalStats = "";
-            globalStats += $"`{artistInfo.Stats.Listeners}` listeners";
-            globalStats += $"\n`{artistInfo.Stats.Playcount}` global plays";
+            globalStats += $"`{artistInfo.Stats.Listeners}` {StringExtensions.GetListenersString(artistInfo.Stats.Listeners)}";
+            globalStats += $"\n`{artistInfo.Stats.Playcount}` global {StringExtensions.GetPlaysString(artistInfo.Stats.Playcount)}";
             if (artistInfo.Stats.Userplaycount.HasValue)
             {
-                globalStats += $"\n`{artistInfo.Stats.Userplaycount}` plays by you";
+                globalStats += $"\n`{artistInfo.Stats.Userplaycount}` {StringExtensions.GetPlaysString(artistInfo.Stats.Userplaycount)} by you";
+                globalStats += $"\n`{await this._playService.GetWeekArtistPlaycountAsync(userSettings.UserId, artistInfo.Name)}` by you last week";
             }
             this._embed.AddField("Global stats", globalStats, true);
 
@@ -135,10 +139,12 @@ namespace FMBot.Bot.Commands.LastFM
                     var serverListeners = await this._whoKnowArtistService.GetArtistListenerCountForServer(guildUsers, artistInfo.Name);
                     var serverPlaycount = await this._whoKnowArtistService.GetArtistPlayCountForServer(guildUsers, artistInfo.Name);
                     var avgServerListenerPlaycount = await this._whoKnowArtistService.GetArtistAverageListenerPlaycountForServer(guildUsers, artistInfo.Name);
+                    var serverPlaycountLastWeek = await this._whoKnowArtistService.GetWeekArtistPlaycountForGuildAsync(guildUsers, artistInfo.Name);
 
                     serverStats += $"`{serverListeners}` listeners";
-                    serverStats += $"\n`{serverPlaycount}` total plays";
-                    serverStats += $"\n`{(int)avgServerListenerPlaycount}` avg plays";
+                    serverStats += $"\n`{serverPlaycount}` total {StringExtensions.GetPlaysString(serverPlaycount)}";
+                    serverStats += $"\n`{(int)avgServerListenerPlaycount}` avg {StringExtensions.GetPlaysString((int)avgServerListenerPlaycount)}";
+                    serverStats += $"\n`{serverPlaycountLastWeek}` {StringExtensions.GetPlaysString(serverPlaycountLastWeek)} last week";
                 }
                 else
                 {
@@ -513,9 +519,9 @@ namespace FMBot.Bot.Commands.LastFM
                     var serverPlaycount = await this._whoKnowArtistService.GetArtistPlayCountForServer(users, artist.Artist.Name);
                     var avgServerListenerPlaycount = await this._whoKnowArtistService.GetArtistAverageListenerPlaycountForServer(users, artist.Artist.Name);
 
-                    footer += $"\n{serverListeners} listeners - ";
-                    footer += $"{serverPlaycount} total plays - ";
-                    footer += $"{(int)avgServerListenerPlaycount} avg plays";
+                    footer += $"\n{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ";
+                    footer += $"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ";
+                    footer += $"{(int)avgServerListenerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerListenerPlaycount)}";
                 }
                 else if (guild.GuildUsers.Count < 450)
                 {

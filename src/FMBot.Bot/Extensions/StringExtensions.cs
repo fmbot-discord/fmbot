@@ -84,5 +84,15 @@ namespace FMBot.Bot.Extensions
                 _ => null
             };
         }
+
+        public static string GetPlaysString(long? playcount)
+        {
+            return playcount == 1 ? "play" : "plays";
+        }
+
+        public static string GetListenersString(long? listeners)
+        {
+            return listeners == 1 ? "listener" : "listeners";
+        }
     }
 }

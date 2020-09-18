@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -14,7 +15,6 @@ namespace FMBot.Bot.Services
     {
         public async Task<DailyOverview> GetDailyOverview(User user, int amountOfDays)
         {
-
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
 
             var now = DateTime.UtcNow;
@@ -74,7 +74,7 @@ namespace FMBot.Bot.Services
                 return "No top track for this day";
             }
 
-            return $"`{topTrack.Count()}` {GetPlaysString(topTrack.Count())} - {topTrack.Key.ArtistName} | {topTrack.Key.TrackName}";
+            return $"`{topTrack.Count()}` {StringExtensions.GetPlaysString(topTrack.Count())} - {topTrack.Key.ArtistName} | {topTrack.Key.TrackName}";
         }
 
         private static string GetTopAlbumForPlays(IEnumerable<UserPlay> plays)
@@ -89,7 +89,7 @@ namespace FMBot.Bot.Services
                 return "No top album for this day";
             }
 
-            return $"`{topAlbum.Count()}` {GetPlaysString(topAlbum.Count())} - {topAlbum.Key.ArtistName} | {topAlbum.Key.AlbumName}";
+            return $"`{topAlbum.Count()}` {StringExtensions.GetPlaysString(topAlbum.Count())} - {topAlbum.Key.ArtistName} | {topAlbum.Key.AlbumName}";
         }
 
         private static string GetTopArtistForPlays(IEnumerable<UserPlay> plays)
@@ -101,15 +101,54 @@ namespace FMBot.Bot.Services
 
             if (topArtist == null)
             {
-                return "No top ARTIST for this day";
+                return "No top artist for this day";
             }
 
-            return $"`{topArtist.Count()}` {GetPlaysString(topArtist.Count())} - {topArtist.Key}";
+            return $"`{topArtist.Count()}` {StringExtensions.GetPlaysString(topArtist.Count())} - {topArtist.Key}";
         }
 
-        private static string GetPlaysString(int playcount)
+        public async Task<int> GetWeekTrackPlaycountAsync(int userId, string trackName, string artistName)
         {
-            return playcount == 1 ? "play" : "plays";
+            var now = DateTime.UtcNow;
+            var minDate = DateTime.UtcNow.AddDays(-7);
+
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            return await db.UserPlays
+                .AsQueryable()
+                .CountAsync(t => t.TimePlayed.Date <= now.Date &&
+                                 t.TimePlayed.Date > minDate.Date &&
+                                 t.TrackName.ToLower() == trackName.ToLower() &&
+                                 t.ArtistName.ToLower() == artistName.ToLower() &&
+                                 t.UserId == userId);
+        }
+
+        public async Task<int> GetWeekAlbumPlaycountAsync(int userId, string albumName, string artistName)
+        {
+            var now = DateTime.UtcNow;
+            var minDate = DateTime.UtcNow.AddDays(-7);
+
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            return await db.UserPlays
+                .AsQueryable()
+                .CountAsync(ab => ab.TimePlayed.Date <= now.Date &&
+                                 ab.TimePlayed.Date > minDate.Date &&
+                                 ab.AlbumName.ToLower() == albumName.ToLower() &&
+                                 ab.ArtistName.ToLower() == artistName.ToLower() &&
+                                 ab.UserId == userId);
+        }
+
+        public async Task<int> GetWeekArtistPlaycountAsync(int userId, string artistName)
+        {
+            var now = DateTime.UtcNow;
+            var minDate = DateTime.UtcNow.AddDays(-7);
+
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            return await db.UserPlays
+                .AsQueryable()
+                .CountAsync(a => a.TimePlayed.Date <= now.Date &&
+                                 a.TimePlayed.Date > minDate.Date &&
+                                 a.ArtistName.ToLower() == artistName.ToLower() &&
+                                 a.UserId == userId);
         }
     }
 }
