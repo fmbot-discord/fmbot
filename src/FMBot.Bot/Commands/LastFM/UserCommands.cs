@@ -114,13 +114,11 @@ namespace FMBot.Bot.Commands.LastFM
                 fmbotStats.AppendLine($"Last index: `{user.LastIndexed} (UTC)`");
                 if (user.Friends?.Count > 0)
                 {
-                    var friendString = user.Friends?.Count == 1 ? "friend" : "friends";
-                    fmbotStats.AppendLine($"- `{user.Friends?.Count}` {friendString}");
+                    fmbotStats.AppendLine($"Friends: `{user.Friends?.Count}`");
                 }
                 if (user.FriendedByUsers?.Count > 0)
                 {
-                    var friendString = user.FriendedByUsers?.Count == 1 ? "friendlist" : "friendlists";
-                    fmbotStats.AppendLine($"- You from `{user.FriendedByUsers?.Count}` other {friendString}");
+                    fmbotStats.AppendLine($"Befriended by: `{user.FriendedByUsers?.Count}`");
                 }
 
 
