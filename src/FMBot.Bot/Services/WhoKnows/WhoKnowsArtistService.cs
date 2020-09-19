@@ -138,5 +138,34 @@ namespace FMBot.Bot.Services.WhoKnows
                                   a.ArtistName.ToLower() == artistName.ToLower() &&
                                   userIds.Contains(a.UserId));
         }
+
+        // TODO: figure out how to do this
+        public async Task<int> GetWeekArtistListenerCountForGuildAsync(IEnumerable<User> guildUsers, string artistName)
+        {
+            var now = DateTime.UtcNow;
+            var minDate = DateTime.UtcNow.AddDays(-7);
+
+            var userIds = guildUsers.Select(s => s.UserId);
+
+
+            try
+            {
+                await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+                return await db.UserPlays
+                    .AsQueryable()
+                    .Where(w => w.TimePlayed.Date <= now.Date &&
+                                w.TimePlayed.Date > minDate.Date &&
+                                w.ArtistName.ToLower() == artistName.ToLower() &&
+                                userIds.Contains(w.UserId))
+                    .GroupBy(x => new { x.UserId, x.ArtistName, x.UserPlayId })
+                    .CountAsync();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+
+        }
     }
 }

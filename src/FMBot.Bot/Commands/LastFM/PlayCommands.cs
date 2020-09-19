@@ -10,7 +10,6 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
@@ -27,6 +26,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly LastFMService _lastFmService;
         private readonly PlayService _playService;
         private readonly IUpdateService _updateService;
+        private readonly IIndexService _indexService;
 
 
         private readonly UserService _userService;
@@ -39,7 +39,8 @@ namespace FMBot.Bot.Commands.LastFM
             UserService userService,
             LastFMService lastFmService,
             PlayService playService,
-            IUpdateService updateService)
+            IUpdateService updateService,
+            IIndexService indexService)
         {
             this._prefixService = prefixService;
             this._guildService = guildService;
@@ -47,6 +48,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._lastFmService = lastFmService;
             this._playService = playService;
             this._updateService = updateService;
+            this._indexService = indexService;
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -457,7 +459,14 @@ namespace FMBot.Bot.Commands.LastFM
             if (userSettings.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
-                await this._updateService.UpdateUser(userSettings);
+                if (userSettings.LastIndexed == null)
+                {
+                    await this._indexService.IndexUser(userSettings);
+                }
+                else
+                {
+                    await this._updateService.UpdateUser(userSettings);
+                }
             }
 
             try

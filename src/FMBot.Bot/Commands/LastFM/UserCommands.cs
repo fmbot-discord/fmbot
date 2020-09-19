@@ -361,8 +361,8 @@ namespace FMBot.Bot.Commands.LastFM
 
         private async Task<bool> GetAndStoreAuthSession(IUser contextUser, string token)
         {
-            var loginDelay = 10000;
-            for (var i = 0; i < 7; i++)
+            var loginDelay = 7000;
+            for (var i = 0; i < 10; i++)
             {
                 await Task.Delay(loginDelay);
 
@@ -386,10 +386,10 @@ namespace FMBot.Bot.Commands.LastFM
                     Log.Information("Login timed out or auth not successful");
                     return false;
                 }
-                else if (!authSession.Success)
+                if (!authSession.Success)
                 {
-                    loginDelay += 3000;
-                    Log.Information("Login attempt {attempt} not succeeded yet ({errorCode}), delaying", i, authSession.Message);
+                    loginDelay += 2000;
+                    Log.Information("Login attempt {attempt} for {user} not succeeded yet ({errorCode}), delaying", i, contextUser.Username, authSession.Message);
                 }
             }
 
