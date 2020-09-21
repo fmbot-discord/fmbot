@@ -265,36 +265,34 @@ namespace FMBot.LastFM.Services
                 Statistics.LastfmApiCalls.Inc();
                 return await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
             }
-            else
+
+            var response = await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
+            if (response.Success && response.Content.TopTracks.Track.Count == 1000)
             {
-                var response = await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
-                if (response.Success && response.Content.TopTracks.Track.Count == 1000)
+                for (var i = 1; i < amountOfPages; i++)
                 {
-                    for (var i = 1; i < amountOfPages; i++)
+                    queryParams.Remove("page");
+                    queryParams.Add("page", (i + 1).ToString());
+
+                    var pageResponse = await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
+                    Statistics.LastfmApiCalls.Inc();
+
+                    if (pageResponse.Success)
                     {
-                        queryParams.Remove("page");
-                        queryParams.Add("page", (i + 1).ToString());
-
-                        var pageResponse = await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
-                        Statistics.LastfmApiCalls.Inc();
-
-                        if (pageResponse.Success)
-                        {
-                            response.Content.TopTracks.Track.AddRange(pageResponse.Content.TopTracks.Track);
-                            if (pageResponse.Content.TopTracks.Track.Count < 1000)
-                            {
-                                break;
-                            }
-                        }
-                        else
+                        response.Content.TopTracks.Track.AddRange(pageResponse.Content.TopTracks.Track);
+                        if (pageResponse.Content.TopTracks.Track.Count < 1000)
                         {
                             break;
                         }
                     }
+                    else
+                    {
+                        break;
+                    }
                 }
-
-                return response;
             }
+
+            return response;
         }
 
         // Check if lastfm user exists

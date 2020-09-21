@@ -79,6 +79,26 @@ namespace FMBot.Bot.Services
         }
 
         // User settings
+        public async Task<User> GetUserAsync(ulong discurdUserId, bool bypassCache = false)
+        {
+            var cacheKey = $"user-settings-{discurdUserId}";
+
+            if (!bypassCache && this._cache.TryGetValue(cacheKey, out User user))
+            {
+                return user;
+            }
+
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            user = await db.Users
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discurdUserId);
+
+            this._cache.Set(cacheKey, user, TimeSpan.FromHours(3));
+
+            return user;
+        }
+
+        // User settings
         public async Task<User> GetFullUserAsync(IUser discordUser)
         {
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);

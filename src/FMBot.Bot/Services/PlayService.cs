@@ -5,8 +5,12 @@ using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.LastFM.Domain.ResponseModels;
+using FMBot.LastFM.Domain.Types;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using IF.Lastfm.Core.Api.Helpers;
+using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services
@@ -149,6 +153,86 @@ namespace FMBot.Bot.Services
                                  a.TimePlayed.Date > minDate.Date &&
                                  a.ArtistName.ToLower() == artistName.ToLower() &&
                                  a.UserId == userId);
+        }
+
+        public async Task<Response<TopTracksResponse>> GetTopTracks(int userId, int days)
+        {
+            var now = DateTime.UtcNow;
+            var minDate = DateTime.UtcNow.AddDays(-days);
+
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            var tracks = await db.UserPlays
+                .AsQueryable()
+                .Where(t => t.TimePlayed.Date <= now.Date &&
+                                 t.TimePlayed.Date > minDate.Date &&
+                                 t.UserId == userId)
+                .GroupBy(x => new { x.ArtistName, x.TrackName })
+                .Select(s => new LastFM.Domain.ResponseModels.Track
+                {
+                    Name = s.Key.TrackName,
+                    Artist = new LastFM.Domain.ResponseModels.Artist
+                    {
+                        Name = s.Key.ArtistName
+                    },
+                    Playcount = s.Count()
+                })
+                .OrderByDescending(o => o.Playcount)
+                .ToListAsync();
+
+            return new Response<TopTracksResponse>
+            {
+                Success = true,
+                Content = new TopTracksResponse
+                {
+                    TopTracks = new TopTracks
+                    {
+                        Track = tracks
+                    }
+                }
+            };
+        }
+
+        public async Task<IReadOnlyList<UserAlbum>> GetTopAlbums(int userId, int days)
+        {
+            var now = DateTime.UtcNow;
+            var minDate = DateTime.UtcNow.AddDays(-days);
+
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            return await db.UserPlays
+                .AsQueryable()
+                .Where(t => t.TimePlayed.Date <= now.Date &&
+                                 t.TimePlayed.Date > minDate.Date &&
+                                 t.UserId == userId)
+                .GroupBy(x => new { x.ArtistName, x.AlbumName })
+                .Select(s => new UserAlbum
+                {
+                    Name = s.Key.AlbumName,
+                    ArtistName = s.Key.ArtistName,
+                    Playcount = s.Count()
+                })
+                .OrderByDescending(o => o.Playcount)
+                .ToListAsync();
+        }
+
+        public async Task<IReadOnlyList<UserArtist>> GetTopArtists(int userId, int days)
+        {
+            var now = DateTime.UtcNow;
+            var minDate = DateTime.UtcNow.AddDays(-days);
+
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            return await db.UserPlays
+                .AsQueryable()
+                .Where(t => t.TimePlayed.Date <= now.Date &&
+                                 t.TimePlayed.Date > minDate.Date &&
+                                 t.UserId == userId)
+                .GroupBy(x => x.ArtistName)
+                .Select(s => new UserArtist
+                {
+                    Name = s.Key,
+                    Playcount = s.Count()
+                })
+                .OrderByDescending(o => o.Playcount)
+                .ToListAsync();
         }
     }
 }

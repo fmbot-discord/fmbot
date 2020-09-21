@@ -19,6 +19,7 @@ using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using IF.Lastfm.Core.Api.Enums;
+using Artist = FMBot.LastFM.Domain.Models.Artist;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -286,14 +287,71 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var artists = await this._lastFmService.GetTopArtistsAsync(userSettings.UserNameLastFm, timeSettings.LastStatsTimeSpan, amount);
-
-                if (artists?.Any() != true)
+                var description = "";
+                if (!timeSettings.UsePlays)
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(artists.Status, prfx);
-                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                    await ReplyAsync("", false, this._embed.Build());
-                    return;
+                    var artists = await this._lastFmService.GetTopArtistsAsync(userSettings.UserNameLastFm,
+                        timeSettings.LastStatsTimeSpan, amount);
+
+                    if (artists?.Any() != true)
+                    {
+                        this._embed.NoScrobblesFoundErrorResponse(artists.Status, prfx);
+                        this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                        await ReplyAsync("", false, this._embed.Build());
+                        return;
+                    }
+
+                    for (var i = 0; i < artists.Count(); i++)
+                    {
+                        var artist = artists.Content[i];
+
+                        description += $"{i + 1}. [{artist.Name}]({artist.Url}) ({artist.PlayCount} plays) \n";
+                    }
+
+                    this._embedFooter.WithText($"{artists.TotalItems} different artists in this time period");
+                }
+                else
+                {
+                    int userId;
+                    if (userSettings.DifferentUser && userSettings.DiscordUserId.HasValue)
+                    {
+                        var otherUser = await this._userService.GetUserAsync(userSettings.DiscordUserId.Value);
+                        if (otherUser.LastIndexed == null)
+                        {
+                            await this._indexService.IndexUser(otherUser);
+                        }
+                        else if (user.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
+                        {
+                            await this._updateService.UpdateUser(otherUser);
+                        }
+
+                        userId = otherUser.UserId;
+                    }
+                    else
+                    {
+                        if (user.LastIndexed == null)
+                        {
+                            await this._indexService.IndexUser(user);
+                        }
+                        else if (user.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
+                        {
+                            await this._updateService.UpdateUser(user);
+                        }
+
+                        userId = user.UserId;
+                    }
+
+                    var artists = await this._playService.GetTopArtists(userId,
+                        timeSettings.PlayDays.GetValueOrDefault());
+
+                    var amountAvailable = artists.Count < amount ? artists.Count : amount;
+                    for (var i = 0; i < amountAvailable; i++)
+                    {
+                        var album = artists[i];
+                        description += $"{i + 1}. {album.Name} ({album.Playcount} {StringExtensions.GetPlaysString(album.Playcount)}) \n";
+                    }
+
+                    this._embedFooter.WithText($"{artists.Count} different artists in this time period");
                 }
 
                 string userTitle;
@@ -310,23 +368,10 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 var artistsString = amount == 1 ? "artist" : "artists";
                 this._embedAuthor.WithName($"Top {amount} {timeSettings.Description.ToLower()} {artistsString} for {userTitle}");
-                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/artists?date_preset={timeSettings.UrlParameter}");
+                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/artists?{timeSettings.UrlParameter}");
                 this._embed.WithAuthor(this._embedAuthor);
 
-                var description = "";
-                for (var i = 0; i < artists.Count(); i++)
-                {
-                    var artist = artists.Content[i];
-
-                    description += $"{i + 1}. [{artist.Name}]({artist.Url}) ({artist.PlayCount} plays) \n";
-                }
-
                 this._embed.WithDescription(description);
-
-                var userInfo = await this._lastFmService.GetUserInfoAsync(userSettings.UserNameLastFm);
-
-                this._embedFooter.WithText(userSettings.UserNameLastFm + "'s total scrobbles: " +
-                                           userInfo.Content.Playcount.ToString("N0"));
                 this._embed.WithFooter(this._embedFooter);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
@@ -362,8 +407,9 @@ namespace FMBot.Bot.Commands.LastFM
                 extraOptions,
                 LastStatsTimeSpan.Overall,
                 ChartTimePeriod.AllTime,
-                "ALL",
-                "overall");
+                "date_preset=ALL",
+                "overall",
+                "All-time");
 
             var tasteSettings = new TasteSettings
             {
@@ -408,8 +454,6 @@ namespace FMBot.Bot.Commands.LastFM
                 var ownArtistsTask = this._lastFmService.GetTopArtistsAsync(ownLastFmUsername, timeType.LastStatsTimeSpan, 1000);
                 var otherArtistsTask = this._lastFmService.GetTopArtistsAsync(lastfmToCompare, timeType.LastStatsTimeSpan, 1000);
 
-                Task.WaitAll(ownArtistsTask, otherArtistsTask);
-
                 var ownArtists = await ownArtistsTask;
                 var otherArtists = await otherArtistsTask;
 
@@ -423,7 +467,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 this._embedAuthor.WithName($"Top artist comparison - {ownLastFmUsername} vs {lastfmToCompare}");
-                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{lastfmToCompare}/library/artists?date_preset={timeType.UrlParameter}");
+                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{lastfmToCompare}/library/artists?{timeType.UrlParameter}");
                 this._embed.WithAuthor(this._embedAuthor);
 
                 int amount = 14;

@@ -13,6 +13,8 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
+using FMBot.LastFM.Domain.ResponseModels;
+using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 
@@ -25,6 +27,9 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly GuildService _guildService;
         private readonly LastFMService _lastFmService;
+        private readonly PlayService _playService;
+        private readonly IUpdateService _updateService;
+        private readonly IIndexService _indexService;
         private readonly WhoKnowsTrackService _whoKnowsTrackService;
         private readonly SpotifyService _spotifyService;
         private readonly Logger.Logger _logger;
@@ -39,7 +44,10 @@ namespace FMBot.Bot.Commands.LastFM
             UserService userService,
             LastFMService lastFmService,
             SpotifyService spotifyService,
-            WhoKnowsTrackService whoKnowsTrackService)
+            WhoKnowsTrackService whoKnowsTrackService,
+            PlayService playService,
+            IUpdateService updateService,
+            IIndexService indexService)
         {
             this._logger = logger;
             this._prefixService = prefixService;
@@ -48,6 +56,9 @@ namespace FMBot.Bot.Commands.LastFM
             this._lastFmService = lastFmService;
             this._spotifyService = spotifyService;
             this._whoKnowsTrackService = whoKnowsTrackService;
+            this._playService = playService;
+            this._updateService = updateService;
+            this._indexService = indexService;
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -319,19 +330,65 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var topTracks = await this._lastFmService.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings.ApiParameter, amount);
-                var userUrl = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/tracks?date_preset={timeSettings.UrlParameter}";
-
-                if (!topTracks.Success)
+                Response<TopTracksResponse> topTracks;
+                if (!timeSettings.UsePlays)
                 {
-                    this._embed.ErrorResponse(topTracks.Error.Value, topTracks.Message, this.Context, this._logger);
-                    await ReplyAsync("", false, this._embed.Build());
-                    return;
+                    topTracks = await this._lastFmService.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings.ApiParameter, amount);
+
+                    if (!topTracks.Success)
+                    {
+                        this._embed.ErrorResponse(topTracks.Error.Value, topTracks.Message, this.Context, this._logger);
+                        await ReplyAsync("", false, this._embed.Build());
+                        return;
+                    }
+
+                    this._embedFooter.WithText($"{topTracks.Content.TopTracks.Attr.Total} different tracks in this time period");
                 }
+                else
+                {
+                    int userId;
+                    if (userSettings.DifferentUser && userSettings.DiscordUserId.HasValue)
+                    {
+                        var otherUser = await this._userService.GetUserAsync(userSettings.DiscordUserId.Value);
+                        if (otherUser.LastIndexed == null)
+                        {
+                            await this._indexService.IndexUser(otherUser);
+                        }
+                        else if (user.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
+                        {
+                            await this._updateService.UpdateUser(otherUser);
+                        }
+
+                        userId = otherUser.UserId;
+                    }
+                    else
+                    {
+                        if (user.LastIndexed == null)
+                        {
+                            await this._indexService.IndexUser(user);
+                        }
+                        else if (user.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
+                        {
+                            await this._updateService.UpdateUser(user);
+                        }
+
+                        userId = user.UserId;
+                    }
+
+                    topTracks = await this._playService.GetTopTracks(userId,
+                        timeSettings.PlayDays.GetValueOrDefault());
+
+                    this._embedFooter.WithText($"{topTracks.Content.TopTracks.Track.Count} different tracks in this time period");
+
+                    topTracks.Content.TopTracks.Track = topTracks.Content.TopTracks.Track.Take(amount).ToList();
+                }
+
+                var userUrl = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/tracks?{timeSettings.UrlParameter}";
+
                 if (!topTracks.Content.TopTracks.Track.Any())
                 {
                     this._embed.WithDescription("No top tracks returned for selected time period.\n" +
-                                                $"View [track history here]{userUrl}");
+                                                $"View [track history here]({userUrl})");
                     this._embed.WithColor(DiscordConstants.WarningColorOrange);
                     await ReplyAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
@@ -350,8 +407,8 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                var artistsString = amount == 1 ? "track" : "tracks";
-                this._embedAuthor.WithName($"Top {amount} {timeSettings.Description.ToLower()} {artistsString} for {userTitle}");
+                var trackStrings = amount == 1 ? "track" : "tracks";
+                this._embedAuthor.WithName($"Top {amount} {timeSettings.Description.ToLower()} {trackStrings} for {userTitle}");
                 this._embedAuthor.WithUrl(userUrl);
                 this._embed.WithAuthor(this._embedAuthor);
 
@@ -360,15 +417,10 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     var track = topTracks.Content.TopTracks.Track[i];
 
-                    description += $"{i + 1}. [{track.Artist.Name}]({track.Artist.Url}) - [{track.Name}]({track.Url}) ({track.Playcount} plays) \n";
+                    description += $"{i + 1}. [{track.Artist.Name}]({track.Artist.Url}) - [{track.Name}]({track.Url}) ({track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)}) \n";
                 }
 
                 this._embed.WithDescription(description);
-
-                var userInfo = await this._lastFmService.GetUserInfoAsync(userSettings.UserNameLastFm);
-
-                this._embedFooter.WithText(userSettings.UserNameLastFm + "'s total scrobbles: " +
-                                           userInfo.Content.Playcount.ToString("N0"));
                 this._embed.WithFooter(this._embedFooter);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());

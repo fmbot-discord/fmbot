@@ -15,6 +15,8 @@ using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
+using IF.Lastfm.Core.Api.Helpers;
+using IF.Lastfm.Core.Objects;
 using SkiaSharp;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -160,7 +162,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 this._embedAuthor.WithUrl(
-                    $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?date_preset={chartSettings.TimespanUrlString}");
+                    $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?{chartSettings.TimespanUrlString}");
 
                 this._embed.WithAuthor(this._embedAuthor);
                 var userInfo = await this._lastFmService.GetUserInfoAsync(userSettings.UserNameLastFm);

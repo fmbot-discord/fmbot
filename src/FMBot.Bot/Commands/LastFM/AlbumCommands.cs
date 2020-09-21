@@ -31,6 +31,9 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly LastFMService _lastFmService;
         private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
         private readonly GuildService _guildService;
+        private readonly PlayService _playService;
+        private readonly IIndexService _indexService;
+        private readonly IUpdateService _updateService;
         private readonly ILastfmApi _lastfmApi;
         private readonly Logger.Logger _logger;
 
@@ -43,12 +46,18 @@ namespace FMBot.Bot.Commands.LastFM
             IPrefixService prefixService,
             UserService userService,
             LastFMService lastFmService,
-            WhoKnowsAlbumService whoKnowsAlbumService)
+            WhoKnowsAlbumService whoKnowsAlbumService,
+            PlayService playService,
+            IIndexService indexService,
+            IUpdateService updateService)
         {
             this._logger = logger;
             this._lastfmApi = lastfmApi;
             this._lastFmService = lastFmService;
             this._whoKnowsAlbumService = whoKnowsAlbumService;
+            this._playService = playService;
+            this._indexService = indexService;
+            this._updateService = updateService;
             this._prefixService = prefixService;
             this._guildService = new GuildService();
             this._userService = userService;
@@ -353,14 +362,68 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var albums = await this._lastFmService.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings.LastStatsTimeSpan, amount);
-
-                if (albums?.Any() != true)
+                var description = "";
+                if (!timeSettings.UsePlays)
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(albums.Status, prfx);
-                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                    await ReplyAsync("", false, this._embed.Build());
-                    return;
+                    var albums = await this._lastFmService.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings.LastStatsTimeSpan, amount);
+                    if (albums?.Any() != true)
+                    {
+                        this._embed.NoScrobblesFoundErrorResponse(albums.Status, prfx);
+                        this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                        await ReplyAsync("", false, this._embed.Build());
+                        return;
+                    }
+
+                    for (var i = 0; i < albums.Count(); i++)
+                    {
+                        var album = albums.Content[i];
+                        description += $"{i + 1}. {album.ArtistName} - [{album.Name}]({album.Url}) ({album.PlayCount} plays) \n";
+                    }
+
+                    this._embedFooter.WithText($"{albums.TotalItems} different albums in this time period");
+                }
+                else
+                {
+                    int userId;
+                    if (userSettings.DifferentUser && userSettings.DiscordUserId.HasValue)
+                    {
+                        var otherUser = await this._userService.GetUserAsync(userSettings.DiscordUserId.Value);
+                        if (otherUser.LastIndexed == null)
+                        {
+                            await this._indexService.IndexUser(otherUser);
+                        }
+                        else if (user.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
+                        {
+                            await this._updateService.UpdateUser(otherUser);
+                        }
+
+                        userId = otherUser.UserId;
+                    }
+                    else
+                    {
+                        if (user.LastIndexed == null)
+                        {
+                            await this._indexService.IndexUser(user);
+                        }
+                        else if (user.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
+                        {
+                            await this._updateService.UpdateUser(user);
+                        }
+
+                        userId = user.UserId;
+                    }
+
+                    var albums = await this._playService.GetTopAlbums(userId,
+                        timeSettings.PlayDays.GetValueOrDefault());
+
+                    var amountAvailable = albums.Count < amount ? albums.Count : amount;
+                    for (var i = 0; i < amountAvailable; i++)
+                    {
+                        var album = albums[i];
+                        description += $"{i + 1}. {album.ArtistName} - {album.Name} ({album.Playcount} {StringExtensions.GetPlaysString(album.Playcount)}) \n";
+                    }
+
+                    this._embedFooter.WithText($"{albums.Count} different albums in this time period");
                 }
 
                 string userTitle;
@@ -377,23 +440,10 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 var artistsString = amount == 1 ? "album" : "albums";
                 this._embedAuthor.WithName($"Top {amount} {timeSettings.Description.ToLower()} {artistsString} for {userTitle}");
-                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?date_preset={timeSettings.UrlParameter}");
+                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?{timeSettings.UrlParameter}");
                 this._embed.WithAuthor(this._embedAuthor);
 
-                var description = "";
-                for (var i = 0; i < albums.Count(); i++)
-                {
-                    var album = albums.Content[i];
-
-                    description += $"{i + 1}. {album.ArtistName} - [{album.Name}]({album.Url}) ({album.PlayCount} plays) \n";
-                }
-
                 this._embed.WithDescription(description);
-
-                var userInfo = await this._lastFmService.GetUserInfoAsync(userSettings.UserNameLastFm);
-
-                this._embedFooter.WithText(userSettings.UserNameLastFm + "'s total scrobbles: " +
-                                           userInfo.Content.Playcount.ToString("N0"));
                 this._embed.WithFooter(this._embedFooter);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());

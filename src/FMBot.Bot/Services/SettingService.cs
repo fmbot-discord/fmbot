@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord.Commands;
@@ -16,7 +17,8 @@ namespace FMBot.Bot.Services
             LastStatsTimeSpan defaultLastStatsTimeSpan = LastStatsTimeSpan.Week,
             ChartTimePeriod defaultChartTimePeriod = ChartTimePeriod.Weekly,
             string defaultUrlParameter = "LAST_7_DAYS",
-            string defaultApiParameter = "7day")
+            string defaultApiParameter = "7day",
+            string defaultDescription = "Weekly")
         {
             var settingsModel = new TimeSettingsModel();
 
@@ -26,7 +28,7 @@ namespace FMBot.Bot.Services
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Weekly;
                 settingsModel.Description = "Weekly";
-                settingsModel.UrlParameter = "LAST_7_DAYS";
+                settingsModel.UrlParameter = "date_preset=LAST_7_DAYS";
                 settingsModel.ApiParameter = "7day";
             }
             else if (extraOptions.Contains("monthly") || extraOptions.Contains("month") || extraOptions.Contains("m"))
@@ -34,7 +36,7 @@ namespace FMBot.Bot.Services
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Monthly;
                 settingsModel.Description = "Monthly";
-                settingsModel.UrlParameter = "LAST_30_DAYS";
+                settingsModel.UrlParameter = "date_preset=LAST_30_DAYS";
                 settingsModel.ApiParameter = "1month";
             }
             else if (extraOptions.Contains("quarterly") || extraOptions.Contains("quarter") || extraOptions.Contains("q"))
@@ -42,7 +44,7 @@ namespace FMBot.Bot.Services
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Quarter;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Quarterly;
                 settingsModel.Description = "Quarterly";
-                settingsModel.UrlParameter = "LAST_90_DAYS";
+                settingsModel.UrlParameter = "date_preset=LAST_90_DAYS";
                 settingsModel.ApiParameter = "3month";
             }
             else if (extraOptions.Contains("halfyearly") || extraOptions.Contains("half") || extraOptions.Contains("h"))
@@ -50,7 +52,7 @@ namespace FMBot.Bot.Services
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Half;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Half;
                 settingsModel.Description = "Half-yearly";
-                settingsModel.UrlParameter = "LAST_180_DAYS";
+                settingsModel.UrlParameter = "date_preset=LAST_180_DAYS";
                 settingsModel.ApiParameter = "6month";
             }
             else if (extraOptions.Contains("yearly") || extraOptions.Contains("year") || extraOptions.Contains("y"))
@@ -58,7 +60,7 @@ namespace FMBot.Bot.Services
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Year;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Yearly;
                 settingsModel.Description = "Yearly";
-                settingsModel.UrlParameter = "LAST_365_DAYS";
+                settingsModel.UrlParameter = "date_preset=LAST_365_DAYS";
                 settingsModel.ApiParameter = "12month";
             }
             else if (extraOptions.Contains("overall") || extraOptions.Contains("alltime") || extraOptions.Contains("o") ||
@@ -68,16 +70,75 @@ namespace FMBot.Bot.Services
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.AllTime;
                 settingsModel.Description = "Overall";
-                settingsModel.UrlParameter = "ALL";
+                settingsModel.UrlParameter = "date_preset=ALL";
+                settingsModel.ApiParameter = "overall";
+            }
+            else if (extraOptions.Contains("6day") ||extraOptions.Contains("6-day") || extraOptions.Contains("day6") || extraOptions.Contains("6d"))
+            {
+                var dateString = DateTime.Today.AddDays(-6).ToString("yyyy-M-dd");
+                settingsModel.Description = "6-day";
+                settingsModel.UrlParameter = $"from={dateString}";
+                settingsModel.UsePlays = true;
+                settingsModel.PlayDays = 6;
+            }
+            else if (extraOptions.Contains("5day") || extraOptions.Contains("5-day") || extraOptions.Contains("day5") || extraOptions.Contains("5d"))
+            {
+                var dateString = DateTime.Today.AddDays(-5).ToString("yyyy-M-dd");
+                settingsModel.Description = "5-day";
+                settingsModel.UrlParameter = $"from={dateString}";
+                settingsModel.UsePlays = true;
+                settingsModel.PlayDays = 5;
+            }
+            else if (extraOptions.Contains("4day") || extraOptions.Contains("4-day") || extraOptions.Contains("day4") || extraOptions.Contains("4d"))
+            {
+                var dateString = DateTime.Today.AddDays(-4).ToString("yyyy-M-dd");
+                settingsModel.Description = "4-day";
+                settingsModel.UrlParameter = $"from={dateString}";
+                settingsModel.UsePlays = true;
+                settingsModel.PlayDays = 4;
+            }
+            else if (extraOptions.Contains("3day") ||extraOptions.Contains("3-day") || extraOptions.Contains("day3") || extraOptions.Contains("3d"))
+            {
+                var dateString = DateTime.Today.AddDays(-3).ToString("yyyy-M-dd");
+                settingsModel.Description = "3-day";
+                settingsModel.UrlParameter = $"from={dateString}";
+                settingsModel.UsePlays = true;
+                settingsModel.PlayDays = 3;
+            }
+            else if (extraOptions.Contains("2day") || extraOptions.Contains("2-day") || extraOptions.Contains("day2") || extraOptions.Contains("2d"))
+            {
+                var dateString = DateTime.Today.AddDays(-2).ToString("yyyy-M-dd");
+                settingsModel.Description = "2-day";
+                settingsModel.UrlParameter = $"from={dateString}";
+                settingsModel.UsePlays = true;
+                settingsModel.PlayDays = 2;
+            }
+            else if (extraOptions.Contains("1day") || extraOptions.Contains("1-day") || extraOptions.Contains("day1") || extraOptions.Contains("1d") || extraOptions.Contains("today"))
+            {
+                var dateString = DateTime.Today.AddDays(-1).ToString("yyyy-M-dd");
+                settingsModel.Description = "1-day";
+                settingsModel.UrlParameter = $"from={dateString}";
+                settingsModel.UsePlays = true;
+                settingsModel.PlayDays = 1;
+            }
+            else if (extraOptions.Contains("overall") || extraOptions.Contains("alltime") || extraOptions.Contains("o") ||
+                     extraOptions.Contains("at") ||
+                     extraOptions.Contains("a"))
+            {
+                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;
+                settingsModel.ChartTimePeriod = ChartTimePeriod.AllTime;
+                settingsModel.Description = "Overall";
+                settingsModel.UrlParameter = "date_preset=ALL";
                 settingsModel.ApiParameter = "overall";
             }
             else
             {
                 settingsModel.LastStatsTimeSpan = defaultLastStatsTimeSpan;
                 settingsModel.ChartTimePeriod = defaultChartTimePeriod;
-                settingsModel.Description = "";
+                settingsModel.Description = defaultDescription;
                 settingsModel.UrlParameter = defaultUrlParameter;
                 settingsModel.ApiParameter = defaultApiParameter;
+                settingsModel.UsePlays = false;
             }
 
             return settingsModel;
@@ -92,7 +153,7 @@ namespace FMBot.Bot.Services
             {
                 DifferentUser = false,
                 UserNameLastFm = username,
-                DiscordUserId = context.User.Id
+                DiscordUserId = context.User.Id,
             };
 
             foreach (var extraOption in extraOptions)
