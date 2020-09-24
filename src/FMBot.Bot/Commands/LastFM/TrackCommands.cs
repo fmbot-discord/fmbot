@@ -121,7 +121,8 @@ namespace FMBot.Bot.Commands.LastFM
                     true);
 
                 var trackLength = TimeSpan.FromMilliseconds(spotifyTrack.DurationMs.GetValueOrDefault());
-                var formattedTrackLength = string.Format("{0}:{1:D2}",
+                var formattedTrackLength = string.Format("{0}{1}:{2:D2}",
+                    trackLength.Hours == 0 ? "" : $"{trackLength.Hours}:",
                     trackLength.Minutes,
                     trackLength.Seconds);
 
