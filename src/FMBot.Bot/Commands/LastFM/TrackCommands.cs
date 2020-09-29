@@ -343,7 +343,10 @@ namespace FMBot.Bot.Commands.LastFM
                         return;
                     }
 
-                    this._embedFooter.WithText($"{topTracks.Content.TopTracks.Attr.Total} different tracks in this time period");
+                    if (topTracks.Content?.TopTracks?.Attr != null)
+                    {
+                        this._embedFooter.WithText($"{topTracks.Content.TopTracks.Attr.Total} different tracks in this time period");
+                    }
                 }
                 else
                 {
