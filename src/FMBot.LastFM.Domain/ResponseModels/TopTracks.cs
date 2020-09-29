@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using FMBot.LastFM.Domain.Models;
+using Newtonsoft.Json;
 
 namespace FMBot.LastFM.Domain.ResponseModels
 {
@@ -11,6 +12,7 @@ namespace FMBot.LastFM.Domain.ResponseModels
 
     public class TopTracks
     {
+        [JsonProperty("@attr")]
         public TopTracksAttr Attr { get; set; }
         public List<Track> Track { get; set; }
     }
