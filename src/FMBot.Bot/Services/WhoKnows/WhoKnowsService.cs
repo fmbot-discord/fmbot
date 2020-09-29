@@ -1,16 +1,10 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Discord;
-using Discord.Commands;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.Persistence.Domain.Models;
-using FMBot.Persistence.EntityFrameWork;
-using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services.WhoKnows
 {
