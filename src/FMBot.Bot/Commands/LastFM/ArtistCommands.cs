@@ -640,8 +640,8 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("serverartists", RunMode = RunMode.Async)]
         [Summary("Shows top artists for your server")]
-        [Alias("sa")]
-        public async Task ServerArtistsAsync(params string[] artistValues)
+        [Alias("sa", "sta", "servertopartists")]
+        public async Task ServerArtistsAsync(string timePeriod = "weekly")
         {
             if (this._guildService.CheckIfDM(this.Context))
             {
@@ -652,6 +652,14 @@ namespace FMBot.Bot.Commands.LastFM
 
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+            if (timePeriod == "help")
+            {
+                await ReplyAsync(
+                    $"Usage: `{prfx}serverartists 'alltime/weekly'");
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
 
             if (guild.LastIndexed == null)
             {
@@ -672,14 +680,25 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var topGuildArtists = await this._whoKnowArtistService.GetTopArtistsForGuild(guild.GuildUsers.Select(s => s.User).ToList());
+                IReadOnlyList<ListArtist> topGuildArtists;
+                var users = guild.GuildUsers.Select(s => s.User).ToList();
+                if (timePeriod.ToLower() == "alltime" || timePeriod.ToLower() == "a")
+                {
+                    topGuildArtists = await this._whoKnowArtistService.GetTopArtistsForGuild(users);
+                    this._embed.WithTitle($"Top alltime artists in {this.Context.Guild.Name}");
+                }
+                else
+                {
+                    topGuildArtists = await this._playService.GetTopWeekArtistsForGuild(users);
+                    this._embed.WithTitle($"Top weekly artists in {this.Context.Guild.Name}");
+                }
 
                 var description = "";
-                for (var i = 0; i < topGuildArtists.Count(); i++)
+                for (var i = 0; i < topGuildArtists.Count; i++)
                 {
                     var artist = topGuildArtists[i];
 
-                    description += $"{i + 1}. {artist.ArtistName} - **{artist.Playcount}** plays - **{artist.ListenerCount}** listeners\n";
+                    description += $"{i + 1}. {artist.ArtistName} - **{artist.Playcount}** {StringExtensions.GetPlaysString(artist.Playcount)} - **{artist.ListenerCount}** {StringExtensions.GetListenersString(artist.ListenerCount)}\n";
                 }
 
                 this._embed.WithDescription(description);
@@ -693,7 +712,6 @@ namespace FMBot.Bot.Commands.LastFM
 
                 footer += "\nView specific artist info with .fmartist";
 
-                this._embed.WithTitle($"Top alltime artists in {this.Context.Guild.Name}");
 
                 this._embedFooter.WithText(footer);
                 this._embed.WithFooter(this._embedFooter);
