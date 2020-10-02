@@ -339,6 +339,13 @@ namespace FMBot.Bot.Services
 
             var timeSettings = SettingService.GetTimePeriod(extraOptions);
 
+            if (timeSettings.UsePlays)
+            {
+                // Reset to weekly since using plays for charts is not supported yet
+                chartSettings.UsePlays = true;
+                timeSettings = SettingService.GetTimePeriod(new []{"weekly"});
+            }
+
             chartSettings.TimeSpan = timeSettings.LastStatsTimeSpan;
             chartSettings.TimespanString = $"{timeSettings.Description} Chart";
             chartSettings.TimespanUrlString = timeSettings.UrlParameter;

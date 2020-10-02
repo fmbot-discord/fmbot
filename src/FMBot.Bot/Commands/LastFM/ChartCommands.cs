@@ -195,6 +195,12 @@ namespace FMBot.Bot.Commands.LastFM
                     embedDescription += "*Linus Tech Tip: If you want the cover of the album you're currently listening to, use `.fmcover` or `.fmco`.*\n";
                 }
 
+                if (chartSettings.UsePlays)
+                {
+                    embedDescription +=
+                        "⚠️ Sorry, but using time periods that use your play history isn't supported for this command.\n";
+                }
+
                 this._embed.WithDescription(embedDescription);
 
                 this._embed.WithFooter(this._embedFooter);
