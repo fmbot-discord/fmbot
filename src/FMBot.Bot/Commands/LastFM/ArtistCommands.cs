@@ -186,7 +186,11 @@ namespace FMBot.Bot.Commands.LastFM
             if (!string.IsNullOrWhiteSpace(artistInfo.Bio.Content))
             {
                 var linktext = $"<a href=\"{artistInfo.Url}\">Read more on Last.fm</a>";
-                this._embed.AddField("Summary", artistInfo.Bio.Summary.Replace(linktext, ""));
+                var filteredSummary = artistInfo.Bio.Summary.Replace(linktext, "");
+                if (!string.IsNullOrWhiteSpace(filteredSummary))
+                {
+                    this._embed.AddField("Summary", filteredSummary);
+                }
             }
 
             if (artistInfo.Tags.Tag.Any())

@@ -90,8 +90,8 @@ namespace FMBot.Bot.Handlers
         {
             if (StackCooldownTarget.Contains(msg.Author))
             {
-                //If they have used this command before, take the time the user last did something, add 1100ms, and see if it's greater than this very moment.
-                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMilliseconds(1100) >=
+                //If they have used this command before, take the time the user last did something, add 900ms, and see if it's greater than this very moment.
+                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMilliseconds(900) >=
                     DateTimeOffset.Now)
                 {
                     return;

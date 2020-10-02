@@ -145,7 +145,11 @@ namespace FMBot.Bot.Commands.LastFM
             if (!string.IsNullOrWhiteSpace(track.Wiki?.Summary))
             {
                 var linktext = $"<a href=\"{track.Url.Replace("https", "http")}\">Read more on Last.fm</a>";
-                this._embed.AddField("Summary", track.Wiki.Summary.Replace(linktext, ""));
+                var filteredSummary = track.Wiki.Summary.Replace(linktext, "");
+                if (!string.IsNullOrWhiteSpace(filteredSummary))
+                {
+                    this._embed.AddField("Summary", filteredSummary);
+                }
             }
 
             if (track.Toptags.Tag.Any())
