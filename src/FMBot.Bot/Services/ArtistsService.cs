@@ -142,6 +142,30 @@ namespace FMBot.Bot.Services
 
             return tasteSettings;
         }
+        
+        public ServerArtistSettings SetServerArtistSettings(ServerArtistSettings serverArtistSettings, string[] extraOptions)
+        {
+            var setServerArtistSettings = serverArtistSettings;
+
+            if (extraOptions.Contains("w") || extraOptions.Contains("week") || extraOptions.Contains("weekly"))
+            {
+                setServerArtistSettings.ChartTimePeriod = ChartTimePeriod.Weekly;
+            }
+            if (extraOptions.Contains("a") || extraOptions.Contains("at") || extraOptions.Contains("alltime"))
+            {
+                setServerArtistSettings.ChartTimePeriod = ChartTimePeriod.AllTime;
+            }
+            if (extraOptions.Contains("p") || extraOptions.Contains("pc") || extraOptions.Contains("playcount") || extraOptions.Contains("plays"))
+            {
+                setServerArtistSettings.OrderType = OrderType.Playcount;
+            }
+            if (extraOptions.Contains("l") || extraOptions.Contains("lc") || extraOptions.Contains("listenercount") || extraOptions.Contains("listeners"))
+            {
+                setServerArtistSettings.OrderType = OrderType.Listeners;
+            }
+
+            return setServerArtistSettings;
+        }
 
 
     }

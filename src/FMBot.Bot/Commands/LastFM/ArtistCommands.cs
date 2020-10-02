@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -645,7 +646,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("serverartists", RunMode = RunMode.Async)]
         [Summary("Shows top artists for your server")]
         [Alias("sa", "sta", "servertopartists")]
-        public async Task ServerArtistsAsync(string timePeriod = "weekly")
+        public async Task ServerArtistsAsync(params string[] extraOptions)
         {
             if (this._guildService.CheckIfDM(this.Context))
             {
@@ -657,10 +658,26 @@ namespace FMBot.Bot.Commands.LastFM
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-            if (timePeriod == "help")
+            if (extraOptions.Any() && extraOptions.First() == "help")
             {
-                await ReplyAsync(
-                    $"Usage: `{prfx}serverartists 'alltime/weekly'");
+                this._embed.WithTitle($"{prfx}serverartists");
+
+                var helpDescription = new StringBuilder();
+                helpDescription.AppendLine("Shows the top artists for your server.");
+                helpDescription.AppendLine();
+                helpDescription.AppendLine("Available time periods: `weekly` and `alltime`");
+                helpDescription.AppendLine("Available order options: `plays` and `listeners`");
+
+                this._embed.WithDescription(helpDescription.ToString());
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}sa` \n" +
+                    $"`{prfx}sa a p` \n" +
+                    $"`{prfx}serverartists` \n" +
+                    $"`{prfx}serverartists alltime` \n" +
+                    $"`{prfx}serverartists listeners weekly`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
@@ -682,40 +699,69 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
+            var serverArtistSettings = new ServerArtistSettings
+            {
+                ChartTimePeriod = ChartTimePeriod.Weekly,
+                OrderType = OrderType.Listeners
+            };
+
+            serverArtistSettings = this._artistsService.SetServerArtistSettings(serverArtistSettings, extraOptions);
+
             try
             {
                 IReadOnlyList<ListArtist> topGuildArtists;
                 var users = guild.GuildUsers.Select(s => s.User).ToList();
-                if (timePeriod.ToLower() == "alltime" || timePeriod.ToLower() == "a")
+                if (serverArtistSettings.ChartTimePeriod == ChartTimePeriod.AllTime)
                 {
-                    topGuildArtists = await this._whoKnowArtistService.GetTopArtistsForGuild(users);
+                    topGuildArtists = await this._whoKnowArtistService.GetTopArtistsForGuild(users, serverArtistSettings.OrderType);
                     this._embed.WithTitle($"Top alltime artists in {this.Context.Guild.Name}");
                 }
                 else
                 {
-                    topGuildArtists = await this._playService.GetTopWeekArtistsForGuild(users);
+                    topGuildArtists = await this._playService.GetTopWeekArtistsForGuild(users, serverArtistSettings.OrderType);
                     this._embed.WithTitle($"Top weekly artists in {this.Context.Guild.Name}");
                 }
 
                 var description = "";
-                for (var i = 0; i < topGuildArtists.Count; i++)
-                {
-                    var artist = topGuildArtists[i];
+                var footer = "";
 
-                    description += $"{i + 1}. {artist.ArtistName} - **{artist.Playcount}** {StringExtensions.GetPlaysString(artist.Playcount)} - **{artist.ListenerCount}** {StringExtensions.GetListenersString(artist.ListenerCount)}\n";
+                if (serverArtistSettings.OrderType == OrderType.Listeners)
+                {
+                    footer += "Listeners / Plays - Ordered by listeners\n";
+                    foreach (var artist in topGuildArtists)
+                    {
+                        description += $"`{artist.ListenerCount}` / `{artist.Playcount}` | **{artist.ArtistName}**\n";
+                    }
+                }
+                else
+                {
+                    footer += "Plays / Listeners - Ordered by plays\n";
+                    foreach (var artist in topGuildArtists)
+                    {
+                        description += $"`{artist.Playcount}` / `{artist.ListenerCount}` | **{artist.ArtistName}**\n";
+                    }
                 }
 
                 this._embed.WithDescription(description);
 
-                var footer = "";
-
-                if (guild.LastIndexed < DateTime.UtcNow.AddDays(-3))
+                var rnd = new Random();
+                var randomHintNumber = rnd.Next(0, 5);
+                if (randomHintNumber == 1)
                 {
-                    footer += $"Missing members? Update with .fmindex";
+                    footer += $"View specific artist listeners with {prfx}whoknows";
                 }
-
-                footer += "\nView specific artist info with .fmartist";
-
+                else if(randomHintNumber == 2)
+                {
+                    footer += $"Available time periods: alltime and weekly";
+                }
+                else if(randomHintNumber == 3)
+                {
+                    footer += $"Available sorting options: plays and listeners";
+                }
+                if (guild.LastIndexed < DateTime.UtcNow.AddDays(-7) && randomHintNumber == 4)
+                {
+                    footer += $"Missing members? Update with {prfx}index\n";
+                }
 
                 this._embedFooter.WithText(footer);
                 this._embed.WithFooter(this._embedFooter);
@@ -727,7 +773,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync(
-                    "Something went wrong while using fmserverartists. Please let us know as this feature is in beta.");
+                    "Something went wrong while using serverartists. Please report this issue.");
             }
         }
 

@@ -235,7 +235,8 @@ namespace FMBot.Bot.Services
                 .ToListAsync();
         }
 
-        public async Task<IReadOnlyList<ListArtist>> GetTopWeekArtistsForGuild(IReadOnlyList<User> guildUsers)
+        public async Task<IReadOnlyList<ListArtist>> GetTopWeekArtistsForGuild(IReadOnlyList<User> guildUsers,
+            OrderType orderType)
         {
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-7);
@@ -256,18 +257,22 @@ namespace FMBot.Bot.Services
                     UserId = s.Key.UserId,
                     Playcount = s.Count()
                 })
-                .OrderByDescending(o => o.Playcount)
                 .ToListAsync();
 
-            return artistUserPlays
+            var query = artistUserPlays
                 .GroupBy(g => g.ArtistName)
                 .Select(s => new ListArtist
                 {
                     ArtistName = s.Key,
                     Playcount = s.Sum(su => su.Playcount),
                     ListenerCount = s.Select(se => se.UserId).Distinct().Count()
-                })
-                .OrderByDescending(o => o.Playcount)
+                });
+
+            query = orderType == OrderType.Playcount ?
+                query.OrderByDescending(o => o.Playcount) :
+                query.OrderByDescending(o => o.ListenerCount);
+
+            return query
                 .Take(14)
                 .ToList();
         }
