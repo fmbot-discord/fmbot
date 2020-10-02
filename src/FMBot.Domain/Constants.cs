@@ -23,7 +23,7 @@ namespace FMBot.Domain
         public const int ArtistsToIndex = 4000;
 
         /// <summary>Amount of days to store plays for users for</summary>
-        public const int DaysToStorePlays = 8;
+        public const int DaysToStorePlays = 32;
 
     }
 }
