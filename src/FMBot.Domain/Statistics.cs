@@ -24,5 +24,12 @@ namespace FMBot.Domain
 
         public static readonly Gauge RegisteredGuilds = Metrics
             .CreateGauge("bot_registered_guilds", "Amount of guilds in the database");
+
+        public static readonly Gauge IndexedUsers = Metrics
+            .CreateGauge("bot_indexed_users", "Amount of calls to the last.fm image cdn");
+
+
+        public static readonly Gauge UpdatedUsers = Metrics
+            .CreateGauge("bot_updated_users", "Amount of calls to the last.fm image cdn");
     }
 }

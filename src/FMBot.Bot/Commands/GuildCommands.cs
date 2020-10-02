@@ -9,6 +9,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
@@ -40,7 +41,7 @@ namespace FMBot.Bot.Commands
             this._disabledCommandService = disabledCommandService;
             this._adminService = new AdminService();
             this._embed = new EmbedBuilder()
-                .WithColor(Constants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embedFooter = new EmbedFooterBuilder();
         }

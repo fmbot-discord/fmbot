@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -40,7 +41,7 @@ namespace FMBot.Bot.Services.WhoKnows
                         Playcount = artist.Playcount,
                         DiscordUserId = artist.User.DiscordUserId,
                         LastFMUsername = artist.User.UserNameLastFM,
-                        UserId = artist.UserId,
+                        UserId = artist.UserId
                     });
                 }
             }
@@ -48,21 +49,27 @@ namespace FMBot.Bot.Services.WhoKnows
             return whoKnowsArtistList;
         }
 
-        public async Task<IList<ListArtist>> GetTopArtistsForGuild(IReadOnlyList<User> guildUsers)
+        public async Task<IReadOnlyList<ListArtist>> GetTopArtistsForGuild(IReadOnlyList<User> guildUsers,
+            OrderType orderType)
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            return await db.UserArtists
+            var query = db.UserArtists
                 .AsQueryable()
                 .Where(w => userIds.Contains(w.UserId))
-                .GroupBy(o => o.Name)
-                .OrderByDescending(o => o.Sum(s => s.Playcount))
+                .GroupBy(o => o.Name);
+
+            query = orderType == OrderType.Playcount ?
+                query.OrderByDescending(o => o.Sum(s => s.Playcount)) :
+                query.OrderByDescending(o => o.Count());
+
+            return await query
                 .Take(14)
                 .Select(s => new ListArtist
                 {
                     ArtistName = s.Key,
-                    Playcount = s.Sum(s => s.Playcount),
+                    Playcount = s.Sum(su => su.Playcount),
                     ListenerCount = s.Count()
                 })
                 .ToListAsync();
@@ -120,6 +127,51 @@ namespace FMBot.Bot.Services.WhoKnows
             {
                 return 0;
             }
+        }
+
+        public async Task<int> GetWeekArtistPlaycountForGuildAsync(IEnumerable<User> guildUsers, string artistName)
+        {
+            var now = DateTime.UtcNow;
+            var minDate = DateTime.UtcNow.AddDays(-7);
+
+            var userIds = guildUsers.Select(s => s.UserId);
+
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            return await db.UserPlays
+                .AsQueryable()
+                .CountAsync(a => a.TimePlayed.Date <= now.Date &&
+                                  a.TimePlayed.Date > minDate.Date &&
+                                  a.ArtistName.ToLower() == artistName.ToLower() &&
+                                  userIds.Contains(a.UserId));
+        }
+
+        // TODO: figure out how to do this
+        public async Task<int> GetWeekArtistListenerCountForGuildAsync(IEnumerable<User> guildUsers, string artistName)
+        {
+            var now = DateTime.UtcNow;
+            var minDate = DateTime.UtcNow.AddDays(-7);
+
+            var userIds = guildUsers.Select(s => s.UserId);
+
+
+            try
+            {
+                await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+                return await db.UserPlays
+                    .AsQueryable()
+                    .Where(w => w.TimePlayed.Date <= now.Date &&
+                                w.TimePlayed.Date > minDate.Date &&
+                                w.ArtistName.ToLower() == artistName.ToLower() &&
+                                userIds.Contains(w.UserId))
+                    .GroupBy(x => new { x.UserId, x.ArtistName, x.UserPlayId })
+                    .CountAsync();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+
         }
     }
 }

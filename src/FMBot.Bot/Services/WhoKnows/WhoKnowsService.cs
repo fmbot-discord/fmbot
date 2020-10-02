@@ -1,15 +1,10 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Discord;
-using Discord.Commands;
-using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
-using FMBot.Bot.Resources;
+using FMBot.Domain;
 using FMBot.Persistence.Domain.Models;
-using FMBot.Persistence.EntityFrameWork;
-using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services.WhoKnows
 {
@@ -55,7 +50,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 var artist = user[index];
 
                 var nameWithLink = NameWithLink(artist);
-                var playString = GetPlaysString(artist.Playcount);
+                var playString = StringExtensions.GetPlaysString(artist.Playcount);
 
                 if (index == 0)
                 {
@@ -77,11 +72,6 @@ namespace FMBot.Bot.Services.WhoKnows
             var discordName = user.DiscordName.Replace("(", "").Replace(")", "").Replace("[", "").Replace("]", "");
             var nameWithLink = $"[{discordName}]({Constants.LastFMUserUrl}{user.LastFMUsername})";
             return nameWithLink;
-        }
-
-        private static string GetPlaysString(int playcount)
-        {
-            return playcount == 1 ? "play" : "plays";
         }
     }
 }

@@ -35,7 +35,7 @@ namespace FMBot.Bot.Commands
             this._userService = userService;
             this._adminService = adminService;
             this._embed = new EmbedBuilder()
-                .WithColor(Constants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFMColorRed);
         }
 
         //[Command("debug")]

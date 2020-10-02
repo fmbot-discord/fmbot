@@ -90,8 +90,8 @@ namespace FMBot.Bot.Handlers
         {
             if (StackCooldownTarget.Contains(msg.Author))
             {
-                //If they have used this command before, take the time the user last did something, add 1100ms, and see if it's greater than this very moment.
-                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMilliseconds(1100) >=
+                //If they have used this command before, take the time the user last did something, add 900ms, and see if it's greater than this very moment.
+                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMilliseconds(900) >=
                     DateTimeOffset.Now)
                 {
                     return;
@@ -145,7 +145,7 @@ namespace FMBot.Bot.Handlers
                 if (!userRegistered)
                 {
                     var embed = new EmbedBuilder()
-                        .WithColor(Constants.LastFMColorRed);
+                        .WithColor(DiscordConstants.LastFMColorRed);
                     embed.UsernameNotSetErrorResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
                     await context.Channel.SendMessageAsync("", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
@@ -158,7 +158,7 @@ namespace FMBot.Bot.Handlers
                 if (!userSession)
                 {
                     var embed = new EmbedBuilder()
-                        .WithColor(Constants.LastFMColorRed);
+                        .WithColor(DiscordConstants.LastFMColorRed);
                     embed.SessionRequiredResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
                     await context.Channel.SendMessageAsync("", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);

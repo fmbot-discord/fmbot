@@ -12,8 +12,11 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
+using IF.Lastfm.Core.Api.Helpers;
+using IF.Lastfm.Core.Objects;
 using SkiaSharp;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -45,7 +48,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._userService = userService;
             this._lastFmService = lastFmService;
             this._embed = new EmbedBuilder()
-                .WithColor(Constants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embedFooter = new EmbedFooterBuilder();
         }
@@ -92,10 +95,9 @@ namespace FMBot.Bot.Commands.LastFM
                 StackCooldownTimer.Add(DateTimeOffset.Now);
             }
 
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var lastFMUserName = userSettings.UserNameLastFM;
-            var self = true;
+            var userSettings = await SettingService.GetUser(otherSettings, user.UserNameLastFM, this.Context);
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
@@ -126,7 +128,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var imagesToRequest = chartSettings.ImagesNeeded + extraAlbums;
 
-                var albums = await this._lastFmService.GetTopAlbumsAsync(lastFMUserName, chartSettings.TimeSpan, imagesToRequest);
+                var albums = await this._lastFmService.GetTopAlbumsAsync(userSettings.UserNameLastFm, chartSettings.TimeSpan, imagesToRequest);
 
                 if (albums.Count() < chartSettings.ImagesNeeded)
                 {
@@ -147,7 +149,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 chartSettings.Albums = albums.Content.ToList();
 
-                if (self)
+                if (!userSettings.DifferentUser)
                 {
                     this._embedAuthor.WithName($"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} for " +
                                                await this._userService.GetUserTitleAsync(this.Context));
@@ -155,19 +157,19 @@ namespace FMBot.Bot.Commands.LastFM
                 else
                 {
                     this._embedAuthor.WithName(
-                        $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} for {lastFMUserName}, requested by {await this._userService.GetUserTitleAsync(this.Context)}");
+                        $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} for {userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}");
                 }
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 this._embedAuthor.WithUrl(
-                    $"{Constants.LastFMUserUrl}{lastFMUserName}/library/albums?date_preset={chartSettings.TimespanUrlString}");
+                    $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?{chartSettings.TimespanUrlString}");
 
                 this._embed.WithAuthor(this._embedAuthor);
-                var userInfo = await this._lastFmService.GetUserInfoAsync(lastFMUserName);
+                var userInfo = await this._lastFmService.GetUserInfoAsync(userSettings.UserNameLastFm);
 
                 var playCount = userInfo.Content.Playcount;
 
-                this._embedFooter.Text = $"{lastFMUserName} has {playCount} scrobbles.";
+                this._embedFooter.Text = $"{userSettings.UserNameLastFm} has {playCount} scrobbles.";
 
                 string embedDescription = "";
                 if (chartSettings.CustomOptionsEnabled)
@@ -193,6 +195,12 @@ namespace FMBot.Bot.Commands.LastFM
                     embedDescription += "*Linus Tech Tip: If you want the cover of the album you're currently listening to, use `.fmcover` or `.fmco`.*\n";
                 }
 
+                if (chartSettings.UsePlays)
+                {
+                    embedDescription +=
+                        "⚠️ Sorry, but using time periods that use your play history isn't supported for this command.\n";
+                }
+
                 this._embed.WithDescription(embedDescription);
 
                 this._embed.WithFooter(this._embedFooter);
@@ -204,7 +212,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this.Context.Channel.SendFileAsync(
                     stream,
-                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSpan.ToString()}-{lastFMUserName}.png",
+                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSpan.ToString()}-{userSettings.UserNameLastFm}.png",
                     null,
                     false,
                     this._embed.Build());
@@ -217,28 +225,6 @@ namespace FMBot.Bot.Commands.LastFM
                 await ReplyAsync(
                     "Sorry, but I was unable to generate a FMChart due to an internal error. Make sure you have scrobbles and Last.FM isn't having issues, and try again later.");
             }
-        }
-
-        private async Task<string> FindUser(string user)
-        {
-            if (await this._lastFmService.LastFMUserExistsAsync(user))
-            {
-                return user;
-            }
-
-            if (!this._guildService.CheckIfDM(this.Context))
-            {
-                var guildUser = await this._guildService.FindUserFromGuildAsync(this.Context, user);
-
-                if (guildUser != null)
-                {
-                    var guildUserLastFm = await this._userService.GetUserSettingsAsync(guildUser);
-
-                    return guildUserLastFm?.UserNameLastFM;
-                }
-            }
-
-            return null;
         }
     }
 }

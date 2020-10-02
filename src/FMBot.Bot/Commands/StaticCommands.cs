@@ -39,7 +39,7 @@ namespace FMBot.Bot.Commands
             this._friendService = friendsService;
             this._guildService = new GuildService();
             this._embed = new EmbedBuilder()
-                .WithColor(Constants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
         }
 

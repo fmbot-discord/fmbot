@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -67,6 +68,23 @@ namespace FMBot.Bot.Services.WhoKnows
                     ListenerCount = s.Count()
                 })
                 .ToListAsync();
+        }
+
+        public async Task<int> GetWeekTrackPlaycountForGuildAsync(IEnumerable<User> guildUsers, string trackName, string artistName)
+        {
+            var now = DateTime.UtcNow;
+            var minDate = DateTime.UtcNow.AddDays(-7);
+
+            var userIds = guildUsers.Select(s => s.UserId);
+
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            return await db.UserPlays
+                .AsQueryable()
+                .CountAsync(t => t.TimePlayed.Date <= now.Date &&
+                                  t.TimePlayed.Date > minDate.Date &&
+                                  t.TrackName.ToLower() == trackName.ToLower() &&
+                                  t.ArtistName.ToLower() == artistName.ToLower() &&
+                                  userIds.Contains(t.UserId));
         }
     }
 }

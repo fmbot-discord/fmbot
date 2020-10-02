@@ -265,36 +265,34 @@ namespace FMBot.LastFM.Services
                 Statistics.LastfmApiCalls.Inc();
                 return await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
             }
-            else
+
+            var response = await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
+            if (response.Success && response.Content.TopTracks.Track.Count == 1000)
             {
-                var response = await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
-                if (response.Success && response.Content.TopTracks.Track.Count == 1000)
+                for (var i = 1; i < amountOfPages; i++)
                 {
-                    for (var i = 1; i < amountOfPages; i++)
+                    queryParams.Remove("page");
+                    queryParams.Add("page", (i + 1).ToString());
+
+                    var pageResponse = await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
+                    Statistics.LastfmApiCalls.Inc();
+
+                    if (pageResponse.Success)
                     {
-                        queryParams.Remove("page");
-                        queryParams.Add("page", (i + 1).ToString());
-
-                        var pageResponse = await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
-                        Statistics.LastfmApiCalls.Inc();
-
-                        if (pageResponse.Success)
-                        {
-                            response.Content.TopTracks.Track.AddRange(pageResponse.Content.TopTracks.Track);
-                            if (pageResponse.Content.TopTracks.Track.Count < 1000)
-                            {
-                                break;
-                            }
-                        }
-                        else
+                        response.Content.TopTracks.Track.AddRange(pageResponse.Content.TopTracks.Track);
+                        if (pageResponse.Content.TopTracks.Track.Count < 1000)
                         {
                             break;
                         }
                     }
+                    else
+                    {
+                        break;
+                    }
                 }
-
-                return response;
             }
+
+            return response;
         }
 
         // Check if lastfm user exists
@@ -357,105 +355,6 @@ namespace FMBot.LastFM.Services
             Statistics.LastfmApiCalls.Inc();
 
             return authSessionCall.Success;
-        }
-
-        public static SettingsModel StringOptionsToSettings(
-            string[] extraOptions,
-            LastStatsTimeSpan defaultLastStatsTimeSpan = LastStatsTimeSpan.Week,
-            ChartTimePeriod defaultChartTimePeriod = ChartTimePeriod.Weekly,
-            string defaultUrlParameter = "LAST_7_DAYS",
-            string defaultApiParameter = "7day")
-        {
-            var settingsModel = new SettingsModel();
-
-            // time period
-            if (extraOptions.Contains("weekly") || extraOptions.Contains("week") || extraOptions.Contains("w"))
-            {
-                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;
-                settingsModel.ChartTimePeriod = ChartTimePeriod.Weekly;
-                settingsModel.Description = "Weekly";
-                settingsModel.UrlParameter = "LAST_7_DAYS";
-                settingsModel.ApiParameter = "7day";
-            }
-            else if (extraOptions.Contains("monthly") || extraOptions.Contains("month") || extraOptions.Contains("m"))
-            {
-                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;
-                settingsModel.ChartTimePeriod = ChartTimePeriod.Monthly;
-                settingsModel.Description = "Monthly";
-                settingsModel.UrlParameter = "LAST_30_DAYS";
-                settingsModel.ApiParameter = "1month";
-            }
-            else if (extraOptions.Contains("quarterly") || extraOptions.Contains("quarter") || extraOptions.Contains("q"))
-            {
-                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Quarter;
-                settingsModel.ChartTimePeriod = ChartTimePeriod.Quarterly;
-                settingsModel.Description = "Quarterly";
-                settingsModel.UrlParameter = "LAST_90_DAYS";
-                settingsModel.ApiParameter = "3month";
-            }
-            else if (extraOptions.Contains("halfyearly") || extraOptions.Contains("half") || extraOptions.Contains("h"))
-            {
-                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Half;
-                settingsModel.ChartTimePeriod = ChartTimePeriod.Half;
-                settingsModel.Description = "Half-yearly";
-                settingsModel.UrlParameter = "LAST_180_DAYS";
-                settingsModel.ApiParameter = "6month";
-            }
-            else if (extraOptions.Contains("yearly") || extraOptions.Contains("year") || extraOptions.Contains("y"))
-            {
-                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Year;
-                settingsModel.ChartTimePeriod = ChartTimePeriod.Yearly;
-                settingsModel.Description = "Yearly";
-                settingsModel.UrlParameter = "LAST_365_DAYS";
-                settingsModel.ApiParameter = "12month";
-            }
-            else if (extraOptions.Contains("overall") || extraOptions.Contains("alltime") || extraOptions.Contains("o") ||
-                     extraOptions.Contains("at") ||
-                     extraOptions.Contains("a"))
-            {
-                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;
-                settingsModel.ChartTimePeriod = ChartTimePeriod.AllTime;
-                settingsModel.Description = "Overall";
-                settingsModel.UrlParameter = "ALL";
-                settingsModel.ApiParameter = "overall";
-            }
-            else
-            {
-                settingsModel.LastStatsTimeSpan = defaultLastStatsTimeSpan;
-                settingsModel.ChartTimePeriod = defaultChartTimePeriod;
-                settingsModel.Description = "";
-                settingsModel.UrlParameter = defaultUrlParameter;
-                settingsModel.ApiParameter = defaultApiParameter;
-            }
-
-            settingsModel.Amount = 10;
-            foreach (var extraOption in extraOptions)
-            {
-                if (int.TryParse(extraOption, out var result))
-                {
-                    if (result > 0 && result <= 50)
-                    {
-                        if (result > 16)
-                        {
-                            result = 16;
-                        }
-
-                        settingsModel.Amount = result;
-                    }
-                }
-
-                if (extraOption.Contains("<@") || extraOption.Length == 18)
-                {
-                    var id = extraOption.Trim('@', '!', '<', '>');
-
-                    if (ulong.TryParse(id, out var discordUserId))
-                    {
-                        settingsModel.OtherDiscordUserId = discordUserId;
-                    }
-                }
-            }
-
-            return settingsModel;
         }
     }
 }

@@ -8,7 +8,6 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Domain;
-using FMBot.LastFM.Services;
 using IF.Lastfm.Core.Objects;
 using SkiaSharp;
 
@@ -338,7 +337,14 @@ namespace FMBot.Bot.Services
                 chartSettings.Width = 3;
             }
 
-            var timeSettings = LastFMService.StringOptionsToSettings(extraOptions);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions);
+
+            if (timeSettings.UsePlays)
+            {
+                // Reset to weekly since using plays for charts is not supported yet
+                chartSettings.UsePlays = true;
+                timeSettings = SettingService.GetTimePeriod(new []{"weekly"});
+            }
 
             chartSettings.TimeSpan = timeSettings.LastStatsTimeSpan;
             chartSettings.TimespanString = $"{timeSettings.Description} Chart";

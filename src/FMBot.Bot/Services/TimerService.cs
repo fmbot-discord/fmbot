@@ -10,7 +10,6 @@ using DiscordBotsList.Api;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
-using FMBot.Bot.Resources;
 using FMBot.Domain;
 using FMBot.LastFM.Services;
 using IF.Lastfm.Core.Api.Enums;
@@ -269,7 +268,7 @@ namespace FMBot.Bot.Services
                     if (ConfigData.Data.LastFm.UserIndexFrequencyInDays == null || ConfigData.Data.LastFm.UserIndexFrequencyInDays == 0)
                     {
                         Log.Warning("No user index frequency set, cancelling user index timer");
-                        this._userUpdateTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                        this._userIndexTimer.Change(Timeout.Infinite, Timeout.Infinite);
                         return;
                     }
 
@@ -350,10 +349,17 @@ namespace FMBot.Bot.Services
                 builder.WithThumbnailUrl(selfUser.GetAvatarUrl());
                 builder.AddField("Featured:", this._trackString);
 
-                var guild = client.GetGuild(ConfigData.Data.Bot.BaseServerId);
-                var channel = guild.GetTextChannel(ConfigData.Data.Bot.FeaturedChannelId);
+                if (ConfigData.Data.Bot.BaseServerId != 0 && ConfigData.Data.Bot.FeaturedChannelId != 0)
+                {
+                    var guild = client.GetGuild(ConfigData.Data.Bot.BaseServerId);
+                    var channel = guild.GetTextChannel(ConfigData.Data.Bot.FeaturedChannelId);
 
-                await channel.SendMessageAsync("", false, builder.Build());
+                    await channel.SendMessageAsync("", false, builder.Build());
+                }
+                else
+                {
+                    Log.Warning("Featured channel not set, not sending featured message");
+                }
             }
             catch (Exception exception)
             {

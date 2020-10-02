@@ -44,11 +44,17 @@ namespace FMBot.LastFM.Services
             Log.Information($"Starting index for {user.UserNameLastFM}");
             var now = DateTime.UtcNow;
 
+            await using var connection = new NpgsqlConnection(this._connectionString);
+            connection.Open();
+
+            var plays = await GetPlaysForUserFromLastFm(user);
+            await InsertPlaysIntoDatabase(plays, user.UserId, connection);
+
             var artists = await GetArtistsForUserFromLastFm(user);
-            await InsertArtistsIntoDatabase(artists, user.UserId);
+            await InsertArtistsIntoDatabase(artists, user.UserId, connection);
 
             var albums = await GetAlbumsForUserFromLastFm(user);
-            await InsertAlbumsIntoDatabase(albums, user.UserId);
+            await InsertAlbumsIntoDatabase(albums, user.UserId, connection);
 
             var tracks = await GetTracksForUserFromLastFm(user);
 
@@ -56,9 +62,12 @@ namespace FMBot.LastFM.Services
                 .Where(w => w.Playcount >= 3)
                 .ToList();
 
-            await InsertTracksIntoDatabase(tracksToInsert, user.UserId);
+            await InsertTracksIntoDatabase(tracksToInsert, user.UserId, connection);
 
             var latestScrobbleDate = await GetLatestScrobbleDate(user);
+
+            Statistics.IndexedUsers.Inc();
+
             await SetUserIndexTime(user.UserId, now, latestScrobbleDate);
         }
 
@@ -94,6 +103,32 @@ namespace FMBot.LastFM.Services
                 Playcount = a.PlayCount.Value,
                 UserId = user.UserId
             }).ToList();
+        }
+
+        private async Task<IReadOnlyList<UserPlay>> GetPlaysForUserFromLastFm(User user)
+        {
+            Log.Information($"Getting plays for user {user.UserNameLastFM}");
+
+            var recentPlays = await this._lastFMClient.User.GetRecentScrobbles(
+                user.UserNameLastFM,
+                count: 1000,
+                from: DateTime.UtcNow.AddDays(-14));
+
+            if (!recentPlays.Success || recentPlays.Content.Count == 0)
+            {
+                return new List<UserPlay>();
+            }
+
+            return recentPlays
+                .Where(w => w.TimePlayed.HasValue && w.TimePlayed.Value.DateTime > DateTime.UtcNow.AddDays(-Constants.DaysToStorePlays))
+                .Select(t => new UserPlay
+                {
+                    TrackName = t.Name,
+                    AlbumName = t.AlbumName,
+                    ArtistName = t.ArtistName,
+                    TimePlayed = t.TimePlayed.Value.DateTime,
+                    UserId = user.UserId
+                }).ToList();
         }
 
         private async Task<IReadOnlyList<UserAlbum>> GetAlbumsForUserFromLastFm(User user)
@@ -151,7 +186,30 @@ namespace FMBot.LastFM.Services
             }).ToList();
         }
 
-        private async Task InsertArtistsIntoDatabase(IReadOnlyList<UserArtist> artists, int userId)
+        private static async Task InsertPlaysIntoDatabase(IReadOnlyList<UserPlay> userPlays, int userId,
+            NpgsqlConnection connection)
+        {
+            Log.Information($"Inserting plays for user {userId}");
+
+            await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
+                                                               "WHERE user_id = @userId", connection);
+
+            deletePlays.Parameters.AddWithValue("userId", userId);
+
+            await deletePlays.ExecuteNonQueryAsync();
+
+            var copyHelper = new PostgreSQLCopyHelper<UserPlay>("public", "user_plays")
+                .MapText("track_name", x => x.TrackName)
+                .MapText("album_name", x => x.AlbumName)
+                .MapText("artist_name", x => x.ArtistName)
+                .MapTimeStamp("time_played", x => x.TimePlayed)
+                .MapInteger("user_id", x => x.UserId);
+
+            await copyHelper.SaveAllAsync(connection, userPlays);
+        }
+
+        private static async Task InsertArtistsIntoDatabase(IReadOnlyList<UserArtist> artists, int userId,
+            NpgsqlConnection connection)
         {
             Log.Information($"Inserting artists for user {userId}");
 
@@ -160,16 +218,14 @@ namespace FMBot.LastFM.Services
                 .MapInteger("user_id", x => x.UserId)
                 .MapInteger("playcount", x => x.Playcount);
 
-            await using var connection = new NpgsqlConnection(this._connectionString);
-            connection.Open();
-
             await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.user_artists WHERE user_id = {userId};", connection);
             await deleteCurrentArtists.ExecuteNonQueryAsync();
 
             await copyHelper.SaveAllAsync(connection, artists);
         }
 
-        private async Task InsertAlbumsIntoDatabase(IReadOnlyList<UserAlbum> albums, int userId)
+        private static async Task InsertAlbumsIntoDatabase(IReadOnlyList<UserAlbum> albums, int userId,
+            NpgsqlConnection connection)
         {
             Log.Information($"Inserting albums for user {userId}");
 
@@ -179,16 +235,14 @@ namespace FMBot.LastFM.Services
                 .MapInteger("user_id", x => x.UserId)
                 .MapInteger("playcount", x => x.Playcount);
 
-            await using var connection = new NpgsqlConnection(this._connectionString);
-            connection.Open();
-
             await using var deleteCurrentAlbums = new NpgsqlCommand($"DELETE FROM public.user_albums WHERE user_id = {userId};", connection);
             await deleteCurrentAlbums.ExecuteNonQueryAsync();
 
             await copyHelper.SaveAllAsync(connection, albums);
         }
 
-        private async Task InsertTracksIntoDatabase(IReadOnlyList<UserTrack> artists, int userId)
+        private static async Task InsertTracksIntoDatabase(IReadOnlyList<UserTrack> artists, int userId,
+            NpgsqlConnection connection)
         {
             Log.Information($"Inserting tracks for user {userId}");
 
@@ -197,9 +251,6 @@ namespace FMBot.LastFM.Services
                 .MapText("artist_name", x => x.ArtistName)
                 .MapInteger("user_id", x => x.UserId)
                 .MapInteger("playcount", x => x.Playcount);
-
-            await using var connection = new NpgsqlConnection(this._connectionString);
-            connection.Open();
 
             await using var deleteCurrentTracks = new NpgsqlCommand($"DELETE FROM public.user_tracks WHERE user_id = {userId};", connection);
             await deleteCurrentTracks.ExecuteNonQueryAsync();

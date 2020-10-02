@@ -79,6 +79,26 @@ namespace FMBot.Bot.Services
         }
 
         // User settings
+        public async Task<User> GetUserAsync(ulong discurdUserId, bool bypassCache = false)
+        {
+            var cacheKey = $"user-settings-{discurdUserId}";
+
+            if (!bypassCache && this._cache.TryGetValue(cacheKey, out User user))
+            {
+                return user;
+            }
+
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            user = await db.Users
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discurdUserId);
+
+            this._cache.Set(cacheKey, user, TimeSpan.FromHours(3));
+
+            return user;
+        }
+
+        // User settings
         public async Task<User> GetFullUserAsync(IUser discordUser)
         {
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
@@ -150,7 +170,7 @@ namespace FMBot.Bot.Services
 
             var users = db.Users
                 .AsQueryable()
-                .Where(w => w.Blacklisted != true).ToList();
+                .Where(w => w.Blocked != true).ToList();
 
             var rand = new Random();
             var user = users[rand.Next(users.Count)];
@@ -177,7 +197,7 @@ namespace FMBot.Bot.Services
                 return false;
             }
 
-            return user.Blacklisted ?? false;
+            return user.Blocked ?? false;
         }
 
         // UserTitle
@@ -212,7 +232,7 @@ namespace FMBot.Bot.Services
         }
 
         // Set LastFM Name
-        public void SetLastFM(IUser discordUser, User newUserSettings)
+        public void SetLastFM(IUser discordUser, User newUserSettings, bool updateSessionKey = false)
         {
             using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var user = db.Users.FirstOrDefault(f => f.DiscordUserId == discordUser.Id);
@@ -251,8 +271,7 @@ namespace FMBot.Bot.Services
                 user.UserNameLastFM = newUserSettings.UserNameLastFM;
                 user.FmEmbedType = newUserSettings.FmEmbedType;
                 user.FmCountType = newUserSettings.FmCountType;
-
-                if (!string.Equals(user.UserNameLastFM, newUserSettings.UserNameLastFM, StringComparison.CurrentCultureIgnoreCase))
+                if (updateSessionKey)
                 {
                     user.SessionKeyLastFm = newUserSettings.SessionKeyLastFm;
                 }

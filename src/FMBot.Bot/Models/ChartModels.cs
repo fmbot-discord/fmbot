@@ -17,6 +17,7 @@ namespace FMBot.Bot.Models
 
             this.TitleSetting = TitleSetting.Titles;
             this.SkipArtistsWithoutImage = false;
+            this.UsePlays = false;
         }
 
         public List<LastAlbum> Albums { get; set; }
@@ -44,6 +45,8 @@ namespace FMBot.Bot.Models
         public bool CustomOptionsEnabled { get; set; }
 
         public bool RainbowSortingEnabled { get; set; }
+
+        public bool UsePlays { get; set; }
     }
 
     public class ChartImage

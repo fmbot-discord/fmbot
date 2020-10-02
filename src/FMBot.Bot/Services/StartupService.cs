@@ -8,7 +8,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
-using FMBot.Bot.Resources;
+using FMBot.Domain;
 using IF.Lastfm.Core.Api;
 using Prometheus;
 using Serilog;

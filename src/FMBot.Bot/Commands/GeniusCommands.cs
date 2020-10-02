@@ -9,6 +9,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 
@@ -37,7 +38,7 @@ namespace FMBot.Bot.Commands
             this._geniusService = geniusService;
             this._lastFmService = lastFmService;
             this._embed = new EmbedBuilder()
-                .WithColor(Constants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFMColorRed);
             this._embedFooter = new EmbedFooterBuilder();
         }
 

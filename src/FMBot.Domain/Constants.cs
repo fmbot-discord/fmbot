@@ -1,11 +1,9 @@
-using System;
-using Discord;
+using System.Drawing;
 
-namespace FMBot.Bot.Resources
+namespace FMBot.Domain
 {
     public static class Constants
     {
-        public static Color LastFMColorRed = new Color(186, 0, 0);
 
         public const string LastFMUserUrl = "https://www.last.fm/user/";
 
@@ -24,10 +22,9 @@ namespace FMBot.Bot.Resources
         /// <summary>Amount of users to index. Should always end with 000</summary>
         public const int ArtistsToIndex = 4000;
 
-        /// <summary>The Discord color for a warning embed.</summary>
-        public static Color WarningColorOrange = new Color(255, 174, 66);
+        /// <summary>Amount of days to store plays for users for</summary>
+        public const int DaysToStorePlays = 32;
 
-        public static Color SuccessColorGreen = new Color(50, 205, 50);
     }
 }
 

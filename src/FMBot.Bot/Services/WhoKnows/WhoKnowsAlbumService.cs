@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -49,7 +50,7 @@ namespace FMBot.Bot.Services.WhoKnows
             return whoKnowsAlbumList;
         }
 
-        public async Task<IList<ListArtist>> GetTopAlbumsForGuild(IReadOnlyList<User> guildUsers)
+        public async Task<IList<ListArtist>> GetTopAlbumsForGuild(IEnumerable<User> guildUsers)
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
@@ -67,6 +68,23 @@ namespace FMBot.Bot.Services.WhoKnows
                     ListenerCount = s.Count()
                 })
                 .ToListAsync();
+        }
+
+        public async Task<int> GetWeekAlbumPlaycountForGuildAsync(IEnumerable<User> guildUsers, string albumName, string artistName)
+        {
+            var now = DateTime.UtcNow;
+            var minDate = DateTime.UtcNow.AddDays(-7);
+
+            var userIds = guildUsers.Select(s => s.UserId);
+
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            return await db.UserPlays
+                .AsQueryable()
+                .CountAsync(ab => ab.TimePlayed.Date <= now.Date &&
+                                 ab.TimePlayed.Date > minDate.Date &&
+                                 ab.AlbumName.ToLower() == albumName.ToLower() &&
+                                 ab.ArtistName.ToLower() == artistName.ToLower() &&
+                                 userIds.Contains(ab.UserId));
         }
     }
 }

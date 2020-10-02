@@ -1,17 +1,20 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 using FMBot.Domain;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using FMBot.Persistence.EntityFrameWork.Migrations;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
+using PostgreSQLCopyHelper;
 using Serilog;
 
 namespace FMBot.LastFM.Services
@@ -47,12 +50,23 @@ namespace FMBot.LastFM.Services
                 return 0;
             }
 
-            var recentTracks = await this._lastFMClient.User.GetRecentScrobbles(user.UserNameLastFM, count: 1000);
+            var lastPlay = await GetLastStoredPlay(user);
+            var recentTracks = await this._lastFMClient.User.GetRecentScrobbles(
+                user.UserNameLastFM,
+                count: 1000,
+                from: lastPlay?.TimePlayed ?? DateTime.UtcNow.AddDays(-14));
+
             Statistics.LastfmApiCalls.Inc();
 
             if (!recentTracks.Success || !recentTracks.Content.Any())
             {
                 Log.Information($"Something went wrong getting recent tracks for {user.UserNameLastFM} | {recentTracks.Status}");
+                if (recentTracks.Success)
+                {
+                    return 0;
+                }
+
+                Log.Information($"Added {user.UserNameLastFM} to update failure list");
                 UserUpdateFailures.Add(user.UserNameLastFM);
                 return 0;
             }
@@ -61,9 +75,10 @@ namespace FMBot.LastFM.Services
                 .Where(w => w.TimePlayed.HasValue && w.TimePlayed.Value.DateTime > user.LastScrobbleUpdate)
                 .ToList();
 
-
             await using var connection = new NpgsqlConnection(this._connectionString);
             await connection.OpenAsync();
+
+            await UpdatePlaysForUser(user, recentTracks, connection);
 
             if (!newScrobbles.Any())
             {
@@ -105,6 +120,52 @@ namespace FMBot.LastFM.Services
             return artists;
         }
 
+        private async Task<UserPlay> GetLastStoredPlay(User user)
+        {
+            await using var db = new FMBotDbContext(this._connectionString);
+            return await db.UserPlays
+                .OrderByDescending(o => o.TimePlayed)
+                .FirstOrDefaultAsync(f => f.UserId == user.UserId);
+        }
+
+
+        private async Task UpdatePlaysForUser(User user, IEnumerable<LastTrack> newScrobbles,
+            NpgsqlConnection connection)
+        {
+            Log.Information($"Updating plays for user {user.UserId}");
+
+            await using var deleteOldPlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
+                                                               "WHERE user_id = @userId AND time_played < @playExpirationDate;", connection);
+
+            deleteOldPlays.Parameters.AddWithValue("userId", user.UserId);
+            deleteOldPlays.Parameters.AddWithValue("playExpirationDate", DateTime.UtcNow.AddDays(-Constants.DaysToStorePlays));
+
+            await deleteOldPlays.ExecuteNonQueryAsync();
+
+            var lastPlay = await GetLastStoredPlay(user);
+
+            var userPlays = newScrobbles
+                .Where(w => w.TimePlayed.HasValue &&
+                            w.TimePlayed.Value.DateTime > (lastPlay?.TimePlayed ?? DateTime.UtcNow.AddDays(-Constants.DaysToStorePlays).Date))
+                .Select(s => new UserPlay
+                {
+                    TrackName = s.Name,
+                    AlbumName = s.AlbumName,
+                    ArtistName = s.ArtistName,
+                    TimePlayed = s.TimePlayed.Value.DateTime,
+                    UserId = user.UserId
+                }).ToList();
+
+            var copyHelper = new PostgreSQLCopyHelper<UserPlay>("public", "user_plays")
+                .MapText("track_name", x => x.TrackName)
+                .MapText("album_name", x => x.AlbumName)
+                .MapText("artist_name", x => x.ArtistName)
+                .MapTimeStamp("time_played", x => x.TimePlayed)
+                .MapInteger("user_id", x => x.UserId);
+
+            await copyHelper.SaveAllAsync(connection, userPlays);
+        }
+
         private async Task UpdateArtistsForUser(User user, IEnumerable<LastTrack> newScrobbles,
             IReadOnlyList<ArtistAlias> cachedArtistAliases, NpgsqlConnection connection)
         {
@@ -136,7 +197,7 @@ namespace FMBot.LastFM.Services
                 else
                 {
                     await using var addUserArtist =
-                        new NpgsqlCommand("INSERT INTO public.user_artists(user_id, name, playcount)"+
+                        new NpgsqlCommand("INSERT INTO public.user_artists(user_id, name, playcount)" +
                                           "VALUES(@userId, @artistName, @artistPlaycount); ",
                             connection);
 
@@ -212,7 +273,7 @@ namespace FMBot.LastFM.Services
                 var artistName = alias != null ? alias.Artist.Name : track.Key.ArtistName;
 
                 await using var db = new FMBotDbContext(this._connectionString);
-                if (await db.UserAlbums.AnyAsync(a => a.UserId == user.UserId &&
+                if (await db.UserTracks.AnyAsync(a => a.UserId == user.UserId &&
                                                       a.Name.ToLower() == track.Key.Name.ToLower() &&
                                                       a.ArtistName.ToLower() == artistName.ToLower()))
                 {
@@ -271,6 +332,13 @@ namespace FMBot.LastFM.Services
             }
 
             return newScrobbles.First(f => f.TimePlayed.HasValue).TimePlayed.Value.DateTime;
+        }
+
+        public static double ConvertToUnixTimestamp(DateTime date)
+        {
+            var origin = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            var diff = date.ToUniversalTime() - origin;
+            return Math.Floor(diff.TotalSeconds);
         }
     }
 }
