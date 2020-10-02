@@ -702,7 +702,7 @@ namespace FMBot.Bot.Commands.LastFM
             var serverArtistSettings = new ServerArtistSettings
             {
                 ChartTimePeriod = ChartTimePeriod.Weekly,
-                OrderType = OrderType.Listeners
+                OrderType = OrderType.Playcount
             };
 
             serverArtistSettings = this._artistsService.SetServerArtistSettings(serverArtistSettings, extraOptions);
