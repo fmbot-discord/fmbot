@@ -13,10 +13,13 @@ namespace FMBot.Bot.Services.WhoKnows
         public static IList<WhoKnowsObjectWithUser> AddOrReplaceUserToIndexList(IList<WhoKnowsObjectWithUser> users, User userSettings, IGuildUser user, string name, long? playcount)
         {
             var userRemoved = false;
-            var existingRecord = users.FirstOrDefault(f => f.UserId == userSettings.UserId);
-            if (existingRecord != null)
+            var existingUsers = users
+                .Where(f => f.LastFMUsername.ToLower() == userSettings.UserNameLastFM.ToLower());
+            if (existingUsers.Any())
             {
-                users.Remove(existingRecord);
+                users = users
+                    .Where(f => f.LastFMUsername.ToLower() != userSettings.UserNameLastFM.ToLower())
+                    .ToList();
                 userRemoved = true;
             }
 
