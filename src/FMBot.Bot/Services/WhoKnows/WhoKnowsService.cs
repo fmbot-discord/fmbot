@@ -12,34 +12,34 @@ namespace FMBot.Bot.Services.WhoKnows
     {
         public static IList<WhoKnowsObjectWithUser> AddOrReplaceUserToIndexList(IList<WhoKnowsObjectWithUser> users, User userSettings, IGuildUser user, string name, long? playcount)
         {
+            var userRemoved = false;
             var existingRecord = users.FirstOrDefault(f => f.UserId == userSettings.UserId);
             if (existingRecord != null)
             {
                 users.Remove(existingRecord);
+                userRemoved = true;
             }
 
             var userPlaycount = int.Parse(playcount.GetValueOrDefault(0).ToString());
-            if (users.Count != 14)
+            users.Add(new WhoKnowsObjectWithUser
             {
-                users.Add(new WhoKnowsObjectWithUser
-                {
-                    UserId = userSettings.UserId,
-                    Name = name,
-                    Playcount = userPlaycount,
-                    LastFMUsername = userSettings.UserNameLastFM,
-                    DiscordUserId = userSettings.DiscordUserId,
-                    DiscordName = user.Nickname ?? user.Username
-                });
-            }
+                UserId = userSettings.UserId,
+                Name = name,
+                Playcount = userPlaycount,
+                LastFMUsername = userSettings.UserNameLastFM,
+                DiscordUserId = userSettings.DiscordUserId,
+                DiscordName = user.Nickname ?? user.Username,
+                NoPosition = !userRemoved
+            });
 
             return users.OrderByDescending(o => o.Playcount).ToList();
         }
 
-        public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> user)
+        public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects)
         {
             var reply = "";
 
-            var artistsCount = user.Count;
+            var artistsCount = whoKnowsObjects.Count;
             if (artistsCount > 14)
             {
                 artistsCount = 14;
@@ -47,10 +47,10 @@ namespace FMBot.Bot.Services.WhoKnows
 
             for (var index = 0; index < artistsCount; index++)
             {
-                var artist = user[index];
+                var user = whoKnowsObjects[index];
 
-                var nameWithLink = NameWithLink(artist);
-                var playString = StringExtensions.GetPlaysString(artist.Playcount);
+                var nameWithLink = NameWithLink(user);
+                var playString = StringExtensions.GetPlaysString(user.Playcount);
 
                 if (index == 0)
                 {
@@ -61,7 +61,17 @@ namespace FMBot.Bot.Services.WhoKnows
                     reply += $" {index + 1}.  {nameWithLink} ";
                 }
 
-                reply += $"- **{artist.Playcount}** {playString}\n";
+                reply += $"- **{user.Playcount}** {playString}\n";
+            }
+
+            var userWithNoPosition = whoKnowsObjects.FirstOrDefault(f => f.NoPosition);
+            if (userWithNoPosition != null)
+            {
+                var nameWithLink = NameWithLink(userWithNoPosition);
+                var playString = StringExtensions.GetPlaysString(userWithNoPosition.Playcount);
+
+                reply += $"  ...   {nameWithLink} ";
+                reply += $"- **{userWithNoPosition.Playcount}** {playString}\n";
             }
 
             return reply;
@@ -69,7 +79,19 @@ namespace FMBot.Bot.Services.WhoKnows
 
         private static string NameWithLink(WhoKnowsObjectWithUser user)
         {
-            var discordName = user.DiscordName.Replace("(", "").Replace(")", "").Replace("[", "").Replace("]", "");
+            var discordName = user.DiscordName;
+            var charsToRemove = new[] { "@", "[", "]", "(", ")","`","|","*","~",">"};
+
+            foreach (var c in charsToRemove)
+            {
+                discordName = discordName.Replace(c, string.Empty);
+            }
+
+            if (string.IsNullOrWhiteSpace(discordName))
+            {
+                discordName = user.LastFMUsername;
+            }
+
             var nameWithLink = $"[{discordName}]({Constants.LastFMUserUrl}{user.LastFMUsername})";
             return nameWithLink;
         }

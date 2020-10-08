@@ -64,10 +64,6 @@ namespace FMBot.Persistence.EntityFrameWork
             {
                 entity.HasKey(e => e.FriendId);
 
-                entity.HasIndex(e => e.FriendUserId);
-
-                entity.HasIndex(e => e.UserId);
-
                 entity.HasOne(d => d.FriendUser)
                     .WithMany(p => p.FriendedByUsers)
                     .HasForeignKey(d => d.FriendUserId)
@@ -82,6 +78,8 @@ namespace FMBot.Persistence.EntityFrameWork
             modelBuilder.Entity<Guild>(entity =>
             {
                 entity.HasKey(e => e.GuildId);
+
+                entity.HasIndex(i => i.GuildId);
 
                 entity.Property(e => e.DisabledCommands)
                     .HasConversion(
@@ -110,8 +108,9 @@ namespace FMBot.Persistence.EntityFrameWork
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.UserId);
-            });
 
+                entity.HasIndex(i => i.UserId);
+            });
 
             modelBuilder.Entity<InactiveUsers>(entity =>
             {
@@ -127,6 +126,8 @@ namespace FMBot.Persistence.EntityFrameWork
             {
                 entity.HasKey(a => a.UserArtistId);
 
+                entity.HasIndex(i => i.UserId);
+
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Artists)
                     .HasForeignKey(f => f.UserId)
@@ -136,6 +137,8 @@ namespace FMBot.Persistence.EntityFrameWork
             modelBuilder.Entity<UserAlbum>(entity =>
             {
                 entity.HasKey(a => a.UserAlbumId);
+
+                entity.HasIndex(i => i.UserId);
 
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Albums)
@@ -147,6 +150,8 @@ namespace FMBot.Persistence.EntityFrameWork
             {
                 entity.HasKey(a => a.UserTrackId);
 
+                entity.HasIndex(i => i.UserId);
+
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Tracks)
                     .HasForeignKey(f => f.UserId)
@@ -156,6 +161,8 @@ namespace FMBot.Persistence.EntityFrameWork
             modelBuilder.Entity<UserPlay>(entity =>
             {
                 entity.HasKey(a => a.UserPlayId);
+
+                entity.HasIndex(i => i.UserId);
 
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Plays)
@@ -172,7 +179,6 @@ namespace FMBot.Persistence.EntityFrameWork
                         v => string.Join(',', v),
                         v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
             });
-
 
             modelBuilder.Entity<Album>(entity =>
             {

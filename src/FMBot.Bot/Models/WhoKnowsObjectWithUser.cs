@@ -13,5 +13,7 @@ namespace FMBot.Bot.Models
         public ulong DiscordUserId { get; set; }
 
         public int UserId { get; set; }
+
+        public bool NoPosition { get; set; }
     }
 }
