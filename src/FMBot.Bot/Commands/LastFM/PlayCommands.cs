@@ -512,6 +512,71 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
+        [Command("pace", RunMode = RunMode.Async)]
+        [Summary("Displays the date a goal amount of scrobbles is reached")]
+        [UsernameSetRequired]
+        public async Task PaceAsync(params string[] amount)
+        {
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            if (amount.Length != 0 && amount.First() == "help")
+            {
+                var replyString = $"Displays the {prfx}fmpace displays the date you reach a scrobble goal based on average scrobbles per day\n" +
+                    $"Use `{prfx}fmpace <amount>` for a certain goal amount, use `{prfx}fmpace <username> <optional amount>` to get an user's goal";
+                await ReplyAsync(replyString);
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            var goalAmount = 0;
+            var lastFMUserName = userSettings.UserNameLastFM;
+
+            if(amount.Length != 0)
+            {
+                // user has provided username 
+                if (!int.TryParse(amount.First(), out goalAmount))
+                {
+                    var alternativeLastFmUserName = await FindUser(amount.First());
+                    if (!string.IsNullOrEmpty(alternativeLastFmUserName) && await this._lastFmService.LastFMUserExistsAsync(alternativeLastFmUserName))
+                    {
+                        lastFMUserName = alternativeLastFmUserName;
+                    }
+
+                    // check if an amount is given next to username
+                    if(amount.Length > 1 && !int.TryParse(amount.GetValue(1).ToString(), out goalAmount))
+                    {
+                        await ReplyAsync($"Please enter a valid number as a goal");
+                        this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                        return;
+                    }
+                }
+            }
+
+            var dateRegistered = await this._lastFmService.GetUserRegisteredAsync(userSettings);
+            var userInfo = await this._lastFmService.GetUserInfoAsync(lastFMUserName);
+
+            if (goalAmount == 0)
+            {
+                var totalPlays = userInfo.Content.Playcount;
+
+                int[] breakPoints = {100, 1000, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000, 2000000, 5000000};
+
+                for(var i = 0; i < breakPoints.Length; i++)
+                {
+                    if(totalPlays < breakPoints[i])
+                    {
+                        goalAmount = breakPoints[i];
+                        break;
+                    }
+                }
+
+            }
+
+            await ReplyAsync($"Goal amount: {goalAmount}, username: {lastFMUserName}");
+            this.Context.LogCommandUsed(CommandResponse.Ok);
+        }
+
         private async Task<string> FindUser(string user)
         {
             if (await this._lastFmService.LastFMUserExistsAsync(user))
