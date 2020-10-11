@@ -356,5 +356,18 @@ namespace FMBot.LastFM.Services
 
             return authSessionCall.Success;
         }
+
+        public async Task<DateTime> GetUserRegisteredAsync(User user)
+        {
+            var queryParams = new Dictionary<string, string>
+            {
+                {"user", user.UserNameLastFM},
+            };
+
+            var lastFMUser = await this._lastfmApi.CallApiAsync<LastUser>(queryParams, Call.UserInfo, true);
+            Statistics.LastfmApiCalls.Inc();
+
+            return lastFMUser.Content.TimeRegistered;
+        }
     }
 }

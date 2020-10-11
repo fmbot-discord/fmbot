@@ -97,7 +97,9 @@ namespace FMBot.LastFM.Services
                         content.Position = 0;
                         streamReader.DiscardBufferedData();
 
-                        var deserializeObject = JsonConvert.DeserializeObject<T>(await streamReader.ReadToEndAsync());
+                        var rawResponse = await streamReader.ReadToEndAsync();
+
+                        var deserializeObject = JsonConvert.DeserializeObject<T>(rawResponse);
                         response.Content = deserializeObject;
                         response.Success = true;
 
