@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -14,6 +15,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
+using IF.Lastfm.Core.Api.Enums;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -515,66 +517,57 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("pace", RunMode = RunMode.Async)]
         [Summary("Displays the date a goal amount of scrobbles is reached")]
         [UsernameSetRequired]
-        public async Task PaceAsync(params string[] amount)
+        [Alias("p", "pc")]
+        public async Task PaceAsync(params string[] extraOptions)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (amount.Length != 0 && amount.First() == "help")
+            if (extraOptions.Any() && extraOptions.First() == "help")
             {
-                var replyString = $"Displays the {prfx}fmpace displays the date you reach a scrobble goal based on average scrobbles per day\n" +
-                    $"Use `{prfx}fmpace <amount>` for a certain goal amount, use `{prfx}fmpace <username> <optional amount>` to get an user's goal";
-                await ReplyAsync(replyString);
+                this._embed.WithTitle($"{prfx}pace");
+
+                var helpDescription = new StringBuilder();
+                helpDescription.AppendLine("Displays the date you reach a scrobble goal based on average scrobbles per day.");
+                helpDescription.AppendLine();
+                helpDescription.AppendLine($"Time periods: {Constants.CompactTimePeriodList}");
+                helpDescription.AppendLine("Optional goal amount: For example `10000`");
+                helpDescription.AppendLine("User to check pace for: Mention or user id");
+
+                this._embed.WithDescription(helpDescription.ToString());
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}p` \n" +
+                    $"`{prfx}p 100000 q` \n" +
+                    $"`{prfx}p 40000 h @user` \n" +
+                    $"`{prfx}pace` \n" +
+                    $"`{prfx}pace yearly @user 250000`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
 
-            var goalAmount = 0;
-            var lastFMUserName = userSettings.UserNameLastFM;
+            var userSettings = await SettingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
+            var userInfo = await this._lastFmService.GetFullUserInfoAsync(userSettings.UserNameLastFm);
 
-            if(amount.Length != 0)
+            var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
+
+            var timeType = SettingService.GetTimePeriod(
+                extraOptions,
+                ChartTimePeriod.AllTime);
+
+            long? timeFrom = null;
+            if (timeType.ChartTimePeriod != ChartTimePeriod.AllTime && timeType.PlayDays != null)
             {
-                // user has provided username 
-                if (!int.TryParse(amount.First(), out goalAmount))
-                {
-                    var alternativeLastFmUserName = await FindUser(amount.First());
-                    if (!string.IsNullOrEmpty(alternativeLastFmUserName) && await this._lastFmService.LastFMUserExistsAsync(alternativeLastFmUserName))
-                    {
-                        lastFMUserName = alternativeLastFmUserName;
-                    }
-
-                    // check if an amount is given next to username
-                    if(amount.Length > 1 && !int.TryParse(amount.GetValue(1).ToString(), out goalAmount))
-                    {
-                        await ReplyAsync($"Please enter a valid number as a goal");
-                        this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                        return;
-                    }
-                }
+                var dateAgo = DateTime.UtcNow.AddDays(-timeType.PlayDays.Value);
+                timeFrom = ((DateTimeOffset) dateAgo).ToUnixTimeSeconds();
             }
 
-            var dateRegistered = await this._lastFmService.GetUserRegisteredAsync(userSettings);
-            var userInfo = await this._lastFmService.GetUserInfoAsync(lastFMUserName);
+            var count = await this._lastFmService.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom);
 
-            if (goalAmount == 0)
-            {
-                var totalPlays = userInfo.Content.Playcount;
-
-                int[] breakPoints = {100, 1000, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000, 2000000, 5000000};
-
-                for(var i = 0; i < breakPoints.Length; i++)
-                {
-                    if(totalPlays < breakPoints[i])
-                    {
-                        goalAmount = breakPoints[i];
-                        break;
-                    }
-                }
-
-            }
-
-            await ReplyAsync($"Goal amount: {goalAmount}, username: {lastFMUserName}");
-            this.Context.LogCommandUsed(CommandResponse.Ok);
+            await ReplyAsync($"Goal amount: {goalAmount}, Playcount in last {timeType.PlayDays} days: {count}, username: {userSettings.UserNameLastFm}");
+            this.Context.LogCommandUsed();
         }
 
         private async Task<string> FindUser(string user)

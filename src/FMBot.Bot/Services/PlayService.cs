@@ -269,8 +269,8 @@ namespace FMBot.Bot.Services
                 });
 
             query = orderType == OrderType.Playcount ?
-                query.OrderByDescending(o => o.Playcount) :
-                query.OrderByDescending(o => o.ListenerCount);
+                query.OrderByDescending(o => o.Playcount).ThenByDescending(o => o.Playcount) :
+                query.OrderByDescending(o => o.ListenerCount).ThenByDescending(o => o.Playcount);
 
             return query
                 .Take(14)

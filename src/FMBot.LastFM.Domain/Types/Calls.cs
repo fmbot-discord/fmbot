@@ -10,6 +10,7 @@ namespace FMBot.LastFM.Domain.Types
             TrackUnLove = "track.unlove",
             UserInfo = "User.getInfo",
             TopTracks = "user.gettoptracks",
+            RecentTracks = "user.getrecenttracks",
             GetToken = "auth.GetToken",
             GetAuthSession = "auth.getSession";
     }

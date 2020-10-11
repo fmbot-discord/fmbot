@@ -14,13 +14,12 @@ namespace FMBot.Bot.Services
     {
         public static TimeSettingsModel GetTimePeriod(
             string[] extraOptions,
-            LastStatsTimeSpan defaultLastStatsTimeSpan = LastStatsTimeSpan.Week,
-            ChartTimePeriod defaultChartTimePeriod = ChartTimePeriod.Weekly,
-            string defaultUrlParameter = "LAST_7_DAYS",
-            string defaultApiParameter = "7day",
-            string defaultDescription = "Weekly")
+            ChartTimePeriod defaultTimePeriod = ChartTimePeriod.Weekly
+            )
+
         {
             var settingsModel = new TimeSettingsModel();
+            var customTimePeriod = true;
 
             // time period
             if (extraOptions.Contains("weekly") || extraOptions.Contains("week") || extraOptions.Contains("w"))
@@ -30,6 +29,7 @@ namespace FMBot.Bot.Services
                 settingsModel.Description = "Weekly";
                 settingsModel.UrlParameter = "date_preset=LAST_7_DAYS";
                 settingsModel.ApiParameter = "7day";
+                settingsModel.PlayDays = 7;
             }
             else if (extraOptions.Contains("monthly") || extraOptions.Contains("month") || extraOptions.Contains("m"))
             {
@@ -38,6 +38,7 @@ namespace FMBot.Bot.Services
                 settingsModel.Description = "Monthly";
                 settingsModel.UrlParameter = "date_preset=LAST_30_DAYS";
                 settingsModel.ApiParameter = "1month";
+                settingsModel.PlayDays = 30;
             }
             else if (extraOptions.Contains("quarterly") || extraOptions.Contains("quarter") || extraOptions.Contains("q"))
             {
@@ -46,6 +47,7 @@ namespace FMBot.Bot.Services
                 settingsModel.Description = "Quarterly";
                 settingsModel.UrlParameter = "date_preset=LAST_90_DAYS";
                 settingsModel.ApiParameter = "3month";
+                settingsModel.PlayDays = 90;
             }
             else if (extraOptions.Contains("halfyearly") || extraOptions.Contains("half") || extraOptions.Contains("h"))
             {
@@ -54,6 +56,7 @@ namespace FMBot.Bot.Services
                 settingsModel.Description = "Half-yearly";
                 settingsModel.UrlParameter = "date_preset=LAST_180_DAYS";
                 settingsModel.ApiParameter = "6month";
+                settingsModel.PlayDays = 180;
             }
             else if (extraOptions.Contains("yearly") || extraOptions.Contains("year") || extraOptions.Contains("y"))
             {
@@ -62,6 +65,7 @@ namespace FMBot.Bot.Services
                 settingsModel.Description = "Yearly";
                 settingsModel.UrlParameter = "date_preset=LAST_365_DAYS";
                 settingsModel.ApiParameter = "12month";
+                settingsModel.PlayDays = 365;
             }
             else if (extraOptions.Contains("overall") || extraOptions.Contains("alltime") || extraOptions.Contains("o") ||
                      extraOptions.Contains("at") ||
@@ -133,12 +137,28 @@ namespace FMBot.Bot.Services
             }
             else
             {
-                settingsModel.LastStatsTimeSpan = defaultLastStatsTimeSpan;
-                settingsModel.ChartTimePeriod = defaultChartTimePeriod;
-                settingsModel.Description = defaultDescription;
-                settingsModel.UrlParameter = defaultUrlParameter;
-                settingsModel.ApiParameter = defaultApiParameter;
-                settingsModel.UsePlays = false;
+                customTimePeriod = false;
+            }
+
+            if (!customTimePeriod)
+            {
+                if (defaultTimePeriod == ChartTimePeriod.AllTime)
+                {
+                    settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;
+                    settingsModel.ChartTimePeriod = ChartTimePeriod.AllTime;
+                    settingsModel.Description = "Overall";
+                    settingsModel.UrlParameter = "date_preset=ALL";
+                    settingsModel.ApiParameter = "overall";
+                }
+                else
+                {
+                    settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;
+                    settingsModel.ChartTimePeriod = ChartTimePeriod.Weekly;
+                    settingsModel.Description = "Weekly";
+                    settingsModel.UrlParameter = "date_preset=LAST_7_DAYS";
+                    settingsModel.ApiParameter = "7day";
+                    settingsModel.PlayDays = 7;
+                }
             }
 
             return settingsModel;
@@ -220,6 +240,62 @@ namespace FMBot.Bot.Services
             }
 
             return amount;
+        }
+
+        public static int GetGoalAmount(
+            string[] extraOptions,
+            long currentPlaycount)
+        {
+            var goalAmount = 100;
+            var ownGoalSet = false;
+            foreach (var extraOption in extraOptions)
+            {
+                if (int.TryParse(extraOption, out var result))
+                {
+                    if (result > currentPlaycount)
+                    {
+                        goalAmount = result;
+                        ownGoalSet = true;
+                    }
+                }
+
+            }
+
+            if (!ownGoalSet)
+            {
+                int[] breakPoints =
+                {
+                    100,
+                    1000,
+                    5000,
+                    10000,
+                    25000,
+                    50000,
+                    100000,
+                    150000,
+                    200000,
+                    250000,
+                    300000,
+                    350000,
+                    400000,
+                    450000,
+                    500000,
+                    1000000,
+                    2000000,
+                    5000000
+                };
+
+                foreach (var breakPoint in breakPoints)
+                {
+                    if (currentPlaycount < breakPoint)
+                    {
+                        goalAmount = breakPoint;
+                        break;
+                    }
+                }
+            }
+
+            return goalAmount;
         }
     }
 }

@@ -410,11 +410,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var timeType = SettingService.GetTimePeriod(
                 extraOptions,
-                LastStatsTimeSpan.Overall,
-                ChartTimePeriod.AllTime,
-                "date_preset=ALL",
-                "overall",
-                "All-time");
+                ChartTimePeriod.AllTime);
 
             var tasteSettings = new TasteSettings
             {
