@@ -557,14 +557,30 @@ namespace FMBot.Bot.Commands.LastFM
                 extraOptions,
                 ChartTimePeriod.AllTime);
 
-            long? timeFrom = null;
+            long timeFrom;
             if (timeType.ChartTimePeriod != ChartTimePeriod.AllTime && timeType.PlayDays != null)
             {
                 var dateAgo = DateTime.UtcNow.AddDays(-timeType.PlayDays.Value);
                 timeFrom = ((DateTimeOffset) dateAgo).ToUnixTimeSeconds();
             }
+            else
+            {
+                timeFrom = userInfo.Registered.Unixtime;
+            }
 
             var count = await this._lastFmService.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom);
+
+            var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
+            var profileAgeForDisplay = Math.Round((DateTime.UtcNow - age).TotalDays).ToString("N0");
+
+            //var avgPerDay = (count / profileAgeForCalculation);
+
+            //var goalDate = (DateTime.Now.AddDays((goalAmount - currentAmount) / (currentAmount / timeType.PlayDays))).ToShortDateString();
+
+            // Unix timestamp is seconds past epoch
+            DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+            double unixTimeStamp = 1456413595;
+            dtDateTime = dtDateTime.AddSeconds(unixTimeStamp).ToLocalTime();
 
             await ReplyAsync($"Goal amount: {goalAmount}, Playcount in last {timeType.PlayDays} days: {count}, username: {userSettings.UserNameLastFm}");
             this.Context.LogCommandUsed();
