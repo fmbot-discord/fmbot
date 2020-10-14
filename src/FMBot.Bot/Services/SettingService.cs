@@ -22,7 +22,10 @@ namespace FMBot.Bot.Services
             var customTimePeriod = true;
 
             // time period
-            if (extraOptions.Contains("weekly") || extraOptions.Contains("week") || extraOptions.Contains("w"))
+            if (extraOptions.Contains("weekly") ||
+                extraOptions.Contains("week") ||
+                extraOptions.Contains("w") ||
+                extraOptions.Contains("7d"))
             {
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Weekly;
@@ -31,7 +34,11 @@ namespace FMBot.Bot.Services
                 settingsModel.ApiParameter = "7day";
                 settingsModel.PlayDays = 7;
             }
-            else if (extraOptions.Contains("monthly") || extraOptions.Contains("month") || extraOptions.Contains("m"))
+            else if (extraOptions.Contains("monthly") ||
+                     extraOptions.Contains("month") ||
+                     extraOptions.Contains("m") ||
+                     extraOptions.Contains("1m") ||
+                     extraOptions.Contains("30d"))
             {
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Monthly;
@@ -40,7 +47,11 @@ namespace FMBot.Bot.Services
                 settingsModel.ApiParameter = "1month";
                 settingsModel.PlayDays = 30;
             }
-            else if (extraOptions.Contains("quarterly") || extraOptions.Contains("quarter") || extraOptions.Contains("q"))
+            else if (extraOptions.Contains("quarterly") ||
+                     extraOptions.Contains("quarter") ||
+                     extraOptions.Contains("q") ||
+                     extraOptions.Contains("3m") ||
+                     extraOptions.Contains("90d"))
             {
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Quarter;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Quarterly;
@@ -49,7 +60,11 @@ namespace FMBot.Bot.Services
                 settingsModel.ApiParameter = "3month";
                 settingsModel.PlayDays = 90;
             }
-            else if (extraOptions.Contains("halfyearly") || extraOptions.Contains("half") || extraOptions.Contains("h"))
+            else if (extraOptions.Contains("halfyearly") ||
+                     extraOptions.Contains("half") ||
+                     extraOptions.Contains("h") ||
+                     extraOptions.Contains("6m") ||
+                     extraOptions.Contains("180d"))
             {
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Half;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Half;
@@ -58,7 +73,12 @@ namespace FMBot.Bot.Services
                 settingsModel.ApiParameter = "6month";
                 settingsModel.PlayDays = 180;
             }
-            else if (extraOptions.Contains("yearly") || extraOptions.Contains("year") || extraOptions.Contains("y"))
+            else if (extraOptions.Contains("yearly") ||
+                     extraOptions.Contains("year") ||
+                     extraOptions.Contains("y") ||
+                     extraOptions.Contains("1y") ||
+                     extraOptions.Contains("12m") ||
+                     extraOptions.Contains("365d"))
             {
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Year;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Yearly;
@@ -67,7 +87,9 @@ namespace FMBot.Bot.Services
                 settingsModel.ApiParameter = "12month";
                 settingsModel.PlayDays = 365;
             }
-            else if (extraOptions.Contains("overall") || extraOptions.Contains("alltime") || extraOptions.Contains("o") ||
+            else if (extraOptions.Contains("overall") ||
+                     extraOptions.Contains("alltime") ||
+                     extraOptions.Contains("o") ||
                      extraOptions.Contains("at") ||
                      extraOptions.Contains("a"))
             {
@@ -77,7 +99,10 @@ namespace FMBot.Bot.Services
                 settingsModel.UrlParameter = "date_preset=ALL";
                 settingsModel.ApiParameter = "overall";
             }
-            else if (extraOptions.Contains("6day") ||extraOptions.Contains("6-day") || extraOptions.Contains("day6") || extraOptions.Contains("6d"))
+            else if (extraOptions.Contains("6day") ||
+                     extraOptions.Contains("6-day") ||
+                     extraOptions.Contains("day6") ||
+                     extraOptions.Contains("6d"))
             {
                 var dateString = DateTime.Today.AddDays(-6).ToString("yyyy-M-dd");
                 settingsModel.Description = "6-day";
@@ -85,7 +110,10 @@ namespace FMBot.Bot.Services
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 6;
             }
-            else if (extraOptions.Contains("5day") || extraOptions.Contains("5-day") || extraOptions.Contains("day5") || extraOptions.Contains("5d"))
+            else if (extraOptions.Contains("5day") ||
+                     extraOptions.Contains("5-day") ||
+                     extraOptions.Contains("day5") ||
+                     extraOptions.Contains("5d"))
             {
                 var dateString = DateTime.Today.AddDays(-5).ToString("yyyy-M-dd");
                 settingsModel.Description = "5-day";
@@ -93,7 +121,10 @@ namespace FMBot.Bot.Services
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 5;
             }
-            else if (extraOptions.Contains("4day") || extraOptions.Contains("4-day") || extraOptions.Contains("day4") || extraOptions.Contains("4d"))
+            else if (extraOptions.Contains("4day") ||
+                     extraOptions.Contains("4-day") ||
+                     extraOptions.Contains("day4") ||
+                     extraOptions.Contains("4d"))
             {
                 var dateString = DateTime.Today.AddDays(-4).ToString("yyyy-M-dd");
                 settingsModel.Description = "4-day";
@@ -101,7 +132,10 @@ namespace FMBot.Bot.Services
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 4;
             }
-            else if (extraOptions.Contains("3day") ||extraOptions.Contains("3-day") || extraOptions.Contains("day3") || extraOptions.Contains("3d"))
+            else if (extraOptions.Contains("3day") ||
+                     extraOptions.Contains("3-day") ||
+                     extraOptions.Contains("day3") ||
+                     extraOptions.Contains("3d"))
             {
                 var dateString = DateTime.Today.AddDays(-3).ToString("yyyy-M-dd");
                 settingsModel.Description = "3-day";
@@ -109,7 +143,10 @@ namespace FMBot.Bot.Services
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 3;
             }
-            else if (extraOptions.Contains("2day") || extraOptions.Contains("2-day") || extraOptions.Contains("day2") || extraOptions.Contains("2d"))
+            else if (extraOptions.Contains("2day") ||
+                     extraOptions.Contains("2-day") ||
+                     extraOptions.Contains("day2") ||
+                     extraOptions.Contains("2d"))
             {
                 var dateString = DateTime.Today.AddDays(-2).ToString("yyyy-M-dd");
                 settingsModel.Description = "2-day";
@@ -117,23 +154,17 @@ namespace FMBot.Bot.Services
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 2;
             }
-            else if (extraOptions.Contains("1day") || extraOptions.Contains("1-day") || extraOptions.Contains("day1") || extraOptions.Contains("1d") || extraOptions.Contains("today"))
+            else if (extraOptions.Contains("1day") ||
+                     extraOptions.Contains("1-day") ||
+                     extraOptions.Contains("day1") ||
+                     extraOptions.Contains("1d") ||
+                     extraOptions.Contains("today"))
             {
                 var dateString = DateTime.Today.AddDays(-1).ToString("yyyy-M-dd");
                 settingsModel.Description = "1-day";
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 1;
-            }
-            else if (extraOptions.Contains("overall") || extraOptions.Contains("alltime") || extraOptions.Contains("o") ||
-                     extraOptions.Contains("at") ||
-                     extraOptions.Contains("a"))
-            {
-                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;
-                settingsModel.ChartTimePeriod = ChartTimePeriod.AllTime;
-                settingsModel.Description = "Overall";
-                settingsModel.UrlParameter = "date_preset=ALL";
-                settingsModel.ApiParameter = "overall";
             }
             else
             {
@@ -242,7 +273,7 @@ namespace FMBot.Bot.Services
             return amount;
         }
 
-        public static int GetGoalAmount(
+        public static long GetGoalAmount(
             string[] extraOptions,
             long currentPlaycount)
         {

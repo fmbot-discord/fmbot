@@ -553,9 +553,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
 
-            var timeType = SettingService.GetTimePeriod(
-                extraOptions,
-                ChartTimePeriod.AllTime);
+            var timeType = SettingService.GetTimePeriod(extraOptions, ChartTimePeriod.AllTime);
 
             long timeFrom;
             if (timeType.ChartTimePeriod != ChartTimePeriod.AllTime && timeType.PlayDays != null)
@@ -570,19 +568,37 @@ namespace FMBot.Bot.Commands.LastFM
 
             var count = await this._lastFmService.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom);
 
+            if (count == null || count == 0)
+            {
+                await ReplyAsync(
+                    $"<@{this.Context.User.Id}> No plays found in the {timeType.Description} time period.");
+            }
+
             var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
-            var profileAgeForDisplay = Math.Round((DateTime.UtcNow - age).TotalDays).ToString("N0");
+            var totalDays = (DateTime.UtcNow - age).TotalDays;
 
-            //var avgPerDay = (count / profileAgeForCalculation);
+            var playsLeft = goalAmount - userInfo.Playcount;
 
-            //var goalDate = (DateTime.Now.AddDays((goalAmount - currentAmount) / (currentAmount / timeType.PlayDays))).ToShortDateString();
+            var avgPerDay = count / totalDays;
 
-            // Unix timestamp is seconds past epoch
-            DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-            double unixTimeStamp = 1456413595;
-            dtDateTime = dtDateTime.AddSeconds(unixTimeStamp).ToLocalTime();
+            var goalDate = (DateTime.Now.AddDays(playsLeft / avgPerDay.Value)).ToString("dd MMM yyyy");
 
-            await ReplyAsync($"Goal amount: {goalAmount}, Playcount in last {timeType.PlayDays} days: {count}, username: {userSettings.UserNameLastFm}");
+            var reply = new StringBuilder();
+
+            reply.AppendLine($"<@{this.Context.User.Id}> My estimate is that you will reach **{goalAmount}** scrobbles on **{goalDate}**.");
+
+            if (timeType.ChartTimePeriod == ChartTimePeriod.AllTime)
+            {
+                reply.AppendLine(
+                    $"This is based on your alltime avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day. ({count} in {Math.Round(totalDays, 0)} days)");
+            }
+            else
+            {
+                reply.AppendLine(
+                    $"This is based on your avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day in the last {Math.Round(totalDays, 0)} days ({count} total)");
+            }
+
+            await ReplyAsync(reply.ToString());
             this.Context.LogCommandUsed();
         }
 
