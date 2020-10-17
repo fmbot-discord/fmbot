@@ -95,14 +95,14 @@ namespace FMBot.Bot.Commands.LastFM
                     $"To see stats for other .fmbot users, use {prfx}stats '@user'");
                 this._embed.WithFooter(this._embedFooter);
 
-                var userInfo = await this._lastFmService.GetUserInfoAsync(userSettings.UserNameLastFm);
+                var userInfo = await this._lastFmService.GetFullUserInfoAsync(userSettings.UserNameLastFm);
 
-                var userImages = userInfo.Content.Avatar;
-                var userAvatar = userImages?.Large?.AbsoluteUri;
+                var userImages = userInfo.Image;
+                var userAvatar = userImages.FirstOrDefault(f => f.Size == "extralarge");
 
-                if (!string.IsNullOrWhiteSpace(userAvatar))
+                if (userAvatar != null && !string.IsNullOrWhiteSpace(userAvatar.Text))
                 {
-                    this._embed.WithThumbnailUrl(userAvatar);
+                    this._embed.WithThumbnailUrl(userAvatar.Text);
                 }
 
                 var fmbotStats = new StringBuilder();
@@ -121,22 +121,22 @@ namespace FMBot.Bot.Commands.LastFM
                     fmbotStats.AppendLine($"Befriended by: `{user.FriendedByUsers?.Count}`");
                 }
 
-
-                this._embed.AddField(".fmbot info", fmbotStats.ToString(), true);
-
                 var lastFmStats = new StringBuilder();
 
                 lastFmStats.AppendLine($"Username: [`{userSettings.UserNameLastFm}`]({Constants.LastFMUserUrl}{userSettings.UserNameLastFm})");
+                lastFmStats.AppendLine($"Name: `{userInfo.Name}`");
+
                 if (!userSettings.DifferentUser)
                 {
-                    var authorized = string.IsNullOrEmpty(user.SessionKeyLastFm) ? "Yes" : "No";
+                    var authorized = !string.IsNullOrEmpty(user.SessionKeyLastFm) ? "Yes" : "No";
                     lastFmStats.AppendLine($".fmbot authorized: `{authorized}`");
                 }
-                lastFmStats.AppendLine($"User type: `{userInfo.Content.Type}`");
-                lastFmStats.AppendLine($"Scrobbles: `{userInfo.Content.Playcount}`");
-                lastFmStats.AppendLine($"Country: `{userInfo.Content.Country}`");
+                lastFmStats.AppendLine($"User type: `{userInfo.Type}`");
+                lastFmStats.AppendLine($"Scrobbles: `{userInfo.Playcount}`");
+                lastFmStats.AppendLine($"Country: `{userInfo.Country}`");
 
                 this._embed.AddField("last.fm info", lastFmStats.ToString(), true);
+                this._embed.AddField(".fmbot info", fmbotStats.ToString(), true);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed();
