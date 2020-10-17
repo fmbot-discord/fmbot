@@ -537,9 +537,9 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(helpDescription.ToString());
 
                 this._embed.AddField("Examples",
-                    $"`{prfx}p` \n" +
-                    $"`{prfx}p 100000 q` \n" +
-                    $"`{prfx}p 40000 h @user` \n" +
+                    $"`{prfx}pc` \n" +
+                    $"`{prfx}pc 100000 q` \n" +
+                    $"`{prfx}pc 40000 h @user` \n" +
                     $"`{prfx}pace` \n" +
                     $"`{prfx}pace yearly @user 250000`");
 
