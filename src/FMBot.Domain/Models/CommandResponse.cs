@@ -26,6 +26,8 @@ namespace FMBot.Domain.Models
 
         LastFmError = 12,
 
-        Disabled = 13
+        Disabled = 13,
+
+        Censored = 14
     }
 }

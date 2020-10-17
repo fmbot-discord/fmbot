@@ -16,7 +16,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using IF.Lastfm.Core.Api.Helpers;
-using IF.Lastfm.Core.Objects;
+using IF.Lastfm.Core.Objects; 
 using SkiaSharp;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -31,6 +31,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly GuildService _guildService;
         private readonly LastFMService _lastFmService;
+        private readonly SupporterService _supporterService;
         private readonly IPrefixService _prefixService;
 
         private readonly UserService _userService;
@@ -40,13 +41,15 @@ namespace FMBot.Bot.Commands.LastFM
             IChartService chartService,
             GuildService guildService,
             UserService userService,
-            LastFMService lastFmService)
+            LastFMService lastFmService,
+            SupporterService supporterService)
         {
             this._prefixService = prefixService;
             this._chartService = chartService;
             this._guildService = guildService;
             this._userService = userService;
             this._lastFmService = lastFmService;
+            this._supporterService = supporterService;
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -201,11 +204,24 @@ namespace FMBot.Bot.Commands.LastFM
                         "⚠️ Sorry, but using time periods that use your play history isn't supported for this command.\n";
                 }
 
-                this._embed.WithDescription(embedDescription);
+                var supporter = await this._supporterService.GetRandomSupporter(this.Context.Guild);
+                if (!string.IsNullOrEmpty(supporter))
+                {
+                    embedDescription +=
+                        $"This chart was brought to you by .fmbot supporter {supporter}.\n";
+                }
 
                 this._embed.WithFooter(this._embedFooter);
 
                 var chart = await this._chartService.GenerateChartAsync(chartSettings);
+
+                if (chartSettings.CensoredAlbums.HasValue && chartSettings.CensoredAlbums > 0)
+                {
+                    embedDescription +=
+                        $"{chartSettings.CensoredAlbums.Value} album(s) filtered due to nsfw images.\n";
+                }
+
+                this._embed.WithDescription(embedDescription);
 
                 var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
                 var stream = encoded.AsStream();

@@ -10,7 +10,6 @@ using FMBot.Bot.Attributes;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
-using FMBot.Persistence.EntityFrameWork;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands

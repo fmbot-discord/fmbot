@@ -30,6 +30,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public bool? SpecialGuild { get; set; }
 
+        public bool? DisableSupporterMessages { get; set; }
+
         public ICollection<GuildUser> GuildUsers { get; set; }
     }
 }

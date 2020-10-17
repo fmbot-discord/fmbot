@@ -33,6 +33,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
         private readonly GuildService _guildService;
         private readonly PlayService _playService;
+        private readonly CensorService _censorService;
         private readonly IIndexService _indexService;
         private readonly IUpdateService _updateService;
         private readonly ILastfmApi _lastfmApi;
@@ -50,7 +51,8 @@ namespace FMBot.Bot.Commands.LastFM
             WhoKnowsAlbumService whoKnowsAlbumService,
             PlayService playService,
             IIndexService indexService,
-            IUpdateService updateService)
+            IUpdateService updateService,
+            CensorService censorService)
         {
             this._logger = logger;
             this._lastfmApi = lastfmApi;
@@ -59,6 +61,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._playService = playService;
             this._indexService = indexService;
             this._updateService = updateService;
+            this._censorService = censorService;
             this._prefixService = prefixService;
             this._guildService = new GuildService();
             this._userService = userService;
@@ -265,6 +268,15 @@ namespace FMBot.Bot.Commands.LastFM
                                             $"[View on last.fm]({searchResult.Url})");
                 await this.ReplyAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Error);
+                return;
+            }
+
+            if (!await this._censorService.AlbumIsSafe(searchResult.Name, searchResult.Artist))
+            {
+                this._embed.WithDescription("Sorry, this album or artist is filtered due to the nsfw image.\n" +
+                                            "The ability to disable this error for nsfw channels will be added soon.");
+                await this.ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Censored);
                 return;
             }
 

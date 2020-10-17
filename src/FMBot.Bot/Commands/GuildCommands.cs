@@ -156,6 +156,42 @@ namespace FMBot.Bot.Commands
             this.Context.LogCommandUsed();
         }
 
+        [Command("togglesupportermessages", RunMode = RunMode.Async)]
+        [Summary("Sets reactions for some server commands.")]
+        [Alias("togglesupporter", "togglesupporters", "togglesupport")]
+        public async Task ToggleSupportMessagesAsync()
+        {
+            if (this._guildService.CheckIfDM(this.Context))
+            {
+                await ReplyAsync("Command is not supported in DMs.");
+                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
+                return;
+            }
+
+            var serverUser = (IGuildUser)this.Context.Message.Author;
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
+                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync(
+                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                return;
+            }
+
+            var messagesDisabled = await this._guildService.ToggleSupporterMessagesAsync(this.Context.Guild);
+
+            if (messagesDisabled == true)
+            {
+                await ReplyAsync(".fmbot supporter messages have been disabled");
+            }
+            else
+            {
+                await ReplyAsync($".fmbot supporter messages have been enabled. These have a 1 in {Constants.SupporterMessageChance} chance of showing up on certain commands.");
+            }
+
+            this.Context.LogCommandUsed();
+        }
+
         [Command("export", RunMode = RunMode.Async)]
         [Summary("Gets Last.FM usernames from your server members in json format.")]
         [Alias("getmembers", "exportmembers")]

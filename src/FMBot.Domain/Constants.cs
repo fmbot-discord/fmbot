@@ -25,6 +25,8 @@ namespace FMBot.Domain
         /// <summary>Amount of days to store plays for users for</summary>
         public const int DaysToStorePlays = 32;
 
+        public const int SupporterMessageChance = 25;
+
     }
 }
 

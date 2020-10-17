@@ -42,15 +42,20 @@ namespace FMBot.Bot.Services.WhoKnows
         {
             var reply = "";
 
-            var artistsCount = whoKnowsObjects.Count;
+            var usersWithPositions = whoKnowsObjects
+                .Where(w => !w.NoPosition)
+                .ToList();
+
+            var artistsCount = usersWithPositions.Count;
             if (artistsCount > 14)
             {
                 artistsCount = 14;
             }
 
+            var position = 0;
             for (var index = 0; index < artistsCount; index++)
             {
-                var user = whoKnowsObjects[index];
+                var user = usersWithPositions[index];
 
                 var nameWithLink = NameWithLink(user);
                 var playString = StringExtensions.GetPlaysString(user.Playcount);
@@ -65,6 +70,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 }
 
                 reply += $"- **{user.Playcount}** {playString}\n";
+                position++;
             }
 
             var userWithNoPosition = whoKnowsObjects.FirstOrDefault(f => f.NoPosition);
@@ -73,7 +79,14 @@ namespace FMBot.Bot.Services.WhoKnows
                 var nameWithLink = NameWithLink(userWithNoPosition);
                 var playString = StringExtensions.GetPlaysString(userWithNoPosition.Playcount);
 
-                reply += $"  ...   {nameWithLink} ";
+                if (position < 14)
+                {
+                    reply += $"  {position + 1}.  {nameWithLink} ";
+                }
+                else
+                {
+                    reply += $"  ...   {nameWithLink} ";
+                }
                 reply += $"- **{userWithNoPosition.Playcount}** {playString}\n";
             }
 
@@ -83,7 +96,7 @@ namespace FMBot.Bot.Services.WhoKnows
         private static string NameWithLink(WhoKnowsObjectWithUser user)
         {
             var discordName = user.DiscordName;
-            var charsToRemove = new[] { "@", "[", "]", "(", ")","`","|","*","~",">"};
+            var charsToRemove = new[] { "@", "[", "]", "(", ")", "`", "|", "*", "~", ">" };
 
             foreach (var c in charsToRemove)
             {

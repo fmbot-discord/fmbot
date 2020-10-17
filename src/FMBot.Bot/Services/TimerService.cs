@@ -87,8 +87,8 @@ namespace FMBot.Bot.Services
                                 var trackList = tracks
                                     .Select(s => new CensoredAlbum(s.ArtistName, s.AlbumName))
                                     .Where(w => !string.IsNullOrEmpty(w.AlbumName) &&
-                                        !GlobalVars.CensoredAlbums.Select(s => s.ArtistName).Contains(w.ArtistName) &&
-                                        !GlobalVars.CensoredAlbums.Select(s => s.AlbumName).Contains(w.AlbumName));
+                                        !GlobalVars.CensoredAlbums.Select(s => s.ArtistName.ToLower()).Contains(w.ArtistName.ToLower()) &&
+                                        !GlobalVars.CensoredAlbums.Select(s => s.AlbumName.ToLower()).Contains(w.AlbumName.ToLower()));
 
                                 var currentTrack = trackList.First();
 

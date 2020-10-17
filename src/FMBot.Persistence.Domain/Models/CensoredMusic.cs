@@ -2,6 +2,8 @@ namespace FMBot.Persistence.Domain.Models
 {
     public class CensoredMusic
     {
+        public int CensoredMusicId { get; set; }
+
         public string ArtistName { get; set; }
 
         public string AlbumName { get; set; }

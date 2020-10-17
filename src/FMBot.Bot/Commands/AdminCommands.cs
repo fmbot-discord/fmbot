@@ -24,16 +24,20 @@ namespace FMBot.Bot.Commands
         private readonly UserService _userService;
         private readonly GuildService _guildService;
 
+        private readonly CensorService _censorService;
+
         public AdminCommands(
             TimerService timer,
             GuildService guildService,
             UserService userService,
-            AdminService adminService)
+            AdminService adminService,
+            CensorService censorService)
         {
             this._timer = timer;
             this._guildService = guildService;
             this._userService = userService;
             this._adminService = adminService;
+            this._censorService = censorService;
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFMColorRed);
         }
@@ -188,6 +192,33 @@ namespace FMBot.Bot.Commands
             else
             {
                 await ReplyAsync("Error: Insufficient rights. Only FMBot admins can change issue mode.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+
+        [Command("addcensoredalbum")]
+        [Summary("Adds censored album")]
+        public async Task IssuesAsync(string album, string artist)
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                if (string.IsNullOrEmpty(album) || string.IsNullOrEmpty(artist))
+                {
+                    await ReplyAsync($"Enter a correct album to be censored\n" +
+                                     $"Example: `.fmaddcensoredalbum \"No Love Deep Web\" \"Death Grips\"");
+                    return;
+
+                }
+
+
+                await this._censorService.AddCensoredAlbum(album, artist);
+
+                await ReplyAsync($"Added `{album}` by `{artist}` to the list of censored albums.");
+                this.Context.LogCommandUsed();
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only FMBot admins add censored albums.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }

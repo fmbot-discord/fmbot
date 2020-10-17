@@ -158,14 +158,19 @@ namespace FMBot.Bot.Services
         public async Task<string> GetRandomLastFMUserAsync()
         {
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            var featuredUser = await db.Users
+            var featuredUsers = await db.Users
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.Featured == true);
-            if (featuredUser != null)
-            {
-                featuredUser.Featured = false;
+                .Where(f => f.Featured == true)
+                .ToListAsync();
 
-                db.Entry(featuredUser).State = EntityState.Modified;
+            if (featuredUsers.Any())
+            {
+
+                foreach (var featuredUser in featuredUsers)
+                {
+                    featuredUser.Featured = false;
+                    db.Entry(featuredUser).State = EntityState.Modified;
+                }
             }
 
             var users = db.Users
