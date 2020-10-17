@@ -168,8 +168,6 @@ namespace FMBot.Bot.Handlers
 
             var result = await this._commands.ExecuteAsync(context, argPos, this._provider);
 
-            await context.Channel.SendMessageAsync("This temporary version of .fmbot will shut down soon. Please ask your server admins to switch to the main .fmbot, all settings and users are available.");
-
             if (result.IsSuccess)
             {
                 Statistics.CommandsExecuted.Inc();

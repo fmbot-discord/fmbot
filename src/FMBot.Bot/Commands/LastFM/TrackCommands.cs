@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -7,6 +9,7 @@ using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.WhoKnows;
@@ -561,6 +564,140 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
+
+        [Command("servertracks", RunMode = RunMode.Async)]
+        [Summary("Shows top albums for your server")]
+        [Alias("st", "stt", "servertoptracks", "servertrack")]
+        public async Task GuildAlbumsAsync(params string[] extraOptions)
+        {
+            if (this._guildService.CheckIfDM(this.Context))
+            {
+                await ReplyAsync("This command is not supported in DMs.");
+                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
+                return;
+            }
+
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+            if (extraOptions.Any() && extraOptions.First() == "help")
+            {
+                this._embed.WithTitle($"{prfx}servertracks");
+
+                var helpDescription = new StringBuilder();
+                helpDescription.AppendLine("Shows the top tracks for your server.");
+                helpDescription.AppendLine();
+                helpDescription.AppendLine("Available time periods: `weekly` and `alltime`");
+                helpDescription.AppendLine("Available order options: `plays` and `listeners`");
+
+                this._embed.WithDescription(helpDescription.ToString());
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}st` \n" +
+                    $"`{prfx}st a p` \n" +
+                    $"`{prfx}servertracks` \n" +
+                    $"`{prfx}servertracks alltime` \n" +
+                    $"`{prfx}servertracks listeners weekly`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            if (guild.LastIndexed == null)
+            {
+                await ReplyAsync("This server hasn't been indexed yet.\n" +
+                                 $"Please run `{prfx}index` to index this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+            if (guild.LastIndexed < DateTime.UtcNow.AddDays(-60))
+            {
+                await ReplyAsync("Server index data is out of date, it was last updated over 60 days ago.\n" +
+                                 $"Please run `{prfx}index` to re-index this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            var serverTrackSettings = new GuildRankingSettings
+            {
+                ChartTimePeriod = ChartTimePeriod.Weekly,
+                OrderType = OrderType.Playcount
+            };
+
+            serverTrackSettings = SettingService.SetGuildRankingSettings(serverTrackSettings, extraOptions);
+
+            try
+            {
+                IReadOnlyList<ListTrack> topGuildTracks;
+                var users = guild.GuildUsers.Select(s => s.User).ToList();
+                if (serverTrackSettings.ChartTimePeriod == ChartTimePeriod.AllTime)
+                {
+                    topGuildTracks = await this._whoKnowsTrackService.GetTopTracksForGuild(users, serverTrackSettings.OrderType);
+                    this._embed.WithTitle($"Top alltime tracks in {this.Context.Guild.Name}");
+                }
+                else
+                {
+                    topGuildTracks = await this._playService.GetTopWeekTracksForGuild(users, serverTrackSettings.OrderType);
+                    this._embed.WithTitle($"Top weekly tracks in {this.Context.Guild.Name}");
+                }
+
+                var description = "";
+                var footer = "";
+
+                if (serverTrackSettings.OrderType == OrderType.Listeners)
+                {
+                    footer += "Listeners / Plays - Ordered by listeners\n";
+                    foreach (var track in topGuildTracks)
+                    {
+                        description += $"`{track.ListenerCount}` / `{track.Playcount}` | **{track.TrackName}** by **{track.ArtistName}**\n";
+                    }
+                }
+                else
+                {
+                    footer += "Plays / Listeners - Ordered by plays\n";
+                    foreach (var track in topGuildTracks)
+                    {
+                        description += $"`{track.Playcount}` / `{track.ListenerCount}` | **{track.TrackName}** by **{track.ArtistName}**\n";
+                    }
+                }
+
+                this._embed.WithDescription(description);
+
+                var rnd = new Random();
+                var randomHintNumber = rnd.Next(0, 5);
+                if (randomHintNumber == 1)
+                {
+                    footer += $"View specific album listeners with {prfx}whoknowstrack";
+                }
+                else if (randomHintNumber == 2)
+                {
+                    footer += $"Available time periods: alltime and weekly";
+                }
+                else if (randomHintNumber == 3)
+                {
+                    footer += $"Available sorting options: plays and listeners";
+                }
+                if (guild.LastIndexed < DateTime.UtcNow.AddDays(-7) && randomHintNumber == 4)
+                {
+                    footer += $"Missing members? Update with {prfx}index\n";
+                }
+
+                this._embedFooter.WithText(footer);
+                this._embed.WithFooter(this._embedFooter);
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync(
+                    "Something went wrong while using servertracks. Please report this issue.");
+            }
+        }
 
         private async Task<ResponseTrack> SearchTrack(string[] trackValues, User userSettings, string prfx)
         {

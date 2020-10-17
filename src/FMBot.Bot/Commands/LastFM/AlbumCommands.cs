@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -602,6 +603,141 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync("Something went wrong while using whoknows album. Please let us know as this feature is in beta.");
+            }
+        }
+
+
+        [Command("serveralbums", RunMode = RunMode.Async)]
+        [Summary("Shows top albums for your server")]
+        [Alias("sab", "stab", "servertopalbums", "serveralbum")]
+        public async Task GuildAlbumsAsync(params string[] extraOptions)
+        {
+            if (this._guildService.CheckIfDM(this.Context))
+            {
+                await ReplyAsync("This command is not supported in DMs.");
+                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
+                return;
+            }
+
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+            if (extraOptions.Any() && extraOptions.First() == "help")
+            {
+                this._embed.WithTitle($"{prfx}serveralbums");
+
+                var helpDescription = new StringBuilder();
+                helpDescription.AppendLine("Shows the top albums for your server.");
+                helpDescription.AppendLine();
+                helpDescription.AppendLine("Available time periods: `weekly` and `alltime`");
+                helpDescription.AppendLine("Available order options: `plays` and `listeners`");
+
+                this._embed.WithDescription(helpDescription.ToString());
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}sab` \n" +
+                    $"`{prfx}sab a p` \n" +
+                    $"`{prfx}serveralbums` \n" +
+                    $"`{prfx}serveralbums alltime` \n" +
+                    $"`{prfx}serveralbums listeners weekly`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            if (guild.LastIndexed == null)
+            {
+                await ReplyAsync("This server hasn't been indexed yet.\n" +
+                                 $"Please run `{prfx}index` to index this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+            if (guild.LastIndexed < DateTime.UtcNow.AddDays(-60))
+            {
+                await ReplyAsync("Server index data is out of date, it was last updated over 60 days ago.\n" +
+                                 $"Please run `{prfx}index` to re-index this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            var serverAlbumSettings = new GuildRankingSettings
+            {
+                ChartTimePeriod = ChartTimePeriod.Weekly,
+                OrderType = OrderType.Playcount
+            };
+
+            serverAlbumSettings = SettingService.SetGuildRankingSettings(serverAlbumSettings, extraOptions);
+
+            try
+            {
+                IReadOnlyList<ListAlbum> topGuildAlbums;
+                var users = guild.GuildUsers.Select(s => s.User).ToList();
+                if (serverAlbumSettings.ChartTimePeriod == ChartTimePeriod.AllTime)
+                {
+                    topGuildAlbums = await this._whoKnowsAlbumService.GetTopAlbumsForGuild(users, serverAlbumSettings.OrderType);
+                    this._embed.WithTitle($"Top alltime albums in {this.Context.Guild.Name}");
+                }
+                else
+                {
+                    topGuildAlbums = await this._playService.GetTopWeekAlbumsForGuild(users, serverAlbumSettings.OrderType);
+                    this._embed.WithTitle($"Top weekly albums in {this.Context.Guild.Name}");
+                }
+
+                var description = "";
+                var footer = "";
+
+                if (serverAlbumSettings.OrderType == OrderType.Listeners)
+                {
+                    footer += "Listeners / Plays - Ordered by listeners\n";
+                    foreach (var album in topGuildAlbums)
+                    {
+                        description += $"`{album.ListenerCount}` / `{album.Playcount}` | **{album.AlbumName}** by **{album.ArtistName}**\n";
+                    }
+                }
+                else
+                {
+                    footer += "Plays / Listeners - Ordered by plays\n";
+                    foreach (var album in topGuildAlbums)
+                    {
+                        description += $"`{album.Playcount}` / `{album.ListenerCount}` | **{album.AlbumName}** by **{album.ArtistName}**\n";
+                    }
+                }
+
+                this._embed.WithDescription(description);
+
+                var rnd = new Random();
+                var randomHintNumber = rnd.Next(0, 5);
+                if (randomHintNumber == 1)
+                {
+                    footer += $"View specific album listeners with {prfx}whoknowsalbum";
+                }
+                else if (randomHintNumber == 2)
+                {
+                    footer += $"Available time periods: alltime and weekly";
+                }
+                else if (randomHintNumber == 3)
+                {
+                    footer += $"Available sorting options: plays and listeners";
+                }
+                if (guild.LastIndexed < DateTime.UtcNow.AddDays(-7) && randomHintNumber == 4)
+                {
+                    footer += $"Missing members? Update with {prfx}index\n";
+                }
+
+                this._embedFooter.WithText(footer);
+                this._embed.WithFooter(this._embedFooter);
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync(
+                    "Something went wrong while using serveralbums. Please report this issue.");
             }
         }
     }

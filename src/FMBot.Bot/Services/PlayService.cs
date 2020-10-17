@@ -277,9 +277,119 @@ namespace FMBot.Bot.Services
                 .ToList();
         }
 
+        public async Task<IReadOnlyList<ListAlbum>> GetTopWeekAlbumsForGuild(IReadOnlyList<User> guildUsers,
+            OrderType orderType)
+        {
+            var now = DateTime.UtcNow;
+            var minDate = DateTime.UtcNow.AddDays(-7);
+
+            var userIds = guildUsers.Select(s => s.UserId);
+
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+
+            var albumUserPlays = await db.UserPlays
+                .AsQueryable()
+                .Where(t => t.TimePlayed.Date <= now.Date &&
+                            t.TimePlayed.Date > minDate.Date &&
+                            userIds.Contains(t.UserId))
+                .GroupBy(x => new { x.ArtistName, x.AlbumName, x.UserId })
+                .Select(s => new AlbumUserPlay()
+                {
+                    ArtistName = s.Key.ArtistName,
+                    AlbumName = s.Key.AlbumName,
+                    UserId = s.Key.UserId,
+                    Playcount = s.Count()
+                })
+                .ToListAsync();
+
+            var query = albumUserPlays
+                .GroupBy(g => new { g.ArtistName, g.AlbumName })
+                .Select(s => new ListAlbum
+                {
+                    ArtistName = s.Key.ArtistName,
+                    AlbumName = s.Key.AlbumName,
+                    Playcount = s.Sum(su => su.Playcount),
+                    ListenerCount = s.Select(se => se.UserId).Distinct().Count()
+                });
+
+            query = orderType == OrderType.Playcount ?
+                query.OrderByDescending(o => o.Playcount).ThenByDescending(o => o.Playcount) :
+                query.OrderByDescending(o => o.ListenerCount).ThenByDescending(o => o.Playcount);
+
+            return query
+                .Take(14)
+                .ToList();
+        }
+
+        public async Task<IReadOnlyList<ListTrack>> GetTopWeekTracksForGuild(IReadOnlyList<User> guildUsers,
+            OrderType orderType)
+        {
+            var now = DateTime.UtcNow;
+            var minDate = DateTime.UtcNow.AddDays(-7);
+
+            var userIds = guildUsers.Select(s => s.UserId);
+
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+
+            var trackUserPlays = await db.UserPlays
+                .AsQueryable()
+                .Where(t => t.TimePlayed.Date <= now.Date &&
+                            t.TimePlayed.Date > minDate.Date &&
+                            userIds.Contains(t.UserId))
+                .GroupBy(x => new { x.ArtistName, x.TrackName, x.UserId })
+                .Select(s => new TrackUserPlay
+                {
+                    ArtistName = s.Key.ArtistName,
+                    TrackName = s.Key.TrackName,
+                    UserId = s.Key.UserId,
+                    Playcount = s.Count()
+                })
+                .ToListAsync();
+
+            var query = trackUserPlays
+                .GroupBy(g => new { g.ArtistName, g.TrackName })
+                .Select(s => new ListTrack
+                {
+                    ArtistName = s.Key.ArtistName,
+                    TrackName = s.Key.TrackName,
+                    Playcount = s.Sum(su => su.Playcount),
+                    ListenerCount = s.Select(se => se.UserId).Distinct().Count()
+                });
+
+            query = orderType == OrderType.Playcount ?
+                query.OrderByDescending(o => o.Playcount).ThenByDescending(o => o.Playcount) :
+                query.OrderByDescending(o => o.ListenerCount).ThenByDescending(o => o.Playcount);
+
+            return query
+                .Take(14)
+                .ToList();
+        }
+
         private class ArtistUserPlay
         {
             public string ArtistName { get; set; }
+
+            public int UserId { get; set; }
+
+            public int Playcount { get; set; }
+        }
+
+        private class AlbumUserPlay
+        {
+            public string ArtistName { get; set; }
+
+            public string AlbumName { get; set; }
+
+            public int UserId { get; set; }
+
+            public int Playcount { get; set; }
+        }
+
+        private class TrackUserPlay
+        {
+            public string ArtistName { get; set; }
+
+            public string TrackName { get; set; }
 
             public int UserId { get; set; }
 

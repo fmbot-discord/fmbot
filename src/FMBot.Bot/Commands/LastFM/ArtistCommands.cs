@@ -642,7 +642,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("serverartists", RunMode = RunMode.Async)]
         [Summary("Shows top artists for your server")]
         [Alias("sa", "sta", "servertopartists")]
-        public async Task ServerArtistsAsync(params string[] extraOptions)
+        public async Task GuildArtistsAsync(params string[] extraOptions)
         {
             if (this._guildService.CheckIfDM(this.Context))
             {
@@ -695,13 +695,13 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var serverArtistSettings = new ServerArtistSettings
+            var serverArtistSettings = new GuildRankingSettings
             {
                 ChartTimePeriod = ChartTimePeriod.Weekly,
                 OrderType = OrderType.Playcount
             };
 
-            serverArtistSettings = this._artistsService.SetServerArtistSettings(serverArtistSettings, extraOptions);
+            serverArtistSettings = SettingService.SetGuildRankingSettings(serverArtistSettings, extraOptions);
 
             try
             {

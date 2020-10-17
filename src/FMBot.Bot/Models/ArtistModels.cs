@@ -2,7 +2,7 @@ using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Models
 {
-    public class ServerArtistSettings
+    public class GuildRankingSettings
     {
         public OrderType OrderType { get; set; }
 
@@ -13,5 +13,14 @@ namespace FMBot.Bot.Models
     {
         Playcount = 1,
         Listeners = 2
+    }
+
+    public class ListArtist
+    {
+        public string ArtistName { get; set; }
+
+        public int Playcount { get; set; }
+
+        public int ListenerCount { get; set; }
     }
 }

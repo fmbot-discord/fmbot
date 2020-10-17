@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Api.Enums;
@@ -327,6 +328,30 @@ namespace FMBot.Bot.Services
             }
 
             return goalAmount;
+        }
+
+        public static GuildRankingSettings SetGuildRankingSettings(GuildRankingSettings guildRankingSettings, string[] extraOptions)
+        {
+            var setGuildRankingSettings = guildRankingSettings;
+
+            if (extraOptions.Contains("w") || extraOptions.Contains("week") || extraOptions.Contains("weekly"))
+            {
+                setGuildRankingSettings.ChartTimePeriod = ChartTimePeriod.Weekly;
+            }
+            if (extraOptions.Contains("a") || extraOptions.Contains("at") || extraOptions.Contains("alltime"))
+            {
+                setGuildRankingSettings.ChartTimePeriod = ChartTimePeriod.AllTime;
+            }
+            if (extraOptions.Contains("p") || extraOptions.Contains("pc") || extraOptions.Contains("playcount") || extraOptions.Contains("plays"))
+            {
+                setGuildRankingSettings.OrderType = OrderType.Playcount;
+            }
+            if (extraOptions.Contains("l") || extraOptions.Contains("lc") || extraOptions.Contains("listenercount") || extraOptions.Contains("listeners"))
+            {
+                setGuildRankingSettings.OrderType = OrderType.Listeners;
+            }
+
+            return setGuildRankingSettings;
         }
     }
 }
