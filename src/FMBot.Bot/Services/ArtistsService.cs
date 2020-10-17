@@ -35,6 +35,11 @@ namespace FMBot.Bot.Services
                 var ownPlaycount = artist.PlayCount.Value;
                 var otherPlaycount = rightUserArtists.Content.First(f => f.Name.Equals(name)).PlayCount.Value;
 
+                if (otherPlaycount < 5)
+                {
+                    continue;
+                }
+
                 if (ownPlaycount > otherPlaycount)
                 {
                     right += $"**{ownPlaycount}**";
@@ -65,8 +70,6 @@ namespace FMBot.Bot.Services
                 LeftDescription = left,
                 RightDescription = right
             };
-
-
         }
 
         // Top artists for 2 users
@@ -77,11 +80,14 @@ namespace FMBot.Bot.Services
 
             var artists = artistsToShow.Select(s =>
             {
+                var ownPlaycount = s.PlayCount.Value;
+                var otherPlaycount = rightUserArtists.Content.First(f => f.Name.Equals(s.Name)).PlayCount.Value;
+
                 return new TasteTwoUserModel
                 {
                     Artist = !string.IsNullOrWhiteSpace(s.Name) && s.Name.Length > AllowedCharacterCount(s.Name) ? $"{s.Name.Substring(0, AllowedCharacterCount(s.Name) - 2)}…" : s.Name,
-                    OwnPlaycount = s.PlayCount.Value,
-                    OtherPlaycount = rightUserArtists.Content.First(f => f.Name.Equals(s.Name)).PlayCount.Value
+                    OwnPlaycount = ownPlaycount,
+                    OtherPlaycount = otherPlaycount
                 };
 
                 static int AllowedCharacterCount(string name)
@@ -90,12 +96,15 @@ namespace FMBot.Bot.Services
                 }
             });
 
-            var customTable = artists.Take(amount).ToTasteTable(new[] { "Artist", mainUser, "   ", userToCompare },
-                u => u.Artist,
-                u => u.OwnPlaycount,
-                u => this.GetCompareChar(u.OwnPlaycount, u.OtherPlaycount),
-                u => u.OtherPlaycount
-            );
+            var customTable = artists
+                .Where(w => w.OtherPlaycount > 4)
+                .Take(amount)
+                .ToTasteTable(new[] { "Artist", mainUser, "   ", userToCompare },
+                    u => u.Artist,
+                    u => u.OwnPlaycount,
+                    u => this.GetCompareChar(u.OwnPlaycount, u.OtherPlaycount),
+                    u => u.OtherPlaycount
+                );
 
 
             var description = $"{Description(leftUserArtists, timePeriod, artistsToShow)}\n" +
@@ -118,11 +127,11 @@ namespace FMBot.Bot.Services
             return ownPlaycount == otherPlaycount ? " • " : ownPlaycount > otherPlaycount ? " > " : " < ";
         }
 
-        private IOrderedEnumerable<LastArtist> ArtistsToShow(IEnumerable<LastArtist> pageResponse, IPageResponse<LastArtist> lastArtists)
+        private IOrderedEnumerable<LastArtist> ArtistsToShow(IEnumerable<LastArtist> leftUserArtists, IPageResponse<LastArtist> rightUserArtists)
         {
             var artistsToShow =
-                pageResponse
-                    .Where(w => lastArtists.Content.Select(s => s.Name).Contains(w.Name))
+                leftUserArtists
+                    .Where(w => rightUserArtists.Content.Select(s => s.Name).Contains(w.Name))
                     .OrderByDescending(o => o.PlayCount);
             return artistsToShow;
         }
