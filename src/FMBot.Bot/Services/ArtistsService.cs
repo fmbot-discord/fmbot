@@ -1,10 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
 
@@ -13,7 +11,7 @@ namespace FMBot.Bot.Services
     public class ArtistsService
     {
         // Top artists for 2 users
-        public async Task<TasteModels> GetEmbedTasteAsync(PageResponse<LastArtist> leftUserArtists,
+        public TasteModels GetEmbedTaste(PageResponse<LastArtist> leftUserArtists,
             PageResponse<LastArtist> rightUserArtists, int amount, ChartTimePeriod timePeriod)
         {
             var matchedArtists = ArtistsToShow(leftUserArtists, rightUserArtists);
@@ -35,7 +33,7 @@ namespace FMBot.Bot.Services
                 var ownPlaycount = artist.PlayCount.Value;
                 var otherPlaycount = rightUserArtists.Content.First(f => f.Name.Equals(name)).PlayCount.Value;
 
-                if (otherPlaycount < 5)
+                if (matchedArtists.Count > 30 && otherPlaycount < 5)
                 {
                     continue;
                 }
@@ -73,7 +71,7 @@ namespace FMBot.Bot.Services
         }
 
         // Top artists for 2 users
-        public async Task<string> GetTableTasteAsync(PageResponse<LastArtist> leftUserArtists,
+        public string GetTableTaste(PageResponse<LastArtist> leftUserArtists,
             PageResponse<LastArtist> rightUserArtists, int amount, ChartTimePeriod timePeriod, string mainUser, string userToCompare)
         {
             var artistsToShow = ArtistsToShow(leftUserArtists, rightUserArtists);
@@ -94,15 +92,19 @@ namespace FMBot.Bot.Services
                 {
                     return (StringExtensions.ContainsUnicodeCharacter(name) ? 9 : 16);
                 }
-            });
+            }).ToList();
+
+            if (artists.Count > 25)
+            {
+                artists = artists.Where(w => w.OtherPlaycount > 4).ToList();
+            }
 
             var customTable = artists
-                .Where(w => w.OtherPlaycount > 4)
                 .Take(amount)
                 .ToTasteTable(new[] { "Artist", mainUser, "   ", userToCompare },
                     u => u.Artist,
                     u => u.OwnPlaycount,
-                    u => this.GetCompareChar(u.OwnPlaycount, u.OtherPlaycount),
+                    u => GetCompareChar(u.OwnPlaycount, u.OtherPlaycount),
                     u => u.OtherPlaycount
                 );
 
@@ -113,26 +115,27 @@ namespace FMBot.Bot.Services
             return description;
         }
 
-        private static string Description(IEnumerable<LastArtist> mainUserArtists, ChartTimePeriod chartTimePeriod, IOrderedEnumerable<LastArtist> matchedArtists)
+        private static string Description(IEnumerable<LastArtist> mainUserArtists, ChartTimePeriod chartTimePeriod, IList<LastArtist> matchedArtists)
         {
-            var percentage = ((decimal)matchedArtists.Count() / (decimal)mainUserArtists.Count()) * 100;
+            var percentage = ((decimal)matchedArtists.Count / (decimal)mainUserArtists.Count()) * 100;
             var description =
                 $"**{matchedArtists.Count()}** ({percentage:0.0}%)  out of top **{mainUserArtists.Count()}** {chartTimePeriod.ToString().ToLower()} artists match";
 
             return description;
         }
 
-        private string GetCompareChar(int ownPlaycount, int otherPlaycount)
+        private static string GetCompareChar(int ownPlaycount, int otherPlaycount)
         {
             return ownPlaycount == otherPlaycount ? " • " : ownPlaycount > otherPlaycount ? " > " : " < ";
         }
 
-        private IOrderedEnumerable<LastArtist> ArtistsToShow(IEnumerable<LastArtist> leftUserArtists, IPageResponse<LastArtist> rightUserArtists)
+        private IList<LastArtist> ArtistsToShow(IEnumerable<LastArtist> leftUserArtists, IPageResponse<LastArtist> rightUserArtists)
         {
             var artistsToShow =
                 leftUserArtists
                     .Where(w => rightUserArtists.Content.Select(s => s.Name).Contains(w.Name))
-                    .OrderByDescending(o => o.PlayCount);
+                    .OrderByDescending(o => o.PlayCount)
+                    .ToList();
             return artistsToShow;
         }
 

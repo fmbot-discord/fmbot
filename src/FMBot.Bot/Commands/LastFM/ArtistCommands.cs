@@ -474,7 +474,7 @@ namespace FMBot.Bot.Commands.LastFM
                 int amount = 14;
                 if (tasteSettings.TasteType == TasteType.FullEmbed)
                 {
-                    var taste = await this._artistsService.GetEmbedTasteAsync(ownArtists, otherArtists, amount, timeType.ChartTimePeriod);
+                    var taste = this._artistsService.GetEmbedTaste(ownArtists, otherArtists, amount, timeType.ChartTimePeriod);
 
                     this._embed.WithDescription(taste.Description);
                     this._embed.AddField("Artist", taste.LeftDescription, true);
@@ -482,7 +482,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else
                 {
-                    var taste = await this._artistsService.GetTableTasteAsync(ownArtists, otherArtists, amount, timeType.ChartTimePeriod, ownLastFmUsername, lastfmToCompare);
+                    var taste = this._artistsService.GetTableTaste(ownArtists, otherArtists, amount, timeType.ChartTimePeriod, ownLastFmUsername, lastfmToCompare);
 
                     this._embed.WithDescription(taste);
                 }
