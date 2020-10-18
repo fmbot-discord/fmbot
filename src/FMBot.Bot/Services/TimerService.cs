@@ -13,6 +13,7 @@ using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.LastFM.Services;
 using IF.Lastfm.Core.Api.Enums;
+using IF.Lastfm.Core.Objects;
 using Serilog;
 using static FMBot.Bot.FMBotUtil;
 using Image = Discord.Image;
@@ -28,6 +29,7 @@ namespace FMBot.Bot.Services
         private readonly Timer _userIndexTimer;
         private readonly LastFMService _lastFMService;
         private readonly UserService _userService;
+        private readonly CensorService _censorService;
         private readonly IUpdateService _updateService;
         private readonly IIndexService _indexService;
         private readonly GuildService _guildService;
@@ -41,12 +43,14 @@ namespace FMBot.Bot.Services
             LastFMService lastFmService,
             IUpdateService updateService,
             UserService userService,
-            IIndexService indexService)
+            IIndexService indexService,
+            CensorService censorService)
         {
             this._client = client;
             this._lastFMService = lastFmService;
             this._userService = userService;
             this._indexService = indexService;
+            this._censorService = censorService;
             this._guildService = new GuildService();
             this._updateService = updateService;
 
@@ -76,27 +80,42 @@ namespace FMBot.Bot.Services
 
                     try
                     {
-                        var lastFMUserName = await this._userService.GetRandomLastFMUserAsync();
-                        Log.Information($"Featured: Picked user {lastFMUserName}");
+                        var lastFmUserName = await this._userService.GetRandomLastFMUserAsync();
+                        Log.Information($"Featured: Picked user {lastFmUserName}");
 
                         switch (randomAvatarMode)
                         {
                             // Recent listens
                             case 1:
-                                var tracks = await this._lastFMService.GetRecentScrobblesAsync(lastFMUserName, 25);
-                                var trackList = tracks
-                                    .Select(s => new CensoredAlbum(s.ArtistName, s.AlbumName))
-                                    .Where(w => !string.IsNullOrEmpty(w.AlbumName) &&
-                                        !GlobalVars.CensoredAlbums.Select(s => s.ArtistName).Contains(w.ArtistName) &&
-                                        !GlobalVars.CensoredAlbums.Select(s => s.AlbumName).Contains(w.AlbumName));
+                                var tracks = await this._lastFMService.GetRecentScrobblesAsync(lastFmUserName, 50);
 
-                                var currentTrack = trackList.First();
+                                if (!tracks.Success || !tracks.Content.Any())
+                                {
+                                    Log.Information($"Featured: User {lastFmUserName} had no recent tracks, switching to alternative avatar mode");
+                                    goto case 2;
+                                }
 
-                                var albumImages = await this._lastFMService.GetAlbumImagesAsync(currentTrack.ArtistName, currentTrack.AlbumName);
+                                LastTrack trackToFeature = null;
+                                for (var j = 0; j < tracks.Content.Count; j++)
+                                {
+                                    var track = tracks.Content[j];
+                                    if (!string.IsNullOrEmpty(track.AlbumName) && await this._censorService.AlbumIsSafe(track.AlbumName, track.ArtistName))
+                                    {
+                                        trackToFeature = track;
+                                    }
+                                }
 
-                                this._trackString = $"{currentTrack.AlbumName} \n" +
-                                                   $"by {currentTrack.ArtistName} \n \n" +
-                                                   $"{randomAvatarModeDesc} from {lastFMUserName}";
+                                if (trackToFeature == null)
+                                {
+                                    Log.Information("Featured: No albums or nsfw filtered, switching to alternative avatar mode");
+                                    goto case 3;
+                                }
+
+                                var albumImages = await this._lastFMService.GetAlbumImagesAsync(trackToFeature.ArtistName, trackToFeature.AlbumName);
+
+                                this._trackString = $"{trackToFeature.AlbumName} \n" +
+                                                   $"by {trackToFeature.ArtistName} \n \n" +
+                                                   $"{randomAvatarModeDesc} from {lastFmUserName}";
 
                                 Log.Information("Featured: Changing avatar to: " + this._trackString);
 
@@ -107,7 +126,7 @@ namespace FMBot.Bot.Services
                                 else
                                 {
                                     Log.Information("Featured: Album had no image, switching to alternative avatar mode");
-                                    goto case 3;
+                                    goto case 4;
                                 }
 
                                 break;
@@ -126,19 +145,16 @@ namespace FMBot.Bot.Services
                                         break;
                                 }
 
-                                var albums = await this._lastFMService.GetTopAlbumsAsync(lastFMUserName, timespan, 10);
+                                var albums = await this._lastFMService.GetTopAlbumsAsync(lastFmUserName, timespan, 10);
 
                                 if (!albums.Any())
                                 {
-                                    Log.Information($"Featured: User {lastFMUserName} had no albums, switching to different user.");
-                                    lastFMUserName = await this._userService.GetRandomLastFMUserAsync();
-                                    albums = await this._lastFMService.GetTopAlbumsAsync(lastFMUserName, timespan, 10);
+                                    Log.Information($"Featured: User {lastFmUserName} had no albums, switching to different user.");
+                                    lastFmUserName = await this._userService.GetRandomLastFMUserAsync();
+                                    albums = await this._lastFMService.GetTopAlbumsAsync(lastFmUserName, timespan, 10);
                                 }
 
                                 var albumList = albums
-                                    .Select(s => new CensoredAlbum(s.ArtistName, s.Name))
-                                    .Where(w => !GlobalVars.CensoredAlbums.Select(s => s.ArtistName).Contains(w.ArtistName) &&
-                                                !GlobalVars.CensoredAlbums.Select(s => s.AlbumName).Contains(w.AlbumName))
                                     .ToList();
 
                                 var albumFound = false;
@@ -148,13 +164,13 @@ namespace FMBot.Bot.Services
                                 {
                                     var currentAlbum = albumList[i];
 
-                                    var albumImage = await this._lastFMService.GetAlbumImagesAsync(currentAlbum.ArtistName, currentAlbum.AlbumName);
+                                    var albumImage = await this._lastFMService.GetAlbumImagesAsync(currentAlbum.ArtistName, currentAlbum.Name);
 
-                                    this._trackString = $"{currentAlbum.AlbumName} \n" +
+                                    this._trackString = $"{currentAlbum.Name} \n" +
                                                         $"by {currentAlbum.ArtistName} \n \n" +
-                                                        $"{randomAvatarModeDesc} from {lastFMUserName}";
+                                                        $"{randomAvatarModeDesc} from {lastFmUserName}";
 
-                                    if (albumImage?.Large != null)
+                                    if (albumImage?.Large != null && await this._censorService.AlbumIsSafe(currentAlbum.Name, currentAlbum.ArtistName))
                                     {
                                         Log.Information($"Featured: Album {i} success, changing avatar to: \n" +
                                                          $"{this._trackString}");
@@ -164,7 +180,7 @@ namespace FMBot.Bot.Services
                                     }
                                     else
                                     {
-                                        Log.Information($"Featured: Album {i} had no image, switching to alternative album");
+                                        Log.Information($"Featured: Album {i} had no image or was nsfw, switching to alternative album");
                                         i++;
                                     }
                                 }

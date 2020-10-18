@@ -110,6 +110,8 @@ namespace FMBot.Bot
                 .AddSingleton<GeniusService>()
                 .AddSingleton<SpotifyService>()
                 .AddSingleton<YoutubeService>()
+                .AddSingleton<SupporterService>()
+                .AddSingleton<CensorService>()
                 .AddSingleton(logger)
                 .AddSingleton<Random>() // Add random to the collection
                 .AddSingleton(this.Configuration) // Add the configuration to the collection

@@ -50,21 +50,28 @@ namespace FMBot.Bot.Services.WhoKnows
             return whoKnowsAlbumList;
         }
 
-        public async Task<IList<ListArtist>> GetTopAlbumsForGuild(IEnumerable<User> guildUsers)
+        public async Task<IReadOnlyList<ListAlbum>> GetTopAlbumsForGuild(IReadOnlyList<User> guildUsers,
+            OrderType orderType)
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            return await db.UserAlbums
+            var query = db.UserAlbums
                 .AsQueryable()
                 .Where(w => userIds.Contains(w.UserId))
-                .GroupBy(o => o.Name)
-                .OrderByDescending(o => o.Sum(s => s.Playcount))
+                .GroupBy(g => new { g.ArtistName, g.Name });
+
+            query = orderType == OrderType.Playcount ?
+                query.OrderByDescending(o => o.Sum(s => s.Playcount)).ThenByDescending(o => o.Count()) :
+                query.OrderByDescending(o => o.Count()).ThenByDescending(o => o.Sum(s => s.Playcount));
+
+            return await query
                 .Take(14)
-                .Select(s => new ListArtist
+                .Select(s => new ListAlbum
                 {
-                    ArtistName = s.Key,
-                    Playcount = s.Sum(s => s.Playcount),
+                    ArtistName = s.Key.ArtistName,
+                    AlbumName = s.Key.Name,
+                    Playcount = s.Sum(su => su.Playcount),
                     ListenerCount = s.Count()
                 })
                 .ToListAsync();

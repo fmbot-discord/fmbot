@@ -1,14 +1,19 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Dasync.Collections;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Domain;
+using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Objects;
+using Microsoft.EntityFrameworkCore;
 using SkiaSharp;
 
 namespace FMBot.Bot.Services
@@ -19,85 +24,104 @@ namespace FMBot.Bot.Services
         {
             try
             {
+                await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+                var censoredMusic = await db.CensoredMusic.AsQueryable().ToListAsync();
+
                 await chart.Albums.ParallelForEachAsync(async album =>
-                {
-                    var encodedId = StringExtensions.ReplaceInvalidChars(album.Url.LocalPath.Replace("/music/", ""));
-                    var localAlbumId = StringExtensions.TruncateLongString(encodedId, 60);
-
-                    SKBitmap chartImage;
-                    var validImage = true;
-                    Color? primaryColor = null;
-
-                    var fileName = localAlbumId + ".png";
-                    var localPath = FMBotUtil.GlobalVars.CacheFolder + fileName;
-
-                    if (File.Exists(localPath))
                     {
-                        chartImage = SKBitmap.Decode(localPath);
-                        Statistics.LastfmCachedImageCalls.Inc();
-                    }
-                    else
-                    {
-                        if (album.Images.Any() && album.Images.Large != null)
+
+                        var encodedId = StringExtensions.ReplaceInvalidChars(album.Url.LocalPath.Replace("/music/", ""));
+                        var localAlbumId = StringExtensions.TruncateLongString(encodedId, 60);
+
+                        SKBitmap chartImage;
+                        var validImage = true;
+                        Color? primaryColor = null;
+
+
+                        var fileName = localAlbumId + ".png";
+                        var localPath = FMBotUtil.GlobalVars.CacheFolder + fileName;
+
+                        if (File.Exists(localPath))
                         {
-                            var url = album.Images.Large.AbsoluteUri;
-
-                            SKBitmap bitmap;
-                            try
-                            {
-                                var httpClient = new System.Net.Http.HttpClient();
-                                var bytes = await httpClient.GetByteArrayAsync(url);
-
-                                Statistics.LastfmImageCalls.Inc();
-
-                                var stream = new MemoryStream(bytes);
-
-                                bitmap = SKBitmap.Decode(stream);
-                            }
-                            catch
-                            {
-                                bitmap = SKBitmap.Decode(FMBotUtil.GlobalVars.ImageFolder + "loading-error.png");
-                                validImage = false;
-                            }
-
-                            chartImage = bitmap;
-
-                            if (validImage)
-                            {
-                                using var image = SKImage.FromBitmap(bitmap);
-                                using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-                                await using var stream = File.OpenWrite(localPath);
-                                data.SaveTo(stream);
-                            }
+                            chartImage = SKBitmap.Decode(localPath);
+                            Statistics.LastfmCachedImageCalls.Inc();
                         }
                         else
                         {
-                            chartImage = SKBitmap.Decode(FMBotUtil.GlobalVars.ImageFolder + "unknown.png");
-                            validImage = false;
+                            if (album.Images.Any() && album.Images.Large != null)
+                            {
+                                var url = album.Images.Large.AbsoluteUri;
+
+                                SKBitmap bitmap;
+                                try
+                                {
+                                    var httpClient = new System.Net.Http.HttpClient();
+                                    var bytes = await httpClient.GetByteArrayAsync(url);
+
+                                    Statistics.LastfmImageCalls.Inc();
+
+                                    var stream = new MemoryStream(bytes);
+
+                                    bitmap = SKBitmap.Decode(stream);
+                                }
+                                catch
+                                {
+                                    bitmap = SKBitmap.Decode(FMBotUtil.GlobalVars.ImageFolder + "loading-error.png");
+                                    validImage = false;
+                                }
+
+                                chartImage = bitmap;
+
+                                if (validImage)
+                                {
+                                    using var image = SKImage.FromBitmap(bitmap);
+                                    using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+                                    await using var stream = File.OpenWrite(localPath);
+                                    data.SaveTo(stream);
+                                }
+                            }
+                            else
+                            {
+                                chartImage = SKBitmap.Decode(FMBotUtil.GlobalVars.ImageFolder + "unknown.png");
+                                validImage = false;
+                            }
                         }
-                    }
 
-                    switch (chart.TitleSetting)
-                    {
-                        case TitleSetting.Titles:
-                            AddTitleToChartImage(chartImage, album);
-                            break;
-                        case TitleSetting.ClassicTitles:
-                            AddClassicTitleToChartImage(chartImage, album);
-                            break;
-                        case TitleSetting.TitlesDisabled:
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
+                        if (!AlbumIsSafe(censoredMusic, album.Name, album.ArtistName))
+                        {
+                            chartImage = SKBitmap.Decode(FMBotUtil.GlobalVars.ImageFolder + "censored.png");
+                            validImage = false;
+                            if (chart.CensoredAlbums.HasValue)
+                            {
+                                chart.CensoredAlbums++;
+                            }
+                            else
+                            {
+                                chart.CensoredAlbums = 1;
+                            }
+                        }
 
-                    if (chart.RainbowSortingEnabled)
-                    {
-                        primaryColor = chartImage.GetAverageRgbColor();
-                    }
+                        switch (chart.TitleSetting)
+                        {
+                            case TitleSetting.Titles:
+                                AddTitleToChartImage(chartImage, album);
+                                break;
+                            case TitleSetting.ClassicTitles:
+                                AddClassicTitleToChartImage(chartImage, album);
+                                break;
+                            case TitleSetting.TitlesDisabled:
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
 
-                    chart.ChartImages.Add(new ChartImage(chartImage, chart.Albums.IndexOf(album), validImage, primaryColor));
-                });
+                        if (chart.RainbowSortingEnabled)
+                        {
+                            primaryColor = chartImage.GetAverageRgbColor();
+                        }
+
+                        chart.ChartImages.Add(new ChartImage(chartImage, chart.Albums.IndexOf(album), validImage, primaryColor));
+                    });
 
 
                 SKImage finalImage = null;
@@ -343,7 +367,7 @@ namespace FMBot.Bot.Services
             {
                 // Reset to weekly since using plays for charts is not supported yet
                 chartSettings.UsePlays = true;
-                timeSettings = SettingService.GetTimePeriod(new []{"weekly"});
+                timeSettings = SettingService.GetTimePeriod(new[] { "weekly" });
             }
 
             chartSettings.TimeSpan = timeSettings.LastStatsTimeSpan;
@@ -353,5 +377,29 @@ namespace FMBot.Bot.Services
             return chartSettings;
         }
 
+        public bool AlbumIsSafe(IReadOnlyList<CensoredMusic> censoredMusic, string albumName, string artistName)
+        {
+            if (censoredMusic
+                .Where(w => w.Artist)
+                .Select(s => s.ArtistName.ToLower())
+                .Contains(artistName.ToLower()))
+            {
+                return false;
+            }
+
+            if (censoredMusic
+                    .Select(s => s.ArtistName.ToLower())
+                    .Contains(artistName.ToLower())
+                &&
+                censoredMusic
+                    .Where(w => !w.Artist && w.AlbumName != null)
+                    .Select(s => s.AlbumName.ToLower())
+                    .Contains(albumName.ToLower()))
+            {
+                return false;
+            }
+
+            return true;
+        }
     }
 }

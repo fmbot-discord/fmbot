@@ -25,4 +25,15 @@ namespace FMBot.Bot.Models
 
         public string Url { get; }
     }
+
+    public class ListAlbum
+    {
+        public string ArtistName { get; set; }
+
+        public string AlbumName { get; set; }
+
+        public int Playcount { get; set; }
+
+        public int ListenerCount { get; set; }
+    }
 }

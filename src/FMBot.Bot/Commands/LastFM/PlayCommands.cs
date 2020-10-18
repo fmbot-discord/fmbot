@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -14,6 +15,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
+using IF.Lastfm.Core.Api.Enums;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -510,6 +512,105 @@ namespace FMBot.Bot.Commands.LastFM
                 await ReplyAsync(
                     "Unable to show your overview on Last.FM due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
+        }
+
+        [Command("pace", RunMode = RunMode.Async)]
+        [Summary("Displays the date a goal amount of scrobbles is reached")]
+        [UsernameSetRequired]
+        [Alias("p", "pc")]
+        public async Task PaceAsync(params string[] extraOptions)
+        {
+            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            if (extraOptions.Any() && extraOptions.First() == "help")
+            {
+                this._embed.WithTitle($"{prfx}pace");
+
+                var helpDescription = new StringBuilder();
+                helpDescription.AppendLine("Displays the date you reach a scrobble goal based on average scrobbles per day.");
+                helpDescription.AppendLine();
+                helpDescription.AppendLine($"Time periods: {Constants.CompactTimePeriodList}");
+                helpDescription.AppendLine("Optional goal amount: For example `10000`");
+                helpDescription.AppendLine("User to check pace for: Mention or user id");
+
+                this._embed.WithDescription(helpDescription.ToString());
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}pc` \n" +
+                    $"`{prfx}pc 100000 q` \n" +
+                    $"`{prfx}pc 40000 h @user` \n" +
+                    $"`{prfx}pace` \n" +
+                    $"`{prfx}pace yearly @user 250000`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            var userSettings = await SettingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
+            var userInfo = await this._lastFmService.GetFullUserInfoAsync(userSettings.UserNameLastFm);
+
+            var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
+
+            var timeType = SettingService.GetTimePeriod(extraOptions, ChartTimePeriod.AllTime);
+
+            long timeFrom;
+            if (timeType.ChartTimePeriod != ChartTimePeriod.AllTime && timeType.PlayDays != null)
+            {
+                var dateAgo = DateTime.UtcNow.AddDays(-timeType.PlayDays.Value);
+                timeFrom = ((DateTimeOffset) dateAgo).ToUnixTimeSeconds();
+            }
+            else
+            {
+                timeFrom = userInfo.Registered.Unixtime;
+            }
+
+            var count = await this._lastFmService.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom);
+
+            if (count == null || count == 0)
+            {
+                await ReplyAsync(
+                    $"<@{this.Context.User.Id}> No plays found in the {timeType.Description} time period.");
+            }
+
+            var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
+            var totalDays = (DateTime.UtcNow - age).TotalDays;
+
+            var playsLeft = goalAmount - userInfo.Playcount;
+
+            var avgPerDay = count / totalDays;
+
+            var goalDate = (DateTime.Now.AddDays(playsLeft / avgPerDay.Value)).ToString("dd MMM yyyy");
+
+            var reply = new StringBuilder();
+
+            var determiner = "your";
+            if (userSettings.DifferentUser)
+            {
+                reply.Append($"<@{this.Context.User.Id}> My estimate is that the user '{userSettings.UserNameLastFm.FilterOutMentions()}'");
+                determiner = "their";
+            }
+            else
+            {
+                reply.Append($"<@{this.Context.User.Id}> My estimate is that you");
+            }
+
+            reply.AppendLine($" will reach **{goalAmount}** scrobbles on **{goalDate}**.");
+
+            if (timeType.ChartTimePeriod == ChartTimePeriod.AllTime)
+            {
+                reply.AppendLine(
+                    $"This is based on {determiner} alltime avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day. ({count} in {Math.Round(totalDays, 0)} days)");
+            }
+            else
+            {
+                reply.AppendLine(
+                    $"This is based on {determiner} avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day in the last {Math.Round(totalDays, 0)} days ({count} total)");
+            }
+
+            await ReplyAsync(reply.ToString());
+            this.Context.LogCommandUsed();
         }
 
         private async Task<string> FindUser(string user)

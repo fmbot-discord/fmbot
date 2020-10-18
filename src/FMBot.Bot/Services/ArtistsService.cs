@@ -1,10 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
 
@@ -13,7 +11,7 @@ namespace FMBot.Bot.Services
     public class ArtistsService
     {
         // Top artists for 2 users
-        public async Task<TasteModels> GetEmbedTasteAsync(PageResponse<LastArtist> leftUserArtists,
+        public TasteModels GetEmbedTaste(PageResponse<LastArtist> leftUserArtists,
             PageResponse<LastArtist> rightUserArtists, int amount, ChartTimePeriod timePeriod)
         {
             var matchedArtists = ArtistsToShow(leftUserArtists, rightUserArtists);
@@ -34,6 +32,11 @@ namespace FMBot.Bot.Services
 
                 var ownPlaycount = artist.PlayCount.Value;
                 var otherPlaycount = rightUserArtists.Content.First(f => f.Name.Equals(name)).PlayCount.Value;
+
+                if (matchedArtists.Count > 30 && otherPlaycount < 5)
+                {
+                    continue;
+                }
 
                 if (ownPlaycount > otherPlaycount)
                 {
@@ -65,37 +68,45 @@ namespace FMBot.Bot.Services
                 LeftDescription = left,
                 RightDescription = right
             };
-
-
         }
 
         // Top artists for 2 users
-        public async Task<string> GetTableTasteAsync(PageResponse<LastArtist> leftUserArtists,
+        public string GetTableTaste(PageResponse<LastArtist> leftUserArtists,
             PageResponse<LastArtist> rightUserArtists, int amount, ChartTimePeriod timePeriod, string mainUser, string userToCompare)
         {
             var artistsToShow = ArtistsToShow(leftUserArtists, rightUserArtists);
 
             var artists = artistsToShow.Select(s =>
             {
+                var ownPlaycount = s.PlayCount.Value;
+                var otherPlaycount = rightUserArtists.Content.First(f => f.Name.Equals(s.Name)).PlayCount.Value;
+
                 return new TasteTwoUserModel
                 {
                     Artist = !string.IsNullOrWhiteSpace(s.Name) && s.Name.Length > AllowedCharacterCount(s.Name) ? $"{s.Name.Substring(0, AllowedCharacterCount(s.Name) - 2)}…" : s.Name,
-                    OwnPlaycount = s.PlayCount.Value,
-                    OtherPlaycount = rightUserArtists.Content.First(f => f.Name.Equals(s.Name)).PlayCount.Value
+                    OwnPlaycount = ownPlaycount,
+                    OtherPlaycount = otherPlaycount
                 };
 
                 static int AllowedCharacterCount(string name)
                 {
                     return (StringExtensions.ContainsUnicodeCharacter(name) ? 9 : 16);
                 }
-            });
+            }).ToList();
 
-            var customTable = artists.Take(amount).ToTasteTable(new[] { "Artist", mainUser, "   ", userToCompare },
-                u => u.Artist,
-                u => u.OwnPlaycount,
-                u => this.GetCompareChar(u.OwnPlaycount, u.OtherPlaycount),
-                u => u.OtherPlaycount
-            );
+            if (artists.Count > 25)
+            {
+                artists = artists.Where(w => w.OtherPlaycount > 4).ToList();
+            }
+
+            var customTable = artists
+                .Take(amount)
+                .ToTasteTable(new[] { "Artist", mainUser, "   ", userToCompare },
+                    u => u.Artist,
+                    u => u.OwnPlaycount,
+                    u => GetCompareChar(u.OwnPlaycount, u.OtherPlaycount),
+                    u => u.OtherPlaycount
+                );
 
 
             var description = $"{Description(leftUserArtists, timePeriod, artistsToShow)}\n" +
@@ -104,26 +115,27 @@ namespace FMBot.Bot.Services
             return description;
         }
 
-        private static string Description(IEnumerable<LastArtist> mainUserArtists, ChartTimePeriod chartTimePeriod, IOrderedEnumerable<LastArtist> matchedArtists)
+        private static string Description(IEnumerable<LastArtist> mainUserArtists, ChartTimePeriod chartTimePeriod, IList<LastArtist> matchedArtists)
         {
-            var percentage = ((decimal)matchedArtists.Count() / (decimal)mainUserArtists.Count()) * 100;
+            var percentage = ((decimal)matchedArtists.Count / (decimal)mainUserArtists.Count()) * 100;
             var description =
                 $"**{matchedArtists.Count()}** ({percentage:0.0}%)  out of top **{mainUserArtists.Count()}** {chartTimePeriod.ToString().ToLower()} artists match";
 
             return description;
         }
 
-        private string GetCompareChar(int ownPlaycount, int otherPlaycount)
+        private static string GetCompareChar(int ownPlaycount, int otherPlaycount)
         {
             return ownPlaycount == otherPlaycount ? " • " : ownPlaycount > otherPlaycount ? " > " : " < ";
         }
 
-        private IOrderedEnumerable<LastArtist> ArtistsToShow(IEnumerable<LastArtist> pageResponse, IPageResponse<LastArtist> lastArtists)
+        private IList<LastArtist> ArtistsToShow(IEnumerable<LastArtist> leftUserArtists, IPageResponse<LastArtist> rightUserArtists)
         {
             var artistsToShow =
-                pageResponse
-                    .Where(w => lastArtists.Content.Select(s => s.Name).Contains(w.Name))
-                    .OrderByDescending(o => o.PlayCount);
+                leftUserArtists
+                    .Where(w => rightUserArtists.Content.Select(s => s.Name).Contains(w.Name))
+                    .OrderByDescending(o => o.PlayCount)
+                    .ToList();
             return artistsToShow;
         }
 
@@ -142,31 +154,5 @@ namespace FMBot.Bot.Services
 
             return tasteSettings;
         }
-        
-        public ServerArtistSettings SetServerArtistSettings(ServerArtistSettings serverArtistSettings, string[] extraOptions)
-        {
-            var setServerArtistSettings = serverArtistSettings;
-
-            if (extraOptions.Contains("w") || extraOptions.Contains("week") || extraOptions.Contains("weekly"))
-            {
-                setServerArtistSettings.ChartTimePeriod = ChartTimePeriod.Weekly;
-            }
-            if (extraOptions.Contains("a") || extraOptions.Contains("at") || extraOptions.Contains("alltime"))
-            {
-                setServerArtistSettings.ChartTimePeriod = ChartTimePeriod.AllTime;
-            }
-            if (extraOptions.Contains("p") || extraOptions.Contains("pc") || extraOptions.Contains("playcount") || extraOptions.Contains("plays"))
-            {
-                setServerArtistSettings.OrderType = OrderType.Playcount;
-            }
-            if (extraOptions.Contains("l") || extraOptions.Contains("lc") || extraOptions.Contains("listenercount") || extraOptions.Contains("listeners"))
-            {
-                setServerArtistSettings.OrderType = OrderType.Listeners;
-            }
-
-            return setServerArtistSettings;
-        }
-
-
     }
 }

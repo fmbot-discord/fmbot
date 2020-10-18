@@ -45,6 +45,26 @@ namespace FMBot.LastFM.Services
             return recentScrobbles;
         }
 
+        // Recent scrobbles
+        public async Task<long?> GetScrobbleCountFromDateAsync(string lastFMUserName, long? unixTimestamp)
+        {
+            var queryParams = new Dictionary<string, string>
+            {
+                {"user", lastFMUserName },
+                {"limit", "1"}
+            };
+
+            if (unixTimestamp != null)
+            {
+                queryParams.Add("from", unixTimestamp.ToString());
+            }
+
+            var recentTracksCall = await this._lastfmApi.CallApiAsync<PlayResponse>(queryParams, Call.RecentTracks);
+            Statistics.LastfmApiCalls.Inc();
+
+            return recentTracksCall.Success ? recentTracksCall.Content.Recenttracks.Attr.Total : (long?)null;
+        }
+
 
         public static string TrackToLinkedString(LastTrack track)
         {
@@ -139,6 +159,20 @@ namespace FMBot.LastFM.Services
             Statistics.LastfmApiCalls.Inc();
 
             return user;
+        }
+
+        // User
+        public async Task<LastFmUser> GetFullUserInfoAsync(string lastFMUserName)
+        {
+            var queryParams = new Dictionary<string, string>
+            {
+                {"user", lastFMUserName }
+            };
+
+            var userCall = await this._lastfmApi.CallApiAsync<UserResponse>(queryParams, Call.UserInfo);
+            Statistics.LastfmApiCalls.Inc();
+
+            return !userCall.Success ? null : userCall.Content.User;
         }
 
         public async Task<PageResponse<LastTrack>> SearchTrackAsync(string searchQuery)

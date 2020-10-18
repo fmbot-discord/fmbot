@@ -61,8 +61,8 @@ namespace FMBot.Bot.Services.WhoKnows
                 .GroupBy(o => o.Name);
 
             query = orderType == OrderType.Playcount ?
-                query.OrderByDescending(o => o.Sum(s => s.Playcount)) :
-                query.OrderByDescending(o => o.Count());
+                query.OrderByDescending(o => o.Sum(s => s.Playcount)).ThenByDescending(o => o.Count()) :
+                query.OrderByDescending(o => o.Count()).ThenByDescending(o => o.Sum(s => s.Playcount));
 
             return await query
                 .Take(14)

@@ -410,11 +410,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var timeType = SettingService.GetTimePeriod(
                 extraOptions,
-                LastStatsTimeSpan.Overall,
-                ChartTimePeriod.AllTime,
-                "date_preset=ALL",
-                "overall",
-                "All-time");
+                ChartTimePeriod.AllTime);
 
             var tasteSettings = new TasteSettings
             {
@@ -478,7 +474,7 @@ namespace FMBot.Bot.Commands.LastFM
                 int amount = 14;
                 if (tasteSettings.TasteType == TasteType.FullEmbed)
                 {
-                    var taste = await this._artistsService.GetEmbedTasteAsync(ownArtists, otherArtists, amount, timeType.ChartTimePeriod);
+                    var taste = this._artistsService.GetEmbedTaste(ownArtists, otherArtists, amount, timeType.ChartTimePeriod);
 
                     this._embed.WithDescription(taste.Description);
                     this._embed.AddField("Artist", taste.LeftDescription, true);
@@ -486,7 +482,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else
                 {
-                    var taste = await this._artistsService.GetTableTasteAsync(ownArtists, otherArtists, amount, timeType.ChartTimePeriod, ownLastFmUsername, lastfmToCompare);
+                    var taste = this._artistsService.GetTableTaste(ownArtists, otherArtists, amount, timeType.ChartTimePeriod, ownLastFmUsername, lastfmToCompare);
 
                     this._embed.WithDescription(taste);
                 }
@@ -646,7 +642,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("serverartists", RunMode = RunMode.Async)]
         [Summary("Shows top artists for your server")]
         [Alias("sa", "sta", "servertopartists")]
-        public async Task ServerArtistsAsync(params string[] extraOptions)
+        public async Task GuildArtistsAsync(params string[] extraOptions)
         {
             if (this._guildService.CheckIfDM(this.Context))
             {
@@ -699,13 +695,13 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var serverArtistSettings = new ServerArtistSettings
+            var serverArtistSettings = new GuildRankingSettings
             {
                 ChartTimePeriod = ChartTimePeriod.Weekly,
                 OrderType = OrderType.Playcount
             };
 
-            serverArtistSettings = this._artistsService.SetServerArtistSettings(serverArtistSettings, extraOptions);
+            serverArtistSettings = SettingService.SetGuildRankingSettings(serverArtistSettings, extraOptions);
 
             try
             {

@@ -47,6 +47,8 @@ namespace FMBot.Bot.Models
         public bool RainbowSortingEnabled { get; set; }
 
         public bool UsePlays { get; set; }
+
+        public int? CensoredAlbums { get; set; }
     }
 
     public class ChartImage

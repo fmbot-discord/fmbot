@@ -26,6 +26,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<Guild> Guilds { get; set; }
         public virtual DbSet<GuildUser> GuildUsers { get; set; }
         public virtual DbSet<User> Users { get; set; }
+        public virtual DbSet<Supporter> Supporters { get; set; }
 
         public virtual DbSet<InactiveUsers> InactiveUsers { get; set; }
 
@@ -37,6 +38,8 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<Artist> Artists { get; set; }
         public virtual DbSet<Album> Albums { get; set; }
         public virtual DbSet<Track> Tracks { get; set; }
+
+        public virtual DbSet<CensoredMusic> CensoredMusic { get; set; }
 
         public virtual DbSet<ArtistGenre> ArtistGenres { get; set; }
         public virtual DbSet<ArtistAlias> ArtistAliases { get; set; }
@@ -64,10 +67,6 @@ namespace FMBot.Persistence.EntityFrameWork
             {
                 entity.HasKey(e => e.FriendId);
 
-                entity.HasIndex(e => e.FriendUserId);
-
-                entity.HasIndex(e => e.UserId);
-
                 entity.HasOne(d => d.FriendUser)
                     .WithMany(p => p.FriendedByUsers)
                     .HasForeignKey(d => d.FriendUserId)
@@ -82,6 +81,8 @@ namespace FMBot.Persistence.EntityFrameWork
             modelBuilder.Entity<Guild>(entity =>
             {
                 entity.HasKey(e => e.GuildId);
+
+                entity.HasIndex(i => i.GuildId);
 
                 entity.Property(e => e.DisabledCommands)
                     .HasConversion(
@@ -110,8 +111,14 @@ namespace FMBot.Persistence.EntityFrameWork
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.UserId);
+
+                entity.HasIndex(i => i.UserId);
             });
 
+            modelBuilder.Entity<Supporter>(entity =>
+            {
+                entity.HasKey(e => e.SupporterId);
+            });
 
             modelBuilder.Entity<InactiveUsers>(entity =>
             {
@@ -127,6 +134,8 @@ namespace FMBot.Persistence.EntityFrameWork
             {
                 entity.HasKey(a => a.UserArtistId);
 
+                entity.HasIndex(i => i.UserId);
+
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Artists)
                     .HasForeignKey(f => f.UserId)
@@ -136,6 +145,8 @@ namespace FMBot.Persistence.EntityFrameWork
             modelBuilder.Entity<UserAlbum>(entity =>
             {
                 entity.HasKey(a => a.UserAlbumId);
+
+                entity.HasIndex(i => i.UserId);
 
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Albums)
@@ -147,6 +158,8 @@ namespace FMBot.Persistence.EntityFrameWork
             {
                 entity.HasKey(a => a.UserTrackId);
 
+                entity.HasIndex(i => i.UserId);
+
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Tracks)
                     .HasForeignKey(f => f.UserId)
@@ -156,6 +169,8 @@ namespace FMBot.Persistence.EntityFrameWork
             modelBuilder.Entity<UserPlay>(entity =>
             {
                 entity.HasKey(a => a.UserPlayId);
+
+                entity.HasIndex(i => i.UserId);
 
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Plays)
@@ -173,7 +188,6 @@ namespace FMBot.Persistence.EntityFrameWork
                         v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
             });
 
-
             modelBuilder.Entity<Album>(entity =>
             {
                 entity.HasKey(a => a.Id);
@@ -190,6 +204,11 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.Tracks)
                     .HasForeignKey(d => d.ArtistId);
+            });
+
+            modelBuilder.Entity<CensoredMusic>(entity =>
+            {
+                entity.HasKey(a => a.CensoredMusicId);
             });
 
             modelBuilder.Entity<ArtistAlias>(entity =>

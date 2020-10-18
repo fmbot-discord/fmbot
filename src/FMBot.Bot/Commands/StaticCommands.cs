@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -26,17 +27,20 @@ namespace FMBot.Bot.Commands
         private readonly IPrefixService _prefixService;
         private readonly UserService _userService;
         private readonly FriendsService _friendService;
+        private readonly SupporterService _supporterService;
 
         public StaticCommands(
             CommandService service,
             IPrefixService prefixService,
             UserService userService,
-            FriendsService friendsService)
+            FriendsService friendsService,
+            SupporterService supporterService)
         {
             this._service = service;
             this._prefixService = prefixService;
             this._userService = userService;
             this._friendService = friendsService;
+            this._supporterService = supporterService;
             this._guildService = new GuildService();
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFMColorRed);
@@ -128,9 +132,13 @@ namespace FMBot.Bot.Commands
 
             var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
+            var ticks = Stopwatch.GetTimestamp();
+            var upTime = (double)ticks / Stopwatch.Frequency;
+            var upTimeInSeconds = TimeSpan.FromSeconds(upTime);
+
             var description = "";
             description += $"**Bot Uptime:** `{startTime.ToReadableString()}`\n";
-            description += $"**Server Uptime:** `{GlobalVars.SystemUpTime().ToReadableString()}`\n";
+            description += $"**Server Uptime:** `{upTimeInSeconds.ToReadableString()}`\n";
             description += $"**Usercount:** `{(await this._userService.GetTotalUserCountAsync()).ToString()}`\n";
             description += $"**Friendcount:** `{await this._friendService.GetTotalFriendCountAsync()}`\n";
             description += $"**Discord usercount:** `{client.Guilds.Select(s => s.MemberCount).Sum()}`\n";
@@ -192,6 +200,37 @@ namespace FMBot.Bot.Commands
                     "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot. \n" +
                     "Keep in mind that the instance might not be fully up to date or other users might not be registered.");
             }
+
+            if (PublicProperties.IssuesAtLastFM)
+            {
+                this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues");
+            }
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
+        }
+
+
+        [Command("supporters", RunMode = RunMode.Async)]
+        [Summary("Displays this list.")]
+        [Alias("donators", "donors", "backers")]
+        public async Task AllSupportersAsync()
+        {
+            this._embed.WithTitle(".fmbot supporters");
+
+            var supporters = await this._supporterService.GetAllVisibleSupporters();
+
+            var description = new StringBuilder();
+
+            foreach (var supporter in supporters)
+            {
+                description.AppendLine(supporter.Name);
+            }
+
+            description.AppendLine();
+            description.AppendLine("Thank you to all our supporters that help keep .fmbot running. If you would like to be on this list too, please check out our [OpenCollective](https://opencollective.com/fmbot).");
+
+            this._embed.WithDescription(description.ToString());
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();

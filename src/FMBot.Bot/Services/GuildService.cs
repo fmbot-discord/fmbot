@@ -167,6 +167,51 @@ namespace FMBot.Bot.Services
             }
         }
 
+        public async Task<bool?> ToggleSupporterMessagesAsync(IGuild guild)
+        {
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            var existingGuild = await db.Guilds
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+
+            if (existingGuild == null)
+            {
+                var newGuild = new Guild
+                {
+                    DiscordGuildId = guild.Id,
+                    TitlesEnabled = true,
+                    ChartTimePeriod = ChartTimePeriod.Monthly,
+                    FmEmbedType = FmEmbedType.embedmini,
+                    Name = guild.Name,
+                    DisableSupporterMessages = true
+                };
+
+                await db.Guilds.AddAsync(newGuild);
+
+                await db.SaveChangesAsync();
+
+                return true;
+            }
+            else
+            {
+                existingGuild.Name = guild.Name;
+                if (existingGuild.DisableSupporterMessages == true)
+                {
+                    existingGuild.DisableSupporterMessages = false;
+                }
+                else
+                {
+                    existingGuild.DisableSupporterMessages = true;
+                }
+
+                db.Entry(existingGuild).State = EntityState.Modified;
+
+                await db.SaveChangesAsync();
+
+                return existingGuild.DisableSupporterMessages;
+            }
+        }
+
         public async Task SetGuildPrefixAsync(IGuild guild, string prefix)
         {
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
