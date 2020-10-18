@@ -198,18 +198,16 @@ namespace FMBot.Bot.Commands
 
         [Command("addcensoredalbum")]
         [Summary("Adds censored album")]
-        public async Task IssuesAsync(string album, string artist)
+        public async Task AddCensoredAlbumAsync(string album, string artist)
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 if (string.IsNullOrEmpty(album) || string.IsNullOrEmpty(artist))
                 {
-                    await ReplyAsync($"Enter a correct album to be censored\n" +
-                                     $"Example: `.fmaddcensoredalbum \"No Love Deep Web\" \"Death Grips\"");
+                    await ReplyAsync("Enter a correct album to be censored\n" +
+                                     "Example: `.fmaddcensoredalbum \"No Love Deep Web\" \"Death Grips\"");
                     return;
-
                 }
-
 
                 await this._censorService.AddCensoredAlbum(album, artist);
 
@@ -219,6 +217,31 @@ namespace FMBot.Bot.Commands
             else
             {
                 await ReplyAsync("Error: Insufficient rights. Only FMBot admins add censored albums.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+
+        [Command("addcensoredartist")]
+        [Summary("Adds censored artist")]
+        public async Task AddCensoredArtistAsync(string artist)
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                if (string.IsNullOrEmpty(artist))
+                {
+                    await ReplyAsync("Enter a correct artist to be censored\n" +
+                                     "Example: `.fmaddcensoredartist \"Last Days of Humanity\"");
+                    return;
+                }
+
+                await this._censorService.AddCensoredArtist(artist);
+
+                await ReplyAsync($"Added `{artist}` to the list of censored artists.");
+                this.Context.LogCommandUsed();
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only FMBot admins add censored artists.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }

@@ -392,6 +392,7 @@ namespace FMBot.Bot.Services
                     .Contains(artistName.ToLower())
                 &&
                 censoredMusic
+                    .Where(w => !w.Artist && w.AlbumName != null)
                     .Select(s => s.AlbumName.ToLower())
                     .Contains(albumName.ToLower()))
             {

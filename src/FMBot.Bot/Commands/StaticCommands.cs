@@ -132,9 +132,13 @@ namespace FMBot.Bot.Commands
 
             var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
+            var ticks = Stopwatch.GetTimestamp();
+            var upTime = (double)ticks / Stopwatch.Frequency;
+            var upTimeInSeconds = TimeSpan.FromSeconds(upTime);
+
             var description = "";
             description += $"**Bot Uptime:** `{startTime.ToReadableString()}`\n";
-            description += $"**Server Uptime:** `{GlobalVars.SystemUpTime().ToReadableString()}`\n";
+            description += $"**Server Uptime:** `{upTimeInSeconds.ToReadableString()}`\n";
             description += $"**Usercount:** `{(await this._userService.GetTotalUserCountAsync()).ToString()}`\n";
             description += $"**Friendcount:** `{await this._friendService.GetTotalFriendCountAsync()}`\n";
             description += $"**Discord usercount:** `{client.Guilds.Select(s => s.MemberCount).Sum()}`\n";
@@ -209,7 +213,7 @@ namespace FMBot.Bot.Commands
 
         [Command("supporters", RunMode = RunMode.Async)]
         [Summary("Displays this list.")]
-        [Alias("donators","donors","backers")]
+        [Alias("donators", "donors", "backers")]
         public async Task AllSupportersAsync()
         {
             this._embed.WithTitle(".fmbot supporters");

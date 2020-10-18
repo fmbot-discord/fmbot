@@ -28,6 +28,7 @@ namespace FMBot.Bot.Services
                 &&
                 db.CensoredMusic
                     .AsQueryable()
+                    .Where(w => !w.Artist && w.AlbumName != null)
                     .Select(s => s.AlbumName.ToLower())
                     .Contains(albumName.ToLower()))
             {
@@ -52,6 +53,7 @@ namespace FMBot.Bot.Services
 
             await db.SaveChangesAsync();
         }
+
         public async Task AddCensoredArtist(string artistName)
         {
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
