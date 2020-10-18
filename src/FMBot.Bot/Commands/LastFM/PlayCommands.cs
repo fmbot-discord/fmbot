@@ -585,17 +585,28 @@ namespace FMBot.Bot.Commands.LastFM
 
             var reply = new StringBuilder();
 
-            reply.AppendLine($"<@{this.Context.User.Id}> My estimate is that you will reach **{goalAmount}** scrobbles on **{goalDate}**.");
+            var determiner = "your";
+            if (userSettings.DifferentUser)
+            {
+                reply.Append($"<@{this.Context.User.Id}> My estimate is that the user '{userSettings.UserNameLastFm.FilterOutMentions()}'");
+                determiner = "their";
+            }
+            else
+            {
+                reply.Append($"<@{this.Context.User.Id}> My estimate is that you");
+            }
+
+            reply.AppendLine($" will reach **{goalAmount}** scrobbles on **{goalDate}**.");
 
             if (timeType.ChartTimePeriod == ChartTimePeriod.AllTime)
             {
                 reply.AppendLine(
-                    $"This is based on your alltime avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day. ({count} in {Math.Round(totalDays, 0)} days)");
+                    $"This is based on {determiner} alltime avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day. ({count} in {Math.Round(totalDays, 0)} days)");
             }
             else
             {
                 reply.AppendLine(
-                    $"This is based on your avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day in the last {Math.Round(totalDays, 0)} days ({count} total)");
+                    $"This is based on {determiner} avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day in the last {Math.Round(totalDays, 0)} days ({count} total)");
             }
 
             await ReplyAsync(reply.ToString());
