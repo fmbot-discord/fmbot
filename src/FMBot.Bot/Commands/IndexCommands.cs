@@ -169,13 +169,13 @@ namespace FMBot.Bot.Commands
             }
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
-            if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-3))
-            {
-                await ReplyAsync(
-                    "You have already been updated recently. Note that this also happens automatically.");
-                this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                return;
-            }
+            //if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-3))
+            //{
+            //    await ReplyAsync(
+            //        "You have already been updated recently. Note that this also happens automatically.");
+            //    this.Context.LogCommandUsed(CommandResponse.Cooldown);
+            //    return;
+            //}
 
             if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full" || force.ToLower() == "-force" || force.ToLower() == "force"))
             {
@@ -237,8 +237,20 @@ namespace FMBot.Bot.Commands
                     }
                     else
                     {
+                        var updatedDescription =
+                            $"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new scrobbles.";
+
+                        var rnd = new Random();
+                        if (rnd.Next(0, 4) == 1)
+                        {
+                            updatedDescription +=
+                                $"\n\n" +
+                                $"Please note that updates are only used for whoknows and that users are also automatically updated every 48 hours.\n" +
+                                $"Other commands directly get their data from last.fm and are always up to date.";
+                        }
+    
                         m.Embed = new EmbedBuilder()
-                            .WithDescription($"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new scrobbles.")
+                            .WithDescription(updatedDescription)
                             .WithColor(DiscordConstants.SuccessColorGreen)
                             .Build();
                     }
