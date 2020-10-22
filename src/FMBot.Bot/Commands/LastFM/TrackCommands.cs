@@ -519,6 +519,12 @@ namespace FMBot.Bot.Commands.LastFM
                 var guild = await guildTask;
                 var users = guild.GuildUsers.Select(s => s.User).ToList();
 
+                if (!users.Select(s => s.UserId).Contains(userSettings.UserId))
+                {
+                    await this._indexService.AddUserToGuild(this.Context.Guild, userSettings);
+                    users.Add(userSettings);
+                }
+
                 var usersWithArtist = await this._whoKnowsTrackService.GetIndexedUsersForTrack(this.Context, users, track.Artist.Name, track.Name);
 
                 if (track.Userplaycount != 0)

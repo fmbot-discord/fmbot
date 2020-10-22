@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -130,6 +131,41 @@ namespace FMBot.Bot.Services
             }
 
             await db.SaveChangesAsync();
+        }
+
+        public async Task RemoveUserFromGuild(SocketGuildUser user)
+        {
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            var userThatLeft = await db.Users
+                .Include(i => i.GuildUsers)
+                .FirstOrDefaultAsync(f => f.DiscordUserId == user.Id);
+
+            if (userThatLeft == null)
+            {
+                return;
+            }
+
+            var guild = await db.Guilds
+                .Include(i => i.GuildUsers)
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == user.Guild.Id);
+
+            if (guild != null && guild.GuildUsers.Select(g => g.UserId).Contains(userThatLeft.UserId))
+            {
+                var guildUser = guild.GuildUsers.FirstOrDefault(f => f.UserId == userThatLeft.UserId && f.GuildId == guild.GuildId);
+
+                if (guildUser != null)
+                {
+                    db.GuildUsers.Remove(guildUser);
+
+                    Log.Information("Removed user {userId} from guild {guildName}", userThatLeft.UserId, guild.Name);
+
+                    await db.SaveChangesAsync();
+                }
+                else
+                {
+                    Log.Warning("Tried removing user {userId} from guild {guildName}, but user was not stored in guild", userThatLeft.UserId, guild.Name);
+                }
+            }
         }
 
         public async Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> guildUsers)

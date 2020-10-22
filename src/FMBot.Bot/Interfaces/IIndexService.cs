@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord;
+using Discord.WebSocket;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Interfaces
@@ -13,6 +14,8 @@ namespace FMBot.Bot.Interfaces
         Task IndexUser(User user);
 
         Task AddUserToGuild(IGuild guild, User user);
+
+        Task RemoveUserFromGuild(SocketGuildUser user);
 
         Task StoreGuildUsers(IGuild guild, IReadOnlyCollection<IGuildUser> guildUsers);
 
