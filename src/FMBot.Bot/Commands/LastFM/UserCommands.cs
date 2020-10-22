@@ -69,7 +69,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task StatsAsync(params string[] userOptions)
         {
             var user = await this._userService.GetFullUserAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             try
             {

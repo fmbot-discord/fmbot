@@ -151,7 +151,7 @@ namespace FMBot.Bot.Commands
         [Alias("u")]
         public async Task UpdateUserAsync(string force = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             if (force == "help")
             {
                 this._embed.WithTitle($"{prfx}update");

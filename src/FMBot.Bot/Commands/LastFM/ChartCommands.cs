@@ -62,7 +62,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         public async Task ChartAsync(params string[] otherSettings)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             if (otherSettings.Any() && otherSettings.First() == "help")
             {
                 await ReplyAsync($"{prfx}chart '2x2-10x10' '{Constants.CompactTimePeriodList}' \n" +
