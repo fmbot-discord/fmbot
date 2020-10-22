@@ -61,7 +61,7 @@ namespace FMBot.Bot.Commands
 
                     if (tracks?.Any() != true)
                     {
-                        this._embed.NoScrobblesFoundErrorResponse(tracks.Status, prfx);
+                        this._embed.NoScrobblesFoundErrorResponse(tracks.Status, prfx, userSettings.UserNameLastFM);
                         await ReplyAsync("", false, this._embed.Build());
                         return;
                     }

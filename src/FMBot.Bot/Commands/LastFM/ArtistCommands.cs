@@ -300,7 +300,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                     if (artists?.Any() != true)
                     {
-                        this._embed.NoScrobblesFoundErrorResponse(artists.Status, prfx);
+                        this._embed.NoScrobblesFoundErrorResponse(artists.Status, prfx, userSettings.UserNameLastFm);
                         this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                         await ReplyAsync("", false, this._embed.Build());
                         return;
@@ -794,7 +794,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (track == null)
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(track.Status, prfx);
+                    this._embed.NoScrobblesFoundErrorResponse(track.Status, prfx, userSettings.UserNameLastFM);
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     await ReplyAsync("", false, this._embed.Build());
                     return null;

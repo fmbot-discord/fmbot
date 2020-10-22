@@ -335,7 +335,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (track == null)
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(track.Status, prfx);
+                    this._embed.NoScrobblesFoundErrorResponse(track.Status, prfx, userSettings.UserNameLastFM);
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     await this.ReplyAsync("", false, this._embed.Build());
                     return new AlbumSearchModel(false);
@@ -385,7 +385,7 @@ namespace FMBot.Bot.Commands.LastFM
                     var albums = await this._lastFmService.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings.LastStatsTimeSpan, amount);
                     if (albums?.Any() != true)
                     {
-                        this._embed.NoScrobblesFoundErrorResponse(albums.Status, prfx);
+                        this._embed.NoScrobblesFoundErrorResponse(albums.Status, prfx, userSettings.UserNameLastFm);
                         this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                         await ReplyAsync("", false, this._embed.Build());
                         return;
