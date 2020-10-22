@@ -13,10 +13,6 @@ namespace FMBot.Bot.Handlers
         public ClientLogHandler(DiscordShardedClient client)
         {
             this._client = client;
-        }
-
-        public void Initialize()
-        {
             this._client.Log += LogEvent;
             this._client.ShardLatencyUpdated += ShardLatencyEvent;
             this._client.ShardDisconnected += ShardDisconnectedEvent;
@@ -37,7 +33,7 @@ namespace FMBot.Bot.Handlers
             {
                 // If log message is a Serializer Error, Log the message to the SerializerError folder.
                 if (logMessage.Message.Contains("Serializer Error"))
-                    Log.Logger.Error(
+                    Log.Error(
                         $"Source: {logMessage.Source} Exception: {logMessage.Exception} Message: {logMessage.Message}");
             });
             return Task.CompletedTask;
@@ -63,29 +59,34 @@ namespace FMBot.Bot.Handlers
 
         private void ShardDisconnected(Exception exception, DiscordSocketClient shard)
         {
-            Log.Warning($"Shard disconnected: `{shard.ShardId}` Disconnected with the reason {exception.Message}");
+            Log.Warning("ShardDisconnected: {shardId} Disconnected",
+                shard.ShardId, exception);
         }
 
         private void ShardConnected(DiscordSocketClient shard)
         {
-            Log.Logger.Information($"Shard connected: {shard.ShardId} with **{shard.Latency}** ms");
+            Log.Information("ShardConnected: {shardId} with {shardLatency} ms",
+                shard.ShardId, shard.Latency);
         }
 
         private void ShardLatencyUpdated(int oldPing, int updatePing, DiscordSocketClient shard)
         {
             // If new or old latency if lager then 500ms.
             if (updatePing < 500 && oldPing < 500) return;
-            Log.Logger.Information($"Shard: `{shard.ShardId}` Latency update from **{oldPing}** ms to **{updatePing}** ms");
+            Log.Information("Shard: {shardId} Latency update from {oldPing} ms to {updatePing} ms",
+                shard.ShardId, oldPing, updatePing);
         }
 
         private void ClientJoinedGuild(SocketGuild guild)
         {
-            Log.Logger.Information($"Joined server: {guild.Name}, Id: {guild.Id}, MemberCount: {guild.MemberCount}.");
+            Log.Information(
+                "JoinedGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.MemberCount);
         }
 
         private async Task ClientLeftGuild(SocketGuild guild)
         {
-            Log.Logger.Information($"Left server: {guild.Name}, Id: {guild.Id}.");
+            Log.Information(
+                "LeftGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.MemberCount);
         }
     }
 }

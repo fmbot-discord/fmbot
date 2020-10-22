@@ -65,7 +65,8 @@ namespace FMBot.Bot
 
             var provider = services.BuildServiceProvider(); // Build the service provider
             //provider.GetRequiredService<LoggingService>();      // Start the logging service
-            provider.GetRequiredService<CommandHandler>(); // Start the command handler service
+            provider.GetRequiredService<CommandHandler>();
+            provider.GetRequiredService<ClientLogHandler>(); 
 
             await provider.GetRequiredService<StartupService>().StartAsync(); // Start the startup service
             await Task.Delay(-1); // Keep the program alive
@@ -91,6 +92,7 @@ namespace FMBot.Bot
                 .AddSingleton<CommandHandler>()
                 .AddSingleton<StartupService>()
                 .AddSingleton<TimerService>()
+                .AddSingleton<ClientLogHandler>()
                 .AddSingleton<IPrefixService, PrefixService>()
                 .AddSingleton<IDisabledCommandService, DisabledCommandService>()
                 .AddSingleton<IUserIndexQueue, UserIndexQueue>()
