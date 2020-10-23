@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using CXuesong.Uel.Serilog.Sinks.Discord;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -17,7 +16,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
-using Serilog.Events;
 using Serilog.Exceptions;
 
 namespace FMBot.Bot
@@ -45,9 +43,10 @@ namespace FMBot.Bot
                 .Enrich.WithProperty("BotUserId", ConfigData.Data.Discord.BotUserId ?? 0)
                 .WriteTo.Console()
                 .WriteTo.Seq("http://localhost:5341")
-                .WriteTo.Conditional(evt =>
-                        !string.IsNullOrEmpty(ConfigData.Data.Bot.ExceptionChannelWebhookUrl),
-                        wt => wt.Discord(new DiscordWebhookMessenger(ConfigData.Data.Bot.ExceptionChannelWebhookUrl), LogEventLevel.Warning))
+                // https://github.com/CXuesong/Serilog.Sinks.Discord/issues/3
+                //.WriteTo.Conditional(evt =>
+                //        !string.IsNullOrEmpty(ConfigData.Data.Bot.ExceptionChannelWebhookUrl),
+                //        wt => wt.Discord(new DiscordWebhookMessenger(ConfigData.Data.Bot.ExceptionChannelWebhookUrl), LogEventLevel.Warning))
                 .CreateLogger();
 
             AppDomain.CurrentDomain.UnhandledException += AppUnhandledException;

@@ -225,6 +225,7 @@ namespace FMBot.Bot.Services
                         {
                             await client.SetGameAsync($"⚠️ Last.fm is currently experiencing issues -> twitter.com/lastfmstatus");
                         }
+
                     }
                 },
                 null,
