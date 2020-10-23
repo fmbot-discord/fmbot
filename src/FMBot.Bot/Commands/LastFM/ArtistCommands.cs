@@ -117,7 +117,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!artistCall.Success)
             {
-                this._embed.ErrorResponse(artistCall.Error.Value, artistCall.Message, this.Context, this._logger);
+                this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context, this._logger);
                 await ReplyAsync("", false, this._embed.Build());
                 this.Context.LogCommandWithLastFmError(artistCall.Error);
                 return;
@@ -232,7 +232,7 @@ namespace FMBot.Bot.Commands.LastFM
             var artistCall = await this._lastfmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
             if (!artistCall.Success)
             {
-                this._embed.ErrorResponse(artistCall.Error.Value, artistCall.Message, this.Context, this._logger);
+                this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context, this._logger);
                 await ReplyAsync("", false, this._embed.Build());
                 this.Context.LogCommandWithLastFmError(artistCall.Error);
                 return;
@@ -554,7 +554,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (!artistCall.Success)
                 {
-                    this._embed.ErrorResponse(artistCall.Error.Value, artistCall.Message, this.Context, this._logger);
+                    this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context, this._logger);
                     await ReplyAsync("", false, this._embed.Build());
                     this.Context.LogCommandWithLastFmError(artistCall.Error);
                     return;

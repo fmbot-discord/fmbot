@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Resources;
@@ -59,7 +60,7 @@ namespace FMBot.Bot.Services
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
-        public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus apiResponse, string message, ICommandContext context, Logger.Logger logger)
+        public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus? apiResponse, string message, ICommandContext context, Logger.Logger logger)
         {
             embed.WithTitle("Error while attempting get Last.FM information");
             switch (apiResponse)
@@ -69,8 +70,11 @@ namespace FMBot.Bot.Services
                                           "Please note that .fmbot isn't affiliated with Last.FM.");
                     break;
                 default:
-                    embed.WithDescription(
-                        message);
+                    embed.WithDescription(message);
+                    if (apiResponse != null)
+                    {
+                        embed.WithFooter($"Last.fm error code: {apiResponse}");
+                    }
                     break;
             }
 

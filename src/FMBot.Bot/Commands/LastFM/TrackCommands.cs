@@ -345,7 +345,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                     if (!topTracks.Success)
                     {
-                        this._embed.ErrorResponse(topTracks.Error.Value, topTracks.Message, this.Context, this._logger);
+                        this._embed.ErrorResponse(topTracks.Error, topTracks.Message, this.Context, this._logger);
                         await ReplyAsync("", false, this._embed.Build());
                         return;
                     }
