@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -29,6 +30,9 @@ namespace FMBot.Bot.Commands
         private readonly UserService _userService;
         private readonly FriendsService _friendService;
         private readonly SupporterService _supporterService;
+
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
+        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
 
         public StaticCommands(
             CommandService service,
@@ -242,6 +246,67 @@ namespace FMBot.Bot.Commands
             this._embed.WithDescription(description.ToString());
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
+        }
+
+
+        [Command("countdown", RunMode = RunMode.Async)]
+        [Summary("Counts down")]
+        public async Task CountdownAsync(int countdown = 3)
+        {
+            if (this._guildService.CheckIfDM(this.Context))
+            {
+                await ReplyAsync("Command is not supported in DMs.");
+                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
+                return;
+            }
+
+            if (countdown > 5)
+            {
+                countdown = 5;
+            }
+
+            if (countdown < 1)
+            {
+                countdown = 1;
+            }
+
+            var msg = this.Context.Message as SocketUserMessage;
+            if (StackCooldownTarget.Contains(this.Context.Message.Author))
+            {
+                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(countdown + 30) >= DateTimeOffset.Now)
+                {
+                    var secondsLeft = (int)(StackCooldownTimer[
+                            StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
+                        .AddSeconds(countdown + 30) - DateTimeOffset.Now).TotalSeconds;
+                    if (secondsLeft <= 20)
+                    {
+                        var secondString = secondsLeft == 1 ? "second" : "seconds";
+                        await ReplyAsync($"Please wait {secondsLeft} {secondString} before starting another countdown.");
+                        this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                    }
+
+                    return;
+                }
+
+                StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
+            }
+            else
+            {
+                StackCooldownTarget.Add(msg.Author);
+                StackCooldownTimer.Add(DateTimeOffset.Now);
+            }
+
+            await ReplyAsync($"Countdown for `{countdown}` seconds starting!");
+            await Task.Delay(4000);
+
+            for (var i = countdown; i > 0; i--)
+            {
+                _ =  ReplyAsync(i.ToString());
+                await Task.Delay(1000);
+            }
+
+            await ReplyAsync("Go!");
             this.Context.LogCommandUsed();
         }
 
