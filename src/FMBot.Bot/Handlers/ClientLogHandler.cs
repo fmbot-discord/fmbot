@@ -59,13 +59,13 @@ namespace FMBot.Bot.Handlers
 
         private void ShardDisconnected(Exception exception, DiscordSocketClient shard)
         {
-            Log.Warning("ShardDisconnected: {shardId} Disconnected",
+            Log.Warning("ShardDisconnected: shard {shardId} Disconnected",
                 shard.ShardId, exception);
         }
 
         private void ShardConnected(DiscordSocketClient shard)
         {
-            Log.Information("ShardConnected: {shardId} with {shardLatency} ms",
+            Log.Information("ShardConnected: shard {shardId} with {shardLatency} ms",
                 shard.ShardId, shard.Latency);
         }
 

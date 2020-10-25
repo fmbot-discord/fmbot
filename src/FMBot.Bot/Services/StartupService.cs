@@ -64,8 +64,12 @@ namespace FMBot.Bot.Services
             Log.Information("Logging into Discord");
             await this._client.LoginAsync(TokenType.Bot, discordToken);
 
-            Log.Information("Starting connection between Discord and the client");
-            await this._client.StartAsync();
+            foreach (var shard in this._client.Shards)
+            {
+                Log.Information("ShardStartConnection: shard {shardId}", shard.ShardId);
+                await shard.StartAsync();
+                await Task.Delay(3000);
+            }
 
             Log.Information("Setting Discord user status");
             await this._client.SetStatusAsync(UserStatus.DoNotDisturb);
