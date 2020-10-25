@@ -182,11 +182,11 @@ namespace FMBot.Bot.Commands
 
             if (messagesDisabled == true)
             {
-                await ReplyAsync(".fmbot supporter messages have been disabled");
+                await ReplyAsync(".fmbot supporter messages have been disabled. Supporters are still visible in `.fmsupporters`, but they will not be shown in `.fmchart` or other commands anymore.");
             }
             else
             {
-                await ReplyAsync($".fmbot supporter messages have been enabled. These have a 1 in {Constants.SupporterMessageChance} chance of showing up on certain commands.");
+                await ReplyAsync($".fmbot supporter messages have been re-enabled. These have a 1 in {Constants.SupporterMessageChance} chance of showing up on certain commands.");
             }
 
             this.Context.LogCommandUsed();

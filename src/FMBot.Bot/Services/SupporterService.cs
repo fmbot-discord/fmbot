@@ -61,6 +61,7 @@ namespace FMBot.Bot.Services
             return await db.Supporters
                 .AsQueryable()
                 .Where(w => w.VisibleInOverview)
+                .OrderByDescending(o => o.SupporterType)
                 .ToListAsync();
         }
     }

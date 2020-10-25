@@ -13,6 +13,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
+using FMBot.Domain.Models;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
@@ -224,7 +225,15 @@ namespace FMBot.Bot.Commands
 
             foreach (var supporter in supporters)
             {
-                description.AppendLine(supporter.Name);
+                var type = supporter.SupporterType switch
+                {
+                    SupporterType.Guild => " (server)",
+                    SupporterType.User => "",
+                    SupporterType.Company => " (business)",
+                    _ => ""
+                };
+
+                description.AppendLine($" - **{supporter.Name}** {type}");
             }
 
             description.AppendLine();
