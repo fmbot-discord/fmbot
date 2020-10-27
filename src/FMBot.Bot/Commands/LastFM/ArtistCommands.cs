@@ -791,6 +791,62 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
+
+        [Command("affinity", RunMode = RunMode.Async)]
+        [Summary("Shows what other users in the same server listen to the same music as you")]
+        [Alias("n", "aff", "neighbors")]
+        [UsernameSetRequired]
+        public async Task AffinityAsync(params string[] artistValues)
+        {
+            if (this._guildService.CheckIfDM(this.Context))
+            {
+                await ReplyAsync("This command is not supported in DMs.");
+                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
+                return;
+            }
+
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+            if (guild.LastIndexed == null)
+            {
+                await ReplyAsync("This server hasn't been indexed yet.\n" +
+                                 $"Please run `{prfx}index` to index this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+
+            if (guild.LastIndexed < DateTime.UtcNow.AddDays(-50))
+            {
+                await ReplyAsync("Server index data is out of date, it was last updated over 50 days ago.\n" +
+                                 $"Please run `{prfx}index` to re-index this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+
+            var users = guild.GuildUsers.Select(s => s.User).ToList();
+            var neighbors = await this._whoKnowArtistService.GetNeighbors(users, userSettings.UserId);
+
+            var description = new StringBuilder();
+
+            foreach (var neighbor in neighbors.Take(15))
+            {
+                description.AppendLine($"**[{neighbor.Name}]({Constants.LastFMUserUrl}{neighbor.LastFMUsername})** " +
+                                       $"- {neighbor.MatchPercentage:0.0}%");
+            }
+
+            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+
+            this._embed.WithTitle($"Neighbors for {userTitle}");
+
+            this._embed.WithDescription(description.ToString());
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+        }
+
         private async Task<string> GetArtistOrHelp(string[] artistValues, User userSettings, string command, string prfx)
         {
             string artist;
