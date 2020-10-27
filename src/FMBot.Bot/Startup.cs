@@ -77,7 +77,8 @@ namespace FMBot.Bot
             var discordClient = new DiscordShardedClient(new DiscordSocketConfig
             {
                 LogLevel = LogSeverity.Verbose,
-                MessageCacheSize = 0
+                MessageCacheSize = 0,
+                AlwaysDownloadUsers = true
             });
 
             var logger = new Logger.Logger();

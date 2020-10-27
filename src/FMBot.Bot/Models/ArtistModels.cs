@@ -31,6 +31,8 @@ namespace FMBot.Bot.Models
         public string ArtistName { get; set; }
 
         public long Playcount { get; set; }
+
+        public decimal Weight { get; set; }
     }
 
     public class AffinityArtistResultWithUser

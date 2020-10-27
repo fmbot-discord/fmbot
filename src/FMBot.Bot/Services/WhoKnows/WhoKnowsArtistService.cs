@@ -200,40 +200,60 @@ namespace FMBot.Bot.Services.WhoKnows
                 else
                 {
                     await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-                    topArtistsForUser = await db.UserArtists
-                        .AsQueryable()
-                        .Where(
-                            w => w.Playcount > 29 &&
-                                 w.UserId == user &&
-                                 w.Name != null)
-                        .Select(s => new AffinityArtist
-                        {
-                            ArtistName = s.Name,
-                            Playcount = s.Playcount,
-                            UserId = s.UserId
-                        })
-                        .ToListAsync();
 
-                    if (topArtistsForUser.Any())
+                    var topArtist = await db.UserArtists
+                        .AsQueryable()
+                        .OrderByDescending(o => o.Playcount)
+                        .FirstOrDefaultAsync(w => w.UserId == user);
+
+                    if (topArtist != null)
                     {
-                        this._cache.Set(key, topArtistsForUser, TimeSpan.FromHours(12));
-                        topArtistsForEveryoneInServer.AddRange(topArtistsForUser);
+                        topArtistsForUser = await db.UserArtists
+                            .AsQueryable()
+                            .Where(
+                                w => w.Playcount > 29 &&
+                                     w.UserId == user &&
+                                     w.Name != null)
+                            .Select(s => new AffinityArtist
+                            {
+                                ArtistName = s.Name,
+                                Playcount = s.Playcount,
+                                UserId = s.UserId,
+                                Weight = ((decimal)s.Playcount / (decimal)topArtist.Playcount) * (s.Playcount > (topArtist.Playcount / 2) ? 3 : 1)
+                            })
+                            .ToListAsync();
+
+                        if (topArtistsForUser.Any())
+                        {
+                            this._cache.Set(key, topArtistsForUser, TimeSpan.FromHours(12));
+                            topArtistsForEveryoneInServer.AddRange(topArtistsForUser);
+                        }
                     }
+
+                    
                 }
             });
 
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+
+            var topArtist = await db.UserArtists
+                .AsQueryable()
+                .OrderByDescending(o => o.Playcount)
+                .FirstOrDefaultAsync(w => w.UserId == userId);
+
             var topArtists = await db.UserArtists
                 .AsQueryable()
                 .Where(
                     w => w.Playcount > 29 &&
                          w.UserId == userId &&
                          w.Name != null)
+                .OrderByDescending(o => o.Playcount)
                 .Select(s => new AffinityArtist
                 {
                     ArtistName = s.Name,
                     Playcount = s.Playcount,
-                    UserId = s.UserId
+                    UserId = s.UserId,
+                    Weight = ((decimal)s.Playcount / (decimal)topArtist.Playcount) * (s.Playcount > (topArtist.Playcount / 2) ? 3 : 1)
                 })
                 .ToListAsync();
 
@@ -242,11 +262,11 @@ namespace FMBot.Bot.Services.WhoKnows
                     w != null &&
                     topArtists.Select(s => s.ArtistName).Contains(w.ArtistName))
                 .GroupBy(g => g.UserId)
-                .OrderByDescending(g => g.Count())
+                .OrderByDescending(g => g.Sum(s => s.Weight))
                 .Select(s => new AffinityArtistResultWithUser
                 {
-                    UserId = s.First().UserId,
-                    MatchPercentage = ((decimal)s.Count() / (decimal)topArtists.Count) * 100,
+                    UserId = s.Key,
+                    MatchPercentage = ((decimal)s.Sum(w => w.Weight) / (decimal)topArtists.Sum(w => w.Weight) * 100) / 2,
                     LastFMUsername = guildUsers.First(f => f.UserId == s.Key).UserNameLastFM,
                     Name = guildUsers.First(f => f.UserId == s.Key).UserNameLastFM
                 })
