@@ -22,23 +22,18 @@ namespace FMBot.Bot.Services
         private readonly DiscordShardedClient _client;
         private readonly IPrefixService _prefixService;
         private readonly IServiceProvider _provider;
-        private readonly Logger.Logger _logger;
-
-        private readonly ILogger logger = Log.ForContext<StartupService>();
 
 
         public StartupService(
             IServiceProvider provider,
             DiscordShardedClient discord,
             CommandService commands,
-            Logger.Logger logger,
             IPrefixService prefixService,
             IDisabledCommandService disabledCommands)
         {
             this._provider = provider;
             this._client = discord;
             this._commands = commands;
-            this._logger = logger;
             this._prefixService = prefixService;
             this._disabledCommands = disabledCommands;
         }

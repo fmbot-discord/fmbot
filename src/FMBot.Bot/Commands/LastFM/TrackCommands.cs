@@ -529,8 +529,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (track.Userplaycount != 0)
                 {
-                    var guildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
-                    usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, userSettings, guildUser, trackName, track.Userplaycount);
+                    usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, userSettings, trackName, track.Userplaycount);
                 }
 
                 var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithArtist);

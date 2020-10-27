@@ -10,7 +10,7 @@ namespace FMBot.Bot.Services.WhoKnows
 {
     public class WhoKnowsService
     {
-        public static IList<WhoKnowsObjectWithUser> AddOrReplaceUserToIndexList(IList<WhoKnowsObjectWithUser> users, User userSettings, IGuildUser user, string name, long? playcount)
+        public static IList<WhoKnowsObjectWithUser> AddOrReplaceUserToIndexList(IList<WhoKnowsObjectWithUser> users, User userSettings, string name, long? playcount)
         {
             var userRemoved = false;
             var existingUsers = users
@@ -31,7 +31,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 Playcount = userPlaycount,
                 LastFMUsername = userSettings.UserNameLastFM,
                 DiscordUserId = userSettings.DiscordUserId,
-                DiscordName = user.Nickname ?? user.Username,
+                DiscordName = userSettings.UserNameLastFM,
                 NoPosition = !userRemoved
             });
 

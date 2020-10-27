@@ -426,7 +426,19 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (user != null)
                 {
-                    var alternativeLastFmUserName = await FindUser(user);
+                    string alternativeLastFmUserName;
+
+                    if (await this._lastFmService.LastFMUserExistsAsync(user))
+                    {
+                        alternativeLastFmUserName = user;
+                    }
+                    else
+                    {
+                        var otherUser = await SettingService.GetUserFromString(user);
+
+                        alternativeLastFmUserName = otherUser?.UserNameLastFM;
+                    }
+
                     if (!string.IsNullOrEmpty(alternativeLastFmUserName))
                     {
                         lastfmToCompare = alternativeLastFmUserName;
@@ -580,8 +592,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (artist.Artist.Stats.Userplaycount != 0)
                 {
-                    var guildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
-                    usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, userSettings, guildUser, artist.Artist.Name, artist.Artist.Stats.Userplaycount);
+                    usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, userSettings, artist.Artist.Name, artist.Artist.Stats.Userplaycount);
                 }
 
                 var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithArtist);
@@ -753,11 +764,11 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     footer += $"View specific artist listeners with {prfx}whoknows";
                 }
-                else if(randomHintNumber == 2)
+                else if (randomHintNumber == 2)
                 {
                     footer += $"Available time periods: alltime and weekly";
                 }
-                else if(randomHintNumber == 3)
+                else if (randomHintNumber == 3)
                 {
                     footer += $"Available sorting options: plays and listeners";
                 }
@@ -811,45 +822,6 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             return artist;
-        }
-
-        private async Task<string> FindUser(string user)
-        {
-            if (await this._lastFmService.LastFMUserExistsAsync(user))
-            {
-                return user;
-            }
-
-            if (!this._guildService.CheckIfDM(this.Context))
-            {
-                var guildUser = await this._guildService.FindUserFromGuildAsync(this.Context, user);
-
-                if (guildUser != null)
-                {
-                    var guildUserLastFm = await this._userService.GetUserSettingsAsync(guildUser);
-
-                    return guildUserLastFm?.UserNameLastFM;
-                }
-            }
-
-            return null;
-        }
-
-        private async Task<string> FindUserFromId(ulong userId)
-        {
-            if (!this._guildService.CheckIfDM(this.Context))
-            {
-                var guildUser = await this._guildService.FindUserFromGuildAsync(this.Context, userId);
-
-                if (guildUser != null)
-                {
-                    var guildUserLastFm = await this._userService.GetUserSettingsAsync(guildUser);
-
-                    return guildUserLastFm?.UserNameLastFM;
-                }
-            }
-
-            return null;
         }
     }
 }
