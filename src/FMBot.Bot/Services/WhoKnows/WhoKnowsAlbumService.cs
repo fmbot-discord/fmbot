@@ -33,18 +33,15 @@ namespace FMBot.Bot.Services.WhoKnows
             foreach (var album in albums)
             {
                 var discordUser = await context.Guild.GetUserAsync(album.User.DiscordUserId);
-                if (discordUser != null)
+                whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
                 {
-                    whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
-                    {
-                        Name = $"{album.ArtistName} - {album.Name}",
-                        DiscordName = discordUser.Nickname ?? discordUser.Username,
-                        Playcount = album.Playcount,
-                        DiscordUserId = album.User.DiscordUserId,
-                        LastFMUsername = album.User.UserNameLastFM,
-                        UserId = album.UserId,
-                    });
-                }
+                    Name = $"{album.ArtistName} - {album.Name}",
+                    DiscordName = discordUser != null ? discordUser.Nickname ?? discordUser.Username : album.User.UserNameLastFM,
+                    Playcount = album.Playcount,
+                    DiscordUserId = album.User.DiscordUserId,
+                    LastFMUsername = album.User.UserNameLastFM,
+                    UserId = album.UserId,
+                });
             }
 
             return whoKnowsAlbumList;
