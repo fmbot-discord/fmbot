@@ -823,6 +823,8 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var users = guild.GuildUsers.Select(s => s.User).ToList();
             var neighbors = await this._whoKnowArtistService.GetNeighbors(users, userSettings.UserId);
 
