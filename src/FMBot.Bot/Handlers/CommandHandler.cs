@@ -125,7 +125,7 @@ namespace FMBot.Bot.Handlers
 
             if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && msg.Content.StartsWith(ConfigData.Data.Bot.Prefix))
             {
-                var commandPrefixResult = await this._commands.ExecuteAsync(context, msg.Content.Remove(0, 1), this._provider);
+                var commandPrefixResult = await this._commands.ExecuteAsync(context, 1, this._provider);
 
                 if (commandPrefixResult.IsSuccess)
                 {
