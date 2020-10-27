@@ -20,7 +20,7 @@
   <ItemGroup>
     <PackageReference Include="AsyncEnumerator" Version="4.0.2" />
     <PackageReference Include="DiscordBotsList.Api" Version="1.4.0" />
-    <PackageReference Include="DNetPlus" Version="1.2.4" />
+    <PackageReference Include="DNetPlus" Version="1.2.8" />
     <PackageReference Include="Genius.NET" Version="4.0.1" />
     <PackageReference Include="Google.Apis" Version="1.49.0" />
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.49.0.2118" />

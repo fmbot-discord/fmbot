@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
@@ -32,18 +33,15 @@ namespace FMBot.Bot.Services.WhoKnows
             foreach (var artist in artists)
             {
                 var discordUser = await context.Guild.GetUserAsync(artist.User.DiscordUserId);
-                if (discordUser != null)
+                whoKnowsArtistList.Add(new WhoKnowsObjectWithUser
                 {
-                    whoKnowsArtistList.Add(new WhoKnowsObjectWithUser
-                    {
-                        Name = artist.Name,
-                        DiscordName = discordUser.Nickname ?? discordUser.Username,
-                        Playcount = artist.Playcount,
-                        DiscordUserId = artist.User.DiscordUserId,
-                        LastFMUsername = artist.User.UserNameLastFM,
-                        UserId = artist.UserId
-                    });
-                }
+                    Name = artist.Name,
+                    DiscordName = discordUser != null ? discordUser.Nickname ?? discordUser.Username : artist.User.UserNameLastFM,
+                    Playcount = artist.Playcount,
+                    DiscordUserId = artist.User.DiscordUserId,
+                    LastFMUsername = artist.User.UserNameLastFM,
+                    UserId = artist.UserId
+                });
             }
 
             return whoKnowsArtistList;
