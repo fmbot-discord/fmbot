@@ -716,7 +716,7 @@ namespace FMBot.Bot.Commands.LastFM
             var serverArtistSettings = new GuildRankingSettings
             {
                 ChartTimePeriod = ChartTimePeriod.Weekly,
-                OrderType = OrderType.Playcount
+                OrderType = OrderType.Listeners
             };
 
             serverArtistSettings = SettingService.SetGuildRankingSettings(serverArtistSettings, extraOptions);
@@ -742,18 +742,15 @@ namespace FMBot.Bot.Commands.LastFM
                 if (serverArtistSettings.OrderType == OrderType.Listeners)
                 {
                     footer += "Listeners / Plays - Ordered by listeners\n";
-                    foreach (var artist in topGuildArtists)
-                    {
-                        description += $"`{artist.ListenerCount}` / `{artist.Playcount}` | **{artist.ArtistName}**\n";
-                    }
                 }
                 else
                 {
-                    footer += "Plays / Listeners - Ordered by plays\n";
-                    foreach (var artist in topGuildArtists)
-                    {
-                        description += $"`{artist.Playcount}` / `{artist.ListenerCount}` | **{artist.ArtistName}**\n";
-                    }
+                    footer += "Listeners / Plays - Ordered by plays\n";
+                }
+
+                foreach (var artist in topGuildArtists)
+                {
+                    description += $"`{artist.ListenerCount}` / `{artist.Playcount}` | **{artist.ArtistName}**\n";
                 }
 
                 this._embed.WithDescription(description);
