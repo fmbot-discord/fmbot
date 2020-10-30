@@ -529,8 +529,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (track.Userplaycount != 0)
                 {
-                    var guildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
-                    usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, userSettings, guildUser, trackName, track.Userplaycount);
+                    usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, userSettings, trackName, track.Userplaycount);
                 }
 
                 var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithArtist);
@@ -574,7 +573,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("servertracks", RunMode = RunMode.Async)]
         [Summary("Shows top albums for your server")]
         [Alias("st", "stt", "servertoptracks", "servertrack")]
-        public async Task GuildAlbumsAsync(params string[] extraOptions)
+        public async Task GuildTracksAsync(params string[] extraOptions)
         {
             if (this._guildService.CheckIfDM(this.Context))
             {
@@ -630,7 +629,7 @@ namespace FMBot.Bot.Commands.LastFM
             var serverTrackSettings = new GuildRankingSettings
             {
                 ChartTimePeriod = ChartTimePeriod.Weekly,
-                OrderType = OrderType.Playcount
+                OrderType = OrderType.Listeners
             };
 
             serverTrackSettings = SettingService.SetGuildRankingSettings(serverTrackSettings, extraOptions);
@@ -656,18 +655,15 @@ namespace FMBot.Bot.Commands.LastFM
                 if (serverTrackSettings.OrderType == OrderType.Listeners)
                 {
                     footer += "Listeners / Plays - Ordered by listeners\n";
-                    foreach (var track in topGuildTracks)
-                    {
-                        description += $"`{track.ListenerCount}` / `{track.Playcount}` | **{track.TrackName}** by **{track.ArtistName}**\n";
-                    }
                 }
                 else
                 {
-                    footer += "Plays / Listeners - Ordered by plays\n";
-                    foreach (var track in topGuildTracks)
-                    {
-                        description += $"`{track.Playcount}` / `{track.ListenerCount}` | **{track.TrackName}** by **{track.ArtistName}**\n";
-                    }
+                    footer += "Listeners / Plays  - Ordered by plays\n";
+                }
+
+                foreach (var track in topGuildTracks)
+                {
+                    description += $"`{track.ListenerCount}` / `{track.Playcount}` | **{track.TrackName}** by **{track.ArtistName}**\n";
                 }
 
                 this._embed.WithDescription(description);

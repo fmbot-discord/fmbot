@@ -5,6 +5,7 @@ using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Api.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -210,44 +211,37 @@ namespace FMBot.Bot.Services
 
             foreach (var extraOption in extraOptions)
             {
-                if (!extraOption.Contains("<@") && extraOption.Length != 18)
+                var user = await GetUserFromString(extraOption);
+
+                if (user != null)
                 {
-                    continue;
+                    settingsModel.DifferentUser = true;
+                    settingsModel.DiscordUserId = user.DiscordUserId;
+                    settingsModel.UserNameLastFm = user.UserNameLastFM;
                 }
-
-                var id = extraOption.Trim('@', '!', '<', '>');
-
-                if (!ulong.TryParse(id, out var discordUserId))
-                {
-                    continue;
-                }
-                if (context.Guild == null)
-                {
-                    continue;
-                }
-                var guildUser = await context.Guild.GetUserAsync(discordUserId);
-
-                if (guildUser == null)
-                {
-                    continue;
-                }
-
-                await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-                var user = await db.Users
-                    .AsQueryable()
-                    .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
-
-                if (user == null)
-                {
-                    continue;
-                }
-
-                settingsModel.DifferentUser = true;
-                settingsModel.DiscordUserId = discordUserId;
-                settingsModel.UserNameLastFm = user.UserNameLastFM;
             }
 
             return settingsModel;
+        }
+
+        public static async Task<User> GetUserFromString(string value)
+        {
+            if (!value.Contains("<@") && value.Length != 18)
+            {
+                return null;
+            }
+
+            var id = value.Trim('@', '!', '<', '>');
+
+            if (!ulong.TryParse(id, out var discordUserId))
+            {
+                return null;
+            }
+
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            return await db.Users
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
         }
 
         public static int GetAmount(

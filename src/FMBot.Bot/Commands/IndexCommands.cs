@@ -9,6 +9,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
+using Serilog;
 
 namespace FMBot.Bot.Commands
 {
@@ -60,6 +61,9 @@ namespace FMBot.Bot.Commands
             try
             {
                 var guildUsers = await this.Context.Guild.GetUsersAsync();
+                Log.Information("Downloaded {guildUserCount} users for guild {guildId} / {guildName} from Discord",
+                    guildUsers.Count, this.Context.Guild.Id, this.Context.Guild.Name);
+
                 var users = await this._indexService.GetUsersToIndex(guildUsers);
                 var indexedUserCount = await this._indexService.GetIndexedUsersCount(guildUsers);
 

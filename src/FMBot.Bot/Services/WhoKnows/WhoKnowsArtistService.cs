@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Dasync.Collections;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
@@ -9,11 +10,20 @@ using FMBot.Bot.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace FMBot.Bot.Services.WhoKnows
 {
     public class WhoKnowsArtistService
     {
+        private readonly IMemoryCache _cache;
+
+        public WhoKnowsArtistService(IMemoryCache cache)
+        {
+            this._cache = cache;
+        }
+
+
         public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(ICommandContext context,
             IReadOnlyList<User> guildUsers, string artistName)
         {
@@ -169,7 +179,110 @@ namespace FMBot.Bot.Services.WhoKnows
                 Console.WriteLine(e);
                 throw;
             }
+        }
 
+        public async Task<IReadOnlyList<AffinityArtistResultWithUser>> GetNeighbors(IEnumerable<User> guildUsers, int userId)
+        {
+            var userIds = guildUsers
+                .Where(w => w.UserId != userId)
+                .Select(s => s.UserId);
+
+            var topArtistsForEveryoneInServer = new List<AffinityArtist>();
+
+            await userIds.ParallelForEachAsync(async user =>
+            {
+                var key = $"top-artists-{user}";
+
+                if (this._cache.TryGetValue(key, out List<AffinityArtist> topArtistsForUser))
+                {
+                    topArtistsForEveryoneInServer.AddRange(topArtistsForUser);
+                }
+                else
+                {
+                    await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+
+                    var topArtist = await db.UserArtists
+                        .AsQueryable()
+                        .OrderByDescending(o => o.Playcount)
+                        .FirstOrDefaultAsync(w => w.UserId == user);
+
+                    var avgPlaycount = await db.UserArtists
+                        .AsQueryable()
+                        .Where(w => w.Playcount > 29 && w.UserId == userId)
+                        .AverageAsync(a => a.Playcount);
+
+                    if (topArtist != null)
+                    {
+                        topArtistsForUser = await db.UserArtists
+                            .AsQueryable()
+                            .Where(
+                                w => w.Playcount > 29 &&
+                                     w.UserId == user &&
+                                     w.Name != null)
+                            .Select(s => new AffinityArtist
+                            {
+                                ArtistName = s.Name.ToLower(),
+                                Playcount = s.Playcount,
+                                UserId = s.UserId,
+                                Weight = ((decimal)s.Playcount / (decimal)topArtist.Playcount) * (s.Playcount > (avgPlaycount * 2) ? 3 : 1)
+                            })
+                            .ToListAsync();
+
+                        if (topArtistsForUser.Any())
+                        {
+                            this._cache.Set(key, topArtistsForUser, TimeSpan.FromHours(12));
+                            topArtistsForEveryoneInServer.AddRange(topArtistsForUser);
+                        }
+                    }
+
+                    
+                }
+            });
+
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+
+            var userTopArtist = await db.UserArtists
+                .AsQueryable()
+                .OrderByDescending(o => o.Playcount)
+                .FirstOrDefaultAsync(w => w.UserId == userId);
+
+            var userAvgPlaycount = await db.UserArtists
+                .AsQueryable()
+                .Where(w => w.Playcount > 29 && w.UserId == userId)
+                .AverageAsync(a => a.Playcount);
+
+            var topArtists = await db.UserArtists
+                .AsQueryable()
+                .Where(
+                    w => w.Playcount > 29 &&
+                         w.UserId == userId &&
+                         w.Name != null)
+                .OrderByDescending(o => o.Playcount)
+                .Select(s => new AffinityArtist
+                {
+                    ArtistName = s.Name.ToLower(),
+                    Playcount = s.Playcount,
+                    UserId = s.UserId,
+                    Weight = ((decimal)s.Playcount / (decimal)userTopArtist.Playcount) * (s.Playcount > (userAvgPlaycount * 2) ? 24 : 8)
+                })
+                .ToListAsync();
+
+            return topArtistsForEveryoneInServer
+                .Where(w =>
+                    w != null &&
+                    topArtists.Select(s => s.ArtistName).Contains(w.ArtistName))
+                .GroupBy(g => g.UserId)
+                .OrderByDescending(g => g.Sum(s => s.Weight * topArtists.First(f => f.ArtistName == s.ArtistName).Weight))
+                .Select(s => new AffinityArtistResultWithUser
+                {
+                    UserId = s.Key,
+                    MatchPercentage = Math.Min(
+                        ((decimal)s.Sum(w => w.Weight * topArtists.First(f => f.ArtistName == w.ArtistName).Weight)
+                        / (decimal)topArtists.Sum(w => w.Weight) * 100) * 2, 100),
+                    LastFMUsername = guildUsers.First(f => f.UserId == s.Key).UserNameLastFM,
+                    Name = guildUsers.First(f => f.UserId == s.Key).UserNameLastFM
+                })
+                .ToList();
         }
     }
 }

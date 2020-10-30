@@ -578,8 +578,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (album.Userplaycount != 0)
                 {
-                    var guildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
-                    usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, userSettings, guildUser, albumName, album.Userplaycount);
+                    usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, userSettings, albumName, album.Userplaycount);
                 }
 
                 var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithArtist);
@@ -684,7 +683,7 @@ namespace FMBot.Bot.Commands.LastFM
             var serverAlbumSettings = new GuildRankingSettings
             {
                 ChartTimePeriod = ChartTimePeriod.Weekly,
-                OrderType = OrderType.Playcount
+                OrderType = OrderType.Listeners
             };
 
             serverAlbumSettings = SettingService.SetGuildRankingSettings(serverAlbumSettings, extraOptions);
@@ -710,18 +709,15 @@ namespace FMBot.Bot.Commands.LastFM
                 if (serverAlbumSettings.OrderType == OrderType.Listeners)
                 {
                     footer += "Listeners / Plays - Ordered by listeners\n";
-                    foreach (var album in topGuildAlbums)
-                    {
-                        description += $"`{album.ListenerCount}` / `{album.Playcount}` | **{album.AlbumName}** by **{album.ArtistName}**\n";
-                    }
                 }
                 else
                 {
-                    footer += "Plays / Listeners - Ordered by plays\n";
-                    foreach (var album in topGuildAlbums)
-                    {
-                        description += $"`{album.Playcount}` / `{album.ListenerCount}` | **{album.AlbumName}** by **{album.ArtistName}**\n";
-                    }
+                    footer += "Listeners / Plays - Ordered by plays\n";
+                }
+
+                foreach (var album in topGuildAlbums)
+                {
+                    description += $"`{album.ListenerCount}` / `{album.Playcount}` | **{album.AlbumName}** by **{album.ArtistName}**\n";
                 }
 
                 this._embed.WithDescription(description);
