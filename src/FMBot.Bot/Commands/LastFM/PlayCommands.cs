@@ -62,18 +62,25 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("np", "qm", "wm", "em", "rm", "tm", "ym", "um", "om", "pm", "dm", "gm", "sm", "am", "hm", "jm", "km",
             "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm")]
         [UsernameSetRequired]
-        public async Task FMAsync(params string[] user)
+        public async Task FMAsync(params string[] parameters)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
+            if (parameters.Length > 0 && parameters.First() == "set")
+            {
+                await ReplyAsync(
+                    "Please remove the space between `.fm` and `set` to set your last.fm username.");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
             if (userSettings?.UserNameLastFM == null)
             {
                 this._embed.UsernameNotSetErrorResponse(prfx);
                 await ReplyAsync("", false, this._embed.Build());
                 return;
             }
-            if (user.Length > 0 && user.First() == "help")
+            if (parameters.Length > 0 && parameters.First() == "help")
             {
                 var fmString = "fm";
                 if (prfx == ".fm")
@@ -100,22 +107,14 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            if (user.Length > 0 && user.First() == "set")
-            {
-                await ReplyAsync(
-                    "Please remove the space between `.fm` and `set` to set your last.fm username.");
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                return;
-            }
-
             try
             {
                 var lastFMUserName = userSettings.UserNameLastFM;
                 var self = true;
 
-                if (user.Length > 0 && !string.IsNullOrEmpty(user.First()))
+                if (parameters.Length > 0 && !string.IsNullOrEmpty(parameters.First()) && parameters.Count() == 1)
                 {
-                    var alternativeLastFmUserName = await FindUser(user.First());
+                    var alternativeLastFmUserName = await FindUser(parameters.First());
                     if (!string.IsNullOrEmpty(alternativeLastFmUserName) && await this._lastFmService.LastFMUserExistsAsync(alternativeLastFmUserName))
                     {
                         lastFMUserName = alternativeLastFmUserName;
@@ -297,7 +296,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("recent", RunMode = RunMode.Async)]
         [Summary("Displays a user's recent tracks.")]
-        [Alias("recenttracks", "r")]
+        [Alias("recenttracks","recents", "r")]
         [UsernameSetRequired]
         public async Task RecentAsync(string amount = "5", string user = null)
         {
