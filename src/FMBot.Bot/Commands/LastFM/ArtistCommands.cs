@@ -839,6 +839,7 @@ namespace FMBot.Bot.Commands.LastFM
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
             this._embed.WithTitle($"Neighbors for {userTitle}");
+            this._embed.WithFooter("Experimental command - work in progress");
 
             this._embed.WithDescription(description.ToString());
 

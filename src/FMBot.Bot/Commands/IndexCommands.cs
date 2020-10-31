@@ -70,12 +70,12 @@ namespace FMBot.Bot.Commands
                 var guildRecentlyIndexed =
                     lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(60));
 
-                //if (guildRecentlyIndexed)
-                //{
-                //    await ReplyAsync("An index was recently started on this server. Please wait before running this command again.");
-                //    this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                //    return;
-                //}
+                if (guildRecentlyIndexed)
+                {
+                    await ReplyAsync("An index was recently started on this server. Please wait before running this command again.");
+                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                    return;
+                }
                 if (users.Count == 0 && lastIndex != null)
                 {
                     await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
