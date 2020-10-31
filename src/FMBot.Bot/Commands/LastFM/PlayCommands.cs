@@ -280,11 +280,15 @@ namespace FMBot.Bot.Commands.LastFM
                                 "Couldn't add emote reactions to `.fm`. If you have recently changed changed any of the configured emotes please use `.fmserverreactions` to reset the automatic emote reactions.");
                         }
 
-
                         break;
                 }
 
                 this.Context.LogCommandUsed();
+
+                if (this._guildService.CheckIfDM(this.Context))
+                {
+                    await this._indexService.UpdateUserNameWithoutGuildUser(await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), userSettings);
+                }
             }
             catch (Exception e)
             {

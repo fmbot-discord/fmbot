@@ -14,12 +14,12 @@ namespace FMBot.Bot.Services.WhoKnows
     public class WhoKnowsAlbumService
     {
         public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForAlbum(ICommandContext context,
-            IReadOnlyList<User> guildUsers, string artistName, string albumName)
+            ICollection<GuildUser> guildUsers, string artistName, string albumName)
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            var albums = await db.UserAlbums
+            var userAlbums = await db.UserAlbums
                 .Include(i => i.User)
                 .Where(w => w.Name.ToLower() == albumName.ToLower() &&
                             w.ArtistName.ToLower() == artistName.ToLower()
@@ -30,17 +30,22 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var whoKnowsAlbumList = new List<WhoKnowsObjectWithUser>();
 
-            foreach (var album in albums)
+            foreach (var userAlbum in userAlbums)
             {
-                var discordUser = await context.Guild.GetUserAsync(album.User.DiscordUserId);
+                var discordUser = await context.Guild.GetUserAsync(userAlbum.User.DiscordUserId);
+                var guildUser = guildUsers.FirstOrDefault(f => f.UserId == userAlbum.UserId);
+                var userName = discordUser != null ?
+                    discordUser.Nickname ?? discordUser.Username :
+                    guildUser?.UserName ?? userAlbum.User.UserNameLastFM;
+
                 whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
                 {
-                    Name = $"{album.ArtistName} - {album.Name}",
-                    DiscordName = discordUser != null ? discordUser.Nickname ?? discordUser.Username : album.User.UserNameLastFM,
-                    Playcount = album.Playcount,
-                    DiscordUserId = album.User.DiscordUserId,
-                    LastFMUsername = album.User.UserNameLastFM,
-                    UserId = album.UserId,
+                    Name = $"{userAlbum.ArtistName} - {userAlbum.Name}",
+                    DiscordName = userName,
+                    Playcount = userAlbum.Playcount,
+                    DiscordUserId = userAlbum.User.DiscordUserId,
+                    LastFMUsername = userAlbum.User.UserNameLastFM,
+                    UserId = userAlbum.UserId,
                 });
             }
 

@@ -14,12 +14,12 @@ namespace FMBot.Bot.Services.WhoKnows
     public class WhoKnowsTrackService
     {
         public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(ICommandContext context,
-            IReadOnlyList<User> guildUsers, string artistName, string trackName)
+            ICollection<GuildUser> guildUsers, string artistName, string trackName)
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            var tracks = await db.UserTracks
+            var userTracks = await db.UserTracks
                 .Include(i => i.User)
                 .Where(w => w.Name.ToLower() == trackName.ToLower() &&
                             w.ArtistName.ToLower() == artistName.ToLower()
@@ -30,17 +30,22 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var whoKnowsTrackList = new List<WhoKnowsObjectWithUser>();
 
-            foreach (var track in tracks)
+            foreach (var userTrack in userTracks)
             {
-                var discordUser = await context.Guild.GetUserAsync(track.User.DiscordUserId);
+                var discordUser = await context.Guild.GetUserAsync(userTrack.User.DiscordUserId);
+                var guildUser = guildUsers.FirstOrDefault(f => f.UserId == userTrack.UserId);
+                var userName = discordUser != null ?
+                    discordUser.Nickname ?? discordUser.Username :
+                    guildUser?.UserName ?? userTrack.User.UserNameLastFM;
+
                 whoKnowsTrackList.Add(new WhoKnowsObjectWithUser
                 {
-                    Name = $"{track.ArtistName} - {track.Name}",
-                    DiscordName = discordUser != null ? discordUser.Nickname ?? discordUser.Username : track.User.UserNameLastFM,
-                    Playcount = track.Playcount,
-                    DiscordUserId = track.User.DiscordUserId,
-                    LastFMUsername = track.User.UserNameLastFM,
-                    UserId = track.UserId,
+                    Name = $"{userTrack.ArtistName} - {userTrack.Name}",
+                    DiscordName = userName,
+                    Playcount = userTrack.Playcount,
+                    DiscordUserId = userTrack.User.DiscordUserId,
+                    LastFMUsername = userTrack.User.UserNameLastFM,
+                    UserId = userTrack.UserId,
                 });
             }
 

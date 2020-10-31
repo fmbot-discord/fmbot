@@ -266,7 +266,11 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                await this._indexService.AddUserToGuild(this.Context.Guild, newUserSettings);
+                var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+                if (guild != null)
+                {
+                    await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(this.Context.User.Id), newUserSettings);
+                }
 
                 var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
                 if (!perms.EmbedLinks || !perms.AttachFiles)

@@ -25,12 +25,12 @@ namespace FMBot.Bot.Services.WhoKnows
 
 
         public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(ICommandContext context,
-            IReadOnlyList<User> guildUsers, string artistName)
+            ICollection<GuildUser> guildUsers, string artistName)
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            var artists = await db.UserArtists
+            var userArtists = await db.UserArtists
                 .Include(i => i.User)
                 .Where(w => w.Name.ToLower() == artistName.ToLower()
                             && userIds.Contains(w.UserId))
@@ -40,17 +40,22 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var whoKnowsArtistList = new List<WhoKnowsObjectWithUser>();
 
-            foreach (var artist in artists)
+            foreach (var userArtist in userArtists)
             {
-                var discordUser = await context.Guild.GetUserAsync(artist.User.DiscordUserId);
+                var discordUser = await context.Guild.GetUserAsync(userArtist.User.DiscordUserId);
+                var guildUser = guildUsers.FirstOrDefault(f => f.UserId == userArtist.UserId);
+                var userName = discordUser != null ?
+                    discordUser.Nickname ?? discordUser.Username :
+                    guildUser?.UserName ?? userArtist.User.UserNameLastFM;
+
                 whoKnowsArtistList.Add(new WhoKnowsObjectWithUser
                 {
-                    Name = artist.Name,
-                    DiscordName = discordUser != null ? discordUser.Nickname ?? discordUser.Username : artist.User.UserNameLastFM,
-                    Playcount = artist.Playcount,
-                    DiscordUserId = artist.User.DiscordUserId,
-                    LastFMUsername = artist.User.UserNameLastFM,
-                    UserId = artist.UserId
+                    Name = userArtist.Name,
+                    DiscordName = userName,
+                    Playcount = userArtist.Playcount,
+                    DiscordUserId = userArtist.User.DiscordUserId,
+                    LastFMUsername = userArtist.User.UserNameLastFM,
+                    UserId = userArtist.UserId
                 });
             }
 
@@ -83,7 +88,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 .ToListAsync();
         }
 
-        public async Task<int> GetArtistListenerCountForServer(IReadOnlyList<User> guildUsers, string artistName)
+        public async Task<int> GetArtistListenerCountForServer(ICollection<GuildUser> guildUsers, string artistName)
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
@@ -95,7 +100,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 .CountAsync();
         }
 
-        public async Task<int> GetArtistPlayCountForServer(IReadOnlyList<User> guildUsers, string artistName)
+        public async Task<int> GetArtistPlayCountForServer(ICollection<GuildUser> guildUsers, string artistName)
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
@@ -117,7 +122,7 @@ namespace FMBot.Bot.Services.WhoKnows
             }
         }
 
-        public async Task<double> GetArtistAverageListenerPlaycountForServer(IReadOnlyList<User> guildUsers, string artistName)
+        public async Task<double> GetArtistAverageListenerPlaycountForServer(ICollection<GuildUser> guildUsers, string artistName)
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
@@ -137,7 +142,7 @@ namespace FMBot.Bot.Services.WhoKnows
             }
         }
 
-        public async Task<int> GetWeekArtistPlaycountForGuildAsync(IEnumerable<User> guildUsers, string artistName)
+        public async Task<int> GetWeekArtistPlaycountForGuildAsync(ICollection<GuildUser> guildUsers, string artistName)
         {
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-7);

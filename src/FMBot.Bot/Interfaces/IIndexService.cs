@@ -13,7 +13,11 @@ namespace FMBot.Bot.Interfaces
 
         Task IndexUser(User user);
 
-        Task AddUserToGuild(IGuild guild, User user);
+        Task<GuildUser> GetOrAddUserToGuild(Guild guild, IGuildUser guildUser, User user);
+
+        Task UpdateUserName(GuildUser guildUser, IGuildUser discordGuildUser);
+
+        Task UpdateUserNameWithoutGuildUser(IGuildUser discordGuildUser, User user);
 
         Task RemoveUserFromGuild(SocketGuildUser user);
 

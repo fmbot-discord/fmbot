@@ -10,15 +10,15 @@ namespace FMBot.Bot.Services.WhoKnows
 {
     public class WhoKnowsService
     {
-        public static IList<WhoKnowsObjectWithUser> AddOrReplaceUserToIndexList(IList<WhoKnowsObjectWithUser> users, User userSettings, string name, long? playcount)
+        public static IList<WhoKnowsObjectWithUser> AddOrReplaceUserToIndexList(IList<WhoKnowsObjectWithUser> users, GuildUser guildUser, string name, long? playcount)
         {
             var userRemoved = false;
             var existingUsers = users
-                .Where(f => f.LastFMUsername.ToLower() == userSettings.UserNameLastFM.ToLower());
+                .Where(f => f.LastFMUsername.ToLower() == guildUser.User.UserNameLastFM.ToLower());
             if (existingUsers.Any())
             {
                 users = users
-                    .Where(f => f.LastFMUsername.ToLower() != userSettings.UserNameLastFM.ToLower())
+                    .Where(f => f.LastFMUsername.ToLower() != guildUser.User.UserNameLastFM.ToLower())
                     .ToList();
                 userRemoved = true;
             }
@@ -26,12 +26,12 @@ namespace FMBot.Bot.Services.WhoKnows
             var userPlaycount = int.Parse(playcount.GetValueOrDefault(0).ToString());
             users.Add(new WhoKnowsObjectWithUser
             {
-                UserId = userSettings.UserId,
+                UserId = guildUser.User.UserId,
                 Name = name,
                 Playcount = userPlaycount,
-                LastFMUsername = userSettings.UserNameLastFM,
-                DiscordUserId = userSettings.DiscordUserId,
-                DiscordName = userSettings.UserNameLastFM,
+                LastFMUsername = guildUser.User.UserNameLastFM,
+                DiscordUserId = guildUser.User.DiscordUserId,
+                DiscordName = guildUser.UserName,
                 NoPosition = !userRemoved
             });
 

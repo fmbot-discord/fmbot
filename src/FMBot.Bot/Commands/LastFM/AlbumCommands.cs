@@ -566,23 +566,25 @@ namespace FMBot.Bot.Commands.LastFM
             try
             {
                 var guild = await guildTask;
-                var users = guild.GuildUsers.Select(s => s.User).ToList();
 
-                if (!users.Select(s => s.UserId).Contains(userSettings.UserId))
+                var currentUser = await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), userSettings);
+
+                if (!guild.GuildUsers.Select(s => s.UserId).Contains(userSettings.UserId))
                 {
-                    await this._indexService.AddUserToGuild(this.Context.Guild, userSettings);
-                    users.Add(userSettings);
+                    guild.GuildUsers.Add(currentUser);
                 }
 
-                var usersWithArtist = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(this.Context, users, album.Artist, album.Name);
+                await this._indexService.UpdateUserName(currentUser, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId));
+
+                var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(this.Context, guild.GuildUsers, album.Artist, album.Name);
 
                 if (album.Userplaycount != 0)
                 {
-                    usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, userSettings, albumName, album.Userplaycount);
+                    usersWithAlbum = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, currentUser, albumName, album.Userplaycount);
                 }
 
-                var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithArtist);
-                if (usersWithArtist.Count == 0)
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithAlbum);
+                if (usersWithAlbum.Count == 0)
                 {
                     serverUsers = "Nobody in this server (not even you) has listened to this album.";
                 }
