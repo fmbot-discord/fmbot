@@ -93,13 +93,13 @@ namespace FMBot.Bot.Services
         {
             var fmClient = new LastfmClient(ConfigData.Data.LastFm.Key, ConfigData.Data.LastFm.Secret);
 
-            Log.Information("Testing Last.FM API");
+            Log.Information("Testing Last.fm API");
             var lastFMUser = await fmClient.User.GetInfoAsync("Lastfmsupport");
 
             if (lastFMUser.Status.ToString().Equals("BadApiKey"))
             {
                 Log.Fatal("BadLastfmApiKey",
-                    "Warning! Invalid API key for Last.FM! Please set the proper API keys in the `/Configs/ConfigData.json`! \n \n" +
+                    "Warning! Invalid API key for Last.fm! Please set the proper API keys in the `/Configs/ConfigData.json`! \n \n" +
                     "Exiting in 5 seconds...");
 
                 Thread.Sleep(5000);
@@ -107,7 +107,7 @@ namespace FMBot.Bot.Services
             }
             else
             {
-                Log.Information("Last.FM API test successful");
+                Log.Information("Last.fm API test successful");
             }
         }
 

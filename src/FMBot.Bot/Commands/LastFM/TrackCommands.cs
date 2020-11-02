@@ -440,7 +440,7 @@ namespace FMBot.Bot.Commands.LastFM
             catch (Exception e)
             {
                 this.Context.LogCommandException(e);
-                await ReplyAsync("Unable to show Last.FM info due to an internal error.");
+                await ReplyAsync("Unable to show Last.fm info due to an internal error.");
             }
         }
 

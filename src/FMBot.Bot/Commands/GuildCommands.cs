@@ -193,7 +193,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("export", RunMode = RunMode.Async)]
-        [Summary("Gets Last.FM usernames from your server members in json format.")]
+        [Summary("Gets Last.fm usernames from your server members in json format.")]
         [Alias("getmembers", "exportmembers")]
         public async Task GetMembersAsync()
         {

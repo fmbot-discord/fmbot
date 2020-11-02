@@ -149,7 +149,7 @@ namespace FMBot.Bot.Commands
             description += $"**Discord usercount:** `{client.Guilds.Select(s => s.MemberCount).Sum()}`\n";
             description += $"**Servercount:** `{client.Guilds.Count}`\n";
             description += $"**Commands used:** `{Statistics.CommandsExecuted.Value}`\n";
-            description += $"**Last.FM API calls:** `{Statistics.LastfmApiCalls.Value}`\n";
+            description += $"**Last.fm API calls:** `{Statistics.LastfmApiCalls.Value}`\n";
             description += $"**Memory usage:** `{currentMemoryUsage.ToFormattedByteString()}` (Peak: `{peakMemoryUsage.ToFormattedByteString()}`)\n";
             description += $"**Average latency:** `{Math.Round(client.Shards.Select(s => s.Latency).Average(), 2) + "ms`"}\n";
             description += $"**Shards:** `{client.Shards.Count}`\n";

@@ -108,8 +108,8 @@ namespace FMBot.Bot.Commands
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync(
-                    "Unable to show Last.FM info via Genius due to an internal error. " +
-                    "Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
+                    "Unable to show Last.fm info via Genius due to an internal error. " +
+                    "Try setting a Last.fm name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
     }

@@ -143,7 +143,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("addfriends", RunMode = RunMode.Async)]
-        [Summary("Adds your friends' Last.FM names.")]
+        [Summary("Adds your friends' Last.fm names.")]
         [Alias("friendsset", "setfriends", "friendsadd", "addfriend", "setfriend")]
         [UsernameSetRequired]
         public async Task AddFriends([Summary("Friend names")] params string[] enteredFriends)
@@ -253,7 +253,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("removefriends", RunMode = RunMode.Async)]
-        [Summary("Remove your friends' Last.FM names.")]
+        [Summary("Remove your friends' Last.fm names.")]
         [Alias("friendsremove", "deletefriend", "deletefriends", "removefriend")]
         [UsernameSetRequired]
         public async Task RemoveFriends([Summary("Friend names")] params string[] enteredFriends)

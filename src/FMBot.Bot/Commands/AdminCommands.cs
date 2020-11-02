@@ -52,7 +52,7 @@ namespace FMBot.Bot.Commands
 
         //    if (userSettings?.UserNameLastFM == null)
         //    {
-        //        await ReplyAsync("The user's Last.FM name has not been set.");
+        //        await ReplyAsync("The user's Last.fm name has not been set.");
         //        this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
         //        return;
         //    }
