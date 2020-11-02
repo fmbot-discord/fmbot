@@ -120,7 +120,6 @@ namespace FMBot.Bot.Services
             catch (Exception e)
             {
                 Log.Error(e, "Error while attempting to add user {userId} to guild {guildId}", user.UserId, guild.GuildId);
-                throw;
             }
 
             return guild.GuildUsers.First(f => f.UserId == user.UserId);

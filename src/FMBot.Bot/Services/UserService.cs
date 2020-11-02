@@ -59,6 +59,31 @@ namespace FMBot.Bot.Services
         }
 
         // User settings
+        public async Task UpdateUserLastUsedAsync(IUser discordUser)
+        {
+            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            var user = await db.Users
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+
+            if (user != null)
+            {
+                user.LastUsed = DateTime.UtcNow;
+
+                db.Entry(user).State = EntityState.Modified;
+
+                try
+                {
+                    await db.SaveChangesAsync();
+                }
+                catch (Exception e)
+                {
+                    Log.Error(e, "Something went wrong while attempting to update user {userId} last used", user.UserId);
+                }
+            }
+        }
+
+        // User settings
         public async Task<User> GetUserSettingsAsync(IUser discordUser, bool bypassCache = false)
         {
             var cacheKey = $"user-settings-{discordUser.Id}";

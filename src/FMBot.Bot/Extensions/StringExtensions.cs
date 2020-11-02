@@ -20,7 +20,7 @@ namespace FMBot.Bot.Extensions
 
         public static string FilterOutMentions(this string str)
         {
-            var pattern = new Regex("(@everyone|@here|<@|`|\\||)");
+            var pattern = new Regex("(@everyone|@here|<@|`)");
             return pattern.Replace(str, "");
         }
 
