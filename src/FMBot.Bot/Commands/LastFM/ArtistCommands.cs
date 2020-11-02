@@ -652,8 +652,17 @@ namespace FMBot.Bot.Commands.LastFM
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync("Something went wrong while using whoknows. Please let us know as this feature is in beta.");
+                if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
+                {
+                    this.Context.LogCommandException(e);
+                    await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
+                                     "Make sure it has permission to 'Embed links' and 'Attach Images'");
+                }
+                else
+                {
+                    this.Context.LogCommandException(e);
+                    await ReplyAsync("Something went wrong while using whoknows. Please let us know as this feature is in beta.");
+                }
             }
         }
 

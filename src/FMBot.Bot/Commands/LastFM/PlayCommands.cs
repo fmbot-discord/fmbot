@@ -282,16 +282,24 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this.Context.LogCommandUsed();
 
-                if (this._guildService.CheckIfDM(this.Context))
+                if (!this._guildService.CheckIfDM(this.Context))
                 {
                     await this._indexService.UpdateUserNameWithoutGuildUser(await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), userSettings);
                 }
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync(
-                    "Unable to show Last.fm info due to an internal error. Try scrobbling something then use the command again.");
+                if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
+                {
+                    this.Context.LogCommandException(e);
+                    await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
+                                     "Make sure it has permission to 'Embed links' and 'Attach Images'");
+                }
+                else
+                {
+                    this.Context.LogCommandException(e);
+                    await ReplyAsync("Something went wrong while showing info from Last.fm. Please try again later or contact staff on our support server.");
+                }
             }
         }
 
@@ -399,7 +407,6 @@ namespace FMBot.Bot.Commands.LastFM
                     "Unable to show your recent tracks on Last.fm due to an internal error. Try setting a Last.fm name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
-
 
         [Command("overview", RunMode = RunMode.Async)]
         [Summary("Displays a week overview.")]
