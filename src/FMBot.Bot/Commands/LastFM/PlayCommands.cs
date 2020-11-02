@@ -147,8 +147,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var embedTitle = self ? userTitle : $"{lastFMUserName}, requested by {userTitle}";
 
                 var fmText = "";
-
-                string footerText = "";
+                var footerText = "";
 
                 footerText +=
                     $"{userInfo.Content.Name} has ";
@@ -207,11 +206,9 @@ namespace FMBot.Bot.Commands.LastFM
                         }
 
                         fmText +=
-                            $"<{Constants.LastFMUserUrl + userSettings.UserNameLastFM}> has {playCount} scrobbles.";
+                            $"<{Constants.LastFMUserUrl + userSettings.UserNameLastFM}> has {playCount} scrobbles";
 
-                        fmText = fmText.FilterOutMentions();
-
-                        await this.Context.Channel.SendMessageAsync(fmText);
+                        await this.Context.Channel.SendMessageAsync(fmText.FilterOutMentions());
                         break;
                     default:
                         var albumImagesTask =
@@ -275,7 +272,7 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                         catch (Exception e)
                         {
-                            this.Context.LogCommandException(e);
+                            this.Context.LogCommandException(e, "Could not add emote reactions");
                             await ReplyAsync(
                                 "Couldn't add emote reactions to `.fm`. If you have recently changed changed any of the configured emotes please use `.fmserverreactions` to reset the automatic emote reactions.");
                         }

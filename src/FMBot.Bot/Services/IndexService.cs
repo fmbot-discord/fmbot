@@ -98,21 +98,29 @@ namespace FMBot.Bot.Services
         {
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
 
-            if (!guild.GuildUsers.Select(g => g.UserId).Contains(user.UserId))
+            try
             {
-                var guildUserToAdd = new GuildUser
+                if (!guild.GuildUsers.Select(g => g.UserId).Contains(user.UserId))
                 {
-                    GuildId = guild.GuildId,
-                    UserId = user.UserId,
-                    UserName = discordGuildUser.Nickname ?? discordGuildUser.Username,
-                    User = user
-                };
-                await db.GuildUsers.AddAsync(guildUserToAdd);
-                await db.SaveChangesAsync();
+                    var guildUserToAdd = new GuildUser
+                    {
+                        GuildId = guild.GuildId,
+                        UserId = user.UserId,
+                        UserName = discordGuildUser.Nickname ?? discordGuildUser.Username,
+                        User = user
+                    };
+                    await db.GuildUsers.AddAsync(guildUserToAdd);
+                    await db.SaveChangesAsync();
 
-                Log.Information("Added user {userId} to guild {guildName}", user.UserId, guild.Name);
+                    Log.Information("Added user {userId} to guild {guildName}", user.UserId, guild.Name);
 
-                return guildUserToAdd;
+                    return guildUserToAdd;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "Error while attempting to add user {userId} to guild {guildId}", user.UserId, guild.GuildId);
+                throw;
             }
 
             return guild.GuildUsers.First(f => f.UserId == user.UserId);

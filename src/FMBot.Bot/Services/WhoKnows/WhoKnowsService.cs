@@ -95,13 +95,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
         private static string NameWithLink(WhoKnowsObjectWithUser user)
         {
-            var discordName = user.DiscordName;
-            var charsToRemove = new[] { "@", "[", "]", "(", ")", "`", "|", "*", "~", ">" };
-
-            foreach (var c in charsToRemove)
-            {
-                discordName = discordName.Replace(c, string.Empty);
-            }
+            var discordName = Format.Sanitize(user.DiscordName);
 
             if (string.IsNullOrWhiteSpace(discordName))
             {

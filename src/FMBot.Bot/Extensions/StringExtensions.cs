@@ -20,14 +20,8 @@ namespace FMBot.Bot.Extensions
 
         public static string FilterOutMentions(this string str)
         {
-            var pattern = new Regex("(@everyone|@here|<@)");
+            var pattern = new Regex("(@everyone|@here|<@|`|\\||)");
             return pattern.Replace(str, "");
-        }
-
-        public static bool ContainsMentions(this string str)
-        {
-            var matchesPattern = Regex.Match(str, "(@everyone|@here|<@)");
-            return matchesPattern.Success;
         }
 
         public static bool ContainsAny(this string haystack, params string[] needles)

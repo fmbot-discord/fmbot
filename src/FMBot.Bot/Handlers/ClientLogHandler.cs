@@ -31,10 +31,33 @@ namespace FMBot.Bot.Handlers
         {
             Task.Run(() =>
             {
-                // If log message is a Serializer Error, Log the message to the SerializerError folder.
-                if (logMessage.Message.Contains("Serializer Error"))
-                    Log.Error(
-                        $"Source: {logMessage.Source} Exception: {logMessage.Exception} Message: {logMessage.Message}");
+                switch (logMessage.Severity)
+                {
+                    case LogSeverity.Critical:
+                        Log.Fatal(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source, logMessage.Message);
+                        break;
+                    case LogSeverity.Error:
+                        Log.Error(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source,
+                            logMessage.Message);
+                        break;
+                    case LogSeverity.Warning:
+                        Log.Warning(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source,
+                            logMessage.Message);
+                        break;
+                    case LogSeverity.Info:;
+                        Log.Information(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source,
+                            logMessage.Message);
+                        break;
+                    case LogSeverity.Verbose:
+                        Log.Verbose(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source,
+                            logMessage.Message);
+                        break;
+                    case LogSeverity.Debug:
+                        Log.Debug(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source,
+                            logMessage.Message);
+                        break;
+                }
+                    
             });
             return Task.CompletedTask;
         }

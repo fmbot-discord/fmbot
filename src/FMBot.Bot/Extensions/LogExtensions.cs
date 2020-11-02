@@ -14,10 +14,10 @@ namespace FMBot.Bot.Extensions
                 context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse, context.Message.Content);
         }
 
-        public static void LogCommandException(this ICommandContext context, Exception exception)
+        public static void LogCommandException(this ICommandContext context, Exception exception, string message = null)
         {
-            Log.Error(exception, "CommandUsed: {userName} / {UserId} | {guildName} / {guildId} | {commandResponse} | {messageContent}",
-                context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, CommandResponse.Error, context.Message.Content);
+            Log.Error(exception, "CommandUsed: {userName} / {UserId} | {guildName} / {guildId} | {commandResponse} ({message}) | {messageContent}",
+                context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, CommandResponse.Error, message, context.Message.Content);
         }
 
         public static void LogCommandWithLastFmError(this ICommandContext context, ResponseStatus? responseStatus)

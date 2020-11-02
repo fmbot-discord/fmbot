@@ -64,7 +64,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("stats", RunMode = RunMode.Async)]
-        [Summary("Displays user stats related to Last.FM and FMBot")]
+        [Summary("Displays user stats related to Last.fm and .fmbot")]
         [UsernameSetRequired]
         public async Task StatsAsync(params string[] userOptions)
         {
@@ -179,9 +179,9 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("set", RunMode = RunMode.Async)]
         [Summary(
-            "Sets your Last.FM name and FM mode. Please note that users in shared servers will be able to see and request your Last.FM username.")]
+            "Sets your Last.fm name and FM mode. Please note that users in shared servers will be able to see and request your Last.fm username.")]
         [Alias("setname", "setmode", "fm set")]
-        public async Task SetAsync([Summary("Your Last.FM name")] string lastFMUserName = null,
+        public async Task SetAsync([Summary("Your Last.fm name")] string lastFMUserName = null,
             params string[] otherSettings)
         {
             var prfx = ConfigData.Data.Bot.Prefix;
@@ -192,7 +192,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var replyString = $"{prfx}set is the command you use to set your last.fm username in the bot, so it knows who you are on the last.fm website. \n" +
                                   "Don't have a last.fm account yet? Register here: https://www.last.fm/join \n \n" +
                                   "Sets your username, mode and playcount for the `.fm` command:\n \n" +
-                                  $"`{prfx}set 'Last.FM Username' 'embedmini/embedfull/textmini/textfull' 'artist/album/track'` \n \n";
+                                  $"`{prfx}set 'Last.fm Username' 'embedmini/embedfull/textmini/textfull' 'artist/album/track'` \n \n";
 
                 if (existingUserSettings?.UserNameLastFM != null)
                 {
@@ -219,14 +219,14 @@ namespace FMBot.Bot.Commands.LastFM
             lastFMUserName = lastFMUserName.Replace("'", "");
             if (!await this._lastFmService.LastFMUserExistsAsync(lastFMUserName))
             {
-                var reply = $"LastFM user `{lastFMUserName}` could not be found. Please check if the name you entered is correct.";
+                var reply = $"Last.fm user `{lastFMUserName}` could not be found. Please check if the name you entered is correct.";
                 await ReplyAsync(reply.FilterOutMentions());
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
             if (lastFMUserName == "lastfmusername")
             {
-                await ReplyAsync("Please enter your own last.fm username and not `lastfmusername`.\n");
+                await ReplyAsync("Please enter your own Last.fm username and not `lastfmusername`.\n");
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
@@ -243,7 +243,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             this._userService.SetLastFM(this.Context.User, userSettingsToAdd);
 
-            var setReply = $"Your Last.FM name has been set to '{lastFMUserName}' and your .fm mode to '{userSettingsToAdd.FmEmbedType}'";
+            var setReply = $"Your Last.fm name has been set to '{lastFMUserName}' and your .fm mode to '{userSettingsToAdd.FmEmbedType}'";
             if (userSettingsToAdd.FmCountType != null)
             {
                 setReply += $" with the '{userSettingsToAdd.FmCountType.ToString().ToLower()}' playcount.";
