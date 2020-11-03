@@ -106,13 +106,17 @@ namespace FMBot.Bot.Services
                     {
                         GuildId = guild.GuildId,
                         UserId = user.UserId,
-                        UserName = discordGuildUser.Nickname ?? discordGuildUser.Username,
-                        User = user
+                        UserName = discordGuildUser.Nickname ?? discordGuildUser.Username
                     };
+
                     await db.GuildUsers.AddAsync(guildUserToAdd);
                     await db.SaveChangesAsync();
 
+                    db.Entry(guildUserToAdd).State = EntityState.Detached;
+
                     Log.Information("Added user {userId} to guild {guildName}", user.UserId, guild.Name);
+
+                    guildUserToAdd.User = user;
 
                     return guildUserToAdd;
                 }
