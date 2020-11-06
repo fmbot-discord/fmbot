@@ -24,7 +24,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly GuildService _guildService;
-        private readonly LastFMService _lastFmService;
+        private readonly LastFmService _lastFmService;
         private readonly PlayService _playService;
         private readonly IUpdateService _updateService;
         private readonly IIndexService _indexService;
@@ -38,7 +38,7 @@ namespace FMBot.Bot.Commands.LastFM
             IPrefixService prefixService,
             GuildService guildService,
             UserService userService,
-            LastFMService lastFmService,
+            LastFmService lastFmService,
             PlayService playService,
             IUpdateService updateService,
             IIndexService indexService)
@@ -114,7 +114,7 @@ namespace FMBot.Bot.Commands.LastFM
                 if (parameters.Length > 0 && !string.IsNullOrEmpty(parameters.First()) && parameters.Count() == 1)
                 {
                     var alternativeLastFmUserName = await FindUser(parameters.First());
-                    if (!string.IsNullOrEmpty(alternativeLastFmUserName) && await this._lastFmService.LastFMUserExistsAsync(alternativeLastFmUserName))
+                    if (!string.IsNullOrEmpty(alternativeLastFmUserName) && await this._lastFmService.LastFmUserExistsAsync(alternativeLastFmUserName))
                     {
                         lastFMUserName = alternativeLastFmUserName;
                         self = false;
@@ -194,14 +194,14 @@ namespace FMBot.Bot.Commands.LastFM
                         {
                             fmText += $"Last track for {embedTitle}: \n";
 
-                            fmText += LastFMService.TrackToString(currentTrack);
+                            fmText += LastFmService.TrackToString(currentTrack);
                         }
                         else
                         {
                             fmText += $"Last tracks for {embedTitle}: \n";
 
-                            fmText += LastFMService.TrackToString(currentTrack);
-                            fmText += LastFMService.TrackToString(previousTrack);
+                            fmText += LastFmService.TrackToString(currentTrack);
+                            fmText += LastFmService.TrackToString(previousTrack);
                         }
 
                         fmText +=
@@ -215,13 +215,13 @@ namespace FMBot.Bot.Commands.LastFM
 
                         if (userSettings.FmEmbedType == FmEmbedType.embedmini)
                         {
-                            fmText += LastFMService.TrackToLinkedString(currentTrack);
+                            fmText += LastFmService.TrackToLinkedString(currentTrack);
                             this._embed.WithDescription(fmText);
                         }
                         else
                         {
-                            this._embed.AddField("Current:", LastFMService.TrackToLinkedString(currentTrack));
-                            this._embed.AddField("Previous:", LastFMService.TrackToLinkedString(previousTrack));
+                            this._embed.AddField("Current:", LastFmService.TrackToLinkedString(currentTrack));
+                            this._embed.AddField("Previous:", LastFmService.TrackToLinkedString(previousTrack));
                         }
 
                         string headerText;
@@ -365,11 +365,11 @@ namespace FMBot.Bot.Commands.LastFM
 
                     if (track.IsNowPlaying == true)
                     {
-                        fmRecentText += $"🎶 - {LastFMService.TrackToLinkedString(track)}\n";
+                        fmRecentText += $"🎶 - {LastFmService.TrackToLinkedString(track)}\n";
                     }
                     else
                     {
-                        fmRecentText += $"`{i + 1}` - {LastFMService.TrackToLinkedString(track)}\n";
+                        fmRecentText += $"`{i + 1}` - {LastFmService.TrackToLinkedString(track)}\n";
                     }
                 }
 
@@ -599,7 +599,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         private async Task<string> FindUser(string user)
         {
-            if (await this._lastFmService.LastFMUserExistsAsync(user))
+            if (await this._lastFmService.LastFmUserExistsAsync(user))
             {
                 return user;
             }

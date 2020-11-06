@@ -33,7 +33,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly PlayService _playService;
         private readonly IUpdateService _updateService;
         private readonly IIndexService _indexService;
-        private readonly LastFMService _lastFmService;
+        private readonly LastFmService _lastFmService;
         private readonly SpotifyService _spotifyService;
         private readonly IPrefixService _prefixService;
         private readonly ILastfmApi _lastfmApi;
@@ -48,7 +48,7 @@ namespace FMBot.Bot.Commands.LastFM
             WhoKnowsArtistService whoKnowsArtistService,
             GuildService guildService,
             UserService userService,
-            LastFMService lastFmService,
+            LastFmService lastFmService,
             PlayService playService,
             IUpdateService updateService,
             SpotifyService spotifyService,
@@ -193,7 +193,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (artistInfo.Tags.Tag.Any())
             {
-                var tags = this._lastFmService.TagsToLinkedString(artistInfo.Tags);
+                var tags = LastFmService.TagsToLinkedString(artistInfo.Tags);
 
                 this._embed.AddField("Tags", tags);
             }
@@ -425,7 +425,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     string alternativeLastFmUserName;
 
-                    if (await this._lastFmService.LastFMUserExistsAsync(user))
+                    if (await this._lastFmService.LastFmUserExistsAsync(user))
                     {
                         alternativeLastFmUserName = user;
                     }

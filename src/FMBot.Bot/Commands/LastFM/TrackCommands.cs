@@ -29,7 +29,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly GuildService _guildService;
-        private readonly LastFMService _lastFmService;
+        private readonly LastFmService _lastFmService;
         private readonly PlayService _playService;
         private readonly IUpdateService _updateService;
         private readonly IIndexService _indexService;
@@ -45,7 +45,7 @@ namespace FMBot.Bot.Commands.LastFM
             IPrefixService prefixService,
             GuildService guildService,
             UserService userService,
-            LastFMService lastFmService,
+            LastFmService lastFmService,
             SpotifyService spotifyService,
             WhoKnowsTrackService whoKnowsTrackService,
             PlayService playService,
@@ -157,7 +157,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (track.Toptags.Tag.Any())
             {
-                var tags = this._lastFmService.TopTagsToString(track.Toptags);
+                var tags = LastFmService.TopTagsToString(track.Toptags);
 
                 this._embed.AddField("Tags", tags);
             }
@@ -245,7 +245,7 @@ namespace FMBot.Bot.Commands.LastFM
             if (trackLoved)
             {
                 this._embed.WithTitle($"❤️ Loved track for {userTitle}");
-                this._embed.WithDescription(LastFMService.ResponseTrackToLinkedString(track));
+                this._embed.WithDescription(LastFmService.ResponseTrackToLinkedString(track));
             }
             else
             {
@@ -292,7 +292,7 @@ namespace FMBot.Bot.Commands.LastFM
             if (trackLoved)
             {
                 this._embed.WithTitle($"💔 Unloved track for {userTitle}");
-                this._embed.WithDescription(LastFMService.ResponseTrackToLinkedString(track));
+                this._embed.WithDescription(LastFmService.ResponseTrackToLinkedString(track));
             }
             else
             {

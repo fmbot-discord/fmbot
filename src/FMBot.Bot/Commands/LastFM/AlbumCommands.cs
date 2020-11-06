@@ -29,7 +29,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedBuilder _embed;
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
-        private readonly LastFMService _lastFmService;
+        private readonly LastFmService _lastFmService;
         private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
         private readonly GuildService _guildService;
         private readonly PlayService _playService;
@@ -47,7 +47,7 @@ namespace FMBot.Bot.Commands.LastFM
             ILastfmApi lastfmApi,
             IPrefixService prefixService,
             UserService userService,
-            LastFMService lastFmService,
+            LastFmService lastFmService,
             WhoKnowsAlbumService whoKnowsAlbumService,
             PlayService playService,
             IIndexService indexService,
@@ -150,7 +150,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (albumInfo.Tags.Tag.Any())
             {
-                var tags = this._lastFmService.TagsToLinkedString(albumInfo.Tags);
+                var tags = LastFmService.TagsToLinkedString(albumInfo.Tags);
 
                 this._embed.AddField("Tags", tags);
             }
@@ -260,7 +260,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var image = await this._lastFmService.GetAlbumImageAsBitmapAsync(albumInfo.Largest);
+            var image = await LastFmService.GetAlbumImageAsBitmapAsync(albumInfo.Largest);
             if (image == null)
             {
                 this._embed.WithDescription("Sorry, something went wrong while getting album cover for this album: \n" +

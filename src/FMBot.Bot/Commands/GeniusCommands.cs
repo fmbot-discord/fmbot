@@ -19,7 +19,7 @@ namespace FMBot.Bot.Commands
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        private readonly LastFMService _lastFmService;
+        private readonly LastFmService _lastFmService;
         private readonly GeniusService _geniusService;
 
         private readonly UserService _userService;
@@ -28,7 +28,7 @@ namespace FMBot.Bot.Commands
 
         public GeniusCommands(
             IPrefixService prefixService,
-            LastFMService lastFmService,
+            LastFmService lastFmService,
             UserService userService,
             GeniusService geniusService)
         {

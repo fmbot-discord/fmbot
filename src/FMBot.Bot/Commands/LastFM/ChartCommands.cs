@@ -30,7 +30,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly GuildService _guildService;
-        private readonly LastFMService _lastFmService;
+        private readonly LastFmService _lastFmService;
         private readonly SupporterService _supporterService;
         private readonly IPrefixService _prefixService;
 
@@ -41,7 +41,7 @@ namespace FMBot.Bot.Commands.LastFM
             IChartService chartService,
             GuildService guildService,
             UserService userService,
-            LastFMService lastFmService,
+            LastFmService lastFmService,
             SupporterService supporterService)
         {
             this._prefixService = prefixService;

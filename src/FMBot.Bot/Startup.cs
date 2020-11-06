@@ -124,7 +124,7 @@ namespace FMBot.Bot
             // These services can only be added after the config is loaded
             services
                 .AddTransient<ILastfmApi, LastfmApi>()
-                .AddTransient<LastFMService>()
+                .AddTransient<LastFmService>()
                 .AddSingleton<GlobalUpdateService>()
                 .AddSingleton<GlobalIndexService>()
                 .AddSingleton<IUpdateService, UpdateService>();

@@ -18,7 +18,7 @@ namespace FMBot.Bot.Commands
     {
         private readonly EmbedBuilder _embed;
 
-        private readonly LastFMService _lastFmService;
+        private readonly LastFmService _lastFmService;
         private readonly SpotifyService _spotifyService;
 
         private readonly UserService _userService;
@@ -27,7 +27,7 @@ namespace FMBot.Bot.Commands
 
         public SpotifyCommands(
             IPrefixService prefixService,
-            LastFMService lastFmService,
+            LastFmService lastFmService,
             UserService userService,
             SpotifyService spotifyService)
         {

@@ -24,11 +24,11 @@ namespace FMBot.LastFM.Services
 
         private readonly string _connectionString;
 
-        private readonly LastFMService lastFmService;
+        private readonly LastFmService lastFmService;
 
         public GlobalIndexService(
             IConfigurationRoot configuration,
-            LastFMService lastFmService)
+            LastFmService lastFmService)
         {
             this.lastFmService = lastFmService;
             this._key = configuration.GetSection("LastFm:Key").Value;

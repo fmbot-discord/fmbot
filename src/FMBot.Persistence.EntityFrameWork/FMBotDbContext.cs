@@ -6,12 +6,12 @@ namespace FMBot.Persistence.EntityFrameWork
 {
     public class FMBotDbContext : DbContext
     {
+        private readonly string _connectionString;
+
         public FMBotDbContext(DbContextOptions<FMBotDbContext> options)
             : base(options)
         {
         }
-
-        private readonly string _connectionString;
 
         public FMBotDbContext(string connectionString)
         {

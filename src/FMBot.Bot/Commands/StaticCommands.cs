@@ -15,7 +15,6 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
 {

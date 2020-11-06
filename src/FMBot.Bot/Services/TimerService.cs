@@ -26,7 +26,7 @@ namespace FMBot.Bot.Services
         private readonly Timer _internalStatsTimer;
         private readonly Timer _userUpdateTimer;
         private readonly Timer _userIndexTimer;
-        private readonly LastFMService _lastFMService;
+        private readonly LastFmService _lastFMService;
         private readonly UserService _userService;
         private readonly CensorService _censorService;
         private readonly IUpdateService _updateService;
@@ -39,7 +39,7 @@ namespace FMBot.Bot.Services
         private string _trackString = "";
 
         public TimerService(DiscordShardedClient client,
-            LastFMService lastFmService,
+            LastFmService lastFmService,
             IUpdateService updateService,
             UserService userService,
             IIndexService indexService,

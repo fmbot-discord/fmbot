@@ -27,7 +27,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedFooterBuilder _embedFooter;
         private readonly FriendsService _friendsService;
         private readonly GuildService _guildService;
-        private readonly LastFMService _lastFmService;
+        private readonly LastFmService _lastFmService;
         private readonly Logger.Logger _logger;
         private readonly TimerService _timer;
 
@@ -44,7 +44,7 @@ namespace FMBot.Bot.Commands.LastFM
             Logger.Logger logger,
             IPrefixService prefixService,
             GuildService guildService,
-            LastFMService lastFmService,
+            LastFmService lastFmService,
             IIndexService indexService,
             UserService userService,
             FriendsService friendsService)
@@ -217,7 +217,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             lastFMUserName = lastFMUserName.Replace("'", "");
-            if (!await this._lastFmService.LastFMUserExistsAsync(lastFMUserName))
+            if (!await this._lastFmService.LastFmUserExistsAsync(lastFMUserName))
             {
                 var reply = $"Last.fm user `{lastFMUserName}` could not be found. Please check if the name you entered is correct.";
                 await ReplyAsync(reply.FilterOutMentions());
