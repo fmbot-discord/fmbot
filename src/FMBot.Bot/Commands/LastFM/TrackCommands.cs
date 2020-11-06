@@ -732,6 +732,16 @@ namespace FMBot.Bot.Commands.LastFM
                 var trackResult = track.Content.First();
                 var trackInfo = await this._lastFmService.GetTrackInfoAsync(trackResult.Name, trackResult.ArtistName,
                     userSettings.UserNameLastFM);
+
+                if (trackInfo == null)
+                {
+                    this._embed.WithDescription($"Last.fm did not return a result for **{trackResult.Name}** by **{trackResult.ArtistName}**.\n" +
+                                                $"This usually happens on recently released tracks. Please try again later.");
+                    await this.ReplyAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return null;
+                }
+
                 return trackInfo;
             }
 
