@@ -9,8 +9,6 @@ using FMBot.LastFM.Domain.ResponseModels;
 using FMBot.LastFM.Domain.Types;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using IF.Lastfm.Core.Api.Helpers;
-using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services

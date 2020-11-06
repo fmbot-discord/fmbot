@@ -21,7 +21,6 @@ namespace FMBot.Bot.Commands
 
         private readonly EmbedBuilder _embed;
 
-        private readonly UserService _userService;
         private readonly GuildService _guildService;
 
         private readonly CensorService _censorService;
@@ -29,13 +28,11 @@ namespace FMBot.Bot.Commands
         public AdminCommands(
             TimerService timer,
             GuildService guildService,
-            UserService userService,
             AdminService adminService,
             CensorService censorService)
         {
             this._timer = timer;
             this._guildService = guildService;
-            this._userService = userService;
             this._adminService = adminService;
             this._censorService = censorService;
             this._embed = new EmbedBuilder()

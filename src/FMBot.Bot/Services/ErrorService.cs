@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Resources;
@@ -34,7 +33,7 @@ namespace FMBot.Bot.Services
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
-        public static void NoScrobblesFoundErrorResponse(this EmbedBuilder embed, LastResponseStatus apiResponse, string prfx, string userName)
+        public static void NoScrobblesFoundErrorResponse(this EmbedBuilder embed, LastResponseStatus? apiResponse, string prfx, string userName)
         {
             embed.WithTitle("Error while attempting get Last.fm information");
             switch (apiResponse)

@@ -7,7 +7,6 @@ using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
-using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -201,9 +200,9 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> guildUsers)
+        public async Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> discordGuildUsers)
         {
-            var userIds = guildUsers.Select(s => s.Id).ToList();
+            var userIds = discordGuildUsers.Select(s => s.Id).ToList();
 
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Users
@@ -213,9 +212,9 @@ namespace FMBot.Bot.Services
                 .ToListAsync();
         }
 
-        public async Task<int> GetIndexedUsersCount(IReadOnlyCollection<IGuildUser> guildUsers)
+        public async Task<int> GetIndexedUsersCount(IReadOnlyCollection<IGuildUser> discordGuildUsers)
         {
-            var userIds = guildUsers.Select(s => s.Id).ToList();
+            var userIds = discordGuildUsers.Select(s => s.Id).ToList();
 
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.Users

@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 using FMBot.Domain;
-using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.ResponseModels;
 using FMBot.LastFM.Domain.Types;

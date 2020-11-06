@@ -286,8 +286,6 @@ namespace FMBot.Bot.Commands.LastFM
             "Logs you in using a link")]
         public async Task LoginAsync()
         {
-            var prfx = ConfigData.Data.Bot.Prefix;
-
             var msg = this.Context.Message as SocketUserMessage;
             if (StackCooldownTarget.Contains(this.Context.Message.Author))
             {

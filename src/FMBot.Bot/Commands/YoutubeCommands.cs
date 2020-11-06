@@ -59,9 +59,9 @@ namespace FMBot.Bot.Commands
                 {
                     var tracks = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM);
 
-                    if (tracks?.Any() != true)
+                    if (tracks == null || !tracks.Any() || !tracks.Content.Any())
                     {
-                        this._embed.NoScrobblesFoundErrorResponse(tracks.Status, prfx, userSettings.UserNameLastFM);
+                        this._embed.NoScrobblesFoundErrorResponse(tracks?.Status, prfx, userSettings.UserNameLastFM);
                         await ReplyAsync("", false, this._embed.Build());
                         return;
                     }

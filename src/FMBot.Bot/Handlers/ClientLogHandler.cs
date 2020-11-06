@@ -44,7 +44,7 @@ namespace FMBot.Bot.Handlers
                         Log.Warning(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source,
                             logMessage.Message);
                         break;
-                    case LogSeverity.Info:;
+                    case LogSeverity.Info:
                         Log.Information(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source,
                             logMessage.Message);
                         break;

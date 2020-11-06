@@ -1,13 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 using FMBot.Domain;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using FMBot.Persistence.EntityFrameWork.Migrations;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;

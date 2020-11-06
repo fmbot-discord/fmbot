@@ -13,7 +13,7 @@ namespace FMBot.Bot.Interfaces
 
         Task IndexUser(User user);
 
-        Task<GuildUser> GetOrAddUserToGuild(Guild guild, IGuildUser guildUser, User user);
+        Task<GuildUser> GetOrAddUserToGuild(Guild guild, IGuildUser discordGuildUser, User user);
 
         Task UpdateUserName(GuildUser guildUser, IGuildUser discordGuildUser);
 
@@ -21,11 +21,11 @@ namespace FMBot.Bot.Interfaces
 
         Task RemoveUserFromGuild(SocketGuildUser user);
 
-        Task StoreGuildUsers(IGuild guild, IReadOnlyCollection<IGuildUser> guildUsers);
+        Task StoreGuildUsers(IGuild guild, IReadOnlyCollection<IGuildUser> discordGuildUsers);
 
-        Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> guildUsers);
+        Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> discordGuildUsers);
 
-        Task<int> GetIndexedUsersCount(IReadOnlyCollection<IGuildUser> guildUsers);
+        Task<int> GetIndexedUsersCount(IReadOnlyCollection<IGuildUser> discordGuildUsers);
 
         Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeLastIndexed);
     }

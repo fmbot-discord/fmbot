@@ -15,7 +15,6 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
-using IF.Lastfm.Core.Api.Enums;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -130,9 +129,9 @@ namespace FMBot.Bot.Commands.LastFM
                 var recentScrobbles = recentScrobblesTask.Result;
                 var userInfo = userInfoTask.Result;
 
-                if (recentScrobbles?.Any() != true)
+                if (recentScrobbles == null || !recentScrobbles.Any() || !recentScrobbles.Content.Any())
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(recentScrobbles.Status, prfx, lastFMUserName);
+                    this._embed.NoScrobblesFoundErrorResponse(recentScrobbles?.Status, prfx, lastFMUserName);
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     await ReplyAsync("", false, this._embed.Build());
                     return;
@@ -332,9 +331,9 @@ namespace FMBot.Bot.Commands.LastFM
                 var tracks = tracksTask.Result;
                 var userInfo = userInfoTask.Result;
 
-                if (tracks?.Any() != true)
+                if (tracks == null || !tracks.Any() || !tracks.Content.Any())
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(tracks.Status, prfx, userSettings.UserNameLastFm);
+                    this._embed.NoScrobblesFoundErrorResponse(tracks?.Status, prfx, userSettings.UserNameLastFm);
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     await ReplyAsync("", false, this._embed.Build());
                     return;
