@@ -30,7 +30,6 @@ namespace FMBot.Bot.Services.WhoKnows
                 Name = name,
                 Playcount = userPlaycount,
                 LastFMUsername = guildUser.User.UserNameLastFM,
-                DiscordUserId = guildUser.User.DiscordUserId,
                 DiscordName = guildUser.UserName,
                 NoPosition = !userRemoved
             });

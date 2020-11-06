@@ -21,9 +21,9 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var userTracks = await db.UserTracks
                 .Include(i => i.User)
-                .Where(w => w.Name.ToLower() == trackName.ToLower() &&
-                            w.ArtistName.ToLower() == artistName.ToLower()
-                            && userIds.Contains(w.UserId))
+                .Where(w => EF.Functions.ILike(w.Name, trackName) &&
+                            EF.Functions.ILike(w.ArtistName, artistName) &&
+                            userIds.Contains(w.UserId))
                 .OrderByDescending(o => o.Playcount)
                 .Take(14)
                 .ToListAsync();
@@ -43,7 +43,6 @@ namespace FMBot.Bot.Services.WhoKnows
                     Name = $"{userTrack.ArtistName} - {userTrack.Name}",
                     DiscordName = userName,
                     Playcount = userTrack.Playcount,
-                    DiscordUserId = userTrack.User.DiscordUserId,
                     LastFMUsername = userTrack.User.UserNameLastFM,
                     UserId = userTrack.UserId,
                 });
