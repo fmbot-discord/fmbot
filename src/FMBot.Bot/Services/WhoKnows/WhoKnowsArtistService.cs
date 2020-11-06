@@ -32,7 +32,7 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var userArtists = await db.UserArtists
                 .Include(i => i.User)
-                .Where(w => EF.Functions.ILike(w.Name, artistName.ToLower())
+                .Where(w => EF.Functions.ILike(w.Name, artistName)
                             && userIds.Contains(w.UserId))
                 .OrderByDescending(o => o.Playcount)
                 .Take(14)
@@ -94,7 +94,7 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             return await db.UserArtists
                 .AsQueryable()
-                .Where(w => w.Name.ToLower() == artistName.ToLower()
+                .Where(w => EF.Functions.ILike(w.Name, artistName)
                             && userIds.Contains(w.UserId))
                 .CountAsync();
         }
@@ -106,7 +106,7 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var query = db.UserArtists
                 .AsQueryable()
-                .Where(w => w.Name.ToLower() == artistName.ToLower()
+                .Where(w => EF.Functions.ILike(w.Name, artistName.ToLower())
                             && userIds.Contains(w.UserId));
 
             // This is bad practice, but it helps with speed. An exception gets thrown if the artist does not exist in the database.
@@ -128,7 +128,7 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
             var query = db.UserArtists
                 .AsQueryable()
-                .Where(w => w.Name.ToLower() == artistName.ToLower()
+                .Where(w => EF.Functions.ILike(w.Name, artistName.ToLower())
                             && userIds.Contains(w.UserId));
 
             try
@@ -153,7 +153,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 .AsQueryable()
                 .CountAsync(a => a.TimePlayed.Date <= now.Date &&
                                   a.TimePlayed.Date > minDate.Date &&
-                                  a.ArtistName.ToLower() == artistName.ToLower() &&
+                                  EF.Functions.ILike(a.ArtistName, artistName.ToLower()) &&
                                   userIds.Contains(a.UserId));
         }
 
@@ -165,7 +165,6 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var userIds = guildUsers.Select(s => s.UserId);
 
-
             try
             {
                 await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
@@ -173,7 +172,7 @@ namespace FMBot.Bot.Services.WhoKnows
                     .AsQueryable()
                     .Where(w => w.TimePlayed.Date <= now.Date &&
                                 w.TimePlayed.Date > minDate.Date &&
-                                w.ArtistName.ToLower() == artistName.ToLower() &&
+                                EF.Functions.ILike(w.ArtistName, artistName) &&
                                 userIds.Contains(w.UserId))
                     .GroupBy(x => new { x.UserId, x.ArtistName, x.UserPlayId })
                     .CountAsync();

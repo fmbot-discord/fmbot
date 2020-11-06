@@ -179,12 +179,12 @@ namespace FMBot.LastFM.Services
 
                 await using var db = new FMBotDbContext(this._connectionString);
                 if (await db.UserArtists.AnyAsync(a => a.UserId == user.UserId &&
-                                                       a.Name.ToLower() == artistName.ToLower()))
+                                                       EF.Functions.ILike(a.Name, artistName.ToLower())))
                 {
                     await using var updateUserArtist =
                         new NpgsqlCommand(
                             "UPDATE public.user_artists SET playcount = playcount + @playcountToAdd " +
-                            "WHERE user_id = @userId AND UPPER(name) = UPPER(@name);",
+                            "WHERE user_id = @userId AND name ILIKE @name;",
                             connection);
 
                     updateUserArtist.Parameters.AddWithValue("playcountToAdd", artist.Count());
@@ -225,13 +225,13 @@ namespace FMBot.LastFM.Services
 
                 await using var db = new FMBotDbContext(this._connectionString);
                 if (await db.UserAlbums.AnyAsync(a => a.UserId == user.UserId &&
-                                                      a.Name.ToLower() == album.Key.AlbumName.ToLower() &&
-                                                      a.ArtistName.ToLower() == artistName.ToLower()))
+                                                      EF.Functions.ILike(a.Name, album.Key.AlbumName) &&
+                                                      EF.Functions.ILike(a.ArtistName, album.Key.ArtistName)))
                 {
                     await using var updateUserAlbum =
                         new NpgsqlCommand(
                             "UPDATE public.user_albums SET playcount = playcount + @playcountToAdd " +
-                            "WHERE user_id = @userId AND UPPER(name) = UPPER(@name) AND UPPER(artist_name) = UPPER(@artistName) ;",
+                            "WHERE user_id = @userId AND name ILIKE @name AND artist_name ILIKE @artistName ;",
                             connection);
 
                     updateUserAlbum.Parameters.AddWithValue("playcountToAdd", album.Count());
@@ -274,13 +274,13 @@ namespace FMBot.LastFM.Services
 
                 await using var db = new FMBotDbContext(this._connectionString);
                 if (await db.UserTracks.AnyAsync(a => a.UserId == user.UserId &&
-                                                      a.Name.ToLower() == track.Key.Name.ToLower() &&
-                                                      a.ArtistName.ToLower() == artistName.ToLower()))
+                                                      EF.Functions.ILike(a.Name, track.Key.Name) &&
+                                                      EF.Functions.ILike(a.ArtistName, track.Key.ArtistName)))
                 {
                     await using var updateUserTrack =
                         new NpgsqlCommand(
                             "UPDATE public.user_tracks SET playcount = playcount + @playcountToAdd " +
-                            "WHERE user_id = @userId AND UPPER(name) = UPPER(@name) AND UPPER(artist_name) = UPPER(@artistName);",
+                            "WHERE user_id = @userId AND name ILIKE @name AND artist_name ILIKE @artistName;",
                             connection);
 
                     updateUserTrack.Parameters.AddWithValue("playcountToAdd", track.Count());
