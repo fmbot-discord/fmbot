@@ -188,12 +188,11 @@ namespace FMBot.LastFM.Services
                     await using var updateUserArtist =
                         new NpgsqlCommand(
                             "UPDATE public.user_artists SET playcount = @newPlaycount " +
-                            "WHERE user_id = @userId AND name ILIKE @name;",
+                            "WHERE user_artist_id = @userArtistId;",
                             connection);
 
                     updateUserArtist.Parameters.AddWithValue("newPlaycount", existingUserArtist.Playcount + artist.Count());
-                    updateUserArtist.Parameters.AddWithValue("userId", user.UserId);
-                    updateUserArtist.Parameters.AddWithValue("name", artistName);
+                    updateUserArtist.Parameters.AddWithValue("userArtistId", existingUserArtist.UserArtistId);
 
                     //Log.Information($"Updated artist {artistName} for {user.UserNameLastFM}");
                     await updateUserArtist.ExecuteNonQueryAsync().ConfigureAwait(false);
@@ -242,13 +241,11 @@ namespace FMBot.LastFM.Services
                     await using var updateUserAlbum =
                         new NpgsqlCommand(
                             "UPDATE public.user_albums SET playcount = @newPlaycount " +
-                            "WHERE user_id = @userId AND name ILIKE @name AND artist_name ILIKE @artistName ;",
+                            "WHERE user_album_id = @userAlbumId;",
                             connection);
 
                     updateUserAlbum.Parameters.AddWithValue("newPlaycount", existingUserAlbum.Playcount + album.Count());
-                    updateUserAlbum.Parameters.AddWithValue("userId", user.UserId);
-                    updateUserAlbum.Parameters.AddWithValue("name", album.Key.AlbumName);
-                    updateUserAlbum.Parameters.AddWithValue("artistName", artistName);
+                    updateUserAlbum.Parameters.AddWithValue("userAlbumId", existingUserAlbum.UserAlbumId);
 
                     //Log.Information($"Updated album {album.Key.AlbumName} for {user.UserNameLastFM}");
                     await updateUserAlbum.ExecuteNonQueryAsync().ConfigureAwait(false);
@@ -298,13 +295,11 @@ namespace FMBot.LastFM.Services
                     await using var updateUserTrack =
                         new NpgsqlCommand(
                             "UPDATE public.user_tracks SET playcount = @newPlaycount " +
-                            "WHERE user_id = @userId AND name ILIKE @name AND artist_name ILIKE @artistName;",
+                            "WHERE user_track_id = @userTrackId",
                             connection);
 
                     updateUserTrack.Parameters.AddWithValue("newPlaycount", existingUserTrack.Playcount + track.Count());
-                    updateUserTrack.Parameters.AddWithValue("userId", user.UserId);
-                    updateUserTrack.Parameters.AddWithValue("name", track.Key.Name);
-                    updateUserTrack.Parameters.AddWithValue("artistName", artistName);
+                    updateUserTrack.Parameters.AddWithValue("userTrackId", existingUserTrack.UserTrackId);
 
                     //Log.Information($"Updated track {track.Key.Name} for {user.UserNameLastFM}");
                     await updateUserTrack.ExecuteNonQueryAsync().ConfigureAwait(false);
