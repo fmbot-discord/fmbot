@@ -181,8 +181,7 @@ namespace FMBot.LastFM.Services
                 var artistName = alias != null ? alias.Artist.Name : artist.Key;
 
                 var existingUserArtist =
-                    userArtists.FirstOrDefault(a => a.UserId == user.UserId &&
-                                                    a.Name.ToLower() == artistName.ToLower());
+                    userArtists.FirstOrDefault(a => a.Name.ToLower() == artistName.ToLower());
 
                 if (existingUserArtist != null)
                 {
@@ -235,8 +234,7 @@ namespace FMBot.LastFM.Services
                 var artistName = alias != null ? alias.Artist.Name : album.Key.ArtistName;
 
                 var existingUserAlbum =
-                    userAlbums.FirstOrDefault(a => a.UserId == user.UserId &&
-                                                   a.Name.ToLower() == album.Key.AlbumName.ToLower() &&
+                    userAlbums.FirstOrDefault(a => a.Name.ToLower() == album.Key.AlbumName.ToLower() &&
                                                    a.ArtistName.ToLower() == album.Key.ArtistName.ToLower());
 
                 if (existingUserAlbum != null)
@@ -291,10 +289,8 @@ namespace FMBot.LastFM.Services
 
                 var artistName = alias != null ? alias.Artist.Name : track.Key.ArtistName;
 
-
                 var existingUserTrack =
-                    userTracks.FirstOrDefault(a => a.UserId == user.UserId &&
-                                                   a.Name.ToLower() == track.Key.Name.ToLower() &&
+                    userTracks.FirstOrDefault(a => a.Name.ToLower() == track.Key.Name.ToLower() &&
                                                    a.ArtistName.ToLower() == track.Key.ArtistName.ToLower());
 
                 if (existingUserTrack != null)
