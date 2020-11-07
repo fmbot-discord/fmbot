@@ -167,25 +167,32 @@ namespace FMBot.LastFM.Services
         private async Task UpdateArtistsForUser(User user, IEnumerable<LastTrack> newScrobbles,
             IReadOnlyList<ArtistAlias> cachedArtistAliases, NpgsqlConnection connection)
         {
+            await using var db = new FMBotDbContext(this._connectionString);
+
+            var userArtists = await db.UserArtists
+                .Where(w => w.UserId == user.UserId)
+                .ToListAsync();
+
             foreach (var artist in newScrobbles.GroupBy(g => g.ArtistName))
             {
                 var alias = cachedArtistAliases
-                    .FirstOrDefault(f => f.Alias.ToLower() == artist.Key.ToLower());
+                            .FirstOrDefault(f => f.Alias.ToLower() == artist.Key.ToLower());
 
                 var artistName = alias != null ? alias.Artist.Name : artist.Key;
 
+                var existingUserArtist =
+                    userArtists.FirstOrDefault(a => a.UserId == user.UserId &&
+                                                    a.Name.ToLower() == artistName.ToLower());
 
-                await using var db = new FMBotDbContext(this._connectionString);
-                if (await db.UserArtists.AnyAsync(a => a.UserId == user.UserId &&
-                                                       EF.Functions.ILike(a.Name, artistName.ToLower())))
+                if (existingUserArtist != null)
                 {
                     await using var updateUserArtist =
                         new NpgsqlCommand(
-                            "UPDATE public.user_artists SET playcount = playcount + @playcountToAdd " +
+                            "UPDATE public.user_artists SET playcount = @newPlaycount " +
                             "WHERE user_id = @userId AND name ILIKE @name;",
                             connection);
 
-                    updateUserArtist.Parameters.AddWithValue("playcountToAdd", artist.Count());
+                    updateUserArtist.Parameters.AddWithValue("newPlaycount", existingUserArtist.Playcount + artist.Count());
                     updateUserArtist.Parameters.AddWithValue("userId", user.UserId);
                     updateUserArtist.Parameters.AddWithValue("name", artistName);
 
@@ -214,6 +221,12 @@ namespace FMBot.LastFM.Services
         private async Task UpdateAlbumsForUser(User user, IEnumerable<LastTrack> newScrobbles,
             IReadOnlyList<ArtistAlias> cachedArtistAliases, NpgsqlConnection connection)
         {
+            await using var db = new FMBotDbContext(this._connectionString);
+
+            var userAlbums = await db.UserAlbums
+                .Where(w => w.UserId == user.UserId)
+                .ToListAsync();
+
             foreach (var album in newScrobbles.GroupBy(x => new { x.ArtistName, x.AlbumName }))
             {
                 var alias = cachedArtistAliases
@@ -221,18 +234,20 @@ namespace FMBot.LastFM.Services
 
                 var artistName = alias != null ? alias.Artist.Name : album.Key.ArtistName;
 
-                await using var db = new FMBotDbContext(this._connectionString);
-                if (await db.UserAlbums.AnyAsync(a => a.UserId == user.UserId &&
-                                                      EF.Functions.ILike(a.Name, album.Key.AlbumName) &&
-                                                      EF.Functions.ILike(a.ArtistName, album.Key.ArtistName)))
+                var existingUserAlbum =
+                    userAlbums.FirstOrDefault(a => a.UserId == user.UserId &&
+                                                   a.Name.ToLower() == album.Key.AlbumName.ToLower() &&
+                                                   a.ArtistName.ToLower() == album.Key.ArtistName.ToLower());
+
+                if (existingUserAlbum != null)
                 {
                     await using var updateUserAlbum =
                         new NpgsqlCommand(
-                            "UPDATE public.user_albums SET playcount = playcount + @playcountToAdd " +
+                            "UPDATE public.user_albums SET playcount = @newPlaycount " +
                             "WHERE user_id = @userId AND name ILIKE @name AND artist_name ILIKE @artistName ;",
                             connection);
 
-                    updateUserAlbum.Parameters.AddWithValue("playcountToAdd", album.Count());
+                    updateUserAlbum.Parameters.AddWithValue("newPlaycount", existingUserAlbum.Playcount + album.Count());
                     updateUserAlbum.Parameters.AddWithValue("userId", user.UserId);
                     updateUserAlbum.Parameters.AddWithValue("name", album.Key.AlbumName);
                     updateUserAlbum.Parameters.AddWithValue("artistName", artistName);
@@ -263,6 +278,12 @@ namespace FMBot.LastFM.Services
         private async Task UpdateTracksForUser(User user, IEnumerable<LastTrack> newScrobbles,
             IReadOnlyList<ArtistAlias> cachedArtistAliases, NpgsqlConnection connection)
         {
+            await using var db = new FMBotDbContext(this._connectionString);
+
+            var userTracks = await db.UserTracks
+                .Where(w => w.UserId == user.UserId)
+                .ToListAsync();
+
             foreach (var track in newScrobbles.GroupBy(x => new { x.ArtistName, x.Name }))
             {
                 var alias = cachedArtistAliases
@@ -270,18 +291,21 @@ namespace FMBot.LastFM.Services
 
                 var artistName = alias != null ? alias.Artist.Name : track.Key.ArtistName;
 
-                await using var db = new FMBotDbContext(this._connectionString);
-                if (await db.UserTracks.AnyAsync(a => a.UserId == user.UserId &&
-                                                      EF.Functions.ILike(a.Name, track.Key.Name) &&
-                                                      EF.Functions.ILike(a.ArtistName, track.Key.ArtistName)))
+
+                var existingUserTrack =
+                    userTracks.FirstOrDefault(a => a.UserId == user.UserId &&
+                                                   a.Name.ToLower() == track.Key.Name.ToLower() &&
+                                                   a.ArtistName.ToLower() == track.Key.ArtistName.ToLower());
+
+                if (existingUserTrack != null)
                 {
                     await using var updateUserTrack =
                         new NpgsqlCommand(
-                            "UPDATE public.user_tracks SET playcount = playcount + @playcountToAdd " +
+                            "UPDATE public.user_tracks SET playcount = @newPlaycount " +
                             "WHERE user_id = @userId AND name ILIKE @name AND artist_name ILIKE @artistName;",
                             connection);
 
-                    updateUserTrack.Parameters.AddWithValue("playcountToAdd", track.Count());
+                    updateUserTrack.Parameters.AddWithValue("newPlaycount", existingUserTrack.Playcount + track.Count());
                     updateUserTrack.Parameters.AddWithValue("userId", user.UserId);
                     updateUserTrack.Parameters.AddWithValue("name", track.Key.Name);
                     updateUserTrack.Parameters.AddWithValue("artistName", artistName);
