@@ -51,7 +51,7 @@ namespace FMBot.Bot.Commands
 
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFmColorRed);
         }
 
         [Command("invite", RunMode = RunMode.Async)]

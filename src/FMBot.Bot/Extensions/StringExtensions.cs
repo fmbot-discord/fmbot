@@ -12,7 +12,7 @@ namespace FMBot.Bot.Extensions
         {
             var messageLength = 2000;
 
-            for (int index = 0; index < str.Length; index += messageLength)
+            for (var index = 0; index < str.Length; index += messageLength)
             {
                 yield return str.Substring(index, Math.Min(messageLength, str.Length - index));
             }
@@ -55,7 +55,10 @@ namespace FMBot.Bot.Extensions
         public static string TruncateLongString(string str, int maxLength)
         {
             if (string.IsNullOrEmpty(str))
+            {
                 return str;
+            }
+
             return str.Substring(0, Math.Min(str.Length, maxLength));
         }
 

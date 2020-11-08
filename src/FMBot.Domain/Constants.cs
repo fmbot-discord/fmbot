@@ -13,11 +13,11 @@ namespace FMBot.Domain
 
         public const ulong BotStagingId = 493845886166630443;
 
-        public const string DocsUrl = "https://fmbot.xyz";
+        public static readonly string DocsUrl = "https://fmbot.xyz";
 
-        public const string CompactTimePeriodList = "weekly/monthly/quarterly/half/yearly/alltime";
+        public static readonly string CompactTimePeriodList = "weekly/monthly/quarterly/half/yearly/alltime";
 
-        public const string ExpandedTimePeriodList = "'weekly', 'monthly', 'quarterly', 'half', 'yearly', or 'alltime'";
+        public static readonly string ExpandedTimePeriodList = "'weekly', 'monthly', 'quarterly', 'half', 'yearly', or 'alltime'";
 
         /// <summary>Amount of users to index. Should always end with 000</summary>
         public const int ArtistsToIndex = 4000;

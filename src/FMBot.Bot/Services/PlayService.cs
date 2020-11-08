@@ -297,7 +297,7 @@ namespace FMBot.Bot.Services
                             t.TimePlayed.Date > minDate.Date &&
                             userIds.Contains(t.UserId))
                 .GroupBy(x => new { x.ArtistName, x.AlbumName, x.UserId })
-                .Select(s => new AlbumUserPlay()
+                .Select(s => new AlbumUserPlay
                 {
                     ArtistName = s.Key.ArtistName,
                     AlbumName = s.Key.AlbumName,

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Discord;
@@ -42,7 +43,7 @@ namespace FMBot.Bot.Commands
             this._disabledCommandService = disabledCommandService;
             this._adminService = adminService;
             this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFmColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embedFooter = new EmbedFooterBuilder();
         }
@@ -320,7 +321,7 @@ namespace FMBot.Bot.Commands
 
 
         /// <summary>
-        /// Changes the prefix for the server.
+        /// Toggles commands for a server
         /// </summary>
         [Command("togglecommand", RunMode = RunMode.Async)]
         [Alias("togglecommands", "toggle")]
@@ -337,22 +338,22 @@ namespace FMBot.Bot.Commands
 
             if (string.IsNullOrEmpty(command))
             {
-                var description = "";
+                var description = new StringBuilder();
                 if (disabledCommands != null)
                 {
-                    description += "Currently disabled commands in this server:\n";
+                    description.AppendLine("Currently disabled commands in this server:");
                     foreach (var disabledCommand in disabledCommands)
                     {
-                        description += $"- {disabledCommand}\n";
+                        description.AppendLine($"- {disabledCommand}");
                     }
                 }
                 else
                 {
-                    description = "This server currently has all commands enabled. \n" +
-                                  "To disable a command, enter the command name like this: `.fmtogglecommand chart`";
+                    description.Append("This server currently has all commands enabled. \n" +
+                                  "To disable a command, enter the command name like this: `.fmtogglecommand chart`");
                 }
 
-                this._embed.WithDescription(description);
+                this._embed.WithDescription(description.ToString());
                 await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
                 this.Context.LogCommandUsed(CommandResponse.Help);
                 return;

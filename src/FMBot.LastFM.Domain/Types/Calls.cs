@@ -2,15 +2,15 @@ namespace FMBot.LastFM.Domain.Types
 {
     public class Call
     {
-        public const string
+        public static readonly string
             ArtistInfo = "Artist.getInfo",
             AlbumInfo = "Album.getInfo",
             TrackInfo = "Track.getInfo",
             TrackLove = "track.love",
-            TrackUnLove = "track.unlove",
+            TrackUnLove = "track.unLove",
             UserInfo = "User.getInfo",
-            TopTracks = "user.gettoptracks",
-            RecentTracks = "user.getrecenttracks",
+            TopTracks = "user.getTopTracks",
+            RecentTracks = "user.getRecentTracks",
             GetToken = "auth.GetToken",
             GetAuthSession = "auth.getSession";
     }

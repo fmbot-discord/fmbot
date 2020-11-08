@@ -34,7 +34,7 @@ namespace FMBot.Bot.Commands
             this._youtubeService = youtubeService;
             this._lastFmService = lastFmService;
             this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFmColorRed);
         }
 
         [Command("youtube")]

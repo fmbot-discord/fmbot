@@ -36,7 +36,7 @@ namespace FMBot.Bot.Commands
             this._timer = timer;
 
             this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFmColorRed);
         }
 
         //[Command("debug")]
