@@ -22,44 +22,45 @@ namespace FMBot.Bot.Commands.LastFM
 {
     public class UserCommands : ModuleBase
     {
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedFooterBuilder _embedFooter;
         private readonly FriendsService _friendsService;
         private readonly GuildService _guildService;
+        private readonly IIndexService _indexService;
+        private readonly IPrefixService _prefixService;
         private readonly LastFmService _lastFmService;
-        private readonly Logger.Logger _logger;
+        private readonly SettingService _settingService;
         private readonly TimerService _timer;
-
         private readonly UserService _userService;
 
-        private readonly IPrefixService _prefixService;
-
-        private readonly IIndexService _indexService;
+        private readonly EmbedAuthorBuilder _embedAuthor;
+        private readonly EmbedBuilder _embed;
+        private readonly EmbedFooterBuilder _embedFooter;
 
         private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
         private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
 
-        public UserCommands(TimerService timer,
-            Logger.Logger logger,
-            IPrefixService prefixService,
-            GuildService guildService,
-            LastFmService lastFmService,
-            IIndexService indexService,
-            UserService userService,
-            FriendsService friendsService)
+        public UserCommands(
+                FriendsService friendsService,
+                GuildService guildService,
+                IIndexService indexService,
+                IPrefixService prefixService,
+                LastFmService lastFmService,
+                SettingService settingService,
+                TimerService timer,
+                UserService userService
+            )
         {
-            this._timer = timer;
-            this._logger = logger;
-            this._prefixService = prefixService;
-            this._guildService = guildService;
             this._friendsService = friendsService;
-            this._userService = userService;
-            this._lastFmService = lastFmService;
+            this._guildService = guildService;
             this._indexService = indexService;
+            this._lastFmService = lastFmService;
+            this._prefixService = prefixService;
+            this._settingService = settingService;
+            this._timer = timer;
+            this._userService = userService;
+
+            this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFMColorRed);
-            this._embedAuthor = new EmbedAuthorBuilder();
             this._embedFooter = new EmbedFooterBuilder();
         }
 
@@ -73,7 +74,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var userSettings = await SettingService.GetUser(userOptions, user.UserNameLastFM, this.Context);
+                var userSettings = await this._settingService.GetUser(userOptions, user.UserNameLastFM, this.Context);
 
                 string userTitle;
                 if (!userSettings.DifferentUser)
@@ -241,7 +242,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             userSettingsToAdd = this._userService.SetSettings(userSettingsToAdd, otherSettings);
 
-            this._userService.SetLastFM(this.Context.User, userSettingsToAdd);
+            this._userService.SetLastFm(this.Context.User, userSettingsToAdd);
 
             var setReply = $"Your Last.fm name has been set to '{lastFMUserName}' and your .fm mode to '{userSettingsToAdd.FmEmbedType}'";
             if (userSettingsToAdd.FmCountType != null)
@@ -377,7 +378,7 @@ namespace FMBot.Bot.Commands.LastFM
                     };
 
                     Log.Information("User {userName} logged in with auth session", authSession.Content.Session.Name);
-                    this._userService.SetLastFM(contextUser, userSettings, true);
+                    this._userService.SetLastFm(contextUser, userSettings, true);
                     return true;
                 }
 

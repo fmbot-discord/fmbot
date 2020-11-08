@@ -4,6 +4,7 @@ using FMBot.Bot.Resources;
 using FMBot.Domain;
 using FMBot.LastFM.Domain.Enums;
 using IF.Lastfm.Core.Api.Enums;
+using Serilog;
 
 namespace FMBot.Bot.Services
 {
@@ -59,7 +60,7 @@ namespace FMBot.Bot.Services
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
-        public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus? apiResponse, string message, ICommandContext context, Logger.Logger logger)
+        public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus? apiResponse, string message, ICommandContext context)
         {
             embed.WithTitle("Error while attempting get Last.fm information");
             switch (apiResponse)
@@ -78,7 +79,7 @@ namespace FMBot.Bot.Services
             }
 
             embed.WithColor(DiscordConstants.WarningColorOrange);
-            logger.LogError($"Last.fm returned error: {message}, error code {apiResponse}", context.Message.Content, context.User.Username, context.Guild?.Name, context.Guild?.Id);
+            Log.Warning($"Last.fm returned error: {message}, error code {apiResponse}", context.Message.Content, context.User.Username, context.Guild?.Name, context.Guild?.Id);
         }
     }
 }

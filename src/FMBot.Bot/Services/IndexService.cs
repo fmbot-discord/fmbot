@@ -21,12 +21,14 @@ namespace FMBot.Bot.Services
     {
         private readonly IUserIndexQueue _userIndexQueue;
         private readonly GlobalIndexService _globalIndexService;
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-        public IndexService(IUserIndexQueue userIndexQueue, GlobalIndexService indexService)
+        public IndexService(IUserIndexQueue userIndexQueue, GlobalIndexService indexService, IDbContextFactory<FMBotDbContext> contextFactory)
         {
             this._userIndexQueue = userIndexQueue;
             this._userIndexQueue.UsersToIndex.SubscribeAsync(OnNextAsync);
             this._globalIndexService = indexService;
+            this._contextFactory = contextFactory;
         }
 
         private async Task OnNextAsync(User user)
@@ -53,7 +55,7 @@ namespace FMBot.Bot.Services
         {
             var userIds = discordGuildUsers.Select(s => s.Id).ToList();
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var existingGuild = await db.Guilds
                 .Include(i => i.GuildUsers)
                 .FirstAsync(f => f.DiscordGuildId == guild.Id);
@@ -95,7 +97,7 @@ namespace FMBot.Bot.Services
 
         public async Task<GuildUser> GetOrAddUserToGuild(Guild guild, IGuildUser discordGuildUser, User user)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
 
             try
             {
@@ -135,7 +137,7 @@ namespace FMBot.Bot.Services
 
             if (guildUser.UserName != discordName)
             {
-                await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+                await using var db = this._contextFactory.CreateDbContext();
 
                 guildUser.UserName = discordName;
 
@@ -149,7 +151,7 @@ namespace FMBot.Bot.Services
         {
             var discordName = discordGuildUser.Nickname ?? discordGuildUser.Username;
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var guildUser = await db.GuildUsers
                 .Include(i => i.Guild)
                 .FirstOrDefaultAsync(f => f.UserId == user.UserId &&
@@ -167,7 +169,7 @@ namespace FMBot.Bot.Services
 
         public async Task RemoveUserFromGuild(SocketGuildUser user)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var userThatLeft = await db.Users
                 .Include(i => i.GuildUsers)
                 .FirstOrDefaultAsync(f => f.DiscordUserId == user.Id);
@@ -204,7 +206,7 @@ namespace FMBot.Bot.Services
         {
             var userIds = discordGuildUsers.Select(s => s.Id).ToList();
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.Users
                 .Include(i => i.Artists)
                 .Where(w => userIds.Contains(w.DiscordUserId)
@@ -216,7 +218,7 @@ namespace FMBot.Bot.Services
         {
             var userIds = discordGuildUsers.Select(s => s.Id).ToList();
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.Users
                 .AsQueryable()
                 .Where(w => userIds.Contains(w.DiscordUserId)
@@ -226,7 +228,7 @@ namespace FMBot.Bot.Services
 
         public async Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeLastIndexed)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.Users
                 .AsQueryable()
                 .Where(f => f.LastIndexed != null &&

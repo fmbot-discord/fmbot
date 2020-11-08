@@ -16,26 +16,26 @@ namespace FMBot.Bot.Commands
 {
     public class GeniusCommands : ModuleBase
     {
+        private readonly GeniusService _geniusService;
+        private readonly IPrefixService _prefixService;
+        private readonly LastFmService _lastFmService;
+        private readonly UserService _userService;
+
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        private readonly LastFmService _lastFmService;
-        private readonly GeniusService _geniusService;
-
-        private readonly UserService _userService;
-
-        private readonly IPrefixService _prefixService;
-
         public GeniusCommands(
-            IPrefixService prefixService,
-            LastFmService lastFmService,
-            UserService userService,
-            GeniusService geniusService)
+                GeniusService geniusService,
+                IPrefixService prefixService,
+                LastFmService lastFmService,
+                UserService userService
+            )
         {
-            this._prefixService = prefixService;
-            this._userService = userService;
             this._geniusService = geniusService;
             this._lastFmService = lastFmService;
+            this._prefixService = prefixService;
+            this._userService = userService;
+
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFMColorRed);
             this._embedFooter = new EmbedFooterBuilder();

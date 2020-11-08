@@ -20,39 +20,42 @@ namespace FMBot.Bot.Commands.LastFM
 {
     public class PlayCommands : ModuleBase
     {
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedFooterBuilder _embedFooter;
         private readonly GuildService _guildService;
+        private readonly IIndexService _indexService;
+        private readonly IPrefixService _prefixService;
+        private readonly IUpdateService _updateService;
         private readonly LastFmService _lastFmService;
         private readonly PlayService _playService;
-        private readonly IUpdateService _updateService;
-        private readonly IIndexService _indexService;
-
-
+        private readonly SettingService _settingService;
         private readonly UserService _userService;
 
-        private readonly IPrefixService _prefixService;
+        private readonly EmbedAuthorBuilder _embedAuthor;
+        private readonly EmbedBuilder _embed;
+        private readonly EmbedFooterBuilder _embedFooter;
 
         public PlayCommands(
-            IPrefixService prefixService,
-            GuildService guildService,
-            UserService userService,
-            LastFmService lastFmService,
-            PlayService playService,
-            IUpdateService updateService,
-            IIndexService indexService)
+                GuildService guildService,
+                IIndexService indexService,
+                IPrefixService prefixService,
+                IUpdateService updateService,
+                LastFmService lastFmService,
+                PlayService playService,
+                SettingService settingService,
+                UserService userService
+            )
         {
-            this._prefixService = prefixService;
             this._guildService = guildService;
-            this._userService = userService;
+            this._indexService = indexService;
             this._lastFmService = lastFmService;
             this._playService = playService;
+            this._prefixService = prefixService;
+            this._settingService = settingService;
             this._updateService = updateService;
-            this._indexService = indexService;
+            this._userService = userService;
+
+            this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFMColorRed);
-            this._embedAuthor = new EmbedAuthorBuilder();
             this._embedFooter = new EmbedFooterBuilder();
         }
 
@@ -318,7 +321,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var userSettings = await SettingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
+            var userSettings = await this._settingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
             var amount = SettingService.GetAmount(extraOptions, 5, 10);
 
             try
@@ -532,7 +535,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var userSettings = await SettingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
+            var userSettings = await this._settingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
             var userInfo = await this._lastFmService.GetFullUserInfoAsync(userSettings.UserNameLastFm);
 
             var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);

@@ -26,48 +26,51 @@ namespace FMBot.Bot.Commands.LastFM
 {
     public class AlbumCommands : ModuleBase
     {
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedFooterBuilder _embedFooter;
-        private readonly LastFmService _lastFmService;
-        private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
-        private readonly GuildService _guildService;
-        private readonly PlayService _playService;
         private readonly CensorService _censorService;
+        private readonly GuildService _guildService;
         private readonly IIndexService _indexService;
-        private readonly IUpdateService _updateService;
-        private readonly ILastfmApi _lastfmApi;
-        private readonly Logger.Logger _logger;
-
-        private readonly UserService _userService;
-
+        private readonly ILastfmApi _lastFmApi;
         private readonly IPrefixService _prefixService;
+        private readonly IUpdateService _updateService;
+        private readonly LastFmService _lastFmService;
+        private readonly PlayService _playService;
+        private readonly SettingService _settingService;
+        private readonly UserService _userService;
+        private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
 
-        public AlbumCommands(Logger.Logger logger,
-            ILastfmApi lastfmApi,
-            IPrefixService prefixService,
-            UserService userService,
-            LastFmService lastFmService,
-            WhoKnowsAlbumService whoKnowsAlbumService,
-            PlayService playService,
-            IIndexService indexService,
-            IUpdateService updateService,
-            CensorService censorService)
+        private readonly EmbedAuthorBuilder _embedAuthor;
+        private readonly EmbedBuilder _embed;
+        private readonly EmbedFooterBuilder _embedFooter;
+
+        public AlbumCommands(
+                CensorService censorService,
+                GuildService guildService,
+                IIndexService indexService,
+                ILastfmApi lastFmApi,
+                IPrefixService prefixService,
+                IUpdateService updateService,
+                LastFmService lastFmService,
+                PlayService playService,
+                SettingService settingService,
+                UserService userService,
+                WhoKnowsAlbumService whoKnowsAlbumService
+            )
         {
-            this._logger = logger;
-            this._lastfmApi = lastfmApi;
-            this._lastFmService = lastFmService;
-            this._whoKnowsAlbumService = whoKnowsAlbumService;
-            this._playService = playService;
-            this._indexService = indexService;
-            this._updateService = updateService;
             this._censorService = censorService;
+            this._guildService = guildService;
+            this._indexService = indexService;
+            this._lastFmService = lastFmService;
+            this._lastFmApi = lastFmApi;
+            this._playService = playService;
             this._prefixService = prefixService;
-            this._guildService = new GuildService();
+            this._settingService = settingService;
+            this._updateService = updateService;
             this._userService = userService;
+            this._whoKnowsAlbumService = whoKnowsAlbumService;
+
+            this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFMColorRed);
-            this._embedAuthor = new EmbedAuthorBuilder();
             this._embedFooter = new EmbedFooterBuilder();
         }
 
@@ -103,11 +106,11 @@ namespace FMBot.Bot.Commands.LastFM
                 {"username", userSettings.UserNameLastFM }
             };
 
-            var albumCall = await this._lastfmApi.CallApiAsync<AlbumResponse>(queryParams, Call.AlbumInfo);
+            var albumCall = await this._lastFmApi.CallApiAsync<AlbumResponse>(queryParams, Call.AlbumInfo);
 
             if (!albumCall.Success)
             {
-                this._embed.ErrorResponse(albumCall.Error, albumCall.Message, this.Context, this._logger);
+                this._embed.ErrorResponse(albumCall.Error, albumCall.Message, this.Context);
                 await ReplyAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Error);
                 return;
@@ -195,11 +198,11 @@ namespace FMBot.Bot.Commands.LastFM
                 {"username", userSettings.UserNameLastFM }
             };
 
-            var albumCall = await this._lastfmApi.CallApiAsync<AlbumResponse>(queryParams, Call.AlbumInfo);
+            var albumCall = await this._lastFmApi.CallApiAsync<AlbumResponse>(queryParams, Call.AlbumInfo);
 
             if (!albumCall.Success)
             {
-                this._embed.ErrorResponse(albumCall.Error, albumCall.Message, this.Context, this._logger);
+                this._embed.ErrorResponse(albumCall.Error, albumCall.Message, this.Context);
                 await ReplyAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Error);
                 return;
@@ -374,7 +377,7 @@ namespace FMBot.Bot.Commands.LastFM
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var timeSettings = SettingService.GetTimePeriod(extraOptions);
-            var userSettings = await SettingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
+            var userSettings = await this._settingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
             var amount = SettingService.GetAmount(extraOptions);
 
             try
@@ -549,11 +552,11 @@ namespace FMBot.Bot.Commands.LastFM
                 {"username", userSettings.UserNameLastFM }
             };
 
-            var albumCall = await this._lastfmApi.CallApiAsync<AlbumResponse>(queryParams, Call.AlbumInfo);
+            var albumCall = await this._lastFmApi.CallApiAsync<AlbumResponse>(queryParams, Call.AlbumInfo);
 
             if (!albumCall.Success)
             {
-                this._embed.ErrorResponse(albumCall.Error, albumCall.Message, this.Context, this._logger);
+                this._embed.ErrorResponse(albumCall.Error, albumCall.Message, this.Context);
                 await ReplyAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Error);
                 return;

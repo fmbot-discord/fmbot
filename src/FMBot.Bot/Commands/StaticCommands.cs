@@ -20,35 +20,38 @@ namespace FMBot.Bot.Commands
 {
     public class StaticCommands : ModuleBase
     {
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly GuildService _guildService;
-
         private readonly CommandService _service;
-        private readonly IPrefixService _prefixService;
-        private readonly UserService _userService;
         private readonly FriendsService _friendService;
+        private readonly GuildService _guildService;
+        private readonly IPrefixService _prefixService;
         private readonly SupporterService _supporterService;
+        private readonly UserService _userService;
+
+        private readonly EmbedAuthorBuilder _embedAuthor;
+        private readonly EmbedBuilder _embed;
 
         private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
         private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
 
         public StaticCommands(
-            CommandService service,
-            IPrefixService prefixService,
-            UserService userService,
-            FriendsService friendsService,
-            SupporterService supporterService)
+                CommandService service,
+                FriendsService friendsService,
+                GuildService guildService,
+                IPrefixService prefixService,
+                SupporterService supporterService,
+                UserService userService
+            )
         {
-            this._service = service;
-            this._prefixService = prefixService;
-            this._userService = userService;
             this._friendService = friendsService;
+            this._guildService = guildService;
+            this._prefixService = prefixService;
+            this._service = service;
             this._supporterService = supporterService;
-            this._guildService = new GuildService();
+            this._userService = userService;
+
+            this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFMColorRed);
-            this._embedAuthor = new EmbedAuthorBuilder();
         }
 
         [Command("invite", RunMode = RunMode.Async)]

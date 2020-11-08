@@ -15,31 +15,32 @@ namespace FMBot.Bot.Commands
 {
     public class IndexCommands : ModuleBase
     {
+        private readonly GuildService _guildService;
+        private readonly IIndexService _indexService;
+        private readonly IPrefixService _prefixService;
+        private readonly IUpdateService _updateService;
+        private readonly UserService _userService;
+
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        private readonly GuildService _guildService;
-        private readonly UserService _userService;
-        private readonly IIndexService _indexService;
-        private readonly IUpdateService _updateService;
-
-        private readonly IPrefixService _prefixService;
-
         public IndexCommands(
-            IIndexService indexService,
-            IUpdateService updateService,
-            GuildService guildService,
-            UserService userService,
-            IPrefixService prefixService)
+                GuildService guildService,
+                IIndexService indexService,
+                IPrefixService prefixService,
+                IUpdateService updateService,
+                UserService userService
+            )
         {
-            this._indexService = indexService;
-            this._updateService = updateService;
             this._guildService = guildService;
-            this._userService = userService;
+            this._indexService = indexService;
             this._prefixService = prefixService;
-            this._embedFooter = new EmbedFooterBuilder();
+            this._updateService = updateService;
+            this._userService = userService;
+
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFMColorRed);
+            this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("index", RunMode = RunMode.Async)]

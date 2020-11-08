@@ -9,7 +9,9 @@ using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Domain;
+using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Api;
+using Microsoft.EntityFrameworkCore;
 using Prometheus;
 using Serilog;
 
@@ -22,6 +24,7 @@ namespace FMBot.Bot.Services
         private readonly DiscordShardedClient _client;
         private readonly IPrefixService _prefixService;
         private readonly IServiceProvider _provider;
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
 
         public StartupService(
@@ -29,17 +32,31 @@ namespace FMBot.Bot.Services
             DiscordShardedClient discord,
             CommandService commands,
             IPrefixService prefixService,
-            IDisabledCommandService disabledCommands)
+            IDisabledCommandService disabledCommands,
+            IDbContextFactory<FMBotDbContext> contextFactory)
         {
             this._provider = provider;
             this._client = discord;
             this._commands = commands;
             this._prefixService = prefixService;
             this._disabledCommands = disabledCommands;
+            this._contextFactory = contextFactory;
         }
 
         public async Task StartAsync()
         {
+            await using var context = this._contextFactory.CreateDbContext();
+            try
+            {
+                Log.Information("Ensuring database is up to date");
+                await context.Database.MigrateAsync();
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "Something went wrong while creating/updating the database!");
+                throw;
+            }
+
             Log.Information("Starting bot");
 
             var discordToken = ConfigData.Data.Discord.Token; // Get the discord token from the config file

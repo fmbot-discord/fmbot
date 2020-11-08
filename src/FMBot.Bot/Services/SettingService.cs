@@ -12,8 +12,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services
 {
-    public static class SettingService
+    public class SettingService
     {
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+
+        public SettingService(IDbContextFactory<FMBotDbContext> contextFactory)
+        {
+            this._contextFactory = contextFactory;
+        }
+
+
         public static TimeSettingsModel GetTimePeriod(
             string[] extraOptions,
             ChartTimePeriod defaultTimePeriod = ChartTimePeriod.Weekly
@@ -197,7 +205,7 @@ namespace FMBot.Bot.Services
             return settingsModel;
         }
 
-        public static async Task<UserSettingsModel> GetUser(
+        public async Task<UserSettingsModel> GetUser(
             string[] extraOptions,
             string username,
             ICommandContext context)
@@ -224,7 +232,7 @@ namespace FMBot.Bot.Services
             return settingsModel;
         }
 
-        public static async Task<User> GetUserFromString(string value)
+        public async Task<User> GetUserFromString(string value)
         {
             if (!value.Contains("<@") && value.Length != 18)
             {
@@ -238,7 +246,7 @@ namespace FMBot.Bot.Services
                 return null;
             }
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);

@@ -65,8 +65,8 @@ namespace FMBot.Bot
             var provider = services.BuildServiceProvider(); // Build the service provider
             //provider.GetRequiredService<LoggingService>();      // Start the logging service
             provider.GetRequiredService<CommandHandler>();
-            provider.GetRequiredService<ClientLogHandler>(); 
-            provider.GetRequiredService<UserEventHandler>(); 
+            provider.GetRequiredService<ClientLogHandler>();
+            provider.GetRequiredService<UserEventHandler>();
 
             await provider.GetRequiredService<StartupService>().StartAsync(); // Start the startup service
             await Task.Delay(-1); // Keep the program alive
@@ -81,8 +81,6 @@ namespace FMBot.Bot
                 AlwaysDownloadUsers = true
             });
 
-            var logger = new Logger.Logger();
-
             services
                 .AddSingleton(discordClient)
                 .AddSingleton(new CommandService(new CommandServiceConfig
@@ -90,58 +88,52 @@ namespace FMBot.Bot
                     LogLevel = LogSeverity.Verbose,
                     DefaultRunMode = RunMode.Async,
                 }))
-                .AddSingleton<CommandHandler>()
-                .AddSingleton<StartupService>()
-                .AddSingleton<TimerService>()
-                .AddSingleton<ClientLogHandler>()
-                .AddSingleton<UserEventHandler>()
-                .AddSingleton<IPrefixService, PrefixService>()
-                .AddSingleton<IDisabledCommandService, DisabledCommandService>()
-                .AddSingleton<IUserIndexQueue, UserIndexQueue>()
-                .AddSingleton<IUserUpdateQueue, UserUpdateQueue>()
-                .AddSingleton<ArtistsService>()
-                .AddSingleton<WhoKnowsService>()
-                .AddSingleton<WhoKnowsArtistService>()
-                .AddSingleton<WhoKnowsAlbumService>()
-                .AddSingleton<WhoKnowsTrackService>()
-                .AddSingleton<IChartService, ChartService>()
-                .AddSingleton<IIndexService, IndexService>()
-                .AddSingleton<GuildService>()
-                .AddSingleton<UserService>()
-                .AddSingleton<PlayService>()
                 .AddSingleton<AdminService>()
+                .AddSingleton<ArtistsService>()
+                .AddSingleton<CensorService>()
+                .AddSingleton<ClientLogHandler>()
+                .AddSingleton<CommandHandler>()
                 .AddSingleton<FriendsService>()
                 .AddSingleton<GeniusService>()
+                .AddSingleton<GuildService>()
+                .AddSingleton<IChartService, ChartService>()
+                .AddSingleton<IDisabledCommandService, DisabledCommandService>()
+                .AddSingleton<IIndexService, IndexService>()
+                .AddSingleton<IPrefixService, PrefixService>()
+                .AddSingleton<IUserIndexQueue, UserIndexQueue>()
+                .AddSingleton<IUserUpdateQueue, UserUpdateQueue>()
+                .AddSingleton<PlayService>()
+                .AddSingleton<Random>()
+                .AddSingleton<SettingService>()
                 .AddSingleton<SpotifyService>()
-                .AddSingleton<YoutubeService>()
+                .AddSingleton<StartupService>()
                 .AddSingleton<SupporterService>()
-                .AddSingleton<CensorService>()
-                .AddSingleton(logger)
-                .AddSingleton<Random>() // Add random to the collection
+                .AddSingleton<TimerService>()
+                .AddSingleton<UserEventHandler>()
+                .AddSingleton<UserService>()
+                .AddSingleton<WhoKnowsAlbumService>()
+                .AddSingleton<WhoKnowsArtistService>()
+                .AddSingleton<WhoKnowsService>()
+                .AddSingleton<WhoKnowsTrackService>()
+                .AddSingleton<YoutubeService>() // Add random to the collection
                 .AddSingleton(this.Configuration) // Add the configuration to the collection
                 .AddHttpClient();
 
             // These services can only be added after the config is loaded
             services
-                .AddTransient<ILastfmApi, LastfmApi>()
-                .AddTransient<LastFmService>()
-                .AddSingleton<GlobalUpdateService>()
                 .AddSingleton<GlobalIndexService>()
-                .AddSingleton<IUpdateService, UpdateService>();
+                .AddSingleton<GlobalUpdateService>()
+                .AddSingleton<IUpdateService, UpdateService>()
+                .AddTransient<ILastfmApi, LastfmApi>()
+                .AddTransient<LastFmService>();
+
+            services.AddDbContextFactory<FMBotDbContext>(b =>
+                b.UseNpgsql(ConfigData.Data.Database.ConnectionString, builder =>
+                {
+                    builder.EnableRetryOnFailure(3, TimeSpan.FromSeconds(10), null);
+                }));
 
             services.AddMemoryCache();
-
-            using var context = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            try
-            {
-                Log.Information("Ensuring database is up to date");
-                context.Database.Migrate();
-            }
-            catch (Exception e)
-            {
-                Log.Error(e, "Something went wrong while creating/updating the database!");
-                throw;
-            }
         }
 
         private static void AppUnhandledException(object sender, UnhandledExceptionEventArgs e)

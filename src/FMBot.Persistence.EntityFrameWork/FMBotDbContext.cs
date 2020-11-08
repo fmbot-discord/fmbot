@@ -6,22 +6,6 @@ namespace FMBot.Persistence.EntityFrameWork
 {
     public class FMBotDbContext : DbContext
     {
-        private readonly string _connectionString;
-
-        public FMBotDbContext(DbContextOptions<FMBotDbContext> options)
-            : base(options)
-        {
-        }
-
-        public FMBotDbContext(string connectionString)
-        {
-            this._connectionString = connectionString;
-        }
-
-        public FMBotDbContext()
-        {
-        }
-
         public virtual DbSet<Friend> Friends { get; set; }
         public virtual DbSet<Guild> Guilds { get; set; }
         public virtual DbSet<GuildUser> GuildUsers { get; set; }
@@ -50,9 +34,8 @@ namespace FMBot.Persistence.EntityFrameWork
             if (!optionsBuilder.IsConfigured)
             {
                 // When creating migrations, make sure to enter the connection string below.
-                optionsBuilder.UseNpgsql(string.IsNullOrEmpty(this._connectionString)
-                    ? "Host=localhost;Port=5433;Username=postgres;Password=password;Database=fmbot;Command Timeout=360;Timeout=360;Persist Security Info=True"
-                    : this._connectionString, builder =>
+                optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Username=postgres;Password=password;Database=fmbot;Command Timeout=1024;Timeout=1024;Persist Security Info=True"
+                   , builder =>
                 {
                     builder.EnableRetryOnFailure(3, TimeSpan.FromSeconds(10), null);
                 });
@@ -63,6 +46,9 @@ namespace FMBot.Persistence.EntityFrameWork
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.HasPostgresExtension("citext");
+            modelBuilder.HasPostgresExtension("pg_trgm");
+
             modelBuilder.Entity<Friend>(entity =>
             {
                 entity.HasKey(e => e.FriendId);
@@ -82,7 +68,7 @@ namespace FMBot.Persistence.EntityFrameWork
             {
                 entity.HasKey(e => e.GuildId);
 
-                entity.HasIndex(i => i.GuildId);
+                entity.HasIndex(i => i.DiscordGuildId);
 
                 entity.Property(e => e.DisabledCommands)
                     .HasConversion(
@@ -113,6 +99,8 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasKey(e => e.UserId);
 
                 entity.HasIndex(i => i.UserId);
+
+                entity.HasIndex(i => i.DiscordUserId);
             });
 
             modelBuilder.Entity<Supporter>(entity =>
@@ -136,6 +124,9 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.HasIndex(i => i.UserId);
 
+                entity.Property(e => e.Name)
+                    .HasColumnType("citext");
+
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Artists)
                     .HasForeignKey(f => f.UserId)
@@ -147,6 +138,12 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasKey(a => a.UserAlbumId);
 
                 entity.HasIndex(i => i.UserId);
+
+                entity.Property(e => e.Name)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.ArtistName)
+                    .HasColumnType("citext");
 
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Albums)
@@ -160,6 +157,12 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.HasIndex(i => i.UserId);
 
+                entity.Property(e => e.Name)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.ArtistName)
+                    .HasColumnType("citext");
+
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Tracks)
                     .HasForeignKey(f => f.UserId)
@@ -171,6 +174,15 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasKey(a => a.UserPlayId);
 
                 entity.HasIndex(i => i.UserId);
+
+                entity.Property(e => e.TrackName)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.AlbumName)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.ArtistName)
+                    .HasColumnType("citext");
 
                 entity.HasOne(u => u.User)
                     .WithMany(a => a.Plays)

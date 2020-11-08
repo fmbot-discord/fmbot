@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord.Commands;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -13,12 +12,19 @@ namespace FMBot.Bot.Services.WhoKnows
 {
     public class WhoKnowsAlbumService
     {
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+
+        public WhoKnowsAlbumService(IDbContextFactory<FMBotDbContext> contextFactory)
+        {
+            this._contextFactory = contextFactory;
+        }
+
         public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForAlbum(ICommandContext context,
             ICollection<GuildUser> guildUsers, string artistName, string albumName)
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var userAlbums = await db.UserAlbums
                 .Include(i => i.User)
                 .Where(w =>
@@ -57,7 +63,7 @@ namespace FMBot.Bot.Services.WhoKnows
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var query = db.UserAlbums
                 .AsQueryable()
                 .Where(w => userIds.Contains(w.UserId))
@@ -86,7 +92,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.UserPlays
                 .AsQueryable()
                 .CountAsync(ab => ab.TimePlayed.Date <= now.Date &&

@@ -1,16 +1,16 @@
-using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Dasync.Collections;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Persistence.EntityFrameWork;
+using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace FMBot.Bot.Services
 {
     public class DisabledCommandService : IDisabledCommandService
     {
-        private readonly Logger.Logger _logger;
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
         /// <summary>
         ///     The <see cref="ConcurrentDictionary{TKey,TValue}" /> that contains all the disabled commands.
@@ -18,9 +18,9 @@ namespace FMBot.Bot.Services
         private static readonly ConcurrentDictionary<ulong, string[]> ServerDisabledCommands =
             new ConcurrentDictionary<ulong, string[]>();
 
-        public DisabledCommandService(Logger.Logger logger)
+        public DisabledCommandService(IDbContextFactory<FMBotDbContext> contextFactory)
         {
-            this._logger = logger;
+            this._contextFactory = contextFactory;
         }
 
         /// <inheritdoc />
@@ -36,7 +36,7 @@ namespace FMBot.Bot.Services
                 var oldDisabledCommands = GetDisabledCommands(key);
                 if (!ServerDisabledCommands.TryUpdate(key, commands, oldDisabledCommands))
                 {
-                    this._logger.Log($"Failed to update disabled commands {commands} with the key: {key} from the dictionary");
+                    Log.Information($"Failed to update disabled commands {commands} with the key: {key} from the dictionary");
                 }
 
                 return;
@@ -44,7 +44,7 @@ namespace FMBot.Bot.Services
 
             if (!ServerDisabledCommands.TryAdd(key, commands))
             {
-                this._logger.Log($"Failed to add disabled commands {commands} with the key: {key} from the dictionary");
+                Log.Information($"Failed to add disabled commands {commands} with the key: {key} from the dictionary");
             }
         }
 
@@ -71,7 +71,7 @@ namespace FMBot.Bot.Services
 
             if (!ServerDisabledCommands.TryRemove(key, out var removedDisabledCommands))
             {
-                this._logger.Log($"Failed to remove custom disabled commands {removedDisabledCommands} with the key: {key} from the dictionary");
+                Log.Information($"Failed to remove custom disabled commands {removedDisabledCommands} with the key: {key} from the dictionary");
             }
         }
 
@@ -79,7 +79,7 @@ namespace FMBot.Bot.Services
         /// <inheritdoc />
         public async Task LoadAllDisabledCommands()
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var servers = await db.Guilds.Where(w => w.DisabledCommands != null).ToListAsync();
             foreach (var server in servers)
             {

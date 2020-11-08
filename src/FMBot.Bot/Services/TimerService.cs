@@ -43,14 +43,15 @@ namespace FMBot.Bot.Services
             IUpdateService updateService,
             UserService userService,
             IIndexService indexService,
-            CensorService censorService)
+            CensorService censorService,
+            GuildService guildService)
         {
             this._client = client;
             this._lastFMService = lastFmService;
             this._userService = userService;
             this._indexService = indexService;
             this._censorService = censorService;
-            this._guildService = new GuildService();
+            this._guildService = guildService;
             this._updateService = updateService;
 
             this._timer = new Timer(async _ =>

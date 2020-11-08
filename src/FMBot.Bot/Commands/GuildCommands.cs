@@ -33,13 +33,14 @@ namespace FMBot.Bot.Commands
         public GuildCommands(IPrefixService prefixService,
             GuildService guildService,
             CommandService commands,
+            AdminService adminService,
             IDisabledCommandService disabledCommandService)
         {
             this._prefixService = prefixService;
             this._guildService = guildService;
             this._commands = commands;
             this._disabledCommandService = disabledCommandService;
-            this._adminService = new AdminService();
+            this._adminService = adminService;
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFMColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();

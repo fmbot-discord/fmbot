@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dasync.Collections;
-using Discord;
 using Discord.Commands;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -17,19 +15,20 @@ namespace FMBot.Bot.Services.WhoKnows
     public class WhoKnowsArtistService
     {
         private readonly IMemoryCache _cache;
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-        public WhoKnowsArtistService(IMemoryCache cache)
+        public WhoKnowsArtistService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory)
         {
             this._cache = cache;
+            this._contextFactory = contextFactory;
         }
-
 
         public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(ICommandContext context,
             ICollection<GuildUser> guildUsers, string artistName)
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var userArtists = await db.UserArtists
                 .Include(i => i.User)
                 .Where(w => EF.Functions.ILike(w.Name, artistName)
@@ -66,7 +65,7 @@ namespace FMBot.Bot.Services.WhoKnows
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var query = db.UserArtists
                 .AsQueryable()
                 .Where(w => userIds.Contains(w.UserId))
@@ -91,7 +90,7 @@ namespace FMBot.Bot.Services.WhoKnows
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.UserArtists
                 .AsQueryable()
                 .Where(w => EF.Functions.ILike(w.Name, artistName)
@@ -103,7 +102,7 @@ namespace FMBot.Bot.Services.WhoKnows
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var query = db.UserArtists
                 .AsQueryable()
                 .Where(w => EF.Functions.ILike(w.Name, artistName.ToLower())
@@ -125,7 +124,7 @@ namespace FMBot.Bot.Services.WhoKnows
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var query = db.UserArtists
                 .AsQueryable()
                 .Where(w => EF.Functions.ILike(w.Name, artistName.ToLower())
@@ -148,7 +147,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.UserPlays
                 .AsQueryable()
                 .CountAsync(a => a.TimePlayed.Date <= now.Date &&
@@ -167,7 +166,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
             try
             {
-                await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+                await using var db = this._contextFactory.CreateDbContext();
                 return await db.UserPlays
                     .AsQueryable()
                     .Where(w => w.TimePlayed.Date <= now.Date &&
@@ -192,6 +191,8 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var topArtistsForEveryoneInServer = new List<AffinityArtist>();
 
+            await using var db = this._contextFactory.CreateDbContext();
+
             await userIds.ParallelForEachAsync(async user =>
             {
                 var key = $"top-artists-{user}";
@@ -202,7 +203,6 @@ namespace FMBot.Bot.Services.WhoKnows
                 }
                 else
                 {
-                    await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
 
                     var topArtist = await db.UserArtists
                         .AsQueryable()
@@ -241,8 +241,6 @@ namespace FMBot.Bot.Services.WhoKnows
                     
                 }
             });
-
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
 
             var userTopArtist = await db.UserArtists
                 .AsQueryable()

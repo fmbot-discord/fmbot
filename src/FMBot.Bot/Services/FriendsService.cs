@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
-using FMBot.Bot.Configurations;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -13,15 +12,17 @@ namespace FMBot.Bot.Services
     public class FriendsService
     {
         private readonly IMemoryCache _cache;
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-        public FriendsService(IMemoryCache cache)
+        public FriendsService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory)
         {
             this._cache = cache;
+            this._contextFactory = contextFactory;
         }
 
         public async Task<IReadOnlyList<string>> GetFMFriendsAsync(IUser discordUser)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users
                 .Include(i => i.Friends)
                 .ThenInclude(i => i.FriendUser)
@@ -38,7 +39,7 @@ namespace FMBot.Bot.Services
 
         public async Task AddLastFMFriendAsync(ulong discordSenderId, string lastfmusername, int? discordFriendId)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var user = db.Users.FirstOrDefault(f => f.DiscordUserId == discordSenderId);
 
             this._cache.Remove($"user-settings-{discordSenderId}");
@@ -72,7 +73,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> RemoveLastFMFriendAsync(int userID, string lastfmusername)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var friend = db.Friends
                 .Include(i => i.FriendUser)
                 .FirstOrDefault(f => f.UserId == userID &&
@@ -94,7 +95,7 @@ namespace FMBot.Bot.Services
 
         public async Task RemoveAllFriendsAsync(int userId)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var friends = db.Friends
                 .AsQueryable()
                 .Where(f => f.UserId == userId).ToList();
@@ -108,7 +109,7 @@ namespace FMBot.Bot.Services
 
         public async Task RemoveUserFromOtherFriendsAsync(int userId)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var friends = db.Friends
                 .AsQueryable()
                 .Where(f => f.FriendUserId == userId).ToList();
@@ -122,7 +123,7 @@ namespace FMBot.Bot.Services
 
         public async Task<int> GetTotalFriendCountAsync()
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.Friends.AsQueryable().CountAsync();
         }
     }

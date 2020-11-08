@@ -24,51 +24,54 @@ namespace FMBot.Bot.Commands.LastFM
 {
     public class ArtistCommands : ModuleBase
     {
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedFooterBuilder _embedFooter;
-        private readonly GuildService _guildService;
         private readonly ArtistsService _artistsService;
-        private readonly WhoKnowsArtistService _whoKnowArtistService;
-        private readonly PlayService _playService;
-        private readonly IUpdateService _updateService;
+        private readonly GuildService _guildService;
         private readonly IIndexService _indexService;
-        private readonly LastFmService _lastFmService;
-        private readonly SpotifyService _spotifyService;
+        private readonly ILastfmApi _lastFmApi;
         private readonly IPrefixService _prefixService;
-        private readonly ILastfmApi _lastfmApi;
-        private readonly Logger.Logger _logger;
-
+        private readonly IUpdateService _updateService;
+        private readonly LastFmService _lastFmService;
+        private readonly PlayService _playService;
+        private readonly SettingService _settingService;
+        private readonly SpotifyService _spotifyService;
         private readonly UserService _userService;
+        private readonly WhoKnowsArtistService _whoKnowArtistService;
 
-        public ArtistCommands(Logger.Logger logger,
-            ILastfmApi lastfmApi,
-            IPrefixService prefixService,
-            ArtistsService artistsService,
-            WhoKnowsArtistService whoKnowsArtistService,
-            GuildService guildService,
-            UserService userService,
-            LastFmService lastFmService,
-            PlayService playService,
-            IUpdateService updateService,
-            SpotifyService spotifyService,
-            IIndexService indexService)
+        private readonly EmbedAuthorBuilder _embedAuthor;
+        private readonly EmbedBuilder _embed;
+        private readonly EmbedFooterBuilder _embedFooter;
+        
+        public ArtistCommands(
+                ArtistsService artistsService,
+                GuildService guildService,
+                IIndexService indexService,
+                ILastfmApi lastFmApi,
+                IPrefixService prefixService,
+                IUpdateService updateService,
+                LastFmService lastFmService,
+                PlayService playService,
+                SettingService settingService,
+                SpotifyService spotifyService,
+                UserService userService,
+                WhoKnowsArtistService whoKnowsArtistService
+            )
         {
-            this._logger = logger;
-            this._lastfmApi = lastfmApi;
+            this._artistsService = artistsService;
+            this._guildService = guildService;
+            this._indexService = indexService;
+            this._lastFmApi = lastFmApi;
             this._lastFmService = lastFmService;
             this._playService = playService;
-            this._updateService = updateService;
-            this._spotifyService = spotifyService;
-            this._indexService = indexService;
             this._prefixService = prefixService;
-            this._artistsService = artistsService;
-            this._whoKnowArtistService = whoKnowsArtistService;
-            this._guildService = guildService;
+            this._settingService = settingService;
+            this._spotifyService = spotifyService;
+            this._updateService = updateService;
             this._userService = userService;
+            this._whoKnowArtistService = whoKnowsArtistService;
+
+            this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFMColorRed);
-            this._embedAuthor = new EmbedAuthorBuilder();
             this._embedFooter = new EmbedFooterBuilder();
         }
 
@@ -97,7 +100,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {"autocorrect", "1"}
             };
 
-            var artistCallTask = this._lastfmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+            var artistCallTask = this._lastFmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
 
             if (userSettings.LastUpdated < DateTime.UtcNow.AddHours(-1))
             {
@@ -115,7 +118,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!artistCall.Success)
             {
-                this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context, this._logger);
+                this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context);
                 await ReplyAsync("", false, this._embed.Build());
                 this.Context.LogCommandWithLastFmError(artistCall.Error);
                 return;
@@ -226,10 +229,10 @@ namespace FMBot.Bot.Commands.LastFM
                 {"username", userSettings.UserNameLastFM },
                 {"autocorrect", "1"}
             };
-            var artistCall = await this._lastfmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+            var artistCall = await this._lastFmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
             if (!artistCall.Success)
             {
-                this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context, this._logger);
+                this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context);
                 await ReplyAsync("", false, this._embed.Build());
                 this.Context.LogCommandWithLastFmError(artistCall.Error);
                 return;
@@ -284,7 +287,7 @@ namespace FMBot.Bot.Commands.LastFM
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var timeSettings = SettingService.GetTimePeriod(extraOptions);
-            var userSettings = await SettingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
+            var userSettings = await this._settingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
             var amount = SettingService.GetAmount(extraOptions);
 
             try
@@ -431,7 +434,7 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                     else
                     {
-                        var otherUser = await SettingService.GetUserFromString(user);
+                        var otherUser = await this._settingService.GetUserFromString(user);
 
                         alternativeLastFmUserName = otherUser?.UserNameLastFM;
                     }
@@ -559,11 +562,11 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var artistCall = await this._lastfmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+                var artistCall = await this._lastFmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
 
                 if (!artistCall.Success)
                 {
-                    this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context, this._logger);
+                    this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context);
                     await ReplyAsync("", false, this._embed.Build());
                     this.Context.LogCommandWithLastFmError(artistCall.Error);
                     return;

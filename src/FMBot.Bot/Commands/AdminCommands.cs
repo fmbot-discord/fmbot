@@ -17,24 +17,24 @@ namespace FMBot.Bot.Commands
     public class AdminCommands : ModuleBase
     {
         private readonly AdminService _adminService;
+        private readonly CensorService _censorService;
+        private readonly GuildService _guildService;
         private readonly TimerService _timer;
 
         private readonly EmbedBuilder _embed;
 
-        private readonly GuildService _guildService;
-
-        private readonly CensorService _censorService;
-
         public AdminCommands(
-            TimerService timer,
-            GuildService guildService,
-            AdminService adminService,
-            CensorService censorService)
+                AdminService adminService,
+                CensorService censorService,
+                GuildService guildService,
+                TimerService timer
+            )
         {
-            this._timer = timer;
-            this._guildService = guildService;
             this._adminService = adminService;
             this._censorService = censorService;
+            this._guildService = guildService;
+            this._timer = timer;
+
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFMColorRed);
         }

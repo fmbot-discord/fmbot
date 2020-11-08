@@ -18,32 +18,33 @@ namespace FMBot.Bot.Commands
 {
     public class FriendsCommands : ModuleBase
     {
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedFooterBuilder _embedFooter;
-
         private readonly FriendsService _friendsService;
         private readonly GuildService _guildService;
+        private readonly IPrefixService _prefixService;
         private readonly LastFmService _lastFmService;
         private readonly UserService _userService;
 
-        private readonly IPrefixService _prefixService;
+        private readonly EmbedAuthorBuilder _embedAuthor;
+        private readonly EmbedBuilder _embed;
+        private readonly EmbedFooterBuilder _embedFooter;
 
         public FriendsCommands(
-            IPrefixService prefixService,
-            GuildService guildService,
-            LastFmService lastFmService,
-            UserService userService,
-            FriendsService friendsService)
+                FriendsService friendsService,
+                GuildService guildService,
+                IPrefixService prefixService,
+                LastFmService lastFmService,
+                UserService userService
+            )
         {
-            this._prefixService = prefixService;
-            this._guildService = guildService;
-            this._userService = userService;
             this._friendsService = friendsService;
+            this._guildService = guildService;
             this._lastFmService = lastFmService;
+            this._prefixService = prefixService;
+            this._userService = userService;
+
+            this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFMColorRed);
-            this._embedAuthor = new EmbedAuthorBuilder();
             this._embedFooter = new EmbedFooterBuilder();
         }
 

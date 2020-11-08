@@ -24,13 +24,16 @@ namespace FMBot.LastFM.Services
 
         private static readonly List<string> UserUpdateFailures = new List<string>();
 
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+
         private readonly string _connectionString;
 
         private readonly IMemoryCache _cache;
 
-        public GlobalUpdateService(IConfigurationRoot configuration, IMemoryCache cache)
+        public GlobalUpdateService(IConfigurationRoot configuration, IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory)
         {
             this._cache = cache;
+            this._contextFactory = contextFactory;
             this._connectionString = configuration.GetSection("Database:ConnectionString").Value;
             this._lastFMClient = new LastfmClient(configuration.GetSection("LastFm:Key").Value, configuration.GetSection("LastFm:Secret").Value);
         }
@@ -115,7 +118,7 @@ namespace FMBot.LastFM.Services
                 return artists;
             }
 
-            await using var db = new FMBotDbContext(this._connectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             artists = await db.ArtistAliases
                 .Include(i => i.Artist)
                 .ToListAsync();
@@ -128,7 +131,7 @@ namespace FMBot.LastFM.Services
 
         private async Task<UserPlay> GetLastStoredPlay(User user)
         {
-            await using var db = new FMBotDbContext(this._connectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.UserPlays
                 .OrderByDescending(o => o.TimePlayed)
                 .FirstOrDefaultAsync(f => f.UserId == user.UserId);
@@ -175,7 +178,7 @@ namespace FMBot.LastFM.Services
         private async Task UpdateArtistsForUser(User user, IEnumerable<LastTrack> newScrobbles,
             IReadOnlyList<ArtistAlias> cachedArtistAliases, NpgsqlConnection connection)
         {
-            await using var db = new FMBotDbContext(this._connectionString);
+            await using var db = this._contextFactory.CreateDbContext();
 
             var userArtists = await db.UserArtists
                 .Where(w => w.UserId == user.UserId)
@@ -228,7 +231,7 @@ namespace FMBot.LastFM.Services
         private async Task UpdateAlbumsForUser(User user, IEnumerable<LastTrack> newScrobbles,
             IReadOnlyList<ArtistAlias> cachedArtistAliases, NpgsqlConnection connection)
         {
-            await using var db = new FMBotDbContext(this._connectionString);
+            await using var db = this._contextFactory.CreateDbContext();
 
             var userAlbums = await db.UserAlbums
                 .Where(w => w.UserId == user.UserId)
@@ -282,7 +285,7 @@ namespace FMBot.LastFM.Services
         private async Task UpdateTracksForUser(User user, IEnumerable<LastTrack> newScrobbles,
             IReadOnlyList<ArtistAlias> cachedArtistAliases, NpgsqlConnection connection)
         {
-            await using var db = new FMBotDbContext(this._connectionString);
+            await using var db = this._contextFactory.CreateDbContext();
 
             var userTracks = await db.UserTracks
                 .Where(w => w.UserId == user.UserId)
