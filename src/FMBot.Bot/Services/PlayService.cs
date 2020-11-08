@@ -2,24 +2,28 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.LastFM.Domain.ResponseModels;
 using FMBot.LastFM.Domain.Types;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using IF.Lastfm.Core.Api.Helpers;
-using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services
 {
     public class PlayService
     {
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+
+        public PlayService(IDbContextFactory<FMBotDbContext> contextFactory)
+        {
+            this._contextFactory = contextFactory;
+        }
+
         public async Task<DailyOverview> GetDailyOverview(User user, int amountOfDays)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
 
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-amountOfDays);
@@ -116,7 +120,7 @@ namespace FMBot.Bot.Services
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-7);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.UserPlays
                 .AsQueryable()
                 .CountAsync(t => t.TimePlayed.Date <= now.Date &&
@@ -131,7 +135,7 @@ namespace FMBot.Bot.Services
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-7);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.UserPlays
                 .AsQueryable()
                 .CountAsync(ab => ab.TimePlayed.Date <= now.Date &&
@@ -146,7 +150,7 @@ namespace FMBot.Bot.Services
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-7);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.UserPlays
                 .AsQueryable()
                 .CountAsync(a => a.TimePlayed.Date <= now.Date &&
@@ -160,7 +164,7 @@ namespace FMBot.Bot.Services
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-days);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var tracks = await db.UserPlays
                 .AsQueryable()
                 .Where(t => t.TimePlayed.Date <= now.Date &&
@@ -197,7 +201,7 @@ namespace FMBot.Bot.Services
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-days);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.UserPlays
                 .AsQueryable()
                 .Where(t => t.TimePlayed.Date <= now.Date &&
@@ -219,7 +223,7 @@ namespace FMBot.Bot.Services
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-days);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.UserPlays
                 .AsQueryable()
                 .Where(t => t.TimePlayed.Date <= now.Date &&
@@ -243,7 +247,7 @@ namespace FMBot.Bot.Services
 
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
 
             var artistUserPlays = await db.UserPlays
                 .AsQueryable()
@@ -285,7 +289,7 @@ namespace FMBot.Bot.Services
 
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
 
             var albumUserPlays = await db.UserPlays
                 .AsQueryable()
@@ -293,7 +297,7 @@ namespace FMBot.Bot.Services
                             t.TimePlayed.Date > minDate.Date &&
                             userIds.Contains(t.UserId))
                 .GroupBy(x => new { x.ArtistName, x.AlbumName, x.UserId })
-                .Select(s => new AlbumUserPlay()
+                .Select(s => new AlbumUserPlay
                 {
                     ArtistName = s.Key.ArtistName,
                     AlbumName = s.Key.AlbumName,
@@ -329,7 +333,7 @@ namespace FMBot.Bot.Services
 
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
 
             var trackUserPlays = await db.UserPlays
                 .AsQueryable()

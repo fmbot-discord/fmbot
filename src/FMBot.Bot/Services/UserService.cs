@@ -1,5 +1,4 @@
 using System;
-using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -18,10 +17,12 @@ namespace FMBot.Bot.Services
     public class UserService
     {
         private readonly IMemoryCache _cache;
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-        public UserService(IMemoryCache cache)
+        public UserService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory)
         {
             this._cache = cache;
+            this._contextFactory = contextFactory;
         }
 
         // User settings
@@ -34,7 +35,7 @@ namespace FMBot.Bot.Services
                 return isRegistered;
             }
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             isRegistered = await db.Users
                 .AsQueryable()
                 .AnyAsync(f => f.DiscordUserId == discordUser.Id);
@@ -50,12 +51,37 @@ namespace FMBot.Bot.Services
         // User settings
         public async Task<bool> UserHasSessionAsync(IUser discordUser)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
             return !string.IsNullOrEmpty(user.SessionKeyLastFm);
+        }
+
+        // User settings
+        public async Task UpdateUserLastUsedAsync(IUser discordUser)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var user = await db.Users
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+
+            if (user != null)
+            {
+                user.LastUsed = DateTime.UtcNow;
+
+                db.Entry(user).State = EntityState.Modified;
+
+                try
+                {
+                    await db.SaveChangesAsync();
+                }
+                catch (Exception e)
+                {
+                    Log.Error(e, "Something went wrong while attempting to update user {userId} last used", user.UserId);
+                }
+            }
         }
 
         // User settings
@@ -68,7 +94,7 @@ namespace FMBot.Bot.Services
                 return user;
             }
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             user = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
@@ -88,7 +114,7 @@ namespace FMBot.Bot.Services
                 return user;
             }
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             user = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discurdUserId);
@@ -101,7 +127,7 @@ namespace FMBot.Bot.Services
         // User settings
         public async Task<User> GetFullUserAsync(IUser discordUser)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var query = db.Users
                 .Include(i => i.Friends)
                 .Include(i => i.FriendedByUsers);
@@ -133,7 +159,7 @@ namespace FMBot.Bot.Services
                 return rank;
             }
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
@@ -148,7 +174,7 @@ namespace FMBot.Bot.Services
         // Featured
         public async Task<User> GetFeaturedUserAsync()
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.Featured == true);
@@ -157,7 +183,7 @@ namespace FMBot.Bot.Services
         // Random user
         public async Task<string> GetRandomLastFMUserAsync()
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var featuredUsers = await db.Users
                 .AsQueryable()
                 .Where(f => f.Featured == true)
@@ -192,7 +218,7 @@ namespace FMBot.Bot.Services
         // Server Blacklisting
         public async Task<bool> GetBlacklistedAsync(IUser discordUser)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
@@ -237,9 +263,9 @@ namespace FMBot.Bot.Services
         }
 
         // Set LastFM Name
-        public void SetLastFM(IUser discordUser, User newUserSettings, bool updateSessionKey = false)
+        public async Task SetLastFm(IUser discordUser, User newUserSettings, bool updateSessionKey = false)
         {
-            using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var user = db.Users.FirstOrDefault(f => f.DiscordUserId == discordUser.Id);
 
             this._cache.Remove($"user-settings-{discordUser.Id}");
@@ -259,11 +285,11 @@ namespace FMBot.Bot.Services
                     SessionKeyLastFm = newUserSettings.SessionKeyLastFm
                 };
 
-                db.Users.Add(newUser);
+                await db.Users.AddAsync(newUser);
 
                 try
                 {
-                    db.SaveChanges();
+                    await db.SaveChangesAsync();
                 }
                 catch (Exception e)
                 {
@@ -283,7 +309,7 @@ namespace FMBot.Bot.Services
 
                 db.Entry(user).State = EntityState.Modified;
 
-                db.SaveChanges();
+                await db.SaveChangesAsync();
             }
         }
 
@@ -331,7 +357,7 @@ namespace FMBot.Bot.Services
 
         public async Task ResetChartTimerAsync(User user)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             user.LastGeneratedChartDateTimeUtc = DateTime.Now;
 
             db.Entry(user).State = EntityState.Modified;
@@ -340,15 +366,15 @@ namespace FMBot.Bot.Services
         }
 
         // Remove user
-        public async Task DeleteUser(int userID)
+        public async Task DeleteUser(int userId)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
 
             try
             {
                 var user = await db.Users
                     .AsQueryable()
-                    .FirstOrDefaultAsync(f => f.UserId == userID);
+                    .FirstOrDefaultAsync(f => f.UserId == userId);
 
                 this._cache.Remove($"user-settings-{user.DiscordUserId}");
                 this._cache.Remove($"user-isRegistered-{user.DiscordUserId}");
@@ -379,7 +405,7 @@ namespace FMBot.Bot.Services
 
         public async Task<int> GetTotalUserCountAsync()
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.Users
                 .AsQueryable()
                 .CountAsync();

@@ -18,7 +18,7 @@ namespace FMBot.Bot.Commands
     {
         private readonly EmbedBuilder _embed;
 
-        private readonly LastFMService _lastFmService;
+        private readonly LastFmService _lastFmService;
         private readonly SpotifyService _spotifyService;
 
         private readonly UserService _userService;
@@ -27,7 +27,7 @@ namespace FMBot.Bot.Commands
 
         public SpotifyCommands(
             IPrefixService prefixService,
-            LastFMService lastFmService,
+            LastFmService lastFmService,
             UserService userService,
             SpotifyService spotifyService)
         {
@@ -36,7 +36,7 @@ namespace FMBot.Bot.Commands
             this._spotifyService = spotifyService;
             this._lastFmService = lastFmService;
             this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFmColorRed);
         }
 
         [Command("spotify")]
@@ -46,7 +46,7 @@ namespace FMBot.Bot.Commands
         public async Task SpotifyAsync(params string[] searchValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             try
             {
@@ -61,9 +61,9 @@ namespace FMBot.Bot.Commands
                 {
                     var tracks = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
 
-                    if (tracks?.Any() != true)
+                    if (tracks == null || !tracks.Any() || !tracks.Content.Any())
                     {
-                        this._embed.NoScrobblesFoundErrorResponse(tracks.Status, prfx);
+                        this._embed.NoScrobblesFoundErrorResponse(tracks?.Status, prfx, userSettings.UserNameLastFM);
                         this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                         await ReplyAsync("", false, this._embed.Build());
                         return;
@@ -104,8 +104,8 @@ namespace FMBot.Bot.Commands
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync(
-                    "Unable to show Last.FM info via Spotify due to an internal error. " +
-                    "Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
+                    "Unable to show Last.fm info via Spotify due to an internal error. " +
+                    "Try setting a Last.fm name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
     }

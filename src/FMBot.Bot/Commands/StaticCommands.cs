@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -13,38 +14,44 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
-using static FMBot.Bot.FMBotUtil;
+using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Commands
 {
     public class StaticCommands : ModuleBase
     {
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly GuildService _guildService;
-
         private readonly CommandService _service;
-        private readonly IPrefixService _prefixService;
-        private readonly UserService _userService;
         private readonly FriendsService _friendService;
+        private readonly GuildService _guildService;
+        private readonly IPrefixService _prefixService;
         private readonly SupporterService _supporterService;
+        private readonly UserService _userService;
+
+        private readonly EmbedAuthorBuilder _embedAuthor;
+        private readonly EmbedBuilder _embed;
+
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
+        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
 
         public StaticCommands(
-            CommandService service,
-            IPrefixService prefixService,
-            UserService userService,
-            FriendsService friendsService,
-            SupporterService supporterService)
+                CommandService service,
+                FriendsService friendsService,
+                GuildService guildService,
+                IPrefixService prefixService,
+                SupporterService supporterService,
+                UserService userService
+            )
         {
-            this._service = service;
-            this._prefixService = prefixService;
-            this._userService = userService;
             this._friendService = friendsService;
+            this._guildService = guildService;
+            this._prefixService = prefixService;
+            this._service = service;
             this._supporterService = supporterService;
-            this._guildService = new GuildService();
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFMColorRed);
+            this._userService = userService;
+
             this._embedAuthor = new EmbedAuthorBuilder();
+            this._embed = new EmbedBuilder()
+                .WithColor(DiscordConstants.LastFmColorRed);
         }
 
         [Command("invite", RunMode = RunMode.Async)]
@@ -144,7 +151,7 @@ namespace FMBot.Bot.Commands
             description += $"**Discord usercount:** `{client.Guilds.Select(s => s.MemberCount).Sum()}`\n";
             description += $"**Servercount:** `{client.Guilds.Count}`\n";
             description += $"**Commands used:** `{Statistics.CommandsExecuted.Value}`\n";
-            description += $"**Last.FM API calls:** `{Statistics.LastfmApiCalls.Value}`\n";
+            description += $"**Last.fm API calls:** `{Statistics.LastfmApiCalls.Value}`\n";
             description += $"**Memory usage:** `{currentMemoryUsage.ToFormattedByteString()}` (Peak: `{peakMemoryUsage.ToFormattedByteString()}`)\n";
             description += $"**Average latency:** `{Math.Round(client.Shards.Select(s => s.Latency).Average(), 2) + "ms`"}\n";
             description += $"**Shards:** `{client.Shards.Count}`\n";
@@ -224,7 +231,15 @@ namespace FMBot.Bot.Commands
 
             foreach (var supporter in supporters)
             {
-                description.AppendLine(supporter.Name);
+                var type = supporter.SupporterType switch
+                {
+                    SupporterType.Guild => " (server)",
+                    SupporterType.User => "",
+                    SupporterType.Company => " (business)",
+                    _ => ""
+                };
+
+                description.AppendLine($" - **{supporter.Name}** {type}");
             }
 
             description.AppendLine();
@@ -233,6 +248,67 @@ namespace FMBot.Bot.Commands
             this._embed.WithDescription(description.ToString());
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
+        }
+
+
+        [Command("countdown", RunMode = RunMode.Async)]
+        [Summary("Counts down")]
+        public async Task CountdownAsync(int countdown = 3)
+        {
+            if (this._guildService.CheckIfDM(this.Context))
+            {
+                await ReplyAsync("Command is not supported in DMs.");
+                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
+                return;
+            }
+
+            if (countdown > 5)
+            {
+                countdown = 5;
+            }
+
+            if (countdown < 1)
+            {
+                countdown = 1;
+            }
+
+            var msg = this.Context.Message as SocketUserMessage;
+            if (StackCooldownTarget.Contains(this.Context.Message.Author))
+            {
+                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(countdown + 30) >= DateTimeOffset.Now)
+                {
+                    var secondsLeft = (int)(StackCooldownTimer[
+                            StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
+                        .AddSeconds(countdown + 30) - DateTimeOffset.Now).TotalSeconds;
+                    if (secondsLeft <= 20)
+                    {
+                        var secondString = secondsLeft == 1 ? "second" : "seconds";
+                        await ReplyAsync($"Please wait {secondsLeft} {secondString} before starting another countdown.");
+                        this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                    }
+
+                    return;
+                }
+
+                StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
+            }
+            else
+            {
+                StackCooldownTarget.Add(msg.Author);
+                StackCooldownTimer.Add(DateTimeOffset.Now);
+            }
+
+            await ReplyAsync($"Countdown for `{countdown}` seconds starting!");
+            await Task.Delay(4000);
+
+            for (var i = countdown; i > 0; i--)
+            {
+                _ =  ReplyAsync(i.ToString());
+                await Task.Delay(1000);
+            }
+
+            await ReplyAsync("Go!");
             this.Context.LogCommandUsed();
         }
 

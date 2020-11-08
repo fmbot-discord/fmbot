@@ -18,6 +18,13 @@ namespace FMBot.Bot.Services
 {
     public class SpotifyService
     {
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+
+        public SpotifyService(IDbContextFactory<FMBotDbContext> contextFactory)
+        {
+            this._contextFactory = contextFactory;
+        }
+
         public async Task<SearchItem> GetSearchResultAsync(string searchValue, SearchType searchType = SearchType.Track)
         {
             var spotify = await GetSpotifyWebApi();
@@ -25,11 +32,9 @@ namespace FMBot.Bot.Services
             return await spotify.SearchItemsAsync(searchValue, searchType);
         }
 
-        
-
         public async Task<string> GetOrStoreArtistImageAsync(ArtistResponse lastFmArtist, string artistNameBeforeCorrect)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var dbArtist = await db.Artists
                 .Include(i => i.ArtistAliases)
                 .AsQueryable()
@@ -151,7 +156,7 @@ namespace FMBot.Bot.Services
 
         public async Task<Track> GetOrStoreTrackAsync(ResponseTrack track)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var dbTrack = await db.Tracks
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.Name.ToLower() == track.Name.ToLower() && f.ArtistName.ToLower() == track.Artist.Name.ToLower());

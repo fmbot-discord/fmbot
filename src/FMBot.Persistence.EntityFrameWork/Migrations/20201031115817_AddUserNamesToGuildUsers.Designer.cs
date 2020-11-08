@@ -3,81 +3,81 @@ using System;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace FMBot.Persistence.EntityFrameWork.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    partial class FMBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20201031115817_AddUserNamesToGuildUsers")]
+    partial class AddUserNamesToGuildUsers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasPostgresExtension("citext")
-                .HasPostgresExtension("pg_trgm")
-                .UseIdentityByDefaultColumns()
-                .HasAnnotation("Relational:MaxIdentifierLength", 63)
-                .HasAnnotation("ProductVersion", "5.0.0-rc.2.20475.6");
+                .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn)
+                .HasAnnotation("ProductVersion", "3.1.9")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.Album", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
                         .HasColumnName("id")
-                        .UseIdentityByDefaultColumn();
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<int>("ArtistId")
-                        .HasColumnType("integer")
-                        .HasColumnName("artist_id");
+                        .HasColumnName("artist_id")
+                        .HasColumnType("integer");
 
                     b.Property<string>("ArtistName")
-                        .HasColumnType("text")
-                        .HasColumnName("artist_name");
+                        .HasColumnName("artist_name")
+                        .HasColumnType("text");
 
                     b.Property<string>("Label")
-                        .HasColumnType("text")
-                        .HasColumnName("label");
+                        .HasColumnName("label")
+                        .HasColumnType("text");
 
                     b.Property<string>("LastFmUrl")
-                        .HasColumnType("text")
-                        .HasColumnName("last_fm_url");
+                        .HasColumnName("last_fm_url")
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("Mbid")
-                        .HasColumnType("uuid")
-                        .HasColumnName("mbid");
+                        .HasColumnName("mbid")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Name")
-                        .HasColumnType("text")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .HasColumnType("text");
 
                     b.Property<int?>("Popularity")
-                        .HasColumnType("integer")
-                        .HasColumnName("popularity");
+                        .HasColumnName("popularity")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("ReleaseDate")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("release_date");
+                        .HasColumnName("release_date")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("SpotifyId")
-                        .HasColumnType("text")
-                        .HasColumnName("spotify_id");
+                        .HasColumnName("spotify_id")
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("SpotifyImageDate")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("spotify_image_date");
+                        .HasColumnName("spotify_image_date")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("SpotifyImageUrl")
-                        .HasColumnType("text")
-                        .HasColumnName("spotify_image_url");
+                        .HasColumnName("spotify_image_url")
+                        .HasColumnType("text");
 
                     b.HasKey("Id")
                         .HasName("pk_albums");
 
                     b.HasIndex("ArtistId")
-                        .HasDatabaseName("ix_albums_artist_id");
+                        .HasName("ix_albums_artist_id");
 
                     b.ToTable("albums");
                 });
@@ -86,41 +86,41 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
                         .HasColumnName("id")
-                        .UseIdentityByDefaultColumn();
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<string>("Aliases")
-                        .HasColumnType("text")
-                        .HasColumnName("aliases");
+                        .HasColumnName("aliases")
+                        .HasColumnType("text");
 
                     b.Property<string>("LastFmUrl")
-                        .HasColumnType("text")
-                        .HasColumnName("last_fm_url");
+                        .HasColumnName("last_fm_url")
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("Mbid")
-                        .HasColumnType("uuid")
-                        .HasColumnName("mbid");
+                        .HasColumnName("mbid")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Name")
-                        .HasColumnType("text")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .HasColumnType("text");
 
                     b.Property<int?>("Popularity")
-                        .HasColumnType("integer")
-                        .HasColumnName("popularity");
+                        .HasColumnName("popularity")
+                        .HasColumnType("integer");
 
                     b.Property<string>("SpotifyId")
-                        .HasColumnType("text")
-                        .HasColumnName("spotify_id");
+                        .HasColumnName("spotify_id")
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("SpotifyImageDate")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("spotify_image_date");
+                        .HasColumnName("spotify_image_date")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("SpotifyImageUrl")
-                        .HasColumnType("text")
-                        .HasColumnName("spotify_image_url");
+                        .HasColumnName("spotify_image_url")
+                        .HasColumnType("text");
 
                     b.HasKey("Id")
                         .HasName("pk_artists");
@@ -132,27 +132,27 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
                         .HasColumnName("id")
-                        .UseIdentityByDefaultColumn();
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<string>("Alias")
-                        .HasColumnType("text")
-                        .HasColumnName("alias");
+                        .HasColumnName("alias")
+                        .HasColumnType("text");
 
                     b.Property<int>("ArtistId")
-                        .HasColumnType("integer")
-                        .HasColumnName("artist_id");
+                        .HasColumnName("artist_id")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("CorrectsInScrobbles")
-                        .HasColumnType("boolean")
-                        .HasColumnName("corrects_in_scrobbles");
+                        .HasColumnName("corrects_in_scrobbles")
+                        .HasColumnType("boolean");
 
                     b.HasKey("Id")
                         .HasName("pk_artist_aliases");
 
                     b.HasIndex("ArtistId")
-                        .HasDatabaseName("ix_artist_aliases_artist_id");
+                        .HasName("ix_artist_aliases_artist_id");
 
                     b.ToTable("artist_aliases");
                 });
@@ -161,23 +161,23 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
                         .HasColumnName("id")
-                        .UseIdentityByDefaultColumn();
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<int>("ArtistId")
-                        .HasColumnType("integer")
-                        .HasColumnName("artist_id");
+                        .HasColumnName("artist_id")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Name")
-                        .HasColumnType("text")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .HasColumnType("text");
 
                     b.HasKey("Id")
                         .HasName("pk_artist_genres");
 
                     b.HasIndex("ArtistId")
-                        .HasDatabaseName("ix_artist_genres_artist_id");
+                        .HasName("ix_artist_genres_artist_id");
 
                     b.ToTable("artist_genres");
                 });
@@ -186,29 +186,29 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                 {
                     b.Property<int>("CensoredMusicId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
                         .HasColumnName("censored_music_id")
-                        .UseIdentityByDefaultColumn();
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<string>("AlbumName")
-                        .HasColumnType("text")
-                        .HasColumnName("album_name");
+                        .HasColumnName("album_name")
+                        .HasColumnType("text");
 
                     b.Property<bool>("Artist")
-                        .HasColumnType("boolean")
-                        .HasColumnName("artist");
+                        .HasColumnName("artist")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("ArtistName")
-                        .HasColumnType("text")
-                        .HasColumnName("artist_name");
+                        .HasColumnName("artist_name")
+                        .HasColumnType("text");
 
                     b.Property<bool>("SafeForCommands")
-                        .HasColumnType("boolean")
-                        .HasColumnName("safe_for_commands");
+                        .HasColumnName("safe_for_commands")
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("SafeForFeatured")
-                        .HasColumnType("boolean")
-                        .HasColumnName("safe_for_featured");
+                        .HasColumnName("safe_for_featured")
+                        .HasColumnType("boolean");
 
                     b.HasKey("CensoredMusicId")
                         .HasName("pk_censored_music");
@@ -220,30 +220,30 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                 {
                     b.Property<int>("FriendId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
                         .HasColumnName("friend_id")
-                        .UseIdentityByDefaultColumn();
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<int?>("FriendUserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("friend_user_id");
+                        .HasColumnName("friend_user_id")
+                        .HasColumnType("integer");
 
                     b.Property<string>("LastFMUserName")
-                        .HasColumnType("text")
-                        .HasColumnName("last_fm_user_name");
+                        .HasColumnName("last_fm_user_name")
+                        .HasColumnType("text");
 
                     b.Property<int>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
+                        .HasColumnName("user_id")
+                        .HasColumnType("integer");
 
                     b.HasKey("FriendId")
                         .HasName("pk_friends");
 
                     b.HasIndex("FriendUserId")
-                        .HasDatabaseName("ix_friends_friend_user_id");
+                        .HasName("ix_friends_friend_user_id");
 
                     b.HasIndex("UserId")
-                        .HasDatabaseName("ix_friends_user_id");
+                        .HasName("ix_friends_user_id");
 
                     b.ToTable("friends");
                 });
@@ -252,63 +252,63 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                 {
                     b.Property<int>("GuildId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
                         .HasColumnName("guild_id")
-                        .UseIdentityByDefaultColumn();
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<bool?>("Blacklisted")
-                        .HasColumnType("boolean")
-                        .HasColumnName("blacklisted");
+                        .HasColumnName("blacklisted")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("ChartTimePeriod")
-                        .HasColumnType("integer")
-                        .HasColumnName("chart_time_period");
+                        .HasColumnName("chart_time_period")
+                        .HasColumnType("integer");
 
                     b.Property<bool?>("DisableSupporterMessages")
-                        .HasColumnType("boolean")
-                        .HasColumnName("disable_supporter_messages");
+                        .HasColumnName("disable_supporter_messages")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("DisabledCommands")
-                        .HasColumnType("text")
-                        .HasColumnName("disabled_commands");
+                        .HasColumnName("disabled_commands")
+                        .HasColumnType("text");
 
                     b.Property<decimal>("DiscordGuildId")
-                        .HasColumnType("numeric(20,0)")
-                        .HasColumnName("discord_guild_id");
+                        .HasColumnName("discord_guild_id")
+                        .HasColumnType("numeric(20,0)");
 
                     b.Property<string>("EmoteReactions")
-                        .HasColumnType("text")
-                        .HasColumnName("emote_reactions");
+                        .HasColumnName("emote_reactions")
+                        .HasColumnType("text");
 
                     b.Property<int>("FmEmbedType")
-                        .HasColumnType("integer")
-                        .HasColumnName("fm_embed_type");
+                        .HasColumnName("fm_embed_type")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("LastIndexed")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("last_indexed");
+                        .HasColumnName("last_indexed")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Name")
-                        .HasColumnType("text")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .HasColumnType("text");
 
                     b.Property<string>("Prefix")
-                        .HasColumnType("text")
-                        .HasColumnName("prefix");
+                        .HasColumnName("prefix")
+                        .HasColumnType("text");
 
                     b.Property<bool?>("SpecialGuild")
-                        .HasColumnType("boolean")
-                        .HasColumnName("special_guild");
+                        .HasColumnName("special_guild")
+                        .HasColumnType("boolean");
 
                     b.Property<bool?>("TitlesEnabled")
-                        .HasColumnType("boolean")
-                        .HasColumnName("titles_enabled");
+                        .HasColumnName("titles_enabled")
+                        .HasColumnType("boolean");
 
                     b.HasKey("GuildId")
                         .HasName("pk_guilds");
 
-                    b.HasIndex("DiscordGuildId")
-                        .HasDatabaseName("ix_guilds_discord_guild_id");
+                    b.HasIndex("GuildId")
+                        .HasName("ix_guilds_guild_id");
 
                     b.ToTable("guilds");
                 });
@@ -316,22 +316,22 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.GuildUser", b =>
                 {
                     b.Property<int>("GuildId")
-                        .HasColumnType("integer")
-                        .HasColumnName("guild_id");
+                        .HasColumnName("guild_id")
+                        .HasColumnType("integer");
 
                     b.Property<int>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
+                        .HasColumnName("user_id")
+                        .HasColumnType("integer");
 
                     b.Property<string>("UserName")
-                        .HasColumnType("text")
-                        .HasColumnName("user_name");
+                        .HasColumnName("user_name")
+                        .HasColumnType("text");
 
                     b.HasKey("GuildId", "UserId")
                         .HasName("pk_guild_users");
 
                     b.HasIndex("UserId")
-                        .HasDatabaseName("ix_guild_users_user_id");
+                        .HasName("ix_guild_users_user_id");
 
                     b.ToTable("guild_users");
                 });
@@ -340,50 +340,50 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                 {
                     b.Property<int>("InactiveUserId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
                         .HasColumnName("inactive_user_id")
-                        .UseIdentityByDefaultColumn();
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<DateTime>("Created")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("created");
+                        .HasColumnName("created")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<int?>("FailureErrorCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("failure_error_count");
+                        .HasColumnName("failure_error_count")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("NoScrobblesErrorCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("no_scrobbles_error_count");
+                        .HasColumnName("no_scrobbles_error_count")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("RecentTracksPrivateCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("recent_tracks_private_count");
+                        .HasColumnName("recent_tracks_private_count")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("Updated")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("updated");
+                        .HasColumnName("updated")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<int?>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
+                        .HasColumnName("user_id")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("UserId1")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id1");
+                        .HasColumnName("user_id1")
+                        .HasColumnType("integer");
 
                     b.Property<string>("UserNameLastFM")
-                        .HasColumnType("text")
-                        .HasColumnName("user_name_last_fm");
+                        .HasColumnName("user_name_last_fm")
+                        .HasColumnType("text");
 
                     b.HasKey("InactiveUserId")
                         .HasName("pk_inactive_users");
 
                     b.HasIndex("UserId")
-                        .HasDatabaseName("ix_inactive_users_user_id");
+                        .HasName("ix_inactive_users_user_id");
 
                     b.HasIndex("UserId1")
-                        .HasDatabaseName("ix_inactive_users_user_id1");
+                        .HasName("ix_inactive_users_user_id1");
 
                     b.ToTable("inactive_users");
                 });
@@ -392,33 +392,33 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                 {
                     b.Property<int>("SupporterId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
                         .HasColumnName("supporter_id")
-                        .UseIdentityByDefaultColumn();
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<DateTime>("Created")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("created");
+                        .HasColumnName("created")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Name")
-                        .HasColumnType("text")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .HasColumnType("text");
 
                     b.Property<string>("Notes")
-                        .HasColumnType("text")
-                        .HasColumnName("notes");
+                        .HasColumnName("notes")
+                        .HasColumnType("text");
 
                     b.Property<bool>("SupporterMessagesEnabled")
-                        .HasColumnType("boolean")
-                        .HasColumnName("supporter_messages_enabled");
+                        .HasColumnName("supporter_messages_enabled")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("SupporterType")
-                        .HasColumnType("integer")
-                        .HasColumnName("supporter_type");
+                        .HasColumnName("supporter_type")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("VisibleInOverview")
-                        .HasColumnType("boolean")
-                        .HasColumnName("visible_in_overview");
+                        .HasColumnName("visible_in_overview")
+                        .HasColumnType("boolean");
 
                     b.HasKey("SupporterId")
                         .HasName("pk_supporters");
@@ -430,62 +430,62 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
                         .HasColumnName("id")
-                        .UseIdentityByDefaultColumn();
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<int?>("AlbumId")
-                        .HasColumnType("integer")
-                        .HasColumnName("album_id");
+                        .HasColumnName("album_id")
+                        .HasColumnType("integer");
 
                     b.Property<string>("AlbumName")
-                        .HasColumnType("text")
-                        .HasColumnName("album_name");
+                        .HasColumnName("album_name")
+                        .HasColumnType("text");
 
                     b.Property<int?>("ArtistId")
-                        .HasColumnType("integer")
-                        .HasColumnName("artist_id");
+                        .HasColumnName("artist_id")
+                        .HasColumnType("integer");
 
                     b.Property<string>("ArtistName")
-                        .HasColumnType("text")
-                        .HasColumnName("artist_name");
+                        .HasColumnName("artist_name")
+                        .HasColumnType("text");
 
                     b.Property<int?>("DurationMs")
-                        .HasColumnType("integer")
-                        .HasColumnName("duration_ms");
+                        .HasColumnName("duration_ms")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("Key")
-                        .HasColumnType("integer")
-                        .HasColumnName("key");
+                        .HasColumnName("key")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Name")
-                        .HasColumnType("text")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .HasColumnType("text");
 
                     b.Property<int?>("Popularity")
-                        .HasColumnType("integer")
-                        .HasColumnName("popularity");
+                        .HasColumnName("popularity")
+                        .HasColumnType("integer");
 
                     b.Property<string>("SpotifyId")
-                        .HasColumnType("text")
-                        .HasColumnName("spotify_id");
+                        .HasColumnName("spotify_id")
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("SpotifyLastUpdated")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("spotify_last_updated");
+                        .HasColumnName("spotify_last_updated")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<float?>("Tempo")
-                        .HasColumnType("real")
-                        .HasColumnName("tempo");
+                        .HasColumnName("tempo")
+                        .HasColumnType("real");
 
                     b.HasKey("Id")
                         .HasName("pk_tracks");
 
                     b.HasIndex("AlbumId")
-                        .HasDatabaseName("ix_tracks_album_id");
+                        .HasName("ix_tracks_album_id");
 
                     b.HasIndex("ArtistId")
-                        .HasDatabaseName("ix_tracks_artist_id");
+                        .HasName("ix_tracks_artist_id");
 
                     b.ToTable("tracks");
                 });
@@ -494,82 +494,75 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                 {
                     b.Property<int>("UserId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
                         .HasColumnName("user_id")
-                        .UseIdentityByDefaultColumn();
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<bool?>("Blocked")
-                        .HasColumnType("boolean")
-                        .HasColumnName("blocked");
+                        .HasColumnName("blocked")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("ChartTimePeriod")
-                        .HasColumnType("integer")
-                        .HasColumnName("chart_time_period");
+                        .HasColumnName("chart_time_period")
+                        .HasColumnType("integer");
 
                     b.Property<decimal>("DiscordUserId")
-                        .HasColumnType("numeric(20,0)")
-                        .HasColumnName("discord_user_id");
+                        .HasColumnName("discord_user_id")
+                        .HasColumnType("numeric(20,0)");
 
                     b.Property<bool?>("Featured")
-                        .HasColumnType("boolean")
-                        .HasColumnName("featured");
+                        .HasColumnName("featured")
+                        .HasColumnType("boolean");
 
                     b.Property<bool?>("FeaturedNotificationsEnabled")
-                        .HasColumnType("boolean")
-                        .HasColumnName("featured_notifications_enabled");
+                        .HasColumnName("featured_notifications_enabled")
+                        .HasColumnType("boolean");
 
                     b.Property<int?>("FmCountType")
-                        .HasColumnType("integer")
-                        .HasColumnName("fm_count_type");
+                        .HasColumnName("fm_count_type")
+                        .HasColumnType("integer");
 
                     b.Property<int>("FmEmbedType")
-                        .HasColumnType("integer")
-                        .HasColumnName("fm_embed_type");
+                        .HasColumnName("fm_embed_type")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("LastGeneratedChartDateTimeUtc")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("last_generated_chart_date_time_utc");
+                        .HasColumnName("last_generated_chart_date_time_utc")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime?>("LastIndexed")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("last_indexed");
+                        .HasColumnName("last_indexed")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime?>("LastScrobbleUpdate")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("last_scrobble_update");
+                        .HasColumnName("last_scrobble_update")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime?>("LastUpdated")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("last_updated");
-
-                    b.Property<DateTime?>("LastUsed")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("last_used");
+                        .HasColumnName("last_updated")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("SessionKeyLastFm")
-                        .HasColumnType("text")
-                        .HasColumnName("session_key_last_fm");
+                        .HasColumnName("session_key_last_fm")
+                        .HasColumnType("text");
 
                     b.Property<bool?>("TitlesEnabled")
-                        .HasColumnType("boolean")
-                        .HasColumnName("titles_enabled");
+                        .HasColumnName("titles_enabled")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("UserNameLastFM")
-                        .HasColumnType("text")
-                        .HasColumnName("user_name_last_fm");
+                        .HasColumnName("user_name_last_fm")
+                        .HasColumnType("text");
 
                     b.Property<int>("UserType")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_type");
+                        .HasColumnName("user_type")
+                        .HasColumnType("integer");
 
                     b.HasKey("UserId")
                         .HasName("pk_users");
 
-                    b.HasIndex("DiscordUserId")
-                        .HasDatabaseName("ix_users_discord_user_id");
-
                     b.HasIndex("UserId")
-                        .HasDatabaseName("ix_users_user_id");
+                        .HasName("ix_users_user_id");
 
                     b.ToTable("users");
                 });
@@ -578,31 +571,31 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                 {
                     b.Property<int>("UserAlbumId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
                         .HasColumnName("user_album_id")
-                        .UseIdentityByDefaultColumn();
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<string>("ArtistName")
-                        .HasColumnType("citext")
-                        .HasColumnName("artist_name");
+                        .HasColumnName("artist_name")
+                        .HasColumnType("text");
 
                     b.Property<string>("Name")
-                        .HasColumnType("citext")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .HasColumnType("text");
 
                     b.Property<int>("Playcount")
-                        .HasColumnType("integer")
-                        .HasColumnName("playcount");
+                        .HasColumnName("playcount")
+                        .HasColumnType("integer");
 
                     b.Property<int>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
+                        .HasColumnName("user_id")
+                        .HasColumnType("integer");
 
                     b.HasKey("UserAlbumId")
                         .HasName("pk_user_albums");
 
                     b.HasIndex("UserId")
-                        .HasDatabaseName("ix_user_albums_user_id");
+                        .HasName("ix_user_albums_user_id");
 
                     b.ToTable("user_albums");
                 });
@@ -611,27 +604,27 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                 {
                     b.Property<int>("UserArtistId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
                         .HasColumnName("user_artist_id")
-                        .UseIdentityByDefaultColumn();
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<string>("Name")
-                        .HasColumnType("citext")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .HasColumnType("text");
 
                     b.Property<int>("Playcount")
-                        .HasColumnType("integer")
-                        .HasColumnName("playcount");
+                        .HasColumnName("playcount")
+                        .HasColumnType("integer");
 
                     b.Property<int>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
+                        .HasColumnName("user_id")
+                        .HasColumnType("integer");
 
                     b.HasKey("UserArtistId")
                         .HasName("pk_user_artists");
 
                     b.HasIndex("UserId")
-                        .HasDatabaseName("ix_user_artists_user_id");
+                        .HasName("ix_user_artists_user_id");
 
                     b.ToTable("user_artists");
                 });
@@ -640,35 +633,35 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                 {
                     b.Property<int>("UserPlayId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
                         .HasColumnName("user_play_id")
-                        .UseIdentityByDefaultColumn();
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<string>("AlbumName")
-                        .HasColumnType("citext")
-                        .HasColumnName("album_name");
+                        .HasColumnName("album_name")
+                        .HasColumnType("text");
 
                     b.Property<string>("ArtistName")
-                        .HasColumnType("citext")
-                        .HasColumnName("artist_name");
+                        .HasColumnName("artist_name")
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("TimePlayed")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("time_played");
+                        .HasColumnName("time_played")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("TrackName")
-                        .HasColumnType("citext")
-                        .HasColumnName("track_name");
+                        .HasColumnName("track_name")
+                        .HasColumnType("text");
 
                     b.Property<int>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
+                        .HasColumnName("user_id")
+                        .HasColumnType("integer");
 
                     b.HasKey("UserPlayId")
                         .HasName("pk_user_plays");
 
                     b.HasIndex("UserId")
-                        .HasDatabaseName("ix_user_plays_user_id");
+                        .HasName("ix_user_plays_user_id");
 
                     b.ToTable("user_plays");
                 });
@@ -677,31 +670,31 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                 {
                     b.Property<int>("UserTrackId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
                         .HasColumnName("user_track_id")
-                        .UseIdentityByDefaultColumn();
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<string>("ArtistName")
-                        .HasColumnType("citext")
-                        .HasColumnName("artist_name");
+                        .HasColumnName("artist_name")
+                        .HasColumnType("text");
 
                     b.Property<string>("Name")
-                        .HasColumnType("citext")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .HasColumnType("text");
 
                     b.Property<int>("Playcount")
-                        .HasColumnType("integer")
-                        .HasColumnName("playcount");
+                        .HasColumnName("playcount")
+                        .HasColumnType("integer");
 
                     b.Property<int>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
+                        .HasColumnName("user_id")
+                        .HasColumnType("integer");
 
                     b.HasKey("UserTrackId")
                         .HasName("pk_user_tracks");
 
                     b.HasIndex("UserId")
-                        .HasDatabaseName("ix_user_tracks_user_id");
+                        .HasName("ix_user_tracks_user_id");
 
                     b.ToTable("user_tracks");
                 });
@@ -714,8 +707,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasConstraintName("fk_albums_artists_artist_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Artist");
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.ArtistAlias", b =>
@@ -726,8 +717,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasConstraintName("fk_artist_aliases_artists_artist_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Artist");
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.ArtistGenre", b =>
@@ -738,8 +727,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasConstraintName("fk_artist_genres_artists_artist_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Artist");
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.Friend", b =>
@@ -755,10 +742,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasConstraintName("FK.Friends.Users_UserID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("FriendUser");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.GuildUser", b =>
@@ -776,10 +759,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasConstraintName("fk_guild_users_users_user_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Guild");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.InactiveUsers", b =>
@@ -793,8 +772,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .WithMany()
                         .HasForeignKey("UserId1")
                         .HasConstraintName("fk_inactive_users_users_user_id1");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.Track", b =>
@@ -808,8 +785,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .WithMany("Tracks")
                         .HasForeignKey("ArtistId")
                         .HasConstraintName("fk_tracks_artists_artist_id");
-
-                    b.Navigation("Artist");
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserAlbum", b =>
@@ -820,8 +795,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasConstraintName("fk_user_albums_users_user_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserArtist", b =>
@@ -832,8 +805,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasConstraintName("fk_user_artists_users_user_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserPlay", b =>
@@ -844,8 +815,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasConstraintName("fk_user_plays_users_user_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserTrack", b =>
@@ -856,46 +825,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasConstraintName("fk_user_tracks_users_user_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("FMBot.Persistence.Domain.Models.Album", b =>
-                {
-                    b.Navigation("Tracks");
-                });
-
-            modelBuilder.Entity("FMBot.Persistence.Domain.Models.Artist", b =>
-                {
-                    b.Navigation("Albums");
-
-                    b.Navigation("ArtistAliases");
-
-                    b.Navigation("ArtistGenres");
-
-                    b.Navigation("Tracks");
-                });
-
-            modelBuilder.Entity("FMBot.Persistence.Domain.Models.Guild", b =>
-                {
-                    b.Navigation("GuildUsers");
-                });
-
-            modelBuilder.Entity("FMBot.Persistence.Domain.Models.User", b =>
-                {
-                    b.Navigation("Albums");
-
-                    b.Navigation("Artists");
-
-                    b.Navigation("FriendedByUsers");
-
-                    b.Navigation("Friends");
-
-                    b.Navigation("GuildUsers");
-
-                    b.Navigation("Plays");
-
-                    b.Navigation("Tracks");
                 });
 #pragma warning restore 612, 618
         }

@@ -2,7 +2,7 @@ namespace FMBot.LastFM.Domain.Types
 {
     public class TimePeriod
     {
-        public const string
+        public static readonly string
             Overall = "overall",
             Week = "7day",
             Month = "1month",

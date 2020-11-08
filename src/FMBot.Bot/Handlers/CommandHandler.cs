@@ -125,7 +125,7 @@ namespace FMBot.Bot.Handlers
 
             if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && msg.Content.StartsWith(ConfigData.Data.Bot.Prefix))
             {
-                var commandPrefixResult = await this._commands.ExecuteAsync(context, msg.Content.Remove(0, 1), this._provider);
+                var commandPrefixResult = await this._commands.ExecuteAsync(context, 1, this._provider);
 
                 if (commandPrefixResult.IsSuccess)
                 {
@@ -145,7 +145,7 @@ namespace FMBot.Bot.Handlers
                 if (!userRegistered)
                 {
                     var embed = new EmbedBuilder()
-                        .WithColor(DiscordConstants.LastFMColorRed);
+                        .WithColor(DiscordConstants.LastFmColorRed);
                     embed.UsernameNotSetErrorResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
                     await context.Channel.SendMessageAsync("", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
@@ -158,7 +158,7 @@ namespace FMBot.Bot.Handlers
                 if (!userSession)
                 {
                     var embed = new EmbedBuilder()
-                        .WithColor(DiscordConstants.LastFMColorRed);
+                        .WithColor(DiscordConstants.LastFmColorRed);
                     embed.SessionRequiredResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
                     await context.Channel.SendMessageAsync("", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
@@ -171,6 +171,7 @@ namespace FMBot.Bot.Handlers
             if (result.IsSuccess)
             {
                 Statistics.CommandsExecuted.Inc();
+                await this._userService.UpdateUserLastUsedAsync(context.User);
             }
             else
             {

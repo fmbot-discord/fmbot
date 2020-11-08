@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Dasync.Collections;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -20,11 +19,18 @@ namespace FMBot.Bot.Services
 {
     public class ChartService : IChartService
     {
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+
+        public ChartService(IDbContextFactory<FMBotDbContext> contextFactory)
+        {
+            this._contextFactory = contextFactory;
+        }
+
         public async Task<SKImage> GenerateChartAsync(ChartSettings chart)
         {
             try
             {
-                await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+                await using var db = this._contextFactory.CreateDbContext();
                 var censoredMusic = await db.CensoredMusic.AsQueryable().ToListAsync();
 
                 await chart.Albums.ParallelForEachAsync(async album =>

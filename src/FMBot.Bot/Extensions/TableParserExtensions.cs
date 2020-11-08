@@ -140,11 +140,18 @@ namespace FMBot.Bot.Extensions
         private static PropertyInfo GetProperty<T>(Expression<Func<T, object>> expression)
         {
             if (expression.Body is UnaryExpression)
+            {
                 if ((expression.Body as UnaryExpression).Operand is MemberExpression)
+                {
                     return ((expression.Body as UnaryExpression).Operand as MemberExpression).Member as PropertyInfo;
+                }
+            }
 
             if (expression.Body is MemberExpression)
+            {
                 return (expression.Body as MemberExpression).Member as PropertyInfo;
+            }
+
             return null;
         }
     }

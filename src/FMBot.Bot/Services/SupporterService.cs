@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
-using FMBot.Bot.Configurations;
 using FMBot.Domain;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -13,6 +12,13 @@ namespace FMBot.Bot.Services
 {
     public class SupporterService
     {
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+
+        public SupporterService(IDbContextFactory<FMBotDbContext> contextFactory)
+        {
+            this._contextFactory = contextFactory;
+        }
+
         public async Task<string> GetRandomSupporter(IGuild guild)
         {
             if (guild == null)
@@ -20,7 +26,7 @@ namespace FMBot.Bot.Services
                 return null;
             }
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var guildSettings = await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
@@ -46,7 +52,7 @@ namespace FMBot.Bot.Services
                 }
 
                 var rand = new Random();
-                var randomSupporter = supporters[rand.Next(supporters.Count)];
+                var randomSupporter = supporters[rand.Next(supporters.Count())];
 
                 return randomSupporter.Name;
             }
@@ -56,11 +62,12 @@ namespace FMBot.Bot.Services
 
         public async Task<IReadOnlyList<Supporter>> GetAllVisibleSupporters()
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
 
             return await db.Supporters
                 .AsQueryable()
                 .Where(w => w.VisibleInOverview)
+                .OrderByDescending(o => o.SupporterType)
                 .ToListAsync();
         }
     }

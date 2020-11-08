@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord.Commands;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -13,38 +12,46 @@ namespace FMBot.Bot.Services.WhoKnows
 {
     public class WhoKnowsTrackService
     {
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+
+        public WhoKnowsTrackService(IDbContextFactory<FMBotDbContext> contextFactory)
+        {
+            this._contextFactory = contextFactory;
+        }
+
         public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(ICommandContext context,
-            IReadOnlyList<User> guildUsers, string artistName, string trackName)
+            ICollection<GuildUser> guildUsers, string artistName, string trackName)
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            var tracks = await db.UserTracks
+            await using var db = this._contextFactory.CreateDbContext();
+            var userTracks = await db.UserTracks
                 .Include(i => i.User)
-                .Where(w => w.Name.ToLower() == trackName.ToLower() &&
-                            w.ArtistName.ToLower() == artistName.ToLower()
-                            && userIds.Contains(w.UserId))
+                .Where(w => EF.Functions.ILike(w.Name, trackName) &&
+                            EF.Functions.ILike(w.ArtistName, artistName) &&
+                            userIds.Contains(w.UserId))
                 .OrderByDescending(o => o.Playcount)
                 .Take(14)
                 .ToListAsync();
 
             var whoKnowsTrackList = new List<WhoKnowsObjectWithUser>();
 
-            foreach (var track in tracks)
+            foreach (var userTrack in userTracks)
             {
-                var discordUser = await context.Guild.GetUserAsync(track.User.DiscordUserId);
-                if (discordUser != null)
+                var discordUser = await context.Guild.GetUserAsync(userTrack.User.DiscordUserId);
+                var guildUser = guildUsers.FirstOrDefault(f => f.UserId == userTrack.UserId);
+                var userName = discordUser != null ?
+                    discordUser.Nickname ?? discordUser.Username :
+                    guildUser?.UserName ?? userTrack.User.UserNameLastFM;
+
+                whoKnowsTrackList.Add(new WhoKnowsObjectWithUser
                 {
-                    whoKnowsTrackList.Add(new WhoKnowsObjectWithUser
-                    {
-                        Name = $"{track.ArtistName} - {track.Name}",
-                        DiscordName = discordUser.Nickname ?? discordUser.Username,
-                        Playcount = track.Playcount,
-                        DiscordUserId = track.User.DiscordUserId,
-                        LastFMUsername = track.User.UserNameLastFM,
-                        UserId = track.UserId,
-                    });
-                }
+                    Name = $"{userTrack.ArtistName} - {userTrack.Name}",
+                    DiscordName = userName,
+                    Playcount = userTrack.Playcount,
+                    LastFMUsername = userTrack.User.UserNameLastFM,
+                    UserId = userTrack.UserId,
+                });
             }
 
             return whoKnowsTrackList;
@@ -55,7 +62,7 @@ namespace FMBot.Bot.Services.WhoKnows
         {
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var query = db.UserTracks
                 .AsQueryable()
                 .Where(w => userIds.Contains(w.UserId))
@@ -84,7 +91,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.UserPlays
                 .AsQueryable()
                 .CountAsync(t => t.TimePlayed.Date <= now.Date &&

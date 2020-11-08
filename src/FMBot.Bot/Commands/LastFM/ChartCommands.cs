@@ -15,44 +15,48 @@ using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
-using IF.Lastfm.Core.Api.Helpers;
-using IF.Lastfm.Core.Objects; 
 using SkiaSharp;
 
 namespace FMBot.Bot.Commands.LastFM
 {
     public class ChartCommands : ModuleBase
     {
-        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
-        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
-        private readonly IChartService _chartService;
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedFooterBuilder _embedFooter;
         private readonly GuildService _guildService;
-        private readonly LastFMService _lastFmService;
-        private readonly SupporterService _supporterService;
+        private readonly IChartService _chartService;
         private readonly IPrefixService _prefixService;
-
+        private readonly LastFmService _lastFmService;
+        private readonly SettingService _settingService;
+        private readonly SupporterService _supporterService;
         private readonly UserService _userService;
 
+        private readonly EmbedAuthorBuilder _embedAuthor;
+        private readonly EmbedBuilder _embed;
+        private readonly EmbedFooterBuilder _embedFooter;
+
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
+        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
+
         public ChartCommands(
-            IPrefixService prefixService,
-            IChartService chartService,
-            GuildService guildService,
-            UserService userService,
-            LastFMService lastFmService,
-            SupporterService supporterService)
+                GuildService guildService,
+                IChartService chartService,
+                IPrefixService prefixService,
+                LastFmService lastFmService,
+                SettingService settingService,
+                SupporterService supporterService,
+                UserService userService
+            )
         {
-            this._prefixService = prefixService;
             this._chartService = chartService;
             this._guildService = guildService;
-            this._userService = userService;
             this._lastFmService = lastFmService;
+            this._prefixService = prefixService;
+            this._settingService = settingService;
             this._supporterService = supporterService;
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFMColorRed);
+            this._userService = userService;
+
             this._embedAuthor = new EmbedAuthorBuilder();
+            this._embed = new EmbedBuilder()
+                .WithColor(DiscordConstants.LastFmColorRed);
             this._embedFooter = new EmbedFooterBuilder();
         }
 
@@ -62,7 +66,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         public async Task ChartAsync(params string[] otherSettings)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             if (otherSettings.Any() && otherSettings.First() == "help")
             {
                 await ReplyAsync($"{prfx}chart '2x2-10x10' '{Constants.CompactTimePeriodList}' \n" +
@@ -100,7 +104,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var userSettings = await SettingService.GetUser(otherSettings, user.UserNameLastFM, this.Context);
+            var userSettings = await this._settingService.GetUser(otherSettings, user.UserNameLastFM, this.Context);
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
@@ -208,7 +212,7 @@ namespace FMBot.Bot.Commands.LastFM
                 if (!string.IsNullOrEmpty(supporter))
                 {
                     embedDescription +=
-                        $"This chart was brought to you by .fmbot supporter {supporter}.\n";
+                        $"*This chart was brought to you by .fmbot supporter {supporter}.*\n";
                 }
 
                 this._embed.WithFooter(this._embedFooter);
@@ -239,7 +243,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync(
-                    "Sorry, but I was unable to generate a FMChart due to an internal error. Make sure you have scrobbles and Last.FM isn't having issues, and try again later.");
+                    "Sorry, but I was unable to generate a FMChart due to an internal error. Make sure you have scrobbles and Last.fm isn't having issues, and try again later.");
             }
         }
     }

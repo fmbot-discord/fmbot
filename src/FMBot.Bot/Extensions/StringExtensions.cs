@@ -12,7 +12,7 @@ namespace FMBot.Bot.Extensions
         {
             var messageLength = 2000;
 
-            for (int index = 0; index < str.Length; index += messageLength)
+            for (var index = 0; index < str.Length; index += messageLength)
             {
                 yield return str.Substring(index, Math.Min(messageLength, str.Length - index));
             }
@@ -20,14 +20,8 @@ namespace FMBot.Bot.Extensions
 
         public static string FilterOutMentions(this string str)
         {
-            var pattern = new Regex("(@everyone|@here|<@)");
+            var pattern = new Regex("(@everyone|@here|<@|`)");
             return pattern.Replace(str, "");
-        }
-
-        public static bool ContainsMentions(this string str)
-        {
-            var matchesPattern = Regex.Match(str, "(@everyone|@here|<@)");
-            return matchesPattern.Success;
         }
 
         public static bool ContainsAny(this string haystack, params string[] needles)
@@ -61,7 +55,10 @@ namespace FMBot.Bot.Extensions
         public static string TruncateLongString(string str, int maxLength)
         {
             if (string.IsNullOrEmpty(str))
+            {
                 return str;
+            }
+
             return str.Substring(0, Math.Min(str.Length, maxLength));
         }
 

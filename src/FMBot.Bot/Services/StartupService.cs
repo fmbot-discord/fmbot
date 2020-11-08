@@ -9,7 +9,9 @@ using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Domain;
+using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Api;
+using Microsoft.EntityFrameworkCore;
 using Prometheus;
 using Serilog;
 
@@ -22,29 +24,39 @@ namespace FMBot.Bot.Services
         private readonly DiscordShardedClient _client;
         private readonly IPrefixService _prefixService;
         private readonly IServiceProvider _provider;
-        private readonly Logger.Logger _logger;
-
-        private readonly ILogger logger = Log.ForContext<StartupService>();
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
 
         public StartupService(
             IServiceProvider provider,
             DiscordShardedClient discord,
             CommandService commands,
-            Logger.Logger logger,
             IPrefixService prefixService,
-            IDisabledCommandService disabledCommands)
+            IDisabledCommandService disabledCommands,
+            IDbContextFactory<FMBotDbContext> contextFactory)
         {
             this._provider = provider;
             this._client = discord;
             this._commands = commands;
-            this._logger = logger;
             this._prefixService = prefixService;
             this._disabledCommands = disabledCommands;
+            this._contextFactory = contextFactory;
         }
 
         public async Task StartAsync()
         {
+            await using var context = this._contextFactory.CreateDbContext();
+            try
+            {
+                Log.Information("Ensuring database is up to date");
+                await context.Database.MigrateAsync();
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "Something went wrong while creating/updating the database!");
+                throw;
+            }
+
             Log.Information("Starting bot");
 
             var discordToken = ConfigData.Data.Discord.Token; // Get the discord token from the config file
@@ -64,8 +76,6 @@ namespace FMBot.Bot.Services
             Log.Information("Logging into Discord");
             await this._client.LoginAsync(TokenType.Bot, discordToken);
 
-            Log.Information("Starting connection between Discord and the client");
-            await this._client.StartAsync();
 
             Log.Information("Setting Discord user status");
             await this._client.SetStatusAsync(UserStatus.DoNotDisturb);
@@ -82,6 +92,13 @@ namespace FMBot.Bot.Services
                     Assembly.GetEntryAssembly(),
                     this._provider); // Load commands and modules into the command service
 
+            foreach (var shard in this._client.Shards)
+            {
+                Log.Information("ShardStartConnection: shard {shardId}", shard.ShardId);
+                await shard.StartAsync();
+                await Task.Delay(6000);
+            }
+
             Log.Information("Preparing cache folder");
             PrepareCacheFolder();
 
@@ -93,13 +110,13 @@ namespace FMBot.Bot.Services
         {
             var fmClient = new LastfmClient(ConfigData.Data.LastFm.Key, ConfigData.Data.LastFm.Secret);
 
-            Log.Information("Testing Last.FM API");
+            Log.Information("Testing Last.fm API");
             var lastFMUser = await fmClient.User.GetInfoAsync("Lastfmsupport");
 
             if (lastFMUser.Status.ToString().Equals("BadApiKey"))
             {
                 Log.Fatal("BadLastfmApiKey",
-                    "Warning! Invalid API key for Last.FM! Please set the proper API keys in the `/Configs/ConfigData.json`! \n \n" +
+                    "Warning! Invalid API key for Last.fm! Please set the proper API keys in the `/Configs/ConfigData.json`! \n \n" +
                     "Exiting in 5 seconds...");
 
                 Thread.Sleep(5000);
@@ -107,7 +124,7 @@ namespace FMBot.Bot.Services
             }
             else
             {
-                Log.Information("Last.FM API test successful");
+                Log.Information("Last.fm API test successful");
             }
         }
 

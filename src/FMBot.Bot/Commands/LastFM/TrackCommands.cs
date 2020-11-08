@@ -25,46 +25,48 @@ namespace FMBot.Bot.Commands.LastFM
 {
     public class TrackCommands : ModuleBase
     {
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedFooterBuilder _embedFooter;
         private readonly GuildService _guildService;
-        private readonly LastFMService _lastFmService;
-        private readonly PlayService _playService;
-        private readonly IUpdateService _updateService;
         private readonly IIndexService _indexService;
-        private readonly WhoKnowsTrackService _whoKnowsTrackService;
-        private readonly SpotifyService _spotifyService;
-        private readonly Logger.Logger _logger;
-
-        private readonly UserService _userService;
-
         private readonly IPrefixService _prefixService;
+        private readonly IUpdateService _updateService;
+        private readonly LastFmService _lastFmService;
+        private readonly PlayService _playService;
+        private readonly SettingService _settingService;
+        private readonly SpotifyService _spotifyService;
+        private readonly UserService _userService;
+        private readonly WhoKnowsTrackService _whoKnowsTrackService;
 
-        public TrackCommands(Logger.Logger logger,
-            IPrefixService prefixService,
-            GuildService guildService,
-            UserService userService,
-            LastFMService lastFmService,
-            SpotifyService spotifyService,
-            WhoKnowsTrackService whoKnowsTrackService,
-            PlayService playService,
-            IUpdateService updateService,
-            IIndexService indexService)
+        private readonly EmbedAuthorBuilder _embedAuthor;
+        private readonly EmbedBuilder _embed;
+        private readonly EmbedFooterBuilder _embedFooter;
+
+        public TrackCommands(
+                GuildService guildService,
+                IIndexService indexService,
+                IPrefixService prefixService,
+                IUpdateService updateService,
+                LastFmService lastFmService,
+                PlayService playService,
+                SettingService settingService,
+                SpotifyService spotifyService,
+                UserService userService,
+                WhoKnowsTrackService whoKnowsTrackService
+            )
         {
-            this._logger = logger;
-            this._prefixService = prefixService;
             this._guildService = guildService;
-            this._userService = userService;
-            this._lastFmService = lastFmService;
-            this._spotifyService = spotifyService;
-            this._whoKnowsTrackService = whoKnowsTrackService;
-            this._playService = playService;
-            this._updateService = updateService;
             this._indexService = indexService;
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFMColorRed);
+            this._lastFmService = lastFmService;
+            this._playService = playService;
+            this._prefixService = prefixService;
+            this._settingService = settingService;
+            this._spotifyService = spotifyService;
+            this._updateService = updateService;
+            this._userService = userService;
+            this._whoKnowsTrackService = whoKnowsTrackService;
+
             this._embedAuthor = new EmbedAuthorBuilder();
+            this._embed = new EmbedBuilder()
+                .WithColor(DiscordConstants.LastFmColorRed);
             this._embedFooter = new EmbedFooterBuilder();
         }
 
@@ -75,7 +77,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task TrackAsync(params string[] trackValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             if (trackValues.Any() && trackValues.First() == "help")
             {
@@ -157,7 +159,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (track.Toptags.Tag.Any())
             {
-                var tags = this._lastFmService.TopTagsToString(track.Toptags);
+                var tags = LastFmService.TopTagsToString(track.Toptags);
 
                 this._embed.AddField("Tags", tags);
             }
@@ -173,7 +175,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task TrackPlaysAsync(params string[] trackValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             if (trackValues.Any() && trackValues.First() == "help")
             {
@@ -219,7 +221,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task LoveAsync(params string[] trackValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             if (trackValues.Any() && trackValues.First() == "help")
             {
@@ -245,7 +247,7 @@ namespace FMBot.Bot.Commands.LastFM
             if (trackLoved)
             {
                 this._embed.WithTitle($"❤️ Loved track for {userTitle}");
-                this._embed.WithDescription(LastFMService.ResponseTrackToLinkedString(track));
+                this._embed.WithDescription(LastFmService.ResponseTrackToLinkedString(track));
             }
             else
             {
@@ -266,7 +268,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task UnLoveAsync(params string[] trackValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             if (trackValues.Any() && trackValues.First() == "help")
             {
@@ -292,7 +294,7 @@ namespace FMBot.Bot.Commands.LastFM
             if (trackLoved)
             {
                 this._embed.WithTitle($"💔 Unloved track for {userTitle}");
-                this._embed.WithDescription(LastFMService.ResponseTrackToLinkedString(track));
+                this._embed.WithDescription(LastFmService.ResponseTrackToLinkedString(track));
             }
             else
             {
@@ -313,7 +315,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task TopTracksAsync(params string[] extraOptions)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             if (extraOptions.Any() && extraOptions.First() == "help")
             {
@@ -333,7 +335,7 @@ namespace FMBot.Bot.Commands.LastFM
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var timeSettings = SettingService.GetTimePeriod(extraOptions);
-            var userSettings = await SettingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
+            var userSettings = await this._settingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
             var amount = SettingService.GetAmount(extraOptions);
 
             try
@@ -345,7 +347,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                     if (!topTracks.Success)
                     {
-                        this._embed.ErrorResponse(topTracks.Error.Value, topTracks.Message, this.Context, this._logger);
+                        this._embed.ErrorResponse(topTracks.Error, topTracks.Message, this.Context);
                         await ReplyAsync("", false, this._embed.Build());
                         return;
                     }
@@ -440,7 +442,7 @@ namespace FMBot.Bot.Commands.LastFM
             catch (Exception e)
             {
                 this.Context.LogCommandException(e);
-                await ReplyAsync("Unable to show Last.FM info due to an internal error.");
+                await ReplyAsync("Unable to show Last.fm info due to an internal error.");
             }
         }
 
@@ -458,7 +460,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             if (trackValues.Any() && trackValues.First() == "help")
             {
@@ -517,18 +519,25 @@ namespace FMBot.Bot.Commands.LastFM
             try
             {
                 var guild = await guildTask;
-                var users = guild.GuildUsers.Select(s => s.User).ToList();
 
-                var usersWithArtist = await this._whoKnowsTrackService.GetIndexedUsersForTrack(this.Context, users, track.Artist.Name, track.Name);
+                var currentUser = await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), userSettings);
+                
+                if (!guild.GuildUsers.Select(s => s.UserId).Contains(userSettings.UserId))
+                {
+                    guild.GuildUsers.Add(currentUser);
+                }
+
+                await this._indexService.UpdateUserName(currentUser, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId));
+
+                var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(this.Context, guild.GuildUsers, track.Artist.Name, track.Name);
 
                 if (track.Userplaycount != 0)
                 {
-                    var guildUser = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
-                    usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, userSettings, guildUser, trackName, track.Userplaycount);
+                    usersWithTrack = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, currentUser, trackName, track.Userplaycount);
                 }
 
-                var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithArtist);
-                if (usersWithArtist.Count == 0)
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithTrack);
+                if (usersWithTrack.Count == 0)
                 {
                     serverUsers = "Nobody in this server (not even you) has listened to this track.";
                 }
@@ -568,7 +577,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("servertracks", RunMode = RunMode.Async)]
         [Summary("Shows top albums for your server")]
         [Alias("st", "stt", "servertoptracks", "servertrack")]
-        public async Task GuildAlbumsAsync(params string[] extraOptions)
+        public async Task GuildTracksAsync(params string[] extraOptions)
         {
             if (this._guildService.CheckIfDM(this.Context))
             {
@@ -577,7 +586,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
             if (extraOptions.Any() && extraOptions.First() == "help")
@@ -624,7 +633,7 @@ namespace FMBot.Bot.Commands.LastFM
             var serverTrackSettings = new GuildRankingSettings
             {
                 ChartTimePeriod = ChartTimePeriod.Weekly,
-                OrderType = OrderType.Playcount
+                OrderType = OrderType.Listeners
             };
 
             serverTrackSettings = SettingService.SetGuildRankingSettings(serverTrackSettings, extraOptions);
@@ -650,18 +659,15 @@ namespace FMBot.Bot.Commands.LastFM
                 if (serverTrackSettings.OrderType == OrderType.Listeners)
                 {
                     footer += "Listeners / Plays - Ordered by listeners\n";
-                    foreach (var track in topGuildTracks)
-                    {
-                        description += $"`{track.ListenerCount}` / `{track.Playcount}` | **{track.TrackName}** by **{track.ArtistName}**\n";
-                    }
                 }
                 else
                 {
-                    footer += "Plays / Listeners - Ordered by plays\n";
-                    foreach (var track in topGuildTracks)
-                    {
-                        description += $"`{track.Playcount}` / `{track.ListenerCount}` | **{track.TrackName}** by **{track.ArtistName}**\n";
-                    }
+                    footer += "Listeners / Plays  - Ordered by plays\n";
+                }
+
+                foreach (var track in topGuildTracks)
+                {
+                    description += $"`{track.ListenerCount}` / `{track.Playcount}` | **{track.TrackName}** by **{track.ArtistName}**\n";
                 }
 
                 this._embed.WithDescription(description);
@@ -717,9 +723,9 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 var track = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
 
-                if (!track.Content.Any())
+                if (track == null || !track.Any() || !track.Content.Any())
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(track.Status, prfx);
+                    this._embed.NoScrobblesFoundErrorResponse(track?.Status, prfx, userSettings.UserNameLastFM);
                     await this.ReplyAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     return null;
@@ -728,6 +734,16 @@ namespace FMBot.Bot.Commands.LastFM
                 var trackResult = track.Content.First();
                 var trackInfo = await this._lastFmService.GetTrackInfoAsync(trackResult.Name, trackResult.ArtistName,
                     userSettings.UserNameLastFM);
+
+                if (trackInfo == null)
+                {
+                    this._embed.WithDescription($"Last.fm did not return a result for **{trackResult.Name}** by **{trackResult.ArtistName}**.\n" +
+                                                $"This usually happens on recently released tracks. Please try again later.");
+                    await this.ReplyAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return null;
+                }
+
                 return trackInfo;
             }
 

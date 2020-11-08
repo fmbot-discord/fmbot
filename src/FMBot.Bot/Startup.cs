@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using CXuesong.Uel.Serilog.Sinks.Discord;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -17,7 +16,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
-using Serilog.Events;
 using Serilog.Exceptions;
 
 namespace FMBot.Bot
@@ -45,9 +43,10 @@ namespace FMBot.Bot
                 .Enrich.WithProperty("BotUserId", ConfigData.Data.Discord.BotUserId ?? 0)
                 .WriteTo.Console()
                 .WriteTo.Seq("http://localhost:5341")
-                .WriteTo.Conditional(evt =>
-                        !string.IsNullOrEmpty(ConfigData.Data.Bot.ExceptionChannelWebhookUrl),
-                        wt => wt.Discord(new DiscordWebhookMessenger(ConfigData.Data.Bot.ExceptionChannelWebhookUrl), LogEventLevel.Warning))
+                // https://github.com/CXuesong/Serilog.Sinks.Discord/issues/3
+                //.WriteTo.Conditional(evt =>
+                //        !string.IsNullOrEmpty(ConfigData.Data.Bot.ExceptionChannelWebhookUrl),
+                //        wt => wt.Discord(new DiscordWebhookMessenger(ConfigData.Data.Bot.ExceptionChannelWebhookUrl), LogEventLevel.Warning))
                 .CreateLogger();
 
             AppDomain.CurrentDomain.UnhandledException += AppUnhandledException;
@@ -65,7 +64,9 @@ namespace FMBot.Bot
 
             var provider = services.BuildServiceProvider(); // Build the service provider
             //provider.GetRequiredService<LoggingService>();      // Start the logging service
-            provider.GetRequiredService<CommandHandler>(); // Start the command handler service
+            provider.GetRequiredService<CommandHandler>();
+            provider.GetRequiredService<ClientLogHandler>();
+            provider.GetRequiredService<UserEventHandler>();
 
             await provider.GetRequiredService<StartupService>().StartAsync(); // Start the startup service
             await Task.Delay(-1); // Keep the program alive
@@ -76,10 +77,9 @@ namespace FMBot.Bot
             var discordClient = new DiscordShardedClient(new DiscordSocketConfig
             {
                 LogLevel = LogSeverity.Verbose,
-                MessageCacheSize = 0
+                MessageCacheSize = 0,
+                AlwaysDownloadUsers = true
             });
-
-            var logger = new Logger.Logger();
 
             services
                 .AddSingleton(discordClient)
@@ -88,56 +88,52 @@ namespace FMBot.Bot
                     LogLevel = LogSeverity.Verbose,
                     DefaultRunMode = RunMode.Async,
                 }))
-                .AddSingleton<CommandHandler>()
-                .AddSingleton<StartupService>()
-                .AddSingleton<TimerService>()
-                .AddSingleton<IPrefixService, PrefixService>()
-                .AddSingleton<IDisabledCommandService, DisabledCommandService>()
-                .AddSingleton<IUserIndexQueue, UserIndexQueue>()
-                .AddSingleton<IUserUpdateQueue, UserUpdateQueue>()
-                .AddSingleton<ArtistsService>()
-                .AddSingleton<WhoKnowsService>()
-                .AddSingleton<WhoKnowsArtistService>()
-                .AddSingleton<WhoKnowsAlbumService>()
-                .AddSingleton<WhoKnowsTrackService>()
-                .AddSingleton<IChartService, ChartService>()
-                .AddSingleton<IIndexService, IndexService>()
-                .AddSingleton<GuildService>()
-                .AddSingleton<UserService>()
-                .AddSingleton<PlayService>()
                 .AddSingleton<AdminService>()
+                .AddSingleton<ArtistsService>()
+                .AddSingleton<CensorService>()
+                .AddSingleton<ClientLogHandler>()
+                .AddSingleton<CommandHandler>()
                 .AddSingleton<FriendsService>()
                 .AddSingleton<GeniusService>()
+                .AddSingleton<GuildService>()
+                .AddSingleton<IChartService, ChartService>()
+                .AddSingleton<IDisabledCommandService, DisabledCommandService>()
+                .AddSingleton<IIndexService, IndexService>()
+                .AddSingleton<IPrefixService, PrefixService>()
+                .AddSingleton<IUserIndexQueue, UserIndexQueue>()
+                .AddSingleton<IUserUpdateQueue, UserUpdateQueue>()
+                .AddSingleton<PlayService>()
+                .AddSingleton<Random>()
+                .AddSingleton<SettingService>()
                 .AddSingleton<SpotifyService>()
-                .AddSingleton<YoutubeService>()
+                .AddSingleton<StartupService>()
                 .AddSingleton<SupporterService>()
-                .AddSingleton<CensorService>()
-                .AddSingleton(logger)
-                .AddSingleton<Random>() // Add random to the collection
+                .AddSingleton<TimerService>()
+                .AddSingleton<UserEventHandler>()
+                .AddSingleton<UserService>()
+                .AddSingleton<WhoKnowsAlbumService>()
+                .AddSingleton<WhoKnowsArtistService>()
+                .AddSingleton<WhoKnowsService>()
+                .AddSingleton<WhoKnowsTrackService>()
+                .AddSingleton<YoutubeService>() // Add random to the collection
                 .AddSingleton(this.Configuration) // Add the configuration to the collection
                 .AddHttpClient();
 
             // These services can only be added after the config is loaded
             services
-                .AddTransient<ILastfmApi, LastfmApi>()
-                .AddTransient<LastFMService>()
-                .AddSingleton<GlobalUpdateService>()
                 .AddSingleton<GlobalIndexService>()
-                .AddSingleton<IUpdateService, UpdateService>();
+                .AddSingleton<GlobalUpdateService>()
+                .AddSingleton<IUpdateService, UpdateService>()
+                .AddTransient<ILastfmApi, LastfmApi>()
+                .AddTransient<LastFmService>();
+
+            services.AddDbContextFactory<FMBotDbContext>(b =>
+                b.UseNpgsql(ConfigData.Data.Database.ConnectionString, builder =>
+                {
+                    builder.EnableRetryOnFailure(3, TimeSpan.FromSeconds(10), null);
+                }));
 
             services.AddMemoryCache();
-
-            using var context = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            try
-            {
-                Log.Information("Ensuring database is up to date");
-                context.Database.Migrate();
-            }
-            catch (Exception e)
-            {
-                Log.Error(e, "Something went wrong while creating/updating the database!");
-                throw;
-            }
         }
 
         private static void AppUnhandledException(object sender, UnhandledExceptionEventArgs e)

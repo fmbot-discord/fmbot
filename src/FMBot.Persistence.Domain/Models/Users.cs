@@ -38,6 +38,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public DateTime? LastScrobbleUpdate { get; set; }
 
+        public DateTime? LastUsed { get; set; }
+
         public ICollection<Friend> FriendedByUsers { get; set; }
 
         public ICollection<Friend> Friends { get; set; }

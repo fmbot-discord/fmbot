@@ -17,7 +17,7 @@ namespace FMBot.Bot.Commands
     {
         private readonly EmbedBuilder _embed;
 
-        private readonly LastFMService _lastFmService;
+        private readonly LastFmService _lastFmService;
         private readonly UserService _userService;
         private readonly YoutubeService _youtubeService;
 
@@ -25,7 +25,7 @@ namespace FMBot.Bot.Commands
 
         public YoutubeCommands(
             IPrefixService prefixService,
-            LastFMService lastFmService,
+            LastFmService lastFmService,
             UserService userService,
             YoutubeService youtubeService)
         {
@@ -34,7 +34,7 @@ namespace FMBot.Bot.Commands
             this._youtubeService = youtubeService;
             this._lastFmService = lastFmService;
             this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFmColorRed);
         }
 
         [Command("youtube")]
@@ -44,7 +44,7 @@ namespace FMBot.Bot.Commands
         public async Task YoutubeAsync(params string[] searchValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             try
             {
@@ -59,9 +59,9 @@ namespace FMBot.Bot.Commands
                 {
                     var tracks = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM);
 
-                    if (tracks?.Any() != true)
+                    if (tracks == null || !tracks.Any() || !tracks.Content.Any())
                     {
-                        this._embed.NoScrobblesFoundErrorResponse(tracks.Status, prfx);
+                        this._embed.NoScrobblesFoundErrorResponse(tracks?.Status, prfx, userSettings.UserNameLastFM);
                         await ReplyAsync("", false, this._embed.Build());
                         return;
                     }
@@ -111,7 +111,7 @@ namespace FMBot.Bot.Commands
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync(
-                    "Unable to show Last.FM info via YouTube due to an internal error. Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
+                    "Unable to show Last.fm info via YouTube due to an internal error. Try setting a Last.fm name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
     }

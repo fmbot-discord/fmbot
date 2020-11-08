@@ -1,16 +1,24 @@
 using System.Linq;
 using System.Threading.Tasks;
-using FMBot.Bot.Configurations;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services
 {
     public class CensorService
     {
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+
+        public CensorService(IDbContextFactory<FMBotDbContext> contextFactory)
+        {
+            this._contextFactory = contextFactory;
+        }
+
+
         public async Task<bool> AlbumIsSafe(string albumName, string artistName)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
 
             if (db.CensoredMusic
                     .AsQueryable()
@@ -40,7 +48,7 @@ namespace FMBot.Bot.Services
 
         public async Task AddCensoredAlbum(string albumName, string artistName)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
 
             await db.CensoredMusic.AddAsync(new CensoredMusic
             {
@@ -56,7 +64,7 @@ namespace FMBot.Bot.Services
 
         public async Task AddCensoredArtist(string artistName)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
 
             await db.CensoredMusic.AddAsync(new CensoredMusic
             {

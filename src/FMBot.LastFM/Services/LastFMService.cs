@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using FMBot.Domain;
-using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.ResponseModels;
 using FMBot.LastFM.Domain.Types;
@@ -19,38 +17,35 @@ using Microsoft.Extensions.Configuration;
 
 namespace FMBot.LastFM.Services
 {
-    public class LastFMService
+    public class LastFmService
     {
-        private readonly LastfmClient _lastFMClient;
+        private readonly LastfmClient _lastFmClient;
 
-        private readonly ILastfmApi _lastfmApi;
+        private readonly ILastfmApi _lastFmApi;
 
-        private readonly string _key;
-        private readonly string _secret;
 
-        public LastFMService(IConfigurationRoot configuration, ILastfmApi lastfmApi)
+        public LastFmService(IConfigurationRoot configuration, ILastfmApi lastFmApi)
         {
-            this._key = configuration.GetSection("LastFm:Key").Value;
-            this._secret = configuration.GetSection("LastFm:Secret").Value;
-            this._lastFMClient = new LastfmClient(this._key, this._secret);
-            this._lastfmApi = lastfmApi;
+            this._lastFmClient =
+                new LastfmClient(configuration.GetSection("LastFm:Key").Value, configuration.GetSection("LastFm:Secret").Value);
+            this._lastFmApi = lastFmApi;
         }
 
         // Recent scrobbles
-        public async Task<PageResponse<LastTrack>> GetRecentScrobblesAsync(string lastFMUserName, int count = 2)
+        public async Task<PageResponse<LastTrack>> GetRecentScrobblesAsync(string lastFmUserName, int count = 2)
         {
-            var recentScrobbles = await this._lastFMClient.User.GetRecentScrobbles(lastFMUserName, null, count: count);
+            var recentScrobbles = await this._lastFmClient.User.GetRecentScrobbles(lastFmUserName, null, count: count);
             Statistics.LastfmApiCalls.Inc();
 
             return recentScrobbles;
         }
 
         // Recent scrobbles
-        public async Task<long?> GetScrobbleCountFromDateAsync(string lastFMUserName, long? unixTimestamp)
+        public async Task<long?> GetScrobbleCountFromDateAsync(string lastFmUserName, long? unixTimestamp)
         {
             var queryParams = new Dictionary<string, string>
             {
-                {"user", lastFMUserName },
+                {"user", lastFmUserName },
                 {"limit", "1"}
             };
 
@@ -59,7 +54,7 @@ namespace FMBot.LastFM.Services
                 queryParams.Add("from", unixTimestamp.ToString());
             }
 
-            var recentTracksCall = await this._lastfmApi.CallApiAsync<PlayResponse>(queryParams, Call.RecentTracks);
+            var recentTracksCall = await this._lastFmApi.CallApiAsync<PlayResponse>(queryParams, Call.RecentTracks);
             Statistics.LastfmApiCalls.Inc();
 
             return recentTracksCall.Success ? recentTracksCall.Content.Recenttracks.Attr.Total : (long?)null;
@@ -103,7 +98,7 @@ namespace FMBot.LastFM.Services
                        : $" | *{track.Album.Title}*\n");
         }
 
-        public static string ResponseTrackToString(ResponseTrack track)
+        private static string ResponseTrackToString(ResponseTrack track)
         {
             return $"{track.Name}\n" +
                    $"By **{track.Artist.Name}**" +
@@ -120,56 +115,56 @@ namespace FMBot.LastFM.Services
                        : $" | *{track.AlbumName}*");
         }
 
-        public string TagsToLinkedString(Tags tags)
+        public static string TagsToLinkedString(Tags tags)
         {
-            var tagString = "";
+            var tagString = new StringBuilder();
             for (var i = 0; i < tags.Tag.Length; i++)
             {
                 if (i != 0)
                 {
-                    tagString += " - ";
+                    tagString.Append(" - ");
                 }
                 var tag = tags.Tag[i];
-                tagString += $"[{tag.Name}]({tag.Url})";
+                tagString.Append($"[{tag.Name}]({tag.Url})");
             }
 
-            return tagString;
+            return tagString.ToString();
         }
 
-        public string TopTagsToString(Toptags tags)
+        public static string TopTagsToString(Toptags tags)
         {
-            var tagString = "";
+            var tagString = new StringBuilder();
             for (var i = 0; i < tags.Tag.Length; i++)
             {
                 if (i != 0)
                 {
-                    tagString += " - ";
+                    tagString.Append(" - ");
                 }
                 var tag = tags.Tag[i];
-                tagString += $"{tag.Name}";
+                tagString.Append($"{tag.Name}");
             }
 
-            return tagString;
+            return tagString.ToString();
         }
 
         // User
-        public async Task<LastResponse<LastUser>> GetUserInfoAsync(string lastFMUserName)
+        public async Task<LastResponse<LastUser>> GetUserInfoAsync(string lastFmUserName)
         {
-            var user = await this._lastFMClient.User.GetInfoAsync(lastFMUserName);
+            var user = await this._lastFmClient.User.GetInfoAsync(lastFmUserName);
             Statistics.LastfmApiCalls.Inc();
 
             return user;
         }
 
         // User
-        public async Task<LastFmUser> GetFullUserInfoAsync(string lastFMUserName)
+        public async Task<LastFmUser> GetFullUserInfoAsync(string lastFmUserName)
         {
             var queryParams = new Dictionary<string, string>
             {
-                {"user", lastFMUserName }
+                {"user", lastFmUserName }
             };
 
-            var userCall = await this._lastfmApi.CallApiAsync<UserResponse>(queryParams, Call.UserInfo);
+            var userCall = await this._lastFmApi.CallApiAsync<UserResponse>(queryParams, Call.UserInfo);
             Statistics.LastfmApiCalls.Inc();
 
             return !userCall.Success ? null : userCall.Content.User;
@@ -177,7 +172,7 @@ namespace FMBot.LastFM.Services
 
         public async Task<PageResponse<LastTrack>> SearchTrackAsync(string searchQuery)
         {
-            var trackSearch = await this._lastFMClient.Track.SearchAsync(searchQuery, itemsPerPage: 1);
+            var trackSearch = await this._lastFmClient.Track.SearchAsync(searchQuery, itemsPerPage: 1);
             Statistics.LastfmApiCalls.Inc();
 
             return trackSearch;
@@ -194,7 +189,7 @@ namespace FMBot.LastFM.Services
                 {"autocorrect", "1"}
             };
 
-            var trackCall = await this._lastfmApi.CallApiAsync<TrackResponse>(queryParams, Call.TrackInfo);
+            var trackCall = await this._lastFmApi.CallApiAsync<TrackResponse>(queryParams, Call.TrackInfo);
             Statistics.LastfmApiCalls.Inc();
 
             return !trackCall.Success ? null : trackCall.Content.Track;
@@ -209,7 +204,7 @@ namespace FMBot.LastFM.Services
                 {"autocorrect", "1"}
             };
 
-            var artistCall = await this._lastfmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+            var artistCall = await this._lastFmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
             Statistics.LastfmApiCalls.Inc();
 
             return artistCall;
@@ -224,7 +219,7 @@ namespace FMBot.LastFM.Services
                 {"username", username }
             };
 
-            var albumCall = await this._lastfmApi.CallApiAsync<AlbumResponse>(queryParams, Call.AlbumInfo);
+            var albumCall = await this._lastFmApi.CallApiAsync<AlbumResponse>(queryParams, Call.AlbumInfo);
             Statistics.LastfmApiCalls.Inc();
 
             return albumCall;
@@ -232,7 +227,7 @@ namespace FMBot.LastFM.Services
 
         public async Task<PageResponse<LastAlbum>> SearchAlbumAsync(string searchQuery)
         {
-            var albumSearch = await this._lastFMClient.Album.SearchAsync(searchQuery, itemsPerPage: 1);
+            var albumSearch = await this._lastFmClient.Album.SearchAsync(searchQuery, itemsPerPage: 1);
             Statistics.LastfmApiCalls.Inc();
 
             return albumSearch;
@@ -241,13 +236,13 @@ namespace FMBot.LastFM.Services
         // Album images
         public async Task<LastImageSet> GetAlbumImagesAsync(string artistName, string albumName)
         {
-            var album = await this._lastFMClient.Album.GetInfoAsync(artistName, albumName);
+            var album = await this._lastFmClient.Album.GetInfoAsync(artistName, albumName);
             Statistics.LastfmApiCalls.Inc();
 
             return album?.Content?.Images;
         }
 
-        public async Task<Bitmap> GetAlbumImageAsBitmapAsync(Uri largestImageSize)
+        public static async Task<Bitmap> GetAlbumImageAsBitmapAsync(Uri largestImageSize)
         {
             try
             {
@@ -264,9 +259,9 @@ namespace FMBot.LastFM.Services
         }
 
         // Top albums
-        public async Task<PageResponse<LastAlbum>> GetTopAlbumsAsync(string lastFMUserName, LastStatsTimeSpan timespan, int count = 2)
+        public async Task<PageResponse<LastAlbum>> GetTopAlbumsAsync(string lastFmUserName, LastStatsTimeSpan timespan, int count = 2)
         {
-            var topAlbums = await this._lastFMClient.User.GetTopAlbums(lastFMUserName, timespan, 1, count);
+            var topAlbums = await this._lastFmClient.User.GetTopAlbums(lastFmUserName, timespan, 1, count);
             Statistics.LastfmApiCalls.Inc();
 
             return topAlbums;
@@ -274,33 +269,33 @@ namespace FMBot.LastFM.Services
 
 
         // Top artists
-        public async Task<PageResponse<LastArtist>> GetTopArtistsAsync(string lastFMUserName,
+        public async Task<PageResponse<LastArtist>> GetTopArtistsAsync(string lastFmUserName,
             LastStatsTimeSpan timespan, int count = 2)
         {
-            var topArtists = await this._lastFMClient.User.GetTopArtists(lastFMUserName, timespan, 1, count);
+            var topArtists = await this._lastFmClient.User.GetTopArtists(lastFmUserName, timespan, 1, count);
             Statistics.LastfmApiCalls.Inc();
 
             return topArtists;
         }
 
         // Top tracks
-        public async Task<Response<TopTracksResponse>> GetTopTracksAsync(string lastFMUserName,
+        public async Task<Response<TopTracksResponse>> GetTopTracksAsync(string lastFmUserName,
             string period, int count = 2, int amountOfPages = 1)
         {
             var queryParams = new Dictionary<string, string>
             {
                 {"limit", count.ToString() },
-                {"username", lastFMUserName },
+                {"username", lastFmUserName },
                 {"period", period },
             };
 
             if (amountOfPages == 1)
             {
                 Statistics.LastfmApiCalls.Inc();
-                return await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
+                return await this._lastFmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
             }
 
-            var response = await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
+            var response = await this._lastFmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
             if (response.Success && response.Content.TopTracks.Track.Count == 1000)
             {
                 for (var i = 1; i < amountOfPages; i++)
@@ -308,7 +303,7 @@ namespace FMBot.LastFM.Services
                     queryParams.Remove("page");
                     queryParams.Add("page", (i + 1).ToString());
 
-                    var pageResponse = await this._lastfmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
+                    var pageResponse = await this._lastFmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
                     Statistics.LastfmApiCalls.Inc();
 
                     if (pageResponse.Success)
@@ -329,20 +324,20 @@ namespace FMBot.LastFM.Services
             return response;
         }
 
-        // Check if lastfm user exists
-        public async Task<bool> LastFMUserExistsAsync(string lastFMUserName)
+        // Check if Last.fm user exists
+        public async Task<bool> LastFmUserExistsAsync(string lastFmUserName)
         {
-            var lastFMUser = await this._lastFMClient.User.GetInfoAsync(lastFMUserName);
+            var lastFmUser = await this._lastFmClient.User.GetInfoAsync(lastFmUserName);
             Statistics.LastfmApiCalls.Inc();
 
-            return lastFMUser.Success;
+            return lastFmUser.Success;
         }
 
         public async Task<Response<TokenResponse>> GetAuthToken()
         {
             var queryParams = new Dictionary<string, string>();
 
-            var tokenCall = await this._lastfmApi.CallApiAsync<TokenResponse>(queryParams, Call.GetToken);
+            var tokenCall = await this._lastFmApi.CallApiAsync<TokenResponse>(queryParams, Call.GetToken);
             Statistics.LastfmApiCalls.Inc();
 
             return tokenCall;
@@ -355,7 +350,7 @@ namespace FMBot.LastFM.Services
                 {"token", token}
             };
 
-            var authSessionCall = await this._lastfmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.GetAuthSession, true);
+            var authSessionCall = await this._lastFmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.GetAuthSession, true);
             Statistics.LastfmApiCalls.Inc();
 
             return authSessionCall;
@@ -370,7 +365,7 @@ namespace FMBot.LastFM.Services
                 {"sk", user.SessionKeyLastFm},
             };
 
-            var authSessionCall = await this._lastfmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.TrackLove, true);
+            var authSessionCall = await this._lastFmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.TrackLove, true);
             Statistics.LastfmApiCalls.Inc();
 
             return authSessionCall.Success;
@@ -385,7 +380,7 @@ namespace FMBot.LastFM.Services
                 {"sk", user.SessionKeyLastFm},
             };
 
-            var authSessionCall = await this._lastfmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.TrackUnLove, true);
+            var authSessionCall = await this._lastFmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.TrackUnLove, true);
             Statistics.LastfmApiCalls.Inc();
 
             return authSessionCall.Success;

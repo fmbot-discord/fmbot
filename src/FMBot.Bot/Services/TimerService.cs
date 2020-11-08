@@ -9,7 +9,6 @@ using Discord.WebSocket;
 using DiscordBotsList.Api;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
-using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.LastFM.Services;
 using IF.Lastfm.Core.Api.Enums;
@@ -27,7 +26,7 @@ namespace FMBot.Bot.Services
         private readonly Timer _internalStatsTimer;
         private readonly Timer _userUpdateTimer;
         private readonly Timer _userIndexTimer;
-        private readonly LastFMService _lastFMService;
+        private readonly LastFmService _lastFMService;
         private readonly UserService _userService;
         private readonly CensorService _censorService;
         private readonly IUpdateService _updateService;
@@ -40,18 +39,19 @@ namespace FMBot.Bot.Services
         private string _trackString = "";
 
         public TimerService(DiscordShardedClient client,
-            LastFMService lastFmService,
+            LastFmService lastFmService,
             IUpdateService updateService,
             UserService userService,
             IIndexService indexService,
-            CensorService censorService)
+            CensorService censorService,
+            GuildService guildService)
         {
             this._client = client;
             this._lastFMService = lastFmService;
             this._userService = userService;
             this._indexService = indexService;
             this._censorService = censorService;
-            this._guildService = new GuildService();
+            this._guildService = guildService;
             this._updateService = updateService;
 
             this._timer = new Timer(async _ =>
@@ -225,6 +225,7 @@ namespace FMBot.Bot.Services
                         {
                             await client.SetGameAsync($"⚠️ Last.fm is currently experiencing issues -> twitter.com/lastfmstatus");
                         }
+
                     }
                 },
                 null,

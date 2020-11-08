@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using Discord;
-using FMBot.Bot.Configurations;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -10,9 +9,16 @@ namespace FMBot.Bot.Services
 {
     public class AdminService
     {
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+
+        public AdminService(IDbContextFactory<FMBotDbContext> contextFactory)
+        {
+            this._contextFactory = contextFactory;
+        }
+
         public async Task<bool> HasCommandAccessAsync(IUser discordUser, UserType userType)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
             if (user == null)
@@ -56,7 +62,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> SetUserTypeAsync(ulong discordUserID, UserType userType)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
 
             if (user == null)
@@ -75,7 +81,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> AddUserToBlacklistAsync(ulong discordUserID)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
 
             if (user == null)
@@ -94,7 +100,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> RemoveUserFromBlacklistAsync(ulong discordUserID)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
 
             if (user == null)
@@ -126,7 +132,7 @@ namespace FMBot.Bot.Services
 
         public async Task FixValues()
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             await db.Database.ExecuteSqlRawAsync("SELECT pg_catalog.setval(pg_get_serial_sequence('users', 'user_id'), (SELECT MAX(user_id) FROM users)+1);");
             Console.WriteLine("User key value has been fixed.");
 

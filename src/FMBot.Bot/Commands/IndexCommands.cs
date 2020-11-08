@@ -9,36 +9,38 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
+using Serilog;
 
 namespace FMBot.Bot.Commands
 {
     public class IndexCommands : ModuleBase
     {
+        private readonly GuildService _guildService;
+        private readonly IIndexService _indexService;
+        private readonly IPrefixService _prefixService;
+        private readonly IUpdateService _updateService;
+        private readonly UserService _userService;
+
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        private readonly GuildService _guildService;
-        private readonly UserService _userService;
-        private readonly IIndexService _indexService;
-        private readonly IUpdateService _updateService;
-
-        private readonly IPrefixService _prefixService;
-
         public IndexCommands(
-            IIndexService indexService,
-            IUpdateService updateService,
-            GuildService guildService,
-            UserService userService,
-            IPrefixService prefixService)
+                GuildService guildService,
+                IIndexService indexService,
+                IPrefixService prefixService,
+                IUpdateService updateService,
+                UserService userService
+            )
         {
-            this._indexService = indexService;
-            this._updateService = updateService;
             this._guildService = guildService;
-            this._userService = userService;
+            this._indexService = indexService;
             this._prefixService = prefixService;
-            this._embedFooter = new EmbedFooterBuilder();
+            this._updateService = updateService;
+            this._userService = userService;
+
             this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFmColorRed);
+            this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("index", RunMode = RunMode.Async)]
@@ -60,6 +62,9 @@ namespace FMBot.Bot.Commands
             try
             {
                 var guildUsers = await this.Context.Guild.GetUsersAsync();
+                Log.Information("Downloaded {guildUserCount} users for guild {guildId} / {guildName} from Discord",
+                    guildUsers.Count, this.Context.Guild.Id, this.Context.Guild.Name);
+
                 var users = await this._indexService.GetUsersToIndex(guildUsers);
                 var indexedUserCount = await this._indexService.GetIndexedUsersCount(guildUsers);
 
@@ -151,7 +156,7 @@ namespace FMBot.Bot.Commands
         [Alias("u")]
         public async Task UpdateUserAsync(string force = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             if (force == "help")
             {
                 this._embed.WithTitle($"{prfx}update");
@@ -169,13 +174,13 @@ namespace FMBot.Bot.Commands
             }
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
-            if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-3))
-            {
-                await ReplyAsync(
-                    "You have already been updated recently. Note that this also happens automatically.");
-                this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                return;
-            }
+            //if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-3))
+            //{
+            //    await ReplyAsync(
+            //        "You have already been updated recently. Note that this also happens automatically.");
+            //    this.Context.LogCommandUsed(CommandResponse.Cooldown);
+            //    return;
+            //}
 
             if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full" || force.ToLower() == "-force" || force.ToLower() == "force"))
             {
@@ -237,8 +242,20 @@ namespace FMBot.Bot.Commands
                     }
                     else
                     {
+                        var updatedDescription =
+                            $"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new scrobbles.";
+
+                        var rnd = new Random();
+                        if (rnd.Next(0, 4) == 1)
+                        {
+                            updatedDescription +=
+                                $"\n\n" +
+                                $"Please note that updates are only used for whoknows and that users are also automatically updated every 48 hours.\n" +
+                                $"Other commands directly get their data from last.fm and are always up to date.";
+                        }
+    
                         m.Embed = new EmbedBuilder()
-                            .WithDescription($"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new scrobbles.")
+                            .WithDescription(updatedDescription)
                             .WithColor(DiscordConstants.SuccessColorGreen)
                             .Build();
                     }

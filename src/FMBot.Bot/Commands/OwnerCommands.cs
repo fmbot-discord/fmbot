@@ -89,6 +89,25 @@ namespace FMBot.Bot.Commands
             }
         }
 
+        [Command("say"), Summary("Says something")]
+        [UsernameSetRequired]
+        public async Task SayAsync(string say)
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+            {
+                try
+                {
+                    await ReplyAsync(say);
+                    this.Context.LogCommandUsed();
+                }
+                catch (Exception e)
+                {
+                    this.Context.LogCommandException(e);
+                    await ReplyAsync("Unable to say something due to an internal error.");
+                }
+            }
+        }
+
         [Command("storagecheck"), Summary("Checks how much storage is left on the server.")]
         [Alias("checkstorage", "storage")]
         [UsernameSetRequired]
@@ -132,9 +151,9 @@ namespace FMBot.Bot.Commands
                 var client = this.Context.Client as DiscordShardedClient;
                 string desc = null;
 
-                foreach (SocketGuild guild in client.Guilds.OrderByDescending(o => o.MemberCount).Take(100))
+                foreach (var guild in client.Guilds.OrderByDescending(o => o.MemberCount).Take(100))
                 {
-                    desc += $"{guild.Name} - Users: {guild.Users.Count()}, Owner: {guild.Owner.ToString()}\n";
+                    desc += $"{guild.Name} - Users: {guild.Users.Count()}, Owner: {guild.Owner}\n";
                 }
 
                 if (!string.IsNullOrWhiteSpace(desc))
@@ -161,7 +180,7 @@ namespace FMBot.Bot.Commands
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
             {
-                await _adminService.FixValues();
+                await this._adminService.FixValues();
                 await ReplyAsync("Postgres values have been fixed.");
                 this.Context.LogCommandUsed();
             }

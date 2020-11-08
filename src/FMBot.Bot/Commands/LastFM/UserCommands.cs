@@ -22,58 +22,59 @@ namespace FMBot.Bot.Commands.LastFM
 {
     public class UserCommands : ModuleBase
     {
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedFooterBuilder _embedFooter;
         private readonly FriendsService _friendsService;
         private readonly GuildService _guildService;
-        private readonly LastFMService _lastFmService;
-        private readonly Logger.Logger _logger;
+        private readonly IIndexService _indexService;
+        private readonly IPrefixService _prefixService;
+        private readonly LastFmService _lastFmService;
+        private readonly SettingService _settingService;
         private readonly TimerService _timer;
-
         private readonly UserService _userService;
 
-        private readonly IPrefixService _prefixService;
-
-        private readonly IIndexService _indexService;
+        private readonly EmbedAuthorBuilder _embedAuthor;
+        private readonly EmbedBuilder _embed;
+        private readonly EmbedFooterBuilder _embedFooter;
 
         private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
         private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
 
-        public UserCommands(TimerService timer,
-            Logger.Logger logger,
-            IPrefixService prefixService,
-            GuildService guildService,
-            LastFMService lastFmService,
-            IIndexService indexService,
-            UserService userService,
-            FriendsService friendsService)
+        public UserCommands(
+                FriendsService friendsService,
+                GuildService guildService,
+                IIndexService indexService,
+                IPrefixService prefixService,
+                LastFmService lastFmService,
+                SettingService settingService,
+                TimerService timer,
+                UserService userService
+            )
         {
-            this._timer = timer;
-            this._logger = logger;
-            this._prefixService = prefixService;
-            this._guildService = guildService;
             this._friendsService = friendsService;
-            this._userService = userService;
-            this._lastFmService = lastFmService;
+            this._guildService = guildService;
             this._indexService = indexService;
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFMColorRed);
+            this._lastFmService = lastFmService;
+            this._prefixService = prefixService;
+            this._settingService = settingService;
+            this._timer = timer;
+            this._userService = userService;
+
             this._embedAuthor = new EmbedAuthorBuilder();
+            this._embed = new EmbedBuilder()
+                .WithColor(DiscordConstants.LastFmColorRed);
             this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("stats", RunMode = RunMode.Async)]
-        [Summary("Displays user stats related to Last.FM and FMBot")]
+        [Summary("Displays user stats related to Last.fm and .fmbot")]
         [UsernameSetRequired]
         public async Task StatsAsync(params string[] userOptions)
         {
             var user = await this._userService.GetFullUserAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             try
             {
-                var userSettings = await SettingService.GetUser(userOptions, user.UserNameLastFM, this.Context);
+                var userSettings = await this._settingService.GetUser(userOptions, user.UserNameLastFM, this.Context);
 
                 string userTitle;
                 if (!userSettings.DifferentUser)
@@ -179,9 +180,9 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("set", RunMode = RunMode.Async)]
         [Summary(
-            "Sets your Last.FM name and FM mode. Please note that users in shared servers will be able to see and request your Last.FM username.")]
+            "Sets your Last.fm name and FM mode. Please note that users in shared servers will be able to see and request your Last.fm username.")]
         [Alias("setname", "setmode", "fm set")]
-        public async Task SetAsync([Summary("Your Last.FM name")] string lastFMUserName = null,
+        public async Task SetAsync([Summary("Your Last.fm name")] string lastFMUserName = null,
             params string[] otherSettings)
         {
             var prfx = ConfigData.Data.Bot.Prefix;
@@ -192,7 +193,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var replyString = $"{prfx}set is the command you use to set your last.fm username in the bot, so it knows who you are on the last.fm website. \n" +
                                   "Don't have a last.fm account yet? Register here: https://www.last.fm/join \n \n" +
                                   "Sets your username, mode and playcount for the `.fm` command:\n \n" +
-                                  $"`{prfx}set 'Last.FM Username' 'embedmini/embedfull/textmini/textfull' 'artist/album/track'` \n \n";
+                                  $"`{prfx}set 'Last.fm Username' 'embedmini/embedfull/textmini/textfull' 'artist/album/track'` \n \n";
 
                 if (existingUserSettings?.UserNameLastFM != null)
                 {
@@ -217,16 +218,16 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             lastFMUserName = lastFMUserName.Replace("'", "");
-            if (!await this._lastFmService.LastFMUserExistsAsync(lastFMUserName))
+            if (!await this._lastFmService.LastFmUserExistsAsync(lastFMUserName))
             {
-                var reply = $"LastFM user `{lastFMUserName}` could not be found. Please check if the name you entered is correct.";
+                var reply = $"Last.fm user `{lastFMUserName}` could not be found. Please check if the name you entered is correct.";
                 await ReplyAsync(reply.FilterOutMentions());
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
             if (lastFMUserName == "lastfmusername")
             {
-                await ReplyAsync("Please enter your own last.fm username and not `lastfmusername`.\n");
+                await ReplyAsync("Please enter your own Last.fm username and not `lastfmusername`.\n");
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
@@ -241,9 +242,9 @@ namespace FMBot.Bot.Commands.LastFM
 
             userSettingsToAdd = this._userService.SetSettings(userSettingsToAdd, otherSettings);
 
-            this._userService.SetLastFM(this.Context.User, userSettingsToAdd);
+            this._userService.SetLastFm(this.Context.User, userSettingsToAdd);
 
-            var setReply = $"Your Last.FM name has been set to '{lastFMUserName}' and your .fm mode to '{userSettingsToAdd.FmEmbedType}'";
+            var setReply = $"Your Last.fm name has been set to '{lastFMUserName}' and your .fm mode to '{userSettingsToAdd.FmEmbedType}'";
             if (userSettingsToAdd.FmCountType != null)
             {
                 setReply += $" with the '{userSettingsToAdd.FmCountType.ToString().ToLower()}' playcount.";
@@ -266,7 +267,11 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                await this._indexService.AddUserToGuild(this.Context.Guild, newUserSettings);
+                var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+                if (guild != null)
+                {
+                    await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(this.Context.User.Id), newUserSettings);
+                }
 
                 var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
                 if (!perms.EmbedLinks || !perms.AttachFiles)
@@ -282,8 +287,6 @@ namespace FMBot.Bot.Commands.LastFM
             "Logs you in using a link")]
         public async Task LoginAsync()
         {
-            var prfx = ConfigData.Data.Bot.Prefix;
-
             var msg = this.Context.Message as SocketUserMessage;
             if (StackCooldownTarget.Contains(this.Context.Message.Author))
             {
@@ -375,7 +378,7 @@ namespace FMBot.Bot.Commands.LastFM
                     };
 
                     Log.Information("User {userName} logged in with auth session", authSession.Content.Session.Name);
-                    this._userService.SetLastFM(contextUser, userSettings, true);
+                    this._userService.SetLastFm(contextUser, userSettings, true);
                     return true;
                 }
 

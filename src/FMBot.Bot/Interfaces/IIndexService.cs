@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord;
+using Discord.WebSocket;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Interfaces
@@ -12,13 +13,19 @@ namespace FMBot.Bot.Interfaces
 
         Task IndexUser(User user);
 
-        Task AddUserToGuild(IGuild guild, User user);
+        Task<GuildUser> GetOrAddUserToGuild(Guild guild, IGuildUser discordGuildUser, User user);
 
-        Task StoreGuildUsers(IGuild guild, IReadOnlyCollection<IGuildUser> guildUsers);
+        Task UpdateUserName(GuildUser guildUser, IGuildUser discordGuildUser);
 
-        Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> guildUsers);
+        Task UpdateUserNameWithoutGuildUser(IGuildUser discordGuildUser, User user);
 
-        Task<int> GetIndexedUsersCount(IReadOnlyCollection<IGuildUser> guildUsers);
+        Task RemoveUserFromGuild(SocketGuildUser user);
+
+        Task StoreGuildUsers(IGuild guild, IReadOnlyCollection<IGuildUser> discordGuildUsers);
+
+        Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> discordGuildUsers);
+
+        Task<int> GetIndexedUsersCount(IReadOnlyCollection<IGuildUser> discordGuildUsers);
 
         Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeLastIndexed);
     }

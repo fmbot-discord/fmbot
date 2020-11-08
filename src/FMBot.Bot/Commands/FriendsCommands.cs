@@ -18,32 +18,33 @@ namespace FMBot.Bot.Commands
 {
     public class FriendsCommands : ModuleBase
     {
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedFooterBuilder _embedFooter;
-
         private readonly FriendsService _friendsService;
         private readonly GuildService _guildService;
-        private readonly LastFMService _lastFmService;
+        private readonly IPrefixService _prefixService;
+        private readonly LastFmService _lastFmService;
         private readonly UserService _userService;
 
-        private readonly IPrefixService _prefixService;
+        private readonly EmbedAuthorBuilder _embedAuthor;
+        private readonly EmbedBuilder _embed;
+        private readonly EmbedFooterBuilder _embedFooter;
 
         public FriendsCommands(
-            IPrefixService prefixService,
-            GuildService guildService,
-            LastFMService lastFmService,
-            UserService userService,
-            FriendsService friendsService)
+                FriendsService friendsService,
+                GuildService guildService,
+                IPrefixService prefixService,
+                LastFmService lastFmService,
+                UserService userService
+            )
         {
-            this._prefixService = prefixService;
-            this._guildService = guildService;
-            this._userService = userService;
             this._friendsService = friendsService;
+            this._guildService = guildService;
             this._lastFmService = lastFmService;
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFMColorRed);
+            this._prefixService = prefixService;
+            this._userService = userService;
+
             this._embedAuthor = new EmbedAuthorBuilder();
+            this._embed = new EmbedBuilder()
+                .WithColor(DiscordConstants.LastFmColorRed);
             this._embedFooter = new EmbedFooterBuilder();
         }
 
@@ -107,7 +108,7 @@ namespace FMBot.Bot.Commands
                     else
                     {
                         var lastTrack = tracks.Content[0];
-                        track = LastFMService.TrackToOneLinedString(lastTrack);
+                        track = LastFmService.TrackToOneLinedString(lastTrack);
                         if (lastTrack.IsNowPlaying == true)
                         {
                             friendTitle += " (Now Playing)";
@@ -143,7 +144,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("addfriends", RunMode = RunMode.Async)]
-        [Summary("Adds your friends' Last.FM names.")]
+        [Summary("Adds your friends' Last.fm names.")]
         [Alias("friendsset", "setfriends", "friendsadd", "addfriend", "setfriend")]
         [UsernameSetRequired]
         public async Task AddFriends([Summary("Friend names")] params string[] enteredFriends)
@@ -197,7 +198,7 @@ namespace FMBot.Bot.Commands
 
                     if (!existingFriends.Select(s => s.ToLower()).Contains(friendUsername.ToLower()))
                     {
-                        if (await this._lastFmService.LastFMUserExistsAsync(friendUsername))
+                        if (await this._lastFmService.LastFmUserExistsAsync(friendUsername))
                         {
                             await this._friendsService.AddLastFMFriendAsync(this.Context.User.Id, friendUsername, friendUserSettings?.UserId);
                             addedFriendsList.Add(friendUsername);
@@ -253,7 +254,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("removefriends", RunMode = RunMode.Async)]
-        [Summary("Remove your friends' Last.FM names.")]
+        [Summary("Remove your friends' Last.fm names.")]
         [Alias("friendsremove", "deletefriend", "deletefriends", "removefriend")]
         [UsernameSetRequired]
         public async Task RemoveFriends([Summary("Friend names")] params string[] enteredFriends)

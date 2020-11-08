@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.LastFM.Services;
@@ -17,12 +16,14 @@ namespace FMBot.Bot.Services
     {
         private readonly IUserUpdateQueue _userUpdateQueue;
         private readonly GlobalUpdateService _globalUpdateService;
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-        public UpdateService(IUserUpdateQueue userUpdateQueue, GlobalUpdateService updateService)
+        public UpdateService(IUserUpdateQueue userUpdateQueue, GlobalUpdateService updateService, IDbContextFactory<FMBotDbContext> contextFactory)
         {
             this._userUpdateQueue = userUpdateQueue;
             this._userUpdateQueue.UsersToUpdate.SubscribeAsync(OnNextAsync);
             this._globalUpdateService = updateService;
+            this._contextFactory = contextFactory;
         }
 
         private async Task OnNextAsync(User user)
@@ -47,7 +48,7 @@ namespace FMBot.Bot.Services
 
         public async Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeLastUpdated)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.Users
                     .AsQueryable()
                     .Where(f => f.LastIndexed != null &&

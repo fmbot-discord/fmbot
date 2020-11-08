@@ -10,7 +10,7 @@ namespace FMBot.DbMigration
 {
     static class Program
     {
-        private static readonly FMBotDbContext NewDatabaseContext = new FMBotDbContext("Host=localhost;Port=5433;Username=postgres;Password=password;Database=fmbot;Command Timeout=15;Timeout=30;Persist Security Info=True");
+        private static readonly FMBotDbContext NewDatabaseContext = new FMBotDbContext();
         private static readonly LocalDbDbContext OldDatabaseContext = new LocalDbDbContext();
 
         private static async Task Main()

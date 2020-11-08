@@ -6,5 +6,6 @@ namespace FMBot.Persistence.Domain.Models
         public User User { get; set; }
         public int GuildId { get; set; }
         public Guild Guild { get; set; }
+        public string UserName { get; set; }
     }
 }

@@ -1,16 +1,16 @@
-using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Dasync.Collections;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Persistence.EntityFrameWork;
+using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace FMBot.Bot.Services
 {
     public class PrefixService : IPrefixService
     {
-        private readonly Logger.Logger _logger;
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
         /// <summary>
         ///     The <see cref="ConcurrentDictionary{TKey,TValue}" /> that contains all the custom prefixes.
@@ -18,9 +18,9 @@ namespace FMBot.Bot.Services
         private static readonly ConcurrentDictionary<ulong, string> ServerPrefixes =
             new ConcurrentDictionary<ulong, string>();
 
-        public PrefixService(Logger.Logger logger)
+        public PrefixService(IDbContextFactory<FMBotDbContext> contextFactory)
         {
-            this._logger = logger;
+            this._contextFactory = contextFactory;
         }
 
         /// <inheritdoc />
@@ -31,7 +31,7 @@ namespace FMBot.Bot.Services
                 var oldPrefix = GetPrefix(key);
                 if (!ServerPrefixes.TryUpdate(key, prefix, oldPrefix))
                 {
-                    this._logger.Log($"Failed to update custom prefix {prefix} with the key: {key} from the dictionary");
+                    Log.Warning($"Failed to update custom prefix {prefix} with the key: {key} from the dictionary");
                 }
 
                 return;
@@ -39,7 +39,7 @@ namespace FMBot.Bot.Services
 
             if (!ServerPrefixes.TryAdd(key, prefix))
             {
-                this._logger.Log($"Failed to add custom prefix {prefix} with the key: {key} from the dictionary");
+                Log.Warning($"Failed to add custom prefix {prefix} with the key: {key} from the dictionary");
             }
         }
 
@@ -66,7 +66,7 @@ namespace FMBot.Bot.Services
 
             if (!ServerPrefixes.TryRemove(key, out var removedPrefix))
             {
-                this._logger.Log($"Failed to remove custom prefix {removedPrefix} with the key: {key} from the dictionary");
+                Log.Warning($"Failed to remove custom prefix {removedPrefix} with the key: {key} from the dictionary");
             }
         }
 
@@ -74,7 +74,7 @@ namespace FMBot.Bot.Services
         /// <inheritdoc />
         public async Task LoadAllPrefixes()
         {
-            using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var servers = await db.Guilds.Where(w => w.Prefix != null).ToListAsync();
             foreach (var server in servers)
             {

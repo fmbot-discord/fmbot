@@ -10,15 +10,15 @@ namespace FMBot.Bot.Services.WhoKnows
 {
     public class WhoKnowsService
     {
-        public static IList<WhoKnowsObjectWithUser> AddOrReplaceUserToIndexList(IList<WhoKnowsObjectWithUser> users, User userSettings, IGuildUser user, string name, long? playcount)
+        public static IList<WhoKnowsObjectWithUser> AddOrReplaceUserToIndexList(IList<WhoKnowsObjectWithUser> users, GuildUser guildUser, string name, long? playcount)
         {
             var userRemoved = false;
             var existingUsers = users
-                .Where(f => f.LastFMUsername.ToLower() == userSettings.UserNameLastFM.ToLower());
+                .Where(f => f.LastFMUsername.ToLower() == guildUser.User.UserNameLastFM.ToLower());
             if (existingUsers.Any())
             {
                 users = users
-                    .Where(f => f.LastFMUsername.ToLower() != userSettings.UserNameLastFM.ToLower())
+                    .Where(f => f.LastFMUsername.ToLower() != guildUser.User.UserNameLastFM.ToLower())
                     .ToList();
                 userRemoved = true;
             }
@@ -26,12 +26,11 @@ namespace FMBot.Bot.Services.WhoKnows
             var userPlaycount = int.Parse(playcount.GetValueOrDefault(0).ToString());
             users.Add(new WhoKnowsObjectWithUser
             {
-                UserId = userSettings.UserId,
+                UserId = guildUser.User.UserId,
                 Name = name,
                 Playcount = userPlaycount,
-                LastFMUsername = userSettings.UserNameLastFM,
-                DiscordUserId = userSettings.DiscordUserId,
-                DiscordName = user.Nickname ?? user.Username,
+                LastFMUsername = guildUser.User.UserNameLastFM,
+                DiscordName = guildUser.UserName,
                 NoPosition = !userRemoved
             });
 
@@ -95,13 +94,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
         private static string NameWithLink(WhoKnowsObjectWithUser user)
         {
-            var discordName = user.DiscordName;
-            var charsToRemove = new[] { "@", "[", "]", "(", ")", "`", "|", "*", "~", ">" };
-
-            foreach (var c in charsToRemove)
-            {
-                discordName = discordName.Replace(c, string.Empty);
-            }
+            var discordName = Format.Sanitize(user.DiscordName);
 
             if (string.IsNullOrWhiteSpace(discordName))
             {

@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
-using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -21,12 +21,14 @@ namespace FMBot.Bot.Services
     {
         private readonly IUserIndexQueue _userIndexQueue;
         private readonly GlobalIndexService _globalIndexService;
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-        public IndexService(IUserIndexQueue userIndexQueue, GlobalIndexService indexService)
+        public IndexService(IUserIndexQueue userIndexQueue, GlobalIndexService indexService, IDbContextFactory<FMBotDbContext> contextFactory)
         {
             this._userIndexQueue = userIndexQueue;
             this._userIndexQueue.UsersToIndex.SubscribeAsync(OnNextAsync);
             this._globalIndexService = indexService;
+            this._contextFactory = contextFactory;
         }
 
         private async Task OnNextAsync(User user)
@@ -49,29 +51,38 @@ namespace FMBot.Bot.Services
             await this._globalIndexService.IndexUser(user);
         }
 
-        public async Task StoreGuildUsers(IGuild guild, IReadOnlyCollection<IGuildUser> guildUsers)
+        public async Task StoreGuildUsers(IGuild guild, IReadOnlyCollection<IGuildUser> discordGuildUsers)
         {
-            var userIds = guildUsers.Select(s => s.Id).ToList();
+            var userIds = discordGuildUsers.Select(s => s.Id).ToList();
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             var existingGuild = await db.Guilds
                 .Include(i => i.GuildUsers)
                 .FirstAsync(f => f.DiscordGuildId == guild.Id);
 
             var users = await db.Users
-                .Include(i => i.Artists)
+                .AsQueryable()
                 .Where(w => userIds.Contains(w.DiscordUserId))
                 .Select(s => new GuildUser
                 {
                     GuildId = existingGuild.GuildId,
-                    UserId = s.UserId
+                    UserId = s.UserId,
+                    User = s
                 })
                 .ToListAsync();
+
+            foreach (var user in users)
+            {
+                var discordUser = discordGuildUsers.First(f => f.Id == user.User.DiscordUserId);
+                var name = discordUser.Nickname ?? discordUser.Username;
+                user.UserName = name;
+            }
 
             var connString = db.Database.GetDbConnection().ConnectionString;
             var copyHelper = new PostgreSQLCopyHelper<GuildUser>("public", "guild_users")
                 .MapInteger("guild_id", x => x.GuildId)
-                .MapInteger("user_id", x => x.UserId);
+                .MapInteger("user_id", x => x.UserId)
+                .MapText("user_name", x => x.UserName);
 
             await using var connection = new NpgsqlConnection(connString);
             connection.Open();
@@ -84,59 +95,118 @@ namespace FMBot.Bot.Services
             Log.Information("Stored guild users for guild with id {guildId}", existingGuild.GuildId);
         }
 
-        public async Task AddUserToGuild(IGuild guild, User user)
+        public async Task<GuildUser> GetOrAddUserToGuild(Guild guild, IGuildUser discordGuildUser, User user)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
-            var existingGuild = await db.Guilds
-                .Include(i => i.GuildUsers)
-                .FirstAsync(f => f.DiscordGuildId == guild.Id);
+            await using var db = this._contextFactory.CreateDbContext();
 
-            if (existingGuild == null)
+            try
             {
-                var newGuild = new Guild
+                if (!guild.GuildUsers.Select(g => g.UserId).Contains(user.UserId))
                 {
-                    DiscordGuildId = guild.Id,
-                    ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = FmEmbedType.embedmini,
-                    Name = guild.Name,
-                    TitlesEnabled = true,
-                };
+                    var guildUserToAdd = new GuildUser
+                    {
+                        GuildId = guild.GuildId,
+                        UserId = user.UserId,
+                        UserName = discordGuildUser.Nickname ?? discordGuildUser.Username
+                    };
 
-                await db.Guilds.AddAsync(newGuild);
+                    await db.GuildUsers.AddAsync(guildUserToAdd);
+                    await db.SaveChangesAsync();
 
-                await db.SaveChangesAsync();
+                    db.Entry(guildUserToAdd).State = EntityState.Detached;
 
-                Log.Information("Added guild {guildName} to database", guild.Name);
+                    Log.Information("Added user {userId} to guild {guildName}", user.UserId, guild.Name);
 
-                var guildId = db.Guilds.First(f => f.DiscordGuildId == guild.Id).GuildId;
+                    guildUserToAdd.User = user;
 
-                await db.GuildUsers.AddAsync(new GuildUser
-                {
-                    GuildId = guildId,
-                    UserId = user.UserId
-                });
-
-                Log.Information("Added user {userId} to guild {guildName}", user.UserId, guild.Name);
+                    return guildUserToAdd;
+                }
             }
-            else if (!existingGuild.GuildUsers.Select(g => g.UserId).Contains(user.UserId))
+            catch (Exception e)
             {
-                await db.GuildUsers.AddAsync(new GuildUser
-                {
-                    GuildId = existingGuild.GuildId,
-                    UserId = user.UserId
-                });
-
-                Log.Information("Added user {userId} to guild {guildName}", user.UserId, guild.Name);
+                Log.Error(e, "Error while attempting to add user {userId} to guild {guildId}", user.UserId, guild.GuildId);
             }
 
-            await db.SaveChangesAsync();
+            return guild.GuildUsers.First(f => f.UserId == user.UserId);
         }
 
-        public async Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> guildUsers)
-        {
-            var userIds = guildUsers.Select(s => s.Id).ToList();
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+        public async Task UpdateUserName(GuildUser guildUser, IGuildUser discordGuildUser)
+        {
+            var discordName = discordGuildUser.Nickname ?? discordGuildUser.Username;
+
+            if (guildUser.UserName != discordName)
+            {
+                await using var db = this._contextFactory.CreateDbContext();
+
+                guildUser.UserName = discordName;
+
+                db.GuildUsers.Update(guildUser);
+
+                await db.SaveChangesAsync();
+            }
+        }
+
+        public async Task UpdateUserNameWithoutGuildUser(IGuildUser discordGuildUser, User user)
+        {
+            var discordName = discordGuildUser.Nickname ?? discordGuildUser.Username;
+
+            await using var db = this._contextFactory.CreateDbContext();
+            var guildUser = await db.GuildUsers
+                .Include(i => i.Guild)
+                .FirstOrDefaultAsync(f => f.UserId == user.UserId &&
+                                          f.Guild.DiscordGuildId == discordGuildUser.GuildId);
+
+            if (guildUser != null && guildUser.UserName != discordName)
+            {
+                guildUser.UserName = discordName;
+
+                db.GuildUsers.Update(guildUser);
+
+                await db.SaveChangesAsync();
+            }
+        }
+
+        public async Task RemoveUserFromGuild(SocketGuildUser user)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var userThatLeft = await db.Users
+                .Include(i => i.GuildUsers)
+                .FirstOrDefaultAsync(f => f.DiscordUserId == user.Id);
+
+            if (userThatLeft == null)
+            {
+                return;
+            }
+
+            var guild = await db.Guilds
+                .Include(i => i.GuildUsers)
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == user.Guild.Id);
+
+            if (guild != null && guild.GuildUsers.Select(g => g.UserId).Contains(userThatLeft.UserId))
+            {
+                var guildUser = guild.GuildUsers.FirstOrDefault(f => f.UserId == userThatLeft.UserId && f.GuildId == guild.GuildId);
+
+                if (guildUser != null)
+                {
+                    db.GuildUsers.Remove(guildUser);
+
+                    Log.Information("Removed user {userId} from guild {guildName}", userThatLeft.UserId, guild.Name);
+
+                    await db.SaveChangesAsync();
+                }
+                else
+                {
+                    Log.Warning("Tried removing user {userId} from guild {guildName}, but user was not stored in guild", userThatLeft.UserId, guild.Name);
+                }
+            }
+        }
+
+        public async Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> discordGuildUsers)
+        {
+            var userIds = discordGuildUsers.Select(s => s.Id).ToList();
+
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.Users
                 .Include(i => i.Artists)
                 .Where(w => userIds.Contains(w.DiscordUserId)
@@ -144,11 +214,11 @@ namespace FMBot.Bot.Services
                 .ToListAsync();
         }
 
-        public async Task<int> GetIndexedUsersCount(IReadOnlyCollection<IGuildUser> guildUsers)
+        public async Task<int> GetIndexedUsersCount(IReadOnlyCollection<IGuildUser> discordGuildUsers)
         {
-            var userIds = guildUsers.Select(s => s.Id).ToList();
+            var userIds = discordGuildUsers.Select(s => s.Id).ToList();
 
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.Users
                 .AsQueryable()
                 .Where(w => userIds.Contains(w.DiscordUserId)
@@ -158,7 +228,7 @@ namespace FMBot.Bot.Services
 
         public async Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeLastIndexed)
         {
-            await using var db = new FMBotDbContext(ConfigData.Data.Database.ConnectionString);
+            await using var db = this._contextFactory.CreateDbContext();
             return await db.Users
                 .AsQueryable()
                 .Where(f => f.LastIndexed != null &&

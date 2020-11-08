@@ -9,7 +9,6 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 
@@ -17,28 +16,28 @@ namespace FMBot.Bot.Commands
 {
     public class GeniusCommands : ModuleBase
     {
+        private readonly GeniusService _geniusService;
+        private readonly IPrefixService _prefixService;
+        private readonly LastFmService _lastFmService;
+        private readonly UserService _userService;
+
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        private readonly LastFMService _lastFmService;
-        private readonly GeniusService _geniusService;
-
-        private readonly UserService _userService;
-
-        private readonly IPrefixService _prefixService;
-
         public GeniusCommands(
-            IPrefixService prefixService,
-            LastFMService lastFmService,
-            UserService userService,
-            GeniusService geniusService)
+                GeniusService geniusService,
+                IPrefixService prefixService,
+                LastFmService lastFmService,
+                UserService userService
+            )
         {
-            this._prefixService = prefixService;
-            this._userService = userService;
             this._geniusService = geniusService;
             this._lastFmService = lastFmService;
+            this._prefixService = prefixService;
+            this._userService = userService;
+
             this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFmColorRed);
             this._embedFooter = new EmbedFooterBuilder();
         }
 
@@ -49,7 +48,7 @@ namespace FMBot.Bot.Commands
         public async Task GeniusAsync(params string[] searchValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             try
             {
@@ -64,9 +63,9 @@ namespace FMBot.Bot.Commands
                 {
                     var tracks = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
 
-                    if (tracks?.Any() != true)
+                    if (tracks == null || !tracks.Any() || !tracks.Content.Any())
                     {
-                        this._embed.NoScrobblesFoundErrorResponse(tracks.Status, prfx);
+                        this._embed.NoScrobblesFoundErrorResponse(tracks?.Status, prfx, userSettings.UserNameLastFM);
                         await ReplyAsync("", false, this._embed.Build());
                         this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                         return;
@@ -108,8 +107,8 @@ namespace FMBot.Bot.Commands
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync(
-                    "Unable to show Last.FM info via Genius due to an internal error. " +
-                    "Try setting a Last.FM name with the 'fmset' command, scrobbling something, and then use the command again.");
+                    "Unable to show Last.fm info via Genius due to an internal error. " +
+                    "Try setting a Last.fm name with the 'fmset' command, scrobbling something, and then use the command again.");
             }
         }
     }

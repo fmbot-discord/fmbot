@@ -17,29 +17,26 @@ namespace FMBot.Bot.Commands
     public class AdminCommands : ModuleBase
     {
         private readonly AdminService _adminService;
+        private readonly CensorService _censorService;
+        private readonly GuildService _guildService;
         private readonly TimerService _timer;
 
         private readonly EmbedBuilder _embed;
 
-        private readonly UserService _userService;
-        private readonly GuildService _guildService;
-
-        private readonly CensorService _censorService;
-
         public AdminCommands(
-            TimerService timer,
-            GuildService guildService,
-            UserService userService,
-            AdminService adminService,
-            CensorService censorService)
+                AdminService adminService,
+                CensorService censorService,
+                GuildService guildService,
+                TimerService timer
+            )
         {
-            this._timer = timer;
-            this._guildService = guildService;
-            this._userService = userService;
             this._adminService = adminService;
             this._censorService = censorService;
+            this._guildService = guildService;
+            this._timer = timer;
+
             this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFmColorRed);
         }
 
         //[Command("debug")]
@@ -52,7 +49,7 @@ namespace FMBot.Bot.Commands
 
         //    if (userSettings?.UserNameLastFM == null)
         //    {
-        //        await ReplyAsync("The user's Last.FM name has not been set.");
+        //        await ReplyAsync("The user's Last.fm name has not been set.");
         //        this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
         //        return;
         //    }

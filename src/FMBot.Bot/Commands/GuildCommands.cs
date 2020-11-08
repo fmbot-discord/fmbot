@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Discord;
@@ -33,15 +34,16 @@ namespace FMBot.Bot.Commands
         public GuildCommands(IPrefixService prefixService,
             GuildService guildService,
             CommandService commands,
+            AdminService adminService,
             IDisabledCommandService disabledCommandService)
         {
             this._prefixService = prefixService;
             this._guildService = guildService;
             this._commands = commands;
             this._disabledCommandService = disabledCommandService;
-            this._adminService = new AdminService();
+            this._adminService = adminService;
             this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFMColorRed);
+                .WithColor(DiscordConstants.LastFmColorRed);
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embedFooter = new EmbedFooterBuilder();
         }
@@ -182,18 +184,18 @@ namespace FMBot.Bot.Commands
 
             if (messagesDisabled == true)
             {
-                await ReplyAsync(".fmbot supporter messages have been disabled");
+                await ReplyAsync(".fmbot supporter messages have been disabled. Supporters are still visible in `.fmsupporters`, but they will not be shown in `.fmchart` or other commands anymore.");
             }
             else
             {
-                await ReplyAsync($".fmbot supporter messages have been enabled. These have a 1 in {Constants.SupporterMessageChance} chance of showing up on certain commands.");
+                await ReplyAsync($".fmbot supporter messages have been re-enabled. These have a 1 in {Constants.SupporterMessageChance} chance of showing up on certain commands.");
             }
 
             this.Context.LogCommandUsed();
         }
 
         [Command("export", RunMode = RunMode.Async)]
-        [Summary("Gets Last.FM usernames from your server members in json format.")]
+        [Summary("Gets Last.fm usernames from your server members in json format.")]
         [Alias("getmembers", "exportmembers")]
         public async Task GetMembersAsync()
         {
@@ -319,7 +321,7 @@ namespace FMBot.Bot.Commands
 
 
         /// <summary>
-        /// Changes the prefix for the server.
+        /// Toggles commands for a server
         /// </summary>
         [Command("togglecommand", RunMode = RunMode.Async)]
         [Alias("togglecommands", "toggle")]
@@ -336,22 +338,22 @@ namespace FMBot.Bot.Commands
 
             if (string.IsNullOrEmpty(command))
             {
-                var description = "";
+                var description = new StringBuilder();
                 if (disabledCommands != null)
                 {
-                    description += "Currently disabled commands in this server:\n";
+                    description.AppendLine("Currently disabled commands in this server:");
                     foreach (var disabledCommand in disabledCommands)
                     {
-                        description += $"- {disabledCommand}\n";
+                        description.AppendLine($"- {disabledCommand}");
                     }
                 }
                 else
                 {
-                    description = "This server currently has all commands enabled. \n" +
-                                  "To disable a command, enter the command name like this: `.fmtogglecommand chart`";
+                    description.Append("This server currently has all commands enabled. \n" +
+                                  "To disable a command, enter the command name like this: `.fmtogglecommand chart`");
                 }
 
-                this._embed.WithDescription(description);
+                this._embed.WithDescription(description.ToString());
                 await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
                 this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
