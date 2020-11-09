@@ -218,6 +218,8 @@ namespace FMBot.Bot.Services.WhoKnows
             {
                 return $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this track!";
             }
+
+            return null;
         }
 
         private string GetTimeAgo(DateTime timeAgo)
