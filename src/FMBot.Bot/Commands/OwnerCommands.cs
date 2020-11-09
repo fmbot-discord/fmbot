@@ -89,25 +89,6 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        [Command("say"), Summary("Says something")]
-        [UsernameSetRequired]
-        public async Task SayAsync(string say)
-        {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
-            {
-                try
-                {
-                    await ReplyAsync(say);
-                    this.Context.LogCommandUsed();
-                }
-                catch (Exception e)
-                {
-                    this.Context.LogCommandException(e);
-                    await ReplyAsync("Unable to say something due to an internal error.");
-                }
-            }
-        }
-
         [Command("storagecheck"), Summary("Checks how much storage is left on the server.")]
         [Alias("checkstorage", "storage")]
         [UsernameSetRequired]
