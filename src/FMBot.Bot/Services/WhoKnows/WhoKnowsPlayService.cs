@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 using FMBot.Bot.Models;
 using FMBot.Persistence.Domain.Models;
@@ -182,27 +183,41 @@ namespace FMBot.Bot.Services.WhoKnows
                 return null;
             }
 
-            UserPlay userPlay = null;
-            var userFound = false;
-            GuildUser foundUser = null;
+            var foundUsers = new List<GuildUser>();
+            var userPlays = new List<UserPlay>();
 
             foreach (var user in guild.GuildUsers)
             {
-                userFound = this._cache.TryGetValue($"{user.UserId}-last-play-{track.ArtistName.ToLower()}-{track.Name.ToLower()}", out userPlay);
+                var userFound = this._cache.TryGetValue($"{user.UserId}-last-play-{track.ArtistName.ToLower()}-{track.Name.ToLower()}", out UserPlay userPlay);
 
                 if (userFound)
                 {
-                    foundUser = user;
-                    break;
+                    foundUsers.Add(user);
+                    userPlays.Add(userPlay);
                 }
             }
 
-            if (!userFound)
+            if (!foundUsers.Any())
             {
                 return null;
             }
 
-            return $"{foundUser.UserName} was also listening to this track {GetTimeAgo(userPlay.TimePlayed)}!";
+            if (foundUsers.Count == 1)
+            {
+                return $"{foundUsers.First().UserName} was also listening to this track {GetTimeAgo(userPlays.First().TimePlayed)}!";
+            }
+            if (foundUsers.Count == 2)
+            {
+                return $"{foundUsers[0].UserName} and {foundUsers[1].UserName} were also recently listening to this track!";
+            }
+            if (foundUsers.Count == 3)
+            {
+                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName} and {foundUsers[2].UserName} were also recently listening to this track!";
+            }
+            if (foundUsers.Count > 3)
+            {
+                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this track!";
+            }
         }
 
         private string GetTimeAgo(DateTime timeAgo)

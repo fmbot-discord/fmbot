@@ -160,18 +160,6 @@ namespace FMBot.Bot.Commands.LastFM
                 var fmText = "";
                 var footerText = "";
 
-                if (this.Context.Guild != null && self)
-                {
-                    var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlaying(userSettings.UserId,
-                        this.Context.Guild.Id, currentTrack);
-
-                    if (guildAlsoPlaying != null)
-                    {
-                        footerText += guildAlsoPlaying;
-                        footerText += "\n";
-                    }
-                }
-
                 footerText +=
                     $"{userInfo.Content.Name} has ";
 
@@ -270,6 +258,18 @@ namespace FMBot.Bot.Commands.LastFM
 
                         this._embedAuthor.WithName(headerText);
                         this._embedAuthor.WithUrl(Constants.LastFMUserUrl + lastFMUserName);
+
+                        if (this.Context.Guild != null && self)
+                        {
+                            var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlaying(userSettings.UserId,
+                                this.Context.Guild.Id, currentTrack);
+
+                            if (guildAlsoPlaying != null)
+                            {
+                                footerText += "\n";
+                                footerText += guildAlsoPlaying;
+                            }
+                        }
 
                         this._embedFooter.WithText(footerText);
 
