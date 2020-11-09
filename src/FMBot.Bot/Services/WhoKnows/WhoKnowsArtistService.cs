@@ -191,8 +191,6 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var topArtistsForEveryoneInServer = new List<AffinityArtist>();
 
-            await using var db = this._contextFactory.CreateDbContext();
-
             await userIds.ParallelForEachAsync(async user =>
             {
                 var key = $"top-artists-{user}";
@@ -203,6 +201,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 }
                 else
                 {
+                    await using var db = this._contextFactory.CreateDbContext();
 
                     var topArtist = await db.UserArtists
                         .AsQueryable()
@@ -241,6 +240,8 @@ namespace FMBot.Bot.Services.WhoKnows
                     
                 }
             });
+
+            await using var db = this._contextFactory.CreateDbContext();
 
             var userTopArtist = await db.UserArtists
                 .AsQueryable()
