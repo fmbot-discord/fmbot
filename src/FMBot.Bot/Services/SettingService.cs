@@ -222,7 +222,7 @@ namespace FMBot.Bot.Services
             {
                 var otherUser = await GetUserFromString(extraOption);
 
-                if (user != null)
+                if (otherUser != null)
                 {
                     settingsModel.DifferentUser = true;
                     settingsModel.DiscordUserId = otherUser.DiscordUserId;
