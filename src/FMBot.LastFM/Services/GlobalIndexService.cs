@@ -4,10 +4,13 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FMBot.Domain;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Objects;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using PostgreSQLCopyHelper;
@@ -22,24 +25,31 @@ namespace FMBot.LastFM.Services
         private readonly string _key;
         private readonly string _secret;
 
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+
         private readonly string _connectionString;
 
         private readonly LastFmService lastFmService;
 
         public GlobalIndexService(
             IConfigurationRoot configuration,
-            LastFmService lastFmService)
+            LastFmService lastFmService,
+            IDbContextFactory<FMBotDbContext> contextFactory)
         {
             this.lastFmService = lastFmService;
+            this._contextFactory = contextFactory;
             this._key = configuration.GetSection("LastFm:Key").Value;
             this._secret = configuration.GetSection("LastFm:Secret").Value;
             this._connectionString = configuration.GetSection("Database:ConnectionString").Value;
             this._lastFMClient = new LastfmClient(this._key, this._secret);
         }
 
-        public async Task IndexUser(User user)
+        public async Task IndexUser(IndexUserQueueItem queueItem)
         {
-            Thread.Sleep(10000);
+            Thread.Sleep(queueItem.TimeoutMs);
+
+            await using var db = this._contextFactory.CreateDbContext();
+            var user = await db.Users.FindAsync(queueItem.UserId);
 
             Log.Information($"Starting index for {user.UserNameLastFM}");
             var now = DateTime.UtcNow;

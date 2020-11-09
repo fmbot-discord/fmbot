@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FMBot.Domain;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Api;
@@ -20,7 +21,7 @@ namespace FMBot.LastFM.Services
     public class GlobalUpdateService
 
     {
-        private readonly LastfmClient _lastFMClient;
+        private readonly LastfmClient _lastFmClient;
 
         private static readonly List<string> UserUpdateFailures = new List<string>();
 
@@ -35,13 +36,15 @@ namespace FMBot.LastFM.Services
             this._cache = cache;
             this._contextFactory = contextFactory;
             this._connectionString = configuration.GetSection("Database:ConnectionString").Value;
-            this._lastFMClient = new LastfmClient(configuration.GetSection("LastFm:Key").Value, configuration.GetSection("LastFm:Secret").Value);
+            this._lastFmClient = new LastfmClient(configuration.GetSection("LastFm:Key").Value, configuration.GetSection("LastFm:Secret").Value);
         }
 
-
-        public async Task<int> UpdateUser(User user)
+        public async Task<int> UpdateUser(UpdateUserQueueItem queueItem)
         {
-            Thread.Sleep(1000);
+            Thread.Sleep(queueItem.TimeoutMs);
+
+            await using var db = this._contextFactory.CreateDbContext();
+            var user = await db.Users.FindAsync(queueItem.UserId);
 
             Log.Information("Update: Started on {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
 
@@ -52,7 +55,7 @@ namespace FMBot.LastFM.Services
             }
 
             var lastPlay = await GetLastStoredPlay(user);
-            var recentTracks = await this._lastFMClient.User.GetRecentScrobbles(
+            var recentTracks = await this._lastFmClient.User.GetRecentScrobbles(
                 user.UserNameLastFM,
                 count: 1000,
                 from: lastPlay?.TimePlayed ?? DateTime.UtcNow.AddDays(-14));
@@ -141,7 +144,7 @@ namespace FMBot.LastFM.Services
         private async Task UpdatePlaysForUser(User user, IEnumerable<LastTrack> newScrobbles,
             NpgsqlConnection connection)
         {
-            Log.Information("Update: Updating plays for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+            Log.Verbose("Update: Updating plays for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
 
             await using var deleteOldPlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
                                                                "WHERE user_id = @userId AND time_played < @playExpirationDate;", connection);
@@ -224,7 +227,7 @@ namespace FMBot.LastFM.Services
                 }
             }
 
-            Log.Information("Update: Updated artists for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+            Log.Verbose("Update: Updated artists for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
 
         }
 
@@ -279,7 +282,7 @@ namespace FMBot.LastFM.Services
                 }
             }
 
-            Log.Information("Update: Updated albums for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+            Log.Verbose("Update: Updated albums for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
         }
 
         private async Task UpdateTracksForUser(User user, IEnumerable<LastTrack> newScrobbles,
@@ -333,7 +336,7 @@ namespace FMBot.LastFM.Services
                 }
             }
 
-            Log.Information("Update: Updated tracks for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+            Log.Verbose("Update: Updated tracks for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
         }
 
         private async Task SetUserUpdateAndScrobbleTime(User user, DateTime now, DateTime lastScrobble, NpgsqlConnection connection)

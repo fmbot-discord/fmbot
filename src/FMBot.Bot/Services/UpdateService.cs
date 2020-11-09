@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -26,9 +27,8 @@ namespace FMBot.Bot.Services
             this._contextFactory = contextFactory;
         }
 
-        private async Task OnNextAsync(User user)
+        private async Task OnNextAsync(UpdateUserQueueItem user)
         {
-            Log.Verbose("User next up for update is {UserNameLastFM}", user.UserNameLastFM);
             await this._globalUpdateService.UpdateUser(user);
         }
 
@@ -41,9 +41,7 @@ namespace FMBot.Bot.Services
 
         public async Task<int> UpdateUser(User user)
         {
-            Log.Information("Starting update for {UserNameLastFM}", user.UserNameLastFM);
-
-            return await this._globalUpdateService.UpdateUser(user);
+            return await this._globalUpdateService.UpdateUser(new UpdateUserQueueItem(user.UserId));
         }
 
         public async Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeLastUpdated)

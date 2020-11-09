@@ -7,6 +7,7 @@ using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -31,24 +32,21 @@ namespace FMBot.Bot.Services
             this._contextFactory = contextFactory;
         }
 
-        private async Task OnNextAsync(User user)
+        private async Task OnNextAsync(IndexUserQueueItem user)
         {
-            Log.Verbose("User next up for index is {UserNameLastFM}", user.UserNameLastFM);
             await this._globalIndexService.IndexUser(user);
         }
 
         public void AddUsersToIndexQueue(IReadOnlyList<User> users)
         {
-            Log.Information($"Starting index for {users.Count} users");
-
-            this._userIndexQueue.Publish(users.ToList());
+            this._userIndexQueue.Publish(users);
         }
 
         public async Task IndexUser(User user)
         {
             Log.Information("Starting index for {UserNameLastFM}", user.UserNameLastFM);
 
-            await this._globalIndexService.IndexUser(user);
+            await this._globalIndexService.IndexUser(new IndexUserQueueItem(user.UserId));
         }
 
         public async Task StoreGuildUsers(IGuild guild, IReadOnlyCollection<IGuildUser> discordGuildUsers)
