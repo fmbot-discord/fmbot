@@ -113,6 +113,7 @@ namespace FMBot.Bot
                 .AddSingleton<UserService>()
                 .AddSingleton<WhoKnowsAlbumService>()
                 .AddSingleton<WhoKnowsArtistService>()
+                .AddSingleton<WhoKnowsPlayService>()
                 .AddSingleton<WhoKnowsService>()
                 .AddSingleton<WhoKnowsTrackService>()
                 .AddSingleton<YoutubeService>() // Add random to the collection

@@ -37,6 +37,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly SettingService _settingService;
         private readonly UserService _userService;
         private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
+        private readonly WhoKnowsPlayService _whoKnowsPlayService;
 
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedBuilder _embed;
@@ -53,8 +54,8 @@ namespace FMBot.Bot.Commands.LastFM
                 PlayService playService,
                 SettingService settingService,
                 UserService userService,
-                WhoKnowsAlbumService whoKnowsAlbumService
-            )
+                WhoKnowsAlbumService whoKnowsAlbumService,
+                WhoKnowsPlayService whoKnowsPlayService)
         {
             this._censorService = censorService;
             this._guildService = guildService;
@@ -67,6 +68,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._updateService = updateService;
             this._userService = userService;
             this._whoKnowsAlbumService = whoKnowsAlbumService;
+            this._whoKnowsPlayService = whoKnowsPlayService;
 
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
@@ -377,7 +379,7 @@ namespace FMBot.Bot.Commands.LastFM
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var timeSettings = SettingService.GetTimePeriod(extraOptions);
-            var userSettings = await this._settingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
+            var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
             var amount = SettingService.GetAmount(extraOptions);
 
             try
@@ -704,7 +706,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else
                 {
-                    topGuildAlbums = await this._playService.GetTopWeekAlbumsForGuild(users, serverAlbumSettings.OrderType);
+                    topGuildAlbums = await this._whoKnowsPlayService.GetTopWeekAlbumsForGuild(users, serverAlbumSettings.OrderType);
                     this._embed.WithTitle($"Top weekly albums in {this.Context.Guild.Name}");
                 }
 

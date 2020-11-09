@@ -35,6 +35,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly SpotifyService _spotifyService;
         private readonly UserService _userService;
         private readonly WhoKnowsTrackService _whoKnowsTrackService;
+        private readonly WhoKnowsPlayService _whoKnowsPlayService;
 
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedBuilder _embed;
@@ -50,8 +51,9 @@ namespace FMBot.Bot.Commands.LastFM
                 SettingService settingService,
                 SpotifyService spotifyService,
                 UserService userService,
-                WhoKnowsTrackService whoKnowsTrackService
-            )
+                WhoKnowsTrackService whoKnowsTrackService,
+                WhoKnowsPlayService whoKnowsPlayService
+                )
         {
             this._guildService = guildService;
             this._indexService = indexService;
@@ -63,6 +65,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._updateService = updateService;
             this._userService = userService;
             this._whoKnowsTrackService = whoKnowsTrackService;
+            this._whoKnowsPlayService = whoKnowsPlayService;
 
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
@@ -335,7 +338,7 @@ namespace FMBot.Bot.Commands.LastFM
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var timeSettings = SettingService.GetTimePeriod(extraOptions);
-            var userSettings = await this._settingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
+            var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
             var amount = SettingService.GetAmount(extraOptions);
 
             try
@@ -649,7 +652,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else
                 {
-                    topGuildTracks = await this._playService.GetTopWeekTracksForGuild(users, serverTrackSettings.OrderType);
+                    topGuildTracks = await this._whoKnowsPlayService.GetTopWeekTracksForGuild(users, serverTrackSettings.OrderType);
                     this._embed.WithTitle($"Top weekly tracks in {this.Context.Guild.Name}");
                 }
 

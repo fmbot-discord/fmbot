@@ -104,7 +104,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var userSettings = await this._settingService.GetUser(otherSettings, user.UserNameLastFM, this.Context);
+            var userSettings = await this._settingService.GetUser(otherSettings, user, this.Context);
 
             if (!this._guildService.CheckIfDM(this.Context))
             {

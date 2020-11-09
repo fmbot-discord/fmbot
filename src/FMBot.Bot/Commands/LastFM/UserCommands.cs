@@ -74,7 +74,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var userSettings = await this._settingService.GetUser(userOptions, user.UserNameLastFM, this.Context);
+                var userSettings = await this._settingService.GetUser(userOptions, user, this.Context);
 
                 string userTitle;
                 if (!userSettings.DifferentUser)

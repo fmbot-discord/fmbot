@@ -11,6 +11,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
@@ -28,6 +29,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly PlayService _playService;
         private readonly SettingService _settingService;
         private readonly UserService _userService;
+        private readonly WhoKnowsPlayService _whoKnowsPlayService;
 
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedBuilder _embed;
@@ -41,8 +43,9 @@ namespace FMBot.Bot.Commands.LastFM
                 LastFmService lastFmService,
                 PlayService playService,
                 SettingService settingService,
-                UserService userService
-            )
+                UserService userService,
+                WhoKnowsPlayService whoKnowsPlayService
+                )
         {
             this._guildService = guildService;
             this._indexService = indexService;
@@ -52,6 +55,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._settingService = settingService;
             this._updateService = updateService;
             this._userService = userService;
+            this._whoKnowsPlayService = whoKnowsPlayService;
 
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
@@ -143,6 +147,11 @@ namespace FMBot.Bot.Commands.LastFM
                 var currentTrack = recentScrobbles.Content[0];
                 var previousTrack = recentScrobbles.Content[1];
 
+                if (self)
+                {
+                    this._whoKnowsPlayService.AddRecentPlayToCache(userSettings.UserId, currentTrack);
+                }
+
                 var playCount = userInfo.Content.Playcount;
 
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
@@ -185,6 +194,19 @@ namespace FMBot.Bot.Commands.LastFM
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
+                }
+
+
+                if (this.Context.Guild != null && self)
+                {
+                    var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlaying(userSettings.UserId,
+                        this.Context.Guild.Id, currentTrack);
+
+                    if (guildAlsoPlaying != null)
+                    {
+                        footerText += guildAlsoPlaying;
+                        footerText += "\n";
+                    }
                 }
 
                 footerText += $"{userInfo.Content.Playcount} total scrobbles";
@@ -238,8 +260,8 @@ namespace FMBot.Bot.Commands.LastFM
                                 ? "Last track for "
                                 : "Last tracks for ";
                         }
-                        headerText += embedTitle;
 
+                        headerText += embedTitle;
 
                         if (currentTrack.IsNowPlaying != true && currentTrack.TimePlayed.HasValue)
                         {
@@ -321,7 +343,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var userSettings = await this._settingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
+            var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
             var amount = SettingService.GetAmount(extraOptions, 5, 10);
 
             try
@@ -445,17 +467,15 @@ namespace FMBot.Bot.Commands.LastFM
                 amountOfDays = 1;
             }
 
-            if (userSettings.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
+            if (userSettings.LastIndexed == null)
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
-                if (userSettings.LastIndexed == null)
-                {
-                    await this._indexService.IndexUser(userSettings);
-                }
-                else
-                {
-                    await this._updateService.UpdateUser(userSettings);
-                }
+                await this._indexService.IndexUser(userSettings);
+            }
+            else if (userSettings.LastUpdated < DateTime.UtcNow.AddMinutes(-20))
+            {
+                _ = this.Context.Channel.TriggerTypingAsync();
+                await this._updateService.UpdateUser(userSettings);
             }
 
             try
@@ -535,7 +555,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var userSettings = await this._settingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
+            var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
             var userInfo = await this._lastFmService.GetFullUserInfoAsync(userSettings.UserNameLastFm);
 
             var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
@@ -597,6 +617,42 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             await ReplyAsync(reply.ToString());
+            this.Context.LogCommandUsed();
+        }
+
+        [Command("streak", RunMode = RunMode.Async)]
+        [Summary("Shows you your streak")]
+        [UsernameSetRequired]
+        [Alias("st", "str", "combo", "cb")]
+        public async Task StreakAsync(params string[] extraOptions)
+        {
+            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            if (user.LastIndexed == null)
+            {
+                _ = this.Context.Channel.TriggerTypingAsync();
+                await this._indexService.IndexUser(user);
+            }
+            else if (user.LastUpdated < DateTime.UtcNow.AddMinutes(-1))
+            {
+                _ = this.Context.Channel.TriggerTypingAsync();
+                await this._updateService.UpdateUser(user);
+            }
+
+            var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
+
+            var streak = await this._playService.GetStreak(userSettings.UserId);
+            this._embed.WithDescription(streak);
+
+            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+
+            this._embedAuthor.WithName($"{userTitle} streak overview");
+            this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+            this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library");
+            this._embed.WithAuthor(this._embedAuthor);
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
         }
 

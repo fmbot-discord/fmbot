@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -36,11 +37,12 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly SpotifyService _spotifyService;
         private readonly UserService _userService;
         private readonly WhoKnowsArtistService _whoKnowArtistService;
+        private readonly WhoKnowsPlayService _whoKnowsPlayService;
 
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
-        
+
         public ArtistCommands(
                 ArtistsService artistsService,
                 GuildService guildService,
@@ -53,8 +55,9 @@ namespace FMBot.Bot.Commands.LastFM
                 SettingService settingService,
                 SpotifyService spotifyService,
                 UserService userService,
-                WhoKnowsArtistService whoKnowsArtistService
-            )
+                WhoKnowsArtistService whoKnowsArtistService,
+                WhoKnowsPlayService whoKnowsPlayService
+                )
         {
             this._artistsService = artistsService;
             this._guildService = guildService;
@@ -68,6 +71,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._updateService = updateService;
             this._userService = userService;
             this._whoKnowArtistService = whoKnowsArtistService;
+            this._whoKnowsPlayService = whoKnowsPlayService;
 
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
@@ -205,6 +209,188 @@ namespace FMBot.Bot.Commands.LastFM
             this.Context.LogCommandUsed();
         }
 
+        [Command("artisttracks", RunMode = RunMode.Async)]
+        [Summary("Displays top tracks for an artist.")]
+        [Alias("at", "att", "artisttrack", "artistrack", "artisttoptracks", "artisttoptrack")]
+        [UsernameSetRequired]
+        public async Task ArtistTracksAsync(params string[] artistValues)
+        {
+            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            var artist = await GetArtistOrHelp(artistValues, user, "artisttracks", prfx);
+            if (artist == null)
+            {
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            if (user.LastIndexed == null)
+            {
+                await this._indexService.IndexUser(user);
+            }
+            else if (user.LastUpdated < DateTime.UtcNow.AddMinutes(-20))
+            {
+                await this._updateService.UpdateUser(user);
+            }
+
+            var queryParams = new Dictionary<string, string>
+            {
+                {"artist", artist },
+                {"username", user.UserNameLastFM },
+                {"autocorrect", "1"}
+            };
+            var artistCall = await this._lastFmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+            if (!artistCall.Success)
+            {
+                this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context);
+                await ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandWithLastFmError(artistCall.Error);
+                return;
+            }
+
+            var artistInfo = artistCall.Content.Artist;
+
+            var timeSettings = SettingService.GetTimePeriod(artistValues, ChartTimePeriod.AllTime);
+
+            var timeDescription = timeSettings.Description;
+            List<UserTrack> topTracks;
+            switch (timeSettings.ChartTimePeriod)
+            {
+                //case ChartTimePeriod.Weekly:
+                //    topTracks = await this._playService.GetTopTracksForArtist(user.UserId, 7, artistInfo.Name);
+                //    break;
+                //case ChartTimePeriod.Monthly:
+                //    topTracks = await this._playService.GetTopTracksForArtist(user.UserId, 31, artistInfo.Name);
+                //    break;
+                default:
+                    timeDescription = "alltime";
+                    topTracks = await this._artistsService.GetTopTracksForArtist(user.UserId, artistInfo.Name);
+                    break;
+            }
+
+            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+
+            if (topTracks.Count == 0)
+            {
+                this._embed.WithDescription(
+                    $"{userTitle} has no scrobbles for this artist.");
+            }
+            else
+            {
+
+                var description = new StringBuilder();
+                for (var i = 0; i < topTracks.Count; i++)
+                {
+                    var track = topTracks[i];
+
+                    description.AppendLine($"{i + 1}. **{track.Name}** ({track.Playcount} plays)");
+                }
+
+                this._embed.WithDescription(description.ToString());
+
+                this._embed.WithFooter($"{userTitle} has {artistInfo.Stats.Userplaycount} total scrobbles on this artist");
+            }
+
+            this._embed.WithTitle($"Your top tracks for '{artistInfo.Name}'");
+            this._embed.WithUrl($"{Constants.LastFMUserUrl}{user.UserNameLastFM}/library/music/{UrlEncoder.Default.Encode(artistInfo.Name)}");
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
+        }
+
+        [Command("artistalbums", RunMode = RunMode.Async)]
+        [Summary("Displays top albums for an artist.")]
+        [Alias("aa", "aab", "atab", "artistalbum", "artistopalbum", "artisttopalbums", "artisttab")]
+        [UsernameSetRequired]
+        public async Task ArtistAlbumsAsync(params string[] artistValues)
+        {
+            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            var artist = await GetArtistOrHelp(artistValues, user, "artistalbums", prfx);
+            if (artist == null)
+            {
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            if (user.LastIndexed == null)
+            {
+                await this._indexService.IndexUser(user);
+            }
+            else if (user.LastUpdated < DateTime.UtcNow.AddMinutes(-20))
+            {
+                await this._updateService.UpdateUser(user);
+            }
+
+            var queryParams = new Dictionary<string, string>
+            {
+                {"artist", artist },
+                {"username", user.UserNameLastFM },
+                {"autocorrect", "1"}
+            };
+            var artistCall = await this._lastFmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+            if (!artistCall.Success)
+            {
+                this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context);
+                await ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandWithLastFmError(artistCall.Error);
+                return;
+            }
+
+            var artistInfo = artistCall.Content.Artist;
+
+            var timeSettings = SettingService.GetTimePeriod(artistValues, ChartTimePeriod.AllTime);
+
+            var timeDescription = timeSettings.Description;
+            List<UserAlbum> topAlbums;
+            switch (timeSettings.ChartTimePeriod)
+            {
+                //case ChartTimePeriod.Weekly:
+                //    topTracks = await this._playService.GetTopTracksForArtist(user.UserId, 7, artistInfo.Name);
+                //    break;
+                //case ChartTimePeriod.Monthly:
+                //    topTracks = await this._playService.GetTopTracksForArtist(user.UserId, 31, artistInfo.Name);
+                //    break;
+                default:
+                    timeDescription = "alltime";
+                    topAlbums = await this._artistsService.GetTopAlbumsForArtist(user.UserId, artistInfo.Name);
+                    break;
+            }
+
+            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+            if (topAlbums.Count == 0)
+            {
+                this._embed.WithDescription(
+                    $"{userTitle} has no scrobbles for this artist or their scrobbles have no album associated with them.");
+            }
+            else
+            {
+                var description = new StringBuilder();
+                for (var i = 0; i < topAlbums.Count; i++)
+                {
+                    var album = topAlbums[i];
+
+                    description.AppendLine($"{i + 1}. **{album.Name}** ({album.Playcount} plays)");
+                }
+
+                this._embed.WithDescription(description.ToString());
+
+                this._embed.WithFooter($"{userTitle} has {artistInfo.Stats.Userplaycount} total scrobbles on this artist");
+            }
+
+            this._embed.WithTitle($"Your top albums for '{artistInfo.Name}'");
+            this._embed.WithUrl($"{Constants.LastFMUserUrl}{user.UserNameLastFM}/library/music/{UrlEncoder.Default.Encode(artistInfo.Name)}");
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
+        }
+
         [Command("artistplays", RunMode = RunMode.Async)]
         [Summary("Displays artist playcount.")]
         [Alias("ap")]
@@ -287,7 +473,7 @@ namespace FMBot.Bot.Commands.LastFM
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var timeSettings = SettingService.GetTimePeriod(extraOptions);
-            var userSettings = await this._settingService.GetUser(extraOptions, user.UserNameLastFM, this.Context);
+            var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
             var amount = SettingService.GetAmount(extraOptions);
 
             try
@@ -742,7 +928,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else
                 {
-                    topGuildArtists = await this._playService.GetTopWeekArtistsForGuild(users, serverArtistSettings.OrderType);
+                    topGuildArtists = await this._whoKnowsPlayService.GetTopWeekArtistsForGuild(users, serverArtistSettings.OrderType);
                     this._embed.WithTitle($"Top weekly artists in {this.Context.Guild.Name}");
                 }
 

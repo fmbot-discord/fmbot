@@ -207,25 +207,26 @@ namespace FMBot.Bot.Services
 
         public async Task<UserSettingsModel> GetUser(
             string[] extraOptions,
-            string username,
+            User user,
             ICommandContext context)
         {
             var settingsModel = new UserSettingsModel
             {
                 DifferentUser = false,
-                UserNameLastFm = username,
+                UserNameLastFm = user.UserNameLastFM,
                 DiscordUserId = context.User.Id,
+                UserId = user.UserId
             };
 
             foreach (var extraOption in extraOptions)
             {
-                var user = await GetUserFromString(extraOption);
+                var otherUser = await GetUserFromString(extraOption);
 
                 if (user != null)
                 {
                     settingsModel.DifferentUser = true;
-                    settingsModel.DiscordUserId = user.DiscordUserId;
-                    settingsModel.UserNameLastFm = user.UserNameLastFM;
+                    settingsModel.DiscordUserId = otherUser.DiscordUserId;
+                    settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
                 }
             }
 
@@ -255,7 +256,7 @@ namespace FMBot.Bot.Services
         public static int GetAmount(
             string[] extraOptions,
             int amount = 8,
-            int maxAmount = 16)
+            int maxAmount = 15)
         {
             foreach (var extraOption in extraOptions)
             {

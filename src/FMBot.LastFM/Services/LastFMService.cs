@@ -23,7 +23,6 @@ namespace FMBot.LastFM.Services
 
         private readonly ILastfmApi _lastFmApi;
 
-
         public LastFmService(IConfigurationRoot configuration, ILastfmApi lastFmApi)
         {
             this._lastFmClient =

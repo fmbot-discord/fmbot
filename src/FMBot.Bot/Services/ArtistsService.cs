@@ -1,15 +1,26 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
+using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services
 {
     public class ArtistsService
     {
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+
+        public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory)
+        {
+            this._contextFactory = contextFactory;
+        }
+
         // Top artists for 2 users
         public TasteModels GetEmbedTaste(PageResponse<LastArtist> leftUserArtists,
             PageResponse<LastArtist> rightUserArtists, int amount, ChartTimePeriod timePeriod)
@@ -153,6 +164,31 @@ namespace FMBot.Bot.Services
             }
 
             return tasteSettings;
+        }
+
+
+        public async Task<List<UserTrack>> GetTopTracksForArtist(int userId, string artistName)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            return await db.UserTracks
+                .AsQueryable()
+                .Where(w => EF.Functions.ILike(w.ArtistName, artistName)
+                            && w.UserId == userId)
+                .OrderByDescending(o => o.Playcount)
+                .Take(12)
+                .ToListAsync();
+        }
+
+        public async Task<List<UserAlbum>> GetTopAlbumsForArtist(int userId, string artistName)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            return await db.UserAlbums
+                .AsQueryable()
+                .Where(w => EF.Functions.ILike(w.ArtistName, artistName)
+                            && w.UserId == userId)
+                .OrderByDescending(o => o.Playcount)
+                .Take(12)
+                .ToListAsync();
         }
     }
 }
