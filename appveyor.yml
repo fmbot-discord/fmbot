@@ -1,7 +1,7 @@
 version: '{branch}.{build}'
 pull_requests:
   do_not_increment_build_number: true
-image: Visual Studio 2019
+image: Visual Studio 2019 Preview
 configuration: Release
 init:
 - ps: $branch = $env:APPVEYOR_REPO_BRANCH -replace '\W', '-'; $env:ASSEMBLY_INFORMATIONAL_VERSION = if ($branch -eq "master") { $env:APPVEYOR_BUILD_VERSION } else { "$env:APPVEYOR_BUILD_VERSION-$branch" }
