@@ -641,7 +641,10 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
 
-            var streak = await this._playService.GetStreak(userSettings.UserId);
+            var recentScrobbles = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFm, 1);
+            var nowPlaying = recentScrobbles.FirstOrDefault(f => f.IsNowPlaying == true);
+
+            var streak = await this._playService.GetStreak(userSettings.UserId, nowPlaying);
             this._embed.WithDescription(streak);
 
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
