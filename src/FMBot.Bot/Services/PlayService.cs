@@ -10,6 +10,7 @@ using FMBot.LastFM.Domain.ResponseModels;
 using FMBot.LastFM.Domain.Types;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services
@@ -161,7 +162,7 @@ namespace FMBot.Bot.Services
                                  a.UserId == userId);
         }
 
-        public async Task<string> GetStreak(int userId)
+        public async Task<string> GetStreak(int userId, LastTrack? nowPlayingTrack)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var lastPlays = await db.UserPlays
@@ -175,7 +176,20 @@ namespace FMBot.Bot.Services
                 return null;
             }
 
-            var firstPlay = lastPlays.First();
+            UserPlay firstPlay;
+            if (nowPlayingTrack == null)
+            {
+                firstPlay = lastPlays.First();
+            }
+            else
+            {
+                firstPlay = new UserPlay
+                {
+                    AlbumName = nowPlayingTrack.AlbumName,
+                    ArtistName = nowPlayingTrack.ArtistName,
+                    TrackName = nowPlayingTrack.Name
+                };
+            }
 
             var artistCount = 1;
             var albumCount = 1;
@@ -188,7 +202,7 @@ namespace FMBot.Bot.Services
             {
                 var play = lastPlays[i];
 
-                if (firstPlay.ArtistName == play.ArtistName)
+                if (firstPlay.ArtistName == play.ArtistName && artistContinue)
                 {
                     artistCount += 1;
                 }
@@ -197,7 +211,7 @@ namespace FMBot.Bot.Services
                     artistContinue = false;
                 }
 
-                if (firstPlay.AlbumName == play.AlbumName)
+                if (firstPlay.AlbumName == play.AlbumName && albumContinue)
                 {
                     albumCount += 1;
                 }
@@ -206,7 +220,7 @@ namespace FMBot.Bot.Services
                     albumContinue = false;
                 }
 
-                if (firstPlay.TrackName == play.TrackName)
+                if (firstPlay.TrackName == play.TrackName && trackContinue)
                 {
                     trackCount += 1;
                 }
