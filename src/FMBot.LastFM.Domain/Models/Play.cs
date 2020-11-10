@@ -1,86 +1,79 @@
 using System;
-using System.Net.Mime;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
+
 
 namespace FMBot.LastFM.Domain.Models
 {
     public class PlayResponse
     {
-        [JsonProperty("recenttracks")]
+        [JsonPropertyName("recenttracks")]
         public Recenttracks Recenttracks { get; set; }
     }
 
     public class Recenttracks
     {
-        [JsonProperty("@attr")]
+        [JsonPropertyName("@attr")]
         public Attr Attr { get; set; }
 
-        [JsonProperty("track")]
+        [JsonPropertyName("track")]
         public RecentTrack[] Track { get; set; }
     }
 
     public class Attr
     {
-        [JsonProperty("page")]
-        [JsonConverter(typeof(ParseStringConverter))]
+        [JsonPropertyName("page")]
         public long Page { get; set; }
 
-        [JsonProperty("total")]
-        [JsonConverter(typeof(ParseStringConverter))]
+        [JsonPropertyName("total")]
         public long Total { get; set; }
 
-        [JsonProperty("user")]
+        [JsonPropertyName("user")]
         public string User { get; set; }
 
-        [JsonProperty("perPage")]
-        [JsonConverter(typeof(ParseStringConverter))]
+        [JsonPropertyName("perPage")]
         public long PerPage { get; set; }
 
-        [JsonProperty("totalPages")]
-        [JsonConverter(typeof(ParseStringConverter))]
+        [JsonPropertyName("totalPages")]
         public long TotalPages { get; set; }
     }
 
     public class RecentTrack
     {
-        [JsonProperty("mbid")]
+        [JsonPropertyName("mbid")]
         public string Mbid { get; set; }
 
-        [JsonProperty("loved")]
-        [JsonConverter(typeof(ParseStringConverter))]
+        [JsonPropertyName("loved")]
         public long Loved { get; set; }
 
-        [JsonProperty("artist")]
+        [JsonPropertyName("artist")]
         public ChildArtist Artist { get; set; }
 
-        [JsonProperty("image")]
+        [JsonPropertyName("image")]
         public Image[] Image { get; set; }
 
-        [JsonProperty("date")]
+        [JsonPropertyName("date")]
         public Date Date { get; set; }
 
-        [JsonProperty("streamable")]
-        [JsonConverter(typeof(ParseStringConverter))]
+        [JsonPropertyName("streamable")]
         public long Streamable { get; set; }
 
-        [JsonProperty("url")]
+        [JsonPropertyName("url")]
         public Uri Url { get; set; }
 
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
 
-        [JsonProperty("album")]
+        [JsonPropertyName("album")]
         public ChildAlbum Album { get; set; }
     }
 
 
     public partial class Date
     {
-        [JsonProperty("uts")]
-        [JsonConverter(typeof(ParseStringConverter))]
+        [JsonPropertyName("uts")]
         public long Uts { get; set; }
 
-        [JsonProperty("#text")]
+        [JsonPropertyName("#text")]
         public string Text { get; set; }
     }
 }

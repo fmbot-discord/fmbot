@@ -1,5 +1,5 @@
+using System.Text.Json.Serialization;
 using FMBot.LastFM.Domain.Enums;
-using Newtonsoft.Json;
 
 namespace FMBot.LastFM.Domain.Types
 {

@@ -1,5 +1,5 @@
+using System.Text.Json.Serialization;
 using FMBot.LastFM.Domain.Enums;
-using Newtonsoft.Json;
 
 namespace FMBot.LastFM.Domain.Models
 {
@@ -8,10 +8,10 @@ namespace FMBot.LastFM.Domain.Models
         [JsonIgnore]
         public bool Success { get; set; }
 
-        [JsonProperty("error")]
+        [JsonPropertyName("error")]
         public ResponseStatus? Error { get; set; }
 
-        [JsonProperty("message")]
+        [JsonPropertyName("message")]
         public string Message { get; set; }
     }
 }

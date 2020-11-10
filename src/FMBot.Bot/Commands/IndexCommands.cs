@@ -71,12 +71,12 @@ namespace FMBot.Bot.Commands
                 var guildRecentlyIndexed =
                     lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(60));
 
-                //if (guildRecentlyIndexed)
-                //{
-                //    await ReplyAsync("An index was recently started on this server. Please wait before running this command again.");
-                //    this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                //    return;
-                //}
+                if (guildRecentlyIndexed)
+                {
+                    await ReplyAsync("An index was recently started on this server. Please wait before running this command again.");
+                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                    return;
+                }
                 if (users.Count == 0 && lastIndex != null)
                 {
                     await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
@@ -184,14 +184,14 @@ namespace FMBot.Bot.Commands
 
             if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full" || force.ToLower() == "-force" || force.ToLower() == "force"))
             {
-                if (userSettings.LastUpdated < DateTime.UtcNow.AddDays(-2))
-                {
-                    await ReplyAsync(
-                        "You can't do a full index too often. Please remember that this command should only be used in case you edited your scrobble history.\n" +
-                        "Experiencing issues with the normal update? Please contact us on the .fmbot support server.");
-                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                    return;
-                }
+                //if (userSettings.LastUpdated < DateTime.UtcNow.AddDays(-2))
+                //{
+                //    await ReplyAsync(
+                //        "You can't do a full index too often. Please remember that this command should only be used in case you edited your scrobble history.\n" +
+                //        "Experiencing issues with the normal update? Please contact us on the .fmbot support server.");
+                //    this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                //    return;
+                //}
 
                 this._embed.WithDescription($"<a:loading:749715170682470461> Fully indexing user {userSettings.UserNameLastFM}..." +
                                             $"\n\nThis can take a while. Please don't fully update too often, if you have any issues with the normal update feel free to let us know.");

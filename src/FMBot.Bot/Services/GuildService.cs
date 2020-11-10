@@ -449,6 +449,23 @@ namespace FMBot.Bot.Services
             await db.SaveChangesAsync();
         }
 
+        public async Task RemoveGuildAsync(SocketGuild guild)
+        {
+            var newGuild = new Guild
+            {
+                DiscordGuildId = guild.Id,
+                ChartTimePeriod = ChartTimePeriod.Monthly,
+                FmEmbedType = FmEmbedType.embedmini,
+                Name = guild.Name,
+                TitlesEnabled = true
+            };
+
+            await using var db = this._contextFactory.CreateDbContext();
+            await db.Guilds.AddAsync(newGuild);
+
+            await db.SaveChangesAsync();
+        }
+
         public async Task<bool> GuildExistsAsync(SocketGuild guild)
         {
             await using var db = this._contextFactory.CreateDbContext();

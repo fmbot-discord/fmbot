@@ -12,6 +12,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.EntityFrameWork;
+using Interactivity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -100,6 +101,7 @@ namespace FMBot.Bot
                 .AddSingleton<IDisabledCommandService, DisabledCommandService>()
                 .AddSingleton<IIndexService, IndexService>()
                 .AddSingleton<IPrefixService, PrefixService>()
+                .AddSingleton<InteractivityService>()
                 .AddSingleton<IUserIndexQueue, UserIndexQueue>()
                 .AddSingleton<IUserUpdateQueue, UserUpdateQueue>()
                 .AddSingleton<PlayService>()

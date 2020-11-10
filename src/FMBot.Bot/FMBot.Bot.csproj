@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <LangVersion>8.0</LangVersion>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
@@ -21,14 +21,15 @@
     <PackageReference Include="AsyncEnumerator" Version="4.0.2" />
     <PackageReference Include="DiscordBotsList.Api" Version="1.4.0" />
     <PackageReference Include="DNetPlus" Version="1.2.10" />
+    <PackageReference Include="DNetPlus-Interactivity" Version="1.0.0" />
     <PackageReference Include="Genius.NET" Version="4.0.1" />
     <PackageReference Include="Google.Apis" Version="1.49.0" />
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.49.0.2120" />
     <PackageReference Include="Inflatable.Lastfm" Version="1.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.9" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="3.1.9" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.9" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="3.1.9" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="5.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.8" />
     <PackageReference Include="Npgsql" Version="5.0.0-preview1" />
     <PackageReference Include="PostgreSQLCopyHelper" Version="2.7.0" />
@@ -41,9 +42,9 @@
     <PackageReference Include="SkiaSharp.Views.Desktop.Common" Version="2.80.2" />
     <PackageReference Include="SpotifyAPI.Web" Version="5.1.1" />
     <PackageReference Include="SpotifyAPI.Web.Auth" Version="5.1.1" />
-    <PackageReference Include="System.Drawing.Common" Version="4.7.0" />
-    <PackageReference Include="System.Reactive" Version="4.4.1" />
-    <PackageReference Include="System.Reactive.Linq" Version="4.4.1" />
+    <PackageReference Include="System.Drawing.Common" Version="5.0.0" />
+    <PackageReference Include="System.Reactive" Version="5.0.0" />
+    <PackageReference Include="System.Reactive.Linq" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FMBot.Domain\FMBot.Domain.csproj" />

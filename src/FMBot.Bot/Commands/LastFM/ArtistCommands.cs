@@ -20,6 +20,8 @@ using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
+using Interactivity;
+using Interactivity.Pagination;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -29,6 +31,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly GuildService _guildService;
         private readonly IIndexService _indexService;
         private readonly ILastfmApi _lastFmApi;
+        private InteractivityService Interactivity { get; set; }
         private readonly IPrefixService _prefixService;
         private readonly IUpdateService _updateService;
         private readonly LastFmService _lastFmService;
@@ -56,8 +59,8 @@ namespace FMBot.Bot.Commands.LastFM
                 SpotifyService spotifyService,
                 UserService userService,
                 WhoKnowsArtistService whoKnowsArtistService,
-                WhoKnowsPlayService whoKnowsPlayService
-                )
+                WhoKnowsPlayService whoKnowsPlayService,
+                InteractivityService interactivity)
         {
             this._artistsService = artistsService;
             this._guildService = guildService;
@@ -72,6 +75,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._userService = userService;
             this._whoKnowArtistService = whoKnowsArtistService;
             this._whoKnowsPlayService = whoKnowsPlayService;
+            this.Interactivity = interactivity;
 
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
@@ -572,6 +576,27 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync("Unable to show Last.fm info due to an internal error.");
+            }
+        }
+
+        [Command("lazypaginator")]
+        public Task LazyPaginatorAsync()
+        {
+            var paginator = new LazyPaginatorBuilder()
+                .WithPageFactory(PageFactory)
+                .WithMaxPageIndex(100)
+                .WithFooter(PaginatorFooter.PageNumber | PaginatorFooter.Users)
+                .WithDefaultEmotes()
+                .Build();
+
+            return Interactivity.SendPaginatorAsync(paginator, Context.Channel, TimeSpan.FromMinutes(2));
+
+            Task<PageBuilder> PageFactory(int page)
+            {
+                return Task.FromResult(new PageBuilder()
+                    .WithText((page + 1).ToString())
+                    .WithTitle($"Title for page {page + 1}")
+                    .WithColor(System.Drawing.Color.FromArgb(page * 1500)));
             }
         }
 

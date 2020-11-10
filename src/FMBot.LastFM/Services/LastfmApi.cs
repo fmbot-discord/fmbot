@@ -5,13 +5,15 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using FMBot.LastFM.Converters;
 using FMBot.LastFM.Domain.Enums;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
 
 namespace FMBot.LastFM.Services
 {
@@ -69,9 +71,7 @@ namespace FMBot.LastFM.Services
                 Method = HttpMethod.Post
             };
 
-            using var httpResponse = await this._client.SendAsync(request);
-
-            var content = await httpResponse.Content.ReadAsStreamAsync();
+            using var httpResponse = await this._client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
             if (httpResponse.StatusCode == HttpStatusCode.NotFound)
             {
@@ -85,49 +85,57 @@ namespace FMBot.LastFM.Services
 
             var response = new Response<T>();
 
-            using (var streamReader = new StreamReader(content))
+            var jsonSerializerOptions = new JsonSerializerOptions
             {
-                try
+                PropertyNameCaseInsensitive = true
+            };
+
+            jsonSerializerOptions.Converters.Add(new LongToStringConverter());
+
+            var stream = await httpResponse.Content.ReadAsStreamAsync();
+            using var streamReader = new StreamReader(stream);
+            var requestBody = await streamReader.ReadToEndAsync();
+
+            try
+            {
+                // Check for error response first since last.fm returns 200 ok even if something isn't found
+                var errorResponse = CheckForError(response, requestBody, jsonSerializerOptions);
+
+                if (errorResponse.Message == null)
                 {
-                    // Check for error response first since last.fm returns 200 ok even if something isn't found
-                    var errorResponse = await CheckForError(response, streamReader);
-
-                    if (errorResponse.Message == null)
-                    {
-                        content.Position = 0;
-                        streamReader.DiscardBufferedData();
-
-                        var deserializeObject = JsonConvert.DeserializeObject<T>(await streamReader.ReadToEndAsync());
-                        response.Content = deserializeObject;
-                        response.Success = true;
-
-                    }
-                    else
-                    {
-                        response.Success = false;
-                        response.Message = errorResponse.Message;
-                        response.Error = errorResponse.Error;
-                    }
+                    var deserializeObject = JsonSerializer.Deserialize<T>(requestBody, jsonSerializerOptions);
+                    response.Content = deserializeObject;
+                    response.Success = true;
                 }
-                catch (Exception ex)
+                else
                 {
                     response.Success = false;
-                    response.Message = "Something went wrong while deserializing the object last.fm returned";
-                    Console.WriteLine(ex);
+                    response.Message = errorResponse.Message;
+                    response.Error = errorResponse.Error;
                 }
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = "Something went wrong while deserializing the object last.fm returned";
+                Console.WriteLine(ex);
             }
 
             return response;
         }
 
-        private static async Task<Response<T>> CheckForError<T>(Response<T> response, StreamReader streamReader)
+        private static Response<T> CheckForError<T>(Response<T> response, string requestBody,
+            JsonSerializerOptions jsonSerializerOptions)
         {
             try
             {
-                var errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(await streamReader.ReadToEndAsync());
-                response.Success = false;
-                response.Error = errorResponse.Error;
-                response.Message = errorResponse.Message;
+                var errorResponse = JsonSerializer.Deserialize<ErrorResponse>(requestBody, jsonSerializerOptions);
+
+                if (errorResponse != null)
+                {
+                    response.Error = errorResponse.Error;
+                    response.Message = errorResponse.Message;
+                }
             }
             catch (Exception ex)
             {
