@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using FMBot.Domain;
 using FMBot.LastFM.Converters;
 using FMBot.LastFM.Domain.Enums;
 using FMBot.LastFM.Domain.Models;
@@ -73,6 +74,8 @@ namespace FMBot.LastFM.Services
 
             using var httpResponse = await this._client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
+            Statistics.LastfmApiCalls.Inc();
+
             if (httpResponse.StatusCode == HttpStatusCode.NotFound)
             {
                 return new Response<T>
@@ -91,6 +94,8 @@ namespace FMBot.LastFM.Services
             };
 
             jsonSerializerOptions.Converters.Add(new LongToStringConverter());
+            jsonSerializerOptions.Converters.Add(new GuidConverter());
+            jsonSerializerOptions.Converters.Add(new BooleanConverter());
 
             var stream = await httpResponse.Content.ReadAsStreamAsync();
             using var streamReader = new StreamReader(stream);

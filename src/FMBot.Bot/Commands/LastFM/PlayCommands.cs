@@ -16,6 +16,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
+using Unosquare.Swan;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -115,7 +116,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var lastFMUserName = userSettings.UserNameLastFM;
+                var lastFmUserName = userSettings.UserNameLastFM;
                 var self = true;
 
                 if (parameters.Length > 0 && !string.IsNullOrEmpty(parameters.First()) && parameters.Count() == 1)
@@ -123,60 +124,64 @@ namespace FMBot.Bot.Commands.LastFM
                     var alternativeLastFmUserName = await FindUser(parameters.First());
                     if (!string.IsNullOrEmpty(alternativeLastFmUserName) && await this._lastFmService.LastFmUserExistsAsync(alternativeLastFmUserName))
                     {
-                        lastFMUserName = alternativeLastFmUserName;
+                        lastFmUserName = alternativeLastFmUserName;
                         self = false;
                     }
                 }
 
-                var recentScrobblesTask = this._lastFmService.GetRecentScrobblesAsync(lastFMUserName);
-                var userInfoTask = this._lastFmService.GetUserInfoAsync(lastFMUserName);
+                _ = this.Context.Channel.TriggerTypingAsync();
 
-                Task.WaitAll(recentScrobblesTask, userInfoTask);
+                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(lastFmUserName);
 
-                var recentScrobbles = recentScrobblesTask.Result;
-                var userInfo = userInfoTask.Result;
-
-                if (recentScrobbles == null || !recentScrobbles.Any() || !recentScrobbles.Content.Any())
+                if (!recentScrobbles.Success || recentScrobbles.Content == null)
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(recentScrobbles?.Status, prfx, lastFMUserName);
+                    this._embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, this.Context);
+                    this.Context.LogCommandUsed(CommandResponse.LastFmError);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
+                }
+
+                if (!recentScrobbles.Content.Recenttracks.Track.Any())
+                {
+                    this._embed.NoScrobblesFoundErrorResponse(userSettings.UserNameLastFM);
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
 
-                var currentTrack = recentScrobbles.Content[0];
-                var previousTrack = recentScrobbles.Content[1];
+                var currentTrack = recentScrobbles.Content.Recenttracks.Track[0];
+                var previousTrack = recentScrobbles.Content.Recenttracks.Track[1];
 
                 if (self)
                 {
                     this._whoKnowsPlayService.AddRecentPlayToCache(userSettings.UserId, currentTrack);
                 }
 
-                var playCount = userInfo.Content.Playcount;
+                var playCount = recentScrobbles.Content.Recenttracks.Attr.Total;
 
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-                var embedTitle = self ? userTitle : $"{lastFMUserName}, requested by {userTitle}";
+                var embedTitle = self ? userTitle : $"{lastFmUserName}, requested by {userTitle}";
 
                 var fmText = "";
                 var footerText = "";
 
                 footerText +=
-                    $"{userInfo.Content.Name} has ";
+                    $"{userSettings.UserNameLastFM} has ";
 
                 switch (userSettings.FmCountType)
                 {
                     case FmCountType.Track:
                         var trackInfo = await this._lastFmService.GetTrackInfoAsync(currentTrack.Name,
-                            currentTrack.ArtistName, lastFMUserName);
+                            currentTrack.Artist.Text, lastFmUserName);
                         if (trackInfo != null)
                         {
                             footerText += $"{trackInfo.Userplaycount} scrobbles on this track | ";
                         }
                         break;
                     case FmCountType.Album:
-                        if (!string.IsNullOrEmpty(currentTrack.AlbumName))
+                        if (!string.IsNullOrEmpty(currentTrack.Album.Text))
                         {
-                            var albumInfo = await this._lastFmService.GetAlbumInfoAsync(currentTrack.ArtistName, currentTrack.AlbumName, lastFMUserName);
+                            var albumInfo = await this._lastFmService.GetAlbumInfoAsync(currentTrack.Artist.Text, currentTrack.Album.Text, lastFmUserName);
                             if (albumInfo.Success)
                             {
                                 footerText += $"{albumInfo.Content.Album.Userplaycount} scrobbles on this album | ";
@@ -184,7 +189,7 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                         break;
                     case FmCountType.Artist:
-                        var artistInfo = await this._lastFmService.GetArtistInfoAsync(currentTrack.ArtistName, lastFMUserName);
+                        var artistInfo = await this._lastFmService.GetArtistInfoAsync(currentTrack.Artist.Text, lastFmUserName);
                         if (artistInfo.Success)
                         {
                             footerText += $"{artistInfo.Content.Artist.Stats.Userplaycount} scrobbles on this artist | ";
@@ -196,7 +201,7 @@ namespace FMBot.Bot.Commands.LastFM
                         throw new ArgumentOutOfRangeException();
                 }
 
-                footerText += $"{userInfo.Content.Playcount} total scrobbles";
+                footerText += $"{playCount} total scrobbles";
 
                 switch (userSettings.FmEmbedType)
                 {
@@ -222,9 +227,6 @@ namespace FMBot.Bot.Commands.LastFM
                         await this.Context.Channel.SendMessageAsync(fmText.FilterOutMentions());
                         break;
                     default:
-                        var albumImagesTask =
-                            this._lastFmService.GetAlbumImagesAsync(currentTrack.ArtistName, currentTrack.AlbumName);
-
                         if (userSettings.FmEmbedType == FmEmbedType.embedmini)
                         {
                             fmText += LastFmService.TrackToLinkedString(currentTrack);
@@ -237,7 +239,7 @@ namespace FMBot.Bot.Commands.LastFM
                         }
 
                         string headerText;
-                        if (currentTrack.IsNowPlaying == true)
+                        if (currentTrack.Attr != null && currentTrack.Attr.Nowplaying)
                         {
                             headerText = "Now playing - ";
                         }
@@ -250,18 +252,19 @@ namespace FMBot.Bot.Commands.LastFM
 
                         headerText += embedTitle;
 
-                        if (currentTrack.IsNowPlaying != true && currentTrack.TimePlayed.HasValue)
+                        if ((currentTrack.Attr == null || !currentTrack.Attr.Nowplaying) && currentTrack.Date != null)
                         {
                             footerText += " | Last scrobble:";
-                            this._embed.WithTimestamp(currentTrack.TimePlayed.Value);
+                            var dateTime = DateTime.UnixEpoch.AddSeconds(currentTrack.Date.Uts).ToUniversalTime();
+                            this._embed.WithTimestamp(dateTime);
                         }
 
                         this._embedAuthor.WithName(headerText);
-                        this._embedAuthor.WithUrl(Constants.LastFMUserUrl + lastFMUserName);
+                        this._embedAuthor.WithUrl(Constants.LastFMUserUrl + lastFmUserName);
 
                         if (this.Context.Guild != null && self)
                         {
-                            var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlaying(userSettings.UserId,
+                            var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingTrack(userSettings.UserId,
                                 this.Context.Guild.Id, currentTrack);
 
                             if (guildAlsoPlaying != null)
@@ -277,11 +280,15 @@ namespace FMBot.Bot.Commands.LastFM
 
                         this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                         this._embed.WithAuthor(this._embedAuthor);
-                        this._embed.WithUrl(Constants.LastFMUserUrl + lastFMUserName);
+                        this._embed.WithUrl(Constants.LastFMUserUrl + lastFmUserName);
 
-                        if ((await albumImagesTask)?.Large != null)
+                        if (currentTrack.Image != null && currentTrack.Image.Any())
                         {
-                            this._embed.WithThumbnailUrl((await albumImagesTask).Large.ToString());
+                            var image = currentTrack.Image.FirstOrDefault(f => f.Size == "extralarge");
+                            if (image != null && !string.IsNullOrWhiteSpace(image.Text))
+                            {
+                                this._embed.WithThumbnailUrl(image.Text);
+                            }
                         }
 
                         var message = await ReplyAsync("", false, this._embed.Build());
@@ -342,22 +349,26 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
             var amount = SettingService.GetAmount(extraOptions, 5, 10);
 
             try
             {
-                var tracksTask = this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFm, amount);
-                var userInfoTask = this._lastFmService.GetUserInfoAsync(userSettings.UserNameLastFm);
+                var tracks = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFm, amount);
 
-                Task.WaitAll(tracksTask, userInfoTask);
-
-                var tracks = tracksTask.Result;
-                var userInfo = userInfoTask.Result;
-
-                if (tracks == null || !tracks.Any() || !tracks.Content.Any())
+                if (!tracks.Success || tracks.Content == null)
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(tracks?.Status, prfx, userSettings.UserNameLastFm);
+                    this._embed.ErrorResponse(tracks.Error, tracks.Message, this.Context);
+                    this.Context.LogCommandUsed(CommandResponse.LastFmError);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
+                }
+
+                if (!tracks.Content.Recenttracks.Track.Any())
+                {
+                    this._embed.NoScrobblesFoundErrorResponse(userSettings.UserNameLastFm);
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     await ReplyAsync("", false, this._embed.Build());
                     return;
@@ -372,22 +383,23 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithAuthor(this._embedAuthor);
 
                 var fmRecentText = "";
-                for (var i = 0; i < tracks.Content.Count; i++)
+                for (var i = 0; i < tracks.Content.Recenttracks.Track.Count(); i++)
                 {
-                    var track = tracks.Content[i];
+                    var track = tracks.Content.Recenttracks.Track[i];
 
                     if (i == 0)
                     {
-                        var albumImages =
-                            await this._lastFmService.GetAlbumImagesAsync(track.ArtistName, track.AlbumName);
-
-                        if (albumImages?.Medium != null)
+                        if (track.Image != null && track.Image.Any())
                         {
-                            this._embed.WithThumbnailUrl(albumImages.Medium.ToString());
+                            var image = track.Image.FirstOrDefault(f => f.Size == "extralarge");
+                            if (image != null && !string.IsNullOrWhiteSpace(image.Text))
+                            {
+                                this._embed.WithThumbnailUrl(image.Text);
+                            }
                         }
                     }
 
-                    if (track.IsNowPlaying == true)
+                    if (track.Attr != null && track.Attr.Nowplaying)
                     {
                         fmRecentText += $"🎶 - {LastFmService.TrackToLinkedString(track)}\n";
                     }
@@ -400,19 +412,22 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(fmRecentText);
 
                 string footerText;
-                if (tracks.Content[0].IsNowPlaying == true)
+                var firstTrack = tracks.Content.Recenttracks.Track[0];
+                if (firstTrack.Attr != null && firstTrack.Attr.Nowplaying)
                 {
                     footerText =
-                        $"{userInfo.Content.Name} has {userInfo.Content.Playcount} scrobbles - Now Playing";
+                        $"{userSettings.UserNameLastFm} has {tracks.Content.Recenttracks.Attr.Total} scrobbles | Now Playing";
                 }
                 else
                 {
                     footerText =
-                        $"{userInfo.Content.Name} has {userInfo.Content.Playcount} scrobbles";
-                    if (tracks.Content[0].TimePlayed.HasValue)
+                        $"{userSettings.UserNameLastFm} has {tracks.Content.Recenttracks.Attr.Total} scrobbles";
+
+                    if ((firstTrack.Attr == null || !firstTrack.Attr.Nowplaying) && firstTrack.Date != null)
                     {
-                        footerText += " - Last scrobble:";
-                        this._embed.WithTimestamp(tracks.Content[0].TimePlayed.Value);
+                        footerText += " | Last scrobble:";
+                        var dateTime = DateTime.UnixEpoch.AddSeconds(firstTrack.Date.Uts).ToUniversalTime();
+                        this._embed.WithTimestamp(dateTime);
                     }
                 }
 

@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using FMBot.Bot.Models;
+using FMBot.LastFM.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Objects;
@@ -154,24 +155,25 @@ namespace FMBot.Bot.Services.WhoKnows
                 .ToList();
         }
 
-        public void AddRecentPlayToCache(int userId, LastTrack track)
+        public void AddRecentPlayToCache(int userId, RecentTrack track)
         {
-            if (track.IsNowPlaying == true || track.TimePlayed.HasValue && track.TimePlayed.Value > DateTime.UtcNow.AddMinutes(-8))
+            if (track.Attr != null && track.Attr.Nowplaying || track.Date != null &&
+                DateTime.UnixEpoch.AddSeconds(track.Date.Uts).ToUniversalTime() > DateTime.UtcNow.AddMinutes(-8))
             {
                 var userPlay = new UserPlay
                 {
-                    ArtistName = track.ArtistName.ToLower(),
-                    AlbumName = track.AlbumName.ToLower(),
+                    ArtistName = track.Artist.Text.ToLower(),
+                    AlbumName = !string.IsNullOrWhiteSpace(track.Album.Text) ? track.Album.Text : null,
                     TrackName = track.Name.ToLower(),
                     UserId = userId,
-                    TimePlayed = track.TimePlayed?.DateTime ?? DateTime.UtcNow
+                    TimePlayed = track.Date != null ? DateTime.UnixEpoch.AddSeconds(track.Date.Uts).ToUniversalTime() : DateTime.UtcNow
                 };
 
-                this._cache.Set($"{userId}-last-play-{track.ArtistName.ToLower()}-{track.Name.ToLower()}", userPlay, TimeSpan.FromMinutes(10));
+                this._cache.Set($"{userId}-last-play", userPlay, TimeSpan.FromMinutes(15));
             }
         }
 
-        public async Task<string> GuildAlsoPlaying(int userId, ulong discordGuildId, LastTrack track)
+        public async Task<string> GuildAlsoPlayingTrack(int userId, ulong discordGuildId, RecentTrack track)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var guild = await db.Guilds
@@ -188,9 +190,9 @@ namespace FMBot.Bot.Services.WhoKnows
 
             foreach (var user in guild.GuildUsers)
             {
-                var userFound = this._cache.TryGetValue($"{user.UserId}-last-play-{track.ArtistName.ToLower()}-{track.Name.ToLower()}", out UserPlay userPlay);
+                var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlay userPlay);
 
-                if (userFound)
+                if (userFound && userPlay.ArtistName == track.Artist.Text.ToLower() && userPlay.TrackName == track.Name.ToLower())
                 {
                     foundUsers.Add(user);
                     userPlays.Add(userPlay);

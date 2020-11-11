@@ -40,6 +40,20 @@ namespace FMBot.LastFM.Services
         }
 
         // Recent scrobbles
+        public async Task<Response<PlayResponse>> GetRecentTracksAsync(string lastFmUserName, int count = 2)
+        {
+            var queryParams = new Dictionary<string, string>
+            {
+                {"user", lastFmUserName },
+                {"limit", count.ToString()}
+            };
+
+            var recentTracksCall = await this._lastFmApi.CallApiAsync<PlayResponse>(queryParams, Call.RecentTracks);
+
+            return recentTracksCall;
+        }
+
+        // Recent scrobbles
         public async Task<long?> GetScrobbleCountFromDateAsync(string lastFmUserName, long? unixTimestamp)
         {
             var queryParams = new Dictionary<string, string>
@@ -54,13 +68,12 @@ namespace FMBot.LastFM.Services
             }
 
             var recentTracksCall = await this._lastFmApi.CallApiAsync<PlayResponse>(queryParams, Call.RecentTracks);
-            Statistics.LastfmApiCalls.Inc();
 
             return recentTracksCall.Success ? recentTracksCall.Content.Recenttracks.Attr.Total : (long?)null;
         }
 
 
-        public static string TrackToLinkedString(LastTrack track)
+        public static string TrackToLinkedString(RecentTrack track)
         {
             if (track.Url.ToString().IndexOfAny(new[] { '(', ')' }) >= 0)
             {
@@ -68,19 +81,19 @@ namespace FMBot.LastFM.Services
             }
 
             return $"[{track.Name}]({track.Url})\n" +
-                   $"By **{track.ArtistName}**" +
-                   (string.IsNullOrWhiteSpace(track.AlbumName)
+                   $"By **{track.Artist.Text}**" +
+                   (string.IsNullOrWhiteSpace(track.Album.Text)
                        ? "\n"
-                       : $" | *{track.AlbumName}*\n");
+                       : $" | *{track.Album.Text}*\n");
         }
 
-        public static string TrackToString(LastTrack track)
+        public static string TrackToString(RecentTrack track)
         {
             return $"{track.Name}\n" +
-                   $"By **{track.ArtistName}**" +
-                   (string.IsNullOrWhiteSpace(track.AlbumName)
+                   $"By **{track.Artist.Text}**" +
+                   (string.IsNullOrWhiteSpace(track.Album.Text)
                        ? "\n"
-                       : $" | *{track.AlbumName}*\n");
+                       : $" | *{track.Album.Text}*\n");
         }
 
         public static string ResponseTrackToLinkedString(ResponseTrack track)
@@ -164,7 +177,6 @@ namespace FMBot.LastFM.Services
             };
 
             var userCall = await this._lastFmApi.CallApiAsync<UserResponse>(queryParams, Call.UserInfo);
-            Statistics.LastfmApiCalls.Inc();
 
             return !userCall.Success ? null : userCall.Content.User;
         }
@@ -189,7 +201,6 @@ namespace FMBot.LastFM.Services
             };
 
             var trackCall = await this._lastFmApi.CallApiAsync<TrackResponse>(queryParams, Call.TrackInfo);
-            Statistics.LastfmApiCalls.Inc();
 
             return !trackCall.Success ? null : trackCall.Content.Track;
         }
@@ -204,7 +215,6 @@ namespace FMBot.LastFM.Services
             };
 
             var artistCall = await this._lastFmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
-            Statistics.LastfmApiCalls.Inc();
 
             return artistCall;
         }
@@ -219,7 +229,6 @@ namespace FMBot.LastFM.Services
             };
 
             var albumCall = await this._lastFmApi.CallApiAsync<AlbumResponse>(queryParams, Call.AlbumInfo);
-            Statistics.LastfmApiCalls.Inc();
 
             return albumCall;
         }
@@ -290,7 +299,6 @@ namespace FMBot.LastFM.Services
 
             if (amountOfPages == 1)
             {
-                Statistics.LastfmApiCalls.Inc();
                 return await this._lastFmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
             }
 
@@ -303,7 +311,6 @@ namespace FMBot.LastFM.Services
                     queryParams.Add("page", (i + 1).ToString());
 
                     var pageResponse = await this._lastFmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
-                    Statistics.LastfmApiCalls.Inc();
 
                     if (pageResponse.Success)
                     {
@@ -337,7 +344,6 @@ namespace FMBot.LastFM.Services
             var queryParams = new Dictionary<string, string>();
 
             var tokenCall = await this._lastFmApi.CallApiAsync<TokenResponse>(queryParams, Call.GetToken);
-            Statistics.LastfmApiCalls.Inc();
 
             return tokenCall;
         }
@@ -350,7 +356,6 @@ namespace FMBot.LastFM.Services
             };
 
             var authSessionCall = await this._lastFmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.GetAuthSession, true);
-            Statistics.LastfmApiCalls.Inc();
 
             return authSessionCall;
         }
@@ -365,7 +370,6 @@ namespace FMBot.LastFM.Services
             };
 
             var authSessionCall = await this._lastFmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.TrackLove, true);
-            Statistics.LastfmApiCalls.Inc();
 
             return authSessionCall.Success;
         }
@@ -380,7 +384,6 @@ namespace FMBot.LastFM.Services
             };
 
             var authSessionCall = await this._lastFmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.TrackUnLove, true);
-            Statistics.LastfmApiCalls.Inc();
 
             return authSessionCall.Success;
         }

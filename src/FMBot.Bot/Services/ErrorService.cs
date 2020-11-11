@@ -60,6 +60,18 @@ namespace FMBot.Bot.Services
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
+        public static void NoScrobblesFoundErrorResponse(this EmbedBuilder embed, string userName)
+        {
+            embed.WithTitle("Error while attempting get Last.fm information");
+
+            embed.WithDescription($"The user `{userName}` has no scrobbles/artists/albums/tracks on [their Last.fm profile]({Constants.LastFMUserUrl}{userName}).\n" +
+                                  $"Just signed up for last.fm and added your account in the bot? Make sure you [track your music](https://www.last.fm/about/trackmymusic), your recent tracks are not marked as private " +
+                                  $"and your Last.fm profile is showing the music that you're listening to.\n\n" +
+                                  $"Note: this error can also appear when Last.fm is having issues, in that case please try again later. Please note that .fmbot is not affiliated with Last.fm.");
+
+            embed.WithColor(DiscordConstants.WarningColorOrange);
+        }
+
         public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus? apiResponse, string message, ICommandContext context)
         {
             embed.WithTitle("Error while attempting get Last.fm information");
