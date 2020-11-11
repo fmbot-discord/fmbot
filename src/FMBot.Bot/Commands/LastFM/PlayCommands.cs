@@ -264,7 +264,7 @@ namespace FMBot.Bot.Commands.LastFM
                         if (this.Context.Guild != null && self)
                         {
                             var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingTrack(userSettings.UserId,
-                                this.Context.Guild.Id, currentTrack);
+                                this.Context.Guild.Id, currentTrack.Artist.Text, currentTrack.Name);
 
                             if (guildAlsoPlaying != null)
                             {

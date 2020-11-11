@@ -163,7 +163,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 var userPlay = new UserPlay
                 {
                     ArtistName = track.Artist.Text.ToLower(),
-                    AlbumName = !string.IsNullOrWhiteSpace(track.Album.Text) ? track.Album.Text : null,
+                    AlbumName = !string.IsNullOrWhiteSpace(track.Album.Text) ? track.Album.Text.ToLower() : null,
                     TrackName = track.Name.ToLower(),
                     UserId = userId,
                     TimePlayed = track.Date != null ? DateTime.UnixEpoch.AddSeconds(track.Date.Uts).ToUniversalTime() : DateTime.UtcNow
@@ -173,7 +173,7 @@ namespace FMBot.Bot.Services.WhoKnows
             }
         }
 
-        public async Task<string> GuildAlsoPlayingTrack(int userId, ulong discordGuildId, RecentTrack track)
+        public async Task<string> GuildAlsoPlayingTrack(int userId, ulong discordGuildId, string artistName, string trackName)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var guild = await db.Guilds
@@ -192,7 +192,7 @@ namespace FMBot.Bot.Services.WhoKnows
             {
                 var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlay userPlay);
 
-                if (userFound && userPlay.ArtistName == track.Artist.Text.ToLower() && userPlay.TrackName == track.Name.ToLower())
+                if (userFound && userPlay.ArtistName == artistName.ToLower() && userPlay.TrackName == trackName.ToLower())
                 {
                     foundUsers.Add(user);
                     userPlays.Add(userPlay);
@@ -219,6 +219,108 @@ namespace FMBot.Bot.Services.WhoKnows
             if (foundUsers.Count > 3)
             {
                 return $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this track!";
+            }
+
+            return null;
+        }
+
+        public async Task<string> GuildAlsoPlayingAlbum(int userId, ulong discordGuildId, string artistName, string albumName)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var guild = await db.Guilds
+                .Include(i => i.GuildUsers.Where(w => w.UserId != userId))
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
+
+            if (guild == null || !guild.GuildUsers.Any())
+            {
+                return null;
+            }
+
+            var foundUsers = new List<GuildUser>();
+            var userPlays = new List<UserPlay>();
+
+            foreach (var user in guild.GuildUsers)
+            {
+                var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlay userPlay);
+
+                if (userFound && userPlay.ArtistName == artistName.ToLower() && userPlay.AlbumName == albumName.ToLower())
+                {
+                    foundUsers.Add(user);
+                    userPlays.Add(userPlay);
+                }
+            }
+
+            if (!foundUsers.Any())
+            {
+                return null;
+            }
+
+            if (foundUsers.Count == 1)
+            {
+                return $"{foundUsers.First().UserName} was also listening to this album {GetTimeAgo(userPlays.First().TimePlayed)}!";
+            }
+            if (foundUsers.Count == 2)
+            {
+                return $"{foundUsers[0].UserName} and {foundUsers[1].UserName} were also recently listening to this album!";
+            }
+            if (foundUsers.Count == 3)
+            {
+                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName} and {foundUsers[2].UserName} were also recently listening to this album!";
+            }
+            if (foundUsers.Count > 3)
+            {
+                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this album!";
+            }
+
+            return null;
+        }
+
+        public async Task<string> GuildAlsoPlayingArtist(int userId, ulong discordGuildId, string artistName)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var guild = await db.Guilds
+                .Include(i => i.GuildUsers.Where(w => w.UserId != userId))
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
+
+            if (guild == null || !guild.GuildUsers.Any())
+            {
+                return null;
+            }
+
+            var foundUsers = new List<GuildUser>();
+            var userPlays = new List<UserPlay>();
+
+            foreach (var user in guild.GuildUsers)
+            {
+                var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlay userPlay);
+
+                if (userFound && userPlay.ArtistName == artistName.ToLower() && userPlay.TimePlayed > DateTime.UtcNow.AddMinutes(-10))
+                {
+                    foundUsers.Add(user);
+                    userPlays.Add(userPlay);
+                }
+            }
+
+            if (!foundUsers.Any())
+            {
+                return null;
+            }
+
+            if (foundUsers.Count == 1)
+            {
+                return $"{foundUsers.First().UserName} was also listening to this artist {GetTimeAgo(userPlays.First().TimePlayed)}!";
+            }
+            if (foundUsers.Count == 2)
+            {
+                return $"{foundUsers[0].UserName} and {foundUsers[1].UserName} were also recently listening to this artist!";
+            }
+            if (foundUsers.Count == 3)
+            {
+                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName} and {foundUsers[2].UserName} were also recently listening to this artist!";
+            }
+            if (foundUsers.Count > 3)
+            {
+                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this artist!";
             }
 
             return null;

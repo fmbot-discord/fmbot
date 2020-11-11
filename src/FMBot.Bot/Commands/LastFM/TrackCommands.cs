@@ -551,7 +551,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var footer = $"WhoKnows track requested by {userTitle} - Users with 3 plays or higher are shown";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 4) == 1 && lastIndex < DateTime.UtcNow.AddDays(-3))
+                if (rnd.Next(0, 6) == 1 && lastIndex < DateTime.UtcNow.AddDays(-15))
                 {
                     footer += $"\nMissing members? Update with {prfx}index";
                 }

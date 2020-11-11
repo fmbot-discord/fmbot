@@ -76,6 +76,21 @@ namespace FMBot.LastFM.Services
                 return 0;
             }
 
+            if (recentTracks.Any(a => a.IsNowPlaying == true))
+            {
+                var currentTrack = recentTracks.First(f => f.IsNowPlaying == true);
+                var userPlay = new UserPlay
+                {
+                    ArtistName = currentTrack.ArtistName.ToLower(),
+                    AlbumName = !string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? currentTrack.AlbumName.ToLower() : null,
+                    TrackName = currentTrack.Name.ToLower(),
+                    UserId = user.UserId,
+                    TimePlayed = DateTime.UtcNow
+                };
+
+                this._cache.Set($"{user.UserId}-last-play", userPlay, TimeSpan.FromMinutes(15));
+            }
+
             var newScrobbles = recentTracks.Content
                 .Where(w => w.TimePlayed.HasValue && w.TimePlayed.Value.DateTime > user.LastScrobbleUpdate)
                 .ToList();

@@ -600,9 +600,18 @@ namespace FMBot.Bot.Commands.LastFM
                 var footer = $"WhoKnows album requested by {userTitle}";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 4) == 1 && lastIndex < DateTime.UtcNow.AddDays(-3))
+                if (rnd.Next(0, 6) == 1 && lastIndex < DateTime.UtcNow.AddDays(-15))
                 {
                     footer += $"\nMissing members? Update with {prfx}index";
+                }
+
+                var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingAlbum(userSettings.UserId,
+                    this.Context.Guild.Id, album.Artist, album.Name);
+
+                if (guildAlsoPlaying != null)
+                {
+                    footer += "\n";
+                    footer += guildAlsoPlaying;
                 }
 
                 this._embed.WithTitle($"Who knows {albumName} in {this.Context.Guild.Name}");

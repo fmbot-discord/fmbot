@@ -819,7 +819,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var footer = $"WhoKnows artist requested by {userTitle}";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 4) == 1 && lastIndex < DateTime.UtcNow.AddDays(-3))
+                if (rnd.Next(0, 6) == 1 && lastIndex < DateTime.UtcNow.AddDays(-15))
                 {
                     footer += $"\nMissing members? Update with {prfx}index";
                 }
@@ -841,6 +841,15 @@ namespace FMBot.Bot.Commands.LastFM
                 else if (guild.GuildUsers.Count < 550)
                 {
                     footer += $"\nView server artist averages in `{prfx}artist`";
+                }
+
+                var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingArtist(userSettings.UserId,
+                    this.Context.Guild.Id, artist.Artist.Name);
+
+                if (guildAlsoPlaying != null)
+                {
+                    footer += "\n";
+                    footer += guildAlsoPlaying;
                 }
 
                 this._embed.WithTitle($"Who knows {artist.Artist.Name} in {this.Context.Guild.Name}");
