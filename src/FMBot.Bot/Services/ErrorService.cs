@@ -81,13 +81,18 @@ namespace FMBot.Bot.Services
                     embed.WithDescription("Can't retrieve data because Last.fm is having issues. Please try again later. \n" +
                                           "Please note that .fmbot isn't affiliated with Last.fm.");
                     break;
+                case ResponseStatus.LoginRequired:
+                    embed.WithDescription("Can't retrieve data because your recent tracks are marked as private in your [Last.fm privacy settings](https://www.last.fm/settings/privacy).\n" +
+                                          "Please note that .fmbot isn't affiliated with Last.fm.");
+                    break;
                 default:
                     embed.WithDescription(message);
-                    if (apiResponse != null)
-                    {
-                        embed.WithFooter($"Last.fm error code: {apiResponse}");
-                    }
                     break;
+            }
+
+            if (apiResponse != null)
+            {
+                embed.WithFooter($"Last.fm error code: {apiResponse}");
             }
 
             embed.WithColor(DiscordConstants.WarningColorOrange);

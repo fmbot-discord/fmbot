@@ -380,7 +380,7 @@ namespace FMBot.LastFM.Services
             {
                 {"artist", artistName},
                 {"track", trackName},
-                {"sk", user.SessionKeyLastFm},
+                {"sk", user.SessionKeyLastFm}
             };
 
             var authSessionCall = await this._lastFmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.TrackUnLove, true);

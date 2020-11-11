@@ -7,6 +7,8 @@ namespace FMBot.Domain
 
         public const string LastFMUserUrl = "https://www.last.fm/user/";
 
+        public const string LastFmNonExistentImageName = "2a96cbd8b46e442fc41c2b86b821562f.png";
+
         public const int InviteLinkPermissions = 52288;
 
         public const ulong BotProductionId = 356268235697553409;

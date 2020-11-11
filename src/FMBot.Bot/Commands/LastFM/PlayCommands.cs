@@ -143,7 +143,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (!recentScrobbles.Content.Recenttracks.Track.Any())
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(userSettings.UserNameLastFM);
+                    this._embed.NoScrobblesFoundErrorResponse(lastFmUserName);
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     await ReplyAsync("", false, this._embed.Build());
                     return;
@@ -285,7 +285,7 @@ namespace FMBot.Bot.Commands.LastFM
                         if (currentTrack.Image != null && currentTrack.Image.Any())
                         {
                             var image = currentTrack.Image.FirstOrDefault(f => f.Size == "extralarge");
-                            if (image != null && !string.IsNullOrWhiteSpace(image.Text))
+                            if (image != null && !string.IsNullOrWhiteSpace(image.Text) && !image.Text.Contains(Constants.LastFmNonExistentImageName))
                             {
                                 this._embed.WithThumbnailUrl(image.Text);
                             }
@@ -392,7 +392,7 @@ namespace FMBot.Bot.Commands.LastFM
                         if (track.Image != null && track.Image.Any())
                         {
                             var image = track.Image.FirstOrDefault(f => f.Size == "extralarge");
-                            if (image != null && !string.IsNullOrWhiteSpace(image.Text))
+                            if (image != null && !string.IsNullOrWhiteSpace(image.Text) && !image.Text.Contains(Constants.LastFmNonExistentImageName))
                             {
                                 this._embed.WithThumbnailUrl(image.Text);
                             }
