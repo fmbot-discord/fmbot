@@ -16,7 +16,6 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
-using Unosquare.Swan;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -166,7 +165,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var footerText = "";
 
                 footerText +=
-                    $"{userSettings.UserNameLastFM} has ";
+                    $"{lastFmUserName} has ";
 
                 switch (userSettings.FmCountType)
                 {
