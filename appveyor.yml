@@ -20,7 +20,7 @@ before_build:
 - ps: cd src
 - ps: nuget restore
 build_script:
- - dotnet publish -c Release /p:Version='{version}'
+ - dotnet publish -c Release
 artifacts:
 - path: src\FMBot.Bot\bin\$(configuration)\net5.0\publish
   name: BinaryRelease
