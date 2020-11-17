@@ -13,12 +13,6 @@ dotnet_csproj:
   assembly_version: '{version}'
   file_version: '{version}'
   informational_version: '{version}'
-assembly_info:
-  patch: true
-  file: '**\AssemblyInfo.*'
-  assembly_version: '{version}'
-  assembly_file_version: '{version}'
-  assembly_informational_version: '$(ASSEMBLY_INFORMATIONAL_VERSION)'
 nuget:
   account_feed: true
   project_feed: true
