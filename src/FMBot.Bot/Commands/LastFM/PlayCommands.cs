@@ -636,7 +636,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("streak", RunMode = RunMode.Async)]
         [Summary("Shows you your streak")]
         [UsernameSetRequired]
-        [Alias("st", "str", "combo", "cb")]
+        [Alias("str", "combo", "cb")]
         public async Task StreakAsync(params string[] extraOptions)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
