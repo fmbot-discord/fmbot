@@ -56,6 +56,11 @@ namespace FMBot.Bot.Services
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
+            if (user == null)
+            {
+                return false;
+            }
+
             return !string.IsNullOrEmpty(user.SessionKeyLastFm);
         }
 
