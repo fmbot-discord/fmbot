@@ -9,6 +9,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 
 namespace FMBot.Bot.Commands
@@ -57,17 +58,26 @@ namespace FMBot.Bot.Commands
                 }
                 else
                 {
-                    var tracks = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM);
+                    var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true);
 
-                    if (tracks == null || !tracks.Any() || !tracks.Content.Any())
+                    if (!recentScrobbles.Success || recentScrobbles.Content == null)
                     {
-                        this._embed.NoScrobblesFoundErrorResponse(tracks?.Status, prfx, userSettings.UserNameLastFM);
+                        this._embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, this.Context);
+                        this.Context.LogCommandUsed(CommandResponse.LastFmError);
                         await ReplyAsync("", false, this._embed.Build());
                         return;
                     }
 
-                    var currentTrack = tracks.Content[0];
-                    querystring = currentTrack.Name + " - " + currentTrack.ArtistName;
+                    if (!recentScrobbles.Content.RecentTracks.Track.Any())
+                    {
+                        this._embed.NoScrobblesFoundErrorResponse(userSettings.UserNameLastFM);
+                        this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                        await ReplyAsync("", false, this._embed.Build());
+                        return;
+                    }
+
+                    var currentTrack = recentScrobbles.Content.RecentTracks.Track[0];
+                    querystring = currentTrack.Name + " - " + currentTrack.Artist.Text;
                 }
 
                 try
@@ -97,7 +107,6 @@ namespace FMBot.Bot.Commands
                     }
 
                     await ReplyAsync(reply.FilterOutMentions());
-
                     this.Context.LogCommandUsed();
                 }
                 catch (Exception e)

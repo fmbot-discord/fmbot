@@ -61,18 +61,26 @@ namespace FMBot.Bot.Commands
                 }
                 else
                 {
-                    var tracks = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
+                    var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true);
 
-                    if (tracks == null || !tracks.Any() || !tracks.Content.Any())
+                    if (!recentScrobbles.Success || recentScrobbles.Content == null)
                     {
-                        this._embed.NoScrobblesFoundErrorResponse(tracks?.Status, prfx, userSettings.UserNameLastFM);
+                        this._embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, this.Context);
+                        this.Context.LogCommandUsed(CommandResponse.LastFmError);
                         await ReplyAsync("", false, this._embed.Build());
-                        this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                         return;
                     }
 
-                    var currentTrack = tracks.Content[0];
-                    querystring = $"{currentTrack.ArtistName} {currentTrack.Name}";
+                    if (!recentScrobbles.Content.RecentTracks.Track.Any())
+                    {
+                        this._embed.NoScrobblesFoundErrorResponse(userSettings.UserNameLastFM);
+                        this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                        await ReplyAsync("", false, this._embed.Build());
+                        return;
+                    }
+
+                    var currentTrack = recentScrobbles.Content.RecentTracks.Track[0];
+                    querystring = $"{currentTrack.Artist.Text} {currentTrack.Name}";
                 }
 
                 var songResult = await this._geniusService.SearchGeniusAsync(querystring);

@@ -724,23 +724,31 @@ namespace FMBot.Bot.Commands.LastFM
             }
             else
             {
-                var track = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
+                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true);
 
-                if (track == null || !track.Any() || !track.Content.Any())
+                if (!recentScrobbles.Success || recentScrobbles.Content == null)
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(track?.Status, prfx, userSettings.UserNameLastFM);
-                    await this.ReplyAsync("", false, this._embed.Build());
-                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                    this._embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, this.Context);
+                    this.Context.LogCommandUsed(CommandResponse.LastFmError);
+                    await ReplyAsync("", false, this._embed.Build());
                     return null;
                 }
 
-                var trackResult = track.Content.First();
-                var trackInfo = await this._lastFmService.GetTrackInfoAsync(trackResult.Name, trackResult.ArtistName,
+                if (!recentScrobbles.Content.RecentTracks.Track.Any())
+                {
+                    this._embed.NoScrobblesFoundErrorResponse(userSettings.UserNameLastFM);
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return null;
+                }
+
+                var trackResult = recentScrobbles.Content.RecentTracks.Track[0];
+                var trackInfo = await this._lastFmService.GetTrackInfoAsync(trackResult.Name, trackResult.Artist.Text,
                     userSettings.UserNameLastFM);
 
                 if (trackInfo == null)
                 {
-                    this._embed.WithDescription($"Last.fm did not return a result for **{trackResult.Name}** by **{trackResult.ArtistName}**.\n" +
+                    this._embed.WithDescription($"Last.fm did not return a result for **{trackResult.Name}** by **{trackResult.Artist.Text}**.\n" +
                                                 $"This usually happens on recently released tracks. Please try again later.");
                     await this.ReplyAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.NotFound);

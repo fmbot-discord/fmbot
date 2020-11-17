@@ -59,23 +59,29 @@ namespace FMBot.Bot.Commands
                 }
                 else
                 {
-                    var tracks = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
+                    var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true);
 
-                    if (tracks == null || !tracks.Any() || !tracks.Content.Any())
+                    if (!recentScrobbles.Success || recentScrobbles.Content == null)
                     {
-                        this._embed.NoScrobblesFoundErrorResponse(tracks?.Status, prfx, userSettings.UserNameLastFM);
+                        this._embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, this.Context);
+                        this.Context.LogCommandUsed(CommandResponse.LastFmError);
+                        await ReplyAsync("", false, this._embed.Build());
+                        return;
+                    }
+
+                    if (!recentScrobbles.Content.RecentTracks.Track.Any())
+                    {
+                        this._embed.NoScrobblesFoundErrorResponse(userSettings.UserNameLastFM);
                         this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                         await ReplyAsync("", false, this._embed.Build());
                         return;
                     }
 
-                    var currentTrack = tracks.Content[0];
+                    var currentTrack = recentScrobbles.Content.RecentTracks.Track[0];
 
-                    var trackName = string.IsNullOrWhiteSpace(currentTrack.Name) ? null : currentTrack.Name;
-                    var artistName = string.IsNullOrWhiteSpace(currentTrack.ArtistName) ? null : currentTrack.ArtistName;
-                    var albumName = string.IsNullOrWhiteSpace(currentTrack.AlbumName) ? null : currentTrack.AlbumName;
+                    var albumName = string.IsNullOrWhiteSpace(currentTrack.Album?.Text) ? null : currentTrack.Album.Text;
 
-                    querystring = $"{trackName} {artistName} {albumName}";
+                    querystring = $"{currentTrack.Name} {currentTrack.Artist.Text} {albumName}";
                 }
 
                 var item = await this._spotifyService.GetSearchResultAsync(querystring);

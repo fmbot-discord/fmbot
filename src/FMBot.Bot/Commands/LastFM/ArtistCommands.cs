@@ -299,7 +299,12 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             this._embed.WithTitle($"Your top tracks for '{artistInfo.Name}'");
-            this._embed.WithUrl($"{Constants.LastFMUserUrl}{user.UserNameLastFM}/library/music/{UrlEncoder.Default.Encode(artistInfo.Name)}");
+
+            var url = $"{Constants.LastFMUserUrl}{user.UserNameLastFM}/library/music/{UrlEncoder.Default.Encode(artistInfo.Name)}";
+            if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+            {
+                this._embed.WithUrl(url);
+            }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
@@ -389,7 +394,12 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             this._embed.WithTitle($"Your top albums for '{artistInfo.Name}'");
-            this._embed.WithUrl($"{Constants.LastFMUserUrl}{user.UserNameLastFM}/library/music/{UrlEncoder.Default.Encode(artistInfo.Name)}");
+
+            var url = $"{Constants.LastFMUserUrl}{user.UserNameLastFM}/library/music/{UrlEncoder.Default.Encode(artistInfo.Name)}";
+            if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+            {
+                this._embed.WithUrl(url);
+            }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
@@ -1094,17 +1104,25 @@ namespace FMBot.Bot.Commands.LastFM
             }
             else
             {
-                var track = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
+                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true);
 
-                if (track == null || !track.Any() || !track.Content.Any())
+                if (!recentScrobbles.Success || recentScrobbles.Content == null)
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(track?.Status, prfx, userSettings.UserNameLastFM);
+                    this._embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, this.Context);
+                    this.Context.LogCommandUsed(CommandResponse.LastFmError);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return null;
+                }
+
+                if (!recentScrobbles.Content.RecentTracks.Track.Any())
+                {
+                    this._embed.NoScrobblesFoundErrorResponse(userSettings.UserNameLastFM);
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     await ReplyAsync("", false, this._embed.Build());
                     return null;
                 }
 
-                artist = track.Content.First().ArtistName;
+                artist = recentScrobbles.Content.RecentTracks.Track[0].Artist.Text;
             }
 
             return artist;
