@@ -130,7 +130,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(lastFmUserName);
+                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(lastFmUserName, useCache: true);
 
                 if (!recentScrobbles.Success || recentScrobbles.Content == null)
                 {
@@ -140,7 +140,7 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                if (!recentScrobbles.Content.Recenttracks.Track.Any())
+                if (!recentScrobbles.Content.RecentTracks.Track.Any())
                 {
                     this._embed.NoScrobblesFoundErrorResponse(lastFmUserName);
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
@@ -148,15 +148,15 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                var currentTrack = recentScrobbles.Content.Recenttracks.Track[0];
-                var previousTrack = recentScrobbles.Content.Recenttracks.Track[1];
+                var currentTrack = recentScrobbles.Content.RecentTracks.Track[0];
+                var previousTrack = recentScrobbles.Content.RecentTracks.Track[1];
 
                 if (self)
                 {
                     this._whoKnowsPlayService.AddRecentPlayToCache(userSettings.UserId, currentTrack);
                 }
 
-                var playCount = recentScrobbles.Content.Recenttracks.Attr.Total;
+                var playCount = recentScrobbles.Content.RecentTracks.Attr.Total;
 
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
                 var embedTitle = self ? userTitle : $"{lastFmUserName}, requested by {userTitle}";
@@ -355,7 +355,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var tracks = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFm, amount);
+                var tracks = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFm, amount, useCache: true);
 
                 if (!tracks.Success || tracks.Content == null)
                 {
@@ -365,7 +365,7 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                if (!tracks.Content.Recenttracks.Track.Any())
+                if (!tracks.Content.RecentTracks.Track.Any())
                 {
                     this._embed.NoScrobblesFoundErrorResponse(userSettings.UserNameLastFm);
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
@@ -382,9 +382,9 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithAuthor(this._embedAuthor);
 
                 var fmRecentText = "";
-                for (var i = 0; i < tracks.Content.Recenttracks.Track.Count(); i++)
+                for (var i = 0; i < tracks.Content.RecentTracks.Track.Count(); i++)
                 {
-                    var track = tracks.Content.Recenttracks.Track[i];
+                    var track = tracks.Content.RecentTracks.Track[i];
 
                     if (i == 0)
                     {
@@ -411,16 +411,16 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(fmRecentText);
 
                 string footerText;
-                var firstTrack = tracks.Content.Recenttracks.Track[0];
+                var firstTrack = tracks.Content.RecentTracks.Track[0];
                 if (firstTrack.Attr != null && firstTrack.Attr.Nowplaying)
                 {
                     footerText =
-                        $"{userSettings.UserNameLastFm} has {tracks.Content.Recenttracks.Attr.Total} scrobbles | Now Playing";
+                        $"{userSettings.UserNameLastFm} has {tracks.Content.RecentTracks.Attr.Total} scrobbles | Now Playing";
                 }
                 else
                 {
                     footerText =
-                        $"{userSettings.UserNameLastFm} has {tracks.Content.Recenttracks.Attr.Total} scrobbles";
+                        $"{userSettings.UserNameLastFm} has {tracks.Content.RecentTracks.Attr.Total} scrobbles";
 
                     if ((firstTrack.Attr == null || !firstTrack.Attr.Nowplaying) && firstTrack.Date != null)
                     {

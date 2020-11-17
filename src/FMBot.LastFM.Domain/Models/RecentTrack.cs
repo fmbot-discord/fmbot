@@ -4,12 +4,12 @@ using System.Text.Json.Serialization;
 
 namespace FMBot.LastFM.Domain.Models
 {
-    public class PlayResponse
+    public class RecentTracksResponse
     {
-        public Recenttracks Recenttracks { get; set; }
+        public RecentTracks RecentTracks { get; set; }
     }
 
-    public class Recenttracks
+    public class RecentTracks
     {
         [JsonPropertyName("@attr")]
         public Attr Attr { get; set; }

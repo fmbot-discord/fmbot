@@ -32,6 +32,7 @@ namespace FMBot.Bot.Services
                 .Where(w => w.LastFMUserName != null || w.FriendUser.UserNameLastFM != null)
                 .Select(
                     s => s.LastFMUserName ?? s.FriendUser.UserNameLastFM)
+                .OrderBy(o => o)
                 .ToList();
 
             return friends;

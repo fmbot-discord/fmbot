@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 
 namespace FMBot.LastFM.Services
@@ -20,14 +22,15 @@ namespace FMBot.LastFM.Services
     public class LastFmService
     {
         private readonly LastfmClient _lastFmClient;
-
+        private readonly IMemoryCache _cache;
         private readonly ILastfmApi _lastFmApi;
 
-        public LastFmService(IConfigurationRoot configuration, ILastfmApi lastFmApi)
+        public LastFmService(IConfigurationRoot configuration, ILastfmApi lastFmApi, IMemoryCache cache)
         {
             this._lastFmClient =
                 new LastfmClient(configuration.GetSection("LastFm:Key").Value, configuration.GetSection("LastFm:Secret").Value);
             this._lastFmApi = lastFmApi;
+            this._cache = cache;
         }
 
         // Recent scrobbles
@@ -40,7 +43,7 @@ namespace FMBot.LastFM.Services
         }
 
         // Recent scrobbles
-        public async Task<Response<PlayResponse>> GetRecentTracksAsync(string lastFmUserName, int count = 2)
+        public async Task<Response<RecentTracksResponse>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false)
         {
             var queryParams = new Dictionary<string, string>
             {
@@ -48,12 +51,30 @@ namespace FMBot.LastFM.Services
                 {"limit", count.ToString()}
             };
 
-            var recentTracksCall = await this._lastFmApi.CallApiAsync<PlayResponse>(queryParams, Call.RecentTracks);
+            if (useCache)
+            {
+                var cachedRecentTracks = this._cache.TryGetValue($"{lastFmUserName}-lastfm-recent-tracks", out RecentTracksResponse recentTrackResponse);
+                if (cachedRecentTracks && recentTrackResponse.RecentTracks.Track.Any() && recentTrackResponse.RecentTracks.Track.Length >= count)
+                {
+                    return new Response<RecentTracksResponse>
+                    {
+                        Content = recentTrackResponse,
+                        Success = true
+                    };
+                }
+            }
+
+            var recentTracksCall = await this._lastFmApi.CallApiAsync<RecentTracksResponse>(queryParams, Call.RecentTracks);
+
+            if (recentTracksCall.Success)
+            {
+                this._cache.Set($"{lastFmUserName}-lastfm-recent-tracks", recentTracksCall.Content, TimeSpan.FromSeconds(16));
+            }
 
             return recentTracksCall;
         }
 
-        // Recent scrobbles
+        // Scrobble count from a certain unix timestamp
         public async Task<long?> GetScrobbleCountFromDateAsync(string lastFmUserName, long? unixTimestamp)
         {
             var queryParams = new Dictionary<string, string>
@@ -67,9 +88,9 @@ namespace FMBot.LastFM.Services
                 queryParams.Add("from", unixTimestamp.ToString());
             }
 
-            var recentTracksCall = await this._lastFmApi.CallApiAsync<PlayResponse>(queryParams, Call.RecentTracks);
+            var recentTracksCall = await this._lastFmApi.CallApiAsync<RecentTracksResponse>(queryParams, Call.RecentTracks);
 
-            return recentTracksCall.Success ? recentTracksCall.Content.Recenttracks.Attr.Total : (long?)null;
+            return recentTracksCall.Success ? recentTracksCall.Content.RecentTracks.Attr.Total : (long?)null;
         }
 
 
@@ -119,12 +140,9 @@ namespace FMBot.LastFM.Services
                        : $" | *{track.Album.Title}*\n");
         }
 
-        public static string TrackToOneLinedString(LastTrack track)
+        public static string TrackToOneLinedString(RecentTrack track)
         {
-            return $"{track.Name} By **{track.ArtistName}**" +
-                   (string.IsNullOrWhiteSpace(track.AlbumName)
-                       ? ""
-                       : $" | *{track.AlbumName}*");
+            return $"**{track.Name}** by **{track.Artist.Text}**";
         }
 
         public static string TagsToLinkedString(Tags tags)

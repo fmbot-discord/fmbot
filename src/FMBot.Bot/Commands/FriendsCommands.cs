@@ -93,42 +93,40 @@ namespace FMBot.Bot.Commands
                 var embedDescription = "";
                 await friends.ParallelForEachAsync(async friend =>
                 {
-                    var tracks = await this._lastFmService.GetRecentScrobblesAsync(friend, 1);
+                    var tracks = await this._lastFmService.GetRecentTracksAsync(friend, useCache: true);
 
                     string track;
-                    string friendTitle = friend;
-                    if (!tracks.Success)
+                    string friendTitle = "";
+                    if (!tracks.Success || tracks.Content == null)
                     {
                         track = "Friend could not be retrieved";
                     }
-                    else if (tracks?.Any() != true)
+                    else if (!tracks.Content.RecentTracks.Track.Any())
                     {
                         track = "No scrobbles found.";
                     }
                     else
                     {
-                        var lastTrack = tracks.Content[0];
+                        var lastTrack = tracks.Content.RecentTracks.Track[0];
                         track = LastFmService.TrackToOneLinedString(lastTrack);
-                        if (lastTrack.IsNowPlaying == true)
+                        if (lastTrack.Attr != null && lastTrack.Attr.Nowplaying)
                         {
-                            friendTitle += " (Now Playing)";
+                            friendTitle += "🎶";
+                        }
+                        else if (lastTrack.Date != null)
+                        {
+                            var dateTime = DateTime.UnixEpoch.AddSeconds(lastTrack.Date.Uts).ToUniversalTime();
+                            friendTitle += $"({StringExtensions.GetTimeAgoShortString(dateTime)})";
                         }
 
-                        if (friends.Count <= 5)
-                        {
-                            var userInfo = await this._lastFmService.GetUserInfoAsync(friend);
-                            totalPlaycount += userInfo.Content.Playcount;
-                        }
+                        totalPlaycount += (int)tracks.Content.RecentTracks.Attr.Total;
                     }
 
-                    embedDescription += $"[{friendTitle}]({Constants.LastFMUserUrl}{friend}) - {track} \n";
-                });
+                    embedDescription += $"**[{friend}]({Constants.LastFMUserUrl}{friend})** {friendTitle} - {track} \n";
+                }, maxDegreeOfParallelism: 3);
 
-                if (friends.Count <= 5)
-                {
-                    this._embedFooter.WithText(embedFooterText + totalPlaycount.ToString("0"));
-                    this._embed.WithFooter(this._embedFooter);
-                }
+                this._embedFooter.WithText(embedFooterText + totalPlaycount.ToString("0"));
+                this._embed.WithFooter(this._embedFooter);
 
                 this._embed.WithDescription(embedDescription);
 

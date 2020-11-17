@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.LastFM.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -206,7 +207,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
             if (foundUsers.Count == 1)
             {
-                return $"{foundUsers.First().UserName} was also listening to this track {GetTimeAgo(userPlays.First().TimePlayed)}!";
+                return $"{foundUsers.First().UserName} was also listening to this track {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!";
             }
             if (foundUsers.Count == 2)
             {
@@ -257,7 +258,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
             if (foundUsers.Count == 1)
             {
-                return $"{foundUsers.First().UserName} was also listening to this album {GetTimeAgo(userPlays.First().TimePlayed)}!";
+                return $"{foundUsers.First().UserName} was also listening to this album {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!";
             }
             if (foundUsers.Count == 2)
             {
@@ -308,7 +309,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
             if (foundUsers.Count == 1)
             {
-                return $"{foundUsers.First().UserName} was also listening to this artist {GetTimeAgo(userPlays.First().TimePlayed)}!";
+                return $"{foundUsers.First().UserName} was also listening to this artist {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!";
             }
             if (foundUsers.Count == 2)
             {
@@ -324,35 +325,6 @@ namespace FMBot.Bot.Services.WhoKnows
             }
 
             return null;
-        }
-
-        private string GetTimeAgo(DateTime timeAgo)
-        {
-            var ts = new TimeSpan(DateTime.UtcNow.Ticks - timeAgo.Ticks);
-            var delta = Math.Abs(ts.TotalSeconds);
-
-            if (delta < 60)
-            {
-                return ts.Seconds == 1 ? "one second ago" : ts.Seconds + " seconds ago";
-            }
-            if (delta < 60 * 2)
-            {
-                return "a minute ago";
-            }
-            if (delta < 45 * 60)
-            {
-                return ts.Minutes + " minutes ago";
-            }
-            if (delta < 90 * 60)
-            {
-                return "an hour ago";
-            }
-            if (delta < 24 * 60 * 60)
-            {
-                return ts.Hours + " hours ago";
-            }
-
-            return "more then a day ago";
         }
 
         private class ArtistUserPlay
