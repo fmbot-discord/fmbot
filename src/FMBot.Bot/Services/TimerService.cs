@@ -272,13 +272,13 @@ namespace FMBot.Bot.Services
                     var timeToUpdate = DateTime.UtcNow.AddHours(-ConfigData.Data.LastFm.UserUpdateFrequencyInHours.Value);
 
                     var usersToUpdate = await this._updateService.GetOutdatedUsers(timeToUpdate);
-                    Log.Information($"Found {usersToUpdate.Count} outdated users, adding them to queue");
+                    Log.Information($"Found {usersToUpdate.Count} outdated users, adding them to update queue");
 
                     this._updateService.AddUsersToUpdateQueue(usersToUpdate);
                 },
                 null,
                 TimeSpan.FromMinutes(5),
-                TimeSpan.FromHours(4));
+                TimeSpan.FromHours(8));
 
             this._userIndexTimer = new Timer(async _ =>
                 {
