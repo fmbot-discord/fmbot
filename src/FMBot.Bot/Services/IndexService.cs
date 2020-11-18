@@ -101,6 +101,15 @@ namespace FMBot.Bot.Services
             {
                 if (!guild.GuildUsers.Select(g => g.UserId).Contains(user.UserId))
                 {
+                    var existingGuildUser = await db.GuildUsers
+                        .AsQueryable()
+                        .FirstOrDefaultAsync(a => a.GuildId == guild.GuildId && a.UserId == user.UserId);
+
+                    if (existingGuildUser != null)
+                    {
+                        return existingGuildUser;
+                    }
+
                     var guildUserToAdd = new GuildUser
                     {
                         GuildId = guild.GuildId,
@@ -123,6 +132,12 @@ namespace FMBot.Bot.Services
             catch (Exception e)
             {
                 Log.Error(e, "Error while attempting to add user {userId} to guild {guildId}", user.UserId, guild.GuildId);
+                return new GuildUser
+                {
+                    GuildId = guild.GuildId,
+                    UserId = user.UserId,
+                    UserName = discordGuildUser.Nickname ?? discordGuildUser.Username
+                };
             }
 
             return guild.GuildUsers.First(f => f.UserId == user.UserId);

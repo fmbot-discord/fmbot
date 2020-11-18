@@ -131,10 +131,7 @@ namespace FMBot.Bot
                 .AddTransient<LastFmService>();
 
             services.AddDbContextFactory<FMBotDbContext>(b =>
-                b.UseNpgsql(ConfigData.Data.Database.ConnectionString, builder =>
-                {
-                    builder.EnableRetryOnFailure(3, TimeSpan.FromSeconds(10), null);
-                }));
+                b.UseNpgsql(ConfigData.Data.Database.ConnectionString));
 
             services.AddMemoryCache();
         }
