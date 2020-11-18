@@ -70,9 +70,14 @@ namespace FMBot.LastFM.Services
                 Log.Information($"Added {user.UserNameLastFM} to update failure list");
                 return 0;
             }
-            if(!recentTracks.Content.Any())
+
+            await using var connection = new NpgsqlConnection(this._connectionString);
+            await connection.OpenAsync();
+
+            if (!recentTracks.Content.Any())
             {
                 Log.Information("Update: No new tracks for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+                await SetUserUpdateTime(user, DateTime.UtcNow, connection);
                 return 0;
             }
 
@@ -94,9 +99,6 @@ namespace FMBot.LastFM.Services
             var newScrobbles = recentTracks.Content
                 .Where(w => w.TimePlayed.HasValue && w.TimePlayed.Value.DateTime > user.LastScrobbleUpdate)
                 .ToList();
-
-            await using var connection = new NpgsqlConnection(this._connectionString);
-            await connection.OpenAsync();
 
             await UpdatePlaysForUser(user, recentTracks, connection);
 
