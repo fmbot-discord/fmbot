@@ -3,6 +3,7 @@ using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using BotListAPI;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -103,6 +104,7 @@ namespace FMBot.Bot.Services
             PrepareCacheFolder();
 
             await this.StartMetricsServer();
+            await this.StartBotSiteUpdater();
         }
 
 
@@ -137,6 +139,7 @@ namespace FMBot.Bot.Services
                 Log.Information("Delaying metric server startup");
                 Thread.Sleep(TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds));
             }
+
             Log.Information("Starting metrics server");
 
             var prometheusPort = 4444;
@@ -152,6 +155,59 @@ namespace FMBot.Bot.Services
             server.Start();
 
             Log.Information($"Prometheus running on localhost:{prometheusPort}/metrics");
+            return Task.CompletedTask;
+        }
+
+        private Task StartBotSiteUpdater()
+        {
+            Thread.Sleep(TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds));
+
+            if (!this._client.CurrentUser.Id.Equals(Constants.BotProductionId))
+            {
+                Log.Information("Cancelled botlist updater, non-production bot detected");
+                return Task.CompletedTask;
+            }
+
+            Log.Information("Starting botlist updater");
+
+            var listConfig = new ListConfig();
+
+            if (ConfigData.Data.BotLists != null)
+            {
+                if (!string.IsNullOrWhiteSpace(ConfigData.Data.BotLists.TopGgApiToken))
+                {
+                    listConfig.TopGG = ConfigData.Data.BotLists.TopGgApiToken;
+                }
+                if (!string.IsNullOrWhiteSpace(ConfigData.Data.BotLists.BotsForDiscordToken))
+                {
+                    listConfig.BotsForDiscord = ConfigData.Data.BotLists.BotsForDiscordToken;
+                }
+                if (!string.IsNullOrWhiteSpace(ConfigData.Data.BotLists.DiscordBoatsToken))
+                {
+                    listConfig.DiscordBoats = ConfigData.Data.BotLists.DiscordBoatsToken;
+                }
+                if (!string.IsNullOrWhiteSpace(ConfigData.Data.BotLists.BotsOnDiscordToken))
+                {
+                    listConfig.BotsOnDiscord = ConfigData.Data.BotLists.BotsOnDiscordToken;
+                }
+            }
+            else
+            {
+                Log.Information("Cancelled botlist updater, no botlist tokens in config");
+                return Task.CompletedTask;
+            }
+
+            try
+            {
+                var listClient = new ListClient(this._client, listConfig);
+
+                listClient.Start();
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "Exception while attempting to start botlist updater!");
+            }
+
             return Task.CompletedTask;
         }
 

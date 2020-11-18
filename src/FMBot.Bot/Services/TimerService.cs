@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
-using DiscordBotsList.Api;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Domain;
@@ -22,7 +21,6 @@ namespace FMBot.Bot.Services
     public class TimerService
     {
         private readonly Timer _timer;
-        private readonly Timer _externalStatsTimer;
         private readonly Timer _internalStatsTimer;
         private readonly Timer _userUpdateTimer;
         private readonly Timer _userIndexTimer;
@@ -231,33 +229,6 @@ namespace FMBot.Bot.Services
                 null,
                 TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds + 5),
                 TimeSpan.FromMinutes(2));
-
-            this._externalStatsTimer = new Timer(async _ =>
-                {
-                    if (client.CurrentUser.Id.Equals(Constants.BotProductionId) && ConfigData.Data.BotLists != null && !string.IsNullOrEmpty(ConfigData.Data.BotLists.TopGgApiToken))
-                    {
-                        Log.Information("Updating top.gg server count");
-                        var dblApi = new AuthDiscordBotListApi(Constants.BotProductionId, ConfigData.Data.BotLists.TopGgApiToken);
-
-                        try
-                        {
-                            var me = await dblApi.GetMeAsync();
-                            await me.UpdateStatsAsync(client.Guilds.Count);
-                        }
-                        catch (Exception e)
-                        {
-                            Log.Error("Exception while updating top.gg count!", e);
-                        }
-                    }
-                    else
-                    {
-                        Log.Information("Non-production bot found or top.gg token not entered, cancelling top.gg server count updater");
-                        this._externalStatsTimer.Change(Timeout.Infinite, Timeout.Infinite);
-                    }
-                },
-                null,
-                TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds + 10),
-                TimeSpan.FromMinutes(30));
 
             this._userUpdateTimer = new Timer(async _ =>
                 {

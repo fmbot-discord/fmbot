@@ -321,7 +321,7 @@ namespace FMBot.LastFM.Services
             }
 
             var response = await this._lastFmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
-            if (response.Success && response.Content.TopTracks.Track.Count == 1000)
+            if (response.Success && response.Content.TopTracks.Track.Count > 998)
             {
                 for (var i = 1; i < amountOfPages; i++)
                 {
