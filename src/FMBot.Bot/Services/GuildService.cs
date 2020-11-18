@@ -11,6 +11,7 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace FMBot.Bot.Services
 {
@@ -36,9 +37,31 @@ namespace FMBot.Bot.Services
             await using var db = this._contextFactory.CreateDbContext();
             return await db.Guilds
                 .AsQueryable()
+                .Include(i => i.GuildBlockedUsers)
+                    .ThenInclude(t => t.User)
                 .Include(i => i.GuildUsers)
-                .ThenInclude(t => t.User)
+                    .ThenInclude(t => t.User)
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guildId);
+        }
+
+        public List<GuildUser> FilterGuildUsersAsync(Guild guild)
+        {
+            var guildUsers = guild.GuildUsers.ToList();
+            if (guild.ActivityThresholdDays.HasValue)
+            {
+                guildUsers = guildUsers.Where(w =>
+                    w.User.LastUsed != null &&
+                    w.User.LastUsed >= DateTime.UtcNow.AddDays(-guild.ActivityThresholdDays.Value))
+                    .ToList();
+            }
+            if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any())
+            {
+                guildUsers = guildUsers.Where(w =>
+                    !guild.GuildBlockedUsers.Select(s => s.UserId).Contains(w.UserId))
+                    .ToList();
+            }
+
+            return guildUsers.ToList();
         }
 
         // Get user from guild with ID
@@ -216,6 +239,102 @@ namespace FMBot.Bot.Services
 
                 return existingGuild.DisableSupporterMessages;
             }
+        }
+
+        public async Task<bool> SetWhoKnowsThresholdDaysAsync(IGuild guild, int? days)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingGuild = await db.Guilds
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+
+            if (existingGuild == null)
+            {
+                return false;
+            }
+
+            existingGuild.Name = guild.Name;
+            existingGuild.ActivityThresholdDays = days;
+            existingGuild.CrownsActivityThresholdDays = days;
+
+            db.Entry(existingGuild).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            return true;
+        }
+
+        public async Task<bool> BlockGuildUserAsync(IGuild guild, int userId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingGuild = await db.Guilds
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+
+            if (existingGuild == null)
+            {
+                return false;
+            }
+
+            var existingBlockedUser = await db.GuildBlockedUsers
+                .AsQueryable()
+                .FirstOrDefaultAsync(a => a.GuildId == existingGuild.GuildId && a.UserId == userId);
+
+            if (existingBlockedUser != null)
+            {
+                existingBlockedUser.BlockedFromWhoKnows = true;
+                existingBlockedUser.BlockedFromCrowns = true;
+
+                db.Entry(existingBlockedUser).State = EntityState.Modified;
+
+                return true;
+            }
+
+            var blockedGuildUserToAdd = new GuildBlockedUser
+            {
+                GuildId = existingGuild.GuildId,
+                UserId = userId,
+                BlockedFromCrowns = true,
+                BlockedFromWhoKnows = true
+            };
+
+            await db.GuildBlockedUsers.AddAsync(blockedGuildUserToAdd);
+            await db.SaveChangesAsync();
+
+            db.Entry(blockedGuildUserToAdd).State = EntityState.Detached;
+
+            Log.Information("Added blocked user {userId} to guild {guildName}", userId, guild.Name);
+
+            return true;
+        }
+        
+        public async Task<bool> UnBlockGuildUserAsync(IGuild guild, int userId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingGuild = await db.Guilds
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+
+            if (existingGuild == null)
+            {
+                return false;
+            }
+
+            var existingBlockedUser = await db.GuildBlockedUsers
+                .AsQueryable()
+                .FirstOrDefaultAsync(a => a.GuildId == existingGuild.GuildId && a.UserId == userId);
+
+            if (existingBlockedUser == null)
+            {
+                return true;
+            }
+
+            db.GuildBlockedUsers.Remove(existingBlockedUser);
+            await db.SaveChangesAsync();
+
+            Log.Information("Removed blocked user {userId} from guild {guildName}", userId, guild.Name);
+
+            return true;
         }
 
         public async Task SetGuildPrefixAsync(IGuild guild, string prefix)

@@ -32,6 +32,12 @@ namespace FMBot.Persistence.Domain.Models
 
         public bool? DisableSupporterMessages { get; set; }
 
+        public int? ActivityThresholdDays { get; set; }
+
+        public int? CrownsActivityThresholdDays { get; set; }
+
         public ICollection<GuildUser> GuildUsers { get; set; }
+
+        public ICollection<GuildBlockedUser> GuildBlockedUsers { get; set; }
     }
 }

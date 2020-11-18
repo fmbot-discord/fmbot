@@ -43,7 +43,7 @@ namespace FMBot.Bot.Commands
         [Summary("Shares a link to a Spotify track based on what a user is listening to")]
         [Alias("sp", "s", "spotifyfind", "spotifysearch")]
         [UsernameSetRequired]
-        public async Task SpotifyAsync([Remainder] string searchValue)
+        public async Task SpotifyAsync([Remainder] string searchValue = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;

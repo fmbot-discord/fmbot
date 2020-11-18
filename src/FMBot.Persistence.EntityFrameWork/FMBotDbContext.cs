@@ -8,6 +8,7 @@ namespace FMBot.Persistence.EntityFrameWork
     {
         public virtual DbSet<Friend> Friends { get; set; }
         public virtual DbSet<Guild> Guilds { get; set; }
+        public virtual DbSet<GuildBlockedUser> GuildBlockedUsers { get; set; }
         public virtual DbSet<GuildUser> GuildUsers { get; set; }
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<Supporter> Supporters { get; set; }
@@ -87,6 +88,19 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.HasOne(sc => sc.User)
                     .WithMany(s => s.GuildUsers)
+                    .HasForeignKey(sc => sc.UserId);
+            });
+
+            modelBuilder.Entity<GuildBlockedUser>(entity =>
+            {
+                entity.HasKey(e => new { e.GuildId, e.UserId });
+
+                entity.HasOne(sc => sc.Guild)
+                    .WithMany(s => s.GuildBlockedUsers)
+                    .HasForeignKey(sc => sc.GuildId);
+
+                entity.HasOne(sc => sc.User)
+                    .WithMany(s => s.GuildBlockedUsers)
                     .HasForeignKey(sc => sc.UserId);
             });
 

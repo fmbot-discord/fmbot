@@ -67,7 +67,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("stats", RunMode = RunMode.Async)]
         [Summary("Displays user stats related to Last.fm and .fmbot")]
         [UsernameSetRequired]
-        public async Task StatsAsync([Remainder] string userOptions)
+        public async Task StatsAsync([Remainder] string userOptions = null)
         {
             var user = await this._userService.GetFullUserAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -242,7 +242,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             userSettingsToAdd = this._userService.SetSettings(userSettingsToAdd, otherSettings);
 
-            this._userService.SetLastFm(this.Context.User, userSettingsToAdd);
+            await this._userService.SetLastFm(this.Context.User, userSettingsToAdd);
 
             var setReply = $"Your Last.fm name has been set to '{lastFmUserName}' and your .fm mode to '{userSettingsToAdd.FmEmbedType}'";
             if (userSettingsToAdd.FmCountType != null)

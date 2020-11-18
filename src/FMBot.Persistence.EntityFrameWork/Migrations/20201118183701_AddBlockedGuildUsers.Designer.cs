@@ -3,15 +3,17 @@ using System;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace FMBot.Persistence.EntityFrameWork.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    partial class FMBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20201118183701_AddBlockedGuildUsers")]
+    partial class AddBlockedGuildUsers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -256,10 +258,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnName("guild_id")
                         .UseIdentityByDefaultColumn();
 
-                    b.Property<int?>("ActivityThresholdDays")
-                        .HasColumnType("integer")
-                        .HasColumnName("activity_threshold_days");
-
                     b.Property<bool?>("Blacklisted")
                         .HasColumnType("boolean")
                         .HasColumnName("blacklisted");
@@ -268,9 +266,9 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("chart_time_period");
 
-                    b.Property<int?>("CrownsActivityThresholdDays")
+                    b.Property<int?>("CrownsEligibleThresholdDays")
                         .HasColumnType("integer")
-                        .HasColumnName("crowns_activity_threshold_days");
+                        .HasColumnName("crowns_eligible_threshold_days");
 
                     b.Property<bool?>("DisableSupporterMessages")
                         .HasColumnType("boolean")
@@ -311,6 +309,10 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Property<bool?>("TitlesEnabled")
                         .HasColumnType("boolean")
                         .HasColumnName("titles_enabled");
+
+                    b.Property<int?>("WhoKnowsEligibleThresholdDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("who_knows_eligible_threshold_days");
 
                     b.HasKey("GuildId")
                         .HasName("pk_guilds");

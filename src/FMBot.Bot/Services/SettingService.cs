@@ -233,6 +233,21 @@ namespace FMBot.Bot.Services
             return settingsModel;
         }
 
+        public async Task<User> GetDifferentUser(string searchValue)
+        {
+            var otherUser = await GetUserFromString(searchValue);
+
+            if (otherUser == null)
+            {
+                await using var db = this._contextFactory.CreateDbContext();
+                return await db.Users
+                    .AsQueryable()
+                    .FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == searchValue.ToLower());
+            }
+
+            return otherUser;
+        }
+
         public async Task<User> GetUserFromString(string value)
         {
             if (!value.Contains("<@") && value.Length != 18)

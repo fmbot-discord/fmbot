@@ -80,7 +80,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays current album.")]
         [Alias("ab")]
         [UsernameSetRequired]
-        public async Task AlbumAsync([Remainder] string albumValues)
+        public async Task AlbumAsync([Remainder] string albumValues = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -172,7 +172,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays album plays.")]
         [Alias("abp", "albumplay", "abplays", "albump")]
         [UsernameSetRequired]
-        public async Task AlbumPlaysAsync([Remainder] string albumValues)
+        public async Task AlbumPlaysAsync([Remainder] string albumValues = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -232,7 +232,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays current album cover.")]
         [Alias("abc", "co", "albumcover")]
         [UsernameSetRequired]
-        public async Task AlbumCoverAsync([Remainder] string albumValues)
+        public async Task AlbumCoverAsync([Remainder] string albumValues = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -364,7 +364,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays top albums.")]
         [Alias("abl", "abs", "tab", "albumlist", "albums", "albumslist")]
         [UsernameSetRequired]
-        public async Task TopAlbumsAsync([Remainder] string extraOptions)
+        public async Task TopAlbumsAsync([Remainder] string extraOptions = null)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -490,7 +490,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Shows what other users listen to the same album in your server")]
         [Alias("wa", "wka", "wkab", "wab", "wkab", "wk album", "whoknows album")]
         [UsernameSetRequired]
-        public async Task WhoKnowsAsync([Remainder] string albumValues)
+        public async Task WhoKnowsAsync([Remainder] string albumValues = null)
         {
             if (this._guildService.CheckIfDM(this.Context))
             {
@@ -571,6 +571,8 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 var guild = await guildTask;
 
+                var filteredGuildUsers = this._guildService.FilterGuildUsersAsync(guild);
+
                 var currentUser = await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), userSettings);
 
                 if (!guild.GuildUsers.Select(s => s.UserId).Contains(userSettings.UserId))
@@ -580,7 +582,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this._indexService.UpdateUserName(currentUser, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId));
 
-                var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(this.Context, guild.GuildUsers, album.Artist, album.Name);
+                var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(this.Context, filteredGuildUsers, album.Artist, album.Name);
 
                 if (album.Userplaycount != 0)
                 {
@@ -599,9 +601,15 @@ namespace FMBot.Bot.Commands.LastFM
                 var footer = $"WhoKnows album requested by {userTitle}";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 6) == 1 && lastIndex < DateTime.UtcNow.AddDays(-15))
+                if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-15))
                 {
                     footer += $"\nMissing members? Update with {prfx}index";
+                }
+
+                if (guild.GuildUsers.Count > filteredGuildUsers.Count)
+                {
+                    var filteredAmount = guild.GuildUsers.Count - filteredGuildUsers.Count;
+                    footer += $"\n{filteredAmount} inactive/blocked users filtered";
                 }
 
                 var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingAlbum(userSettings.UserId,
@@ -653,6 +661,8 @@ namespace FMBot.Bot.Commands.LastFM
 
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+            var filteredGuildUsers = this._guildService.FilterGuildUsersAsync(guild);
 
             if (extraOptions.Any() && extraOptions.First() == "help")
             {
@@ -706,7 +716,7 @@ namespace FMBot.Bot.Commands.LastFM
             try
             {
                 IReadOnlyList<ListAlbum> topGuildAlbums;
-                var users = guild.GuildUsers.Select(s => s.User).ToList();
+                var users = filteredGuildUsers.Select(s => s.User).ToList();
                 if (serverAlbumSettings.ChartTimePeriod == ChartTimePeriod.AllTime)
                 {
                     topGuildAlbums = await this._whoKnowsAlbumService.GetTopAlbumsForGuild(users, serverAlbumSettings.OrderType);
@@ -741,19 +751,25 @@ namespace FMBot.Bot.Commands.LastFM
                 var randomHintNumber = rnd.Next(0, 5);
                 if (randomHintNumber == 1)
                 {
-                    footer += $"View specific album listeners with {prfx}whoknowsalbum";
+                    footer += $"View specific album listeners with {prfx}whoknowsalbum\n";
                 }
                 else if (randomHintNumber == 2)
                 {
-                    footer += $"Available time periods: alltime and weekly";
+                    footer += $"Available time periods: alltime and weekly\n";
                 }
                 else if (randomHintNumber == 3)
                 {
-                    footer += $"Available sorting options: plays and listeners";
+                    footer += $"Available sorting options: plays and listeners\n";
                 }
-                if (guild.LastIndexed < DateTime.UtcNow.AddDays(-7) && randomHintNumber == 4)
+                if (guild.LastIndexed < DateTime.UtcNow.AddDays(-15) && randomHintNumber == 4)
                 {
                     footer += $"Missing members? Update with {prfx}index\n";
+                }
+
+                if (guild.GuildUsers.Count > filteredGuildUsers.Count)
+                {
+                    var filteredAmount = guild.GuildUsers.Count - filteredGuildUsers.Count;
+                    footer += $"{filteredAmount} inactive/blocked users filtered";
                 }
 
                 this._embedFooter.WithText(footer);

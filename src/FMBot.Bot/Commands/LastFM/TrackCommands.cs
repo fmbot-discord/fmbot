@@ -77,7 +77,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays track info and stats.")]
         [Alias("tr", "ti", "ts", "trackinfo")]
         [UsernameSetRequired]
-        public async Task TrackAsync([Remainder] string trackValues)
+        public async Task TrackAsync([Remainder] string trackValues = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -175,7 +175,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays track info and stats.")]
         [Alias("tp", "trackplay", "tplays", "trackp")]
         [UsernameSetRequired]
-        public async Task TrackPlaysAsync([Remainder] string trackValues)
+        public async Task TrackPlaysAsync([Remainder] string trackValues = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -221,7 +221,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Add track to loved tracks")]
         [UserSessionRequired]
         [Alias("l", "heart")]
-        public async Task LoveAsync([Remainder] string trackValues)
+        public async Task LoveAsync([Remainder] string trackValues = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -268,7 +268,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Add track to loved tracks")]
         [UserSessionRequired]
         [Alias("ul", "unheart", "hate", "fuck")]
-        public async Task UnLoveAsync([Remainder] string trackValues)
+        public async Task UnLoveAsync([Remainder] string trackValues = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -315,7 +315,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays top tracks.")]
         [Alias("tt", "tl", "tracklist", "tracks", "trackslist")]
         [UsernameSetRequired]
-        public async Task TopTracksAsync([Remainder] string extraOptions)
+        public async Task TopTracksAsync([Remainder] string extraOptions = null)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -453,7 +453,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Shows what other users listen to the same artist in your server")]
         [Alias("wt", "wkt", "wktr", "wtr", "wktrack", "wk track", "whoknows track")]
         [UsernameSetRequired]
-        public async Task WhoKnowsAsync([Remainder] string trackValues)
+        public async Task WhoKnowsAsync([Remainder] string trackValues = null)
         {
             if (this._guildService.CheckIfDM(this.Context))
             {
@@ -514,6 +514,8 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 var guild = await guildTask;
 
+                var filteredGuildUsers = this._guildService.FilterGuildUsersAsync(guild);
+
                 var currentUser = await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), userSettings);
                 
                 if (!guild.GuildUsers.Select(s => s.UserId).Contains(userSettings.UserId))
@@ -523,7 +525,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this._indexService.UpdateUserName(currentUser, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId));
 
-                var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(this.Context, guild.GuildUsers, track.Artist.Name, track.Name);
+                var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(this.Context, filteredGuildUsers, track.Artist.Name, track.Name);
 
                 if (track.Userplaycount != 0)
                 {
@@ -542,9 +544,15 @@ namespace FMBot.Bot.Commands.LastFM
                 var footer = $"WhoKnows track requested by {userTitle} - Users with 3 plays or higher are shown";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 6) == 1 && lastIndex < DateTime.UtcNow.AddDays(-15))
+                if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-15))
                 {
                     footer += $"\nMissing members? Update with {prfx}index";
+                }
+
+                if (guild.GuildUsers.Count > filteredGuildUsers.Count)
+                {
+                    var filteredAmount = guild.GuildUsers.Count - filteredGuildUsers.Count;
+                    footer += $"\n{filteredAmount} inactive/blocked users filtered";
                 }
 
                 this._embed.WithTitle($"Who knows {trackName} in {this.Context.Guild.Name}");
@@ -582,6 +590,8 @@ namespace FMBot.Bot.Commands.LastFM
 
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+            var filteredGuildUsers = this._guildService.FilterGuildUsersAsync(guild);
 
             if (extraOptions.Any() && extraOptions.First() == "help")
             {
@@ -635,7 +645,7 @@ namespace FMBot.Bot.Commands.LastFM
             try
             {
                 IReadOnlyList<ListTrack> topGuildTracks;
-                var users = guild.GuildUsers.Select(s => s.User).ToList();
+                var users = filteredGuildUsers.Select(s => s.User).ToList();
                 if (serverTrackSettings.ChartTimePeriod == ChartTimePeriod.AllTime)
                 {
                     topGuildTracks = await this._whoKnowsTrackService.GetTopTracksForGuild(users, serverTrackSettings.OrderType);
@@ -670,19 +680,25 @@ namespace FMBot.Bot.Commands.LastFM
                 var randomHintNumber = rnd.Next(0, 5);
                 if (randomHintNumber == 1)
                 {
-                    footer += $"View specific album listeners with {prfx}whoknowstrack";
+                    footer += $"View specific album listeners with {prfx}whoknowstrack\n";
                 }
                 else if (randomHintNumber == 2)
                 {
-                    footer += $"Available time periods: alltime and weekly";
+                    footer += $"Available time periods: alltime and weekly\n";
                 }
                 else if (randomHintNumber == 3)
                 {
-                    footer += $"Available sorting options: plays and listeners";
+                    footer += $"Available sorting options: plays and listeners\n";
                 }
                 if (guild.LastIndexed < DateTime.UtcNow.AddDays(-7) && randomHintNumber == 4)
                 {
                     footer += $"Missing members? Update with {prfx}index\n";
+                }
+
+                if (guild.GuildUsers.Count > filteredGuildUsers.Count)
+                {
+                    var filteredAmount = guild.GuildUsers.Count - filteredGuildUsers.Count;
+                    footer += $"{filteredAmount} inactive/blocked users filtered";
                 }
 
                 this._embedFooter.WithText(footer);

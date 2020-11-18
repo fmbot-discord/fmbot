@@ -45,7 +45,7 @@ namespace FMBot.Bot.Commands
         [Summary("Shares a link to the Genius lyrics based on what a user is listening to or what the user is searching for.")]
         [Alias("lyrics", "g", "lyricsfind", "lyricsearch", "lyricssearch")]
         [UsernameSetRequired]
-        public async Task GeniusAsync([Remainder] string searchValue)
+        public async Task GeniusAsync([Remainder] string searchValue = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
