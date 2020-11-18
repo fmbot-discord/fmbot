@@ -322,7 +322,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                await ReplyAsync("Check your DMs for a link to login!");
+                await ReplyAsync("Check your DMs for a link to connect your Last.fm account to .fmbot!");
             }
 
             var success = await GetAndStoreAuthSession(this.Context.User, token.Content.Token);
@@ -351,7 +351,8 @@ namespace FMBot.Bot.Commands.LastFM
                 await authorizeMessage.ModifyAsync(m =>
                 {
                     m.Embed = new EmbedBuilder()
-                        .WithDescription($"❌ Login failed.. link expired or something went wrong.")
+                        .WithDescription($"❌ Login failed.. link expired or something went wrong.\n\n" +
+                                         $"Having trouble connecting your Last.fm to .fmbot? Feel free to ask for help on our support server.")
                         .WithColor(DiscordConstants.WarningColorOrange)
                         .Build();
                 });
@@ -363,7 +364,7 @@ namespace FMBot.Bot.Commands.LastFM
         private async Task<bool> GetAndStoreAuthSession(IUser contextUser, string token)
         {
             var loginDelay = 7000;
-            for (var i = 0; i < 10; i++)
+            for (var i = 0; i < 9; i++)
             {
                 await Task.Delay(loginDelay);
 
@@ -377,20 +378,20 @@ namespace FMBot.Bot.Commands.LastFM
                         SessionKeyLastFm = authSession.Content.Session.Key
                     };
 
-                    Log.Information("User {userName} logged in with auth session", authSession.Content.Session.Name);
-                    this._userService.SetLastFm(contextUser, userSettings, true);
+                    Log.Information("LastfmAuth: User {userName} logged in with auth session (discordUserId: {discordUserId})", authSession.Content.Session.Name, contextUser.Id);
+                    await this._userService.SetLastFm(contextUser, userSettings, true);
                     return true;
                 }
 
-                if (!authSession.Success && i == 6)
+                if (!authSession.Success && i == 8)
                 {
-                    Log.Information("Login timed out or auth not successful");
+                    Log.Information("LastfmAuth: Login timed out or auth not successful (discordUserId: {discordUserId})", contextUser.Id);
                     return false;
                 }
                 if (!authSession.Success)
                 {
                     loginDelay += 2000;
-                    Log.Information("Login attempt {attempt} for {user} not succeeded yet ({errorCode}), delaying", i, contextUser.Username, authSession.Message);
+                    Log.Information("LastfmAuth: Login attempt {attempt} for {user} | {discordUserId} not succeeded yet ({errorCode}), delaying", i, contextUser.Username, contextUser.Id, authSession.Message);
                 }
             }
 
