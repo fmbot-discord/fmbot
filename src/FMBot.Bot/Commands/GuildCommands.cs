@@ -246,7 +246,7 @@ namespace FMBot.Bot.Commands
                 {
                     await ReplyAsync(
                         $"Please pick a value between 2 and {maxAmountOfDays} days.\n" +
-                        $".fmbot only started storing user activity from November 4th 2020. It is not possible to set the activity filter before this date.\n");
+                        $".fmbot only started storing user activity after November 4th 2020. It is not possible to set the activity filter before this date.\n");
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
@@ -415,7 +415,7 @@ namespace FMBot.Bot.Commands
             }
             else
             {
-                await ReplyAsync("Something went wrong while attempting to block user, please contact .fmbot staff.");
+                await ReplyAsync("Something went wrong while attempting to unblock user, please contact .fmbot staff.");
                 this.Context.LogCommandUsed(CommandResponse.Error);
             }
         }
