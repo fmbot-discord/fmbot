@@ -24,17 +24,6 @@ namespace FMBot.Bot.Extensions
             return pattern.Replace(str, "");
         }
 
-        public static bool ContainsAny(this string haystack, params string[] needles)
-        {
-            foreach (string needle in needles)
-            {
-                if (haystack.Contains(needle))
-                    return true;
-            }
-
-            return false;
-        }
-
         public static bool ContainsUnicodeCharacter(string input)
         {
             if (string.IsNullOrWhiteSpace(input))

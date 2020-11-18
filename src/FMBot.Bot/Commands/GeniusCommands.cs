@@ -45,7 +45,7 @@ namespace FMBot.Bot.Commands
         [Summary("Shares a link to the Genius lyrics based on what a user is listening to or what the user is searching for.")]
         [Alias("lyrics", "g", "lyricsfind", "lyricsearch", "lyricssearch")]
         [UsernameSetRequired]
-        public async Task GeniusAsync(params string[] searchValues)
+        public async Task GeniusAsync([Remainder] string searchValue)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -55,9 +55,9 @@ namespace FMBot.Bot.Commands
                 _ = this.Context.Channel.TriggerTypingAsync();
 
                 string querystring;
-                if (searchValues.Length > 0)
+                if (!string.IsNullOrWhiteSpace(searchValue))
                 {
-                    querystring = string.Join(" ", searchValues);
+                    querystring = searchValue;
                 }
                 else
                 {
@@ -95,7 +95,7 @@ namespace FMBot.Bot.Commands
                         $"By **[{songResult.Result.PrimaryArtist.Name}]({songResult.Result.PrimaryArtist.Url})**");
 
                     var rnd = new Random();
-                    if (rnd.Next(0, 5) == 1 && searchValues.Length < 1)
+                    if (rnd.Next(0, 7) == 1 && string.IsNullOrWhiteSpace(searchValue))
                     {
                         this._embedFooter.WithText("Tip: Search for other songs by simply adding the searchvalue behind .fmgenius.");
                         this._embed.WithFooter(this._embedFooter);

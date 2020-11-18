@@ -64,10 +64,10 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Generates a chart based on a user's parameters.")]
         [Alias("c")]
         [UsernameSetRequired]
-        public async Task ChartAsync(params string[] otherSettings)
+        public async Task ChartAsync([Remainder] string otherSettings)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            if (otherSettings.Any() && otherSettings.First() == "help")
+            if (!string.IsNullOrWhiteSpace(otherSettings) && otherSettings.ToLower() == "help")
             {
                 await ReplyAsync($"{prfx}chart '2x2-10x10' '{Constants.CompactTimePeriodList}' \n" +
                                  "Optional extra settings: 'notitles', 'nt', 'skipemptyimages', 's'\n" +

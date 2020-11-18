@@ -7,6 +7,6 @@ namespace FMBot.Bot.Interfaces
     public interface IChartService
     {
         Task<SKImage> GenerateChartAsync(ChartSettings chart);
-        ChartSettings SetSettings(ChartSettings currentChartSettings, string[] extraOptions);
+        ChartSettings SetSettings(ChartSettings currentChartSettings, string extraOptions);
     }
 }

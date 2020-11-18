@@ -21,12 +21,10 @@ namespace FMBot.Bot.Services
             this._contextFactory = contextFactory;
         }
 
-
         public static TimeSettingsModel GetTimePeriod(
-            string[] extraOptions,
+            string extraOptions,
             ChartTimePeriod defaultTimePeriod = ChartTimePeriod.Weekly
             )
-
         {
             var settingsModel = new TimeSettingsModel();
             var customTimePeriod = true;
@@ -206,7 +204,7 @@ namespace FMBot.Bot.Services
         }
 
         public async Task<UserSettingsModel> GetUser(
-            string[] extraOptions,
+            string extraOptions,
             User user,
             ICommandContext context)
         {
@@ -218,9 +216,11 @@ namespace FMBot.Bot.Services
                 UserId = user.UserId
             };
 
-            foreach (var extraOption in extraOptions)
+            var options = extraOptions.Split(' ');
+
+            foreach (var option in options)
             {
-                var otherUser = await GetUserFromString(extraOption);
+                var otherUser = await GetUserFromString(option);
 
                 if (otherUser != null)
                 {
@@ -254,13 +254,14 @@ namespace FMBot.Bot.Services
         }
 
         public static int GetAmount(
-            string[] extraOptions,
+            string extraOptions,
             int amount = 8,
             int maxAmount = 15)
         {
-            foreach (var extraOption in extraOptions)
+            var options = extraOptions.Split(' ');
+            foreach (var option in options)
             {
-                if (int.TryParse(extraOption, out var result))
+                if (int.TryParse(option, out var result))
                 {
                     if (result > 0 && result <= 100)
                     {
@@ -278,14 +279,17 @@ namespace FMBot.Bot.Services
         }
 
         public static long GetGoalAmount(
-            string[] extraOptions,
+            string extraOptions,
             long currentPlaycount)
         {
             var goalAmount = 100;
             var ownGoalSet = false;
-            foreach (var extraOption in extraOptions)
+
+            var options = extraOptions.Split(' ');
+
+            foreach (var option in options)
             {
-                if (int.TryParse(extraOption, out var result))
+                if (int.TryParse(option, out var result))
                 {
                     if (result > currentPlaycount)
                     {

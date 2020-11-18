@@ -67,7 +67,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("stats", RunMode = RunMode.Async)]
         [Summary("Displays user stats related to Last.fm and .fmbot")]
         [UsernameSetRequired]
-        public async Task StatsAsync(params string[] userOptions)
+        public async Task StatsAsync([Remainder] string userOptions)
         {
             var user = await this._userService.GetFullUserAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -182,13 +182,13 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary(
             "Sets your Last.fm name and FM mode. Please note that users in shared servers will be able to see and request your Last.fm username.")]
         [Alias("setname", "setmode", "fm set")]
-        public async Task SetAsync([Summary("Your Last.fm name")] string lastFMUserName = null,
+        public async Task SetAsync([Summary("Your Last.fm name")] string lastFmUserName = null,
             params string[] otherSettings)
         {
             var prfx = ConfigData.Data.Bot.Prefix;
 
             var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
-            if (lastFMUserName == null || lastFMUserName == "help")
+            if (lastFmUserName == null || lastFmUserName == "help")
             {
                 var replyString = $"{prfx}set is the command you use to set your last.fm username in the bot, so it knows who you are on the last.fm website. \n" +
                                   "Don't have a last.fm account yet? Register here: https://www.last.fm/join \n \n" +
@@ -217,15 +217,15 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            lastFMUserName = lastFMUserName.Replace("'", "");
-            if (!await this._lastFmService.LastFmUserExistsAsync(lastFMUserName))
+            lastFmUserName = lastFmUserName.Replace("'", "");
+            if (!await this._lastFmService.LastFmUserExistsAsync(lastFmUserName))
             {
-                var reply = $"Last.fm user `{lastFMUserName}` could not be found. Please check if the name you entered is correct.";
+                var reply = $"Last.fm user `{lastFmUserName}` could not be found. Please check if the name you entered is correct.";
                 await ReplyAsync(reply.FilterOutMentions());
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
-            if (lastFMUserName == "lastfmusername")
+            if (lastFmUserName == "lastfmusername")
             {
                 await ReplyAsync("Please enter your own Last.fm username and not `lastfmusername`.\n");
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
@@ -233,18 +233,18 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var usernameChanged = !(existingUserSettings?.UserNameLastFM != null &&
-                                     string.Equals(existingUserSettings.UserNameLastFM, lastFMUserName, StringComparison.CurrentCultureIgnoreCase));
+                                     string.Equals(existingUserSettings.UserNameLastFM, lastFmUserName, StringComparison.CurrentCultureIgnoreCase));
 
             var userSettingsToAdd = new User
             {
-                UserNameLastFM = lastFMUserName
+                UserNameLastFM = lastFmUserName
             };
 
             userSettingsToAdd = this._userService.SetSettings(userSettingsToAdd, otherSettings);
 
             this._userService.SetLastFm(this.Context.User, userSettingsToAdd);
 
-            var setReply = $"Your Last.fm name has been set to '{lastFMUserName}' and your .fm mode to '{userSettingsToAdd.FmEmbedType}'";
+            var setReply = $"Your Last.fm name has been set to '{lastFmUserName}' and your .fm mode to '{userSettingsToAdd.FmEmbedType}'";
             if (userSettingsToAdd.FmCountType != null)
             {
                 setReply += $" with the '{userSettingsToAdd.FmCountType.ToString().ToLower()}' playcount.";

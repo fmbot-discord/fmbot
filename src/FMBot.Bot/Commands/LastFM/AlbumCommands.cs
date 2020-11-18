@@ -80,12 +80,12 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays current album.")]
         [Alias("ab")]
         [UsernameSetRequired]
-        public async Task AlbumAsync(params string[] albumValues)
+        public async Task AlbumAsync([Remainder] string albumValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (albumValues.Any() && albumValues.First() == "help")
+            if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.ToLower() == "help")
             {
                 await ReplyAsync(
                     $"Usage: `{prfx}album 'artist and album name'`\n" +
@@ -172,12 +172,12 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays album plays.")]
         [Alias("abp", "albumplay", "abplays", "albump")]
         [UsernameSetRequired]
-        public async Task AlbumPlaysAsync(params string[] albumValues)
+        public async Task AlbumPlaysAsync([Remainder] string albumValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (albumValues.Any() && albumValues.First() == "help")
+            if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.ToLower() == "help")
             {
                 await ReplyAsync(
                     $"Usage: `{prfx}albumplays 'artist and album name'`\n" +
@@ -232,12 +232,12 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays current album cover.")]
         [Alias("abc", "co", "albumcover")]
         [UsernameSetRequired]
-        public async Task AlbumCoverAsync(params string[] albumValues)
+        public async Task AlbumCoverAsync([Remainder] string albumValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (albumValues.Any() && albumValues.First() == "help")
+            if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.ToLower() == "help")
             {
                 await ReplyAsync(
                     $"Usage: `{prfx}cover 'artist and album name'`\n" +
@@ -303,7 +303,7 @@ namespace FMBot.Bot.Commands.LastFM
             this.Context.LogCommandUsed();
         }
 
-        private async Task<AlbumSearchModel> SearchAlbum(string[] albumValues, User userSettings, string prfx)
+        private async Task<AlbumSearchModel> SearchAlbum(string albumValues, User userSettings, string prfx)
         {
             if (albumValues.Any())
             {
@@ -364,12 +364,12 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays top albums.")]
         [Alias("abl", "abs", "tab", "albumlist", "albums", "albumslist")]
         [UsernameSetRequired]
-        public async Task TopAlbumsAsync(params string[] extraOptions)
+        public async Task TopAlbumsAsync([Remainder] string extraOptions)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (extraOptions.Any() && extraOptions.First() == "help")
+            if (!string.IsNullOrWhiteSpace(extraOptions) && extraOptions.ToLower() == "help")
             {
                 this._embed.WithTitle($"{prfx}topalbums options");
                 this._embed.WithDescription($"- `{Constants.CompactTimePeriodList}`\n" +
@@ -490,7 +490,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Shows what other users listen to the same album in your server")]
         [Alias("wa", "wka", "wkab", "wab", "wkab", "wk album", "whoknows album")]
         [UsernameSetRequired]
-        public async Task WhoKnowsAsync(params string[] albumValues)
+        public async Task WhoKnowsAsync([Remainder] string albumValues)
         {
             if (this._guildService.CheckIfDM(this.Context))
             {
@@ -502,7 +502,7 @@ namespace FMBot.Bot.Commands.LastFM
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (albumValues.Any() && albumValues.First() == "help")
+            if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.ToLower() == "help")
             {
                 this._embed.WithTitle($"{prfx}whoknowsalbum");
                 this._embed.WithDescription($"Shows what members in your server listened to the album you're currently listening to or searching for.");
@@ -536,15 +536,6 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var guildTask = this._guildService.GetGuildAsync(this.Context.Guild.Id);
-
-            if (albumValues.Any() && albumValues.First() == "help")
-            {
-                await ReplyAsync(
-                    $"Usage: `{prfx}whoknowsalbum 'artist and album name'`\n" +
-                    "If you don't enter any track name, it will get the info from the track you're currently listening to.");
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
 
             _ = this.Context.Channel.TriggerTypingAsync();
 

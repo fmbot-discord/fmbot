@@ -190,8 +190,6 @@ namespace FMBot.Bot.Services
             }
         }
 
-
-
         private static void AddTitleToChartImage(SKBitmap chartImage, LastAlbum album)
         {
             var textColor = chartImage.GetTextColor();
@@ -269,7 +267,7 @@ namespace FMBot.Bot.Services
             bitmapCanvas.DrawText(album.Name, 4, 22, textPaint);
         }
 
-        public ChartSettings SetSettings(ChartSettings currentChartSettings, string[] extraOptions)
+        public ChartSettings SetSettings(ChartSettings currentChartSettings, string extraOptions)
         {
             var chartSettings = currentChartSettings;
             chartSettings.CustomOptionsEnabled = false;
@@ -373,7 +371,7 @@ namespace FMBot.Bot.Services
             {
                 // Reset to weekly since using plays for charts is not supported yet
                 chartSettings.UsePlays = true;
-                timeSettings = SettingService.GetTimePeriod(new[] { "weekly" });
+                timeSettings = SettingService.GetTimePeriod("weekly");
             }
 
             chartSettings.TimeSpan = timeSettings.LastStatsTimeSpan;

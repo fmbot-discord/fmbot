@@ -150,7 +150,7 @@ namespace FMBot.Bot.Services
             return artistsToShow;
         }
 
-        public TasteSettings SetTasteSettings(TasteSettings currentTasteSettings, string[] extraOptions)
+        public TasteSettings SetTasteSettings(TasteSettings currentTasteSettings, string extraOptions)
         {
             var tasteSettings = currentTasteSettings;
 

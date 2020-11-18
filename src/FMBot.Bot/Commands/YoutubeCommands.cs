@@ -42,7 +42,7 @@ namespace FMBot.Bot.Commands
         [Summary("Shares a link to a YouTube video based on what a user is listening to")]
         [Alias("yt", "y", "youtubesearch", "ytsearch", "yts")]
         [UsernameSetRequired]
-        public async Task YoutubeAsync(params string[] searchValues)
+        public async Task YoutubeAsync([Remainder] string searchValue)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -52,9 +52,9 @@ namespace FMBot.Bot.Commands
                 _ = this.Context.Channel.TriggerTypingAsync();
 
                 string querystring;
-                if (searchValues.Length > 0)
+                if (!string.IsNullOrWhiteSpace(searchValue))
                 {
-                    querystring = string.Join(" ", searchValues);
+                    querystring = searchValue;
                 }
                 else
                 {
@@ -101,7 +101,7 @@ namespace FMBot.Bot.Commands
                     }
 
                     var rnd = new Random();
-                    if (rnd.Next(0, 5) == 1 && searchValues.Length < 1)
+                    if (rnd.Next(0, 7) == 1 && string.IsNullOrWhiteSpace(searchValue))
                     {
                         reply += $"\n*Tip: Search for other songs or videos by simply adding the searchvalue behind {prfx}youtube.*";
                     }

@@ -87,7 +87,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays artist info and stats.")]
         [Alias("a")]
         [UsernameSetRequired]
-        public async Task ArtistAsync(params string[] artistValues)
+        public async Task ArtistAsync([Remainder] string artistValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -217,7 +217,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays top tracks for an artist.")]
         [Alias("at", "att", "artisttrack", "artistrack", "artisttoptracks", "artisttoptrack")]
         [UsernameSetRequired]
-        public async Task ArtistTracksAsync(params string[] artistValues)
+        public async Task ArtistTracksAsync([Remainder] string artistValues)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -314,7 +314,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays top albums for an artist.")]
         [Alias("aa", "aab", "atab", "artistalbum", "artistopalbum", "artisttopalbums", "artisttab")]
         [UsernameSetRequired]
-        public async Task ArtistAlbumsAsync(params string[] artistValues)
+        public async Task ArtistAlbumsAsync([Remainder] string artistValues)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -409,7 +409,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays artist playcount.")]
         [Alias("ap")]
         [UsernameSetRequired]
-        public async Task ArtistPlaysAsync(params string[] artistValues)
+        public async Task ArtistPlaysAsync([Remainder] string artistValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -464,12 +464,12 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays top artists.")]
         [Alias("al", "as", "ta", "artistlist", "artists", "artistslist")]
         [UsernameSetRequired]
-        public async Task TopArtistsAsync(params string[] extraOptions)
+        public async Task TopArtistsAsync([Remainder] string extraOptions)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (extraOptions.Any() && extraOptions.First() == "help")
+            if (!string.IsNullOrWhiteSpace(extraOptions) && extraOptions.ToLower() == "help")
             {
                 this._embed.WithTitle($"{prfx}topartists options");
                 this._embed.WithDescription($"- `{Constants.CompactTimePeriodList}`\n" +
@@ -614,7 +614,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Compare taste to other user.")]
         [UsernameSetRequired]
         [Alias("t")]
-        public async Task TasteAsync(string user = null, params string[] extraOptions)
+        public async Task TasteAsync(string user = null, [Remainder] string extraOptions = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -734,7 +734,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Shows what other users listen to the same artist in your server")]
         [Alias("w", "wk")]
         [UsernameSetRequired]
-        public async Task WhoKnowsAsync(params string[] artistValues)
+        public async Task WhoKnowsAsync([Remainder] string artistValues = null)
         {
             if (this._guildService.CheckIfDM(this.Context))
             {
@@ -1033,7 +1033,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Shows what other users in the same server listen to the same music as you")]
         [Alias("n", "aff", "neighbors")]
         [UsernameSetRequired]
-        public async Task AffinityAsync(params string[] artistValues)
+        public async Task AffinityAsync()
         {
             if (this._guildService.CheckIfDM(this.Context))
             {
@@ -1087,12 +1087,12 @@ namespace FMBot.Bot.Commands.LastFM
 
         }
 
-        private async Task<string> GetArtistOrHelp(string[] artistValues, User userSettings, string command, string prfx)
+        private async Task<string> GetArtistOrHelp(string artistValues, User userSettings, string command, string prfx)
         {
             string artist;
-            if (artistValues.Length > 0)
+            if (!string.IsNullOrWhiteSpace(artistValues))
             {
-                if (artistValues.First() == "help")
+                if (artistValues.ToLower() == "help")
                 {
                     await ReplyAsync(
                         $"Usage: `.fm{command} 'name'`\n" +

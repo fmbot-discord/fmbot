@@ -43,7 +43,7 @@ namespace FMBot.Bot.Commands
         [Summary("Shares a link to a Spotify track based on what a user is listening to")]
         [Alias("sp", "s", "spotifyfind", "spotifysearch")]
         [UsernameSetRequired]
-        public async Task SpotifyAsync(params string[] searchValues)
+        public async Task SpotifyAsync([Remainder] string searchValue)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -53,9 +53,9 @@ namespace FMBot.Bot.Commands
                 _ = this.Context.Channel.TriggerTypingAsync();
 
                 string querystring;
-                if (searchValues.Length > 0)
+                if (!string.IsNullOrWhiteSpace(searchValue))
                 {
-                    querystring = string.Join(" ", searchValues);
+                    querystring = searchValue;
                 }
                 else
                 {
@@ -92,7 +92,7 @@ namespace FMBot.Bot.Commands
                     var reply = $"https://open.spotify.com/track/{track.Id}";
 
                     var rnd = new Random();
-                    if (rnd.Next(0, 5) == 1 && searchValues.Length < 1)
+                    if (rnd.Next(0, 7) == 1 && string.IsNullOrWhiteSpace(searchValue))
                     {
                         reply += $"\n*Tip: Search for other songs by simply adding the searchvalue behind {prfx}spotify.*";
                     }

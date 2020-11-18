@@ -336,12 +336,12 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays a user's recent tracks.")]
         [Alias("recenttracks", "recents", "r")]
         [UsernameSetRequired]
-        public async Task RecentAsync(params string[] extraOptions)
+        public async Task RecentAsync([Remainder] string extraOptions)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (extraOptions.Any() && extraOptions.First() == "help")
+            if (!string.IsNullOrWhiteSpace(extraOptions) && extraOptions.ToLower() == "help")
             {
                 await ReplyAsync($"{prfx}recent 'number of items (max 10)' 'lastfm username/@discord user'");
                 this.Context.LogCommandUsed(CommandResponse.Help);
@@ -538,12 +538,12 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays the date a goal amount of scrobbles is reached")]
         [UsernameSetRequired]
         [Alias("p", "pc")]
-        public async Task PaceAsync(params string[] extraOptions)
+        public async Task PaceAsync([Remainder] string extraOptions)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (extraOptions.Any() && extraOptions.First() == "help")
+            if (!string.IsNullOrWhiteSpace(extraOptions) && extraOptions.ToLower() == "help")
             {
                 this._embed.WithTitle($"{prfx}pace");
 
@@ -637,7 +637,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Shows you your streak")]
         [UsernameSetRequired]
         [Alias("str", "combo", "cb")]
-        public async Task StreakAsync(params string[] extraOptions)
+        public async Task StreakAsync([Remainder] string extraOptions)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;

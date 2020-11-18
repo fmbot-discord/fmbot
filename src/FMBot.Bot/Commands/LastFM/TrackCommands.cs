@@ -77,12 +77,12 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays track info and stats.")]
         [Alias("tr", "ti", "ts", "trackinfo")]
         [UsernameSetRequired]
-        public async Task TrackAsync(params string[] trackValues)
+        public async Task TrackAsync([Remainder] string trackValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (trackValues.Any() && trackValues.First() == "help")
+            if (!string.IsNullOrWhiteSpace(trackValues) && trackValues.ToLower() == "help")
             {
                 this._embed.WithTitle($"{prfx}track");
                 this._embed.WithDescription($"Shows track info about the track you're currently listening to or searching for.");
@@ -175,12 +175,12 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays track info and stats.")]
         [Alias("tp", "trackplay", "tplays", "trackp")]
         [UsernameSetRequired]
-        public async Task TrackPlaysAsync(params string[] trackValues)
+        public async Task TrackPlaysAsync([Remainder] string trackValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (trackValues.Any() && trackValues.First() == "help")
+            if (!string.IsNullOrWhiteSpace(trackValues) && trackValues.ToLower() == "help")
             {
                 this._embed.WithTitle($"{prfx}trackplays");
                 this._embed.WithDescription($"Shows your total plays from the track you're currently listening to or searching for.");
@@ -221,12 +221,12 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Add track to loved tracks")]
         [UserSessionRequired]
         [Alias("l", "heart")]
-        public async Task LoveAsync(params string[] trackValues)
+        public async Task LoveAsync([Remainder] string trackValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (trackValues.Any() && trackValues.First() == "help")
+            if (!string.IsNullOrWhiteSpace(trackValues) && trackValues.ToLower() == "help")
             {
                 this._embed.WithTitle($"{prfx}love");
                 this._embed.WithDescription("Loves the track you're currently listening to or searching for on last.fm.");
@@ -268,12 +268,12 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Add track to loved tracks")]
         [UserSessionRequired]
         [Alias("ul", "unheart", "hate", "fuck")]
-        public async Task UnLoveAsync(params string[] trackValues)
+        public async Task UnLoveAsync([Remainder] string trackValues)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (trackValues.Any() && trackValues.First() == "help")
+            if (!string.IsNullOrWhiteSpace(trackValues) && trackValues.ToLower() == "help")
             {
                 this._embed.WithTitle($"{prfx}unlove");
                 this._embed.WithDescription("Unloves the track you're currently listening to or searching for on last.fm.");
@@ -315,12 +315,12 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays top tracks.")]
         [Alias("tt", "tl", "tracklist", "tracks", "trackslist")]
         [UsernameSetRequired]
-        public async Task TopTracksAsync(params string[] extraOptions)
+        public async Task TopTracksAsync([Remainder] string extraOptions)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (extraOptions.Any() && extraOptions.First() == "help")
+            if (!string.IsNullOrWhiteSpace(extraOptions) && extraOptions.ToLower() == "help")
             {
                 this._embed.WithTitle($"{prfx}toptracks options");
                 this._embed.WithDescription($"- `{Constants.CompactTimePeriodList}`\n" +
@@ -453,7 +453,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Shows what other users listen to the same artist in your server")]
         [Alias("wt", "wkt", "wktr", "wtr", "wktrack", "wk track", "whoknows track")]
         [UsernameSetRequired]
-        public async Task WhoKnowsAsync(params string[] trackValues)
+        public async Task WhoKnowsAsync([Remainder] string trackValues)
         {
             if (this._guildService.CheckIfDM(this.Context))
             {
@@ -465,7 +465,7 @@ namespace FMBot.Bot.Commands.LastFM
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (trackValues.Any() && trackValues.First() == "help")
+            if (!string.IsNullOrWhiteSpace(trackValues) && trackValues.ToLower() == "help")
             {
                 this._embed.WithTitle($"{prfx}whoknowstrack");
                 this._embed.WithDescription($"Shows what members in your server listened to the track you're currently listening to or searching for.");
@@ -499,15 +499,6 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var guildTask = this._guildService.GetGuildAsync(this.Context.Guild.Id);
-
-            if (trackValues.Any() && trackValues.First() == "help")
-            {
-                await ReplyAsync(
-                    $"Usage: `{prfx}whoknowstrack 'artist and track name'`\n" +
-                    "If you don't enter any track name, it will get the info from the track you're currently listening to.");
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -708,7 +699,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        private async Task<ResponseTrack> SearchTrack(string[] trackValues, User userSettings, string prfx)
+        private async Task<ResponseTrack> SearchTrack(string trackValues, User userSettings, string prfx)
         {
             string searchValue;
             if (trackValues.Any())
