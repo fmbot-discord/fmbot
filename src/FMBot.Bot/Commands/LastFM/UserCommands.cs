@@ -441,6 +441,8 @@ namespace FMBot.Bot.Commands.LastFM
 
             this._embed.WithDescription(sb.ToString());
 
+            this._embed.WithFooter("Note: This will not delete any data from Last.fm, just from .fmbot.");
+
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
         }
