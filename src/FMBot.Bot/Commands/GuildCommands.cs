@@ -468,6 +468,10 @@ namespace FMBot.Bot.Commands
                 this._embed.WithFooter($"To add: {prfx}block mention/user id/last.fm username\n" +
                                         $"To remove: {prfx}unblock mention/user id/last.fm username");
             }
+            else
+            {
+                this._embed.WithDescription("No blocked users found for this server.");
+            }
 
             await ReplyAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
