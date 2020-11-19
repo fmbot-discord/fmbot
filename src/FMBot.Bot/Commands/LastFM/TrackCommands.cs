@@ -718,9 +718,9 @@ namespace FMBot.Bot.Commands.LastFM
         private async Task<ResponseTrack> SearchTrack(string trackValues, User userSettings, string prfx)
         {
             string searchValue;
-            if (trackValues.Any())
+            if (!string.IsNullOrWhiteSpace(trackValues))
             {
-                searchValue = string.Join(" ", trackValues);
+                searchValue = trackValues;
 
                 if (searchValue.Contains(" | "))
                 {

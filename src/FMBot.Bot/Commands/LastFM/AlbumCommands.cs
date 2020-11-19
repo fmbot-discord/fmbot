@@ -305,9 +305,9 @@ namespace FMBot.Bot.Commands.LastFM
 
         private async Task<AlbumSearchModel> SearchAlbum(string albumValues, User userSettings, string prfx)
         {
-            if (albumValues.Any())
+            if (!string.IsNullOrWhiteSpace(albumValues))
             {
-                var searchValue = string.Join(" ", albumValues);
+                var searchValue = albumValues;
 
                 if (searchValue.Contains(" | "))
                 {
@@ -321,43 +321,39 @@ namespace FMBot.Bot.Commands.LastFM
 
                     return new AlbumSearchModel(true, album.ArtistName, null, album.Name, album.Url.ToString());
                 }
-                else if (result.Success)
+
+                if (result.Success)
                 {
                     this._embed.WithDescription($"Album could not be found, please check your search values and try again.");
                     await this.ReplyAsync("", false, this._embed.Build());
                     return new AlbumSearchModel(false);
                 }
-                else
-                {
-                    this._embed.WithDescription($"Last.fm returned an error: {result.Status}");
-                    await this.ReplyAsync("", false, this._embed.Build());
-                    return new AlbumSearchModel(false);
-                }
+                this._embed.WithDescription($"Last.fm returned an error: {result.Status}");
+                await this.ReplyAsync("", false, this._embed.Build());
+                return new AlbumSearchModel(false);
             }
-            else
+
+            var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true);
+
+            if (!recentScrobbles.Success || recentScrobbles.Content == null)
             {
-                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true);
-
-                if (!recentScrobbles.Success || recentScrobbles.Content == null)
-                {
-                    this._embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, this.Context);
-                    this.Context.LogCommandUsed(CommandResponse.LastFmError);
-                    await ReplyAsync("", false, this._embed.Build());
-                    return new AlbumSearchModel(false);
-                }
-
-                if (!recentScrobbles.Content.RecentTracks.Track.Any())
-                {
-                    this._embed.NoScrobblesFoundErrorResponse(userSettings.UserNameLastFM);
-                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                    await ReplyAsync("", false, this._embed.Build());
-                    return new AlbumSearchModel(false);
-                }
-
-                var currentTrack = recentScrobbles.Content.RecentTracks.Track[0];
-
-                return new AlbumSearchModel(true, currentTrack.Artist.Text, currentTrack.Artist.Url, currentTrack.Album.Text, currentTrack.Url.ToString());
+                this._embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, this.Context);
+                this.Context.LogCommandUsed(CommandResponse.LastFmError);
+                await ReplyAsync("", false, this._embed.Build());
+                return new AlbumSearchModel(false);
             }
+
+            if (!recentScrobbles.Content.RecentTracks.Track.Any())
+            {
+                this._embed.NoScrobblesFoundErrorResponse(userSettings.UserNameLastFM);
+                this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                await ReplyAsync("", false, this._embed.Build());
+                return new AlbumSearchModel(false);
+            }
+
+            var currentTrack = recentScrobbles.Content.RecentTracks.Track[0];
+
+            return new AlbumSearchModel(true, currentTrack.Artist.Text, currentTrack.Artist.Url, currentTrack.Album.Text, currentTrack.Url.ToString());
         }
 
         [Command("topalbums", RunMode = RunMode.Async)]

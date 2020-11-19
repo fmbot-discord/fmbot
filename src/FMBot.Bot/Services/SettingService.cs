@@ -29,6 +29,8 @@ namespace FMBot.Bot.Services
             var settingsModel = new TimeSettingsModel();
             var customTimePeriod = true;
 
+            extraOptions ??= "";
+
             // time period
             if (extraOptions.Contains("weekly") ||
                 extraOptions.Contains("week") ||
@@ -216,6 +218,11 @@ namespace FMBot.Bot.Services
                 UserId = user.UserId
             };
 
+            if (extraOptions == null)
+            {
+                return settingsModel;
+            }
+
             var options = extraOptions.Split(' ');
 
             foreach (var option in options)
@@ -273,6 +280,11 @@ namespace FMBot.Bot.Services
             int amount = 8,
             int maxAmount = 15)
         {
+            if (extraOptions == null)
+            {
+                return amount;
+            }
+
             var options = extraOptions.Split(' ');
             foreach (var option in options)
             {
@@ -300,20 +312,23 @@ namespace FMBot.Bot.Services
             var goalAmount = 100;
             var ownGoalSet = false;
 
-            var options = extraOptions.Split(' ');
-
-            foreach (var option in options)
+            if (extraOptions != null)
             {
-                if (int.TryParse(option, out var result))
+                var options = extraOptions.Split(' ');
+
+                foreach (var option in options)
                 {
-                    if (result > currentPlaycount)
+                    if (int.TryParse(option, out var result))
                     {
-                        goalAmount = result;
-                        ownGoalSet = true;
+                        if (result > currentPlaycount)
+                        {
+                            goalAmount = result;
+                            ownGoalSet = true;
+                        }
                     }
                 }
-
             }
+
 
             if (!ownGoalSet)
             {
