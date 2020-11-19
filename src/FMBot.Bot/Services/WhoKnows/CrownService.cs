@@ -2,12 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord.WebSocket;
 using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace FMBot.Bot.Services.WhoKnows
 {
@@ -43,8 +45,14 @@ namespace FMBot.Bot.Services.WhoKnows
             }
 
             var topUser = users
+                .Where(w => eligibleUsers.Select(s => s.UserId).Contains(w.UserId))
                 .OrderByDescending(o => o.Playcount)
-                .First();
+                .FirstOrDefault();
+
+            if (topUser == null)
+            {
+                return null;
+            }
 
             await using var db = this._contextFactory.CreateDbContext();
             var existingCrownForArtist = await db.UserCrowns
@@ -271,5 +279,37 @@ namespace FMBot.Bot.Services.WhoKnows
 
             await db.SaveChangesAsync();
         }
+
+        public async Task RemoveAllCrownsFromDiscordUser(SocketGuildUser user)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var userThatLeft = await db.Users
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordUserId == user.Id);
+
+            if (userThatLeft == null)
+            {
+                return;
+            }
+
+            var guild = await db.Guilds
+                .Include(i => i.GuildUsers)
+                .Include(i  => i.GuildCrowns)
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == user.Guild.Id);
+
+            if (guild.GuildCrowns != null && guild.GuildCrowns.Any())
+            {
+                var userGuildCrowns = await db.UserCrowns
+                    .AsQueryable()
+                    .Where(f => f.UserId == userThatLeft.UserId &&
+                                f.GuildId == guild.GuildId)
+                    .ToListAsync();
+
+                db.UserCrowns.RemoveRange(userGuildCrowns);
+
+                await db.SaveChangesAsync();
+            }
+        }
+
     }
 }

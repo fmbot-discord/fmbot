@@ -13,5 +13,7 @@ namespace FMBot.Persistence.Domain.Models
         public bool BlockedFromCrowns { get; set; }
 
         public bool BlockedFromWhoKnows { get; set; }
+
+        public bool SelfBlockFromWhoKnows { get; set; }
     }
 }

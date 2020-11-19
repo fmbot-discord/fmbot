@@ -292,6 +292,28 @@ namespace FMBot.Bot.Services
             return true;
         }
 
+        public async Task<bool> SetCrownThresholdDaysAsync(IGuild guild, int? days)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingGuild = await db.Guilds
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+
+            if (existingGuild == null)
+            {
+                return false;
+            }
+
+            existingGuild.Name = guild.Name;
+            existingGuild.CrownsActivityThresholdDays = days;
+
+            db.Entry(existingGuild).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            return true;
+        }
+
         public async Task<bool> BlockGuildUserAsync(IGuild guild, int userId)
         {
             await using var db = this._contextFactory.CreateDbContext();
@@ -315,6 +337,8 @@ namespace FMBot.Bot.Services
 
                 db.Entry(existingBlockedUser).State = EntityState.Modified;
 
+                await db.SaveChangesAsync();
+
                 return true;
             }
 
@@ -332,6 +356,50 @@ namespace FMBot.Bot.Services
             db.Entry(blockedGuildUserToAdd).State = EntityState.Detached;
 
             Log.Information("Added blocked user {userId} to guild {guildName}", userId, guild.Name);
+
+            return true;
+        }
+
+        public async Task<bool> CrownBlockGuildUserAsync(IGuild guild, int userId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingGuild = await db.Guilds
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+
+            if (existingGuild == null)
+            {
+                return false;
+            }
+
+            var existingBlockedUser = await db.GuildBlockedUsers
+                .AsQueryable()
+                .FirstOrDefaultAsync(a => a.GuildId == existingGuild.GuildId && a.UserId == userId);
+
+            if (existingBlockedUser != null)
+            {
+                existingBlockedUser.BlockedFromCrowns = true;
+
+                db.Entry(existingBlockedUser).State = EntityState.Modified;
+
+                await db.SaveChangesAsync();
+
+                return true;
+            }
+
+            var blockedGuildUserToAdd = new GuildBlockedUser
+            {
+                GuildId = existingGuild.GuildId,
+                UserId = userId,
+                BlockedFromCrowns = true
+            };
+
+            await db.GuildBlockedUsers.AddAsync(blockedGuildUserToAdd);
+            await db.SaveChangesAsync();
+
+            db.Entry(blockedGuildUserToAdd).State = EntityState.Detached;
+
+            Log.Information("Added crownblocked user {userId} to guild {guildName}", userId, guild.Name);
 
             return true;
         }
