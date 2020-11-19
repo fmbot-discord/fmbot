@@ -154,6 +154,11 @@ namespace FMBot.Bot.Services
         {
             var tasteSettings = currentTasteSettings;
 
+            if (extraOptions == null)
+            {
+                return tasteSettings;
+            }
+
             if (extraOptions.Contains("t") || extraOptions.Contains("table"))
             {
                 tasteSettings.TasteType = TasteType.Table;
