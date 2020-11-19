@@ -20,6 +20,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<UserAlbum> UserAlbums { get; set; }
         public virtual DbSet<UserTrack> UserTracks { get; set; }
         public virtual DbSet<UserPlay> UserPlays { get; set; }
+        public virtual DbSet<UserCrown> UserCrowns { get; set; }
 
         public virtual DbSet<Artist> Artists { get; set; }
         public virtual DbSet<Album> Albums { get; set; }

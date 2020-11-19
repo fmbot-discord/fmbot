@@ -59,7 +59,7 @@ namespace FMBot.Bot.Services
             {
                 guildUsers = guildUsers.Where(w =>
                     !guild.GuildBlockedUsers
-                        .Where(w => w.BlockedFromWhoKnows)
+                        .Where(wh => wh.BlockedFromWhoKnows)
                         .Select(s => s.UserId).Contains(w.UserId))
                     .ToList();
             }
@@ -159,7 +159,7 @@ namespace FMBot.Bot.Services
                     TitlesEnabled = true
                 };
 
-                db.Guilds.Add(newGuild);
+                await db.Guilds.AddAsync(newGuild);
 
                 await db.SaveChangesAsync();
             }

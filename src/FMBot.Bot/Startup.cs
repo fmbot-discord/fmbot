@@ -92,6 +92,7 @@ namespace FMBot.Bot
                 .AddSingleton<AdminService>()
                 .AddSingleton<ArtistsService>()
                 .AddSingleton<CensorService>()
+                .AddSingleton<CrownService>()
                 .AddSingleton<ClientLogHandler>()
                 .AddSingleton<CommandHandler>()
                 .AddSingleton<FriendsService>()

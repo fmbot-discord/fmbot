@@ -28,6 +28,7 @@ namespace FMBot.Bot.Commands.LastFM
     public class ArtistCommands : ModuleBase
     {
         private readonly ArtistsService _artistsService;
+        private readonly CrownService _crownService;
         private readonly GuildService _guildService;
         private readonly IIndexService _indexService;
         private readonly ILastfmApi _lastFmApi;
@@ -48,6 +49,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         public ArtistCommands(
                 ArtistsService artistsService,
+                CrownService crownService,
                 GuildService guildService,
                 IIndexService indexService,
                 ILastfmApi lastFmApi,
@@ -63,6 +65,7 @@ namespace FMBot.Bot.Commands.LastFM
                 InteractivityService interactivity)
         {
             this._artistsService = artistsService;
+            this._crownService = crownService;
             this._guildService = guildService;
             this._indexService = indexService;
             this._lastFmApi = lastFmApi;
@@ -830,6 +833,16 @@ namespace FMBot.Bot.Commands.LastFM
                 if (usersWithArtist.Count == 0)
                 {
                     serverUsers = "Nobody in this server (not even you) has listened to this artist.";
+                }
+
+                if (guild.CrownsDisabled != true && usersWithArtist.Count >= 1)
+                {
+                    var crownDescription =
+                        await this._crownService.GetAndUpdateCrownForArtist(usersWithArtist, guild, artist.Artist.Name);
+                    if (crownDescription != null)
+                    {
+                        serverUsers += $"\n{crownDescription}";
+                    }
                 }
 
                 this._embed.WithDescription(serverUsers);

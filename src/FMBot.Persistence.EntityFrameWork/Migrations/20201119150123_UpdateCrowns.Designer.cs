@@ -3,15 +3,17 @@ using System;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace FMBot.Persistence.EntityFrameWork.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    partial class FMBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20201119150123_UpdateCrowns")]
+    partial class UpdateCrowns
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -307,10 +309,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Property<int?>("CrownsActivityThresholdDays")
                         .HasColumnType("integer")
                         .HasColumnName("crowns_activity_threshold_days");
-
-                    b.Property<bool?>("CrownsDisabled")
-                        .HasColumnType("boolean")
-                        .HasColumnName("crowns_disabled");
 
                     b.Property<bool?>("DisableSupporterMessages")
                         .HasColumnType("boolean")
