@@ -41,6 +41,7 @@ namespace FMBot.Bot.Services
                     .ThenInclude(t => t.User)
                 .Include(i => i.GuildUsers)
                     .ThenInclude(t => t.User)
+                .Include(i => i.Channels)
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guildId);
         }
 
@@ -54,10 +55,12 @@ namespace FMBot.Bot.Services
                     w.User.LastUsed >= DateTime.UtcNow.AddDays(-guild.ActivityThresholdDays.Value))
                     .ToList();
             }
-            if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any())
+            if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromWhoKnows))
             {
                 guildUsers = guildUsers.Where(w =>
-                    !guild.GuildBlockedUsers.Select(s => s.UserId).Contains(w.UserId))
+                    !guild.GuildBlockedUsers
+                        .Where(w => w.BlockedFromWhoKnows)
+                        .Select(s => s.UserId).Contains(w.UserId))
                     .ToList();
             }
 
@@ -381,7 +384,7 @@ namespace FMBot.Bot.Services
             return existingGuild?.DisabledCommands;
         }
 
-        public async Task<string[]> AddDisabledCommandAsync(IGuild guild, string command)
+        public async Task<string[]> AddGuildDisabledCommandAsync(IGuild guild, string command)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var existingGuild = await db.Guilds
@@ -406,31 +409,29 @@ namespace FMBot.Bot.Services
 
                 return newGuild.DisabledCommands;
             }
+
+            if (existingGuild.DisabledCommands != null && existingGuild.DisabledCommands.Length > 0)
+            {
+                var newDisabledCommands = existingGuild.DisabledCommands;
+                Array.Resize(ref newDisabledCommands, newDisabledCommands.Length + 1);
+                newDisabledCommands[^1] = command;
+                existingGuild.DisabledCommands = newDisabledCommands;
+            }
             else
             {
-                if (existingGuild.DisabledCommands != null && existingGuild.DisabledCommands.Length > 0)
-                {
-                    var newDisabledCommands = existingGuild.DisabledCommands;
-                    Array.Resize(ref newDisabledCommands, newDisabledCommands.Length + 1);
-                    newDisabledCommands[^1] = command;
-                    existingGuild.DisabledCommands = newDisabledCommands;
-                }
-                else
-                {
-                    existingGuild.DisabledCommands = new[] { command };
-                }
-
-                existingGuild.Name = guild.Name;
-
-                db.Entry(existingGuild).State = EntityState.Modified;
-
-                await db.SaveChangesAsync();
-
-                return existingGuild.DisabledCommands;
+                existingGuild.DisabledCommands = new[] { command };
             }
+
+            existingGuild.Name = guild.Name;
+
+            db.Entry(existingGuild).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            return existingGuild.DisabledCommands;
         }
 
-        public async Task<string[]> RemoveDisabledCommandAsync(IGuild guild, string command)
+        public async Task<string[]> RemoveGuildDisabledCommandAsync(IGuild guild, string command)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var existingGuild = await db.Guilds
@@ -446,6 +447,79 @@ namespace FMBot.Bot.Services
             await db.SaveChangesAsync();
 
             return existingGuild.DisabledCommands;
+        }
+
+        public async Task<string[]> GetDisabledCommandsForChannel(IChannel channel)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingGuild = await db.Channels
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordChannelId == channel.Id);
+
+            return existingGuild?.DisabledCommands;
+        }
+
+        public async Task<string[]> AddChannelDisabledCommandAsync(IChannel channel, int guildId, string command)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingChannel = await db.Channels
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordChannelId == channel.Id);
+
+            if (existingChannel == null)
+            {
+                var newChannel = new Channel
+                {
+                    DiscordChannelId = channel.Id,
+                    Name = channel.Name,
+                    GuildId = guildId,
+                    DisabledCommands = new[] { command }
+                };
+
+                await db.Channels.AddAsync(newChannel);
+
+                await db.SaveChangesAsync();
+
+                return newChannel.DisabledCommands;
+            }
+
+            if (existingChannel.DisabledCommands != null && existingChannel.DisabledCommands.Length > 0)
+            {
+                var newDisabledCommands = existingChannel.DisabledCommands;
+                Array.Resize(ref newDisabledCommands, newDisabledCommands.Length + 1);
+                newDisabledCommands[^1] = command;
+                existingChannel.DisabledCommands = newDisabledCommands;
+            }
+            else
+            {
+                existingChannel.DisabledCommands = new[] { command };
+            }
+
+            existingChannel.Name = existingChannel.Name;
+
+            db.Entry(existingChannel).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            return existingChannel.DisabledCommands;
+        }
+
+        public async Task<string[]> RemoveChannelDisabledCommandAsync(IChannel channel, string command)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingChannel = await db.Channels
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordChannelId == channel.Id);
+
+            existingChannel.DisabledCommands = existingChannel.DisabledCommands.Where(w => !w.Contains(command)).ToArray();
+
+            existingChannel.Name = channel.Name;
+
+            db.Entry(existingChannel).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            return existingChannel.DisabledCommands;
         }
 
         public async Task<DateTime?> GetGuildIndexTimestampAsync(IGuild guild)

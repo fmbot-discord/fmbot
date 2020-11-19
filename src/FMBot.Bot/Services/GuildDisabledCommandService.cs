@@ -8,25 +8,21 @@ using Serilog;
 
 namespace FMBot.Bot.Services
 {
-    public class DisabledCommandService : IDisabledCommandService
+    public class GuildDisabledCommandService : IGuildDisabledCommandService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-        /// <summary>
-        ///     The <see cref="ConcurrentDictionary{TKey,TValue}" /> that contains all the disabled commands.
-        /// </summary>
-        private static readonly ConcurrentDictionary<ulong, string[]> ServerDisabledCommands =
+        private static readonly ConcurrentDictionary<ulong, string[]> GuildDisabledCommands =
             new ConcurrentDictionary<ulong, string[]>();
 
-        public DisabledCommandService(IDbContextFactory<FMBotDbContext> contextFactory)
+        public GuildDisabledCommandService(IDbContextFactory<FMBotDbContext> contextFactory)
         {
             this._contextFactory = contextFactory;
         }
 
-        /// <inheritdoc />
         public void StoreDisabledCommands(string[] commands, ulong key)
         {
-            if (ServerDisabledCommands.ContainsKey(key))
+            if (GuildDisabledCommands.ContainsKey(key))
             {
                 if (commands == null)
                 {
@@ -34,22 +30,21 @@ namespace FMBot.Bot.Services
                 }
 
                 var oldDisabledCommands = GetDisabledCommands(key);
-                if (!ServerDisabledCommands.TryUpdate(key, commands, oldDisabledCommands))
+                if (!GuildDisabledCommands.TryUpdate(key, commands, oldDisabledCommands))
                 {
-                    Log.Information($"Failed to update disabled commands {commands} with the key: {key} from the dictionary");
+                    Log.Information($"Failed to update disabled guild commands {commands} with the key: {key} from the dictionary");
                 }
 
                 return;
             }
 
-            if (!ServerDisabledCommands.TryAdd(key, commands))
+            if (!GuildDisabledCommands.TryAdd(key, commands))
             {
-                Log.Information($"Failed to add disabled commands {commands} with the key: {key} from the dictionary");
+                Log.Information($"Failed to add disabled guild commands {commands} with the key: {key} from the dictionary");
             }
         }
 
 
-        /// <inheritdoc />
         public string[] GetDisabledCommands(ulong? key)
         {
             if (!key.HasValue)
@@ -57,30 +52,30 @@ namespace FMBot.Bot.Services
                 return null;
             }
 
-            return !ServerDisabledCommands.ContainsKey(key.Value) ? null : ServerDisabledCommands[key.Value];
+            return !GuildDisabledCommands.ContainsKey(key.Value) ? null : GuildDisabledCommands[key.Value];
         }
 
 
-        /// <inheritdoc />
         public void RemoveDisabledCommands(ulong key)
         {
-            if (!ServerDisabledCommands.ContainsKey(key))
+            if (!GuildDisabledCommands.ContainsKey(key))
             {
                 return;
             }
 
-            if (!ServerDisabledCommands.TryRemove(key, out var removedDisabledCommands))
+            if (!GuildDisabledCommands.TryRemove(key, out var removedDisabledCommands))
             {
-                Log.Information($"Failed to remove custom disabled commands {removedDisabledCommands} with the key: {key} from the dictionary");
+                Log.Information($"Failed to remove custom disabled guild commands {removedDisabledCommands} with the key: {key} from the dictionary");
             }
         }
 
 
-        /// <inheritdoc />
         public async Task LoadAllDisabledCommands()
         {
             await using var db = this._contextFactory.CreateDbContext();
-            var servers = await db.Guilds.Where(w => w.DisabledCommands != null).ToListAsync();
+            var servers = await db.Guilds
+                .Where(w => w.DisabledCommands != null && w.DisabledCommands.Length > 0)
+                .ToListAsync();
             foreach (var server in servers)
             {
                 StoreDisabledCommands(server.DisabledCommands, server.DiscordGuildId);

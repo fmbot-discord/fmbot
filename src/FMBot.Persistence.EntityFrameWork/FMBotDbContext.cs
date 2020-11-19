@@ -8,6 +8,7 @@ namespace FMBot.Persistence.EntityFrameWork
     {
         public virtual DbSet<Friend> Friends { get; set; }
         public virtual DbSet<Guild> Guilds { get; set; }
+        public virtual DbSet<Channel> Channels { get; set; }
         public virtual DbSet<GuildBlockedUser> GuildBlockedUsers { get; set; }
         public virtual DbSet<GuildUser> GuildUsers { get; set; }
         public virtual DbSet<User> Users { get; set; }
@@ -73,6 +74,24 @@ namespace FMBot.Persistence.EntityFrameWork
                         v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
 
                 entity.Property(e => e.EmoteReactions)
+                    .HasConversion(
+                        v => string.Join(',', v),
+                        v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
+            });
+
+            modelBuilder.Entity<Channel>(entity =>
+            {
+                entity.HasKey(e => e.ChannelId);
+
+                entity.HasIndex(i => i.DiscordChannelId);
+
+                entity.HasIndex(i => i.GuildId);
+
+                entity.HasOne(sc => sc.Guild)
+                    .WithMany(s => s.Channels)
+                    .HasForeignKey(sc => sc.GuildId);
+
+                entity.Property(e => e.DisabledCommands)
                     .HasConversion(
                         v => string.Join(',', v),
                         v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
@@ -198,6 +217,26 @@ namespace FMBot.Persistence.EntityFrameWork
                     .WithMany(a => a.Plays)
                     .HasForeignKey(f => f.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<UserCrown>(entity =>
+            {
+                entity.HasKey(e => e.CrownId);
+
+                entity.HasIndex(i => i.UserId);
+
+                entity.HasIndex(i => i.GuildId);
+
+                entity.Property(e => e.ArtistName)
+                    .HasColumnType("citext");
+
+                entity.HasOne(sc => sc.Guild)
+                    .WithMany(s => s.GuildCrowns)
+                    .HasForeignKey(sc => sc.GuildId);
+
+                entity.HasOne(sc => sc.User)
+                    .WithMany(s => s.Crowns)
+                    .HasForeignKey(sc => sc.UserId);
             });
 
             modelBuilder.Entity<Artist>(entity =>

@@ -39,5 +39,9 @@ namespace FMBot.Persistence.Domain.Models
         public ICollection<GuildUser> GuildUsers { get; set; }
 
         public ICollection<GuildBlockedUser> GuildBlockedUsers { get; set; }
+
+        public ICollection<UserCrown> GuildCrowns { get; set; }
+
+        public ICollection<Channel> Channels { get; set; }
     }
 }

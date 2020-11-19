@@ -25,7 +25,8 @@ namespace FMBot.Bot.Handlers
         private readonly UserService _userService;
         private readonly DiscordShardedClient _discord;
         private readonly IPrefixService _prefixService;
-        private readonly IDisabledCommandService _disabledCommandService;
+        private readonly IGuildDisabledCommandService _guildDisabledCommandService;
+        private readonly IChannelDisabledCommandService _channelDisabledCommandService;
         private readonly IServiceProvider _provider;
 
         // DiscordSocketClient, CommandService, IConfigurationRoot, and IServiceProvider are injected automatically from the IServiceProvider
@@ -34,14 +35,16 @@ namespace FMBot.Bot.Handlers
             CommandService commands,
             IServiceProvider provider,
             IPrefixService prefixService,
-            IDisabledCommandService disabledCommandService,
+            IGuildDisabledCommandService guildDisabledCommandService,
+            IChannelDisabledCommandService channelDisabledCommandService,
             UserService userService)
         {
             this._discord = discord;
             this._commands = commands;
             this._provider = provider;
             this._prefixService = prefixService;
-            this._disabledCommandService = disabledCommandService;
+            this._guildDisabledCommandService = guildDisabledCommandService;
+            this._channelDisabledCommandService = channelDisabledCommandService;
             this._userService = userService;
             this._discord.MessageReceived += OnMessageReceivedAsync;
         }
@@ -114,12 +117,21 @@ namespace FMBot.Bot.Handlers
                 return;
             }
 
-            var disabledCommands = this._disabledCommandService.GetDisabledCommands(context.Guild?.Id);
+            var disabledGuildCommands = this._guildDisabledCommandService.GetDisabledCommands(context.Guild?.Id);
             if (searchResult.Commands != null &&
-                disabledCommands != null &&
-                disabledCommands.Any(searchResult.Commands.First().Command.Name.Contains))
+                disabledGuildCommands != null &&
+                disabledGuildCommands.Any(searchResult.Commands.First().Command.Name.Contains))
             {
                 await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this server.");
+                return;
+            }
+
+            var disabledChannelCommands = this._channelDisabledCommandService.GetDisabledCommands(context.Channel?.Id);
+            if (searchResult.Commands != null &&
+                disabledChannelCommands != null &&
+                disabledChannelCommands.Any(searchResult.Commands.First().Command.Name.Contains))
+            {
+                await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this channel.");
                 return;
             }
 

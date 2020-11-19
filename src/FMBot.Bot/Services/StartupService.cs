@@ -21,7 +21,8 @@ namespace FMBot.Bot.Services
     public class StartupService
     {
         private readonly CommandService _commands;
-        private readonly IDisabledCommandService _disabledCommands;
+        private readonly IGuildDisabledCommandService _guildDisabledCommands;
+        private readonly IChannelDisabledCommandService _channelDisabledCommands;
         private readonly DiscordShardedClient _client;
         private readonly IPrefixService _prefixService;
         private readonly IServiceProvider _provider;
@@ -33,14 +34,16 @@ namespace FMBot.Bot.Services
             DiscordShardedClient discord,
             CommandService commands,
             IPrefixService prefixService,
-            IDisabledCommandService disabledCommands,
+            IGuildDisabledCommandService guildDisabledCommands,
+            IChannelDisabledCommandService channelDisabledCommands,
             IDbContextFactory<FMBotDbContext> contextFactory)
         {
             this._provider = provider;
             this._client = discord;
             this._commands = commands;
             this._prefixService = prefixService;
-            this._disabledCommands = disabledCommands;
+            this._guildDisabledCommands = guildDisabledCommands;
+            this._channelDisabledCommands = channelDisabledCommands;
             this._contextFactory = contextFactory;
         }
 
@@ -71,8 +74,11 @@ namespace FMBot.Bot.Services
             Log.Information("Loading all prefixes");
             await this._prefixService.LoadAllPrefixes();
 
-            Log.Information("Loading all disabled commands");
-            await this._disabledCommands.LoadAllDisabledCommands();
+            Log.Information("Loading all server disabled commands");
+            await this._guildDisabledCommands.LoadAllDisabledCommands();
+
+            Log.Information("Loading all channel disabled commands");
+            await this._channelDisabledCommands.LoadAllDisabledCommands();
 
             Log.Information("Logging into Discord");
             await this._client.LoginAsync(TokenType.Bot, discordToken);
