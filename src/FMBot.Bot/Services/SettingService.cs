@@ -240,6 +240,39 @@ namespace FMBot.Bot.Services
             return settingsModel;
         }
 
+        public async Task<UserSettingsModel> GetFmBotUser(
+            string extraOptions,
+            User currentUser)
+        {
+            var settingsModel = new UserSettingsModel
+            {
+                DifferentUser = false,
+                UserNameLastFm = currentUser.UserNameLastFM,
+                UserId = currentUser.UserId
+            };
+
+            if (extraOptions == null)
+            {
+                return settingsModel;
+            }
+
+            var options = extraOptions.Split(' ');
+
+            foreach (var option in options)
+            {
+                var otherUser = await GetUserFromString(option);
+
+                if (otherUser != null)
+                {
+                    settingsModel.DifferentUser = true;
+                    settingsModel.DiscordUserId = otherUser.DiscordUserId;
+                    settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
+                }
+            }
+
+            return settingsModel;
+        }
+
         public async Task<User> GetDifferentUser(string searchValue)
         {
             var otherUser = await GetUserFromString(searchValue);

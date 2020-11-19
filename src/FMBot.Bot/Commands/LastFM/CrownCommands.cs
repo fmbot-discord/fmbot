@@ -23,6 +23,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly GuildService _guildService;
         private readonly LastFmService _lastFmService;
         private readonly IPrefixService _prefixService;
+        private readonly SettingService _settingService;
         private readonly UserService _userService;
 
         private readonly EmbedAuthorBuilder _embedAuthor;
@@ -34,7 +35,8 @@ namespace FMBot.Bot.Commands.LastFM
             IPrefixService prefixService,
             UserService userService,
             AdminService adminService,
-            LastFmService lastFmService)
+            LastFmService lastFmService,
+            SettingService settingService)
         {
             this._crownService = crownService;
             this._guildService = guildService;
@@ -42,6 +44,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._userService = userService;
             this._adminService = adminService;
             this._lastFmService = lastFmService;
+            this._settingService = settingService;
 
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
@@ -55,9 +58,9 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("cws")]
         [UsernameSetRequired]
         [GuildOnly]
-        public async Task UserCrownsAsync()
+        public async Task UserCrownsAsync([Remainder] string extraOptions = null)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
@@ -76,13 +79,28 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-            var userCrowns = await this._crownService.GetCrownsForUser(guild, userSettings.UserId);
 
-            this._embed.WithTitle($"Crowns for {userTitle}");
+            var differentUser = false;
+            if (!string.IsNullOrWhiteSpace(extraOptions))
+            {
+                var userSettings = await this._settingService.GetUserFromString(extraOptions);
+
+                if (userSettings != null)
+                {
+                    user = userSettings;
+                    differentUser = true;
+                }
+            }
+
+            var userCrowns = await this._crownService.GetCrownsForUser(guild, user.UserId);
+
+            this._embed.WithTitle(differentUser
+                ? $"Crowns for {user.UserNameLastFM}, requested by {userTitle}"
+                : $"Crowns for {userTitle}");
 
             if (!userCrowns.Any())
             {
-                this._embed.WithDescription($"You don't have any crowns yet. \n" +
+                this._embed.WithDescription($"You or the user you're searching for don't have any crowns yet. \n" +
                                             $"Use `{prfx}whoknows` to start getting crowns!");
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 return;

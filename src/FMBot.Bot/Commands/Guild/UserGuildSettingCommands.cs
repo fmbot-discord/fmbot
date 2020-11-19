@@ -181,7 +181,7 @@ namespace FMBot.Bot.Commands
 
         [Command("unblock", RunMode = RunMode.Async)]
         [Summary("Remove block from a user from appearing in server-wide commands")]
-        [Alias("unblockuser", "unban", "unbanuser", "removeblock", "removeban")]
+        [Alias("unblockuser", "unban", "unbanuser", "removeblock", "removeban", "crownunblock")]
         [GuildOnly]
         public async Task GuildUnBlockUserAsync([Remainder] string user = null)
         {
