@@ -272,6 +272,8 @@ namespace FMBot.Bot.Services
             var chartSettings = currentChartSettings;
             chartSettings.CustomOptionsEnabled = false;
 
+            extraOptions ??= "";
+
             if (extraOptions.Contains("notitles") || extraOptions.Contains("nt"))
             {
                 chartSettings.TitleSetting = TitleSetting.TitlesDisabled;
