@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,16 +10,20 @@ using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using Serilog;
 
 namespace FMBot.Bot.Services
 {
     public class ArtistsService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly IMemoryCache _cache;
 
-        public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory)
+        public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
         {
             this._contextFactory = contextFactory;
+            this._cache = cache;
         }
 
         // Top artists for 2 users
@@ -169,6 +174,40 @@ namespace FMBot.Bot.Services
             }
 
             return tasteSettings;
+        }
+
+        public async Task<Artist> GetArtistFromDatabase(string artistName)
+        {
+            var cachedArtistAliases = await GetCachedArtistAliases();
+            var alias = cachedArtistAliases
+                .FirstOrDefault(f => f.Alias.ToLower() == artistName.ToLower());
+
+            var correctedArtistName = alias != null ? alias.Artist.Name : artistName;
+
+            await using var db = this._contextFactory.CreateDbContext();
+            var artist = await db.Artists
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => EF.Functions.ILike(f.Name, correctedArtistName));
+
+            return artist?.SpotifyId != null ? artist : null;
+        }
+
+        private async Task<IReadOnlyList<ArtistAlias>> GetCachedArtistAliases()
+        {
+            if (this._cache.TryGetValue("artists", out IReadOnlyList<ArtistAlias> artists))
+            {
+                return artists;
+            }
+
+            await using var db = this._contextFactory.CreateDbContext();
+            artists = await db.ArtistAliases
+                .Include(i => i.Artist)
+                .ToListAsync();
+
+            this._cache.Set("artists", artists, TimeSpan.FromHours(2));
+            Log.Information($"Added {artists.Count} artists to memory cache");
+
+            return artists;
         }
 
 

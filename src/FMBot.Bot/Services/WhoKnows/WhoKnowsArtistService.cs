@@ -105,7 +105,7 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var db = this._contextFactory.CreateDbContext();
             var query = db.UserArtists
                 .AsQueryable()
-                .Where(w => EF.Functions.ILike(w.Name, artistName.ToLower())
+                .Where(w => EF.Functions.ILike(w.Name, artistName)
                             && userIds.Contains(w.UserId));
 
             // This is bad practice, but it helps with speed. An exception gets thrown if the artist does not exist in the database.
@@ -118,6 +118,18 @@ namespace FMBot.Bot.Services.WhoKnows
             {
                 return 0;
             }
+        }
+
+        public async Task<int?> GetArtistPlayCountForUser(string artistName, int userId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var userArtist = await db.UserArtists
+                .AsQueryable()
+                .FirstOrDefaultAsync(w =>
+                    EF.Functions.ILike(w.Name, artistName)
+                    && w.UserId == userId);
+
+            return userArtist?.Playcount;
         }
 
         public async Task<double> GetArtistAverageListenerPlaycountForServer(ICollection<GuildUser> guildUsers, string artistName)
