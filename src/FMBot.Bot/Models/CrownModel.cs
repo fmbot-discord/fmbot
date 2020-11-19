@@ -1,0 +1,11 @@
+using FMBot.Persistence.Domain.Models;
+
+namespace FMBot.Bot.Models
+{
+    public class CrownModel
+    {
+        public UserCrown Crown { get; set; }
+
+        public string CrownResult { get; set; }
+    }
+}

@@ -244,6 +244,31 @@ namespace FMBot.Bot.Services
             }
         }
 
+        public async Task<bool?> ToggleCrownsAsync(IGuild guild)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingGuild = await db.Guilds
+                .AsQueryable()
+                .FirstAsync(f => f.DiscordGuildId == guild.Id);
+
+            existingGuild.Name = guild.Name;
+
+            if (existingGuild.CrownsDisabled == true)
+            {
+                existingGuild.CrownsDisabled = false;
+            }
+            else
+            {
+                existingGuild.CrownsDisabled = true;
+            }
+
+            db.Entry(existingGuild).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            return existingGuild.CrownsDisabled;
+        }
+
         public async Task<bool> SetWhoKnowsThresholdDaysAsync(IGuild guild, int? days)
         {
             await using var db = this._contextFactory.CreateDbContext();
@@ -310,7 +335,7 @@ namespace FMBot.Bot.Services
 
             return true;
         }
-        
+
         public async Task<bool> UnBlockGuildUserAsync(IGuild guild, int userId)
         {
             await using var db = this._contextFactory.CreateDbContext();

@@ -37,7 +37,7 @@ namespace FMBot.Bot.Services.WhoKnows
             return users.OrderByDescending(o => o.Playcount).ToList();
         }
 
-        public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects)
+        public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects, CrownModel crownModel = null)
         {
             var reply = "";
 
@@ -59,16 +59,16 @@ namespace FMBot.Bot.Services.WhoKnows
                 var nameWithLink = NameWithLink(user);
                 var playString = StringExtensions.GetPlaysString(user.Playcount);
 
-                if (index == 0)
+                var positionCounter = $" {index + 1}. ";
+
+                if (crownModel?.Crown != null && crownModel.Crown.UserId == user.UserId)
                 {
-                    reply += $"👑  {nameWithLink}";
-                }
-                else
-                {
-                    reply += $" {index + 1}.  {nameWithLink} ";
+                    positionCounter = "👑 ";
                 }
 
-                reply += $"- **{user.Playcount}** {playString}\n";
+                reply += $"{positionCounter} {nameWithLink}";
+
+                reply += $" - **{user.Playcount}** {playString}\n";
                 position++;
             }
 
@@ -86,7 +86,12 @@ namespace FMBot.Bot.Services.WhoKnows
                 {
                     reply += $"  ...   {nameWithLink} ";
                 }
-                reply += $"- **{userWithNoPosition.Playcount}** {playString}\n";
+                reply += $" - **{userWithNoPosition.Playcount}** {playString}\n";
+            }
+
+            if (crownModel != null && crownModel.CrownResult != null)
+            {
+                reply += $"\n{crownModel.CrownResult}";
             }
 
             return reply;

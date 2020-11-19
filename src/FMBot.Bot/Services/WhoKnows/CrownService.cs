@@ -22,7 +22,7 @@ namespace FMBot.Bot.Services.WhoKnows
             this._lastFmService = lastFmService;
         }
 
-        public async Task<string> GetAndUpdateCrownForArtist(IList<WhoKnowsObjectWithUser> users, Guild guild, string artistName)
+        public async Task<CrownModel> GetAndUpdateCrownForArtist(IList<WhoKnowsObjectWithUser> users, Guild guild, string artistName)
         {
             var eligibleUsers = guild.GuildUsers.ToList();
 
@@ -67,10 +67,17 @@ namespace FMBot.Bot.Services.WhoKnows
                     db.Entry(existingCrownForArtist).State = EntityState.Modified;
                     await db.SaveChangesAsync();
 
-                    return $"Crown playcount for {topUser.DiscordName} updated from {oldPlaycount} to {topUser.Playcount}.";
+                    return new CrownModel
+                    {
+                        Crown = existingCrownForArtist,
+                        CrownResult = $"Crown playcount for {topUser.DiscordName} updated from {oldPlaycount} to {topUser.Playcount}."
+                    };
                 }
 
-                return null;
+                return new CrownModel
+                {
+                    Crown = existingCrownForArtist,
+                };
             }
 
             // Crown exists, but top user is a different person
@@ -81,7 +88,11 @@ namespace FMBot.Bot.Services.WhoKnows
 
                 if (currentPlaycountForCrownUser == null)
                 {
-                    return $"Could not confirm playcount for current crown holder.";
+                    return new CrownModel
+                    {
+                        Crown = existingCrownForArtist,
+                        CrownResult = $"Could not confirm playcount for current crown holder."
+                    };
                 }
                 if (currentPlaycountForCrownUser >= topUser.Playcount)
                 {
@@ -93,7 +104,11 @@ namespace FMBot.Bot.Services.WhoKnows
 
                     await db.SaveChangesAsync();
 
-                    return $"Crown playcount for {topUser.DiscordName} updated from {oldPlaycount} to {topUser.Playcount}.";
+                    return new CrownModel
+                    {
+                        Crown = existingCrownForArtist,
+                        CrownResult = $"Crown playcount for {topUser.DiscordName} updated from {oldPlaycount} to {topUser.Playcount}."
+                    };
                 }
 
                 if (existingCrownForArtist.CurrentPlaycount != currentPlaycountForCrownUser)
@@ -122,7 +137,11 @@ namespace FMBot.Bot.Services.WhoKnows
 
                 await db.SaveChangesAsync();
 
-                return $"Crown stolen by {topUser.DiscordName}! ({existingCrownForArtist.CurrentPlaycount} > {topUser.Playcount} plays).";
+                return new CrownModel
+                {
+                    Crown = newCrown,
+                    CrownResult = $"Crown stolen by {topUser.DiscordName}! ({existingCrownForArtist.CurrentPlaycount} > {topUser.Playcount} plays)."
+                };
             }
 
             // No crown exists yet
@@ -146,13 +165,21 @@ namespace FMBot.Bot.Services.WhoKnows
 
                     await db.SaveChangesAsync();
 
-                    return $"Crown claimed by {topUser.DiscordName}!";
+                    return new CrownModel
+                    {
+                        Crown = newCrown,
+                        CrownResult = $"Crown claimed by {topUser.DiscordName}!"
+                    };
                 }
 
                 if (topUser.Playcount >= 10)
                 {
                     var amountOfPlaysRequired = Constants.MinPlaysForCrown - topUser.Playcount;
-                    return $"{topUser.DiscordName} needs {amountOfPlaysRequired} more plays to claim the crown.";
+
+                    return new CrownModel
+                    {
+                        CrownResult = $"{topUser.DiscordName} needs {amountOfPlaysRequired} more plays to claim the crown."
+                    };
                 }
             }
 
@@ -169,6 +196,80 @@ namespace FMBot.Bot.Services.WhoKnows
             }
 
             return artist.Content.Artist.Stats.Userplaycount;
+        }
+
+        public async Task<IList<UserCrown>> GetCrownsForArtist(Guild guild, string artistName)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            return await db.UserCrowns
+                .AsQueryable()
+                .Include(i => i.User)
+                .OrderByDescending(o => o.CurrentPlaycount)
+                .Where(f => f.GuildId == guild.GuildId &&
+                                          EF.Functions.ILike(f.ArtistName, artistName))
+                .ToListAsync();
+        }
+
+        public async Task RemoveCrowns(IList<UserCrown> crowns)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+
+            db.UserCrowns.RemoveRange(crowns);
+
+            await db.SaveChangesAsync();
+        }
+
+        public async Task<IList<UserCrown>> GetCrownsForUser(Guild guild, int userId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            return await db.UserCrowns
+                .AsQueryable()
+                .Include(i => i.User)
+                .OrderByDescending(o => o.CurrentPlaycount)
+                .Where(f => f.GuildId == guild.GuildId &&
+                            f.UserId == userId)
+                .ToListAsync();
+        }
+
+        public async Task<List<IGrouping<int, UserCrown>>> GetTopCrownUsersForGuild(Guild guild)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var guildCrowns = await db.UserCrowns
+                .AsQueryable()
+                .Include(i => i.User)
+                .Where(f => f.GuildId == guild.GuildId)
+                .ToListAsync();
+
+            return guildCrowns
+                .GroupBy(g => g.UserId)
+                .OrderByDescending(o => o.Count())
+                .ToList();
+        }
+
+        public async Task RemoveAllCrownsFromGuild(Guild guild)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var guildCrowns = await db.UserCrowns
+                .AsQueryable()
+                .Where(f => f.GuildId == guild.GuildId)
+                .ToListAsync();
+
+            db.UserCrowns.RemoveRange(guildCrowns);
+
+            await db.SaveChangesAsync();
+        }
+
+        public async Task RemoveAllCrownsFromUser(int userId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var userCrowns = await db.UserCrowns
+                .AsQueryable()
+                .Where(f => f.UserId == userId)
+                .ToListAsync();
+
+            db.UserCrowns.RemoveRange(userCrowns);
+
+            await db.SaveChangesAsync();
         }
     }
 }

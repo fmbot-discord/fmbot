@@ -12,6 +12,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
@@ -22,6 +23,7 @@ namespace FMBot.Bot.Commands.LastFM
 {
     public class UserCommands : ModuleBase
     {
+        private readonly CrownService _crownService;
         private readonly FriendsService _friendsService;
         private readonly GuildService _guildService;
         private readonly IIndexService _indexService;
@@ -46,8 +48,8 @@ namespace FMBot.Bot.Commands.LastFM
                 LastFmService lastFmService,
                 SettingService settingService,
                 TimerService timer,
-                UserService userService
-            )
+                UserService userService,
+                CrownService crownService)
         {
             this._friendsService = friendsService;
             this._guildService = guildService;
@@ -57,6 +59,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._settingService = settingService;
             this._timer = timer;
             this._userService = userService;
+            this._crownService = crownService;
 
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
@@ -263,6 +266,7 @@ namespace FMBot.Bot.Commands.LastFM
             if (usernameChanged)
             {
                 await this._indexService.IndexUser(newUserSettings);
+                await this._crownService.RemoveAllCrownsFromUser(newUserSettings.UserId);
             }
 
             if (!this._guildService.CheckIfDM(this.Context))
@@ -343,6 +347,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (!string.Equals(existingUserSettings.UserNameLastFM, newUserSettings.UserNameLastFM, StringComparison.CurrentCultureIgnoreCase))
                 {
+                    await this._crownService.RemoveAllCrownsFromUser(newUserSettings.UserId);
                     await this._indexService.IndexUser(newUserSettings);
                 }
             }
