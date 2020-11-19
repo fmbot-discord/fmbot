@@ -79,6 +79,13 @@ namespace FMBot.Bot.Commands.LastFM
 
             this._embed.WithTitle($"Crowns for {userTitle}");
 
+            if (!userCrowns.Any())
+            {
+                this._embed.WithDescription($"You don't have any crowns yet. Use whoknows to start getting crowns!");
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                return;
+            }
+
             var embedDescription = new StringBuilder();
             for (var index = 0; index < userCrowns.Count && index < 15; index++)
             {
