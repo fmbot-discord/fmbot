@@ -249,6 +249,7 @@ namespace FMBot.Bot.Services
                 await using var db = this._contextFactory.CreateDbContext();
                 return await db.Users
                     .AsQueryable()
+                    .OrderByDescending(o => o.LastUsed)
                     .FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == searchValue.ToLower());
             }
 

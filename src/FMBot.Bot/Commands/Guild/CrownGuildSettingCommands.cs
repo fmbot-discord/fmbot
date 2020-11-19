@@ -203,9 +203,9 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        [Command("blockedusers", RunMode = RunMode.Async)]
+        [Command("crownblockedusers", RunMode = RunMode.Async)]
         [Summary("Block a user from appearing in server-wide commands")]
-        [Alias("blocked", "banned", "bannedusers")]
+        [Alias("crownblocked", "crownbanned", "crownbannedusers")]
         public async Task BlockedUsersAsync()
         {
             if (this._guildService.CheckIfDM(this.Context))

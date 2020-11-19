@@ -55,79 +55,79 @@ namespace FMBot.Bot.Services.WhoKnows
             }
 
             await using var db = this._contextFactory.CreateDbContext();
-            var existingCrownForArtist = await db.UserCrowns
+            var currentCrownholder = await db.UserCrowns
                 .AsQueryable()
                 .Include(i => i.User)
-                .Where(w => eligibleUsers.Select(s => s.UserId).Contains(w.UserId))
                 .OrderByDescending(o => o.CurrentPlaycount)
                 .FirstOrDefaultAsync(f => f.GuildId == guild.GuildId &&
+                                          f.Active &&
                                           EF.Functions.ILike(f.ArtistName, artistName));
 
             // Crown exists and is same as top user
-            if (existingCrownForArtist != null && topUser.UserId == existingCrownForArtist.UserId)
+            if (currentCrownholder != null && topUser.UserId == currentCrownholder.UserId)
             {
-                var oldPlaycount = existingCrownForArtist.CurrentPlaycount;
+                var oldPlaycount = currentCrownholder.CurrentPlaycount;
                 if (oldPlaycount < topUser.Playcount)
                 {
-                    existingCrownForArtist.CurrentPlaycount = topUser.Playcount;
-                    existingCrownForArtist.Modified = DateTime.UtcNow;
+                    currentCrownholder.CurrentPlaycount = topUser.Playcount;
+                    currentCrownholder.Modified = DateTime.UtcNow;
 
-                    db.Entry(existingCrownForArtist).State = EntityState.Modified;
+                    db.Entry(currentCrownholder).State = EntityState.Modified;
                     await db.SaveChangesAsync();
 
                     return new CrownModel
                     {
-                        Crown = existingCrownForArtist,
+                        Crown = currentCrownholder,
                         CrownResult = $"Crown playcount for {topUser.DiscordName} updated from {oldPlaycount} to {topUser.Playcount}."
                     };
                 }
 
                 return new CrownModel
                 {
-                    Crown = existingCrownForArtist,
+                    Crown = currentCrownholder,
                 };
             }
 
             // Crown exists, but top user is a different person
-            if (existingCrownForArtist != null && topUser.UserId != existingCrownForArtist.UserId)
+            if (currentCrownholder != null && topUser.UserId != currentCrownholder.UserId)
             {
-                var currentPlaycountForCrownUser =
-                    await GetCurrentPlaycountForUser(artistName, existingCrownForArtist.User.UserNameLastFM);
+                var currentPlaycountForCrownHolder =
+                    await GetCurrentPlaycountForUser(artistName, currentCrownholder.User.UserNameLastFM);
 
-                if (currentPlaycountForCrownUser == null)
+                if (currentPlaycountForCrownHolder == null)
                 {
                     return new CrownModel
                     {
-                        Crown = existingCrownForArtist,
+                        Crown = currentCrownholder,
                         CrownResult = $"Could not confirm playcount for current crown holder."
                     };
                 }
-                if (currentPlaycountForCrownUser >= topUser.Playcount)
+                if (eligibleUsers.Select(s => s.UserId).Contains(currentCrownholder.UserId) && currentPlaycountForCrownHolder >= topUser.Playcount)
                 {
-                    var oldPlaycount = existingCrownForArtist.CurrentPlaycount;
-                    existingCrownForArtist.CurrentPlaycount = topUser.Playcount;
-                    existingCrownForArtist.Modified = DateTime.UtcNow;
+                    var oldPlaycount = currentCrownholder.CurrentPlaycount;
+                    currentCrownholder.CurrentPlaycount = topUser.Playcount;
+                    currentCrownholder.Modified = DateTime.UtcNow;
 
-                    db.Entry(existingCrownForArtist).State = EntityState.Modified;
+                    db.Entry(currentCrownholder).State = EntityState.Modified;
 
                     await db.SaveChangesAsync();
 
                     return new CrownModel
                     {
-                        Crown = existingCrownForArtist,
+                        Crown = currentCrownholder,
                         CrownResult = $"Crown playcount for {topUser.DiscordName} updated from {oldPlaycount} to {topUser.Playcount}."
                     };
                 }
 
-                if (existingCrownForArtist.CurrentPlaycount != currentPlaycountForCrownUser)
+                if (currentCrownholder.CurrentPlaycount != currentPlaycountForCrownHolder)
                 {
-                    existingCrownForArtist.CurrentPlaycount = topUser.Playcount;
+                    currentCrownholder.CurrentPlaycount = topUser.Playcount;
                 }
 
-                existingCrownForArtist.Active = false;
-                existingCrownForArtist.Modified = DateTime.UtcNow;
+                currentCrownholder.Active = false;
+                currentCrownholder.Modified = DateTime.UtcNow;
 
-                db.Entry(existingCrownForArtist).State = EntityState.Modified;
+                db.Entry(currentCrownholder).State = EntityState.Modified;
 
                 var newCrown = new UserCrown
                 {
@@ -148,12 +148,12 @@ namespace FMBot.Bot.Services.WhoKnows
                 return new CrownModel
                 {
                     Crown = newCrown,
-                    CrownResult = $"Crown stolen by {topUser.DiscordName}! ({existingCrownForArtist.CurrentPlaycount} > {topUser.Playcount} plays)."
+                    CrownResult = $"Crown stolen by {topUser.DiscordName}! ({currentCrownholder.CurrentPlaycount} > {topUser.Playcount} plays)."
                 };
             }
 
             // No crown exists yet
-            if (existingCrownForArtist == null)
+            if (currentCrownholder == null)
             {
                 if (topUser.Playcount >= Constants.MinPlaysForCrown)
                 {
@@ -235,6 +235,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 .Include(i => i.User)
                 .OrderByDescending(o => o.CurrentPlaycount)
                 .Where(f => f.GuildId == guild.GuildId &&
+                            f.Active &&
                             f.UserId == userId)
                 .ToListAsync();
         }

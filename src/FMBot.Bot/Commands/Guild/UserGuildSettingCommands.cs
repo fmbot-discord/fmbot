@@ -239,7 +239,7 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            if (guild.GuildBlockedUsers == null || !guild.GuildBlockedUsers.Where(w => w.BlockedFromWhoKnows).Select(s => s.UserId).Contains(userToUnblock.UserId))
+            if (guild.GuildBlockedUsers == null || !guild.GuildBlockedUsers.OrderByDescending(o => o.User.LastUsed).Select(s => s.UserId).Contains(userToUnblock.UserId))
             {
                 await ReplyAsync("The user you're trying to unblock was not blocked on this server.");
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
