@@ -1,34 +1,30 @@
 using System;
-using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
-namespace FMBot.Bot.Commands
+namespace FMBot.Bot.Commands.Guild
 {
     [Summary("Server Staff Only")]
     public class CrownGuildSettingCommands : ModuleBase
     {
         private readonly AdminService _adminService;
+        private readonly CrownService _crownService;
         private readonly GuildService _guildService;
         private readonly SettingService _settingService;
 
         private readonly IPrefixService _prefixService;
-        private readonly IGuildDisabledCommandService _guildDisabledCommandService;
-        private readonly IChannelDisabledCommandService _channelDisabledCommandService;
-
-        private readonly CommandService _commands;
 
         private readonly EmbedBuilder _embed;
         private readonly EmbedAuthorBuilder _embedAuthor;
@@ -36,18 +32,13 @@ namespace FMBot.Bot.Commands
 
         public CrownGuildSettingCommands(IPrefixService prefixService,
             GuildService guildService,
-            CommandService commands,
             AdminService adminService,
-            IGuildDisabledCommandService guildDisabledCommandService,
-            IChannelDisabledCommandService channelDisabledCommandService,
-            SettingService settingService)
+            SettingService settingService, CrownService crownService)
         {
             this._prefixService = prefixService;
             this._guildService = guildService;
-            this._commands = commands;
-            this._guildDisabledCommandService = guildDisabledCommandService;
-            this._channelDisabledCommandService = channelDisabledCommandService;
             this._settingService = settingService;
+            this._crownService = crownService;
             this._adminService = adminService;
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFmColorRed);
@@ -55,18 +46,74 @@ namespace FMBot.Bot.Commands
             this._embedFooter = new EmbedFooterBuilder();
         }
 
-        [Command("crownactivitythreshold", RunMode = RunMode.Async)]
+
+        [Command("crownthreshold", RunMode = RunMode.Async)]
         [Summary("Sets amount of days to filter out users for inactivity")]
-        [Alias("setcrownactivitythreshold", "setcrownthreshold", "setcwthreshold", "cwthreshold")]
-        public async Task SetCrownThresholdAsync([Remainder] string days = null)
+        [Alias("setcrownthreshold", "setcwthreshold", "cwthreshold", "crowntreshold")]
+        [GuildOnly]
+        public async Task SetCrownPlaycountThresholdAsync([Remainder] string playcount = null)
         {
-            if (this._guildService.CheckIfDM(this.Context))
+            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
+
+            if (lastIndex == null)
             {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
+                await ReplyAsync("This server hasn't been indexed yet.\n" +
+                                 $"Please run `.fmindex` to index this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+            var serverUser = (IGuildUser)this.Context.Message.Author;
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
+                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync(
+                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
 
+            if (string.IsNullOrWhiteSpace(playcount))
+            {
+                await this._guildService.SetMinimumCrownPlaycountThresholdAsync(this.Context.Guild, null);
+
+                await ReplyAsync($"Minumum amount of plays for a crown has been set to the default of {Constants.DefaultPlaysForCrown}.");
+                this.Context.LogCommandUsed();
+                return;
+            }
+
+            var maxAmountOfDays = (DateTime.UtcNow - new DateTime(2020, 11, 4)).Days;
+
+            if (int.TryParse(playcount, out var result))
+            {
+                if (result < 10 || result > 1000)
+                {
+                    await ReplyAsync(
+                        $"Please pick a value between 10 and 1000 plays.");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+            }
+            else
+            {
+                await ReplyAsync("Please enter a valid amount of plays. \n" +
+                                 "Any playcount below the amount you enter will not be enough for a crown.");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
+
+            await this._guildService.SetMinimumCrownPlaycountThresholdAsync(this.Context.Guild, result);
+
+            await ReplyAsync($"Crown playcount threshold has been set for this server.\n" +
+                             $"All users that have less then {result} plays for an artist won't able to gain crowns for that artist.");
+            this.Context.LogCommandUsed();
+        }
+
+        [Command("crownactivitythreshold", RunMode = RunMode.Async)]
+        [Summary("Sets amount of days to filter out users for inactivity")]
+        [Alias("setcrownactivitythreshold",  "setcwactivitythreshold", "cwactivitythreshold", "crownactivitytreshold")]
+        [GuildOnly]
+        public async Task SetCrownActivityThresholdAsync([Remainder] string days = null)
+        {
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
             if (lastIndex == null)
@@ -88,7 +135,7 @@ namespace FMBot.Bot.Commands
 
             if (string.IsNullOrWhiteSpace(days))
             {
-                await this._guildService.SetCrownThresholdDaysAsync(this.Context.Guild, null);
+                await this._guildService.SetCrownActivityThresholdDaysAsync(this.Context.Guild, null);
 
                 await ReplyAsync("All registered users in this server will now be able to gain crowns.");
                 this.Context.LogCommandUsed();
@@ -116,7 +163,7 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            await this._guildService.SetCrownThresholdDaysAsync(this.Context.Guild, result);
+            await this._guildService.SetCrownActivityThresholdDaysAsync(this.Context.Guild, result);
 
             await ReplyAsync($"Crown activity threshold has been set for this server.\n" +
                              $"All users that have not used .fmbot in the last {result} days won't able to gain crowns.");
@@ -126,15 +173,9 @@ namespace FMBot.Bot.Commands
         [Command("crownblock", RunMode = RunMode.Async)]
         [Summary("Block a user from appearing gaining crowns")]
         [Alias("crownblockuser", "crownban", "cwblock", "cwban", "crownbanuser")]
+        [GuildOnly]
         public async Task GuildBlockUserFromCrownsAsync([Remainder] string user = null)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             var serverUser = (IGuildUser)this.Context.Message.Author;
@@ -206,15 +247,9 @@ namespace FMBot.Bot.Commands
         [Command("crownblockedusers", RunMode = RunMode.Async)]
         [Summary("Block a user from appearing in server-wide commands")]
         [Alias("crownblocked", "crownbanned", "crownbannedusers")]
+        [GuildOnly]
         public async Task BlockedUsersAsync()
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             var serverUser = (IGuildUser)this.Context.Message.Author;
@@ -257,6 +292,56 @@ namespace FMBot.Bot.Commands
             }
 
             await ReplyAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
+        }
+
+        [Command("togglecrowns", RunMode = RunMode.Async)]
+        [Summary("Toggles crowns for your server.")]
+        [Alias("togglecrown")]
+        [GuildOnly]
+        public async Task ToggleCrownsAsync([Remainder] string confirmation = null)
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+            if (guild == null)
+            {
+                await ReplyAsync("This server hasn't been stored yet.\n" +
+                                 $"Please run `{prfx}index` to store this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+
+            var serverUser = (IGuildUser)this.Context.Message.Author;
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
+                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync(
+                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                return;
+            }
+
+            if (guild.CrownsDisabled != true && (confirmation == null || confirmation.ToLower() != "confirm"))
+            {
+                await ReplyAsync($"Disabling crowns will remove all existing crowns and crown history for this server.\n" +
+                                 $"Type `{prfx}togglecrowns confirm` to confirm.");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
+
+            var crownsDisabled = await this._guildService.ToggleCrownsAsync(this.Context.Guild);
+
+            if (crownsDisabled == true)
+            {
+                await this._crownService.RemoveAllCrownsFromGuild(guild);
+                await ReplyAsync("All crowns have been removed and crowns have been disabled for this server.");
+            }
+            else
+            {
+                await ReplyAsync($"Crowns have been enabled for this server.");
+            }
+
             this.Context.LogCommandUsed();
         }
     }

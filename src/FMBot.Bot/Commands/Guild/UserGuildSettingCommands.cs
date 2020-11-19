@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -44,15 +45,9 @@ namespace FMBot.Bot.Commands
         [Command("activitythreshold", RunMode = RunMode.Async)]
         [Summary("Sets amount of days to filter out users for inactivity")]
         [Alias("setactivitythreshold", "setthreshold")]
+        [GuildOnly]
         public async Task SetWhoKnowsThresholdAsync([Remainder] string days = null)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
             if (lastIndex == null)
@@ -74,7 +69,7 @@ namespace FMBot.Bot.Commands
 
             if (string.IsNullOrWhiteSpace(days))
             {
-                await this._guildService.SetWhoKnowsThresholdDaysAsync(this.Context.Guild, null);
+                await this._guildService.SetWhoKnowsActivityThresholdDaysAsync(this.Context.Guild, null);
 
                 await ReplyAsync("All registered users in this server will now be visible again in server-wide commands and be able to gain crowns.");
                 this.Context.LogCommandUsed();
@@ -102,7 +97,7 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            await this._guildService.SetWhoKnowsThresholdDaysAsync(this.Context.Guild, result);
+            await this._guildService.SetWhoKnowsActivityThresholdDaysAsync(this.Context.Guild, result);
 
             await ReplyAsync($"Activity threshold has been set for this server.\n" +
                              $"All users that have not used .fmbot in the last {result} days are now filtered from all server-wide commands and won't able to gain crowns.");
@@ -112,15 +107,9 @@ namespace FMBot.Bot.Commands
         [Command("block", RunMode = RunMode.Async)]
         [Summary("Block a user from appearing in server-wide commands")]
         [Alias("blockuser", "ban", "banuser")]
+        [GuildOnly]
         public async Task GuildBlockUserAsync([Remainder] string user = null)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             var serverUser = (IGuildUser)this.Context.Message.Author;
@@ -193,15 +182,9 @@ namespace FMBot.Bot.Commands
         [Command("unblock", RunMode = RunMode.Async)]
         [Summary("Remove block from a user from appearing in server-wide commands")]
         [Alias("unblockuser", "unban", "unbanuser", "removeblock", "removeban")]
+        [GuildOnly]
         public async Task GuildUnBlockUserAsync([Remainder] string user = null)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             var serverUser = (IGuildUser)this.Context.Message.Author;
@@ -270,15 +253,9 @@ namespace FMBot.Bot.Commands
         [Command("blockedusers", RunMode = RunMode.Async)]
         [Summary("Block a user from appearing in server-wide commands")]
         [Alias("blocked", "banned", "bannedusers")]
+        [GuildOnly]
         public async Task BlockedUsersAsync()
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             var serverUser = (IGuildUser)this.Context.Message.Author;

@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -58,17 +59,11 @@ namespace FMBot.Bot.Commands
         [Command("serverset", RunMode = RunMode.Async)]
         [Summary("Sets the global FMBot settings for the server.")]
         [Alias("serversetmode")]
+        [GuildOnly]
         public async Task SetServerAsync([Summary("The default mode you want to use.")]
             string chartType = "embedmini", [Summary("The default timeperiod you want to use.")]
             string chartTimePeriod = "monthly")
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -113,15 +108,9 @@ namespace FMBot.Bot.Commands
         [Command("serverreactions", RunMode = RunMode.Async)]
         [Summary("Sets reactions for some server commands.")]
         [Alias("serversetreactions")]
+        [GuildOnly]
         public async Task SetGuildReactionsAsync(params string[] emotes)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -168,15 +157,9 @@ namespace FMBot.Bot.Commands
         [Command("togglesupportermessages", RunMode = RunMode.Async)]
         [Summary("Sets reactions for some server commands.")]
         [Alias("togglesupporter", "togglesupporters", "togglesupport")]
+        [GuildOnly]
         public async Task ToggleSupportMessagesAsync()
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -204,15 +187,9 @@ namespace FMBot.Bot.Commands
         [Command("export", RunMode = RunMode.Async)]
         [Summary("Gets Last.fm usernames from your server members in json format.")]
         [Alias("getmembers", "exportmembers")]
+        [GuildOnly]
         public async Task GetMembersAsync()
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -260,15 +237,9 @@ namespace FMBot.Bot.Commands
         /// </summary>
         /// <param name="prefix">The desired prefix.</param>
         [Command("prefix", RunMode = RunMode.Async)]
+        [GuildOnly]
         public async Task SetPrefixAsync(string prefix = null)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -332,15 +303,9 @@ namespace FMBot.Bot.Commands
         /// </summary>
         [Command("toggleservercommand", RunMode = RunMode.Async)]
         [Alias("toggleservercommands", "toggleserver", "servertoggle")]
+        [GuildOnly]
         public async Task ToggleGuildCommand(string command = null)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var disabledCommandsForGuild = await this._guildService.GetDisabledCommandsForGuild(this.Context.Guild);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
@@ -415,15 +380,9 @@ namespace FMBot.Bot.Commands
 
         [Command("togglecommand", RunMode = RunMode.Async)]
         [Alias("togglecommands", "channeltoggle", "togglechannel", "togglechannelcommand", "togglechannelcommands")]
+        [GuildOnly]
         public async Task ToggleChannelCommand(string command = null)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 

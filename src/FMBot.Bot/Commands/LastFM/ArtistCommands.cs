@@ -744,15 +744,9 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Shows what other users listen to the same artist in your server")]
         [Alias("w", "wk")]
         [UsernameSetRequired]
+        [GuildOnly]
         public async Task WhoKnowsAsync([Remainder] string artistValues = null)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("This command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 

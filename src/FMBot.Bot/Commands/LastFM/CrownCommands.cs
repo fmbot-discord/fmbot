@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +11,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -21,6 +21,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly AdminService _adminService;
         private readonly CrownService _crownService;
         private readonly GuildService _guildService;
+        private readonly LastFmService _lastFmService;
         private readonly IPrefixService _prefixService;
         private readonly UserService _userService;
 
@@ -28,13 +29,19 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        public CrownCommands(CrownService crownService, GuildService guildService, IPrefixService prefixService, UserService userService, AdminService adminService)
+        public CrownCommands(CrownService crownService,
+            GuildService guildService,
+            IPrefixService prefixService,
+            UserService userService,
+            AdminService adminService,
+            LastFmService lastFmService)
         {
             this._crownService = crownService;
             this._guildService = guildService;
             this._prefixService = prefixService;
             this._userService = userService;
             this._adminService = adminService;
+            this._lastFmService = lastFmService;
 
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
@@ -47,15 +54,9 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Shows you your crowns")]
         [Alias("cws")]
         [UsernameSetRequired]
+        [GuildOnly]
         public async Task UserCrownsAsync()
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("This command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
@@ -81,7 +82,8 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!userCrowns.Any())
             {
-                this._embed.WithDescription($"You don't have any crowns yet. Use whoknows to start getting crowns!");
+                this._embed.WithDescription($"You don't have any crowns yet. \n" +
+                                            $"Use `{prfx}whoknows` to start getting crowns!");
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 return;
             }
@@ -101,19 +103,13 @@ namespace FMBot.Bot.Commands.LastFM
             this.Context.LogCommandUsed();
         }
 
-        //[Command("crown", RunMode = RunMode.Async)]
-        //[Summary("Shows who previosuly owned artist crowns")]
-        //[Alias("cw")]
+        [Command("crown", RunMode = RunMode.Async)]
+        [Summary("Shows crown info about current artist")]
+        [Alias("cw")]
         [UsernameSetRequired]
+        [GuildOnly]
         public async Task CrownAsync([Remainder] string artistValues = null)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("This command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
@@ -132,21 +128,70 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-            var artistCrowns = await this._crownService.GetCrownsForArtist(guild, artistValues);
+            var artist = artistValues;
 
-            if (!artistCrowns.Any())
+            if (string.IsNullOrWhiteSpace(artistValues))
             {
-                this._embed.WithDescription($"No crown history for the artist `{artistValues}`");
+                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true);
+
+                if (!recentScrobbles.Success || recentScrobbles.Content == null)
+                {
+                    this._embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, this.Context);
+                    this.Context.LogCommandUsed(CommandResponse.LastFmError);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
+                }
+
+                if (!recentScrobbles.Content.RecentTracks.Track.Any())
+                {
+                    this._embed.NoScrobblesFoundErrorResponse(userSettings.UserNameLastFM);
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
+                }
+
+                var currentTrack = recentScrobbles.Content.RecentTracks.Track[0];
+                artist = currentTrack.Artist.Text;
+            }
+
+            var artistCrowns = await this._crownService.GetCrownsForArtist(guild, artist);
+
+            if (!artistCrowns.Any(a => a.Active))
+            {
+                this._embed.WithDescription($"No known crowns for the artist `{artist}`. \n" +
+                                            $"Be the first to claim the crown with `{prfx}whoknows`!");
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 return;
             }
 
             var currentCrown = artistCrowns
+                .Where(w => w.Active)
                 .OrderByDescending(o => o.CurrentPlaycount)
                 .First();
 
-            this._embed.WithTitle($"Crown history for {currentCrown.ArtistName}");
+            var name = await this._guildService.GetUserFromGuild(guild, currentCrown.UserId);
+
+            this._embed.AddField("Current crown holder",
+                $"**{name?.UserName ?? currentCrown.User.UserNameLastFM}** - **{currentCrown.CurrentPlaycount}** plays");
+
+            var lastCrownCreateDate = currentCrown.Created;
+            if (artistCrowns.Count > 1)
+            {
+                var crownHistory = new StringBuilder();
+                foreach (var artistCrown in artistCrowns.Where(w => !w.Active))
+                {
+                    var crownUsername = await this._guildService.GetUserFromGuild(guild, artistCrown.UserId);
+
+                    crownHistory.AppendLine($"**{crownUsername?.UserName ?? artistCrown.User.UserNameLastFM}** - " +
+                                            $"**{artistCrown.Created:MMMM dd yyyy}** to **{lastCrownCreateDate:MMMM dd yyyy}** - " +
+                                            $"**{artistCrown.CurrentPlaycount}** to **{artistCrown.StartPlaycount}** plays");
+                    lastCrownCreateDate = artistCrown.Created;
+                }
+
+                this._embed.AddField("Crown history", crownHistory.ToString());
+            }
+
+            this._embed.WithTitle($"Crown info for {currentCrown.ArtistName}");
 
             var embedDescription = new StringBuilder();
 
@@ -160,15 +205,9 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Shows users with the most crowns in your server")]
         [Alias("cwlb", "crownlb", "cwleaderboard")]
         [UsernameSetRequired]
+        [GuildOnly]
         public async Task CrownLeaderboardAsync()
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("This command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
@@ -223,19 +262,12 @@ namespace FMBot.Bot.Commands.LastFM
             this.Context.LogCommandUsed();
         }
 
-
         [Command("killcrown", RunMode = RunMode.Async)]
         [Summary("Removes all crowns from a specific artist")]
         [Alias("kcw", "kcrown", "killcw")]
+        [GuildOnly]
         public async Task KillCrownAsync([Remainder] string artistValues = null)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
@@ -277,62 +309,6 @@ namespace FMBot.Bot.Commands.LastFM
 
             this._embed.WithDescription($"All crowns for `{artistValues}` have been removed.");
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed();
-        }
-
-        [Command("togglecrowns", RunMode = RunMode.Async)]
-        [Summary("Toggles crowns for your server.")]
-        [Alias("togglecrown")]
-        public async Task ToggleCrownsAsync([Remainder] string confirmation = null)
-        {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-
-            if (guild == null)
-            {
-                await ReplyAsync("This server hasn't been stored yet.\n" +
-                                 $"Please run `{prfx}index` to store this server.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
-
-            var serverUser = (IGuildUser)this.Context.Message.Author;
-            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
-                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
-            {
-                await ReplyAsync(
-                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
-                return;
-            }
-
-            if (guild.CrownsDisabled != true && (confirmation == null || confirmation.ToLower() != "confirm"))
-            {
-                await ReplyAsync($"Disabling crowns will remove all existing crowns and crown history for this server.\n" +
-                                 $"Type `{prfx}togglecrowns confirm` to confirm.");
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                return;
-            }
-
-            var crownsDisabled = await this._guildService.ToggleCrownsAsync(this.Context.Guild);
-
-            if (crownsDisabled == true)
-            {
-                await this._crownService.RemoveAllCrownsFromGuild(guild);
-                await ReplyAsync("All crowns have been removed and crowns have been disabled for this server.");
-            }
-            else
-            {
-                await ReplyAsync($"Crowns have been enabled for this server.");
-            }
-
             this.Context.LogCommandUsed();
         }
     }

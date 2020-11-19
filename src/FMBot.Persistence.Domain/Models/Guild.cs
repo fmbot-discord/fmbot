@@ -36,6 +36,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public int? CrownsActivityThresholdDays { get; set; }
 
+        public int? CrownsMinimumPlaycountThreshold { get; set; }
+
         public bool? CrownsDisabled { get; set; }
 
         public ICollection<GuildUser> GuildUsers { get; set; }

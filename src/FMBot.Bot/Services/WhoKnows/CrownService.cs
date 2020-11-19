@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord.WebSocket;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
 
 namespace FMBot.Bot.Services.WhoKnows
 {
@@ -30,14 +30,14 @@ namespace FMBot.Bot.Services.WhoKnows
 
             if (guild.CrownsActivityThresholdDays.HasValue)
             {
-                eligibleUsers = guild.GuildUsers.Where(w =>
+                eligibleUsers = eligibleUsers.Where(w =>
                         w.User.LastUsed != null &&
                         w.User.LastUsed >= DateTime.UtcNow.AddDays(-guild.CrownsActivityThresholdDays.Value))
                     .ToList();
             }
             if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromCrowns))
             {
-                eligibleUsers = guild.GuildUsers.Where(w =>
+                eligibleUsers = eligibleUsers.Where(w =>
                         !guild.GuildBlockedUsers
                             .Where(wh => wh.BlockedFromCrowns)
                             .Select(s => s.UserId).Contains(w.UserId))
@@ -55,7 +55,7 @@ namespace FMBot.Bot.Services.WhoKnows
             }
 
             await using var db = this._contextFactory.CreateDbContext();
-            var currentCrownholder = await db.UserCrowns
+            var currentCrownHolder = await db.UserCrowns
                 .AsQueryable()
                 .Include(i => i.User)
                 .OrderByDescending(o => o.CurrentPlaycount)
@@ -64,70 +64,70 @@ namespace FMBot.Bot.Services.WhoKnows
                                           EF.Functions.ILike(f.ArtistName, artistName));
 
             // Crown exists and is same as top user
-            if (currentCrownholder != null && topUser.UserId == currentCrownholder.UserId)
+            if (currentCrownHolder != null && topUser.UserId == currentCrownHolder.UserId)
             {
-                var oldPlaycount = currentCrownholder.CurrentPlaycount;
+                var oldPlaycount = currentCrownHolder.CurrentPlaycount;
                 if (oldPlaycount < topUser.Playcount)
                 {
-                    currentCrownholder.CurrentPlaycount = topUser.Playcount;
-                    currentCrownholder.Modified = DateTime.UtcNow;
+                    currentCrownHolder.CurrentPlaycount = topUser.Playcount;
+                    currentCrownHolder.Modified = DateTime.UtcNow;
 
-                    db.Entry(currentCrownholder).State = EntityState.Modified;
+                    db.Entry(currentCrownHolder).State = EntityState.Modified;
                     await db.SaveChangesAsync();
 
                     return new CrownModel
                     {
-                        Crown = currentCrownholder,
+                        Crown = currentCrownHolder,
                         CrownResult = $"Crown playcount for {topUser.DiscordName} updated from {oldPlaycount} to {topUser.Playcount}."
                     };
                 }
 
                 return new CrownModel
                 {
-                    Crown = currentCrownholder,
+                    Crown = currentCrownHolder,
                 };
             }
 
             // Crown exists, but top user is a different person
-            if (currentCrownholder != null && topUser.UserId != currentCrownholder.UserId)
+            if (currentCrownHolder != null && topUser.UserId != currentCrownHolder.UserId)
             {
                 var currentPlaycountForCrownHolder =
-                    await GetCurrentPlaycountForUser(artistName, currentCrownholder.User.UserNameLastFM);
+                    await GetCurrentPlaycountForUser(artistName, currentCrownHolder.User.UserNameLastFM);
 
                 if (currentPlaycountForCrownHolder == null)
                 {
                     return new CrownModel
                     {
-                        Crown = currentCrownholder,
+                        Crown = currentCrownHolder,
                         CrownResult = $"Could not confirm playcount for current crown holder."
                     };
                 }
-                if (eligibleUsers.Select(s => s.UserId).Contains(currentCrownholder.UserId) && currentPlaycountForCrownHolder >= topUser.Playcount)
+                if (eligibleUsers.Select(s => s.UserId).Contains(currentCrownHolder.UserId) && currentPlaycountForCrownHolder >= topUser.Playcount)
                 {
-                    var oldPlaycount = currentCrownholder.CurrentPlaycount;
-                    currentCrownholder.CurrentPlaycount = topUser.Playcount;
-                    currentCrownholder.Modified = DateTime.UtcNow;
+                    var oldPlaycount = currentCrownHolder.CurrentPlaycount;
+                    currentCrownHolder.CurrentPlaycount = topUser.Playcount;
+                    currentCrownHolder.Modified = DateTime.UtcNow;
 
-                    db.Entry(currentCrownholder).State = EntityState.Modified;
+                    db.Entry(currentCrownHolder).State = EntityState.Modified;
 
                     await db.SaveChangesAsync();
 
                     return new CrownModel
                     {
-                        Crown = currentCrownholder,
+                        Crown = currentCrownHolder,
                         CrownResult = $"Crown playcount for {topUser.DiscordName} updated from {oldPlaycount} to {topUser.Playcount}."
                     };
                 }
 
-                if (currentCrownholder.CurrentPlaycount != currentPlaycountForCrownHolder)
+                if (currentCrownHolder.CurrentPlaycount != currentPlaycountForCrownHolder)
                 {
-                    currentCrownholder.CurrentPlaycount = topUser.Playcount;
+                    currentCrownHolder.CurrentPlaycount = topUser.Playcount;
                 }
 
-                currentCrownholder.Active = false;
-                currentCrownholder.Modified = DateTime.UtcNow;
+                currentCrownHolder.Active = false;
+                currentCrownHolder.Modified = DateTime.UtcNow;
 
-                db.Entry(currentCrownholder).State = EntityState.Modified;
+                db.Entry(currentCrownHolder).State = EntityState.Modified;
 
                 var newCrown = new UserCrown
                 {
@@ -148,14 +148,16 @@ namespace FMBot.Bot.Services.WhoKnows
                 return new CrownModel
                 {
                     Crown = newCrown,
-                    CrownResult = $"Crown stolen by {topUser.DiscordName}! ({currentCrownholder.CurrentPlaycount} > {topUser.Playcount} plays)."
+                    CrownResult = $"Crown stolen by {topUser.DiscordName}! ({currentCrownHolder.CurrentPlaycount} > {topUser.Playcount} plays)."
                 };
             }
 
+            var minAmountOfPlaysForCrown = guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown;
+
             // No crown exists yet
-            if (currentCrownholder == null)
+            if (currentCrownHolder == null)
             {
-                if (topUser.Playcount >= Constants.MinPlaysForCrown)
+                if (topUser.Playcount >= minAmountOfPlaysForCrown)
                 {
                     var newCrown = new UserCrown
                     {
@@ -180,13 +182,13 @@ namespace FMBot.Bot.Services.WhoKnows
                     };
                 }
 
-                if (topUser.Playcount >= 10)
+                if (topUser.Playcount >= minAmountOfPlaysForCrown / 3)
                 {
-                    var amountOfPlaysRequired = Constants.MinPlaysForCrown - topUser.Playcount;
+                    var amountOfPlaysRequired = minAmountOfPlaysForCrown - topUser.Playcount;
 
                     return new CrownModel
                     {
-                        CrownResult = $"{topUser.DiscordName} needs {amountOfPlaysRequired} more plays to claim the crown."
+                        CrownResult = $"{topUser.DiscordName} needs {amountOfPlaysRequired} more {StringExtensions.GetPlaysString(amountOfPlaysRequired)} to claim the crown."
                     };
                 }
             }

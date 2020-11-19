@@ -29,7 +29,7 @@ namespace FMBot.Domain
 
         public const int SupporterMessageChance = 25;
 
-        public const int MinPlaysForCrown = 50;
+        public const int DefaultPlaysForCrown = 30;
 
     }
 }

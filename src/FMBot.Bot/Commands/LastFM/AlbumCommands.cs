@@ -486,15 +486,9 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Shows what other users listen to the same album in your server")]
         [Alias("wa", "wka", "wkab", "wab", "wkab", "wk album", "whoknows album")]
         [UsernameSetRequired]
+        [GuildOnly]
         public async Task WhoKnowsAsync([Remainder] string albumValues = null)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("This command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 

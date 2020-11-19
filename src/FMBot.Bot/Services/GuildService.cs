@@ -95,6 +95,12 @@ namespace FMBot.Bot.Services
             return null;
         }
 
+        public async Task<GuildUser> GetUserFromGuild(Guild guild, int userId)
+        {
+            return guild.GuildUsers
+                .FirstOrDefault(f => f.UserId == userId);
+        }
+
 
         // Get user from guild with searchvalue
         public async Task<string> MentionToLastFmUsernameAsync(string searchValue)
@@ -269,7 +275,7 @@ namespace FMBot.Bot.Services
             return existingGuild.CrownsDisabled;
         }
 
-        public async Task<bool> SetWhoKnowsThresholdDaysAsync(IGuild guild, int? days)
+        public async Task<bool> SetWhoKnowsActivityThresholdDaysAsync(IGuild guild, int? days)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var existingGuild = await db.Guilds
@@ -292,7 +298,7 @@ namespace FMBot.Bot.Services
             return true;
         }
 
-        public async Task<bool> SetCrownThresholdDaysAsync(IGuild guild, int? days)
+        public async Task<bool> SetCrownActivityThresholdDaysAsync(IGuild guild, int? days)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var existingGuild = await db.Guilds
@@ -306,6 +312,28 @@ namespace FMBot.Bot.Services
 
             existingGuild.Name = guild.Name;
             existingGuild.CrownsActivityThresholdDays = days;
+
+            db.Entry(existingGuild).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            return true;
+        }
+
+        public async Task<bool> SetMinimumCrownPlaycountThresholdAsync(IGuild guild, int? playcount)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingGuild = await db.Guilds
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+
+            if (existingGuild == null)
+            {
+                return false;
+            }
+
+            existingGuild.Name = guild.Name;
+            existingGuild.CrownsMinimumPlaycountThreshold = playcount;
 
             db.Entry(existingGuild).State = EntityState.Modified;
 

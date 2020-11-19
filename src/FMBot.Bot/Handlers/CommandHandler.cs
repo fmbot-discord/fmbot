@@ -177,6 +177,15 @@ namespace FMBot.Bot.Handlers
                     return;
                 }
             }
+            if (searchResult.Commands[0].Command.Attributes.OfType<GuildOnly>().Any())
+            {
+                if (context.Guild == null)
+                {
+                    await context.User.SendMessageAsync("This command is not supported in DMs.");
+                    context.LogCommandUsed(CommandResponse.UsernameNotSet);
+                    return;
+                }
+            }
 
             var result = await this._commands.ExecuteAsync(context, argPos, this._provider);
 

@@ -46,15 +46,9 @@ namespace FMBot.Bot.Commands
         [Command("index", RunMode = RunMode.Async)]
         [Summary("Indexes top artists, albums and tracks for every user in your server.")]
         [Alias("i")]
+        [GuildOnly]
         public async Task IndexGuildAsync()
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("This command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
@@ -154,6 +148,7 @@ namespace FMBot.Bot.Commands
         [Summary("Update user.")]
         [UsernameSetRequired]
         [Alias("u")]
+        [GuildOnly]
         public async Task UpdateUserAsync(string force = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -174,24 +169,24 @@ namespace FMBot.Bot.Commands
             }
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
-            //if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-3))
-            //{
-            //    await ReplyAsync(
-            //        "You have already been updated recently. Note that this also happens automatically.");
-            //    this.Context.LogCommandUsed(CommandResponse.Cooldown);
-            //    return;
-            //}
+            if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-10))
+            {
+                await ReplyAsync(
+                    "You have already been updated recently. Note that this also happens automatically.");
+                this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                return;
+            }
 
             if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full" || force.ToLower() == "-force" || force.ToLower() == "force"))
             {
-                //if (userSettings.LastUpdated < DateTime.UtcNow.AddDays(-2))
-                //{
-                //    await ReplyAsync(
-                //        "You can't do a full index too often. Please remember that this command should only be used in case you edited your scrobble history.\n" +
-                //        "Experiencing issues with the normal update? Please contact us on the .fmbot support server.");
-                //    this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                //    return;
-                //}
+                if (userSettings.LastUpdated < DateTime.UtcNow.AddDays(-2))
+                {
+                    await ReplyAsync(
+                        "You can't do a full index too often. Please remember that this command should only be used in case you edited your scrobble history.\n" +
+                        "Experiencing issues with the normal update? Please contact us on the .fmbot support server.");
+                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                    return;
+                }
 
                 this._embed.WithDescription($"<a:loading:749715170682470461> Fully indexing user {userSettings.UserNameLastFM}..." +
                                             $"\n\nThis can take a while. Please don't fully update too often, if you have any issues with the normal update feel free to let us know.");
