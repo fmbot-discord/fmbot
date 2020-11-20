@@ -22,14 +22,16 @@ namespace FMBot.Bot.Services
         }
 
         public static TimeSettingsModel GetTimePeriod(
-            string extraOptions,
+            string options,
             ChartTimePeriod defaultTimePeriod = ChartTimePeriod.Weekly
             )
         {
             var settingsModel = new TimeSettingsModel();
             var customTimePeriod = true;
 
-            extraOptions ??= "";
+            options ??= "";
+
+            var extraOptions = options.Split(' ');
 
             // time period
             if (extraOptions.Contains("weekly") ||
