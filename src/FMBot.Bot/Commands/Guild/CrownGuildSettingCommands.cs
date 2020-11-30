@@ -172,7 +172,7 @@ namespace FMBot.Bot.Commands.Guild
 
         [Command("crownblock", RunMode = RunMode.Async)]
         [Summary("Block a user from appearing gaining crowns")]
-        [Alias("crownblockuser", "crownban", "cwblock", "cwban", "crownbanuser")]
+        [Alias("crownblockuser", "crownban", "cwblock", "cwban", "crownbanuser", "crownbanmember")]
         [GuildOnly]
         public async Task GuildBlockUserFromCrownsAsync([Remainder] string user = null)
         {
@@ -246,7 +246,7 @@ namespace FMBot.Bot.Commands.Guild
 
         [Command("crownblockedusers", RunMode = RunMode.Async)]
         [Summary("Block a user from appearing in server-wide commands")]
-        [Alias("crownblocked", "crownbanned", "crownbannedusers")]
+        [Alias("crownblocked", "crownbanned", "crownbannedusers", "crownbannedmembers")]
         [GuildOnly]
         public async Task BlockedUsersAsync()
         {

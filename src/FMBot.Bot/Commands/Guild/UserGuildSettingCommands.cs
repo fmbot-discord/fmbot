@@ -106,7 +106,7 @@ namespace FMBot.Bot.Commands
 
         [Command("block", RunMode = RunMode.Async)]
         [Summary("Block a user from appearing in server-wide commands")]
-        [Alias("blockuser", "ban", "banuser")]
+        [Alias("blockuser", "ban", "banuser", "banmember", "blockmember")]
         [GuildOnly]
         public async Task GuildBlockUserAsync([Remainder] string user = null)
         {
@@ -181,7 +181,7 @@ namespace FMBot.Bot.Commands
 
         [Command("unblock", RunMode = RunMode.Async)]
         [Summary("Remove block from a user from appearing in server-wide commands")]
-        [Alias("unblockuser", "unban", "unbanuser", "removeblock", "removeban", "crownunblock")]
+        [Alias("unblockuser", "unban", "unbanuser","unbanmember", "removeblock", "removeban", "crownunblock")]
         [GuildOnly]
         public async Task GuildUnBlockUserAsync([Remainder] string user = null)
         {
@@ -252,7 +252,7 @@ namespace FMBot.Bot.Commands
 
         [Command("blockedusers", RunMode = RunMode.Async)]
         [Summary("Block a user from appearing in server-wide commands")]
-        [Alias("blocked", "banned", "bannedusers")]
+        [Alias("blocked", "banned", "bannedusers", "blockedmembers", "bannedmembers")]
         [GuildOnly]
         public async Task BlockedUsersAsync()
         {
