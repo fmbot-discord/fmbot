@@ -49,14 +49,34 @@ namespace FMBot.Bot.Services
             await this._globalIndexService.IndexUser(new IndexUserQueueItem(user.UserId));
         }
 
-        public async Task StoreGuildUsers(IGuild guild, IReadOnlyCollection<IGuildUser> discordGuildUsers)
+        public async Task StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers)
         {
             var userIds = discordGuildUsers.Select(s => s.Id).ToList();
 
             await using var db = this._contextFactory.CreateDbContext();
             var existingGuild = await db.Guilds
                 .Include(i => i.GuildUsers)
-                .FirstAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
+
+            if (existingGuild == null)
+            {
+                var newGuild = new Guild
+                {
+                    DiscordGuildId = discordGuild.Id,
+                    TitlesEnabled = true,
+                    ChartTimePeriod = ChartTimePeriod.Monthly,
+                    FmEmbedType = FmEmbedType.embedmini,
+                    Name = discordGuild.Name,
+                };
+
+                await db.Guilds.AddAsync(newGuild);
+
+                await db.SaveChangesAsync();
+
+                existingGuild = await db.Guilds
+                    .Include(i => i.GuildUsers)
+                    .FirstAsync(f => f.DiscordGuildId == discordGuild.Id);
+            }
 
             var users = await db.Users
                 .AsQueryable()
