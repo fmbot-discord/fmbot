@@ -767,67 +767,66 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var guildTask = this._guildService.GetGuildAsync(this.Context.Guild.Id);
-
-            _ = this.Context.Channel.TriggerTypingAsync();
-
-            var artistQuery = await GetArtistOrHelp(artistValues, userSettings, "whoknows", prfx);
-            if (artistQuery == null)
+            try
             {
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return;
-            }
+                var guildTask = this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-            string artistName;
-            string artistUrl;
-            string spotifyImageUrl;
-            long? userPlaycount;
+                _ = this.Context.Channel.TriggerTypingAsync();
 
-            var cachedArtist = await this._artistsService.GetArtistFromDatabase(artistQuery);
- 
-            if (userSettings.LastIndexed != null && userSettings.LastUpdated < DateTime.UtcNow.AddHours(-1))
-            {
-                await this._updateService.UpdateUser(userSettings);
-                userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
-            }
-            if (userSettings.LastUpdated > DateTime.UtcNow.AddHours(-1) && cachedArtist != null)
-            {
-                artistName = cachedArtist.Name;
-                artistUrl = cachedArtist.LastFmUrl;
-                spotifyImageUrl = cachedArtist.SpotifyImageUrl;
+                var artistQuery = await GetArtistOrHelp(artistValues, userSettings, "whoknows", prfx);
+                if (artistQuery == null)
+                {
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
 
-                userPlaycount = await this._whoKnowArtistService.GetArtistPlayCountForUser(artistName, userSettings.UserId);
-            }
-            else
-            {
-                var queryParams = new Dictionary<string, string>
+                string artistName;
+                string artistUrl;
+                string spotifyImageUrl;
+                long? userPlaycount;
+
+                var cachedArtist = await this._artistsService.GetArtistFromDatabase(artistQuery);
+
+                if (userSettings.LastIndexed != null && userSettings.LastUpdated < DateTime.UtcNow.AddHours(-1))
+                {
+                    await this._updateService.UpdateUser(userSettings);
+                    userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
+                }
+                if (userSettings.LastUpdated > DateTime.UtcNow.AddHours(-1) && cachedArtist != null)
+                {
+                    artistName = cachedArtist.Name;
+                    artistUrl = cachedArtist.LastFmUrl;
+                    spotifyImageUrl = cachedArtist.SpotifyImageUrl;
+
+                    userPlaycount = await this._whoKnowArtistService.GetArtistPlayCountForUser(artistName, userSettings.UserId);
+                }
+                else
+                {
+                    var queryParams = new Dictionary<string, string>
                 {
                     {"artist", artistQuery },
                     {"username", userSettings.UserNameLastFM },
                     {"autocorrect", "1"}
                 };
 
-                var artistCall = await this._lastFmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+                    var artistCall = await this._lastFmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
 
-                if (!artistCall.Success)
-                {
-                    this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context);
-                    await ReplyAsync("", false, this._embed.Build());
-                    this.Context.LogCommandWithLastFmError(artistCall.Error);
-                    return;
+                    if (!artistCall.Success)
+                    {
+                        this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context);
+                        await ReplyAsync("", false, this._embed.Build());
+                        this.Context.LogCommandWithLastFmError(artistCall.Error);
+                        return;
+                    }
+
+                    artistName = artistCall.Content.Artist.Name;
+                    artistUrl = artistCall.Content.Artist.Url;
+
+                    var spotifyArtistResults = await this._spotifyService.GetOrStoreArtistImageAsync(artistCall.Content, artistQuery);
+                    spotifyImageUrl = spotifyArtistResults;
+                    userPlaycount = artistCall.Content.Artist.Stats.Userplaycount;
                 }
 
-                artistName = artistCall.Content.Artist.Name;
-                artistUrl = artistCall.Content.Artist.Url;
-
-                var spotifyArtistResults = await this._spotifyService.GetOrStoreArtistImageAsync(artistCall.Content, artistQuery);
-                spotifyImageUrl = spotifyArtistResults;
-                userPlaycount = artistCall.Content.Artist.Stats.Userplaycount;
-            }
-
-
-            try
-            {
                 var guild = await guildTask;
 
                 var filteredGuildUsers = this._guildService.FilterGuildUsersAsync(guild);
