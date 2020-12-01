@@ -28,6 +28,8 @@ namespace FMBot.Domain.Models
 
         Disabled = 13,
 
-        Censored = 14
+        Censored = 14,
+
+        UserBlocked = 15
     }
 }

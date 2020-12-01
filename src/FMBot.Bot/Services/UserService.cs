@@ -28,24 +28,22 @@ namespace FMBot.Bot.Services
         // User settings
         public async Task<bool> UserRegisteredAsync(IUser discordUser)
         {
-            var cacheKey = $"user-isRegistered-{discordUser.Id}";
-
-            if (this._cache.TryGetValue(cacheKey, out bool isRegistered))
-            {
-                return isRegistered;
-            }
-
             await using var db = this._contextFactory.CreateDbContext();
-            isRegistered = await db.Users
+            var isRegistered = await db.Users
                 .AsQueryable()
                 .AnyAsync(f => f.DiscordUserId == discordUser.Id);
 
-            if (isRegistered)
-            {
-                this._cache.Set(cacheKey, isRegistered, TimeSpan.FromHours(24));
-            }
-
             return isRegistered;
+        }
+
+        public async Task<bool> UserBlockedAsync(IUser discordUser)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var isBlocked = await db.Users
+                .AsQueryable()
+                .AnyAsync(f => f.DiscordUserId == discordUser.Id && f.Blocked == true);
+
+            return isBlocked;
         }
 
         // User settings

@@ -23,6 +23,20 @@ namespace FMBot.Bot.Services
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
+        public static void UserBlockedResponse(this EmbedBuilder embed, string prfx)
+        {
+            embed.WithTitle("You are not allowed to use .fmbot.");
+            embed.WithDescription("You have been blocked from using .fmbot.\n\n" +
+                                  "This is probably for a good reason, but if you think this is a mistake you can try contacting us on our support server.\n\n" +
+                                  "If you happen to be banned from our support server as well you won't get unblocked. " +
+                                  "Maybe host .fmbot yourself since its open-source and maintained by volunteers? " +
+                                  "Or consider looking for an alternative.");
+
+            embed.WithThumbnailUrl("https://i.imgur.com/wNmcoR5.jpg");
+
+            embed.WithColor(DiscordConstants.WarningColorOrange);
+        }
+
         public static void SessionRequiredResponse(this EmbedBuilder embed, string prfx)
         {
             embed.WithTitle("Error while attempting get Last.fm information");

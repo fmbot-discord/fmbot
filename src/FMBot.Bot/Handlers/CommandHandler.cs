@@ -163,6 +163,18 @@ namespace FMBot.Bot.Handlers
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
                     return;
                 }
+
+                var userBlocked = await this._userService.UserBlockedAsync(context.User);
+                if (userBlocked)
+                {
+                    var embed = new EmbedBuilder()
+                        .WithColor(DiscordConstants.LastFmColorRed);
+                    embed.UserBlockedResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
+                    await context.Channel.SendMessageAsync("", false, embed.Build());
+                    context.LogCommandUsed(CommandResponse.UserBlocked);
+                    return;
+                }
+
             }
             if (searchResult.Commands[0].Command.Attributes.OfType<UserSessionRequired>().Any())
             {
@@ -174,6 +186,17 @@ namespace FMBot.Bot.Handlers
                     embed.SessionRequiredResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
                     await context.Channel.SendMessageAsync("", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
+                    return;
+                }
+
+                var userBlocked = await this._userService.UserBlockedAsync(context.User);
+                if (userBlocked)
+                {
+                    var embed = new EmbedBuilder()
+                        .WithColor(DiscordConstants.LastFmColorRed);
+                    embed.UserBlockedResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
+                    await context.Channel.SendMessageAsync("", false, embed.Build());
+                    context.LogCommandUsed(CommandResponse.UserBlocked);
                     return;
                 }
             }
