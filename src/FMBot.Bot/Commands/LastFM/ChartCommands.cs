@@ -195,6 +195,10 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     embedDescription += "- Classic titles enabled\n";
                 }
+                if (chartSettings.RainbowSortingEnabled)
+                {
+                    embedDescription += "- Secret rainbow option enabled! (Not perfect but hey, it somewhat exists)\n";
+                }
 
                 var rnd = new Random();
                 if (chartSettings.ImagesNeeded == 1 && rnd.Next(0, 3) == 1)

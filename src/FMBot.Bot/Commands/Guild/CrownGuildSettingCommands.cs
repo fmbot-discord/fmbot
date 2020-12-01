@@ -46,7 +46,6 @@ namespace FMBot.Bot.Commands.Guild
             this._embedFooter = new EmbedFooterBuilder();
         }
 
-
         [Command("crownthreshold", RunMode = RunMode.Async)]
         [Summary("Sets amount of days to filter out users for inactivity")]
         [Alias("setcrownthreshold", "setcwthreshold", "cwthreshold", "crowntreshold")]

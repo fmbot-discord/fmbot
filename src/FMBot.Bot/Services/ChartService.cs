@@ -297,8 +297,7 @@ namespace FMBot.Bot.Services
             }
 
             if (extraOptions.Contains("rainbow") ||
-                extraOptions.Contains("pride") ||
-                extraOptions.Contains("r"))
+                extraOptions.Contains("pride"))
             {
                 chartSettings.RainbowSortingEnabled = true;
                 chartSettings.SkipArtistsWithoutImage = true;
