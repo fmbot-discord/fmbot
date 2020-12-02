@@ -286,6 +286,63 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
+        [Command("mode", RunMode = RunMode.Async)]
+        [Summary(
+            "Change your settings for how your .fm looks")]
+        [Alias("m", "md")]
+        [UsernameSetRequired]
+        public async Task ModeAsync(params string[] otherSettings)
+        {
+            var prfx = ConfigData.Data.Bot.Prefix;
+
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
+            if (otherSettings == null || otherSettings.Length < 1 || otherSettings.First() == "help")
+            {
+                var replyString = $"Use {prfx}mode to change how your .fm command looks.";
+
+                this._embed.AddField("Options",
+                    "**Modes**: `embedmini/embedfull/textmini/textfull`\n" +
+                    "**Playcounts**: `artist/album/track`\n" +
+                    "*Note: Playcounts are only visible in non-text modes.*");
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}mode embedmini` \n" +
+                    $"`{prfx}mode embedfull track`\n" +
+                    $"`{prfx}mode textfull`\n" +
+                    $"`{prfx}mode embedmini album`");
+
+                this._embed.WithTitle("Changing your .fm command");
+                this._embed.WithUrl($"{Constants.DocsUrl}/commands/");
+
+                var countType = !userSettings.FmCountType.HasValue ? "No extra playcount" : userSettings.FmCountType.ToString();
+                this._embed.WithFooter(
+                    $"Current mode and playcount: {userSettings.FmEmbedType} - {countType}");
+                this._embed.WithDescription(replyString);
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            var newUserSettings = this._userService.SetSettings(userSettings, otherSettings);
+
+            await this._userService.SetLastFm(this.Context.User, newUserSettings);
+
+            var setReply = $"Your .fm has been set mode to '{newUserSettings.FmEmbedType}'";
+            if (newUserSettings.FmCountType != null)
+            {
+                setReply += $" with the '{newUserSettings.FmCountType.ToString().ToLower()}' playcount.";
+            }
+            else
+            {
+                setReply += $" with no extra playcount.";
+            }
+
+            await ReplyAsync(setReply.FilterOutMentions());
+
+            this.Context.LogCommandUsed();
+        }
+
         [Command("login", RunMode = RunMode.Async)]
         [Summary(
             "Logs you in using a link")]
@@ -314,12 +371,12 @@ namespace FMBot.Bot.Commands.LastFM
             var token = await this._lastFmService.GetAuthToken();
 
             var replyString =
-                $"[Click here authorize .fmbot on last.fm](http://www.last.fm/api/auth/?api_key={ConfigData.Data.LastFm.Key}&token={token.Content.Token})";
+                $"[Click here add your Last.fm account to .fmbot](http://www.last.fm/api/auth/?api_key={ConfigData.Data.LastFm.Key}&token={token.Content.Token})";
 
             this._embed.WithTitle("Logging into .fmbot...");
             this._embed.WithDescription(replyString);
 
-            this._embedFooter.WithText("Login will expire after 2 minutes.");
+            this._embedFooter.WithText("Link will expire after 2 minutes, please wait a moment after allowing access...");
             this._embed.WithFooter(this._embedFooter);
 
             var authorizeMessage = await this.Context.User.SendMessageAsync("", false, this._embed.Build());
@@ -329,6 +386,7 @@ namespace FMBot.Bot.Commands.LastFM
                 await ReplyAsync("Check your DMs for a link to connect your Last.fm account to .fmbot!");
             }
 
+
             var success = await GetAndStoreAuthSession(this.Context.User, token.Content.Token);
 
             if (success)
@@ -336,9 +394,21 @@ namespace FMBot.Bot.Commands.LastFM
                 var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
                 await authorizeMessage.ModifyAsync(m =>
                 {
+                    var description =
+                        $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({Constants.LastFMUserUrl}{newUserSettings.UserNameLastFM})!\n\n" +
+                        $"Tip: Also check out `.fmmode` to change how your `.fm` command looks.";
+
+                    var sourceGuildId = this.Context.Guild?.Id;
+                    var sourceChannelId = this.Context.Channel?.Id;
+
+                    if (sourceGuildId != null && sourceChannelId != null)
+                    {
+                        description += "\n\n" +
+                                       $"**[Click here to go back to <#{sourceChannelId}>](https://discord.com/channels/{sourceGuildId}/{sourceChannelId}/)**";
+                    }
+
                     m.Embed = new EmbedBuilder()
-                        .WithDescription(
-                            $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({Constants.LastFMUserUrl}{newUserSettings.UserNameLastFM})!")
+                        .WithDescription(description)
                         .WithColor(DiscordConstants.SuccessColorGreen)
                         .Build();
                 });

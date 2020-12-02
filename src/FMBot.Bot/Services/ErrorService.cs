@@ -13,10 +13,8 @@ namespace FMBot.Bot.Services
         public static void UsernameNotSetErrorResponse(this EmbedBuilder embed, string prfx)
         {
             embed.WithTitle("Error while attempting get Last.fm information");
-            embed.WithDescription("Your Last.fm username has not been set. \n" +
-                                        $"Please use the `{prfx}set` command to connect your Last.fm account to .fmbot. \n" +
-                                        $"Example: `{prfx}set lastfmusername`\n \n" +
-                                        $"For more info, use `{prfx}set help`.");
+            embed.WithDescription("You have not added your Last.fm account to .fmbot yet.\n\n" +
+                                  $"Please use the `{prfx}login` command to receive a link to connect your Last.fm account.");
 
             embed.WithUrl($"{Constants.DocsUrl}/commands/");
 

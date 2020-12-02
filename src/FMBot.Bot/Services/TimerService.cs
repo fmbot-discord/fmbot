@@ -34,7 +34,7 @@ namespace FMBot.Bot.Services
 
         private bool _timerEnabled;
 
-        private string _trackString = "";
+        private string _trackString = "No featured picked since last bot startup. Please wait for a new featured user to be chosen.";
 
         public TimerService(DiscordShardedClient client,
             LastFmService lastFmService,
