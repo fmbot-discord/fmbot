@@ -354,8 +354,12 @@ namespace FMBot.Bot.Commands.LastFM
                 if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMinutes(1) >= DateTimeOffset.Now)
                 {
                     await ReplyAsync($"A login link has already been sent to your DMs.\n" +
-                                     $"Didn't receive a link? Please check if you have DMs enabled for this server.");
+                                     $"Didn't receive a link? Please check if you have DMs enabled for this server and try again.\n" +
+                                     $"Setting location: Click on the server name (top left) > `Privacy Settings` > `Allow direct messages from server members`.");
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
+
+                    StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now.AddMinutes(-5);
+
                     return;
                 }
 
