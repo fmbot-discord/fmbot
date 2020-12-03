@@ -188,8 +188,9 @@ namespace FMBot.Bot.Commands
             this._embed.AddField($"Main command `{prefix}{mainCommand}`",
                 "Displays last scrobbles, and looks different depending on the mode you've set.");
 
-            this._embed.AddField($"Setting up: `{prefix}set lastfmusername`",
-                $"For more settings, please use `{prefix}set help`.");
+            this._embed.AddField($"Connecting your Last.fm account: `{prefix}login`",
+                $"Not receiving a DM from .fmbot when logging in? Please check if you have DMs enabled in this servers privacy settings.\n" +
+                $"For changing how your .fm command looks use `{prefix}mode`.");
 
             if (customPrefix)
             {
