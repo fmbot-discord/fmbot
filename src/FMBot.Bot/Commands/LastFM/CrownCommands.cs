@@ -244,6 +244,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var topCrownUsers = await this._crownService.GetTopCrownUsersForGuild(guild);
+            var guildCrownCount = await this._crownService.GetTotalCrownCountForGuild(guild);
 
             if (!topCrownUsers.Any())
             {
@@ -269,12 +270,14 @@ namespace FMBot.Bot.Commands.LastFM
                     name = guildUser.UserName;
                 }
 
-                embedDescription.AppendLine($"{index + 1}. **{name ?? crownUser.First().User.UserNameLastFM}** - **{crownUser.Count()}** crowns");
+                embedDescription.AppendLine($"{index + 1}. **{name ?? crownUser.First().User.UserNameLastFM}** - **{crownUser.Count()}** {StringExtensions.GetCrownsString(crownUser.Count())}");
             }
 
             this._embed.WithTitle($"Users with most crowns in {this.Context.Guild.Name}");
 
             this._embed.WithDescription(embedDescription.ToString());
+
+            this._embed.WithFooter($"{guildCrownCount} total active crowns in this server");
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();

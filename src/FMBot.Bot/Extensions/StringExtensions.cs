@@ -81,6 +81,11 @@ namespace FMBot.Bot.Extensions
             return listeners == 1 ? "listener" : "listeners";
         }
 
+        public static string GetCrownsString(long? crowns)
+        {
+            return crowns == 1 ? "crown" : "crowns";
+        }
+
         public static string GetTimeAgo(DateTime timeAgo)
         {
             var ts = new TimeSpan(DateTime.UtcNow.Ticks - timeAgo.Ticks);

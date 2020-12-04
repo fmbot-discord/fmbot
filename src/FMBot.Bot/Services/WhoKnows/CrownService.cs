@@ -77,8 +77,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
                     return new CrownModel
                     {
-                        Crown = currentCrownHolder,
-                        CrownResult = $"Crown playcount for {topUser.DiscordName} updated from {oldPlaycount} to {topUser.Playcount}."
+                        Crown = currentCrownHolder
                     };
                 }
 
@@ -114,8 +113,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
                     return new CrownModel
                     {
-                        Crown = currentCrownHolder,
-                        CrownResult = $"Crown playcount for {topUser.DiscordName} updated from {oldPlaycount} to {topUser.Playcount}."
+                        Crown = currentCrownHolder
                     };
                 }
 
@@ -148,7 +146,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 return new CrownModel
                 {
                     Crown = newCrown,
-                    CrownResult = $"Crown stolen by {topUser.DiscordName}! ({currentCrownHolder.CurrentPlaycount} > {topUser.Playcount} plays)."
+                    CrownResult = $"Crown stolen by {topUser.DiscordName}! (From **{currentCrownHolder.CurrentPlaycount}** to **{topUser.Playcount}** plays)."
                 };
             }
 
@@ -258,6 +256,17 @@ namespace FMBot.Bot.Services.WhoKnows
                 .ToList();
         }
 
+        public async Task<int> GetTotalCrownCountForGuild(Guild guild)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            return await db.UserCrowns
+                .AsQueryable()
+                .Include(i => i.User)
+                .Where(f => f.GuildId == guild.GuildId &&
+                            f.Active)
+                .CountAsync();
+        }
+
         public async Task RemoveAllCrownsFromGuild(Guild guild)
         {
             await using var db = this._contextFactory.CreateDbContext();
@@ -298,7 +307,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var guild = await db.Guilds
                 .Include(i => i.GuildUsers)
-                .Include(i  => i.GuildCrowns)
+                .Include(i => i.GuildCrowns)
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == user.Guild.Id);
 
             if (guild.GuildCrowns != null && guild.GuildCrowns.Any())
