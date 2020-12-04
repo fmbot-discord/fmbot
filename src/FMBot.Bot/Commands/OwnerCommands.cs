@@ -24,6 +24,25 @@ namespace FMBot.Bot.Commands
             this._adminService = adminService;
         }
 
+        [Command("say"), Summary("Says something")]
+        [UsernameSetRequired]
+        public async Task SayAsync([Remainder] string say)
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+            {
+                try
+                {
+                    await ReplyAsync(say);
+                    this.Context.LogCommandUsed();
+                }
+                catch (Exception e)
+                {
+                    this.Context.LogCommandException(e);
+                    await ReplyAsync("Unable to say something due to an internal error.");
+                }
+            }
+        }
+
         [Command("setusertype"), Summary("Sets usertype for other users")]
         [Alias("setperms")]
         [UsernameSetRequired]
