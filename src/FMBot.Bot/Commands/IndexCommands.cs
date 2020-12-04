@@ -168,7 +168,7 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-10))
             {
                 await ReplyAsync(

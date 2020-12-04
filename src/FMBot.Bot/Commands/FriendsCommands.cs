@@ -54,7 +54,7 @@ namespace FMBot.Bot.Commands
         [UsernameSetRequired]
         public async Task FriendsAsync()
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, bypassCache: true);
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             try
             {
@@ -257,7 +257,7 @@ namespace FMBot.Bot.Commands
         [UsernameSetRequired]
         public async Task RemoveFriends([Summary("Friend names")] params string[] enteredFriends)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, bypassCache: true);
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             if (enteredFriends.Length == 0)
             {
@@ -340,7 +340,7 @@ namespace FMBot.Bot.Commands
         [UsernameSetRequired]
         public async Task RemoveAllFriends()
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, bypassCache: true);
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             try
             {

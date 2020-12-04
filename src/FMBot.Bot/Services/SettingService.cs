@@ -314,7 +314,7 @@ namespace FMBot.Bot.Services
         public static int GetAmount(
             string extraOptions,
             int amount = 8,
-            int maxAmount = 15)
+            int maxAmount = 20)
         {
             if (extraOptions == null)
             {

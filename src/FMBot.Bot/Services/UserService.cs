@@ -88,23 +88,12 @@ namespace FMBot.Bot.Services
         }
 
         // User settings
-        public async Task<User> GetUserSettingsAsync(IUser discordUser, bool bypassCache = false)
+        public async Task<User> GetUserSettingsAsync(IUser discordUser)
         {
-            var cacheKey = $"user-settings-{discordUser.Id}";
-
-            if (!bypassCache && this._cache.TryGetValue(cacheKey, out User user))
-            {
-                return user;
-            }
-
             await using var db = this._contextFactory.CreateDbContext();
-            user = await db.Users
+            return await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
-
-            this._cache.Set(cacheKey, user, TimeSpan.FromHours(12));
-
-            return user;
         }
 
         // User settings

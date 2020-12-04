@@ -403,7 +403,15 @@ namespace FMBot.Bot.Commands.LastFM
                     for (var i = 0; i < albums.Count(); i++)
                     {
                         var album = albums.Content[i];
-                        description += $"{i + 1}. {album.ArtistName} - [{album.Name}]({album.Url}) ({album.PlayCount} plays) \n";
+
+                        if (albums.Count() > 10)
+                        {
+                            description += $"{i + 1}. **{album.ArtistName}** - **{album.Name}** ({album.PlayCount} plays) \n";
+                        }
+                        else
+                        {
+                            description += $"{i + 1}. **{album.ArtistName}** - [**{album.Name}**]({album.Url}) ({album.PlayCount} plays) \n";
+                        }
                     }
 
                     this._embedFooter.WithText($"{albums.TotalItems} different albums in this time period");
@@ -446,7 +454,7 @@ namespace FMBot.Bot.Commands.LastFM
                     for (var i = 0; i < amountAvailable; i++)
                     {
                         var album = albums[i];
-                        description += $"{i + 1}. {album.ArtistName} - {album.Name} ({album.Playcount} {StringExtensions.GetPlaysString(album.Playcount)}) \n";
+                        description += $"{i + 1}. **{album.ArtistName}** - **{album.Name}** ({album.Playcount} {StringExtensions.GetPlaysString(album.Playcount)}) \n";
                     }
 
                     this._embedFooter.WithText($"{albums.Count} different albums in this time period");

@@ -520,7 +520,15 @@ namespace FMBot.Bot.Commands.LastFM
                     {
                         var artist = artists.Content[i];
 
-                        description += $"{i + 1}. [{artist.Name}]({artist.Url}) ({artist.PlayCount} plays) \n";
+                        if (artists.Count() > 10)
+                        {
+                            description += $"{i + 1}. **{artist.Name}** ({artist.PlayCount} plays) \n";
+                        }
+                        else
+                        {
+                            description += $"{i + 1}. [**{artist.Name}**]({artist.Url}) ({artist.PlayCount} plays) \n";
+                        }
+
                     }
 
                     this._embedFooter.WithText($"{artists.TotalItems} different artists in this time period");
@@ -562,8 +570,9 @@ namespace FMBot.Bot.Commands.LastFM
                     var amountAvailable = artists.Count < amount ? artists.Count : amount;
                     for (var i = 0; i < amountAvailable; i++)
                     {
-                        var album = artists[i];
-                        description += $"{i + 1}. {album.Name} ({album.Playcount} {StringExtensions.GetPlaysString(album.Playcount)}) \n";
+                        var artist = artists[i];
+
+                        description += $"{i + 1}. **{artist.Name}** ({artist.Playcount} {StringExtensions.GetPlaysString(artist.Playcount)}) \n";
                     }
 
                     this._embedFooter.WithText($"{artists.Count} different artists in this time period");
@@ -747,7 +756,7 @@ namespace FMBot.Bot.Commands.LastFM
         [GuildOnly]
         public async Task WhoKnowsAsync([Remainder] string artistValues = null)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
@@ -790,7 +799,7 @@ namespace FMBot.Bot.Commands.LastFM
                 if (userSettings.LastIndexed != null && userSettings.LastUpdated < DateTime.UtcNow.AddHours(-1))
                 {
                     await this._updateService.UpdateUser(userSettings);
-                    userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
+                    userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
                 }
                 if (userSettings.LastUpdated > DateTime.UtcNow.AddHours(-1) && cachedArtist != null)
                 {

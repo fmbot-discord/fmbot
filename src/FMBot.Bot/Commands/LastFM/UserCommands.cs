@@ -190,7 +190,7 @@ namespace FMBot.Bot.Commands.LastFM
         {
             var prfx = ConfigData.Data.Bot.Prefix;
 
-            var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
+            var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             if (lastFmUserName == null || lastFmUserName == "help")
             {
                 var replyString = $"{prfx}set is the command you use to set your last.fm username in the bot, so it knows who you are on the last.fm website. \n" +
@@ -262,7 +262,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             this.Context.LogCommandUsed();
 
-            var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
+            var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             if (usernameChanged)
             {
                 await this._indexService.IndexUser(newUserSettings);
@@ -295,7 +295,7 @@ namespace FMBot.Bot.Commands.LastFM
         {
             var prfx = ConfigData.Data.Bot.Prefix;
 
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             if (otherSettings == null || otherSettings.Length < 1 || otherSettings.First() == "help")
             {
                 var replyString = $"Use {prfx}mode to change how your .fm command looks.";
@@ -371,7 +371,7 @@ namespace FMBot.Bot.Commands.LastFM
                 StackCooldownTimer.Add(DateTimeOffset.Now);
             }
 
-            var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
+            var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var token = await this._lastFmService.GetAuthToken();
 
             var replyString =
@@ -395,7 +395,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (success)
             {
-                var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
+                var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
                 await authorizeMessage.ModifyAsync(m =>
                 {
                     var description =

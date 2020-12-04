@@ -433,7 +433,15 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     var track = topTracks.Content.TopTracks.Track[i];
 
-                    description += $"{i + 1}. [{track.Artist.Name}]({track.Artist.Url}) - [{track.Name}]({track.Url}) ({track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)}) \n";
+                    if (topTracks.Content.TopTracks.Track.Count > 10)
+                    {
+                        description += $"{i + 1}. **{track.Artist.Name}** - **{track.Name}** ({track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)}) \n";
+                    }
+                    else
+                    {
+                        description += $"{i + 1}. [**{track.Artist.Name}**]({track.Artist.Url}) - [**{track.Name}**]({track.Url}) ({track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)}) \n";
+                    }
+
                 }
 
                 this._embed.WithDescription(description);
