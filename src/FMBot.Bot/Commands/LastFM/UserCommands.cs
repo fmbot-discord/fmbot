@@ -424,6 +424,16 @@ namespace FMBot.Bot.Commands.LastFM
                     await this._crownService.RemoveAllCrownsFromUser(newUserSettings.UserId);
                     await this._indexService.IndexUser(newUserSettings);
                 }
+
+                if (!this._guildService.CheckIfDM(this.Context))
+                {
+                    var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+                    if (guild != null)
+                    {
+                        await this._indexService.GetOrAddUserToGuild(guild,
+                            await this.Context.Guild.GetUserAsync(this.Context.User.Id), newUserSettings);
+                    }
+                }
             }
             else
             {
