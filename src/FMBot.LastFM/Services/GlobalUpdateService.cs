@@ -65,9 +65,13 @@ namespace FMBot.LastFM.Services
             if (!recentTracks.Success)
             {
                 Log.Information("Update: Something went wrong getting tracks for {userId} | {userNameLastFm} | {responseStatus}", user.UserId, user.UserNameLastFM, recentTracks.Status);
-                UserUpdateFailures.Add(user.UserNameLastFM);
 
-                Log.Information($"Added {user.UserNameLastFM} to update failure list");
+                if (user.LastUsed == null || user.LastUsed < DateTime.UtcNow.AddDays(-31))
+                {
+                    UserUpdateFailures.Add(user.UserNameLastFM);
+                    Log.Information($"Added {user.UserNameLastFM} to update failure list");
+                }
+
                 return 0;
             }
 
