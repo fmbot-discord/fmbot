@@ -248,7 +248,8 @@ namespace FMBot.Bot.Services.WhoKnows
             var guildCrowns = await db.UserCrowns
                 .AsQueryable()
                 .Include(i => i.User)
-                .Where(f => f.GuildId == guild.GuildId)
+                .Where(f => f.GuildId == guild.GuildId &&
+                            f.Active)
                 .ToListAsync();
 
             return guildCrowns
