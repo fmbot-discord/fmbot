@@ -172,7 +172,8 @@ namespace FMBot.Bot.Commands
             if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-10))
             {
                 await ReplyAsync(
-                    "You have already been updated recently. Note that this also happens automatically.");
+                    $"You have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). " +
+                    $"Note that this also happens automatically, for example with commands that use indexed data.");
                 this.Context.LogCommandUsed(CommandResponse.Cooldown);
                 return;
             }
