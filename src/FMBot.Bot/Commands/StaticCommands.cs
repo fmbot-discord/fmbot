@@ -101,8 +101,8 @@ namespace FMBot.Bot.Commands
             this._embed.AddField("View the code on Github:",
                 "https://github.com/fmbot-discord/fmbot");
 
-            this._embed.AddField("Or on GitLab:",
-                "https://gitlab.com/Bitl/FMBot_Discord");
+            this._embed.AddField("Follow us on Twitter:",
+                "https://twitter.com/fmbotDiscord");
 
             this._embed.AddField("Join the FMBot server for support and updates:",
                 "https://discord.gg/srmpCaa");
