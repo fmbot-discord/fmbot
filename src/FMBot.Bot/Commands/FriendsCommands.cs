@@ -200,6 +200,7 @@ namespace FMBot.Bot.Commands
                         {
                             await this._friendsService.AddLastFMFriendAsync(this.Context.User.Id, friendUsername, friendUserSettings?.UserId);
                             addedFriendsList.Add(friendUsername);
+                            existingFriends.Add(friendUsername);
                         }
                         else
                         {
@@ -234,9 +235,9 @@ namespace FMBot.Bot.Commands
                 if (duplicateFriendsList.Count > 0)
                 {
                     reply += $"Could not add {duplicateFriendsList.Count} friend(s) because you already have them added:\n";
-                    foreach (var dupeFriends in duplicateFriendsList)
+                    foreach (var dupeFriend in duplicateFriendsList)
                     {
-                        reply += $"- *[{dupeFriends}]({Constants.LastFMUserUrl}{dupeFriends})*\n";
+                        reply += $"- *[{dupeFriend}]({Constants.LastFMUserUrl}{dupeFriend})*\n";
                     }
                 }
 

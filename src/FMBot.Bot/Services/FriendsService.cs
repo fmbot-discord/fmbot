@@ -20,7 +20,7 @@ namespace FMBot.Bot.Services
             this._contextFactory = contextFactory;
         }
 
-        public async Task<IReadOnlyList<string>> GetFMFriendsAsync(IUser discordUser)
+        public async Task<IList<string>> GetFMFriendsAsync(IUser discordUser)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users
