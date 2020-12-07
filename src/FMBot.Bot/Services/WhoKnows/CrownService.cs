@@ -310,7 +310,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 .Include(i => i.GuildCrowns)
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == user.Guild.Id);
 
-            if (guild.GuildCrowns != null && guild.GuildCrowns.Any())
+            if (guild?.GuildCrowns != null && guild.GuildCrowns.Any())
             {
                 var userGuildCrowns = await db.UserCrowns
                     .AsQueryable()
