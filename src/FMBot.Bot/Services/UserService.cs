@@ -97,27 +97,16 @@ namespace FMBot.Bot.Services
         }
 
         // User settings
-        public async Task<User> GetUserAsync(ulong discurdUserId, bool bypassCache = false)
+        public async Task<User> GetUserAsync(ulong discordUserId)
         {
-            var cacheKey = $"user-settings-{discurdUserId}";
-
-            if (!bypassCache && this._cache.TryGetValue(cacheKey, out User user))
-            {
-                return user;
-            }
-
             await using var db = this._contextFactory.CreateDbContext();
-            user = await db.Users
+            return await db.Users
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordUserId == discurdUserId);
-
-            this._cache.Set(cacheKey, user, TimeSpan.FromHours(3));
-
-            return user;
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
         }
 
         // User settings
-        public async Task<User> GetFullUserAsync(IUser discordUser)
+        public async Task<User> GetFullUserAsync(ulong discordUserId)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var query = db.Users
@@ -125,7 +114,7 @@ namespace FMBot.Bot.Services
                 .Include(i => i.FriendedByUsers);
 
             return await query
-                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
         }
 
         // Discord nickname/username

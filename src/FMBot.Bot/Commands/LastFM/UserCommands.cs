@@ -72,7 +72,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         public async Task StatsAsync([Remainder] string userOptions = null)
         {
-            var user = await this._userService.GetFullUserAsync(this.Context.User);
+            var user = await this._userService.GetFullUserAsync(this.Context.User.Id);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             try
@@ -80,14 +80,15 @@ namespace FMBot.Bot.Commands.LastFM
                 var userSettings = await this._settingService.GetUser(userOptions, user, this.Context);
 
                 string userTitle;
-                if (!userSettings.DifferentUser)
-                {
-                    userTitle = await this._userService.GetUserTitleAsync(this.Context);
-                }
-                else
+                if (userSettings.DifferentUser && userSettings.DiscordUserId.HasValue)
                 {
                     userTitle =
                         $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
+                    user = await this._userService.GetFullUserAsync(userSettings.DiscordUserId.Value);
+                }
+                else
+                {
+                    userTitle = await this._userService.GetUserTitleAsync(this.Context);
                 }
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
@@ -492,7 +493,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("delete", "removedata", "deletedata")]
         public async Task RemoveAsync()
         {
-            var userSettings = await this._userService.GetFullUserAsync(this.Context.User);
+            var userSettings = await this._userService.GetFullUserAsync(this.Context.User.Id);
 
             if (userSettings == null)
             {
