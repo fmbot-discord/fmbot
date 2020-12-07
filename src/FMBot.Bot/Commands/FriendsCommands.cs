@@ -96,7 +96,7 @@ namespace FMBot.Bot.Commands
                     var tracks = await this._lastFmService.GetRecentTracksAsync(friend, useCache: true);
 
                     string track;
-                    string friendTitle = "";
+                    var friendTitle = "";
                     if (!tracks.Success || tracks.Content == null)
                     {
                         track = "Friend could not be retrieved";
@@ -111,18 +111,18 @@ namespace FMBot.Bot.Commands
                         track = LastFmService.TrackToOneLinedString(lastTrack);
                         if (lastTrack.Attr != null && lastTrack.Attr.Nowplaying)
                         {
-                            friendTitle += "🎶";
+                            track += " 🎶";
                         }
                         else if (lastTrack.Date != null)
                         {
                             var dateTime = DateTime.UnixEpoch.AddSeconds(lastTrack.Date.Uts).ToUniversalTime();
-                            friendTitle += $"({StringExtensions.GetTimeAgoShortString(dateTime)})";
+                            track += $" ({StringExtensions.GetTimeAgoShortString(dateTime)})";
                         }
 
                         totalPlaycount += (int)tracks.Content.RecentTracks.Attr.Total;
                     }
 
-                    embedDescription += $"**[{friend}]({Constants.LastFMUserUrl}{friend})** {friendTitle} - {track} \n";
+                    embedDescription += $"**[`{friend}`]({Constants.LastFMUserUrl}{friend})** {friendTitle} | {track}\n";
                 }, maxDegreeOfParallelism: 3);
 
                 this._embedFooter.WithText(embedFooterText + totalPlaycount.ToString("0"));
