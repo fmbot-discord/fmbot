@@ -38,9 +38,10 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var artistUserPlays = await db.UserPlays
                 .AsQueryable()
-                .Where(t => t.TimePlayed.Date <= now.Date &&
-                            t.TimePlayed.Date > minDate.Date &&
-                            userIds.Contains(t.UserId))
+                .Where(t =>
+                    userIds.Contains(t.UserId) &&
+                    t.TimePlayed.Date <= now.Date &&
+                    t.TimePlayed.Date > minDate.Date)
                 .GroupBy(x => new { x.ArtistName, x.UserId })
                 .Select(s => new ArtistUserPlay
                 {
@@ -80,9 +81,10 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var albumUserPlays = await db.UserPlays
                 .AsQueryable()
-                .Where(t => t.TimePlayed.Date <= now.Date &&
-                            t.TimePlayed.Date > minDate.Date &&
-                            userIds.Contains(t.UserId))
+                .Where(t =>
+                    userIds.Contains(t.UserId) &&
+                    t.TimePlayed.Date <= now.Date &&
+                    t.TimePlayed.Date > minDate.Date)
                 .GroupBy(x => new { x.ArtistName, x.AlbumName, x.UserId })
                 .Select(s => new AlbumUserPlay
                 {
@@ -124,9 +126,10 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var trackUserPlays = await db.UserPlays
                 .AsQueryable()
-                .Where(t => t.TimePlayed.Date <= now.Date &&
-                            t.TimePlayed.Date > minDate.Date &&
-                            userIds.Contains(t.UserId))
+                .Where(t =>
+                    userIds.Contains(t.UserId) &&
+                    t.TimePlayed.Date <= now.Date &&
+                    t.TimePlayed.Date > minDate.Date)
                 .GroupBy(x => new { x.ArtistName, x.TrackName, x.UserId })
                 .Select(s => new TrackUserPlay
                 {

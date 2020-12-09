@@ -28,9 +28,9 @@ namespace FMBot.Bot.Services.WhoKnows
             var userAlbums = await db.UserAlbums
                 .Include(i => i.User)
                 .Where(w =>
+                        userIds.Contains(w.UserId) &&
                         EF.Functions.ILike(w.Name, albumName) &&
-                        EF.Functions.ILike(w.ArtistName, artistName) &&
-                        userIds.Contains(w.UserId))
+                        EF.Functions.ILike(w.ArtistName, artistName))
                 .OrderByDescending(o => o.Playcount)
                 .Take(14)
                 .ToListAsync();
@@ -95,11 +95,12 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var db = this._contextFactory.CreateDbContext();
             return await db.UserPlays
                 .AsQueryable()
-                .CountAsync(ab => ab.TimePlayed.Date <= now.Date &&
-                                 ab.TimePlayed.Date > minDate.Date &&
-                                 ab.AlbumName.ToLower() == albumName.ToLower() &&
-                                 ab.ArtistName.ToLower() == artistName.ToLower() &&
-                                 userIds.Contains(ab.UserId));
+                .CountAsync(ab =>
+                                userIds.Contains(ab.UserId) &&
+                                ab.TimePlayed.Date <= now.Date &&
+                                ab.TimePlayed.Date > minDate.Date &&
+                                ab.AlbumName.ToLower() == albumName.ToLower() &&
+                                ab.ArtistName.ToLower() == artistName.ToLower());
         }
     }
 }

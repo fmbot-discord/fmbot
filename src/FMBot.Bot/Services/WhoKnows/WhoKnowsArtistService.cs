@@ -31,8 +31,9 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var db = this._contextFactory.CreateDbContext();
             var userArtists = await db.UserArtists
                 .Include(i => i.User)
-                .Where(w => EF.Functions.ILike(w.Name, artistName)
-                            && userIds.Contains(w.UserId))
+                .Where(w =>
+                    userIds.Contains(w.UserId) &&
+                    EF.Functions.ILike(w.Name, artistName))
                 .OrderByDescending(o => o.Playcount)
                 .Take(14)
                 .ToListAsync();
@@ -93,8 +94,8 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var db = this._contextFactory.CreateDbContext();
             return await db.UserArtists
                 .AsQueryable()
-                .Where(w => EF.Functions.ILike(w.Name, artistName)
-                            && userIds.Contains(w.UserId))
+                .Where(w => userIds.Contains(w.UserId) &&
+                            EF.Functions.ILike(w.Name, artistName))
                 .CountAsync();
         }
 
@@ -126,8 +127,8 @@ namespace FMBot.Bot.Services.WhoKnows
             var userArtist = await db.UserArtists
                 .AsQueryable()
                 .FirstOrDefaultAsync(w =>
-                    EF.Functions.ILike(w.Name, artistName)
-                    && w.UserId == userId);
+                    w.UserId == userId &&
+                    EF.Functions.ILike(w.Name, artistName));
 
             return userArtist?.Playcount;
         }
@@ -139,8 +140,9 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var db = this._contextFactory.CreateDbContext();
             var query = db.UserArtists
                 .AsQueryable()
-                .Where(w => EF.Functions.ILike(w.Name, artistName.ToLower())
-                            && userIds.Contains(w.UserId));
+                .Where(w =>
+                    userIds.Contains(w.UserId) &&
+                    EF.Functions.ILike(w.Name, artistName));
 
             try
             {
@@ -162,10 +164,11 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var db = this._contextFactory.CreateDbContext();
             return await db.UserPlays
                 .AsQueryable()
-                .CountAsync(a => a.TimePlayed.Date <= now.Date &&
-                                  a.TimePlayed.Date > minDate.Date &&
-                                  EF.Functions.ILike(a.ArtistName, artistName.ToLower()) &&
-                                  userIds.Contains(a.UserId));
+                .CountAsync(a =>
+                    userIds.Contains(a.UserId) &&
+                    a.TimePlayed.Date <= now.Date &&
+                    a.TimePlayed.Date > minDate.Date &&
+                    EF.Functions.ILike(a.ArtistName, artistName.ToLower()));
         }
 
         // TODO: figure out how to do this
@@ -181,10 +184,11 @@ namespace FMBot.Bot.Services.WhoKnows
                 await using var db = this._contextFactory.CreateDbContext();
                 return await db.UserPlays
                     .AsQueryable()
-                    .Where(w => w.TimePlayed.Date <= now.Date &&
-                                w.TimePlayed.Date > minDate.Date &&
-                                EF.Functions.ILike(w.ArtistName, artistName) &&
-                                userIds.Contains(w.UserId))
+                    .Where(w =>
+                        userIds.Contains(w.UserId) &&
+                        w.TimePlayed.Date <= now.Date &&
+                        w.TimePlayed.Date > minDate.Date &&
+                        EF.Functions.ILike(w.ArtistName, artistName))
                     .GroupBy(x => new { x.UserId, x.ArtistName, x.UserPlayId })
                     .CountAsync();
             }
@@ -222,7 +226,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
                     var avgPlaycount = await db.UserArtists
                         .AsQueryable()
-                        .Where(w => w.Playcount > 29 && w.UserId == userId)
+                        .Where(w => w.UserId == userId && w.Playcount > 29)
                         .AverageAsync(a => a.Playcount);
 
                     if (topArtist != null)
@@ -268,8 +272,8 @@ namespace FMBot.Bot.Services.WhoKnows
             var topArtists = await db.UserArtists
                 .AsQueryable()
                 .Where(
-                    w => w.Playcount > 29 &&
-                         w.UserId == userId &&
+                    w => w.UserId == userId &&
+                         w.Playcount > 29 &&
                          w.Name != null)
                 .OrderByDescending(o => o.Playcount)
                 .Select(s => new AffinityArtist
