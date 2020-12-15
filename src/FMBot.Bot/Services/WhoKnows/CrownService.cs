@@ -98,12 +98,11 @@ namespace FMBot.Bot.Services.WhoKnows
                     return new CrownModel
                     {
                         Crown = currentCrownHolder,
-                        CrownResult = $"Could not confirm playcount for current crown holder."
+                        CrownResult = "Could not confirm playcount for current crown holder."
                     };
                 }
                 if (eligibleUsers.Select(s => s.UserId).Contains(currentCrownHolder.UserId) && currentPlaycountForCrownHolder >= topUser.Playcount)
                 {
-                    var oldPlaycount = currentCrownHolder.CurrentPlaycount;
                     currentCrownHolder.CurrentPlaycount = topUser.Playcount;
                     currentCrownHolder.Modified = DateTime.UtcNow;
 
@@ -214,7 +213,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 .Include(i => i.User)
                 .OrderByDescending(o => o.CurrentPlaycount)
                 .Where(f => f.GuildId == guild.GuildId &&
-                                          EF.Functions.ILike(f.ArtistName, artistName))
+                            EF.Functions.ILike(f.ArtistName, artistName))
                 .ToListAsync();
         }
 

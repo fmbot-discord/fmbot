@@ -812,11 +812,11 @@ namespace FMBot.Bot.Commands.LastFM
                 else
                 {
                     var queryParams = new Dictionary<string, string>
-                {
-                    {"artist", artistQuery },
-                    {"username", userSettings.UserNameLastFM },
-                    {"autocorrect", "1"}
-                };
+                    {
+                        {"artist", artistQuery },
+                        {"username", userSettings.UserNameLastFM },
+                        {"autocorrect", "1"}
+                    };
 
                     var artistCall = await this._lastFmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
 
