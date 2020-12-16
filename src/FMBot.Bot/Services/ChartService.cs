@@ -267,12 +267,10 @@ namespace FMBot.Bot.Services
             bitmapCanvas.DrawText(album.Name, 4, 22, textPaint);
         }
 
-        public ChartSettings SetSettings(ChartSettings currentChartSettings, string extraOptions)
+        public ChartSettings SetSettings(ChartSettings currentChartSettings, string[] extraOptions)
         {
             var chartSettings = currentChartSettings;
             chartSettings.CustomOptionsEnabled = false;
-
-            extraOptions ??= "";
 
             if (extraOptions.Contains("notitles") || extraOptions.Contains("nt"))
             {
@@ -366,7 +364,13 @@ namespace FMBot.Bot.Services
                 chartSettings.Width = 3;
             }
 
-            var timeSettings = SettingService.GetTimePeriod(extraOptions);
+            var optionsAsString = "";
+            if (extraOptions.Any())
+            {
+                optionsAsString = string.Join(" ", extraOptions);
+            }
+
+            var timeSettings = SettingService.GetTimePeriod(optionsAsString);
 
             if (timeSettings.UsePlays)
             {

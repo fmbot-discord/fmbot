@@ -64,14 +64,26 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Generates a chart based on a user's parameters.")]
         [Alias("c")]
         [UsernameSetRequired]
-        public async Task ChartAsync([Remainder] string otherSettings = null)
+        public async Task ChartAsync(params string[] otherSettings)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            if (!string.IsNullOrWhiteSpace(otherSettings) && otherSettings.ToLower() == "help")
+            if (otherSettings != null && otherSettings.Any()  && otherSettings.First() == "help")
             {
-                await ReplyAsync($"{prfx}chart '2x2-10x10' '{Constants.CompactTimePeriodList}' \n" +
-                                 "Optional extra settings: 'notitles', 'nt', 'skipemptyimages', 's'\n" +
-                                 "Options can be used in any order..");
+                this._embed.WithTitle($"{prfx}chart extra options");
+                this._embed.WithDescription($"- Time periods: `{Constants.CompactTimePeriodList}`\n" +
+                                            $"- Disable titles: `notitles` / `nt`\n" +
+                                            $"- Skip albums with no image: `skipemptyimages` / `s`\n" +
+                                            $"- Size: `2x2`, `3x3` up to `10x10`\n" +
+                                            $"- Other users: `user mention/id`");
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}c`\n" +
+                    $"`{prfx}c q 8x8 nt s`\n" +
+                    $"`{prfx}hart 8x8 quarterly notitles skip`\n" +
+                    $"`{prfx}c 10x10 alltime notitles skip`\n" +
+                    $"`{prfx}c @user 7x7 yearly`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
@@ -104,7 +116,12 @@ namespace FMBot.Bot.Commands.LastFM
 
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var userSettings = await this._settingService.GetUser(otherSettings, user, this.Context);
+            var optionsAsString = "";
+            if (otherSettings != null && otherSettings.Any())
+            {
+                optionsAsString = string.Join(" ", otherSettings);
+            }
+            var userSettings = await this._settingService.GetUser(optionsAsString, user, this.Context);
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
