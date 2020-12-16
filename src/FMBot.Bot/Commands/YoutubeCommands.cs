@@ -85,6 +85,13 @@ namespace FMBot.Bot.Commands
                 {
                     var youtubeResult = await this._youtubeService.GetSearchResult(querystring);
 
+                    if (youtubeResult == null)
+                    {
+                        await ReplyAsync("No results have been found for this query.");
+                        this.Context.LogCommandUsed(CommandResponse.NotFound);
+                        return;
+                    }
+
                     var name = await this._userService.GetNameAsync(this.Context);
 
                     var reply = $"{name} searched for: `{querystring}`";
@@ -92,12 +99,12 @@ namespace FMBot.Bot.Commands
                     var user = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
                     if (user.GuildPermissions.EmbedLinks)
                     {
-                        reply += $"\nhttps://www.youtube.com/watch?v={youtubeResult.Id.VideoId}";
+                        reply += $"\nhttps://www.youtube.com/watch?v={youtubeResult.VideoId}";
                     }
                     else
                     {
-                        reply += $"\n<https://www.youtube.com/watch?v={youtubeResult.Id.VideoId}>" +
-                                 $"\n`{youtubeResult.Snippet.Title}`" +
+                        reply += $"\n<https://www.youtube.com/watch?v={youtubeResult.VideoId}>" +
+                                 $"\n`{youtubeResult.Title}`" +
                                  $"\n*Embed disabled because user that requested link is not allowed to embed links.*";
                     }
 

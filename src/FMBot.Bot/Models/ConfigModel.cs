@@ -82,6 +82,8 @@ namespace FMBot.Bot.Models
     public class GoogleConfig
     {
         public string ApiKey { get; set; }
+
+        public string InvidiousUrl { get; set; }
     }
 
     public class BotListConfig

@@ -12,6 +12,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.EntityFrameWork;
+using FMBot.Youtube.Services;
 using Interactivity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -130,7 +131,8 @@ namespace FMBot.Bot
                 .AddSingleton<GlobalUpdateService>()
                 .AddSingleton<IUpdateService, UpdateService>()
                 .AddTransient<ILastfmApi, LastfmApi>()
-                .AddTransient<LastFmService>();
+                .AddTransient<LastFmService>()
+                .AddTransient<InvidiousApi>();
 
             services.AddDbContextFactory<FMBotDbContext>(b =>
                 b.UseNpgsql(ConfigData.Data.Database.ConnectionString));

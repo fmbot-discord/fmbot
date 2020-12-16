@@ -14,6 +14,7 @@ using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
+using Serilog;
 
 namespace FMBot.LastFM.Services
 {
@@ -123,6 +124,7 @@ namespace FMBot.LastFM.Services
                 response.Success = false;
                 response.Message = "Something went wrong while deserializing the object last.fm returned";
                 Console.WriteLine(ex);
+                Log.Error("Something went wrong while deserializing the object Last.fm returned:", ex);
             }
 
             return response;
