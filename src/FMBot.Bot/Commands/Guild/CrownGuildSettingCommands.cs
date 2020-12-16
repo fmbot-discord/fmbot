@@ -16,7 +16,8 @@ using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands.Guild
 {
-    [Summary("Server Staff Only")]
+    [Name("Crown settings")]
+    [Summary("Server staff only")]
     public class CrownGuildSettingCommands : ModuleBase
     {
         private readonly AdminService _adminService;

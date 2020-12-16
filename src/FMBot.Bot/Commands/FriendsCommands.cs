@@ -16,6 +16,7 @@ using FMBot.LastFM.Services;
 
 namespace FMBot.Bot.Commands
 {
+    [Name("Friends")]
     public class FriendsCommands : ModuleBase
     {
         private readonly FriendsService _friendsService;
@@ -143,7 +144,7 @@ namespace FMBot.Bot.Commands
 
         [Command("addfriends", RunMode = RunMode.Async)]
         [Summary("Adds your friends' Last.fm names.")]
-        [Alias("friendsset", "setfriends", "friendsadd", "addfriend", "setfriend")]
+        [Alias("friendsset", "setfriends", "friendsadd", "addfriend", "setfriend", "friends add", "friend add", "add friends")]
         [UsernameSetRequired]
         public async Task AddFriends([Summary("Friend names")] params string[] enteredFriends)
         {
@@ -254,7 +255,7 @@ namespace FMBot.Bot.Commands
 
         [Command("removefriends", RunMode = RunMode.Async)]
         [Summary("Remove your friends' Last.fm names.")]
-        [Alias("friendsremove", "deletefriend", "deletefriends", "removefriend")]
+        [Alias("friendsremove", "deletefriend", "deletefriends", "removefriend", "remove friend", "remove friends", "friends remove", "friend remove")]
         [UsernameSetRequired]
         public async Task RemoveFriends([Summary("Friend names")] params string[] enteredFriends)
         {
@@ -337,7 +338,7 @@ namespace FMBot.Bot.Commands
 
         [Command("removeallfriends", RunMode = RunMode.Async)]
         [Summary("Remove all your friends")]
-        [Alias("friendsremoveall")]
+        [Alias("friendsremoveall", "friends remove all")]
         [UsernameSetRequired]
         public async Task RemoveAllFriends()
         {

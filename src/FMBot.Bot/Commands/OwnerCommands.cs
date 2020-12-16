@@ -14,7 +14,10 @@ using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
 {
-    [Summary("FMBot Owners Only")]
+    [Name("Owner commands")]
+    [Summary(".fmbot Owners Only")]
+    [RequireOwner]
+    [ExcludeFromHelp]
     public class OwnerCommands : ModuleBase
     {
         private readonly AdminService _adminService;

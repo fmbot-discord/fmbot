@@ -19,6 +19,7 @@ using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands.LastFM
 {
+    [Name("Plays")]
     public class PlayCommands : ModuleBase
     {
         private readonly GuildService _guildService;
@@ -65,7 +66,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("fm", RunMode = RunMode.Async)]
         [Summary("Displays what a user is listening to.")]
-        [Alias("np", "qm", "wm", "em", "rm", "tm", "ym", "um", "om", "pm", "dm", "gm", "sm", "am", "hm", "jm", "km",
+        [Alias("np", "qm", "wm", "em", "rm", "tm", "ym", "um", "om", "pm", "gm", "sm", "am", "hm", "jm", "km",
             "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm")]
         [UsernameSetRequired]
         public async Task FMAsync(params string[] parameters)
@@ -682,23 +683,6 @@ namespace FMBot.Bot.Commands.LastFM
             if (!this._guildService.CheckIfDM(this.Context))
             {
                 var guildUser = await this._guildService.FindUserFromGuildAsync(this.Context, user);
-
-                if (guildUser != null)
-                {
-                    var guildUserLastFm = await this._userService.GetUserSettingsAsync(guildUser);
-
-                    return guildUserLastFm?.UserNameLastFM;
-                }
-            }
-
-            return null;
-        }
-
-        private async Task<string> FindUserFromId(ulong userId)
-        {
-            if (!this._guildService.CheckIfDM(this.Context))
-            {
-                var guildUser = await this._guildService.FindUserFromGuildAsync(this.Context, userId);
 
                 if (guildUser != null)
                 {

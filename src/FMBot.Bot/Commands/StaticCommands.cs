@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -18,6 +19,7 @@ using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Commands
 {
+    [Name("Static commands")]
     public class StaticCommands : ModuleBase
     {
         private readonly CommandService _service;
@@ -322,9 +324,9 @@ namespace FMBot.Bot.Commands
 
             var embed = new EmbedBuilder();
 
-            foreach (var module in this._service.Modules.OrderByDescending(o => o.Commands.Count()).Where(w =>
-                !w.Name.Contains("SecretCommands") && !w.Name.Contains("OwnerCommands") &&
-                !w.Name.Contains("AdminCommands") && !w.Name.Contains("GuildCommands")))
+            foreach (var module in this._service.Modules
+                .OrderByDescending(o => o.Commands.Count).Where(w =>
+                !w.Attributes.OfType<ExcludeFromHelp>().Any()))
             {
                 var moduleCommands = "";
                 foreach (var cmd in module.Commands)

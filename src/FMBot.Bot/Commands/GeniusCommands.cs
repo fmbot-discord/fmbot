@@ -14,6 +14,7 @@ using FMBot.LastFM.Services;
 
 namespace FMBot.Bot.Commands
 {
+    [Name("Genius")]
     public class GeniusCommands : ModuleBase
     {
         private readonly GeniusService _geniusService;

@@ -24,6 +24,7 @@ using ImageFormat = System.Drawing.Imaging.ImageFormat;
 
 namespace FMBot.Bot.Commands.LastFM
 {
+    [Name("Albums")]
     public class AlbumCommands : ModuleBase
     {
         private readonly CensorService _censorService;
@@ -170,7 +171,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("albumplays", RunMode = RunMode.Async)]
         [Summary("Displays album plays.")]
-        [Alias("abp", "albumplay", "abplays", "albump")]
+        [Alias("abp", "albumplay", "abplays", "albump", "album plays")]
         [UsernameSetRequired]
         public async Task AlbumPlaysAsync([Remainder] string albumValues = null)
         {
@@ -230,7 +231,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("cover", RunMode = RunMode.Async)]
         [Summary("Displays current album cover.")]
-        [Alias("abc", "co", "albumcover")]
+        [Alias("abc", "co", "albumcover", "album cover")]
         [UsernameSetRequired]
         public async Task AlbumCoverAsync([Remainder] string albumValues = null)
         {
@@ -358,7 +359,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("topalbums", RunMode = RunMode.Async)]
         [Summary("Displays top albums.")]
-        [Alias("abl", "abs", "tab", "albumlist", "albums", "albumslist")]
+        [Alias("abl", "abs", "tab", "albumlist","top albums", "albums", "albumslist")]
         [UsernameSetRequired]
         public async Task TopAlbumsAsync([Remainder] string extraOptions = null)
         {
@@ -647,7 +648,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("serveralbums", RunMode = RunMode.Async)]
         [Summary("Shows top albums for your server")]
-        [Alias("sab", "stab", "servertopalbums", "serveralbum")]
+        [Alias("sab", "stab", "servertopalbums", "serveralbum", "server albums")]
         public async Task GuildAlbumsAsync(params string[] extraOptions)
         {
             if (this._guildService.CheckIfDM(this.Context))

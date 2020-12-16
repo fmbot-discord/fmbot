@@ -25,6 +25,7 @@ using Interactivity.Pagination;
 
 namespace FMBot.Bot.Commands.LastFM
 {
+    [Name("Artists")]
     public class ArtistCommands : ModuleBase
     {
         private readonly ArtistsService _artistsService;
@@ -225,7 +226,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("artisttracks", RunMode = RunMode.Async)]
         [Summary("Displays top tracks for an artist.")]
-        [Alias("at", "att", "artisttrack", "artistrack", "artisttoptracks", "artisttoptrack")]
+        [Alias("at", "att", "artisttrack", "artist track", "artist tracks", "artistrack", "artisttoptracks", "artisttoptrack")]
         [UsernameSetRequired]
         public async Task ArtistTracksAsync([Remainder] string artistValues = null)
         {
@@ -322,7 +323,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("artistalbums", RunMode = RunMode.Async)]
         [Summary("Displays top albums for an artist.")]
-        [Alias("aa", "aab", "atab", "artistalbum", "artistopalbum", "artisttopalbums", "artisttab")]
+        [Alias("aa", "aab", "atab", "artistalbum","artist album","artist albums", "artistopalbum", "artisttopalbums", "artisttab")]
         [UsernameSetRequired]
         public async Task ArtistAlbumsAsync([Remainder] string artistValues = null)
         {
@@ -417,7 +418,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("artistplays", RunMode = RunMode.Async)]
         [Summary("Displays artist playcount.")]
-        [Alias("ap")]
+        [Alias("ap","artist plays")]
         [UsernameSetRequired]
         public async Task ArtistPlaysAsync([Remainder] string artistValues = null)
         {
@@ -472,7 +473,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("topartists", RunMode = RunMode.Async)]
         [Summary("Displays top artists.")]
-        [Alias("al", "as", "ta", "artistlist", "artists", "artistslist")]
+        [Alias("al", "as", "ta", "artistlist", "artists","top artists", "artistslist")]
         [UsernameSetRequired]
         public async Task TopArtistsAsync([Remainder] string extraOptions = null)
         {
@@ -952,7 +953,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("serverartists", RunMode = RunMode.Async)]
         [Summary("Shows top artists for your server")]
-        [Alias("sa", "sta", "servertopartists")]
+        [Alias("sa", "sta", "servertopartists", "server artists")]
         public async Task GuildArtistsAsync(params string[] extraOptions)
         {
             if (this._guildService.CheckIfDM(this.Context))

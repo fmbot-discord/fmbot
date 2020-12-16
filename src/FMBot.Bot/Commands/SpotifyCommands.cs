@@ -14,6 +14,7 @@ using FMBot.LastFM.Services;
 
 namespace FMBot.Bot.Commands
 {
+    [Name("Spotify")]
     public class SpotifyCommands : ModuleBase
     {
         private readonly EmbedBuilder _embed;

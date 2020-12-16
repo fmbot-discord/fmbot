@@ -19,6 +19,7 @@ using SkiaSharp;
 
 namespace FMBot.Bot.Commands.LastFM
 {
+    [Name("Charts")]
     public class ChartCommands : ModuleBase
     {
         private readonly GuildService _guildService;

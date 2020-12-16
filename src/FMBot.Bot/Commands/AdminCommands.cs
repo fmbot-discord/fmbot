@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
@@ -13,7 +14,9 @@ using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands
 {
-    [Summary("FMBot Admins Only")]
+    [Name("Admin settings")]
+    [Summary(".fmbot Admins Only")]
+    [ExcludeFromHelp]
     public class AdminCommands : ModuleBase
     {
         private readonly AdminService _adminService;

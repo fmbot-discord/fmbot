@@ -13,6 +13,7 @@ using Serilog;
 
 namespace FMBot.Bot.Commands
 {
+    [Name("Indexing")]
     public class IndexCommands : ModuleBase
     {
         private readonly GuildService _guildService;

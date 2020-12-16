@@ -21,6 +21,7 @@ using Serilog;
 
 namespace FMBot.Bot.Commands.LastFM
 {
+    [Name("User settings")]
     public class UserCommands : ModuleBase
     {
         private readonly CrownService _crownService;
@@ -288,8 +289,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("mode", RunMode = RunMode.Async)]
-        [Summary(
-            "Change your settings for how your .fm looks")]
+        [Summary("Change your settings for how your .fm looks")]
         [Alias("m", "md")]
         [UsernameSetRequired]
         public async Task ModeAsync(params string[] otherSettings)
@@ -345,8 +345,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("login", RunMode = RunMode.Async)]
-        [Summary(
-            "Logs you in using a link")]
+        [Summary("Logs you in using a link")]
         public async Task LoginAsync()
         {
             var msg = this.Context.Message as SocketUserMessage;
@@ -390,7 +389,6 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 await ReplyAsync("Check your DMs for a link to connect your Last.fm account to .fmbot!");
             }
-
 
             var success = await GetAndStoreAuthSession(this.Context.User, token.Content.Token);
 
@@ -491,7 +489,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("remove", RunMode = RunMode.Async)]
         [Summary("Deletes your FMBot data.")]
         [Alias("delete", "removedata", "deletedata")]
-        public async Task RemoveAsync()
+        public async Task RemoveAsync([Remainder] string confirmation = null)
         {
             var userSettings = await this._userService.GetFullUserAsync(this.Context.User.Id);
 
@@ -502,63 +500,55 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var sb = new StringBuilder();
-            sb.AppendLine("Are you sure you want to delete all your data from .fmbot?");
-            sb.AppendLine("This will remove the following data:");
-
-            sb.AppendLine("- Your last.fm username");
-            if (userSettings.Friends?.Count > 0)
+            if (string.IsNullOrEmpty(confirmation) || confirmation.ToLower() != "confirm")
             {
-                var friendString = userSettings.Friends?.Count == 1 ? "friend" : "friends";
-                sb.AppendLine($"- `{userSettings.Friends?.Count}` {friendString}");
+                var sb = new StringBuilder();
+                sb.AppendLine("Are you sure you want to delete all your data from .fmbot?");
+                sb.AppendLine("This will remove the following data:");
+
+                sb.AppendLine("- Your last.fm username");
+                if (userSettings.Friends?.Count > 0)
+                {
+                    var friendString = userSettings.Friends?.Count == 1 ? "friend" : "friends";
+                    sb.AppendLine($"- `{userSettings.Friends?.Count}` {friendString}");
+                }
+
+                if (userSettings.FriendedByUsers?.Count > 0)
+                {
+                    var friendString = userSettings.FriendedByUsers?.Count == 1 ? "friendlist" : "friendlists";
+                    sb.AppendLine($"- You from `{userSettings.FriendedByUsers?.Count}` other {friendString}");
+                }
+
+                sb.AppendLine("- Indexed artists, albums and tracks");
+                sb.AppendLine("- All crowns you've gained or lost");
+
+                if (userSettings.UserType != UserType.User)
+                {
+                    sb.AppendLine($"- `{userSettings.UserType}` account status");
+                    sb.AppendLine("*Account status has to be manually changed back by an .fmbot admin*");
+                }
+
+                sb.AppendLine();
+                sb.AppendLine("Type `.fmremoveconfirm` to confirm deletion.");
+
+                this._embed.WithDescription(sb.ToString());
+
+                this._embed.WithFooter("Note: This will not delete any data from Last.fm, just from .fmbot.");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             }
-            if (userSettings.FriendedByUsers?.Count > 0)
+            else
             {
-                var friendString = userSettings.FriendedByUsers?.Count == 1 ? "friendlist" : "friendlists";
-                sb.AppendLine($"- You from `{userSettings.FriendedByUsers?.Count}` other {friendString}");
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                await this._friendsService.RemoveAllFriendsAsync(userSettings.UserId);
+                await this._friendsService.RemoveUserFromOtherFriendsAsync(userSettings.UserId);
+
+                await this._userService.DeleteUser(userSettings.UserId);
+
+                await ReplyAsync("Your settings, friends and any other data have been successfully deleted from .fmbot.");
             }
 
-            sb.AppendLine("- Indexed artists, albums and tracks");
-
-            if (userSettings.UserType != UserType.User)
-            {
-                sb.AppendLine($"- `{userSettings.UserType}` account status");
-                sb.AppendLine("*Account status has to be manually changed back by an .fmbot admin*");
-            }
-
-            sb.AppendLine();
-            sb.AppendLine("Type `.fmremoveconfirm` to confirm deletion.");
-
-            this._embed.WithDescription(sb.ToString());
-
-            this._embed.WithFooter("Note: This will not delete any data from Last.fm, just from .fmbot.");
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed();
-        }
-
-        [Command("removeconfirm", RunMode = RunMode.Async)]
-        [Summary("Deletes your FMBot data.")]
-        [Alias("deleteconfirm")]
-        public async Task RemoveConfirmAsync()
-        {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-            if (userSettings == null)
-            {
-                await ReplyAsync("Sorry, but we don't have any data from you in our database.");
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return;
-            }
-
-            _ = this.Context.Channel.TriggerTypingAsync();
-
-            await this._friendsService.RemoveAllFriendsAsync(userSettings.UserId);
-            await this._friendsService.RemoveUserFromOtherFriendsAsync(userSettings.UserId);
-
-            await this._userService.DeleteUser(userSettings.UserId);
-
-            await ReplyAsync("Your settings, friends and any other data have been successfully deleted from .fmbot.");
             this.Context.LogCommandUsed();
         }
 
@@ -578,9 +568,6 @@ namespace FMBot.Bot.Commands.LastFM
                 else
                 {
                 */
-
-
-
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 this._embedAuthor.WithName(this.Context.User.ToString());

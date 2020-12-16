@@ -14,6 +14,7 @@ using FMBot.LastFM.Services;
 
 namespace FMBot.Bot.Commands
 {
+    [Name("Youtube")]
     public class YoutubeCommands : ModuleBase
     {
         private readonly EmbedBuilder _embed;

@@ -16,6 +16,7 @@ using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands.LastFM
 {
+    [Name("Crowns")]
     public class CrownCommands : ModuleBase
     {
         private readonly AdminService _adminService;
@@ -221,7 +222,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("crownleaderboard", RunMode = RunMode.Async)]
         [Summary("Shows users with the most crowns in your server")]
-        [Alias("cwlb", "crownlb", "cwleaderboard")]
+        [Alias("cwlb", "crownlb", "cwleaderboard", "crown leaderboard")]
         [UsernameSetRequired]
         [GuildOnly]
         public async Task CrownLeaderboardAsync()
@@ -285,7 +286,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("killcrown", RunMode = RunMode.Async)]
         [Summary("Removes all crowns from a specific artist")]
-        [Alias("kcw", "kcrown", "killcw")]
+        [Alias("kcw", "kcrown", "killcw", "kill crown", "crown kill")]
         [GuildOnly]
         public async Task KillCrownAsync([Remainder] string artistValues = null)
         {

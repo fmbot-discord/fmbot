@@ -23,6 +23,7 @@ using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands.LastFM
 {
+    [Name("Tracks")]
     public class TrackCommands : ModuleBase
     {
         private readonly GuildService _guildService;
@@ -173,7 +174,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("trackplays", RunMode = RunMode.Async)]
         [Summary("Displays track info and stats.")]
-        [Alias("tp", "trackplay", "tplays", "trackp")]
+        [Alias("tp", "trackplay", "tplays", "trackp", "track plays")]
         [UsernameSetRequired]
         public async Task TrackPlaysAsync([Remainder] string trackValues = null)
         {
@@ -313,7 +314,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("toptracks", RunMode = RunMode.Async)]
         [Summary("Displays top tracks.")]
-        [Alias("tt", "tl", "tracklist", "tracks", "trackslist")]
+        [Alias("tt", "tl", "tracklist", "tracks", "trackslist", "top tracks", "top track")]
         [UsernameSetRequired]
         public async Task TopTracksAsync([Remainder] string extraOptions = null)
         {
@@ -586,7 +587,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("servertracks", RunMode = RunMode.Async)]
         [Summary("Shows top albums for your server")]
-        [Alias("st", "stt", "servertoptracks", "servertrack")]
+        [Alias("st", "stt", "servertoptracks", "servertrack", "server tracks")]
         public async Task GuildTracksAsync(params string[] extraOptions)
         {
             if (this._guildService.CheckIfDM(this.Context))

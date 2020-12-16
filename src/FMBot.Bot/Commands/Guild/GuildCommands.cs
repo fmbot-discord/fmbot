@@ -16,9 +16,10 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
-namespace FMBot.Bot.Commands
+namespace FMBot.Bot.Commands.Guild
 {
-    [Summary("Server Staff Only")]
+    [Name("Server settings")]
+    [Summary("Server staff only")]
     public class GuildCommands : ModuleBase
     {
         private readonly AdminService _adminService;

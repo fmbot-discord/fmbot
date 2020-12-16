@@ -2,8 +2,8 @@ using System;
 
 namespace FMBot.Bot.Attributes
 {
-    [AttributeUsage(AttributeTargets.Method)]
-    public class GuildOnly : Attribute
+    [AttributeUsage(AttributeTargets.Class)]
+    public class ExcludeFromHelp : Attribute
     {
         
     }
