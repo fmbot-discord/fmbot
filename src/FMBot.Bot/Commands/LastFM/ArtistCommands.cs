@@ -608,7 +608,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        [Command("lazypaginator")]
+        //[Command("lazypaginator")]
         public Task LazyPaginatorAsync()
         {
             var paginator = new LazyPaginatorBuilder()

@@ -305,7 +305,7 @@ namespace FMBot.Bot.Commands
 
             for (var i = countdown; i > 0; i--)
             {
-                _ =  ReplyAsync(i.ToString());
+                _ = ReplyAsync(i.ToString());
                 await Task.Delay(1000);
             }
 
@@ -320,55 +320,50 @@ namespace FMBot.Bot.Commands
         {
             var prefix = ConfigData.Data.Bot.Prefix;
 
-            string description = null;
-            var length = 0;
+            var embed = new EmbedBuilder();
 
-            var builder = new EmbedBuilder();
-
-            foreach (var module in this._service.Modules.OrderByDescending(o => o.Commands.Count()).Where(w =>
-                !w.Name.Contains("SecretCommands") && !w.Name.Contains("OwnerCommands") &&
-                !w.Name.Contains("AdminCommands") && !w.Name.Contains("GuildCommands")))
+            try
             {
-                foreach (var cmd in module.Commands)
+                foreach (var module in this._service.Modules.OrderByDescending(o => o.Commands.Count()).Where(w =>
+                    !w.Name.Contains("SecretCommands") && !w.Name.Contains("OwnerCommands") &&
+                    !w.Name.Contains("AdminCommands") && !w.Name.Contains("GuildCommands")))
                 {
-                    var result = await cmd.CheckPreconditionsAsync(this.Context);
-                    if (result.IsSuccess)
+                    var moduleCommands = "";
+                    foreach (var cmd in module.Commands)
                     {
-                        if (!string.IsNullOrWhiteSpace(cmd.Summary))
+                        var result = await cmd.CheckPreconditionsAsync(this.Context);
+                        if (result.IsSuccess)
                         {
-                            description += $"{prefix}{cmd.Aliases.First()} - {cmd.Summary}\n";
-                        }
-                        else
-                        {
-                            description += $"{prefix}{cmd.Aliases.First()}\n";
+                            if (!string.IsNullOrEmpty(moduleCommands))
+                            {
+                                moduleCommands += ", ";
+                            }
+
+                            moduleCommands += $"`{prefix}{cmd.Name}`";
                         }
                     }
+
+                    var moduleSummary = string.IsNullOrEmpty(module.Summary) ? "" : $" - {module.Summary}";
+
+                    if (!string.IsNullOrEmpty(module.Name) && !string.IsNullOrEmpty(moduleCommands))
+                    {
+                        embed.AddField(
+                            module.Name + moduleSummary,
+                            moduleCommands,
+                            true);
+                    }
+
                 }
 
-                if (description.Length < 1024)
-                {
-                    builder.AddField
-                    (module.Name + (module.Summary != null ? " - " + module.Summary : ""),
-                        description != null ? description : "");
-                }
+                await this.Context.Channel.SendMessageAsync("", false, embed.Build());
 
-                length += description.Length;
-                description = null;
-
-                if (length < 1990)
-                {
-                    await this.Context.User.SendMessageAsync("", false, builder.Build());
-
-                    builder = new EmbedBuilder();
-                    length = 0;
-                }
+                this.Context.LogCommandUsed();
             }
-
-            if (!this._guildService.CheckIfDM(this.Context))
+            catch (Exception e)
             {
-                await this.Context.Channel.SendMessageAsync("Check your DMs!");
+                Console.WriteLine(e);
+                throw;
             }
-            this.Context.LogCommandUsed();
         }
 
         private static bool IsBotSelfHosted(ulong botId)
