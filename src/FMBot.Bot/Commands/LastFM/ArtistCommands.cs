@@ -526,7 +526,7 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                         else
                         {
-                            description += $"{i + 1}. [**{artist.Name}**]({artist.Url}) ({artist.PlayCount} plays) \n";
+                            description += $"{i + 1}. **[{artist.Name}]({artist.Url})** ({artist.PlayCount} plays) \n";
                         }
 
                     }

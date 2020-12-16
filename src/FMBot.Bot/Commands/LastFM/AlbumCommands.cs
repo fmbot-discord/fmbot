@@ -410,7 +410,7 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                         else
                         {
-                            description += $"{i + 1}. **{album.ArtistName}** - [**{album.Name}**]({album.Url}) ({album.PlayCount} plays) \n";
+                            description += $"{i + 1}. **{album.ArtistName}** - **[{album.Name}]({album.Url})** ({album.PlayCount} plays) \n";
                         }
                     }
 
