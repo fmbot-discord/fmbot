@@ -322,48 +322,41 @@ namespace FMBot.Bot.Commands
 
             var embed = new EmbedBuilder();
 
-            try
+            foreach (var module in this._service.Modules.OrderByDescending(o => o.Commands.Count()).Where(w =>
+                !w.Name.Contains("SecretCommands") && !w.Name.Contains("OwnerCommands") &&
+                !w.Name.Contains("AdminCommands") && !w.Name.Contains("GuildCommands")))
             {
-                foreach (var module in this._service.Modules.OrderByDescending(o => o.Commands.Count()).Where(w =>
-                    !w.Name.Contains("SecretCommands") && !w.Name.Contains("OwnerCommands") &&
-                    !w.Name.Contains("AdminCommands") && !w.Name.Contains("GuildCommands")))
+                var moduleCommands = "";
+                foreach (var cmd in module.Commands)
                 {
-                    var moduleCommands = "";
-                    foreach (var cmd in module.Commands)
+                    var result = await cmd.CheckPreconditionsAsync(this.Context);
+                    if (result.IsSuccess)
                     {
-                        var result = await cmd.CheckPreconditionsAsync(this.Context);
-                        if (result.IsSuccess)
+                        if (!string.IsNullOrEmpty(moduleCommands))
                         {
-                            if (!string.IsNullOrEmpty(moduleCommands))
-                            {
-                                moduleCommands += ", ";
-                            }
-
-                            moduleCommands += $"`{prefix}{cmd.Name}`";
+                            moduleCommands += ", ";
                         }
+
+                        moduleCommands += $"`{prefix}{cmd.Name}`";
                     }
-
-                    var moduleSummary = string.IsNullOrEmpty(module.Summary) ? "" : $" - {module.Summary}";
-
-                    if (!string.IsNullOrEmpty(module.Name) && !string.IsNullOrEmpty(moduleCommands))
-                    {
-                        embed.AddField(
-                            module.Name + moduleSummary,
-                            moduleCommands,
-                            true);
-                    }
-
                 }
 
-                await this.Context.Channel.SendMessageAsync("", false, embed.Build());
+                var moduleSummary = string.IsNullOrEmpty(module.Summary) ? "" : $" - {module.Summary}";
 
-                this.Context.LogCommandUsed();
+                if (!string.IsNullOrEmpty(module.Name) && !string.IsNullOrEmpty(moduleCommands))
+                {
+                    embed.AddField(
+                        module.Name + moduleSummary,
+                        moduleCommands,
+                        true);
+                }
+
             }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
+
+            embed.WithFooter("Add 'help' after a command to get more info. For example: .fmchart help");
+            await this.Context.Channel.SendMessageAsync("", false, embed.Build());
+
+            this.Context.LogCommandUsed();
         }
 
         private static bool IsBotSelfHosted(ulong botId)
