@@ -29,6 +29,9 @@ namespace FMBot.Bot.Services
         {
             var spotify = await GetSpotifyWebApi();
 
+            searchValue = searchValue.Replace("- Single", "");
+            searchValue = searchValue.Replace("- EP", "");
+
             return await spotify.SearchItemsAsync(searchValue, searchType);
         }
 
