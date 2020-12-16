@@ -241,9 +241,9 @@ namespace FMBot.Bot.Services
 
             await using var db = this._contextFactory.CreateDbContext();
             return await db.Users
-                .Include(i => i.Artists)
-                .Where(w => userIds.Contains(w.DiscordUserId)
-                && (w.LastIndexed == null || w.LastUpdated == null))
+                .AsQueryable()
+                .Where(w => userIds.Contains(w.DiscordUserId) &&
+                            (w.LastIndexed == null || w.LastUpdated == null))
                 .ToListAsync();
         }
 

@@ -64,7 +64,7 @@ namespace FMBot.Bot.Commands
                 var indexedUserCount = await this._indexService.GetIndexedUsersCount(guildUsers);
 
                 var guildRecentlyIndexed =
-                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(60));
+                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(20));
 
                 if (guildRecentlyIndexed)
                 {
@@ -72,7 +72,7 @@ namespace FMBot.Bot.Commands
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
                     return;
                 }
-                if (users.Count == 0 && lastIndex != null)
+                if (users != null && users.Count == 0 && lastIndex != null)
                 {
                     await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
                     await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
@@ -85,7 +85,7 @@ namespace FMBot.Bot.Commands
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
                     return;
                 }
-                if (users.Count == 0 && lastIndex == null)
+                if (users == null || users.Count == 0 && lastIndex == null)
                 {
                     await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
                     await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow.AddDays(-1));
