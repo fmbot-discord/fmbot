@@ -61,22 +61,28 @@ namespace FMBot.Bot.Commands
         [Alias("server")]
         public async Task InviteAsync()
         {
-            var SelfID = this.Context.Client.CurrentUser.Id.ToString();
+            var selfId = this.Context.Client.CurrentUser.Id.ToString();
+            var embedDescription = new StringBuilder();
 
-            this._embed.AddField("Invite the bot to your own server with the link below:",
-                "https://discordapp.com/oauth2/authorize?client_id=" + SelfID + "&scope=bot%20applications.commands.update%20applications.commands&permissions=" +
-                Constants.InviteLinkPermissions);
+            embedDescription.AppendLine("- You can invite .fmbot to your own server by **[clicking here](" +
+                "https://discordapp.com/oauth2/authorize?" +
+                $"client_id={selfId}" +
+                "&scope=bot%20applications.commands.update%20applications.commands" +
+                $"&permissions={Constants.InviteLinkPermissions}).**");
 
-            this._embed.AddField("Join the FMBot server for support and updates:",
-                "https://discord.gg/srmpCaa");
+            embedDescription.AppendLine(
+                "- Join the [.fmbot server](https://discord.gg/srmpCaa) for support and updates.");
 
-            this._embed.AddField("Support us on OpenCollective:",
-                "https://opencollective.com/fmbot");
+            embedDescription.AppendLine(
+                "- Help us cover hosting and other costs on our [OpenCollective](https://opencollective.com/fmbot)");
+
+            this._embed.WithDescription(embedDescription.ToString());
 
             if (IsBotSelfHosted(this.Context.Client.CurrentUser.Id))
             {
                 this._embed.AddField("Note:",
-                    "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot.");
+                    "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot. " +
+                    "The invite link linked here invites the self-hosted instance and not the official .fmbot.");
             }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
