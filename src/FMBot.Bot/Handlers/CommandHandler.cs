@@ -117,22 +117,25 @@ namespace FMBot.Bot.Handlers
                 return;
             }
 
-            var disabledGuildCommands = this._guildDisabledCommandService.GetDisabledCommands(context.Guild?.Id);
-            if (searchResult.Commands != null &&
-                disabledGuildCommands != null &&
-                disabledGuildCommands.Any(searchResult.Commands.First().Command.Name.Contains))
+            if (context.Guild != null)
             {
-                await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this server.");
-                return;
-            }
+                var disabledGuildCommands = this._guildDisabledCommandService.GetDisabledCommands(context.Guild?.Id);
+                if (searchResult.Commands != null &&
+                    disabledGuildCommands != null &&
+                    disabledGuildCommands.Any(searchResult.Commands.First().Command.Name.Contains))
+                {
+                    await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this server.");
+                    return;
+                }
 
-            var disabledChannelCommands = this._channelDisabledCommandService.GetDisabledCommands(context.Channel?.Id);
-            if (searchResult.Commands != null &&
-                disabledChannelCommands != null &&
-                disabledChannelCommands.Any(searchResult.Commands.First().Command.Name.Contains))
-            {
-                await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this channel.");
-                return;
+                var disabledChannelCommands = this._channelDisabledCommandService.GetDisabledCommands(context.Channel?.Id);
+                if ((searchResult.Commands != null && disabledChannelCommands != null && disabledChannelCommands.Any()) &&
+                    disabledChannelCommands.Any(searchResult.Commands.First().Command.Name.Contains) ||
+                    (disabledChannelCommands.Any(w => w == "fm") && msg.Content.Equals(ConfigData.Data.Bot.Prefix)))
+                {
+                    await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this channel.");
+                    return;
+                }
             }
 
             if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && msg.Content.StartsWith(ConfigData.Data.Bot.Prefix))
