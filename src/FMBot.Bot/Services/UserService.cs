@@ -296,7 +296,7 @@ namespace FMBot.Bot.Services
 
         public User SetSettings(User userSettings, string[] extraOptions)
         {
-
+            extraOptions = extraOptions.Select(s => s.ToLower()).ToArray();
             if (extraOptions.Contains("embedfull") || extraOptions.Contains("ef"))
             {
                 userSettings.FmEmbedType = FmEmbedType.embedfull;

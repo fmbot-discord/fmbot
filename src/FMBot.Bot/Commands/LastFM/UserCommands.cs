@@ -190,7 +190,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task SetAsync([Summary("Your Last.fm name")] string lastFmUserName = null,
             params string[] otherSettings)
         {
-            var prfx = ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             if (lastFmUserName == null || lastFmUserName == "help")
@@ -290,11 +290,11 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("mode", RunMode = RunMode.Async)]
         [Summary("Change your settings for how your .fm looks")]
-        [Alias("m", "md")]
+        [Alias("m", "md", "fmmode")]
         [UsernameSetRequired]
         public async Task ModeAsync(params string[] otherSettings)
         {
-            var prfx = ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             if (otherSettings == null || otherSettings.Length < 1 || otherSettings.First() == "help")
@@ -339,7 +339,14 @@ namespace FMBot.Bot.Commands.LastFM
                 setReply += $" with no extra playcount.";
             }
 
-            await ReplyAsync(setReply.FilterOutMentions());
+            if (this.Context.InteractionData != null)
+            {
+                await ReplyInteractionAsync(setReply.FilterOutMentions());
+            }
+            else
+            {
+                await ReplyAsync(setReply.FilterOutMentions());
+            }
 
             this.Context.LogCommandUsed();
         }
