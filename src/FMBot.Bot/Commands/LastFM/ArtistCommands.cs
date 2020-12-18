@@ -762,7 +762,15 @@ namespace FMBot.Bot.Commands.LastFM
                     this._embed.WithDescription(taste);
                 }
 
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                if (this.Context.InteractionData != null)
+                {
+                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+                }
+                else
+                {
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                }
+                
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)
