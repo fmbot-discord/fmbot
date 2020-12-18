@@ -18,6 +18,9 @@ namespace FMBot.Domain
 
         public static readonly Gauge CommandsExecuted = Metrics
             .CreateGauge("bot_commands_executed", "Amount of commands executed");
+        
+        public static readonly Gauge SlashCommandsExecuted = Metrics
+            .CreateGauge("bot__slash_commands_executed", "Amount of slash commands executed");
 
         public static readonly Gauge RegisteredUsers = Metrics
             .CreateGauge("bot_registered_users", "Amount of users in the database");

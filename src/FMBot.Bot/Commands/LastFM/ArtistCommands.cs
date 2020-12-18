@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Discord;
+using Discord.API.Rest;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
@@ -323,7 +324,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("artistalbums", RunMode = RunMode.Async)]
         [Summary("Displays top albums for an artist.")]
-        [Alias("aa", "aab", "atab", "artistalbum","artist album","artist albums", "artistopalbum", "artisttopalbums", "artisttab")]
+        [Alias("aa", "aab", "atab", "artistalbum", "artist album", "artist albums", "artistopalbum", "artisttopalbums", "artisttab")]
         [UsernameSetRequired]
         public async Task ArtistAlbumsAsync([Remainder] string artistValues = null)
         {
@@ -418,7 +419,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("artistplays", RunMode = RunMode.Async)]
         [Summary("Displays artist playcount.")]
-        [Alias("ap","artist plays")]
+        [Alias("ap", "artist plays")]
         [UsernameSetRequired]
         public async Task ArtistPlaysAsync([Remainder] string artistValues = null)
         {
@@ -473,7 +474,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("topartists", RunMode = RunMode.Async)]
         [Summary("Displays top artists.")]
-        [Alias("al", "as", "ta", "artistlist", "artists","top artists", "artistslist")]
+        [Alias("al", "as", "ta", "artistlist", "artists", "top artists", "artistslist")]
         [UsernameSetRequired]
         public async Task TopArtistsAsync([Remainder] string extraOptions = null)
         {
@@ -497,9 +498,23 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var timeSettings = SettingService.GetTimePeriod(extraOptions);
+            var timePeriodString = extraOptions;
+            if (this.Context.InteractionData != null)
+            {
+                var time = this.Context.InteractionData.Choices.FirstOrDefault(w => w.Name == "time");
+                timePeriodString = time?.Value?.ToLower();
+            }
+
+            var amountString = extraOptions;
+            if (this.Context.InteractionData != null)
+            {
+                var time = this.Context.InteractionData.Choices.FirstOrDefault(w => w.Name == "amount");
+                amountString = time?.Value?.ToLower();
+            }
+
+            var timeSettings = SettingService.GetTimePeriod(timePeriodString);
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
-            var amount = SettingService.GetAmount(extraOptions);
+            var amount = SettingService.GetAmount(amountString);
 
             try
             {
@@ -599,7 +614,14 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(description);
                 this._embed.WithFooter(this._embedFooter);
 
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                if (this.Context.InteractionData != null)
+                {
+                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+                }
+                else
+                {
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                }
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)
@@ -697,7 +719,7 @@ namespace FMBot.Bot.Commands.LastFM
                 if (lastfmToCompare.ToLower() == userSettings.UserNameLastFM.ToLower())
                 {
                     await ReplyAsync(
-                        $"You can't compare your own taste with yourself. For viewing your top artists, use `fmtopartists`\n" +
+                        $"You can't compare your own taste with yourself. For viewing your top artists, use `{prfx}topartists`\n" +
                         $"Please enter a different last.fm username or mention another user.");
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
@@ -752,7 +774,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("whoknows", RunMode = RunMode.Async)]
         [Summary("Shows what other users listen to the same artist in your server")]
-        [Alias("w", "wk")]
+        [Alias("w", "wk", "whoknows artist")]
         [UsernameSetRequired]
         [GuildOnly]
         public async Task WhoKnowsAsync([Remainder] string artistValues = null)
@@ -932,7 +954,15 @@ namespace FMBot.Bot.Commands.LastFM
                     this._embed.WithThumbnailUrl(spotifyImageUrl);
                 }
 
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                if (this.Context.InteractionData != null)
+                {
+                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+                }
+                else
+                {
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                }
+
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)

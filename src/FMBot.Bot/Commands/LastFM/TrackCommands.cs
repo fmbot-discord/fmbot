@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Discord.API.Rest;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
@@ -338,9 +339,23 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var timeSettings = SettingService.GetTimePeriod(extraOptions);
+            var timePeriodString = extraOptions;
+            if (this.Context.InteractionData != null)
+            {
+                var time = this.Context.InteractionData.Choices.FirstOrDefault(w => w.Name == "time");
+                timePeriodString = time?.Value?.ToLower();
+            }
+
+            var amountString = extraOptions;
+            if (this.Context.InteractionData != null)
+            {
+                var time = this.Context.InteractionData.Choices.FirstOrDefault(w => w.Name == "amount");
+                amountString = time?.Value?.ToLower();
+            }
+
+            var timeSettings = SettingService.GetTimePeriod(timePeriodString);
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
-            var amount = SettingService.GetAmount(extraOptions);
+            var amount = SettingService.GetAmount(amountString);
 
             try
             {
@@ -448,7 +463,14 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(description);
                 this._embed.WithFooter(this._embedFooter);
 
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                if (this.Context.InteractionData != null)
+                {
+                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+                }
+                else
+                {
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                }
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)
@@ -526,7 +548,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var filteredGuildUsers = this._guildService.FilterGuildUsersAsync(guild);
 
                 var currentUser = await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), userSettings);
-                
+
                 if (!guild.GuildUsers.Select(s => s.UserId).Contains(userSettings.UserId))
                 {
                     guild.GuildUsers.Add(currentUser);
@@ -573,8 +595,16 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embedFooter.WithText(footer);
                 this._embed.WithFooter(this._embedFooter);
+                
+                if (this.Context.InteractionData != null)
+                {
+                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+                }
+                else
+                {
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                }
 
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)

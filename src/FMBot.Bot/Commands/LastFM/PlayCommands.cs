@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Discord.API.Rest;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
@@ -67,7 +68,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("fm", RunMode = RunMode.Async)]
         [Summary("Displays what a user is listening to.")]
         [Alias("np", "qm", "wm", "em", "rm", "tm", "ym", "um", "om", "pm", "gm", "sm", "am", "hm", "jm", "km",
-            "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm")]
+            "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm", "nowplaying")]
         [UsernameSetRequired]
         public async Task FMAsync(params string[] parameters)
         {
@@ -291,20 +292,27 @@ namespace FMBot.Bot.Commands.LastFM
                             }
                         }
 
-                        var message = await ReplyAsync("", false, this._embed.Build());
-
-                        try
+                        if (this.Context.InteractionData != null)
                         {
-                            if (!this._guildService.CheckIfDM(this.Context))
-                            {
-                                await this._guildService.AddReactionsAsync(message, this.Context.Guild);
-                            }
+                            await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
                         }
-                        catch (Exception e)
+                        else
                         {
-                            this.Context.LogCommandException(e, "Could not add emote reactions");
-                            await ReplyAsync(
-                                "Couldn't add emote reactions to `.fm`. If you have recently changed changed any of the configured emotes please use `.fmserverreactions` to reset the automatic emote reactions.");
+                            var message = await ReplyAsync("", false, this._embed.Build());
+
+                            try
+                            {
+                                if (!this._guildService.CheckIfDM(this.Context))
+                                {
+                                    await this._guildService.AddReactionsAsync(message, this.Context.Guild);
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                this.Context.LogCommandException(e, "Could not add emote reactions");
+                                await ReplyAsync(
+                                    "Couldn't add emote reactions to `.fm`. If you have recently changed changed any of the configured emotes please use `.fmserverreactions` to reset the automatic emote reactions.");
+                            }
                         }
 
                         break;
@@ -435,7 +443,15 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithFooter(this._embedFooter);
 
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                if (this.Context.InteractionData != null)
+                {
+                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+                }
+                else
+                {
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                }
+
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)

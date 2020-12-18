@@ -67,6 +67,7 @@ namespace FMBot.Bot
             var provider = services.BuildServiceProvider(); // Build the service provider
             //provider.GetRequiredService<LoggingService>();      // Start the logging service
             provider.GetRequiredService<CommandHandler>();
+            provider.GetRequiredService<SlashCommandHandler>();
             provider.GetRequiredService<ClientLogHandler>();
             provider.GetRequiredService<UserEventHandler>();
 
@@ -110,6 +111,7 @@ namespace FMBot.Bot
                 .AddSingleton<PlayService>()
                 .AddSingleton<Random>()
                 .AddSingleton<SettingService>()
+                .AddSingleton<SlashCommandHandler>()
                 .AddSingleton<SpotifyService>()
                 .AddSingleton<StartupService>()
                 .AddSingleton<SupporterService>()

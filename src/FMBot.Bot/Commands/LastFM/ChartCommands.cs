@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using Discord.API.Rest;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
@@ -68,7 +69,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task ChartAsync(params string[] otherSettings)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            if (otherSettings != null && otherSettings.Any()  && otherSettings.First() == "help")
+            if (otherSettings != null && otherSettings.Any() && otherSettings.First() == "help")
             {
                 this._embed.WithTitle($"{prfx}chart extra options");
                 this._embed.WithDescription($"- Time periods: `{Constants.CompactTimePeriodList}`\n" +
@@ -143,7 +144,7 @@ namespace FMBot.Bot.Commands.LastFM
                 // Generating image
                 var chartSettings = new ChartSettings(this.Context.User);
 
-                chartSettings = this._chartService.SetSettings(chartSettings, otherSettings);
+                chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, this.Context);
 
                 var extraAlbums = 0;
                 if (chartSettings.SkipArtistsWithoutImage)
@@ -174,29 +175,36 @@ namespace FMBot.Bot.Commands.LastFM
 
                 chartSettings.Albums = albums.Content.ToList();
 
+                var embedAuthorDescription = "";
                 if (!userSettings.DifferentUser)
                 {
-                    this._embedAuthor.WithName($"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} for " +
-                                               await this._userService.GetUserTitleAsync(this.Context));
+                    embedAuthorDescription = $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} for " +
+                                             await this._userService.GetUserTitleAsync(this.Context);
                 }
                 else
                 {
-                    this._embedAuthor.WithName(
-                        $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} for {userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}");
+                    embedAuthorDescription =
+                        $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} for {userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
                 }
 
+                this._embedAuthor.WithName(embedAuthorDescription);
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 this._embedAuthor.WithUrl(
                     $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?{chartSettings.TimespanUrlString}");
 
-                this._embed.WithAuthor(this._embedAuthor);
-                var userInfo = await this._lastFmService.GetUserInfoAsync(userSettings.UserNameLastFm);
+                var embedDescription = "";
+                if (this.Context.InteractionData == null)
+                {
+                    this._embed.WithAuthor(this._embedAuthor);
+                    var userInfo = await this._lastFmService.GetUserInfoAsync(userSettings.UserNameLastFm);
 
-                var playCount = userInfo.Content.Playcount;
-
-                this._embedFooter.Text = $"{userSettings.UserNameLastFm} has {playCount} scrobbles.";
-
-                string embedDescription = "";
+                    var playCount = userInfo.Content.Playcount;
+                    this._embedFooter.Text = $"{userSettings.UserNameLastFm} has {playCount} scrobbles.";
+                }
+                else
+                {
+                    embedDescription += $"**{embedAuthorDescription}**\n";
+                }
                 if (chartSettings.CustomOptionsEnabled)
                 {
                     embedDescription += "Chart options:\n";
@@ -252,12 +260,12 @@ namespace FMBot.Bot.Commands.LastFM
                 var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
                 var stream = encoded.AsStream();
 
+                await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+
                 await this.Context.Channel.SendFileAsync(
                     stream,
-                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSpan.ToString()}-{userSettings.UserNameLastFm}.png",
-                    null,
-                    false,
-                    this._embed.Build());
+                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSpan}-{userSettings.UserNameLastFm}.png");
+
 
                 this.Context.LogCommandUsed();
             }

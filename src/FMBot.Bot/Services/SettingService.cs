@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
@@ -21,10 +22,8 @@ namespace FMBot.Bot.Services
             this._contextFactory = contextFactory;
         }
 
-        public static TimeSettingsModel GetTimePeriod(
-            string options,
-            ChartTimePeriod defaultTimePeriod = ChartTimePeriod.Weekly
-            )
+        public static TimeSettingsModel GetTimePeriod(string options,
+            ChartTimePeriod defaultTimePeriod = ChartTimePeriod.Weekly)
         {
             var settingsModel = new TimeSettingsModel();
             var customTimePeriod = true;
@@ -72,7 +71,8 @@ namespace FMBot.Bot.Services
                 settingsModel.ApiParameter = "3month";
                 settingsModel.PlayDays = 90;
             }
-            else if (extraOptions.Contains("halfyearly") ||
+            else if (extraOptions.Contains("half-yearly") ||
+                     extraOptions.Contains("halfyearly") ||
                      extraOptions.Contains("half") ||
                      extraOptions.Contains("h") ||
                      extraOptions.Contains("6m") ||
@@ -101,6 +101,7 @@ namespace FMBot.Bot.Services
             }
             else if (extraOptions.Contains("overall") ||
                      extraOptions.Contains("alltime") ||
+                     extraOptions.Contains("all-time") ||
                      extraOptions.Contains("o") ||
                      extraOptions.Contains("at") ||
                      extraOptions.Contains("a"))
@@ -236,6 +237,22 @@ namespace FMBot.Bot.Services
                     settingsModel.DifferentUser = true;
                     settingsModel.DiscordUserId = otherUser.DiscordUserId;
                     settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
+                }
+            }
+
+            if (context.InteractionData != null && context.InteractionData.Choices.Any())
+            {
+                var userInteraction = context.InteractionData.Choices.FirstOrDefault(f => f.Name == "user");
+                if (userInteraction != null)
+                {
+                    var otherUser = await GetUserFromString(userInteraction.Value);
+
+                    if (otherUser != null)
+                    {
+                        settingsModel.DifferentUser = true;
+                        settingsModel.DiscordUserId = otherUser.DiscordUserId;
+                        settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
+                    }
                 }
             }
 

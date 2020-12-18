@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
@@ -20,7 +20,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AsyncEnumerator" Version="4.0.2" />
-    <PackageReference Include="DNetPlus" Version="1.3.0" />
+    <PackageReference Include="DNetPlus" Version="1.4.0" />
     <PackageReference Include="DNetPlus-BotListAPI" Version="1.1.0" />
     <PackageReference Include="DNetPlus-Interactivity" Version="1.0.0" />
     <PackageReference Include="Genius.NET" Version="4.0.1" />
