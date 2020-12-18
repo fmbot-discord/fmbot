@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Discord.API.Rest;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
@@ -156,7 +157,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("featured", RunMode = RunMode.Async)]
         [Summary("Displays the featured avatar.")]
-        [Alias("fmfeaturedavatar", "fmfeatureduser", "fmfeaturedalbum")]
+        [Alias("featuredavatar", "featureduser", "featuredalbum", "avatar")]
         public async Task FeaturedAsync()
         {
             try
@@ -170,8 +171,15 @@ namespace FMBot.Bot.Commands.LastFM
                     this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues");
                 }
 
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                if (this.Context.InteractionData != null)
+                {
+                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+                }
+                else
+                {
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                }
+                
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)
