@@ -274,9 +274,9 @@ namespace FMBot.Bot.Services
             var chartSettings = currentChartSettings;
             chartSettings.CustomOptionsEnabled = false;
 
-            var interactionSize = commandContext.InteractionData.Choices.FirstOrDefault(w => w.Name == "size");
-            var interactionTitles = commandContext.InteractionData.Choices.FirstOrDefault(w => w.Name == "titles");
-            var interactionSkip = commandContext.InteractionData.Choices.FirstOrDefault(w => w.Name == "skipalbums");
+            var interactionSize = commandContext.InteractionData?.Choices.FirstOrDefault(w => w.Name == "size");
+            var interactionTitles = commandContext.InteractionData?.Choices.FirstOrDefault(w => w.Name == "titles");
+            var interactionSkip = commandContext.InteractionData?.Choices.FirstOrDefault(w => w.Name == "skipalbums");
 
             if (extraOptions.Contains("notitles") || extraOptions.Contains("nt") || interactionTitles != null && interactionTitles.Value == "False")
             {
@@ -377,7 +377,7 @@ namespace FMBot.Bot.Services
                 optionsAsString = string.Join(" ", extraOptions);
             }
 
-            if (!commandContext.InteractionData.Choices.Any())
+            if (commandContext.InteractionData == null)
             {
                 var timeSettings = SettingService.GetTimePeriod(optionsAsString);
 
