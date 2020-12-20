@@ -314,7 +314,6 @@ namespace FMBot.Bot.Services
                 userSettings.FmEmbedType = FmEmbedType.embedmini;
             }
 
-
             if (extraOptions.Contains("artist"))
             {
                 userSettings.FmCountType = FmCountType.Artist;
@@ -381,7 +380,6 @@ namespace FMBot.Bot.Services
                 Log.Error(e, "Error while deleting user!");
                 throw;
             }
-
         }
 
         public async Task<int> GetTotalUserCountAsync()
@@ -389,6 +387,15 @@ namespace FMBot.Bot.Services
             await using var db = this._contextFactory.CreateDbContext();
             return await db.Users
                 .AsQueryable()
+                .CountAsync();
+        }
+        
+        public async Task<int> GetTotalAuthorizedUserCountAsync()
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            return await db.Users
+                .AsQueryable()
+                .Where(w => w.SessionKeyLastFm != null)
                 .CountAsync();
         }
     }

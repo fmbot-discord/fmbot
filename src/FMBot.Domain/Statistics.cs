@@ -20,19 +20,21 @@ namespace FMBot.Domain
             .CreateGauge("bot_commands_executed", "Amount of commands executed");
         
         public static readonly Gauge SlashCommandsExecuted = Metrics
-            .CreateGauge("bot__slash_commands_executed", "Amount of slash commands executed");
+            .CreateGauge("bot_slash_commands_executed", "Amount of slash commands executed");
+        
+        public static readonly Gauge RegisteredUserCount = Metrics
+            .CreateGauge("bot_registered_users_count", "Total count of all users in the database");
+        
+        public static readonly Gauge AuthorizedUserCount = Metrics
+            .CreateGauge("bot_authorized_users_count", "Total count of all users that authorized Last.fm");
 
-        public static readonly Gauge RegisteredUsers = Metrics
-            .CreateGauge("bot_registered_users", "Amount of users in the database");
-
-        public static readonly Gauge RegisteredGuilds = Metrics
-            .CreateGauge("bot_registered_guilds", "Amount of guilds in the database");
+        public static readonly Gauge RegisteredGuildCount = Metrics
+            .CreateGauge("bot_registered_guilds_count", "Total count of all guilds in the database");
 
         public static readonly Gauge IndexedUsers = Metrics
-            .CreateGauge("bot_indexed_users", "Amount of calls to the last.fm image cdn");
-
+            .CreateGauge("bot_indexed_users", "Amount of indexed users");
 
         public static readonly Gauge UpdatedUsers = Metrics
-            .CreateGauge("bot_updated_users", "Amount of calls to the last.fm image cdn");
+            .CreateGauge("bot_updated_users", "Amount of updated users");
     }
 }

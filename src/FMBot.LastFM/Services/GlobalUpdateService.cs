@@ -131,6 +131,8 @@ namespace FMBot.LastFM.Services
                 Log.Error(e, "Update: Error in update process for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
             }
 
+            Statistics.UpdatedUsers.Inc();
+
             await connection.CloseAsync();
             return newScrobbles.Count;
         }

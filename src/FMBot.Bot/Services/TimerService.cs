@@ -204,8 +204,9 @@ namespace FMBot.Bot.Services
 
                     try
                     {
-                        Statistics.RegisteredUsers.Set(await this._userService.GetTotalUserCountAsync());
-                        Statistics.RegisteredGuilds.Set(await this._guildService.GetTotalGuildCountAsync());
+                        Statistics.RegisteredUserCount.Set(await this._userService.GetTotalUserCountAsync());
+                        Statistics.AuthorizedUserCount.Set(await this._userService.GetTotalAuthorizedUserCountAsync());
+                        Statistics.RegisteredGuildCount.Set(await this._guildService.GetTotalGuildCountAsync());
                     }
                     catch (Exception e)
                     {
