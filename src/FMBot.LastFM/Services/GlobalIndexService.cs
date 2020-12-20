@@ -87,8 +87,9 @@ namespace FMBot.LastFM.Services
 
             var topArtists = new List<LastArtist>();
 
-            const int amountOfApiCalls = 4000 / 1000;
-            for (var i = 1; i < amountOfApiCalls + 1; i++)
+            var indexLimit = UserHasHigherIndexLimit(user) ? 25 : 4;
+
+            for (var i = 1; i < indexLimit + 1; i++)
             {
                 var artistResult = await this._lastFMClient.User.GetTopArtists(user.UserNameLastFM,
                     LastStatsTimeSpan.Overall, i, 1000);
@@ -147,8 +148,9 @@ namespace FMBot.LastFM.Services
 
             var topAlbums = new List<LastAlbum>();
 
-            const int amountOfApiCalls = 5000 / 1000;
-            for (var i = 1; i < amountOfApiCalls + 1; i++)
+            var indexLimit = UserHasHigherIndexLimit(user) ? 25 : 5;
+
+            for (var i = 1; i < indexLimit + 1; i++)
             {
                 var albumResult = await this._lastFMClient.User.GetTopAlbums(user.UserNameLastFM,
                     LastStatsTimeSpan.Overall, i, 1000);
@@ -180,7 +182,9 @@ namespace FMBot.LastFM.Services
         {
             Log.Information($"Getting tracks for user {user.UserNameLastFM}");
 
-            var trackResult = await this.lastFmService.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, 6);
+            var indexLimit = UserHasHigherIndexLimit(user) ? 25 : 6;
+
+            var trackResult = await this.lastFmService.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, indexLimit);
 
             if (!trackResult.Success || trackResult.Content.TopTracks.Track.Count == 0)
             {
@@ -199,7 +203,7 @@ namespace FMBot.LastFM.Services
         private static async Task InsertPlaysIntoDatabase(IReadOnlyList<UserPlay> userPlays, int userId,
             NpgsqlConnection connection)
         {
-            Log.Information($"Inserting plays for user {userId}");
+            Log.Information($"Inserting {userPlays.Count} plays for user {userId}");
 
             await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
                                                                "WHERE user_id = @userId", connection);
@@ -221,7 +225,7 @@ namespace FMBot.LastFM.Services
         private static async Task InsertArtistsIntoDatabase(IReadOnlyList<UserArtist> artists, int userId,
             NpgsqlConnection connection)
         {
-            Log.Information($"Inserting artists for user {userId}");
+            Log.Information($"Inserting {artists.Count} artists for user {userId}");
 
             var copyHelper = new PostgreSQLCopyHelper<UserArtist>("public", "user_artists")
                 .MapText("name", x => x.Name)
@@ -237,7 +241,7 @@ namespace FMBot.LastFM.Services
         private static async Task InsertAlbumsIntoDatabase(IReadOnlyList<UserAlbum> albums, int userId,
             NpgsqlConnection connection)
         {
-            Log.Information($"Inserting albums for user {userId}");
+            Log.Information($"Inserting {albums.Count} albums for user {userId}");
 
             var copyHelper = new PostgreSQLCopyHelper<UserAlbum>("public", "user_albums")
                 .MapText("name", x => x.Name)
@@ -254,7 +258,7 @@ namespace FMBot.LastFM.Services
         private static async Task InsertTracksIntoDatabase(IReadOnlyList<UserTrack> artists, int userId,
             NpgsqlConnection connection)
         {
-            Log.Information($"Inserting tracks for user {userId}");
+            Log.Information($"Inserting {artists.Count} tracks for user {userId}");
 
             var copyHelper = new PostgreSQLCopyHelper<UserTrack>("public", "user_tracks")
                 .MapText("name", x => x.Name)
@@ -291,6 +295,25 @@ namespace FMBot.LastFM.Services
             }
 
             return recentTracks.Content.First(f => f.TimePlayed.HasValue).TimePlayed.Value.DateTime;
+        }
+
+        private bool UserHasHigherIndexLimit(User user)
+        {
+            switch (user.UserType)
+            {
+                case UserType.Backer:
+                    return true;
+                case UserType.Contributor:
+                    return true;
+                case UserType.Admin:
+                    return true;
+                case UserType.Owner:
+                    return true;
+                case UserType.User:
+                    return false;
+                default:
+                    return false;
+            }
         }
     }
 }

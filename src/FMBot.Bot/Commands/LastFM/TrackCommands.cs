@@ -533,6 +533,11 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
+            if (this.Context.InteractionData != null)
+            {
+                _ = this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, "", type: InteractionMessageType.AcknowledgeWithSource);
+            }
+
             var track = await this.SearchTrack(trackValues, userSettings, prfx);
             if (track == null)
             {
@@ -595,15 +600,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embedFooter.WithText(footer);
                 this._embed.WithFooter(this._embedFooter);
-                
-                if (this.Context.InteractionData != null)
-                {
-                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
-                }
-                else
-                {
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                }
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
                 this.Context.LogCommandUsed();
             }

@@ -560,6 +560,11 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
+            if (this.Context.InteractionData != null)
+            {
+                _ = this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, "", type: InteractionMessageType.AcknowledgeWithSource);
+            }
+
             var searchResult = await this.SearchAlbum(albumValues, userSettings, prfx);
             if (!searchResult.AlbumFound)
             {
@@ -656,15 +661,8 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     this._embed.WithThumbnailUrl(album.Image.First(f => f.Size == "mega").Text.ToString());
                 }
-                
-                if (this.Context.InteractionData != null)
-                {
-                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
-                }
-                else
-                {
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                }
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
                 this.Context.LogCommandUsed();
             }

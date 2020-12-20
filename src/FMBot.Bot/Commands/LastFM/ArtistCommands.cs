@@ -671,8 +671,15 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
+            var timePeriodString = extraOptions;
+            if (this.Context.InteractionData != null)
+            {
+                var time = this.Context.InteractionData.Choices.FirstOrDefault(w => w.Name == "time");
+                timePeriodString = time?.Value?.ToLower();
+            }
+
             var timeType = SettingService.GetTimePeriod(
-                extraOptions,
+                timePeriodString,
                 ChartTimePeriod.AllTime);
 
             var tasteSettings = new TasteSettings
@@ -710,17 +717,39 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (lastfmToCompare == null)
                 {
-                    await ReplyAsync(
-                        $"Please enter a valid user to compare your top artists to. \n" +
-                        $"Example: `{prfx}taste lastfmusername` or `{prfx}taste @user`");
+                    var errorReply = $"Error while attempting taste comparison: \n\n" +
+                                     $"Please enter a valid user to compare your top artists to.\n" +
+                                     $"Example: `{prfx}taste lastfmusername` or `{prfx}taste @user`.\n" +
+                                     $"Make sure the user is registered in .fmbot or has a public Last.fm profile.";
+
+                    if (this.Context.InteractionData != null)
+                    {
+                        await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, errorReply, type: InteractionMessageType.ChannelMessage, ghostMessage: true);
+                    }
+                    else
+                    {
+                        await ReplyAsync(errorReply);
+                    }
+
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
                 if (lastfmToCompare.ToLower() == userSettings.UserNameLastFM.ToLower())
                 {
-                    await ReplyAsync(
+                    var errorReply =
+                        $"Error while attempting taste comparison: \n\n" +
                         $"You can't compare your own taste with yourself. For viewing your top artists, use `{prfx}topartists`\n" +
-                        $"Please enter a different last.fm username or mention another user.");
+                        $"Please enter a different last.fm username or mention another user.";
+
+                    if (this.Context.InteractionData != null)
+                    {
+                        await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, errorReply, type: InteractionMessageType.ChannelMessage, ghostMessage: true);
+                    }
+                    else
+                    {
+                        await ReplyAsync(errorReply);
+                    }
+                    
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
@@ -764,13 +793,14 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (this.Context.InteractionData != null)
                 {
-                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.AcknowledgeWithSource);
                 }
                 else
                 {
                     await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 }
-                
+
+
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)
@@ -812,6 +842,11 @@ namespace FMBot.Bot.Commands.LastFM
                 var guildTask = this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
                 _ = this.Context.Channel.TriggerTypingAsync();
+
+                if (this.Context.InteractionData != null)
+                {
+                    _ = this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, "", type: InteractionMessageType.AcknowledgeWithSource);
+                }
 
                 var artistQuery = await GetArtistOrHelp(artistValues, userSettings, "whoknows", prfx);
                 if (artistQuery == null)
@@ -962,14 +997,7 @@ namespace FMBot.Bot.Commands.LastFM
                     this._embed.WithThumbnailUrl(spotifyImageUrl);
                 }
 
-                if (this.Context.InteractionData != null)
-                {
-                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
-                }
-                else
-                {
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                }
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
                 this.Context.LogCommandUsed();
             }

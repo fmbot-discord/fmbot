@@ -141,6 +141,11 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
 
+                if (this.Context.InteractionData != null)
+                {
+                    _ = this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, "", type: InteractionMessageType.AcknowledgeWithSource);
+                }
+
                 // Generating image
                 var chartSettings = new ChartSettings(this.Context.User);
 
@@ -193,18 +198,13 @@ namespace FMBot.Bot.Commands.LastFM
                     $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?{chartSettings.TimespanUrlString}");
 
                 var embedDescription = "";
-                if (this.Context.InteractionData == null)
-                {
-                    this._embed.WithAuthor(this._embedAuthor);
-                    var userInfo = await this._lastFmService.GetUserInfoAsync(userSettings.UserNameLastFm);
 
-                    var playCount = userInfo.Content.Playcount;
-                    this._embedFooter.Text = $"{userSettings.UserNameLastFm} has {playCount} scrobbles.";
-                }
-                else
-                {
-                    embedDescription += $"**{embedAuthorDescription}**\n";
-                }
+                this._embed.WithAuthor(this._embedAuthor);
+                var userInfo = await this._lastFmService.GetUserInfoAsync(userSettings.UserNameLastFm);
+
+                var playCount = userInfo.Content.Playcount;
+                this._embedFooter.Text = $"{userSettings.UserNameLastFm} has {playCount} scrobbles.";
+
                 if (chartSettings.CustomOptionsEnabled)
                 {
                     embedDescription += "Chart options:\n";
@@ -260,11 +260,10 @@ namespace FMBot.Bot.Commands.LastFM
                 var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
                 var stream = encoded.AsStream();
 
-                await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
-
                 await this.Context.Channel.SendFileAsync(
                     stream,
-                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSpan}-{userSettings.UserNameLastFm}.png");
+                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSpan}-{userSettings.UserNameLastFm}.png",
+                    embed: this._embed.Build());
 
 
                 this.Context.LogCommandUsed();

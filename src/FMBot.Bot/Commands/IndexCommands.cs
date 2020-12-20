@@ -10,6 +10,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 using Serilog;
 
 namespace FMBot.Bot.Commands
@@ -171,27 +172,10 @@ namespace FMBot.Bot.Commands
             }
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-10))
-            {
-                var recentlyUpdatedText =
-                    $"You have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). " +
-                    $"Note that this also happens automatically, for example with commands that use indexed data.";
-                if (this.Context.InteractionData != null)
-                {
-                    await ReplyInteractionAsync(recentlyUpdatedText,
-                        ghostMessage: true, type: InteractionMessageType.Acknowledge);
-                }
-                else
-                {
-                    await ReplyAsync(recentlyUpdatedText);
-                }
-                this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                return;
-            }
 
             if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full" || force.ToLower() == "-force" || force.ToLower() == "force"))
             {
-                if (userSettings.LastUpdated < DateTime.UtcNow.AddDays(-2))
+                if (userSettings.LastIndexed < DateTime.UtcNow.AddDays(-1))
                 {
                     await ReplyAsync(
                         "You can't do a full index too often. Please remember that this command should only be used in case you edited your scrobble history.\n" +
@@ -200,8 +184,17 @@ namespace FMBot.Bot.Commands
                     return;
                 }
 
-                this._embed.WithDescription($"<a:loading:749715170682470461> Fully indexing user {userSettings.UserNameLastFM}..." +
-                                            $"\n\nThis can take a while. Please don't fully update too often, if you have any issues with the normal update feel free to let us know.");
+                var indexDescription =
+                    $"<a:loading:749715170682470461> Fully indexing user {userSettings.UserNameLastFM}..." +
+                    $"\n\nThis can take a while. Please don't fully update too often, if you have any issues with the normal update feel free to let us know.";
+
+                if (userSettings.UserType != UserType.User)
+                {
+                    indexDescription += "\n\n" +
+                                        $"*As a thank you for being an .fmbot {userSettings.UserType.ToString().ToLower()} the bot will index the top 25k of your artists/albums/tracks (instead of top 4k/5k/6k).*";
+                }
+
+                this._embed.WithDescription(indexDescription);
 
                 var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
@@ -217,6 +210,24 @@ namespace FMBot.Bot.Commands
             }
             else
             {
+                if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-10))
+                {
+                    var recentlyUpdatedText =
+                        $"You have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). " +
+                        $"Note that this also happens automatically, for example with commands that use indexed data.";
+                    if (this.Context.InteractionData != null)
+                    {
+                        await ReplyInteractionAsync(recentlyUpdatedText,
+                            ghostMessage: true, type: InteractionMessageType.Acknowledge);
+                    }
+                    else
+                    {
+                        await ReplyAsync(recentlyUpdatedText);
+                    }
+                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                    return;
+                }
+
                 if (userSettings.LastIndexed == null)
                 {
                     await ReplyAsync(
