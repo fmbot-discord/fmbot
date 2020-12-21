@@ -335,7 +335,13 @@ namespace FMBot.Bot.Commands.LastFM
                 return new AlbumSearchModel(false);
             }
 
-            var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true);
+            string sessionKey = null;
+            if (!string.IsNullOrEmpty(userSettings.SessionKeyLastFm))
+            {
+                sessionKey = userSettings.SessionKeyLastFm;
+            }
+
+            var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true, sessionKey: sessionKey);
 
             if (!recentScrobbles.Success || recentScrobbles.Content == null)
             {
@@ -518,7 +524,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("wa", "wka", "wkab", "wab", "wkab", "wk album", "whoknows album")]
         [UsernameSetRequired]
         [GuildOnly]
-        public async Task WhoKnowsAsync([Remainder] string albumValues = null)
+        public async Task WhoKnowsAlbumAsync([Remainder] string albumValues = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;

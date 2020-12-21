@@ -43,13 +43,20 @@ namespace FMBot.LastFM.Services
         }
 
         // Recent scrobbles
-        public async Task<Response<RecentTracksResponse>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false)
+        public async Task<Response<RecentTracksResponse>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false, string sessionKey = null)
         {
             var queryParams = new Dictionary<string, string>
             {
                 {"user", lastFmUserName },
                 {"limit", count.ToString()}
             };
+            var authorizedCall = false;
+
+            if (!string.IsNullOrEmpty(sessionKey))
+            {
+                queryParams.Add("sk", sessionKey);
+                authorizedCall = true;
+            }
 
             if (useCache)
             {
@@ -64,7 +71,7 @@ namespace FMBot.LastFM.Services
                 }
             }
 
-            var recentTracksCall = await this._lastFmApi.CallApiAsync<RecentTracksResponse>(queryParams, Call.RecentTracks);
+            var recentTracksCall = await this._lastFmApi.CallApiAsync<RecentTracksResponse>(queryParams, Call.RecentTracks, authorizedCall);
 
             if (recentTracksCall.Success)
             {
@@ -384,7 +391,7 @@ namespace FMBot.LastFM.Services
             {
                 {"artist", artistName},
                 {"track", trackName},
-                {"sk", user.SessionKeyLastFm},
+                {"sk", user.SessionKeyLastFm}
             };
 
             var authSessionCall = await this._lastFmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.TrackLove, true);

@@ -62,6 +62,12 @@ namespace FMBot.LastFM.Services
 
                 signature.Append(this._secret);
                 parameters.Add("api_sig", CreateMd5(signature.ToString()));
+                
+                Statistics.LastfmAuthorizedApiCalls.Inc();
+            }
+            else
+            {
+                Statistics.LastfmApiCalls.Inc();
             }
 
             var url = QueryHelpers.AddQueryString(apiUrl, parameters);

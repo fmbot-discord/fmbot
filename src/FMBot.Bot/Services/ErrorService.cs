@@ -97,6 +97,10 @@ namespace FMBot.Bot.Services
                     embed.WithDescription("Can't retrieve data because your recent tracks are marked as private in your [Last.fm privacy settings](https://www.last.fm/settings/privacy).\n" +
                                           "Please note that .fmbot isn't affiliated with Last.fm.");
                     break;
+                case ResponseStatus.SessionExpired:
+                    embed.WithDescription("Can't retrieve data because your Last.fm session is expired or invalid.\n" +
+                                          "Please re-login to the bot with `.fmlogin`.");
+                    break;
                 default:
                     embed.WithDescription(message);
                     break;

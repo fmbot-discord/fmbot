@@ -142,7 +142,13 @@ namespace FMBot.Bot.Commands.LastFM
 
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(lastFmUserName, useCache: true);
+                string sessionKey = null;
+                if (self && !string.IsNullOrEmpty(userSettings.SessionKeyLastFm))
+                {
+                    sessionKey = userSettings.SessionKeyLastFm;
+                }
+                
+                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(lastFmUserName, useCache: true, sessionKey: sessionKey);
 
                 if (!recentScrobbles.Success || recentScrobbles.Content == null)
                 {

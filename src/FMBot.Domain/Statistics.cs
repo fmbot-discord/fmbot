@@ -5,10 +5,13 @@ namespace FMBot.Domain
     public static class Statistics
     {
         public static readonly Gauge DiscordServerCount = Metrics
-            .CreateGauge("discord_server_count", "Number of servers the bot is in");
+            .CreateGauge("discord_server_count", "Total count of all servers the bot is in");
 
         public static readonly Gauge LastfmApiCalls = Metrics
             .CreateGauge("lastfm_api_calls", "Amount of last.fm API calls");
+
+        public static readonly Gauge LastfmAuthorizedApiCalls = Metrics
+            .CreateGauge("lastfm_authorized_api_calls", "Amount of authorized last.fm API calls");
 
         public static readonly Gauge LastfmImageCalls = Metrics
             .CreateGauge("lastfm_image_cdn_calls", "Amount of calls to the last.fm image cdn");

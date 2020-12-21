@@ -484,7 +484,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Shows what other users listen to the same artist in your server")]
         [Alias("wt", "wkt", "wktr", "wtr", "wktrack", "wk track", "whoknows track")]
         [UsernameSetRequired]
-        public async Task WhoKnowsAsync([Remainder] string trackValues = null)
+        public async Task WhoKnowsTrackAsync([Remainder] string trackValues = null)
         {
             if (this._guildService.CheckIfDM(this.Context))
             {
@@ -770,7 +770,13 @@ namespace FMBot.Bot.Commands.LastFM
             }
             else
             {
-                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true);
+                string sessionKey = null;
+                if (!string.IsNullOrEmpty(userSettings.SessionKeyLastFm))
+                {
+                    sessionKey = userSettings.SessionKeyLastFm;
+                }
+
+                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
                 if (!recentScrobbles.Success || recentScrobbles.Content == null)
                 {

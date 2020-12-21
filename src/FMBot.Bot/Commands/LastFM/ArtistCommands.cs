@@ -1235,7 +1235,13 @@ namespace FMBot.Bot.Commands.LastFM
             }
             else
             {
-                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true);
+                string sessionKey = null;
+                if (!string.IsNullOrEmpty(userSettings.SessionKeyLastFm))
+                {
+                    sessionKey = userSettings.SessionKeyLastFm;
+                }
+
+                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true, sessionKey: sessionKey);
 
                 if (!recentScrobbles.Success || recentScrobbles.Content == null)
                 {
