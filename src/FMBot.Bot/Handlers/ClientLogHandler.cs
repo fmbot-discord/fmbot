@@ -37,24 +37,19 @@ namespace FMBot.Bot.Handlers
                         Log.Fatal(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source, logMessage.Message);
                         break;
                     case LogSeverity.Error:
-                        Log.Error(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source,
-                            logMessage.Message);
+                        Log.Error(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source, logMessage.Message);
                         break;
                     case LogSeverity.Warning:
-                        Log.Warning(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source,
-                            logMessage.Message);
+                        Log.Warning(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source, logMessage.Message);
                         break;
                     case LogSeverity.Info:
-                        Log.Information(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source,
-                            logMessage.Message);
+                        Log.Information(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source, logMessage.Message);
                         break;
                     case LogSeverity.Verbose:
-                        Log.Verbose(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source,
-                            logMessage.Message);
+                        Log.Verbose(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source, logMessage.Message);
                         break;
                     case LogSeverity.Debug:
-                        Log.Debug(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source,
-                            logMessage.Message);
+                        Log.Debug(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source, logMessage.Message);
                         break;
                 }
                     
