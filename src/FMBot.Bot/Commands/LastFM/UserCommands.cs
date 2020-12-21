@@ -349,7 +349,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (this.Context.InteractionData != null)
             {
-                await ReplyInteractionAsync(setReply.FilterOutMentions(), ghostMessage: true, type: InteractionMessageType.Acknowledge);
+                await ReplyInteractionAsync(setReply.FilterOutMentions(), ghostMessage: true, type: InteractionMessageType.ChannelMessage);
             }
             else
             {
