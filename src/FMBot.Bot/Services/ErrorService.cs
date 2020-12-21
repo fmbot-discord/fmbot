@@ -84,10 +84,10 @@ namespace FMBot.Bot.Services
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
-        public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus? apiResponse, string message, ICommandContext context)
+        public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus? responseStatus, string message, ICommandContext context)
         {
             embed.WithTitle("Error while attempting get Last.fm information");
-            switch (apiResponse)
+            switch (responseStatus)
             {
                 case ResponseStatus.Failure:
                     embed.WithDescription("Can't retrieve data because Last.fm is having issues. Please try again later. \n" +
@@ -106,13 +106,13 @@ namespace FMBot.Bot.Services
                     break;
             }
 
-            if (apiResponse != null)
+            if (responseStatus != null)
             {
-                embed.WithFooter($"Last.fm error code: {apiResponse}");
+                embed.WithFooter($"Last.fm error code: {responseStatus}");
             }
 
             embed.WithColor(DiscordConstants.WarningColorOrange);
-            Log.Warning("Last.fm returned error: {message} | Error code {apiResponse} | {userName} / {UserId} | {messageContent}", message, apiResponse, context.User.Username, context.User.Id, context.Message.Content);
+            Log.Warning("Last.fm returned error: {message} | Error code {responseStatus} | {userName} / {UserId} | {messageContent}", message, responseStatus, context.User.Username, context.User.Id, context.Message.Content);
         }
     }
 }
