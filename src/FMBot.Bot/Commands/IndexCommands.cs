@@ -240,7 +240,7 @@ namespace FMBot.Bot.Commands
                 {
                     var scrobblesUsed = await this._updateService.UpdateUser(userSettings);
 
-                    await ReplyInteractionAsync($"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new scrobbles.",
+                    await ReplyInteractionAsync($"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new {StringExtensions.GetScrobblesString(scrobblesUsed)}.",
                         ghostMessage: true, type: InteractionMessageType.Acknowledge);
                 }
                 else
@@ -272,7 +272,7 @@ namespace FMBot.Bot.Commands
                         else
                         {
                             var updatedDescription =
-                                $"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new scrobbles.";
+                                $"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new {StringExtensions.GetScrobblesString(scrobblesUsed)}.";
 
                             var rnd = new Random();
                             if (rnd.Next(0, 4) == 1)

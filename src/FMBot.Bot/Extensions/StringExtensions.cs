@@ -75,6 +75,11 @@ namespace FMBot.Bot.Extensions
         {
             return playcount == 1 ? "play" : "plays";
         }
+        
+        public static string GetScrobblesString(long? scrobbles)
+        {
+            return scrobbles == 1 ? "scrobble" : "scrobbles";
+        }
 
         public static string GetListenersString(long? listeners)
         {
