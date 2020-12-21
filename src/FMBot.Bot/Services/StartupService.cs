@@ -103,7 +103,7 @@ namespace FMBot.Bot.Services
             {
                 Log.Information("ShardStartConnection: shard {shardId}", shard.ShardId);
                 await shard.StartAsync();
-                await Task.Delay(3000);
+                await Task.Delay(4000);
             }
 
             Log.Information("Preparing cache folder");
