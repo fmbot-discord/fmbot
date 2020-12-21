@@ -16,7 +16,6 @@ namespace FMBot.Bot.Commands
 {
     [Name("Owner commands")]
     [Summary(".fmbot Owners Only")]
-    [RequireOwner]
     [ExcludeFromHelp]
     public class OwnerCommands : ModuleBase
     {
