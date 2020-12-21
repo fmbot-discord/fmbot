@@ -86,6 +86,16 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this._embed.UsernameNotSetErrorResponse(prfx);
                 await ReplyAsync("", false, this._embed.Build());
+
+                if (this.Context.InteractionData == null)
+                {
+                    await ReplyAsync("", false, this._embed.Build());
+                }
+                else
+                {
+                    await ReplyInteractionAsync("", embed: this._embed.Build());
+                }
+
                 return;
             }
             if (parameters.Length > 0 && parameters.First() == "help")
@@ -138,7 +148,14 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     this._embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, this.Context);
                     this.Context.LogCommandUsed(CommandResponse.LastFmError);
-                    await ReplyAsync("", false, this._embed.Build());
+                    if (this.Context.InteractionData == null)
+                    {
+                        await ReplyAsync("", false, this._embed.Build());
+                    }
+                    else
+                    {
+                        await ReplyInteractionAsync("", embed: this._embed.Build());
+                    }
                     return;
                 }
 
@@ -146,7 +163,14 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     this._embed.NoScrobblesFoundErrorResponse(lastFmUserName);
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                    await ReplyAsync("", false, this._embed.Build());
+                    if (this.Context.InteractionData == null)
+                    {
+                        await ReplyAsync("", false, this._embed.Build());
+                    }
+                    else
+                    {
+                        await ReplyInteractionAsync("", embed: this._embed.Build());
+                    }
                     return;
                 }
 
@@ -370,7 +394,14 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     this._embed.ErrorResponse(tracks.Error, tracks.Message, this.Context);
                     this.Context.LogCommandUsed(CommandResponse.LastFmError);
-                    await ReplyAsync("", false, this._embed.Build());
+                    if (this.Context.InteractionData == null)
+                    {
+                        await ReplyAsync("", false, this._embed.Build());
+                    }
+                    else
+                    {
+                        await ReplyInteractionAsync("", embed: this._embed.Build());
+                    }
                     return;
                 }
 
@@ -378,7 +409,14 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     this._embed.NoScrobblesFoundErrorResponse(userSettings.UserNameLastFm);
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                    await ReplyAsync("", false, this._embed.Build());
+                    if (this.Context.InteractionData == null)
+                    {
+                        await ReplyAsync("", false, this._embed.Build());
+                    }
+                    else
+                    {
+                        await ReplyInteractionAsync("", embed: this._embed.Build());
+                    }
                     return;
                 }
 
@@ -607,8 +645,15 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (count == null || count == 0)
             {
-                await ReplyAsync(
-                    $"<@{this.Context.User.Id}> No plays found in the {timeType.Description} time period.");
+                var errorReply = $"<@{this.Context.User.Id}> No plays found in the {timeType.Description} time period.";
+                if (this.Context.InteractionData != null)
+                {
+                    await ReplyInteractionAsync(errorReply.FilterOutMentions(), ghostMessage: true, type: InteractionMessageType.ChannelMessage);
+                }
+                else
+                {
+                    await this.Context.Channel.SendMessageAsync(errorReply);
+                }
             }
 
             var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
@@ -646,7 +691,15 @@ namespace FMBot.Bot.Commands.LastFM
                     $"This is based on {determiner} avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day in the last {Math.Round(totalDays, 0)} days ({count} total)");
             }
 
-            await ReplyAsync(reply.ToString());
+            if (this.Context.InteractionData != null)
+            {
+                await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, reply.ToString(), type: InteractionMessageType.ChannelMessageWithSource);
+            }
+            else
+            {
+                await this.Context.Channel.SendMessageAsync(reply.ToString());
+            }
+
             this.Context.LogCommandUsed();
         }
 
@@ -657,7 +710,6 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task StreakAsync([Remainder] string extraOptions = null)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             if (user.LastIndexed == null)
             {
@@ -685,7 +737,15 @@ namespace FMBot.Bot.Commands.LastFM
             this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library");
             this._embed.WithAuthor(this._embedAuthor);
 
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            if (this.Context.InteractionData != null)
+            {
+                await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+            }
+            else
+            {
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            }
+
             this.Context.LogCommandUsed();
         }
 

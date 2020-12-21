@@ -106,7 +106,7 @@ namespace FMBot.Bot.Handlers
                     disabledGuildCommands != null &&
                     disabledGuildCommands.Any(searchResult.Commands.First().Command.Name.Contains))
                 {
-                    await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this server.");
+                    await context.Channel.SendInteractionMessageAsync(context.InteractionData, "The command you're trying to execute has been disabled in this server.");
                     return;
                 }
 
@@ -116,7 +116,7 @@ namespace FMBot.Bot.Handlers
                     disabledChannelCommands.Any() &&
                     disabledChannelCommands.Any(searchResult.Commands.First().Command.Name.Contains))
                 {
-                    await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this channel.");
+                    await context.Channel.SendInteractionMessageAsync(context.InteractionData, "The command you're trying to execute has been disabled in this channel.");
                     return;
                 }
             }
@@ -130,7 +130,7 @@ namespace FMBot.Bot.Handlers
                     var embed = new EmbedBuilder()
                                 .WithColor(DiscordConstants.LastFmColorRed);
                     embed.UsernameNotSetErrorResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
-                    await context.Channel.SendMessageAsync("", false, embed.Build());
+                    await context.Channel.SendInteractionMessageAsync(context.InteractionData, "", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
                     return;
                 }
@@ -141,7 +141,7 @@ namespace FMBot.Bot.Handlers
                     var embed = new EmbedBuilder()
                         .WithColor(DiscordConstants.LastFmColorRed);
                     embed.UserBlockedResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
-                    await context.Channel.SendMessageAsync("", false, embed.Build());
+                    await context.Channel.SendInteractionMessageAsync(context.InteractionData, "", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UserBlocked);
                     return;
                 }
@@ -157,7 +157,7 @@ namespace FMBot.Bot.Handlers
                     var embed = new EmbedBuilder()
                         .WithColor(DiscordConstants.LastFmColorRed);
                     embed.SessionRequiredResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
-                    await context.Channel.SendMessageAsync("", false, embed.Build());
+                    await context.Channel.SendInteractionMessageAsync(context.InteractionData, "", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
                     return;
                 }
@@ -168,7 +168,7 @@ namespace FMBot.Bot.Handlers
                     var embed = new EmbedBuilder()
                         .WithColor(DiscordConstants.LastFmColorRed);
                     embed.UserBlockedResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
-                    await context.Channel.SendMessageAsync("", false, embed.Build());
+                    await context.Channel.SendInteractionMessageAsync(context.InteractionData, "", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UserBlocked);
                     return;
                 }

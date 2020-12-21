@@ -368,13 +368,24 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMinutes(1) >= DateTimeOffset.Now)
                 {
-                    await ReplyAsync($"A login link has already been sent to your DMs.\n" +
-                                     $"Didn't receive a link? Please check if you have DMs enabled for this server and try again.\n" +
-                                     $"Setting location: Click on the server name (top left) > `Privacy Settings` > `Allow direct messages from server members`.");
+                    if (this.Context.InteractionData != null)
+                    {
+                        await this.Context.Channel.SendInteractionMessageAsync(
+                            this.Context.InteractionData,
+                            "You have already requested a login link in the last minute. \n" +
+                            "Please check if you can login through that link, or try again later.",
+                            type: InteractionMessageType.ChannelMessage,
+                            ghostMessage: true);
+                    }
+                    else
+                    {
+                        await ReplyAsync($"A login link has already been sent to your DMs.\n" +
+                                         $"Didn't receive a link? Please check if you have DMs enabled for this server and try again.\n" +
+                                         $"Setting location: Click on the server name (top left) > `Privacy Settings` > `Allow direct messages from server members`.");
+                    }
+                    
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
-
                     StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now.AddMinutes(-5);
-
                     return;
                 }
 
@@ -389,6 +400,7 @@ namespace FMBot.Bot.Commands.LastFM
             var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var token = await this._lastFmService.GetAuthToken();
 
+            // TODO: When our Discord library supports follow up messages for interactions, add slash command support.
             var replyString =
                 $"[Click here add your Last.fm account to .fmbot](http://www.last.fm/api/auth/?api_key={ConfigData.Data.LastFm.Key}&token={token.Content.Token})";
 
@@ -433,7 +445,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this.Context.LogCommandUsed();
 
-                if (!string.Equals(existingUserSettings.UserNameLastFM, newUserSettings.UserNameLastFM, StringComparison.CurrentCultureIgnoreCase))
+                if (existingUserSettings != null && !string.Equals(existingUserSettings.UserNameLastFM, newUserSettings.UserNameLastFM, StringComparison.CurrentCultureIgnoreCase))
                 {
                     await this._crownService.RemoveAllCrownsFromUser(newUserSettings.UserId);
                     await this._indexService.IndexUser(newUserSettings);

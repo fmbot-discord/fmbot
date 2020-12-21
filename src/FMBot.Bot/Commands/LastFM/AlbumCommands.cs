@@ -544,13 +544,14 @@ namespace FMBot.Bot.Commands.LastFM
             if (lastIndex == null)
             {
                 await ReplyAsync("This server hasn't been indexed yet.\n" +
-                                 $"Please run `{prfx}index` to index this server.");
+                                 $"Please run `{prfx}index` to index this server.\n" +
+                                 $" Note that this can take some time on large servers.");
                 this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
             }
-            if (lastIndex < DateTime.UtcNow.AddDays(-50))
+            if (lastIndex < DateTime.UtcNow.AddDays(-100))
             {
-                await ReplyAsync("Server index data is out of date, it was last updated over 50 days ago.\n" +
+                await ReplyAsync("Server index data is out of date, it was last updated over 100 days ago.\n" +
                                  $"Please run `{prfx}index` to re-index this server.");
                 this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
@@ -718,13 +719,14 @@ namespace FMBot.Bot.Commands.LastFM
             if (guild.LastIndexed == null)
             {
                 await ReplyAsync("This server hasn't been indexed yet.\n" +
-                                 $"Please run `{prfx}index` to index this server.");
+                                 $"Please run `{prfx}index` to index this server.\n" +
+                                 $" Note that this can take some time on large servers.");
                 this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
             }
-            if (guild.LastIndexed < DateTime.UtcNow.AddDays(-60))
+            if (guild.LastIndexed < DateTime.UtcNow.AddDays(-100))
             {
-                await ReplyAsync("Server index data is out of date, it was last updated over 60 days ago.\n" +
+                await ReplyAsync("Server index data is out of date, it was last updated over 100 days ago.\n" +
                                  $"Please run `{prfx}index` to re-index this server.");
                 this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
