@@ -146,7 +146,6 @@ namespace FMBot.Bot.Commands.LastFM
                     _ = this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, "", type: InteractionMessageType.AcknowledgeWithSource);
                 }
 
-                // Generating image
                 var chartSettings = new ChartSettings(this.Context.User);
 
                 chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, this.Context);

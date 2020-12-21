@@ -102,7 +102,7 @@ namespace FMBot.Bot.Services
         }
 
 
-        // Get user from guild with searchvalue
+        // Get last.fm username from guild with searchvalue
         public async Task<string> MentionToLastFmUsernameAsync(string searchValue)
         {
             if (searchValue.Length > 3)
@@ -123,6 +123,31 @@ namespace FMBot.Bot.Services
                 }
 
                 return searchValue;
+            }
+
+            return null;
+        }
+
+
+        // Get user from guild with searchvalue
+        public async Task<User> MentionToUserAsync(string searchValue)
+        {
+            if (searchValue.Length > 3)
+            {
+                if (this._mentionRegex.IsMatch(searchValue))
+                {
+                    var id = searchValue.Trim('@', '!', '<', '>');
+
+                    if (ulong.TryParse(id, out ulong discordUserId))
+                    {
+                        await using var db = this._contextFactory.CreateDbContext();
+                        var userSettings = await db.Users
+                            .AsQueryable()
+                            .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+
+                        return userSettings;
+                    }
+                }
             }
 
             return null;

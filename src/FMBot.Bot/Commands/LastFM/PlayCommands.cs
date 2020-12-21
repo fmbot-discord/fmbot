@@ -15,6 +15,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 
@@ -46,8 +47,7 @@ namespace FMBot.Bot.Commands.LastFM
                 PlayService playService,
                 SettingService settingService,
                 UserService userService,
-                WhoKnowsPlayService whoKnowsPlayService
-                )
+                WhoKnowsPlayService whoKnowsPlayService)
         {
             this._guildService = guildService;
             this._indexService = indexService;
@@ -147,41 +147,35 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     sessionKey = userSettings.SessionKeyLastFm;
                 }
-                
+
                 var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(lastFmUserName, useCache: true, sessionKey: sessionKey);
+                var spotifyUsed = false;
 
-                if (!recentScrobbles.Success || recentScrobbles.Content == null)
+                RecentTrack currentTrack;
+                RecentTrack previousTrack = null;
+
+                if (ErrorService.RecentScrobbleCallFailed(recentScrobbles, lastFmUserName))
                 {
-                    this._embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, this.Context);
-                    this.Context.LogCommandUsed(CommandResponse.LastFmError);
-                    if (this.Context.InteractionData == null)
+                    var listeningActivity =
+                        this.Context.User.Activities.FirstOrDefault(a => a.Type == ActivityType.Listening);
+                    if (listeningActivity != null && PublicProperties.IssuesAtLastFM)
                     {
-                        await ReplyAsync("", false, this._embed.Build());
+                        var spotifyActivity = (SpotifyGame)listeningActivity;
+                        currentTrack = SpotifyService.SpotifyGameToRecentTrack(spotifyActivity);
+                        this._embed.Color = DiscordConstants.SpotifyColorGreen;
+                        spotifyUsed = true;
                     }
                     else
                     {
-                        await ReplyInteractionAsync("", embed: this._embed.Build());
+                        await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, lastFmUserName, this.Context);
+                        return;
                     }
-                    return;
                 }
-
-                if (!recentScrobbles.Content.RecentTracks.Track.Any())
+                else
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(lastFmUserName);
-                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                    if (this.Context.InteractionData == null)
-                    {
-                        await ReplyAsync("", false, this._embed.Build());
-                    }
-                    else
-                    {
-                        await ReplyInteractionAsync("", embed: this._embed.Build());
-                    }
-                    return;
+                    currentTrack = recentScrobbles.Content.RecentTracks.Track[0];
+                    previousTrack = recentScrobbles.Content.RecentTracks.Track[1];
                 }
-
-                var currentTrack = recentScrobbles.Content.RecentTracks.Track[0];
-                var previousTrack = recentScrobbles.Content.RecentTracks.Track[1];
 
                 if (self)
                 {
@@ -244,7 +238,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                             fmText += LastFmService.TrackToString(currentTrack);
                         }
-                        else
+                        else if (previousTrack != null)
                         {
                             fmText += $"Last tracks for {embedTitle}: \n";
 
@@ -263,7 +257,7 @@ namespace FMBot.Bot.Commands.LastFM
                             fmText += LastFmService.TrackToLinkedString(currentTrack);
                             this._embed.WithDescription(fmText);
                         }
-                        else
+                        else if (previousTrack != null)
                         {
                             this._embed.AddField("Current:", LastFmService.TrackToLinkedString(currentTrack));
                             this._embed.AddField("Previous:", LastFmService.TrackToLinkedString(previousTrack));
@@ -305,6 +299,12 @@ namespace FMBot.Bot.Commands.LastFM
                             }
                         }
 
+                        if (spotifyUsed)
+                        {
+                            footerText +=
+                                $"\nSpotify status used due to Last.fm error ({recentScrobbles.Error})";
+                        }
+                        
                         this._embedFooter.WithText(footerText);
 
                         this._embed.WithFooter(this._embedFooter);
@@ -402,33 +402,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var tracks = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFm, amount, useCache: true, sessionKey: sessionKey);
 
-                if (!tracks.Success || tracks.Content == null)
+                if (await ErrorService.RecentScrobbleCallFailedReply(tracks, userSettings.UserNameLastFm, this.Context))
                 {
-                    this._embed.ErrorResponse(tracks.Error, tracks.Message, this.Context);
-                    this.Context.LogCommandUsed(CommandResponse.LastFmError);
-                    if (this.Context.InteractionData == null)
-                    {
-                        await ReplyAsync("", false, this._embed.Build());
-                    }
-                    else
-                    {
-                        await ReplyInteractionAsync("", embed: this._embed.Build());
-                    }
-                    return;
-                }
-
-                if (!tracks.Content.RecentTracks.Track.Any())
-                {
-                    this._embed.NoScrobblesFoundErrorResponse(userSettings.UserNameLastFm);
-                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                    if (this.Context.InteractionData == null)
-                    {
-                        await ReplyAsync("", false, this._embed.Build());
-                    }
-                    else
-                    {
-                        await ReplyInteractionAsync("", embed: this._embed.Build());
-                    }
                     return;
                 }
 

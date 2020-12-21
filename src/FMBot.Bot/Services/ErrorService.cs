@@ -1,8 +1,14 @@
+using System.Linq;
+using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Domain;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
+using FMBot.LastFM.Domain.Models;
+using FMBot.LastFM.Domain.Types;
 using IF.Lastfm.Core.Api.Enums;
 using Serilog;
 
@@ -72,7 +78,7 @@ namespace FMBot.Bot.Services
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
-        public static void NoScrobblesFoundErrorResponse(this EmbedBuilder embed, string userName)
+        private static void NoScrobblesFoundErrorResponse(this EmbedBuilder embed, string userName)
         {
             embed.WithTitle("Error while attempting get Last.fm information");
 
@@ -113,6 +119,54 @@ namespace FMBot.Bot.Services
 
             embed.WithColor(DiscordConstants.WarningColorOrange);
             Log.Warning("Last.fm returned error: {message} | {responseStatus} | {discordUserName} / {discordUserId} | {messageContent}", message, responseStatus, context.User.Username, context.User.Id, context.Message.Content);
+        }
+
+        public static bool RecentScrobbleCallFailed(Response<RecentTracksResponse> recentScrobbles, string lastFmUserName)
+        {
+            if (!recentScrobbles.Success || recentScrobbles.Content == null || !recentScrobbles.Content.RecentTracks.Track.Any())
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public static async Task<bool> RecentScrobbleCallFailedReply(Response<RecentTracksResponse> recentScrobbles, string lastFmUserName, ICommandContext context)
+        {
+            var embed = new EmbedBuilder();
+            if (!recentScrobbles.Success || recentScrobbles.Content == null)
+            {
+                embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, context);
+                context.LogCommandUsed(CommandResponse.LastFmError);
+                if (context.InteractionData == null)
+                {
+                    await context.Channel.SendMessageAsync("", false, embed.Build());
+                }
+                else
+                {
+                    await context.Channel.SendInteractionMessageAsync(context.InteractionData, "", embed: embed.Build());
+                }
+
+                return true;
+            }
+
+            if (!recentScrobbles.Content.RecentTracks.Track.Any())
+            {
+                embed.NoScrobblesFoundErrorResponse(lastFmUserName);
+                context.LogCommandUsed(CommandResponse.NoScrobbles);
+                if (context.InteractionData == null)
+                {
+                    await context.Channel.SendMessageAsync("", false, embed.Build());
+                }
+                else
+                {
+                    await context.Channel.SendInteractionMessageAsync(context.InteractionData, "", embed: embed.Build());
+                }
+
+                return true;
+            }
+
+            return false;
         }
     }
 }

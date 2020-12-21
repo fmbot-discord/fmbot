@@ -1243,19 +1243,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true, sessionKey: sessionKey);
 
-                if (!recentScrobbles.Success || recentScrobbles.Content == null)
+                if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                 {
-                    this._embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, this.Context);
-                    this.Context.LogCommandUsed(CommandResponse.LastFmError);
-                    await ReplyAsync("", false, this._embed.Build());
-                    return null;
-                }
-
-                if (!recentScrobbles.Content.RecentTracks.Track.Any())
-                {
-                    this._embed.NoScrobblesFoundErrorResponse(userSettings.UserNameLastFM);
-                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                    await ReplyAsync("", false, this._embed.Build());
                     return null;
                 }
 

@@ -151,21 +151,16 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (string.IsNullOrWhiteSpace(artistValues))
             {
-                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true);
-
-                if (!recentScrobbles.Success || recentScrobbles.Content == null)
+                string sessionKey = null;
+                if (!string.IsNullOrWhiteSpace(userSettings.SessionKeyLastFm))
                 {
-                    this._embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, this.Context);
-                    this.Context.LogCommandUsed(CommandResponse.LastFmError);
-                    await ReplyAsync("", false, this._embed.Build());
-                    return;
+                    sessionKey = userSettings.SessionKeyLastFm;
                 }
 
-                if (!recentScrobbles.Content.RecentTracks.Track.Any())
+                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true, sessionKey: sessionKey);
+
+                if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                 {
-                    this._embed.NoScrobblesFoundErrorResponse(userSettings.UserNameLastFM);
-                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                    await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
 

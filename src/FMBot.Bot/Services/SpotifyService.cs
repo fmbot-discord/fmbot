@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
 using FMBot.Bot.Configurations;
 using FMBot.LastFM.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -13,6 +14,7 @@ using SpotifyAPI.Web.Auth;
 using SpotifyAPI.Web.Enums;
 using SpotifyAPI.Web.Models;
 using Artist = FMBot.Persistence.Domain.Models.Artist;
+using Image = FMBot.LastFM.Domain.Models.Image;
 
 namespace FMBot.Bot.Services
 {
@@ -296,6 +298,31 @@ namespace FMBot.Bot.Services
                 AccessToken = token.AccessToken,
                 UseAuth = true
             };
-    }
+        }
+
+        public static RecentTrack SpotifyGameToRecentTrack(SpotifyGame spotifyActivity)
+        {
+            return new RecentTrack
+            {
+                Name = spotifyActivity.TrackTitle,
+                Album = new SmallAlbum
+                {
+                    Text = spotifyActivity.AlbumTitle
+                },
+                Artist = new SmallArtist
+                {
+                    Text = spotifyActivity.Artists.First()
+                },
+                Image = new[]
+                {
+                    new Image
+                    {
+                        Text = spotifyActivity.AlbumArtUrl,
+                        Size = "extralarge"
+                    }
+                },
+                Url = new Uri(spotifyActivity.TrackUrl)
+            };
+        }
     }
 }

@@ -103,7 +103,8 @@ namespace FMBot.LastFM.Services
 
         public static string TrackToLinkedString(RecentTrack track)
         {
-            if (track.Url.ToString().IndexOfAny(new[] { '(', ')' }) >= 0)
+            if (track.Url == null ||
+                track.Url.ToString().IndexOfAny(new[] { '(', ')' }) >= 0)
             {
                 return TrackToString(track);
             }

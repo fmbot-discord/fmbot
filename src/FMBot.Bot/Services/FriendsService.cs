@@ -20,7 +20,7 @@ namespace FMBot.Bot.Services
             this._contextFactory = contextFactory;
         }
 
-        public async Task<IList<string>> GetFMFriendsAsync(IUser discordUser)
+        public async Task<List<Friend>> GetFmFriendsAsync(IUser discordUser)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users
@@ -30,15 +30,12 @@ namespace FMBot.Bot.Services
 
             var friends = user.Friends
                 .Where(w => w.LastFMUserName != null || w.FriendUser.UserNameLastFM != null)
-                .Select(
-                    s => s.LastFMUserName ?? s.FriendUser.UserNameLastFM)
-                .OrderBy(o => o)
                 .ToList();
 
             return friends;
         }
 
-        public async Task AddLastFMFriendAsync(ulong discordSenderId, string lastfmusername, int? discordFriendId)
+        public async Task AddLastFmFriendAsync(ulong discordSenderId, string lastFmUserName, int? discordFriendId)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var user = db.Users.FirstOrDefault(f => f.DiscordUserId == discordSenderId);
@@ -60,7 +57,7 @@ namespace FMBot.Bot.Services
             var friend = new Friend
             {
                 User = user,
-                LastFMUserName = lastfmusername,
+                LastFMUserName = lastFmUserName,
                 FriendUserId = discordFriendId
             };
 
@@ -72,13 +69,13 @@ namespace FMBot.Bot.Services
         }
 
 
-        public async Task<bool> RemoveLastFMFriendAsync(int userID, string lastfmusername)
+        public async Task<bool> RemoveLastFmFriendAsync(int userId, string lastFmUserName)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var friend = db.Friends
                 .Include(i => i.FriendUser)
-                .FirstOrDefault(f => f.UserId == userID &&
-                                     (f.LastFMUserName.ToLower() == lastfmusername.ToLower() || f.FriendUser != null && f.FriendUser.UserNameLastFM.ToLower() == lastfmusername.ToLower()));
+                .FirstOrDefault(f => f.UserId == userId &&
+                                     (f.LastFMUserName.ToLower() == lastFmUserName.ToLower() || f.FriendUser != null && f.FriendUser.UserNameLastFM.ToLower() == lastFmUserName.ToLower()));
 
             if (friend != null)
             {

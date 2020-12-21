@@ -13,6 +13,7 @@ using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
+using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands
 {
@@ -59,7 +60,7 @@ namespace FMBot.Bot.Commands
 
             try
             {
-                var friends = await this._friendsService.GetFMFriendsAsync(this.Context.User);
+                var friends = await this._friendsService.GetFmFriendsAsync(this.Context.User);
 
                 if (friends?.Any() != true)
                 {
@@ -94,13 +95,24 @@ namespace FMBot.Bot.Commands
                 var embedDescription = "";
                 await friends.ParallelForEachAsync(async friend =>
                 {
-                    var tracks = await this._lastFmService.GetRecentTracksAsync(friend, useCache: true);
+                    var userName = friend.LastFMUserName;
+                    string sessionKey = null;
+                    if (friend.FriendUser?.UserNameLastFM != null)
+                    {
+                        userName = friend.FriendUser.UserNameLastFM;
+                        if (!string.IsNullOrWhiteSpace(friend.FriendUser.SessionKeyLastFm))
+                        {
+                            sessionKey = friend.FriendUser.SessionKeyLastFm;
+                        }
+                    }
+                    
+                    var tracks = await this._lastFmService.GetRecentTracksAsync(userName, useCache: true, sessionKey: sessionKey);
 
                     string track;
                     var friendTitle = "";
                     if (!tracks.Success || tracks.Content == null)
                     {
-                        track = "Friend could not be retrieved";
+                        track = $"Friend could not be retrieved ({tracks.Error})";
                     }
                     else if (!tracks.Content.RecentTracks.Track.Any())
                     {
@@ -123,7 +135,7 @@ namespace FMBot.Bot.Commands
                         totalPlaycount += (int)tracks.Content.RecentTracks.Attr.Total;
                     }
 
-                    embedDescription += $"**[`{friend}`]({Constants.LastFMUserUrl}{friend})** {friendTitle} | {track}\n";
+                    embedDescription += $"**[`{friend.LastFMUserName}`]({Constants.LastFMUserUrl}{friend.LastFMUserName})** {friendTitle} | {track}\n";
                 }, maxDegreeOfParallelism: 3);
 
                 this._embedFooter.WithText(embedFooterText + totalPlaycount.ToString("0"));
@@ -168,7 +180,7 @@ namespace FMBot.Bot.Commands
                 var friendNotFoundList = new List<string>();
                 var duplicateFriendsList = new List<string>();
 
-                var existingFriends = await this._friendsService.GetFMFriendsAsync(this.Context.User);
+                var existingFriends = await this._friendsService.GetFmFriendsAsync(this.Context.User);
 
                 if (existingFriends.Count + enteredFriends.Length > 10)
                 {
@@ -179,29 +191,30 @@ namespace FMBot.Bot.Commands
 
                 foreach (var enteredFriendParameter in enteredFriends)
                 {
-                    var guildUser = await this._guildService.FindUserFromGuildAsync(this.Context, enteredFriendParameter);
+                    var guildUser = await this._guildService.MentionToUserAsync(enteredFriendParameter);
 
-                    Persistence.Domain.Models.User friendUserSettings;
                     string friendUsername;
 
                     if (guildUser != null)
                     {
-                        friendUserSettings = await this._userService.GetUserSettingsAsync(guildUser);
-                        friendUsername = friendUserSettings?.UserNameLastFM ?? enteredFriendParameter;
+                        friendUsername = guildUser.UserNameLastFM ?? enteredFriendParameter;
                     }
                     else
                     {
                         friendUsername = enteredFriendParameter;
-                        friendUserSettings = null;
                     }
 
-                    if (!existingFriends.Select(s => s.ToLower()).Contains(friendUsername.ToLower()))
+                    if (!existingFriends.Select(s => s.LastFMUserName.ToLower()).Contains(friendUsername.ToLower()) ||
+                        !existingFriends.Where(w => w.FriendUser != null).Select(s => s.FriendUser.UserNameLastFM.ToLower()).Contains(friendUsername.ToLower()))
                     {
                         if (await this._lastFmService.LastFmUserExistsAsync(friendUsername))
                         {
-                            await this._friendsService.AddLastFMFriendAsync(this.Context.User.Id, friendUsername, friendUserSettings?.UserId);
+                            await this._friendsService.AddLastFmFriendAsync(this.Context.User.Id, friendUsername, guildUser?.UserId);
                             addedFriendsList.Add(friendUsername);
-                            existingFriends.Add(friendUsername);
+                            existingFriends.Add(new Friend
+                            {
+                                LastFMUserName = friendUsername
+                            });
                         }
                         else
                         {
@@ -273,7 +286,7 @@ namespace FMBot.Bot.Commands
 
             try
             {
-                var existingFriends = await this._friendsService.GetFMFriendsAsync(this.Context.User);
+                var existingFriends = await this._friendsService.GetFmFriendsAsync(this.Context.User);
 
                 foreach (var enteredFriendParameter in enteredFriends)
                 {
@@ -291,10 +304,11 @@ namespace FMBot.Bot.Commands
                         friendUsername = enteredFriendParameter;
                     }
 
-                    if (existingFriends.Select(s => s.ToLower()).Contains(friendUsername.ToLower()))
+                    if (existingFriends.Select(s => s.LastFMUserName.ToLower()).Contains(friendUsername.ToLower()) ||
+                        existingFriends.Where(w => w.FriendUser != null).Select(s => s.FriendUser.UserNameLastFM.ToLower()).Contains(friendUsername.ToLower()))
                     {
-                        var friendSuccesfullyRemoved = await this._friendsService.RemoveLastFMFriendAsync(userSettings.UserId, friendUsername);
-                        if (friendSuccesfullyRemoved)
+                        var friendSuccessfullyRemoved = await this._friendsService.RemoveLastFmFriendAsync(userSettings.UserId, friendUsername);
+                        if (friendSuccessfullyRemoved)
                         {
                             removedFriendsList.Add(friendUsername);
                         }
