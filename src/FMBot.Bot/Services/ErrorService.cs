@@ -112,7 +112,7 @@ namespace FMBot.Bot.Services
             }
 
             embed.WithColor(DiscordConstants.WarningColorOrange);
-            Log.Warning($"Last.fm returned error: {message}, error code {apiResponse}", context.Message.Content, context.User.Username, context.Guild?.Name, context.Guild?.Id);
+            Log.Warning("Last.fm returned error: {message} | Error code {apiResponse} | {userName} / {UserId} | {messageContent}", message, apiResponse, context.User.Username, context.User.Id, context.Message.Content);
         }
     }
 }
