@@ -361,7 +361,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("login", RunMode = RunMode.Async)]
         [Summary("Logs you in using a link")]
-        public async Task LoginAsync()
+        public async Task LoginAsync([Remainder] string unusedValues = null)
         {
             var msg = this.Context.Message as SocketUserMessage;
             if (StackCooldownTarget.Contains(this.Context.Message.Author))
