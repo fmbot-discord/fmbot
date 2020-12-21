@@ -75,11 +75,11 @@ namespace FMBot.Bot.Handlers
             {
                 await ExecuteCommand(msg, context, argPos);
             }
-            else if (customPrefix != null && msg.HasStringPrefix(customPrefix, ref argPos, StringComparison.CurrentCultureIgnoreCase))
+            else if (!string.IsNullOrWhiteSpace(customPrefix) && msg.HasStringPrefix(customPrefix, ref argPos, StringComparison.CurrentCultureIgnoreCase))
             {
                 await ExecuteCommand(msg, context, argPos, customPrefix);
             }
-            else if (customPrefix == null && msg.HasStringPrefix(".", ref argPos))
+            else if (string.IsNullOrWhiteSpace(customPrefix) && msg.HasStringPrefix(".", ref argPos))
             {
                 var searchResult = this._commands.Search(context, argPos);
                 if (searchResult.IsSuccess && searchResult.Commands.FirstOrDefault().Command.Name == "fm")
