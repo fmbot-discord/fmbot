@@ -394,7 +394,13 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var tracks = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFm, amount, useCache: true);
+                string sessionKey = null;
+                if (!userSettings.DifferentUser && !string.IsNullOrEmpty(user.SessionKeyLastFm))
+                {
+                    sessionKey = user.SessionKeyLastFm;
+                }
+
+                var tracks = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFm, amount, useCache: true, sessionKey: sessionKey);
 
                 if (!tracks.Success || tracks.Content == null)
                 {
