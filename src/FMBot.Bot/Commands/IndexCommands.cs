@@ -175,7 +175,7 @@ namespace FMBot.Bot.Commands
 
             if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full" || force.ToLower() == "-force" || force.ToLower() == "force"))
             {
-                if (userSettings.LastIndexed < DateTime.UtcNow.AddDays(-1))
+                if (userSettings.LastIndexed > DateTime.UtcNow.AddDays(-1))
                 {
                     await ReplyAsync(
                         "You can't do a full index too often. Please remember that this command should only be used in case you edited your scrobble history.\n" +
