@@ -204,7 +204,7 @@ namespace FMBot.Bot.Commands
                         friendUsername = enteredFriendParameter;
                     }
 
-                    if (!existingFriends.Select(s => s.LastFMUserName.ToLower()).Contains(friendUsername.ToLower()) ||
+                    if (!existingFriends.Select(s => s.LastFMUserName.ToLower()).Contains(friendUsername.ToLower()) &&
                         !existingFriends.Where(w => w.FriendUser != null).Select(s => s.FriendUser.UserNameLastFM.ToLower()).Contains(friendUsername.ToLower()))
                     {
                         if (await this._lastFmService.LastFmUserExistsAsync(friendUsername))
