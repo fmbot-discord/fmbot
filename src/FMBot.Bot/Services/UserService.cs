@@ -382,7 +382,6 @@ namespace FMBot.Bot.Services
             catch (Exception e)
             {
                 Log.Error(e, "Error while deleting user!");
-                throw;
             }
         }
 
