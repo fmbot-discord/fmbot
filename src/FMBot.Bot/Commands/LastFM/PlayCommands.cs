@@ -109,16 +109,17 @@ namespace FMBot.Bot.Commands.LastFM
                 var replyString = $"`{prfx}{fmString}` shows you your last scrobble(s). \n " +
                                   $"This command can also be used on others, for example `{prfx}{fmString} lastfmusername` or `{prfx}{fmString} @discorduser`\n \n" +
 
-                                  $"You can set your username and you can change the mode with the `{prfx}set` command.\n";
+                                  $"You can change your .fm mode and displayed count with the `{prfx}mode` command.\n";
 
                 var differentMode = userSettings.FmEmbedType == FmEmbedType.embedmini ? "embedfull" : "embedmini";
-                replyString += $"`{prfx}set {userSettings.UserNameLastFM} {differentMode}` \n \n" +
-                               $"For more info, use `{prfx}set help`.";
+                replyString += $"`{prfx}mode {differentMode}` \n \n" +
+                               $"For more info, use `{prfx}mode help`.";
 
 
                 this._embed.WithUrl($"{Constants.DocsUrl}/commands/tracks/");
                 this._embed.WithTitle($"Using the {prfx}{fmString} command");
                 this._embed.WithDescription(replyString);
+                this._embed.WithFooter("For more information on the bot in general, use .fmhelp");
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
@@ -483,7 +484,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync(
-                    "Unable to show your recent tracks on Last.fm due to an internal error. Try setting a Last.fm name with the 'fmset' command, scrobbling something, and then use the command again.");
+                    "Unable to show your recent tracks on Last.fm due to an internal error. Please try again later or contact .fmbot support.");
             }
         }
 
@@ -572,7 +573,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync(
-                    "Unable to show your overview on Last.fm due to an internal error. Try setting a Last.fm name with the 'fmset' command, scrobbling something, and then use the command again.");
+                    "Unable to show your overview on Last.fm due to an internal error. Please try again later or contact .fmbot support.");
             }
         }
 
