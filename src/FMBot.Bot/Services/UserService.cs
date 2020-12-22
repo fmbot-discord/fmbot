@@ -410,7 +410,7 @@ namespace FMBot.Bot.Services
             await using var db = this._contextFactory.CreateDbContext();
             var inactiveUsers = await db.InactiveUsers
                 .AsQueryable()
-                .Where(w => w.MissingParametersErrorCount > 1 && w.Updated > DateTime.UtcNow.AddDays(-3))
+                .Where(w => w.MissingParametersErrorCount >= 1 && w.Updated > DateTime.UtcNow.AddDays(-3))
                 .ToListAsync();
 
             foreach (var inactiveUser in inactiveUsers)
