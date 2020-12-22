@@ -200,6 +200,8 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 globalStats += $"\n`{artistInfo.Stats.Userplaycount}` {StringExtensions.GetPlaysString(artistInfo.Stats.Userplaycount)} by you";
                 globalStats += $"\n`{await this._playService.GetWeekArtistPlaycountAsync(userSettings.UserId, artistInfo.Name)}` by you last week";
+                await this._whoKnowArtistService.CorrectUserArtistPlaycount(userSettings.UserId, artistInfo.Name,
+                    artistInfo.Stats.Userplaycount.Value);
             }
 
             this._embed.AddField("Last.fm stats", globalStats, true);
@@ -901,6 +903,12 @@ namespace FMBot.Bot.Commands.LastFM
                     var spotifyArtistResults = await this._spotifyService.GetOrStoreArtistImageAsync(artistCall.Content, artistQuery);
                     spotifyImageUrl = spotifyArtistResults;
                     userPlaycount = artistCall.Content.Artist.Stats.Userplaycount;
+                    if (userPlaycount.HasValue)
+                    {
+                        await this._whoKnowArtistService.CorrectUserArtistPlaycount(userSettings.UserId, artistCall.Content.Artist.Name,
+                            userPlaycount.Value);
+                    }
+                    
                 }
 
                 var guild = await guildTask;

@@ -210,23 +210,23 @@ namespace FMBot.Bot.Commands
             }
             else
             {
-                //if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-10))
-                //{
-                //    var recentlyUpdatedText =
-                //        $"You have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). " +
-                //        $"Note that this also happens automatically, for example with commands that use indexed data.";
-                //    if (this.Context.InteractionData != null)
-                //    {
-                //        await ReplyInteractionAsync(recentlyUpdatedText,
-                //            ghostMessage: true, type: InteractionMessageType.Acknowledge);
-                //    }
-                //    else
-                //    {
-                //        await ReplyAsync(recentlyUpdatedText);
-                //    }
-                //    this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                //    return;
-                //}
+                if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-10))
+                {
+                    var recentlyUpdatedText =
+                        $"You have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). " +
+                        $"Note that this also happens automatically, for example with commands that use indexed data.";
+                    if (this.Context.InteractionData != null)
+                    {
+                        await ReplyInteractionAsync(recentlyUpdatedText,
+                            ghostMessage: true, type: InteractionMessageType.Acknowledge);
+                    }
+                    else
+                    {
+                        await ReplyAsync(recentlyUpdatedText);
+                    }
+                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                    return;
+                }
 
                 if (userSettings.LastIndexed == null)
                 {
