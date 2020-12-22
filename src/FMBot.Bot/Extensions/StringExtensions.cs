@@ -18,6 +18,14 @@ namespace FMBot.Bot.Extensions
             }
         }
 
+        public static string Truncate(this string value, int maxLength)
+        {
+            maxLength -= 2;
+            
+            if (string.IsNullOrEmpty(value)) return value;
+            return value.Length <= maxLength ? value : $"{value.Substring(0, maxLength)}..";
+        }
+
         public static string FilterOutMentions(this string str)
         {
             var pattern = new Regex("(@everyone|@here|<@|`)");
@@ -75,7 +83,7 @@ namespace FMBot.Bot.Extensions
         {
             return playcount == 1 ? "play" : "plays";
         }
-        
+
         public static string GetScrobblesString(long? scrobbles)
         {
             return scrobbles == 1 ? "scrobble" : "scrobbles";

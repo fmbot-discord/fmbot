@@ -125,7 +125,7 @@ namespace FMBot.Bot.Commands.LastFM
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
             this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            this._embedAuthor.WithName($"Info about {albumInfo.Artist} - {albumInfo.Name} for {userTitle}");
+            this._embedAuthor.WithName(StringExtensions.TruncateLongString($"Info about {albumInfo.Artist} - {albumInfo.Name} for {userTitle}", 255));
             if (Uri.IsWellFormedUriString(albumInfo.Url, UriKind.Absolute))
             {
                 this._embed.WithUrl(albumInfo.Url);
@@ -643,7 +643,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += guildAlsoPlaying;
                 }
 
-                this._embed.WithTitle($"Who knows {albumName} in {this.Context.Guild.Name}");
+                this._embed.WithTitle(StringExtensions.TruncateLongString($"Who knows {albumName} in {this.Context.Guild.Name}", 255));
 
                 if (Uri.IsWellFormedUriString(album.Url, UriKind.Absolute))
                 {
