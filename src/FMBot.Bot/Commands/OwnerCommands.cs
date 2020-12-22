@@ -20,10 +20,12 @@ namespace FMBot.Bot.Commands
     public class OwnerCommands : ModuleBase
     {
         private readonly AdminService _adminService;
+        private readonly UserService _userService;
 
-        public OwnerCommands(AdminService adminService)
+        public OwnerCommands(AdminService adminService, UserService userService)
         {
             this._adminService = adminService;
+            this._userService = userService;
         }
 
         [Command("say"), Summary("Says something")]
@@ -173,6 +175,31 @@ namespace FMBot.Bot.Commands
             else
             {
                 await ReplyAsync("Only .fmbot owners can execute this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+
+
+        [Command("deleteinactiveusers")]
+        [Summary("Deletes inactive users")]
+        public async Task TimerStatusAsync()
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+            {
+                try
+                {
+                    var deletedUsers = await this._userService.DeleteInactiveUsers();
+                    await ReplyAsync($"Deleted {deletedUsers} inactive users from the database");
+                }
+                catch (Exception e)
+                {
+                    this.Context.LogCommandException(e);
+                    await ReplyAsync("Error while attempting to delete inactive users");
+                }
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only FMBot admins can check timer.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }

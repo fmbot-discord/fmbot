@@ -1,10 +1,12 @@
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -18,11 +20,13 @@ namespace FMBot.Bot.Services
     {
         private readonly IMemoryCache _cache;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly LastFmService _lastFmService;
 
-        public UserService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory)
+        public UserService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmService lastFmService)
         {
             this._cache = cache;
             this._contextFactory = contextFactory;
+            this._lastFmService = lastFmService;
         }
 
         // User settings
@@ -389,7 +393,7 @@ namespace FMBot.Bot.Services
                 .AsQueryable()
                 .CountAsync();
         }
-        
+
         public async Task<int> GetTotalAuthorizedUserCountAsync()
         {
             await using var db = this._contextFactory.CreateDbContext();
@@ -397,6 +401,44 @@ namespace FMBot.Bot.Services
                 .AsQueryable()
                 .Where(w => w.SessionKeyLastFm != null)
                 .CountAsync();
+        }
+
+        public async Task<int> DeleteInactiveUsers()
+        {
+            var deletedInactiveUsers = 0;
+
+            await using var db = this._contextFactory.CreateDbContext();
+            var inactiveUsers = await db.InactiveUsers
+                .AsQueryable()
+                .Where(w => w.MissingParametersErrorCount > 1 && w.Updated > DateTime.UtcNow.AddDays(-3))
+                .ToListAsync();
+
+            foreach (var inactiveUser in inactiveUsers)
+            {
+                var user = await db.Users
+                    .AsQueryable()
+                    .FirstOrDefaultAsync(f => f.UserId == inactiveUser.UserId &&
+                                              (f.LastUsed == null || f.LastUsed < DateTime.UtcNow.AddDays(-30)) &&
+                                              string.IsNullOrWhiteSpace(f.SessionKeyLastFm));
+
+                if (user != null)
+                {
+                    if (!await this._lastFmService.LastFmUserExistsAsync(user.UserNameLastFM))
+                    {
+                        await DeleteUser(user.UserId);
+                        Log.Information("DeleteInactiveUsers: User {userNameLastFm} | {userId} | {discordUserId} deleted", user.UserNameLastFM, user.UserId, user.DiscordUserId);
+                        deletedInactiveUsers++;
+                    }
+                    else
+                    {
+                        Log.Information("DeleteInactiveUsers: User {userNameLastFm} exists, so deletion cancelled", user.UserNameLastFM);
+                    }
+
+                    Thread.Sleep(250);
+                }
+            }
+
+            return deletedInactiveUsers;
         }
     }
 }

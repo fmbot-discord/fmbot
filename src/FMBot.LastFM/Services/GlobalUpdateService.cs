@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -78,6 +79,11 @@ namespace FMBot.LastFM.Services
             {
                 Log.Information("Update: Something went wrong getting tracks for {userId} | {userNameLastFm} | {responseStatus}", user.UserId, user.UserNameLastFM, recentTracks.Error);
 
+                if (recentTracks.Error == ResponseStatus.MissingParameters)
+                {
+                    await AddOrUpdateInactiveUserMissingParameterError(user);
+                }
+
                 if ((user.LastUsed == null || user.LastUsed < DateTime.UtcNow.AddDays(-31)) && recentTracks.Error != ResponseStatus.Failure)
                 {
                     UserUpdateFailures.Add(user.UserNameLastFM);
@@ -86,6 +92,8 @@ namespace FMBot.LastFM.Services
 
                 return 0;
             }
+
+            await RemoveInactiveUserIfExists(user);
 
             await using var connection = new NpgsqlConnection(this._connectionString);
             await connection.OpenAsync();
@@ -417,7 +425,7 @@ namespace FMBot.LastFM.Services
             return DateTime.UnixEpoch.AddSeconds(scrobbleWithDate.Date.Uts).ToUniversalTime();
         }
 
-        private void AddRecentPlayToMemoryCache(int userId, RecentTrack track) 
+        private void AddRecentPlayToMemoryCache(int userId, RecentTrack track)
         {
             if (track.Attr != null && track.Attr.Nowplaying || track.Date != null &&
                 DateTime.UnixEpoch.AddSeconds(track.Date.Uts).ToUniversalTime() > DateTime.UtcNow.AddMinutes(-8))
@@ -432,6 +440,61 @@ namespace FMBot.LastFM.Services
                 };
 
                 this._cache.Set($"{userId}-last-play", userPlay, TimeSpan.FromMinutes(15));
+            }
+        }
+
+        private async Task AddOrUpdateInactiveUserMissingParameterError(User user)
+        {
+            if (user.LastUsed > DateTime.UtcNow.AddDays(-20) || !string.IsNullOrEmpty(user.SessionKeyLastFm))
+            {
+                return;
+            }
+
+            await using var db = this._contextFactory.CreateDbContext();
+
+            var existingInactiveUser = await db.InactiveUsers.FirstOrDefaultAsync(f => f.UserId == user.UserId);
+
+            if (existingInactiveUser == null)
+            {
+                var inactiveUser = new InactiveUsers
+                {
+                    UserNameLastFM = user.UserNameLastFM,
+                    UserId = user.UserId,
+                    Created = DateTime.UtcNow,
+                    Updated = DateTime.UtcNow,
+                    MissingParametersErrorCount = 1
+                };
+
+                await db.InactiveUsers.AddAsync(inactiveUser);
+
+                Log.Verbose("InactiveUsers: Added user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+            }
+            else
+            {
+                existingInactiveUser.MissingParametersErrorCount++;
+                existingInactiveUser.Updated = DateTime.UtcNow;
+
+                db.Entry(existingInactiveUser).State = EntityState.Modified;
+
+                Log.Verbose("InactiveUsers: Updated user {userId} | {userNameLastFm} (missingparameter +1)", user.UserId, user.UserNameLastFM);
+            }
+
+            await db.SaveChangesAsync();
+        }
+
+        private async Task RemoveInactiveUserIfExists(User user)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+
+            var existingInactiveUser = await db.InactiveUsers.FirstOrDefaultAsync(f => f.UserId == user.UserId);
+
+            if (existingInactiveUser != null)
+            {
+                db.InactiveUsers.Remove(existingInactiveUser);
+                
+                Log.Verbose("InactiveUsers: Removed user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+
+                await db.SaveChangesAsync();
             }
         }
     }

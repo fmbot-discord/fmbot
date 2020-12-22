@@ -142,10 +142,13 @@ namespace FMBot.Persistence.EntityFrameWork
             {
                 entity.HasKey(e => e.InactiveUserId);
 
+                entity.HasIndex(i => i.UserId);
+
                 entity
                     .HasOne<User>()
                     .WithMany()
-                    .HasForeignKey(p => p.UserId);
+                    .HasForeignKey(p => p.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<UserArtist>(entity =>

@@ -420,7 +420,6 @@ namespace FMBot.Bot.Commands
             }
         }
 
-
         [Command("globalblacklistadd")]
         [Summary("Adds a user to the global FMBot blacklist.")]
         public async Task BlacklistAddAsync(SocketGuildUser user = null)
@@ -443,7 +442,7 @@ namespace FMBot.Bot.Commands
                         return;
                     }
 
-                    var blacklistResult = await this._adminService.AddUserToBlacklistAsync(user.Id);
+                    var blacklistResult = await this._adminService.AddUserToBlocklistAsync(user.Id);
 
                     if (blacklistResult)
                     {
@@ -485,7 +484,7 @@ namespace FMBot.Bot.Commands
                         return;
                     }
 
-                    var blacklistResult = await this._adminService.RemoveUserFromBlacklistAsync(user.Id);
+                    var blacklistResult = await this._adminService.RemoveUserFromBlocklistAsync(user.Id);
 
                     if (blacklistResult)
                     {

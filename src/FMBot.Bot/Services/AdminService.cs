@@ -59,7 +59,6 @@ namespace FMBot.Bot.Services
             }
         }
 
-
         public async Task<bool> SetUserTypeAsync(ulong discordUserID, UserType userType)
         {
             await using var db = this._contextFactory.CreateDbContext();
@@ -79,7 +78,7 @@ namespace FMBot.Bot.Services
             return true;
         }
 
-        public async Task<bool> AddUserToBlacklistAsync(ulong discordUserID)
+        public async Task<bool> AddUserToBlocklistAsync(ulong discordUserID)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
@@ -98,7 +97,7 @@ namespace FMBot.Bot.Services
             return true;
         }
 
-        public async Task<bool> RemoveUserFromBlacklistAsync(ulong discordUserID)
+        public async Task<bool> RemoveUserFromBlocklistAsync(ulong discordUserID)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);

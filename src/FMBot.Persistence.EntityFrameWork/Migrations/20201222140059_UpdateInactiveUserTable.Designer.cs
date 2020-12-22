@@ -3,15 +3,17 @@ using System;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace FMBot.Persistence.EntityFrameWork.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    partial class FMBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20201222140059_UpdateInactiveUserTable")]
+    partial class UpdateInactiveUserTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -963,8 +965,7 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.HasOne("FMBot.Persistence.Domain.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .HasConstraintName("fk_inactive_users_users_user_id")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasConstraintName("fk_inactive_users_users_user_id");
 
                     b.HasOne("FMBot.Persistence.Domain.Models.User", "User")
                         .WithMany()
