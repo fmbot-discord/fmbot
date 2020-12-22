@@ -167,7 +167,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 var userPlay = new UserPlay
                 {
                     ArtistName = track.Artist.Text.ToLower(),
-                    AlbumName = !string.IsNullOrWhiteSpace(track.Album.Text) ? track.Album.Text.ToLower() : null,
+                    AlbumName = !string.IsNullOrWhiteSpace(track.Album?.Text) ? track.Album.Text.ToLower() : null,
                     TrackName = track.Name.ToLower(),
                     UserId = userId,
                     TimePlayed = track.Date != null ? DateTime.UnixEpoch.AddSeconds(track.Date.Uts).ToUniversalTime() : DateTime.UtcNow

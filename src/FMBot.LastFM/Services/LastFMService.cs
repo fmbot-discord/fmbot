@@ -43,7 +43,7 @@ namespace FMBot.LastFM.Services
         }
 
         // Recent scrobbles
-        public async Task<Response<RecentTracksResponse>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false, string sessionKey = null)
+        public async Task<Response<RecentTracksResponse>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false, string sessionKey = null, long? fromUnixTimestamp = null)
         {
             var queryParams = new Dictionary<string, string>
             {
@@ -56,6 +56,10 @@ namespace FMBot.LastFM.Services
             {
                 queryParams.Add("sk", sessionKey);
                 authorizedCall = true;
+            }
+            if (fromUnixTimestamp != null)
+            {
+                queryParams.Add("from", fromUnixTimestamp.ToString());
             }
 
             if (useCache)

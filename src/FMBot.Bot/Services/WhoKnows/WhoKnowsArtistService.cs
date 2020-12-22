@@ -302,5 +302,10 @@ namespace FMBot.Bot.Services.WhoKnows
                 })
                 .ToList();
         }
+
+        public async Task CorrectArtistUserPlaycount(int userId, string artistName, int playcount)
+        {
+
+        }
     }
 }
