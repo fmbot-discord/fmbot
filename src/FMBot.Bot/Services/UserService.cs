@@ -374,6 +374,12 @@ namespace FMBot.Bot.Services
 
                 await using var deleteTracks = new NpgsqlCommand($"DELETE FROM public.user_tracks WHERE user_id = {user.UserId};", connection);
                 await deleteTracks.ExecuteNonQueryAsync();
+                
+                await using var deleteFriends = new NpgsqlCommand($"DELETE FROM public.friends WHERE user_id = {user.UserId};", connection);
+                await deleteFriends.ExecuteNonQueryAsync();
+                
+                await using var deleteOtherFriends = new NpgsqlCommand($"DELETE FROM public.friends WHERE friend_user_id = {user.UserId};", connection);
+                await deleteOtherFriends.ExecuteNonQueryAsync();
 
                 db.Users.Remove(user);
 
