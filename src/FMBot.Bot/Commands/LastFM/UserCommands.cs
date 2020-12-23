@@ -519,6 +519,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task RemoveAsync([Remainder] string confirmation = null)
         {
             var userSettings = await this._userService.GetFullUserAsync(this.Context.User.Id);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             if (userSettings == null)
             {
@@ -556,7 +557,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 sb.AppendLine();
-                sb.AppendLine("Type `.fmremoveconfirm` to confirm deletion.");
+                sb.AppendLine($"Type `{prfx}remove confirm` to confirm deletion.");
 
                 this._embed.WithDescription(sb.ToString());
 
