@@ -586,7 +586,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(serverUsers);
 
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-                var footer = $"WhoKnows track requested by {userTitle} - Users with 3 plays or higher are shown";
+                var footer = $"WhoKnows track requested by {userTitle}";
 
                 var rnd = new Random();
                 if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-15))

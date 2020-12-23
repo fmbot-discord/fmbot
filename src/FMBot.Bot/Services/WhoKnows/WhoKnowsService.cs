@@ -52,6 +52,8 @@ namespace FMBot.Bot.Services.WhoKnows
             }
 
             var position = 0;
+            var spacer = crownModel?.Crown == null ? "" : " ";
+
             for (var index = 0; index < artistsCount; index++)
             {
                 var user = usersWithPositions[index];
@@ -59,7 +61,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 var nameWithLink = NameWithLink(user);
                 var playString = StringExtensions.GetPlaysString(user.Playcount);
 
-                var positionCounter = $" {index + 1}. ";
+                var positionCounter = $"{spacer}{index + 1}. ";
 
                 if (crownModel?.Crown != null && crownModel.Crown.UserId == user.UserId)
                 {
@@ -80,7 +82,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
                 if (position < 14)
                 {
-                    reply += $"  {position + 1}.  {nameWithLink} ";
+                    reply += $"{spacer}{position + 1}.  {nameWithLink} ";
                 }
                 else
                 {
