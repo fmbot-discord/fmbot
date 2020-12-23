@@ -7,50 +7,88 @@ using FMBot.Bot.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace FMBot.Bot.Services.WhoKnows
 {
     public class WhoKnowsTrackService
     {
+        private readonly IMemoryCache _cache;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-        public WhoKnowsTrackService(IDbContextFactory<FMBotDbContext> contextFactory)
+        public WhoKnowsTrackService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
         {
             this._contextFactory = contextFactory;
+            this._cache = cache;
         }
 
         public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(ICommandContext context,
             ICollection<GuildUser> guildUsers, string artistName, string trackName)
         {
-            var userIds = guildUsers.Select(s => s.UserId);
+            var cachedUserTracks = new List<CachedUserTrack>();
+            foreach (var user in guildUsers)
+            {
+                var key = $"top-tracks-{user.UserId}";
 
-            await using var db = this._contextFactory.CreateDbContext();
-            var userTracks = await db.UserTracks
-                .Include(i => i.User)
-                .Where(w =>
-                    userIds.Contains(w.UserId) &&
-                    EF.Functions.ILike(w.Name, trackName) &&
-                    EF.Functions.ILike(w.ArtistName, artistName))
-                .OrderByDescending(o => o.Playcount)
-                .Take(14)
-                .ToListAsync();
+                if (this._cache.TryGetValue(key, out List<CachedUserTrack> topTracksForUser))
+                {
+                    var userTrack = topTracksForUser.FirstOrDefault(f => f.Name.ToLower() == trackName.ToLower() &&
+                                                                          f.ArtistName.ToLower() == artistName.ToLower());
+
+                    if (userTrack != null)
+                    {
+                        cachedUserTracks.Add(userTrack);
+                    }
+                }
+                else
+                {
+                    await using var db = this._contextFactory.CreateDbContext();
+                    var userTracksToCache = await db.UserTracks
+                        .AsQueryable()
+                        .Include(i => i.User)
+                        .Where(w => w.UserId == user.UserId)
+                        .Select(s => new CachedUserTrack
+                        {
+                            Name = s.Name,
+                            ArtistName = s.ArtistName,
+                            Playcount = s.Playcount,
+                            LastFmUserName = s.User.UserNameLastFM,
+                            UserId = s.UserId,
+                            DiscordUserId = s.User.DiscordUserId
+                        })
+                        .ToListAsync();
+
+                    if (userTracksToCache != null && userTracksToCache.Any())
+                    {
+                        this._cache.Set(key, userTracksToCache, TimeSpan.FromMinutes(20));
+
+                        var userTrack = userTracksToCache.FirstOrDefault(f => f.Name.ToLower() == trackName.ToLower() &&
+                                                                              f.ArtistName.ToLower() == artistName.ToLower());
+
+                        if (userTrack != null)
+                        {
+                            cachedUserTracks.Add(userTrack);
+                        }
+                    }
+                }
+            }
 
             var whoKnowsTrackList = new List<WhoKnowsObjectWithUser>();
 
-            foreach (var userTrack in userTracks)
+            foreach (var userTrack in cachedUserTracks)
             {
-                var discordUser = await context.Guild.GetUserAsync(userTrack.User.DiscordUserId);
+                var discordUser = await context.Guild.GetUserAsync(userTrack.DiscordUserId);
                 var guildUser = guildUsers.FirstOrDefault(f => f.UserId == userTrack.UserId);
                 var userName = discordUser != null ?
                     discordUser.Nickname ?? discordUser.Username :
-                    guildUser?.UserName ?? userTrack.User.UserNameLastFM;
+                    guildUser?.UserName ?? userTrack.LastFmUserName;
 
                 whoKnowsTrackList.Add(new WhoKnowsObjectWithUser
                 {
                     Name = $"{userTrack.ArtistName} - {userTrack.Name}",
                     DiscordName = userName,
                     Playcount = userTrack.Playcount,
-                    LastFMUsername = userTrack.User.UserNameLastFM,
+                    LastFMUsername = userTrack.LastFmUserName,
                     UserId = userTrack.UserId,
                 });
             }

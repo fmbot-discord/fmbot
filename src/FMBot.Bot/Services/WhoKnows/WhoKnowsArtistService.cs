@@ -27,34 +27,67 @@ namespace FMBot.Bot.Services.WhoKnows
         public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(ICommandContext context,
             ICollection<GuildUser> guildUsers, string artistName)
         {
-            var userIds = guildUsers.Select(s => s.UserId);
+            var cachedUserArtists = new List<CachedUserArtist>();
+            foreach (var user in guildUsers)
+            {
+                var key = $"top-artists-{user.UserId}";
 
-            await using var db = this._contextFactory.CreateDbContext();
-            var userArtists = await db.UserArtists
-                .Include(i => i.User)
-                .Where(w =>
-                    userIds.Contains(w.UserId) &&
-                    EF.Functions.ILike(w.Name, artistName))
-                .OrderByDescending(o => o.Playcount)
-                .Take(14)
-                .ToListAsync();
+                if (this._cache.TryGetValue(key, out List<CachedUserArtist> topArtistsForUser))
+                {
+                    var userArtist = topArtistsForUser.FirstOrDefault(f => f.Name.ToLower() == artistName.ToLower());
+
+                    if (userArtist != null)
+                    {
+                        cachedUserArtists.Add(userArtist);
+                    }
+                }
+                else
+                {
+                    await using var db = this._contextFactory.CreateDbContext();
+                    var userArtistsToCache = await db.UserArtists
+                        .AsQueryable()
+                        .Include(i => i.User)
+                        .Where(
+                            w => w.UserId == user.UserId)
+                        .Select(s => new CachedUserArtist
+                        {
+                            Name = s.Name,
+                            Playcount = s.Playcount,
+                            LastFmUserName = s.User.UserNameLastFM,
+                            UserId = s.UserId,
+                            DiscordUserId = s.User.DiscordUserId
+                        })
+                        .ToListAsync();
+
+                    if (userArtistsToCache != null && userArtistsToCache.Any())
+                    {
+                        this._cache.Set(key, userArtistsToCache, TimeSpan.FromMinutes(40));
+
+                        var userArtist = userArtistsToCache.FirstOrDefault(f => f.Name.ToLower() == artistName.ToLower());
+
+                        if (userArtist != null)
+                        {
+                            cachedUserArtists.Add(userArtist);
+                        }
+                    }
+                }
+            }
 
             var whoKnowsArtistList = new List<WhoKnowsObjectWithUser>();
-
-            foreach (var userArtist in userArtists)
+            foreach (var userArtist in cachedUserArtists)
             {
-                var discordUser = await context.Guild.GetUserAsync(userArtist.User.DiscordUserId);
+                var discordUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId);
                 var guildUser = guildUsers.FirstOrDefault(f => f.UserId == userArtist.UserId);
                 var userName = discordUser != null ?
                     discordUser.Nickname ?? discordUser.Username :
-                    guildUser?.UserName ?? userArtist.User.UserNameLastFM;
+                    guildUser?.UserName ?? userArtist.LastFmUserName;
 
                 whoKnowsArtistList.Add(new WhoKnowsObjectWithUser
                 {
                     Name = userArtist.Name,
                     DiscordName = userName,
                     Playcount = userArtist.Playcount,
-                    LastFMUsername = userArtist.User.UserNameLastFM,
+                    LastFMUsername = userArtist.LastFmUserName,
                     UserId = userArtist.UserId
                 });
             }
@@ -210,7 +243,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
             await userIds.ParallelForEachAsync(async user =>
             {
-                var key = $"top-artists-{user}";
+                var key = $"top-affinity-artists-{user}";
 
                 if (this._cache.TryGetValue(key, out List<AffinityArtist> topArtistsForUser))
                 {
@@ -254,7 +287,7 @@ namespace FMBot.Bot.Services.WhoKnows
                         }
                     }
 
-                    
+
                 }
             });
 
@@ -310,14 +343,14 @@ namespace FMBot.Bot.Services.WhoKnows
             {
                 return;
             }
-            
+
             await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users
                 .AsQueryable()
                 .Include(i => i.Artists)
                 .FirstOrDefaultAsync(f => f.UserId == userId);
 
-            if (user?.LastUpdated == null ||  !user.Artists.Any() || user.LastUpdated < DateTime.UtcNow.AddMinutes(-2))
+            if (user?.LastUpdated == null || !user.Artists.Any() || user.LastUpdated < DateTime.UtcNow.AddMinutes(-2))
             {
                 return;
             }
@@ -331,9 +364,12 @@ namespace FMBot.Bot.Services.WhoKnows
                 return;
             }
 
+
+            this._cache.Remove($"top-artists-{user.UserId}");
+
             Log.Information("Corrected playcount for user {userId} | {lastFmUserName} for artist {artistName} from {oldPlaycount} to {newPlaycount}",
                 user.UserId, user.UserNameLastFM, userArtist.Name, userArtist.Playcount, correctPlaycount);
-            
+
             userArtist.Playcount = (int)correctPlaycount;
 
             db.Entry(userArtist).State = EntityState.Modified;

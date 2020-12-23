@@ -47,6 +47,10 @@ namespace FMBot.LastFM.Services
             await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users.FindAsync(queueItem.UserId);
 
+            this._cache.Remove($"top-artists-{user.UserId}");
+            this._cache.Remove($"top-albums-{user.UserId}");
+            this._cache.Remove($"top-tracks-{user.UserId}");
+
             Log.Information("Update: Started on {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
 
             if (UserUpdateFailures.Contains(user.UserNameLastFM))

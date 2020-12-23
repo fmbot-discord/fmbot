@@ -11,7 +11,7 @@ namespace FMBot.Domain
         public static readonly Counter LastfmApiCalls = Metrics
             .CreateCounter("lastfm_api_calls", "Amount of last.fm API calls");
 
-        public static readonly Counter LastfmAuthorizedApiCalls = Metrics
+        public static readonly Counter LastfmAuthorizedApiCalls = Metrics 
             .CreateCounter("lastfm_authorized_api_calls", "Amount of authorized last.fm API calls");
 
         public static readonly Counter LastfmImageCalls = Metrics

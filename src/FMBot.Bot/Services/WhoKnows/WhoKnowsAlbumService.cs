@@ -7,50 +7,88 @@ using FMBot.Bot.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace FMBot.Bot.Services.WhoKnows
 {
     public class WhoKnowsAlbumService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly IMemoryCache _cache;
 
-        public WhoKnowsAlbumService(IDbContextFactory<FMBotDbContext> contextFactory)
+        public WhoKnowsAlbumService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
         {
             this._contextFactory = contextFactory;
+            this._cache = cache;
         }
 
         public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForAlbum(ICommandContext context,
             ICollection<GuildUser> guildUsers, string artistName, string albumName)
         {
-            var userIds = guildUsers.Select(s => s.UserId);
+            var cachedUserAlbums = new List<CachedUserAlbum>();
+            foreach (var user in guildUsers)
+            {
+                var key = $"top-albums-{user.UserId}";
 
-            await using var db = this._contextFactory.CreateDbContext();
-            var userAlbums = await db.UserAlbums
-                .Include(i => i.User)
-                .Where(w =>
-                        userIds.Contains(w.UserId) &&
-                        EF.Functions.ILike(w.Name, albumName) &&
-                        EF.Functions.ILike(w.ArtistName, artistName))
-                .OrderByDescending(o => o.Playcount)
-                .Take(14)
-                .ToListAsync();
+                if (this._cache.TryGetValue(key, out List<CachedUserAlbum> topAlbumsForUser))
+                {
+                    var userAlbum = topAlbumsForUser.FirstOrDefault(f => f.Name.ToLower() == albumName.ToLower() &&
+                                                                          f.ArtistName.ToLower() == artistName.ToLower());
+
+                    if (userAlbum != null)
+                    {
+                        cachedUserAlbums.Add(userAlbum);
+                    }
+                }
+                else
+                {
+                    await using var db = this._contextFactory.CreateDbContext();
+                    var userAlbumsToCache = await db.UserAlbums
+                        .AsQueryable()
+                        .Include(i => i.User)
+                        .Where(w => w.UserId == user.UserId)
+                        .Select(s => new CachedUserAlbum
+                        {
+                            Name = s.Name,
+                            ArtistName = s.ArtistName,
+                            Playcount = s.Playcount,
+                            LastFmUserName = s.User.UserNameLastFM,
+                            UserId = s.UserId,
+                            DiscordUserId = s.User.DiscordUserId
+                        })
+                        .ToListAsync();
+
+                    if (userAlbumsToCache != null && userAlbumsToCache.Any())
+                    {
+                        this._cache.Set(key, userAlbumsToCache, TimeSpan.FromMinutes(30));
+
+                        var userAlbum = userAlbumsToCache.FirstOrDefault(f => f.Name.ToLower() == albumName.ToLower() &&
+                                                                              f.ArtistName.ToLower() == artistName.ToLower());
+
+                        if (userAlbum != null)
+                        {
+                            cachedUserAlbums.Add(userAlbum);
+                        }
+                    }
+                }
+            }
 
             var whoKnowsAlbumList = new List<WhoKnowsObjectWithUser>();
 
-            foreach (var userAlbum in userAlbums)
+            foreach (var userAlbum in cachedUserAlbums)
             {
-                var discordUser = await context.Guild.GetUserAsync(userAlbum.User.DiscordUserId);
+                var discordUser = await context.Guild.GetUserAsync(userAlbum.DiscordUserId);
                 var guildUser = guildUsers.FirstOrDefault(f => f.UserId == userAlbum.UserId);
                 var userName = discordUser != null ?
                     discordUser.Nickname ?? discordUser.Username :
-                    guildUser?.UserName ?? userAlbum.User.UserNameLastFM;
+                    guildUser?.UserName ?? userAlbum.LastFmUserName;
 
                 whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
                 {
                     Name = $"{userAlbum.ArtistName} - {userAlbum.Name}",
                     DiscordName = userName,
                     Playcount = userAlbum.Playcount,
-                    LastFMUsername = userAlbum.User.UserNameLastFM,
+                    LastFMUsername = userAlbum.LastFmUserName,
                     UserId = userAlbum.UserId,
                 });
             }

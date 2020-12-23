@@ -264,7 +264,6 @@ namespace FMBot.Bot.Commands.LastFM
                     $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSpan}-{userSettings.UserNameLastFm}.png",
                     embed: this._embed.Build());
 
-
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)

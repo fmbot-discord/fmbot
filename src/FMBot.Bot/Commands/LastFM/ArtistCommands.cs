@@ -223,7 +223,16 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.AddField("Tags", tags);
             }
 
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+            if (this.Context.InteractionData != null)
+            {
+                await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+            }
+            else
+            {
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            }
+
             this.Context.LogCommandUsed();
         }
 
@@ -842,7 +851,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var guildTask = this._guildService.GetGuildAsync(this.Context.Guild.Id);
+                var guildTask = this._guildService.GetGuildAsync(260438376270921729);
 
                 _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -1233,9 +1242,18 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 if (artistValues.ToLower() == "help")
                 {
-                    await ReplyAsync(
-                        $"Usage: `.fm{command} 'name'`\n" +
-                        "If you don't enter any artists name, it will get the info from the artist you're currently listening to.");
+                    var helpText =
+                        $"Usage: `{prfx}{command} 'name'`\n" +
+                        "If you don't enter any artists name, it will get the info from the artist you're currently listening to.";
+
+                    if (this.Context.InteractionData != null)
+                    {
+                        await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, helpText, type: InteractionMessageType.ChannelMessageWithSource);
+                    }
+                    else
+                    {
+                        await this.Context.Channel.SendMessageAsync(helpText);
+                    }
                     return null;
                 }
 

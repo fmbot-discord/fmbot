@@ -169,7 +169,15 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.AddField("Tags", tags);
             }
 
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            if (this.Context.InteractionData != null)
+            {
+                await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+            }
+            else
+            {
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            }
+            
             this.Context.LogCommandUsed();
         }
 
@@ -530,7 +538,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var guildTask = this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guildTask = this._guildService.GetGuildAsync(260438376270921729);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -791,7 +799,14 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     this._embed.WithDescription($"Last.fm did not return a result for **{trackResult.Name}** by **{trackResult.Artist.Text}**.\n" +
                                                 $"This usually happens on recently released tracks. Please try again later.");
-                    await this.ReplyAsync("", false, this._embed.Build());
+                    if (this.Context.InteractionData != null)
+                    {
+                        await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+                    }
+                    else
+                    {
+                        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    }
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
                     return null;
                 }
@@ -812,13 +827,28 @@ namespace FMBot.Bot.Commands.LastFM
             if (result.Success)
             {
                 this._embed.WithDescription($"Track could not be found, please check your search values and try again.");
-                await this.ReplyAsync("", false, this._embed.Build());
+
+                if (this.Context.InteractionData != null)
+                {
+                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+                }
+                else
+                {
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                }
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return null;
             }
 
             this._embed.WithDescription($"Last.fm returned an error: {result.Status}");
-            await this.ReplyAsync("", false, this._embed.Build());
+            if (this.Context.InteractionData != null)
+            {
+                await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+            }
+            else
+            {
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            }
             this.Context.LogCommandUsed(CommandResponse.Error);
             return null;
         }

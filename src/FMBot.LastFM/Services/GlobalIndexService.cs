@@ -11,6 +11,7 @@ using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using PostgreSQLCopyHelper;
@@ -21,6 +22,8 @@ namespace FMBot.LastFM.Services
     public class GlobalIndexService
     {
         private readonly LastfmClient _lastFMClient;
+
+        private readonly IMemoryCache _cache;
 
         private readonly string _key;
         private readonly string _secret;
@@ -34,10 +37,12 @@ namespace FMBot.LastFM.Services
         public GlobalIndexService(
             IConfigurationRoot configuration,
             LastFmService lastFmService,
-            IDbContextFactory<FMBotDbContext> contextFactory)
+            IDbContextFactory<FMBotDbContext> contextFactory,
+            IMemoryCache cache)
         {
             this.lastFmService = lastFmService;
             this._contextFactory = contextFactory;
+            this._cache = cache;
             this._key = configuration.GetSection("LastFm:Key").Value;
             this._secret = configuration.GetSection("LastFm:Secret").Value;
             this._connectionString = configuration.GetSection("Database:ConnectionString").Value;
@@ -50,6 +55,10 @@ namespace FMBot.LastFM.Services
 
             await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users.FindAsync(queueItem.UserId);
+
+            this._cache.Remove($"top-artists-{user.UserId}");
+            this._cache.Remove($"top-albums-{user.UserId}");
+            this._cache.Remove($"top-tracks-{user.UserId}");
 
             Log.Information($"Starting index for {user.UserNameLastFM}");
             var now = DateTime.UtcNow;
