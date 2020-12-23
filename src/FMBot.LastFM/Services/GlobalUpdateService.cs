@@ -47,9 +47,10 @@ namespace FMBot.LastFM.Services
             await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users.FindAsync(queueItem.UserId);
 
-            this._cache.Remove($"top-artists-{user.UserId}");
-            this._cache.Remove($"top-albums-{user.UserId}");
-            this._cache.Remove($"top-tracks-{user.UserId}");
+            if (user.LastUpdated > DateTime.UtcNow.AddMinutes(-1))
+            {
+                return 0;
+            }
 
             Log.Information("Update: Started on {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
 
@@ -316,7 +317,7 @@ namespace FMBot.LastFM.Services
                     updateUserAlbum.Parameters.AddWithValue("userAlbumId", existingUserAlbum.UserAlbumId);
 
 #if DEBUG
-                    Log.Information($"Updated album {album.Key.AlbumName} for {user.UserNameLastFM}");
+                    Log.Information($"Updated album {album.Key.AlbumName} for {user.UserNameLastFM} (+{album.Count()} plays)");
 #endif
                     await updateUserAlbum.ExecuteNonQueryAsync().ConfigureAwait(false);
                 }
@@ -333,7 +334,7 @@ namespace FMBot.LastFM.Services
                     addUserAlbum.Parameters.AddWithValue("albumPlaycount", album.Count());
 
 #if DEBUG
-                    Log.Information($"Added album {album.Key.AlbumName} for {user.UserNameLastFM}");
+                    Log.Information($"Added album {album.Key.ArtistName} - {album.Key.AlbumName} for {user.UserNameLastFM}");
 #endif
 
                     await addUserAlbum.ExecuteNonQueryAsync().ConfigureAwait(false);
@@ -375,7 +376,7 @@ namespace FMBot.LastFM.Services
                     updateUserTrack.Parameters.AddWithValue("userTrackId", existingUserTrack.UserTrackId);
 
 #if DEBUG
-                    Log.Information($"Updated track {track.Key.Name} for {user.UserNameLastFM}");
+                    Log.Information($"Updated track {track.Key.Name} for {user.UserNameLastFM} (+{track.Count()} plays)");
 #endif
 
                     await updateUserTrack.ExecuteNonQueryAsync().ConfigureAwait(false);
@@ -393,14 +394,12 @@ namespace FMBot.LastFM.Services
                     addUserTrack.Parameters.AddWithValue("trackPlaycount", track.Count());
 
 #if DEBUG
-                    Log.Information($"Added track {track.Key.Name} for {user.UserNameLastFM}");
+                    Log.Information($"Added track {track.Key.ArtistName} - {track.Key.Name} for {user.UserNameLastFM}");
 #endif
 
                     await addUserTrack.ExecuteNonQueryAsync().ConfigureAwait(false);
                 }
             }
-
-            Log.Verbose("Update: Updated tracks for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
         }
 
         private async Task SetUserUpdateAndScrobbleTime(User user, DateTime now, DateTime lastScrobble, NpgsqlConnection connection)

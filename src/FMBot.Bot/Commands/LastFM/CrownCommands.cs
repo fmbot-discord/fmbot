@@ -9,6 +9,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;

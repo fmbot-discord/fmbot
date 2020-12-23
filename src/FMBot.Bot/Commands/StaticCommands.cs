@@ -14,6 +14,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 
@@ -369,7 +370,7 @@ namespace FMBot.Bot.Commands
 
         private static bool IsBotSelfHosted(ulong botId)
         {
-            return !botId.Equals(Constants.BotProductionId) && !botId.Equals(Constants.BotStagingId);
+            return !botId.Equals(Constants.BotProductionId) && !botId.Equals(Constants.BotDevelopId);
         }
     }
 }

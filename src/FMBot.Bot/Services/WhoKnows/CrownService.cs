@@ -24,7 +24,7 @@ namespace FMBot.Bot.Services.WhoKnows
             this._lastFmService = lastFmService;
         }
 
-        public async Task<CrownModel> GetAndUpdateCrownForArtist(IList<WhoKnowsObjectWithUser> users, Guild guild, string artistName)
+        public async Task<CrownModel> GetAndUpdateCrownForArtist(IList<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
         {
             var eligibleUsers = guild.GuildUsers.ToList();
 
@@ -205,7 +205,7 @@ namespace FMBot.Bot.Services.WhoKnows
             return artist.Content.Artist.Stats.Userplaycount;
         }
 
-        public async Task<IList<UserCrown>> GetCrownsForArtist(Guild guild, string artistName)
+        public async Task<IList<UserCrown>> GetCrownsForArtist(Persistence.Domain.Models.Guild guild, string artistName)
         {
             await using var db = this._contextFactory.CreateDbContext();
             return await db.UserCrowns
@@ -226,7 +226,7 @@ namespace FMBot.Bot.Services.WhoKnows
             await db.SaveChangesAsync();
         }
 
-        public async Task<IList<UserCrown>> GetCrownsForUser(Guild guild, int userId)
+        public async Task<IList<UserCrown>> GetCrownsForUser(Persistence.Domain.Models.Guild guild, int userId)
         {
             await using var db = this._contextFactory.CreateDbContext();
             return await db.UserCrowns
@@ -239,7 +239,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 .ToListAsync();
         }
 
-        public async Task<List<IGrouping<int, UserCrown>>> GetTopCrownUsersForGuild(Guild guild)
+        public async Task<List<IGrouping<int, UserCrown>>> GetTopCrownUsersForGuild(Persistence.Domain.Models.Guild guild)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var guildCrowns = await db.UserCrowns
@@ -255,7 +255,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 .ToList();
         }
 
-        public async Task<int> GetTotalCrownCountForGuild(Guild guild)
+        public async Task<int> GetTotalCrownCountForGuild(Persistence.Domain.Models.Guild guild)
         {
             await using var db = this._contextFactory.CreateDbContext();
             return await db.UserCrowns
@@ -266,7 +266,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 .CountAsync();
         }
 
-        public async Task RemoveAllCrownsFromGuild(Guild guild)
+        public async Task RemoveAllCrownsFromGuild(Persistence.Domain.Models.Guild guild)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var guildCrowns = await db.UserCrowns

@@ -8,6 +8,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 

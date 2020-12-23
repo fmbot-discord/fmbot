@@ -7,7 +7,9 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.LastFM.Services;
 using IF.Lastfm.Core.Api.Enums;
@@ -31,6 +33,7 @@ namespace FMBot.Bot.Services
         private readonly IIndexService _indexService;
         private readonly GuildService _guildService;
         private readonly DiscordShardedClient _client;
+        private readonly WebhookService _webhookService;
 
         private bool _timerEnabled;
 
@@ -42,7 +45,8 @@ namespace FMBot.Bot.Services
             UserService userService,
             IIndexService indexService,
             CensorService censorService,
-            GuildService guildService)
+            GuildService guildService,
+            WebhookService webhookService)
         {
             this._client = client;
             this._lastFMService = lastFmService;
@@ -50,6 +54,7 @@ namespace FMBot.Bot.Services
             this._indexService = indexService;
             this._censorService = censorService;
             this._guildService = guildService;
+            this._webhookService = webhookService;
             this._updateService = updateService;
 
             this._timer = new Timer(async _ =>
@@ -111,8 +116,8 @@ namespace FMBot.Bot.Services
 
                                 var albumImages = await this._lastFMService.GetAlbumImagesAsync(trackToFeature.ArtistName, trackToFeature.AlbumName);
 
-                                this._trackString = $"{trackToFeature.AlbumName} \n" +
-                                                   $"by {trackToFeature.ArtistName} \n \n" +
+                                this._trackString = $"[{trackToFeature.AlbumName}]({trackToFeature.Url}) \n" +
+                                                   $"by [{trackToFeature.ArtistName}]({trackToFeature.ArtistUrl}) \n \n" +
                                                    $"{randomAvatarModeDesc} from {lastFmUserName}";
 
                                 Log.Information("Featured: Changing avatar to: " + this._trackString);
@@ -164,7 +169,7 @@ namespace FMBot.Bot.Services
 
                                     var albumImage = await this._lastFMService.GetAlbumImagesAsync(currentAlbum.ArtistName, currentAlbum.Name);
 
-                                    this._trackString = $"{currentAlbum.Name} \n" +
+                                    this._trackString = $"[{currentAlbum.Name}]({currentAlbum.Url}) \n" +
                                                         $"by {currentAlbum.ArtistName} \n \n" +
                                                         $"{randomAvatarModeDesc} from {lastFmUserName}";
 
@@ -190,7 +195,7 @@ namespace FMBot.Bot.Services
                     }
                     catch (Exception e)
                     {
-                        Log.Error("ChangeFeaturedAvatar", e);
+                        Log.Error(e, "ChangeFeaturedAvatar");
                     }
                 },
                 null,
@@ -210,6 +215,7 @@ namespace FMBot.Bot.Services
                     }
                     catch (Exception e)
                     {
+                        Log.Error(e, "UpdatingMetrics");
                         Console.WriteLine(e);
                     }
 
@@ -331,12 +337,15 @@ namespace FMBot.Bot.Services
                     Log.Information("Avatar succesfully changed");
                 }
 
-                await Task.Delay(2500);
+                await Task.Delay(7500);
 
                 var builder = new EmbedBuilder();
                 var selfUser = client.CurrentUser;
                 builder.WithThumbnailUrl(selfUser.GetAvatarUrl());
                 builder.AddField("Featured:", this._trackString);
+
+                var botType = BotTypeExtension.GetBotType(client.CurrentUser.Id);
+                await this._webhookService.SendFeaturedWebhooks(botType, this._trackString, selfUser.GetAvatarUrl());
 
                 if (ConfigData.Data.Bot.BaseServerId != 0 && ConfigData.Data.Bot.FeaturedChannelId != 0)
                 {

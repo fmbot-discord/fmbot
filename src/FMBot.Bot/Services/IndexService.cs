@@ -60,7 +60,7 @@ namespace FMBot.Bot.Services
 
             if (existingGuild == null)
             {
-                var newGuild = new Guild
+                var newGuild = new Persistence.Domain.Models.Guild
                 {
                     DiscordGuildId = discordGuild.Id,
                     TitlesEnabled = true,
@@ -113,7 +113,7 @@ namespace FMBot.Bot.Services
             Log.Information("Stored guild users for guild with id {guildId}", existingGuild.GuildId);
         }
 
-        public async Task<GuildUser> GetOrAddUserToGuild(Guild guild, IGuildUser discordGuildUser, User user)
+        public async Task<GuildUser> GetOrAddUserToGuild(Persistence.Domain.Models.Guild guild, IGuildUser discordGuildUser, User user)
         {
             await using var db = this._contextFactory.CreateDbContext();
 

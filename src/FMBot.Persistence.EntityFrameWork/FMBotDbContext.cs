@@ -9,6 +9,8 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<Friend> Friends { get; set; }
         public virtual DbSet<Guild> Guilds { get; set; }
         public virtual DbSet<Channel> Channels { get; set; }
+        public virtual DbSet<Webhook> Webhooks { get; set; }
+
         public virtual DbSet<GuildBlockedUser> GuildBlockedUsers { get; set; }
         public virtual DbSet<GuildUser> GuildUsers { get; set; }
         public virtual DbSet<User> Users { get; set; }
@@ -30,6 +32,7 @@ namespace FMBot.Persistence.EntityFrameWork
 
         public virtual DbSet<ArtistGenre> ArtistGenres { get; set; }
         public virtual DbSet<ArtistAlias> ArtistAliases { get; set; }
+        
 
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -55,12 +58,14 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasOne(d => d.FriendUser)
                     .WithMany(p => p.FriendedByUsers)
                     .HasForeignKey(d => d.FriendUserId)
-                    .HasConstraintName("FK.Friends.Users_FriendUserID");
+                    .HasConstraintName("FK.Friends.Users_FriendUserID")
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(d => d.User)
                     .WithMany(p => p.Friends)
                     .HasForeignKey(d => d.UserId)
-                    .HasConstraintName("FK.Friends.Users_UserID");
+                    .HasConstraintName("FK.Friends.Users_UserID")
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<Guild>(entity =>
@@ -294,6 +299,15 @@ namespace FMBot.Persistence.EntityFrameWork
                     .WithMany(p => p.ArtistGenres)
                     .HasForeignKey(d => d.ArtistId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Webhook>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.HasOne(sc => sc.Guild)
+                    .WithMany(s => s.Webhooks)
+                    .HasForeignKey(sc => sc.GuildId);
             });
         }
     }

@@ -9,6 +9,8 @@ using FMBot.Bot.Handlers;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
+using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.EntityFrameWork;
@@ -119,6 +121,7 @@ namespace FMBot.Bot
                 .AddSingleton<TimerService>()
                 .AddSingleton<UserEventHandler>()
                 .AddSingleton<UserService>()
+                .AddSingleton<WebhookService>()
                 .AddSingleton<WhoKnowsAlbumService>()
                 .AddSingleton<WhoKnowsArtistService>()
                 .AddSingleton<WhoKnowsPlayService>()

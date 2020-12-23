@@ -1,13 +1,8 @@
-using System.Linq;
 using System.Threading.Tasks;
-using FMBot.Bot.Configurations;
 using FMBot.Youtube.Domain.Models;
 using FMBot.Youtube.Services;
-using Google.Apis.Services;
-using Google.Apis.YouTube.v3;
-using Google.Apis.YouTube.v3.Data;
 
-namespace FMBot.Bot.Services
+namespace FMBot.Bot.Services.ThirdParty
 {
     public class YoutubeService
     {

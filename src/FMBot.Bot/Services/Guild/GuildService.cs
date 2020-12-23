@@ -13,7 +13,7 @@ using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
-namespace FMBot.Bot.Services
+namespace FMBot.Bot.Services.Guild
 {
     public class GuildService
     {
@@ -32,7 +32,7 @@ namespace FMBot.Bot.Services
             return context.Guild == null;
         }
 
-        public async Task<Guild> GetGuildAsync(ulong guildId)
+        public async Task<Persistence.Domain.Models.Guild> GetGuildAsync(ulong guildId)
         {
             await using var db = this._contextFactory.CreateDbContext();
             return await db.Guilds
@@ -42,10 +42,11 @@ namespace FMBot.Bot.Services
                 .Include(i => i.GuildUsers)
                     .ThenInclude(t => t.User)
                 .Include(i => i.Channels)
+                .Include(i => i.Webhooks)
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guildId);
         }
 
-        public List<GuildUser> FilterGuildUsersAsync(Guild guild)
+        public List<GuildUser> FilterGuildUsersAsync(Persistence.Domain.Models.Guild guild)
         {
             var guildUsers = guild.GuildUsers.ToList();
             if (guild.ActivityThresholdDays.HasValue)
@@ -95,7 +96,7 @@ namespace FMBot.Bot.Services
             return null;
         }
 
-        public async Task<GuildUser> GetUserFromGuild(Guild guild, int userId)
+        public async Task<GuildUser> GetUserFromGuild(Persistence.Domain.Models.Guild guild, int userId)
         {
             return guild.GuildUsers
                 .FirstOrDefault(f => f.UserId == userId);
@@ -181,7 +182,7 @@ namespace FMBot.Bot.Services
 
             if (existingGuild == null)
             {
-                var newGuild = new Guild
+                var newGuild = new Persistence.Domain.Models.Guild
                 {
                     DiscordGuildId = guild.Id,
                     ChartTimePeriod = chartTimePeriod,
@@ -205,7 +206,7 @@ namespace FMBot.Bot.Services
 
             if (existingGuild == null)
             {
-                var newGuild = new Guild
+                var newGuild = new Persistence.Domain.Models.Guild
                 {
                     DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
@@ -239,7 +240,7 @@ namespace FMBot.Bot.Services
 
             if (existingGuild == null)
             {
-                var newGuild = new Guild
+                var newGuild = new Persistence.Domain.Models.Guild
                 {
                     DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
@@ -495,7 +496,7 @@ namespace FMBot.Bot.Services
 
             if (existingGuild == null)
             {
-                var newGuild = new Guild
+                var newGuild = new Persistence.Domain.Models.Guild
                 {
                     DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
@@ -539,7 +540,7 @@ namespace FMBot.Bot.Services
 
             if (existingGuild == null)
             {
-                var newGuild = new Guild
+                var newGuild = new Persistence.Domain.Models.Guild
                 {
                     DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
@@ -687,7 +688,7 @@ namespace FMBot.Bot.Services
 
             if (existingGuild == null)
             {
-                var newGuild = new Guild
+                var newGuild = new Persistence.Domain.Models.Guild
                 {
                     DiscordGuildId = guild.Id,
                     ChartTimePeriod = ChartTimePeriod.Monthly,
@@ -773,7 +774,7 @@ namespace FMBot.Bot.Services
 
         public async Task AddGuildAsync(SocketGuild guild)
         {
-            var newGuild = new Guild
+            var newGuild = new Persistence.Domain.Models.Guild
             {
                 DiscordGuildId = guild.Id,
                 ChartTimePeriod = ChartTimePeriod.Monthly,
@@ -790,7 +791,7 @@ namespace FMBot.Bot.Services
 
         public async Task RemoveGuildAsync(SocketGuild guild)
         {
-            var newGuild = new Guild
+            var newGuild = new Persistence.Domain.Models.Guild
             {
                 DiscordGuildId = guild.Id,
                 ChartTimePeriod = ChartTimePeriod.Monthly,

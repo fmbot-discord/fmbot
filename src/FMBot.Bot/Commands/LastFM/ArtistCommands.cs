@@ -14,6 +14,8 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
+using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
@@ -933,7 +935,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this._indexService.UpdateUserName(currentUser, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId));
 
-                var usersWithArtist = await this._whoKnowArtistService.GetIndexedUsersForArtist(this.Context, filteredGuildUsers, guild.GuildId, artistName);
+                var usersWithArtist = await this._whoKnowArtistService.GetIndexedUsersForArtist(this.Context, filteredGuildUsers,guild.GuildId, artistName);
 
                 Statistics.LastfmApiCalls.Inc();
 

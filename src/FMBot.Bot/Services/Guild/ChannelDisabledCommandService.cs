@@ -6,7 +6,7 @@ using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
-namespace FMBot.Bot.Services
+namespace FMBot.Bot.Services.Guild
 {
     public class ChannelDisabledCommandService : IChannelDisabledCommandService
     {

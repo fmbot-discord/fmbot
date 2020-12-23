@@ -4,7 +4,7 @@ using FMBot.Bot.Configurations;
 using Genius;
 using Genius.Models;
 
-namespace FMBot.Bot.Services
+namespace FMBot.Bot.Services.ThirdParty
 {
     public class GeniusService
     {

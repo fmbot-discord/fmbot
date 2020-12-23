@@ -16,7 +16,7 @@ using SpotifyAPI.Web.Models;
 using Artist = FMBot.Persistence.Domain.Models.Artist;
 using Image = FMBot.LastFM.Domain.Models.Image;
 
-namespace FMBot.Bot.Services
+namespace FMBot.Bot.Services.ThirdParty
 {
     public class SpotifyService
     {
