@@ -137,8 +137,6 @@ namespace FMBot.Bot
                 .AddTransient<LastFmService>()
                 .AddTransient<InvidiousApi>();
 
-            services.AddScoped(c => new SqlConnectionFactory(ConfigData.Data.Database.ConnectionString));
-
             services.AddDbContextFactory<FMBotDbContext>(b =>
                 b.UseNpgsql(ConfigData.Data.Database.ConnectionString));
 
