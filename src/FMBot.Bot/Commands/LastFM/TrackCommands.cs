@@ -570,7 +570,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this._indexService.UpdateUserName(currentUser, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId));
 
-                var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(this.Context, filteredGuildUsers, track.Artist.Name, track.Name);
+                var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(this.Context, filteredGuildUsers, guild.GuildId, track.Artist.Name, track.Name);
 
                 if (track.Userplaycount != 0)
                 {

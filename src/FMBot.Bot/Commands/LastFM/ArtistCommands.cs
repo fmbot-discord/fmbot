@@ -933,7 +933,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this._indexService.UpdateUserName(currentUser, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId));
 
-                var usersWithArtist = await this._whoKnowArtistService.GetIndexedUsersForArtist(this.Context, filteredGuildUsers, artistName);
+                var usersWithArtist = await this._whoKnowArtistService.GetIndexedUsersForArtist(this.Context, filteredGuildUsers, guild.GuildId, artistName);
 
                 Statistics.LastfmApiCalls.Inc();
 

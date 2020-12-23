@@ -24,45 +24,17 @@ namespace FMBot.Bot.Models
         public int ListenerCount { get; set; }
     }
 
-    public class CachedUserArtist
+    public abstract class WhoKnowsArtistDto
     {
         public int UserId { get; set; }
 
         public string Name { get; set; }
 
-        public int Playcount { get; set; }
-
-        public string LastFmUserName { get; set; }
-
-        public ulong DiscordUserId { get; set; }
-    }
-    
-    public class CachedUserAlbum
-    {
-        public int UserId { get; set; }
-
-        public string Name { get; set; }
-        
         public string ArtistName { get; set; }
 
         public int Playcount { get; set; }
 
-        public string LastFmUserName { get; set; }
-
-        public ulong DiscordUserId { get; set; }
-    }
-    
-    public class CachedUserTrack
-    {
-        public int UserId { get; set; }
-
-        public string Name { get; set; }
-        
-        public string ArtistName { get; set; }
-
-        public int Playcount { get; set; }
-
-        public string LastFmUserName { get; set; }
+        public string UserNameLastFm { get; set; }
 
         public ulong DiscordUserId { get; set; }
     }

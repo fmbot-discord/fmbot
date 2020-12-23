@@ -84,6 +84,7 @@ namespace FMBot.Bot
                 AlwaysDownloadUsers = true
             });
 
+
             services
                 .AddSingleton(discordClient)
                 .AddSingleton(new CommandService(new CommandServiceConfig
@@ -135,6 +136,8 @@ namespace FMBot.Bot
                 .AddTransient<ILastfmApi, LastfmApi>()
                 .AddTransient<LastFmService>()
                 .AddTransient<InvidiousApi>();
+
+            services.AddScoped(c => new SqlConnectionFactory(ConfigData.Data.Database.ConnectionString));
 
             services.AddDbContextFactory<FMBotDbContext>(b =>
                 b.UseNpgsql(ConfigData.Data.Database.ConnectionString));

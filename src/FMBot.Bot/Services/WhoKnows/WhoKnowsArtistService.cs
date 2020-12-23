@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
 using Dasync.Collections;
 using Discord.Commands;
 using FMBot.Bot.Models;
@@ -17,77 +18,54 @@ namespace FMBot.Bot.Services.WhoKnows
     {
         private readonly IMemoryCache _cache;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly SqlConnectionFactory _sqlConnectionFactory;
 
-        public WhoKnowsArtistService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory)
+        public WhoKnowsArtistService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, SqlConnectionFactory sqlConnectionFactory)
         {
             this._cache = cache;
             this._contextFactory = contextFactory;
+            this._sqlConnectionFactory = sqlConnectionFactory;
         }
 
         public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(ICommandContext context,
-            ICollection<GuildUser> guildUsers, string artistName)
+            ICollection<GuildUser> guildUsers, int guildId, string artistName)
         {
-            var cachedUserArtists = new List<CachedUserArtist>();
-            foreach (var user in guildUsers)
+            const string sql = "SELECT ut.user_id AS \"UserId\", " +
+                               "ut.name AS \"Name\", " +
+                               "ut.playcount AS \"Playcount\", " +
+                               "u.user_name_last_fm AS \"UserNameLastFm\", " +
+                               "u.discord_user_id AS \"DiscordUserId\" " +
+                               "FROM user_albums AS ut " +
+                               "INNER JOIN users AS u ON ut.user_id = u.user_id " +
+                               "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                               "WHERE gu.guild_id = @guildId AND UPPER(ut.name) = UPPER('@name')" +
+                               "ORDER BY ut.playcount DESC " +
+                               "LIMIT 14";
+
+            var connection = this._sqlConnectionFactory.GetOpenConnection();
+
+            var userArtists = await connection.QueryAsync<WhoKnowsArtistDto>(sql, new
             {
-                var key = $"top-artists-{user.UserId}";
-
-                if (this._cache.TryGetValue(key, out List<CachedUserArtist> topArtistsForUser))
-                {
-                    var userArtist = topArtistsForUser.FirstOrDefault(f => f.Name.ToLower() == artistName.ToLower());
-
-                    if (userArtist != null)
-                    {
-                        cachedUserArtists.Add(userArtist);
-                    }
-                }
-                else
-                {
-                    await using var db = this._contextFactory.CreateDbContext();
-                    var userArtistsToCache = await db.UserArtists
-                        .AsQueryable()
-                        .Include(i => i.User)
-                        .Where(
-                            w => w.UserId == user.UserId)
-                        .Select(s => new CachedUserArtist
-                        {
-                            Name = s.Name,
-                            Playcount = s.Playcount,
-                            LastFmUserName = s.User.UserNameLastFM,
-                            UserId = s.UserId,
-                            DiscordUserId = s.User.DiscordUserId
-                        })
-                        .ToListAsync();
-
-                    if (userArtistsToCache != null && userArtistsToCache.Any())
-                    {
-                        this._cache.Set(key, userArtistsToCache, TimeSpan.FromMinutes(40));
-
-                        var userArtist = userArtistsToCache.FirstOrDefault(f => f.Name.ToLower() == artistName.ToLower());
-
-                        if (userArtist != null)
-                        {
-                            cachedUserArtists.Add(userArtist);
-                        }
-                    }
-                }
-            }
+                guildId,
+                artistName
+            });
 
             var whoKnowsArtistList = new List<WhoKnowsObjectWithUser>();
-            foreach (var userArtist in cachedUserArtists)
+            
+            foreach (var userArtist in userArtists)
             {
                 var discordUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId);
                 var guildUser = guildUsers.FirstOrDefault(f => f.UserId == userArtist.UserId);
                 var userName = discordUser != null ?
                     discordUser.Nickname ?? discordUser.Username :
-                    guildUser?.UserName ?? userArtist.LastFmUserName;
+                    guildUser?.UserName ?? userArtist.UserNameLastFm;
 
                 whoKnowsArtistList.Add(new WhoKnowsObjectWithUser
                 {
                     Name = userArtist.Name,
                     DiscordName = userName,
                     Playcount = userArtist.Playcount,
-                    LastFMUsername = userArtist.LastFmUserName,
+                    LastFMUsername = userArtist.UserNameLastFm,
                     UserId = userArtist.UserId
                 });
             }
