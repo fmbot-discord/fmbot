@@ -47,7 +47,7 @@ namespace FMBot.Bot.Commands.Guild
             if (!user.GuildPermissions.ManageWebhooks)
             {
                 await ReplyAsync(
-                    "In order to create the featured webhook, I permission to add webhooks.\n" +
+                    "In order to create the featured webhook, I need permission to add webhooks.\n" +
                     $"You can add this permission by going to `Server Settings` > `Roles` > `{Context.Client.CurrentUser.Username}` and enabling the `Manage Webhooks` permission.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
@@ -61,16 +61,16 @@ namespace FMBot.Bot.Commands.Guild
                 await ReplyAsync(
                     "This server already has a webhook configured.\n" +
                     "You can change the channel in the webhook settings (`Server settings` > `Integrations` > `Webhooks`)\n" +
-                    "If you recently deleted the webhook and want to make a new one, please run `.fmaddfeaturedwebhook` once to remove the deleted webhook from our database.");
+                    "If you recently deleted the webhook and want to make a new one, please run `.fmtestwebhook` once to remove the deleted webhook from our database.");
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
                 return;
             }
 
             var createdWebhook = await this._webhookService.CreateWebhook(this.Context, guild.GuildId);
 
-            await this._webhookService.TestWebhook(createdWebhook, "If you see this message, then the webhook has been added!\n" +
-                                                                                        "You will now automatically receive the .fmbot featured message every hour.\n" +
-                                                                                        "To disable this, simply delete the webhook in your servers integration settings.");
+            await this._webhookService.TestWebhook(createdWebhook, "If you see this message the webhook has been successfully added!\n" +
+                                                                   "You will now automatically receive the .fmbot featured message every hour.\n" +
+                                                                   "To disable this, simply delete the webhook in your servers integration settings.");
             this.Context.LogCommandUsed();
         }
 
@@ -102,7 +102,7 @@ namespace FMBot.Bot.Commands.Guild
                 if (!successful)
                 {
                     await ReplyAsync("The previously registered webhook has been removed from our database.\n" +
-                                     "You can now add a new webhook for .fmbot with `.fmaddfeaturedwebhook`.");
+                                     "You can now add a new webhook for .fmbot with `.fmaddwebhook`.");
                 }
                 
                 this.Context.LogCommandUsed();
@@ -110,7 +110,7 @@ namespace FMBot.Bot.Commands.Guild
             else
             {
                 await ReplyAsync("You don't have any webhooks added yet.\n" +
-                                 "Add a webhook for .fmbot with `.fmaddfeaturedwebhook`");
+                                 "Add a webhook for .fmbot with `.fmaddwebhook`");
                 this.Context.LogCommandUsed();
             }
         }
