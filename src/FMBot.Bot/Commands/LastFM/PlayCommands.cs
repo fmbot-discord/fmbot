@@ -618,7 +618,13 @@ namespace FMBot.Bot.Commands.LastFM
 
             var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
 
-            var timeType = SettingService.GetTimePeriod(extraOptions, ChartTimePeriod.AllTime);
+            var timePeriodString = extraOptions;
+            if (this.Context.InteractionData != null)
+            {
+                var time = this.Context.InteractionData.Choices.FirstOrDefault(w => w.Name == "time");
+                timePeriodString = time?.Value?.ToLower();
+            }
+            var timeType = SettingService.GetTimePeriod(timePeriodString, ChartTimePeriod.AllTime);
 
             long timeFrom;
             if (timeType.ChartTimePeriod != ChartTimePeriod.AllTime && timeType.PlayDays != null)
