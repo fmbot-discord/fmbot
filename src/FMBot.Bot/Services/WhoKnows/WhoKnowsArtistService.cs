@@ -30,18 +30,19 @@ namespace FMBot.Bot.Services.WhoKnows
         public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(ICommandContext context,
             ICollection<GuildUser> guildUsers, int guildId, string artistName)
         {
-            const string sql = "SELECT ut.user_id AS \"UserId\", " +
-                               "ut.name AS \"Name\", " +
-                               "ut.playcount AS \"Playcount\", " +
-                               "u.user_name_last_fm AS \"UserNameLastFm\", " +
-                               "u.discord_user_id AS \"DiscordUserId\" " +
-                               "FROM user_albums AS ut " +
-                               "INNER JOIN users AS u ON ut.user_id = u.user_id " +
+            const string sql = "SELECT ua.user_id, " +
+                               "ua.name, " +
+                               "ua.playcount, " +
+                               "u.user_name_last_fm, " +
+                               "u.discord_user_id " +
+                               "FROM user_artists AS ua " +
+                               "INNER JOIN users AS u ON ua.user_id = u.user_id " +
                                "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
-                               "WHERE gu.guild_id = @guildId AND UPPER(ut.name) = UPPER('@name')" +
-                               "ORDER BY ut.playcount DESC " +
+                               "WHERE gu.guild_id = @guildId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))" +
+                               "ORDER BY ua.playcount DESC " +
                                "LIMIT 14";
 
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
             await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
             await connection.OpenAsync();
 

@@ -24,13 +24,11 @@ namespace FMBot.Bot.Models
         public int ListenerCount { get; set; }
     }
 
-    public abstract class WhoKnowsArtistDto
+    public class WhoKnowsArtistDto
     {
         public int UserId { get; set; }
 
         public string Name { get; set; }
-
-        public string ArtistName { get; set; }
 
         public int Playcount { get; set; }
 

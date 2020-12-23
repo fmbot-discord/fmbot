@@ -37,7 +37,7 @@ namespace FMBot.Bot.Models
         public int ListenerCount { get; set; }
     }
 
-    public abstract class WhoKnowsAlbumDto
+    public class WhoKnowsAlbumDto
     {
         public int UserId { get; set; }
 
