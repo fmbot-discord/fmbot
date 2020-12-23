@@ -851,7 +851,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var guildTask = this._guildService.GetGuildAsync(260438376270921729);
+                var guildTask = this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
                 _ = this.Context.Channel.TriggerTypingAsync();
 

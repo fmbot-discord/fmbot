@@ -538,7 +538,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var guildTask = this._guildService.GetGuildAsync(260438376270921729);
+            var guildTask = this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
