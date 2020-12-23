@@ -24,7 +24,7 @@ namespace FMBot.Bot.Models
         public void Publish(IReadOnlyList<User> users)
         {
             var queueItems = users
-                .Select(s => new UpdateUserQueueItem(s.UserId, 1200))
+                .Select(s => new UpdateUserQueueItem(s.UserId, 1800))
                 .ToList();
 
             this._subject.OnNext(queueItems);
