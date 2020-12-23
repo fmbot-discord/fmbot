@@ -4,22 +4,22 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using Discord.Commands;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace FMBot.Bot.Services.WhoKnows
 {
     public class WhoKnowsTrackService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-        private readonly SqlConnectionFactory _sqlConnectionFactory;
 
-        public WhoKnowsTrackService(IDbContextFactory<FMBotDbContext> contextFactory, SqlConnectionFactory sqlConnectionFactory)
+        public WhoKnowsTrackService(IDbContextFactory<FMBotDbContext> contextFactory)
         {
             this._contextFactory = contextFactory;
-            this._sqlConnectionFactory = sqlConnectionFactory;
         }
 
         public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(ICommandContext context,
@@ -38,7 +38,8 @@ namespace FMBot.Bot.Services.WhoKnows
                                "ORDER BY ut.playcount DESC " +
                                "LIMIT 14";
 
-            var connection = this._sqlConnectionFactory.GetOpenConnection();
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
 
             var userTracks = await connection.QueryAsync<WhoKnowsTrackDto>(sql, new
             {

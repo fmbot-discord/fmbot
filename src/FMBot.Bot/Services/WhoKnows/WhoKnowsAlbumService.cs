@@ -4,22 +4,22 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using Discord.Commands;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace FMBot.Bot.Services.WhoKnows
 {
     public class WhoKnowsAlbumService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-        private readonly SqlConnectionFactory _sqlConnectionFactory;
 
-        public WhoKnowsAlbumService(IDbContextFactory<FMBotDbContext> contextFactory, SqlConnectionFactory sqlConnectionFactory)
+        public WhoKnowsAlbumService(IDbContextFactory<FMBotDbContext> contextFactory)
         {
             this._contextFactory = contextFactory;
-            this._sqlConnectionFactory = sqlConnectionFactory;
         }
 
         public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForAlbum(ICommandContext context,
@@ -38,7 +38,8 @@ namespace FMBot.Bot.Services.WhoKnows
                                "ORDER BY ut.playcount DESC " +
                                "LIMIT 14";
 
-            var connection = this._sqlConnectionFactory.GetOpenConnection();
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
 
             var userAlbums = await connection.QueryAsync<WhoKnowsAlbumDto>(sql, new
             {
@@ -59,8 +60,8 @@ namespace FMBot.Bot.Services.WhoKnows
 
                 whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
                 {
-                    Name = $"{userAlbum.ArtistName} - {userAlbum.Name}",
                     DiscordName = userName,
+                    Name = $"{userAlbum.ArtistName} - {userAlbum.Name}",
                     Playcount = userAlbum.Playcount,
                     LastFMUsername = userAlbum.UserNameLastFm,
                     UserId = userAlbum.UserId,

@@ -5,11 +5,13 @@ using System.Threading.Tasks;
 using Dapper;
 using Dasync.Collections;
 using Discord.Commands;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Npgsql;
 using Serilog;
 
 namespace FMBot.Bot.Services.WhoKnows
@@ -18,13 +20,11 @@ namespace FMBot.Bot.Services.WhoKnows
     {
         private readonly IMemoryCache _cache;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-        private readonly SqlConnectionFactory _sqlConnectionFactory;
 
-        public WhoKnowsArtistService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, SqlConnectionFactory sqlConnectionFactory)
+        public WhoKnowsArtistService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory)
         {
             this._cache = cache;
             this._contextFactory = contextFactory;
-            this._sqlConnectionFactory = sqlConnectionFactory;
         }
 
         public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(ICommandContext context,
@@ -42,7 +42,8 @@ namespace FMBot.Bot.Services.WhoKnows
                                "ORDER BY ut.playcount DESC " +
                                "LIMIT 14";
 
-            var connection = this._sqlConnectionFactory.GetOpenConnection();
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
 
             var userArtists = await connection.QueryAsync<WhoKnowsArtistDto>(sql, new
             {
