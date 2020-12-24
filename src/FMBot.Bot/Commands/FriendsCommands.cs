@@ -96,21 +96,20 @@ namespace FMBot.Bot.Commands
                 var embedDescription = "";
                 await friends.ParallelForEachAsync(async friend =>
                 {
-                    var userName = friend.LastFMUserName;
+                    var friendUsername = friend.LastFMUserName;
                     string sessionKey = null;
                     if (friend.FriendUser?.UserNameLastFM != null)
                     {
-                        userName = friend.FriendUser.UserNameLastFM;
+                        friendUsername = friend.FriendUser.UserNameLastFM;
                         if (!string.IsNullOrWhiteSpace(friend.FriendUser.SessionKeyLastFm))
                         {
                             sessionKey = friend.FriendUser.SessionKeyLastFm;
                         }
                     }
                     
-                    var tracks = await this._lastFmService.GetRecentTracksAsync(userName, useCache: true, sessionKey: sessionKey);
+                    var tracks = await this._lastFmService.GetRecentTracksAsync(friendUsername, useCache: true, sessionKey: sessionKey);
 
                     string track;
-                    var friendTitle = "";
                     if (!tracks.Success || tracks.Content == null)
                     {
                         track = $"Friend could not be retrieved ({tracks.Error})";
@@ -136,7 +135,7 @@ namespace FMBot.Bot.Commands
                         totalPlaycount += (int)tracks.Content.RecentTracks.Attr.Total;
                     }
 
-                    embedDescription += $"**[`{friend.LastFMUserName}`]({Constants.LastFMUserUrl}{friend.LastFMUserName})** {friendTitle} | {track}\n";
+                    embedDescription += $"**[{friendUsername}]({Constants.LastFMUserUrl}{friendUsername})** | {track}\n";
                 }, maxDegreeOfParallelism: 3);
 
                 this._embedFooter.WithText(embedFooterText + totalPlaycount.ToString("0"));
