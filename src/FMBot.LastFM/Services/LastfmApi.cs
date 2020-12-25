@@ -80,8 +80,6 @@ namespace FMBot.LastFM.Services
 
             using var httpResponse = await this._client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
-            Statistics.LastfmApiCalls.Inc();
-
             if (httpResponse.StatusCode == HttpStatusCode.NotFound)
             {
                 return new Response<T>
