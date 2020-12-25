@@ -137,23 +137,12 @@ namespace FMBot.Bot.Services
         // Rank
         public async Task<UserType> GetRankAsync(IUser discordUser)
         {
-            var cacheKey = $"user-userType-{discordUser.Id}";
-
-            if (this._cache.TryGetValue(cacheKey, out UserType rank))
-            {
-                return rank;
-            }
-
             await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
-            rank = user?.UserType ?? UserType.User;
-
-            this._cache.Set(cacheKey, rank, TimeSpan.FromHours(6));
-
-            return rank;
+            return user?.UserType ?? UserType.User;
         }
 
         // Featured
@@ -184,9 +173,11 @@ namespace FMBot.Bot.Services
                 }
             }
 
+            var filterDate = DateTime.UtcNow.AddDays(-14);
             var users = db.Users
                 .AsQueryable()
-                .Where(w => w.Blocked != true).ToList();
+                .Where(w => w.Blocked != true &&
+                            w.LastUsed > filterDate).ToList();
 
             var rand = new Random();
             var user = users[rand.Next(users.Count)];
