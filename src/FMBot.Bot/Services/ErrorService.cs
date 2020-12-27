@@ -63,7 +63,7 @@ namespace FMBot.Bot.Services
                     break;
                 case LastResponseStatus.MissingParameters:
                     embed.WithDescription("You or the user you're searching for has no scrobbles/artists on their profile, or Last.fm is having issues. Please try again later. \n \n" +
-                                          $"Recently changed your Last.fm username? Please change it here too using `{prfx}login`.");
+                                          $"Recently changed your Last.fm username? Please change it here too using `{prfx}login` again.");
                     break;
                 default:
                     embed.WithDescription(

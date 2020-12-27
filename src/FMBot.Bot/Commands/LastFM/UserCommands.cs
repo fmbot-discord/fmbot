@@ -214,6 +214,9 @@ namespace FMBot.Bot.Commands.LastFM
                     var differentMode = existingUserSettings.FmEmbedType == FmEmbedType.embedmini ? "embedfull" : "embedmini";
                     replyString += "Example of picking a different mode: \n" +
                                    $"`{prfx}set {existingUserSettings.UserNameLastFM} {differentMode} album`";
+
+                    replyString += "\n\n⚠️ Changing your Last.fm username with this command will clear all your crowns.\n" +
+                                   $"Please use `{prfx}login` instead when you changed your Last.fm username and want to keep your crowns.";
                 }
                 else
                 {
