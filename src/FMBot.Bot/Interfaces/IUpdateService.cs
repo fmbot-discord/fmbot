@@ -11,6 +11,6 @@ namespace FMBot.Bot.Interfaces
 
         Task<int> UpdateUser(User user);
 
-        Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeLastUpdated);
+        Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeAuthorizedLastUpdated, DateTime timeUnauthorizedFilter);
     }
 }

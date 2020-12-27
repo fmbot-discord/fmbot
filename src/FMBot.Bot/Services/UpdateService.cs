@@ -44,14 +44,15 @@ namespace FMBot.Bot.Services
             return await this._globalUpdateService.UpdateUser(new UpdateUserQueueItem(user.UserId));
         }
 
-        public async Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeLastUpdated)
+        public async Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeAuthorizedLastUpdated, DateTime timeUnauthorizedFilter)
         {
             await using var db = this._contextFactory.CreateDbContext();
             return await db.Users
                     .AsQueryable()
                     .Where(f => f.LastIndexed != null &&
                                 f.LastUpdated != null &&
-                                f.LastUpdated <= timeLastUpdated)
+                                (f.SessionKeyLastFm != null && f.LastUpdated <= timeAuthorizedLastUpdated ||
+                                 f.SessionKeyLastFm == null && f.LastUpdated <= timeUnauthorizedFilter))
                     .OrderBy(o => o.LastUpdated)
                     .ToListAsync();
         }
