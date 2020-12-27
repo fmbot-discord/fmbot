@@ -448,7 +448,6 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (existingUserSettings != null && !string.Equals(existingUserSettings.UserNameLastFM, newUserSettings.UserNameLastFM, StringComparison.CurrentCultureIgnoreCase))
                 {
-                    await this._crownService.RemoveAllCrownsFromUser(newUserSettings.UserId);
                     await this._indexService.IndexUser(newUserSettings);
                 }
 
