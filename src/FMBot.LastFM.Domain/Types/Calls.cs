@@ -8,6 +8,7 @@ namespace FMBot.LastFM.Domain.Types
             TrackInfo = "Track.getInfo",
             TrackLove = "track.love",
             TrackUnLove = "track.unLove",
+            TrackScrobble = "track.scrobble",
             UserInfo = "User.getInfo",
             TopTracks = "user.getTopTracks",
             RecentTracks = "user.getRecentTracks",

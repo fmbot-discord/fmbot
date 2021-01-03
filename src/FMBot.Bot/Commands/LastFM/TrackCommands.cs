@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.API.Rest;
 using Discord.Commands;
+using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
@@ -23,6 +24,8 @@ using FMBot.LastFM.Domain.ResponseModels;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
+using Interactivity;
+using Interactivity.Confirmation;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -44,6 +47,10 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
+        private readonly InteractivityService _interactivity;
+
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
+        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
 
         public TrackCommands(
                 GuildService guildService,
@@ -56,8 +63,8 @@ namespace FMBot.Bot.Commands.LastFM
                 SpotifyService spotifyService,
                 UserService userService,
                 WhoKnowsTrackService whoKnowsTrackService,
-                WhoKnowsPlayService whoKnowsPlayService
-                )
+                WhoKnowsPlayService whoKnowsPlayService,
+                InteractivityService interactivity)
         {
             this._guildService = guildService;
             this._indexService = indexService;
@@ -70,6 +77,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._userService = userService;
             this._whoKnowsTrackService = whoKnowsTrackService;
             this._whoKnowsPlayService = whoKnowsPlayService;
+            this._interactivity = interactivity;
 
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
@@ -179,7 +187,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             }
-            
+
             this.Context.LogCommandUsed();
         }
 
@@ -321,6 +329,115 @@ namespace FMBot.Bot.Commands.LastFM
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
+        }
+
+        [Command("scrobble", RunMode = RunMode.Async)]
+        [Summary("Scrobbles a track to Last.fm")]
+        [UserSessionRequired]
+        [Alias("sb")]
+        public async Task ScrobbleAsync([Remainder] string trackValues = null)
+        {
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            if (string.IsNullOrWhiteSpace(trackValues) || trackValues.ToLower() == "help")
+            {
+                this._embed.WithTitle($"{prfx}scrobble");
+                this._embed.WithDescription("Scrobbles a track. You can enter a search value or enter the exact name with separators. " +
+                                            "You can only scrobble tracks that already exist on Last.fm.");
+
+                this._embed.AddField("Search for a track to scrobble",
+                    $"`{prfx}sb Stronger Kanye` *(scrobbles Stronger by Kanye West)*\n" +
+                    $"`{prfx}scrobble Loona Heart Attack` *(scrobbles Heart Attack (츄) by LOONA)*"); 
+
+                this._embed.AddField("Or enter the exact name with separators",
+                    $"`{prfx}scrobble Artist | Track | Album (optional)`\n" +
+                    $"`{prfx}scrobble Mac DeMarco | Chamber of Reflection`\n" +
+                    $"`{prfx}scrobble Home | Climbing Out | Falling into Place`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            var msg = this.Context.Message as SocketUserMessage;
+            if (StackCooldownTarget.Contains(this.Context.Message.Author))
+            {
+                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(30) >= DateTimeOffset.Now)
+                {
+                    var secondsLeft = (int)(StackCooldownTimer[
+                            StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
+                        .AddSeconds(30) - DateTimeOffset.Now).TotalSeconds;
+                    if (secondsLeft <= 28)
+                    {
+                        await ReplyAsync("Please wait before scrobbling to Last.fm again.");
+                        this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                    }
+
+                    return;
+                }
+
+                StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
+            }
+            else
+            {
+                StackCooldownTarget.Add(msg.Author);
+                StackCooldownTimer.Add(DateTimeOffset.Now);
+            }
+
+            var track = await this.SearchTrack(trackValues, userSettings, prfx);
+            if (track == null)
+            {
+                return;
+            }
+
+            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+
+            var trackScrobbled = await this._lastFmService.ScrobbleAsync(userSettings, track.Artist.Name, track.Name, track.Album?.Title);
+
+            if (trackScrobbled.Success && trackScrobbled.Content.Scrobbles.Attr.Accepted > 0)
+            {
+                this._embed.WithTitle($"Scrobbled track for {userTitle}");
+                this._embed.WithDescription(LastFmService.ResponseTrackToLinkedString(track));
+            }
+            else if (trackScrobbled.Success && trackScrobbled.Content.Scrobbles.Attr.Ignored > 0)
+            {
+                this._embed.WithTitle($"Last.fm ignored scrobble for {userTitle}");
+                var description = new StringBuilder();
+
+                if (!string.IsNullOrWhiteSpace(trackScrobbled.Content.Scrobbles.Scrobble.IgnoredMessage?.Text))
+                {
+                    description.AppendLine($"Reason: {trackScrobbled.Content.Scrobbles.Scrobble.IgnoredMessage?.Text}");
+                }
+
+                description.AppendLine(LastFmService.ResponseTrackToLinkedString(track));
+                this._embed.WithDescription(description.ToString());
+            }
+            else
+            {
+                await this.Context.Message.Channel.SendMessageAsync("Something went wrong while scrobbling track :(.");
+                this.Context.LogCommandWithLastFmError(trackScrobbled.Error);
+                return;
+            }
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
+
+            //var request = new ConfirmationBuilder()
+            //    .WithContent(new PageBuilder().WithText("Please Confirm"))
+            //    .Build();
+
+            //var result = await Interactivity.SendConfirmationAsync(request, Context.Channel);
+
+            //if (result.Value == true)
+            //{
+            //    await Context.Channel.SendMessageAsync("Confirmed :thumbsup:!");
+            //}
+            //else
+            //{
+            //    await Context.Channel.SendMessageAsync("Declined :thumbsup:!");
+            //}
+
         }
 
         [Command("toptracks", RunMode = RunMode.Async)]
@@ -494,15 +611,9 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Shows what other users listen to the same artist in your server")]
         [Alias("wt", "wkt", "wktr", "wtr", "wktrack", "wk track", "whoknows track")]
         [UsernameSetRequired]
+        [GuildOnly]
         public async Task WhoKnowsTrackAsync([Remainder] string trackValues = null)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("This command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
@@ -627,15 +738,9 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("servertracks", RunMode = RunMode.Async)]
         [Summary("Shows top albums for your server")]
         [Alias("st", "stt", "servertoptracks", "servertrack", "server tracks")]
+        [GuildOnly]
         public async Task GuildTracksAsync(params string[] extraOptions)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("This command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
@@ -773,6 +878,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (searchValue.Contains(" | "))
                 {
+
                     var trackInfo = await this._lastFmService.GetTrackInfoAsync(searchValue.Split(" | ")[1], searchValue.Split(" | ")[0],
                         userSettings.UserNameLastFM);
                     return trackInfo;

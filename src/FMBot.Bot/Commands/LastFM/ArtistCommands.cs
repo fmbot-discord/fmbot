@@ -25,6 +25,7 @@ using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using Interactivity;
 using Interactivity.Pagination;
+using Interactivity.Selection;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -644,25 +645,46 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        //[Command("lazypaginator")]
-        public Task LazyPaginatorAsync()
+        [Command("lazypaginator")]
+        public async Task LazyPaginatorAsync()
         {
-            var paginator = new LazyPaginatorBuilder()
-                .WithPageFactory(PageFactory)
-                .WithMaxPageIndex(100)
-                .WithFooter(PaginatorFooter.PageNumber | PaginatorFooter.Users)
-                .WithDefaultEmotes()
-                .Build();
+            //var paginator = new LazyPaginatorBuilder()
+            //    .WithPageFactory(PageFactory)
+            //    .WithMaxPageIndex(100)
+            //    .WithFooter(PaginatorFooter.PageNumber | PaginatorFooter.Users)
+            //    .WithDefaultEmotes()
+            //    .Build();
 
-            return Interactivity.SendPaginatorAsync(paginator, Context.Channel, TimeSpan.FromMinutes(2));
+            //return this.Interactivity.SendPaginatorAsync(paginator, Context.Channel, TimeSpan.FromMinutes(2));
 
-            Task<PageBuilder> PageFactory(int page)
+            //Task<PageBuilder> PageFactory(int page)
+            //{
+            //    return Task.FromResult(new PageBuilder()
+            //        .WithText((page + 1).ToString())
+            //        .WithTitle($"Title for page {page + 1}")
+            //        .WithColor(System.Drawing.Color.FromArgb(page * 1500)));
+            //}
+
+            try
             {
-                return Task.FromResult(new PageBuilder()
-                    .WithText((page + 1).ToString())
-                    .WithTitle($"Title for page {page + 1}")
-                    .WithColor(System.Drawing.Color.FromArgb(page * 1500)));
+                var builder = new ReactionSelectionBuilder<string>()
+                    .WithValues("Hi", "How", "Hey", "Huh?!")
+                    .WithEmotes(new Emoji("💵"), new Emoji("🍭"), new Emoji("😩"), new Emoji("💠"));
+
+                var result =
+                    await Interactivity.SendSelectionAsync(builder.Build(), Context.Channel, TimeSpan.FromSeconds(50));
+
+                if (result.IsSuccess == true)
+                {
+                    await Context.Channel.SendMessageAsync(result.Value.ToString());
+                }
             }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+
         }
 
         [Command("taste", RunMode = RunMode.Async)]

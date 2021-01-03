@@ -417,5 +417,25 @@ namespace FMBot.LastFM.Services
 
             return authSessionCall.Success;
         }
+        
+        public async Task<Response<ScrobbledTrack>> ScrobbleAsync(User user, string artistName, string trackName, string albumName = null)
+        {
+            var queryParams = new Dictionary<string, string>
+            {
+                {"artist", artistName},
+                {"track", trackName},
+                {"sk", user.SessionKeyLastFm},
+                {"timestamp",  ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds().ToString() }
+            };
+
+            if (!string.IsNullOrWhiteSpace(albumName))
+            {
+                queryParams.Add("album", albumName);
+            }
+
+            var authSessionCall = await this._lastFmApi.CallApiAsync<ScrobbledTrack>(queryParams, Call.TrackScrobble, true);
+
+            return authSessionCall;
+        }
     }
 }
