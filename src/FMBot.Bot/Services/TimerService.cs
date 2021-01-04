@@ -125,10 +125,11 @@ namespace FMBot.Bot.Services
                                 if (albumImages?.Large != null)
                                 {
                                     ChangeToNewAvatar(client, albumImages.Large.AbsoluteUri);
+                                    ScrobbleFeatured(client, trackToFeature);
                                 }
                                 else
                                 {
-                                    Log.Information("Featured: Album had no image, switching to alternative avatar mode");
+                                    Log.Information("Featured: Recent listen had no image, switching to alternative avatar mode");
                                     goto case 4;
                                 }
 
@@ -363,6 +364,23 @@ namespace FMBot.Bot.Services
             catch (Exception exception)
             {
                 Log.Error(exception, nameof(ChangeToNewAvatar));
+            }
+        }
+
+        public async void ScrobbleFeatured(DiscordShardedClient client, LastTrack track)
+        {
+            try
+            {
+                var botUser = await this._userService.GetUserAsync(client.CurrentUser.Id);
+
+                if (botUser?.SessionKeyLastFm != null)
+                {
+                    await this._lastFMService.ScrobbleAsync(botUser, track.ArtistName, track.Name);
+                }
+            }
+            catch (Exception exception)
+            {
+                Log.Error(exception, nameof(ScrobbleFeatured));
             }
         }
 
