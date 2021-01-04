@@ -162,7 +162,7 @@ namespace FMBot.Bot.Services
                                  a.UserId == userId);
         }
 
-        public async Task<string> GetStreak(int userId, LastTrack? nowPlayingTrack)
+        public async Task<string> GetStreak(int userId, LastTrack nowPlayingTrack = null)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var lastPlays = await db.UserPlays

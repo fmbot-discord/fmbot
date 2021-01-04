@@ -262,7 +262,7 @@ namespace FMBot.LastFM.Services
             var queryParams = new Dictionary<string, string>
             {
                 {"artist", artistName },
-                {"trackLfm", trackName },
+                {"track", trackName },
                 {"username", username },
                 {"autocorrect", "1"}
             };
@@ -432,7 +432,7 @@ namespace FMBot.LastFM.Services
             var queryParams = new Dictionary<string, string>
             {
                 {"artist", artistName},
-                {"trackLfm", trackName},
+                {"track", trackName},
                 {"sk", user.SessionKeyLastFm}
             };
 
@@ -446,7 +446,7 @@ namespace FMBot.LastFM.Services
             var queryParams = new Dictionary<string, string>
             {
                 {"artist", artistName},
-                {"trackLfm", trackName},
+                {"track", trackName},
                 {"sk", user.SessionKeyLastFm}
             };
 
@@ -460,7 +460,7 @@ namespace FMBot.LastFM.Services
             var queryParams = new Dictionary<string, string>
             {
                 {"artist", artistName},
-                {"trackLfm", trackName},
+                {"track", trackName},
                 {"sk", user.SessionKeyLastFm},
                 {"timestamp",  ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds().ToString() }
             };

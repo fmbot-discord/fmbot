@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
-using FMBot.LastFM.Domain.Models;
+using FMBot.LastFM.Domain.Types;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -23,8 +23,6 @@ namespace FMBot.LastFM.Services
     {
         private readonly LastFmService _lastFmService;
 
-        private static readonly List<string> UserUpdateFailures = new List<string>();
-
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
         private readonly string _connectionString;
@@ -39,25 +37,14 @@ namespace FMBot.LastFM.Services
             this._connectionString = configuration.GetSection("Database:ConnectionString").Value;
         }
 
-        public async Task<int> UpdateUser(UpdateUserQueueItem queueItem)
+        public async Task<Response<RecentTrackList>> UpdateUser(UpdateUserQueueItem queueItem)
         {
             Thread.Sleep(queueItem.TimeoutMs);
 
             await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users.FindAsync(queueItem.UserId);
 
-            if (user.LastUpdated > DateTime.UtcNow.AddMinutes(-1))
-            {
-                return 0;
-            }
-
             Log.Information("Update: Started on {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
-
-            if (UserUpdateFailures.Contains(user.UserNameLastFM))
-            {
-                Log.Information("Update: Skipped {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
-                return 0;
-            }
 
             var lastPlay = await GetLastStoredPlay(user);
 
@@ -87,14 +74,13 @@ namespace FMBot.LastFM.Services
                 {
                     await AddOrUpdateInactiveUserMissingParameterError(user);
                 }
-
-                if ((user.LastUsed == null || user.LastUsed < DateTime.UtcNow.AddDays(-31)) && recentTracks.Error != ResponseStatus.Failure)
+                if (recentTracks.Error == ResponseStatus.LoginRequired)
                 {
-                    UserUpdateFailures.Add(user.UserNameLastFM);
-                    Log.Information($"Added {user.UserNameLastFM} to update failure list");
+                    await AddOrUpdatePrivateUserMissingParameterError(user);
                 }
 
-                return 0;
+                recentTracks.Content.NewRecentTracksAmount = 0;
+                return recentTracks;
             }
 
             await RemoveInactiveUserIfExists(user);
@@ -106,7 +92,9 @@ namespace FMBot.LastFM.Services
             {
                 Log.Information("Update: No new tracks for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
                 await SetUserUpdateTime(user, DateTime.UtcNow, connection);
-                return 0;
+                
+                recentTracks.Content.NewRecentTracksAmount = 0;
+                return recentTracks;
             }
 
             AddRecentPlayToMemoryCache(user.UserId, recentTracks.Content.RecentTracks.First());
@@ -121,7 +109,9 @@ namespace FMBot.LastFM.Services
             {
                 Log.Information("Update: After local filter no new tracks for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
                 await SetUserUpdateTime(user, DateTime.UtcNow, connection);
-                return 0;
+                
+                recentTracks.Content.NewRecentTracksAmount = 0;
+                return recentTracks;
             }
 
             var cachedArtistAliases = await GetCachedArtistAliases();
@@ -147,7 +137,9 @@ namespace FMBot.LastFM.Services
             Statistics.UpdatedUsers.Inc();
 
             await connection.CloseAsync();
-            return newScrobbles.Count;
+
+            recentTracks.Content.NewRecentTracksAmount = newScrobbles.Count;
+            return recentTracks;
         }
 
         private async Task<IReadOnlyList<ArtistAlias>> GetCachedArtistAliases()
@@ -452,7 +444,6 @@ namespace FMBot.LastFM.Services
             }
 
             await using var db = this._contextFactory.CreateDbContext();
-
             var existingInactiveUser = await db.InactiveUsers.FirstOrDefaultAsync(f => f.UserId == user.UserId);
 
             if (existingInactiveUser == null)
@@ -478,6 +469,44 @@ namespace FMBot.LastFM.Services
                 db.Entry(existingInactiveUser).State = EntityState.Modified;
 
                 Log.Verbose("InactiveUsers: Updated user {userId} | {userNameLastFm} (missingparameter +1)", user.UserId, user.UserNameLastFM);
+            }
+
+            await db.SaveChangesAsync();
+        }
+        
+        private async Task AddOrUpdatePrivateUserMissingParameterError(User user)
+        {
+            if (user.LastUsed > DateTime.UtcNow.AddDays(-20) || !string.IsNullOrEmpty(user.SessionKeyLastFm))
+            {
+                return;
+            }
+
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingPrivateUser = await db.InactiveUsers.FirstOrDefaultAsync(f => f.UserId == user.UserId);
+
+            if (existingPrivateUser == null)
+            {
+                var inactiveUser = new InactiveUsers
+                {
+                    UserNameLastFM = user.UserNameLastFM,
+                    UserId = user.UserId,
+                    Created = DateTime.UtcNow,
+                    Updated = DateTime.UtcNow,
+                    RecentTracksPrivateCount = 1
+                };
+
+                await db.InactiveUsers.AddAsync(inactiveUser);
+
+                Log.Verbose("InactiveUsers: Added private user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+            }
+            else
+            {
+                existingPrivateUser.RecentTracksPrivateCount++;
+                existingPrivateUser.Updated = DateTime.UtcNow;
+
+                db.Entry(existingPrivateUser).State = EntityState.Modified;
+
+                Log.Verbose("InactiveUsers: Updated private user {userId} | {userNameLastFm} (RecentTracksPrivateCount +1)", user.UserId, user.UserNameLastFM);
             }
 
             await db.SaveChangesAsync();

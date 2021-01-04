@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -40,6 +41,12 @@ namespace FMBot.Bot.Services
         }
 
         public async Task<int> UpdateUser(User user)
+        {
+            var updatedUser = await this._globalUpdateService.UpdateUser(new UpdateUserQueueItem(user.UserId));
+            return (int)updatedUser.Content.NewRecentTracksAmount;
+        }
+
+        public async Task<Response<RecentTrackList>> UpdateUserAndGetRecentTracks(User user)
         {
             return await this._globalUpdateService.UpdateUser(new UpdateUserQueueItem(user.UserId));
         }

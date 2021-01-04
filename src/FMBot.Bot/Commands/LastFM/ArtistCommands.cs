@@ -100,7 +100,7 @@ namespace FMBot.Bot.Commands.LastFM
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            var artist = await GetArtistOrHelp(artistValues, userSettings, "artist", prfx);
+            var artist = await GetArtistOrHelp(artistValues, userSettings, "artist", prfx, null);
             if (artist == null)
             {
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
@@ -116,22 +116,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {"autocorrect", "1"}
             };
 
-            var artistCallTask = this._lastFmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
-
-            if (userSettings.LastUpdated < DateTime.UtcNow.AddHours(-1))
-            {
-                if (userSettings.LastIndexed == null)
-                {
-                    await this._indexService.IndexUser(userSettings);
-                }
-                else
-                {
-                    await this._updateService.UpdateUser(userSettings);
-                }
-            }
-
-            var artistCall = await artistCallTask;
-
+            var artistCall = await this._lastFmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
             if (!artistCall.Success)
             {
                 this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context);
@@ -248,7 +233,7 @@ namespace FMBot.Bot.Commands.LastFM
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            var artist = await GetArtistOrHelp(artistValues, user, "artisttracks", prfx);
+            var artist = await GetArtistOrHelp(artistValues, user, "artisttracks", prfx, null);
             if (artist == null)
             {
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
@@ -256,15 +241,6 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             _ = this.Context.Channel.TriggerTypingAsync();
-
-            if (user.LastIndexed == null)
-            {
-                await this._indexService.IndexUser(user);
-            }
-            else if (user.LastUpdated < DateTime.UtcNow.AddMinutes(-20))
-            {
-                await this._updateService.UpdateUser(user);
-            }
 
             var queryParams = new Dictionary<string, string>
             {
@@ -345,7 +321,7 @@ namespace FMBot.Bot.Commands.LastFM
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            var artist = await GetArtistOrHelp(artistValues, user, "artistalbums", prfx);
+            var artist = await GetArtistOrHelp(artistValues, user, "artistalbums", prfx, null);
             if (artist == null)
             {
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
@@ -353,15 +329,6 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             _ = this.Context.Channel.TriggerTypingAsync();
-
-            if (user.LastIndexed == null)
-            {
-                await this._indexService.IndexUser(user);
-            }
-            else if (user.LastUpdated < DateTime.UtcNow.AddMinutes(-20))
-            {
-                await this._updateService.UpdateUser(user);
-            }
 
             var queryParams = new Dictionary<string, string>
             {
@@ -440,7 +407,7 @@ namespace FMBot.Bot.Commands.LastFM
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            var artist = await GetArtistOrHelp(artistValues, userSettings, "artistplays", prfx);
+            var artist = await GetArtistOrHelp(artistValues, userSettings, "artistplays", prfx, null);
             if (artist == null)
             {
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
@@ -672,11 +639,11 @@ namespace FMBot.Bot.Commands.LastFM
                     .WithEmotes(new Emoji("💵"), new Emoji("🍭"), new Emoji("😩"), new Emoji("💠"));
 
                 var result =
-                    await Interactivity.SendSelectionAsync(builder.Build(), Context.Channel, TimeSpan.FromSeconds(50));
+                    await this.Interactivity.SendSelectionAsync(builder.Build(), Context.Channel, TimeSpan.FromSeconds(50));
 
                 if (result.IsSuccess == true)
                 {
-                    await Context.Channel.SendMessageAsync(result.Value.ToString());
+                    await this.Context.Channel.SendMessageAsync(result.Value.ToString());
                 }
             }
             catch (Exception e)
@@ -852,7 +819,6 @@ namespace FMBot.Bot.Commands.LastFM
         [GuildOnly]
         public async Task WhoKnowsAsync([Remainder] string artistValues = null)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
@@ -883,8 +849,10 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     _ = this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, "", type: InteractionMessageType.AcknowledgeWithSource);
                 }
+                
+                var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-                var artistQuery = await GetArtistOrHelp(artistValues, userSettings, "whoknows", prfx);
+                var artistQuery = await GetArtistOrHelp(artistValues, userSettings, "whoknows", prfx, null);
                 if (artistQuery == null)
                 {
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
@@ -898,11 +866,6 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var cachedArtist = await this._artistsService.GetArtistFromDatabase(artistQuery);
 
-                if (userSettings.LastIndexed != null && userSettings.LastUpdated < DateTime.UtcNow.AddHours(-1))
-                {
-                    await this._updateService.UpdateUser(userSettings);
-                    userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-                }
                 if (userSettings.LastUpdated > DateTime.UtcNow.AddHours(-1) && cachedArtist != null)
                 {
                     artistName = cachedArtist.Name;
@@ -941,7 +904,6 @@ namespace FMBot.Bot.Commands.LastFM
                         await this._whoKnowArtistService.CorrectUserArtistPlaycount(userSettings.UserId, artistCall.Content.Artist.Name,
                             userPlaycount.Value);
                     }
-                    
                 }
 
                 var guild = await guildTask;
@@ -1259,7 +1221,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         }
 
-        private async Task<string> GetArtistOrHelp(string artistValues, User userSettings, string command, string prfx)
+        private async Task<string> GetArtistOrHelp(string artistValues, User userSettings, string command, string prfx, string alternativeLastFmUserName)
         {
             string artist;
             if (!string.IsNullOrWhiteSpace(artistValues))
@@ -1285,20 +1247,39 @@ namespace FMBot.Bot.Commands.LastFM
             }
             else
             {
-                string sessionKey = null;
-                if (!string.IsNullOrEmpty(userSettings.SessionKeyLastFm))
+                Response<RecentTrackList> recentTracks;
+
+                if (string.IsNullOrWhiteSpace(alternativeLastFmUserName))
                 {
-                    sessionKey = userSettings.SessionKeyLastFm;
+                    string sessionKey = null;
+                    if (!string.IsNullOrEmpty(userSettings.SessionKeyLastFm))
+                    {
+                        sessionKey = userSettings.SessionKeyLastFm;
+                    }
+
+                    if (userSettings.LastIndexed == null)
+                    {
+                        _ = this._indexService.IndexUser(userSettings);
+                        recentTracks = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true, sessionKey: sessionKey);
+                    }
+                    else
+                    {
+                        recentTracks = await this._updateService.UpdateUserAndGetRecentTracks(userSettings);
+                    }
+                }
+                else
+                {
+                    recentTracks = await this._lastFmService.GetRecentTracksAsync(alternativeLastFmUserName, useCache: true);
                 }
 
-                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true, sessionKey: sessionKey);
+                userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-                if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
+                if (await ErrorService.RecentScrobbleCallFailedReply(recentTracks, userSettings.UserNameLastFM, this.Context))
                 {
                     return null;
                 }
 
-                artist = recentScrobbles.Content.RecentTracks[0].ArtistName;
+                artist = recentTracks.Content.RecentTracks[0].ArtistName;
             }
 
             return artist;
