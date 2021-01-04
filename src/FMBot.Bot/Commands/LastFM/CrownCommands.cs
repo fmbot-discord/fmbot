@@ -1,3 +1,5 @@
+using System;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -112,7 +114,12 @@ namespace FMBot.Bot.Commands.LastFM
             for (var index = 0; index < userCrowns.Count && index < 15; index++)
             {
                 var userCrown = userCrowns[index];
-                embedDescription.AppendLine($"{index + 1}. **{userCrown.ArtistName}** - **{userCrown.CurrentPlaycount}** plays (claimed {StringExtensions.GetTimeAgo(userCrown.Created)})");
+
+                var claimTimeDescription = DateTime.UtcNow.AddDays(-3) < userCrown.Created
+                    ? StringExtensions.GetTimeAgo(userCrown.Created)
+                    : userCrown.Created.Date.ToString("dddd MMMM d", CultureInfo.InvariantCulture);
+                
+                embedDescription.AppendLine($"{index + 1}. **{userCrown.ArtistName}** - **{userCrown.CurrentPlaycount}** plays (claimed {claimTimeDescription})");
             }
 
             this._embed.WithDescription(embedDescription.ToString());

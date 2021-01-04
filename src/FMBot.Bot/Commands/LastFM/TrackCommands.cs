@@ -347,13 +347,14 @@ namespace FMBot.Bot.Commands.LastFM
                                             "You can only scrobble tracks that already exist on Last.fm.");
 
                 this._embed.AddField("Search for a track to scrobble",
+                    $"Format: `{prfx}scrobble SearchValue`\n" +
                     $"`{prfx}sb Stronger Kanye` *(scrobbles Stronger by Kanye West)*\n" +
                     $"`{prfx}scrobble Loona Heart Attack` *(scrobbles Heart Attack (츄) by LOONA)*"); 
 
                 this._embed.AddField("Or enter the exact name with separators",
-                    $"`{prfx}scrobble Artist | Track | Album (optional)`\n" +
+                    $"Format: `{prfx}scrobble Artist | Track`\n" +
                     $"`{prfx}scrobble Mac DeMarco | Chamber of Reflection`\n" +
-                    $"`{prfx}scrobble Home | Climbing Out | Falling into Place`");
+                    $"`{prfx}scrobble Home | Climbing Out`");
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
