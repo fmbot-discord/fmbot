@@ -152,9 +152,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (guild.LastIndexed != null)
                 {
-                    var serverListenersTask = this._whoKnowArtistService.GetArtistListenerCountForServer(filteredGuildUsers, artistInfo.Name);
-                    var serverPlaycountTask = this._whoKnowArtistService.GetArtistPlayCountForServer(filteredGuildUsers, artistInfo.Name);
-                    var avgServerListenerPlaycountTask = this._whoKnowArtistService.GetArtistAverageListenerPlaycountForServer(filteredGuildUsers, artistInfo.Name);
+                    var serverListenersTask = this._whoKnowArtistService.GetArtistListenerCountForServer(guild.GuildId, artistInfo.Name);
+                    var serverPlaycountTask = this._whoKnowArtistService.GetArtistPlayCountForServer(guild.GuildId, artistInfo.Name);
+                    var avgServerListenerPlaycountTask = this._whoKnowArtistService.GetArtistAverageListenerPlaycountForServer(guild.GuildId, artistInfo.Name);
                     var serverPlaycountLastWeekTask = this._whoKnowArtistService.GetWeekArtistPlaycountForGuildAsync(filteredGuildUsers, artistInfo.Name);
 
                     var serverListeners = await serverListenersTask;
@@ -954,9 +954,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (filteredGuildUsers.Count < 500)
                 {
-                    var serverListenersTask = this._whoKnowArtistService.GetArtistListenerCountForServer(filteredGuildUsers, artistName);
-                    var serverPlaycountTask = this._whoKnowArtistService.GetArtistPlayCountForServer(filteredGuildUsers, artistName);
-                    var avgServerListenerPlaycountTask = this._whoKnowArtistService.GetArtistAverageListenerPlaycountForServer(filteredGuildUsers, artistName);
+                    var serverListenersTask = this._whoKnowArtistService.GetArtistListenerCountForServer(guild.GuildId, artistName);
+                    var serverPlaycountTask = this._whoKnowArtistService.GetArtistPlayCountForServer(guild.GuildId, artistName);
+                    var avgServerListenerPlaycountTask = this._whoKnowArtistService.GetArtistAverageListenerPlaycountForServer(guild.GuildId, artistName);
 
                     var serverListeners = await serverListenersTask;
                     var serverPlaycount = await serverPlaycountTask;
