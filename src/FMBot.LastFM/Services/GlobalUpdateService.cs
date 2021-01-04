@@ -113,6 +113,10 @@ namespace FMBot.LastFM.Services
                 Log.Information("Update: After local filter no new tracks for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
                 await SetUserUpdateTime(user, DateTime.UtcNow, connection);
 
+                if (!user.TotalPlaycount.HasValue)
+                {
+                    recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, newScrobbles.Count, connection);
+                }
                 recentTracks.Content.NewRecentTracksAmount = 0;
                 return recentTracks;
             }
@@ -121,7 +125,7 @@ namespace FMBot.LastFM.Services
 
             try
             {
-                await SetOrUpdateUserPlaycount(user, newScrobbles.Count, connection);
+                recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, newScrobbles.Count, connection);
 
                 await UpdatePlaysForUser(user, newScrobbles, connection);
 
@@ -413,26 +417,30 @@ namespace FMBot.LastFM.Services
             await setUpdateTime.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
-        private async Task SetOrUpdateUserPlaycount(User user, long playcountToAdd, NpgsqlConnection connection)
+        private async Task<long> SetOrUpdateUserPlaycount(User user, long playcountToAdd, NpgsqlConnection connection)
         {
-            if (user.TotalPlaycount == null)
+            if (!user.TotalPlaycount.HasValue)
             {
                 var recentTracks = await this._lastFmService.GetRecentTracksAsync(
                     user.UserNameLastFM,
                     count: 1,
                     useCache: false,
                     user.SessionKeyLastFm);
-                
+
                 await using var setPlaycount = new NpgsqlCommand($"UPDATE public.users SET total_playcount = {recentTracks.Content.TotalAmount} WHERE user_id = {user.UserId};", connection);
-                user.TotalPlaycount = recentTracks.Content.TotalAmount;
                 await setPlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
+
+                user.TotalPlaycount = recentTracks.Content.TotalAmount;
+
+                return recentTracks.Content.TotalAmount;
             }
             else
             {
-                var updatedPlaycount = user.TotalPlaycount + playcountToAdd;
+                var updatedPlaycount = user.TotalPlaycount.Value + playcountToAdd;
                 await using var updatePlaycount = new NpgsqlCommand($"UPDATE public.users SET total_playcount = {updatedPlaycount} WHERE user_id = {user.UserId};", connection);
-                user.TotalPlaycount = updatedPlaycount;
                 await updatePlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
+
+                return updatedPlaycount;
             }
         }
 

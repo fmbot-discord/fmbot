@@ -171,7 +171,7 @@ namespace FMBot.Bot.Commands.LastFM
                     recentTracks = await this._lastFmService.GetRecentTracksAsync(lastFmUserName, useCache: true);
                 }
 
-                var totalPlaycount = userSettings.TotalPlaycount;
+                var totalPlaycount = userSettings.TotalPlaycount ?? recentTracks.Content.TotalAmount;
 
                 var spotifyUsed = false;
 
