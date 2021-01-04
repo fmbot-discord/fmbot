@@ -14,12 +14,12 @@ namespace FMBot.Bot.Services.ThirdParty
 
             var result = await client.SearchClient.Search(searchValue);
 
-            if (!result.Response.Hits.Any())
+            if (result.Response?.Hits == null || !result.Response.Hits.Any())
             {
                 return null;
             }
 
-            return result.Response.Hits[0];
+            return result.Response.Hits.OrderByDescending(o => o.Result.PyongsCount).ToList()[0];
         }
     }
 }
