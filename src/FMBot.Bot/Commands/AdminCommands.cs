@@ -4,16 +4,20 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands
 {
-    [Summary("FMBot Admins Only")]
+    [Name("Admin settings")]
+    [Summary(".fmbot Admins Only")]
+    [ExcludeFromHelp]
     public class AdminCommands : ModuleBase
     {
         private readonly AdminService _adminService;
@@ -417,7 +421,6 @@ namespace FMBot.Bot.Commands
             }
         }
 
-
         [Command("globalblacklistadd")]
         [Summary("Adds a user to the global FMBot blacklist.")]
         public async Task BlacklistAddAsync(SocketGuildUser user = null)
@@ -440,7 +443,7 @@ namespace FMBot.Bot.Commands
                         return;
                     }
 
-                    var blacklistResult = await this._adminService.AddUserToBlacklistAsync(user.Id);
+                    var blacklistResult = await this._adminService.AddUserToBlocklistAsync(user.Id);
 
                     if (blacklistResult)
                     {
@@ -482,7 +485,7 @@ namespace FMBot.Bot.Commands
                         return;
                     }
 
-                    var blacklistResult = await this._adminService.RemoveUserFromBlacklistAsync(user.Id);
+                    var blacklistResult = await this._adminService.RemoveUserFromBlocklistAsync(user.Id);
 
                     if (blacklistResult)
                     {

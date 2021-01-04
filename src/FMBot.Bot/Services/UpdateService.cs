@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Domain.Models;
+using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -26,9 +28,8 @@ namespace FMBot.Bot.Services
             this._contextFactory = contextFactory;
         }
 
-        private async Task OnNextAsync(User user)
+        private async Task OnNextAsync(UpdateUserQueueItem user)
         {
-            Log.Verbose("User next up for update is {UserNameLastFM}", user.UserNameLastFM);
             await this._globalUpdateService.UpdateUser(user);
         }
 
@@ -41,19 +42,25 @@ namespace FMBot.Bot.Services
 
         public async Task<int> UpdateUser(User user)
         {
-            Log.Information("Starting update for {UserNameLastFM}", user.UserNameLastFM);
-
-            return await this._globalUpdateService.UpdateUser(user);
+            var updatedUser = await this._globalUpdateService.UpdateUser(new UpdateUserQueueItem(user.UserId));
+            return (int)updatedUser.Content.NewRecentTracksAmount;
         }
 
-        public async Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeLastUpdated)
+        public async Task<Response<RecentTrackList>> UpdateUserAndGetRecentTracks(User user)
+        {
+            return await this._globalUpdateService.UpdateUser(new UpdateUserQueueItem(user.UserId));
+        }
+
+        public async Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeAuthorizedLastUpdated, DateTime timeUnauthorizedFilter)
         {
             await using var db = this._contextFactory.CreateDbContext();
             return await db.Users
                     .AsQueryable()
                     .Where(f => f.LastIndexed != null &&
                                 f.LastUpdated != null &&
-                                f.LastUpdated <= timeLastUpdated)
+                                (f.SessionKeyLastFm != null && f.LastUpdated <= timeAuthorizedLastUpdated ||
+                                 f.SessionKeyLastFm == null && f.LastUpdated <= timeUnauthorizedFilter))
+                    .OrderBy(o => o.LastUpdated)
                     .ToListAsync();
         }
     }

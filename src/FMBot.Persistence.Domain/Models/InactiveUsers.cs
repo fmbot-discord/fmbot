@@ -15,10 +15,14 @@ namespace FMBot.Persistence.Domain.Models
         public int? NoScrobblesErrorCount { get; set; }
 
         public int? FailureErrorCount { get; set; }
+        
+        public int? MissingParametersErrorCount { get; set; }
 
         public DateTime Created { get; set; }
 
         public DateTime Updated { get; set; }
+
+        public bool? Removed { get; set; }
 
         public User User { get; set; }
     }

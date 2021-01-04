@@ -9,11 +9,13 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 
 namespace FMBot.Bot.Commands
 {
+    [Name("Genius")]
     public class GeniusCommands : ModuleBase
     {
         private readonly GeniusService _geniusService;
@@ -45,7 +47,7 @@ namespace FMBot.Bot.Commands
         [Summary("Shares a link to the Genius lyrics based on what a user is listening to or what the user is searching for.")]
         [Alias("lyrics", "g", "lyricsfind", "lyricsearch", "lyricssearch")]
         [UsernameSetRequired]
-        public async Task GeniusAsync(params string[] searchValues)
+        public async Task GeniusAsync([Remainder] string searchValue = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -55,24 +57,27 @@ namespace FMBot.Bot.Commands
                 _ = this.Context.Channel.TriggerTypingAsync();
 
                 string querystring;
-                if (searchValues.Length > 0)
+                if (!string.IsNullOrWhiteSpace(searchValue))
                 {
-                    querystring = string.Join(" ", searchValues);
+                    querystring = searchValue;
                 }
                 else
                 {
-                    var tracks = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFM, 1);
-
-                    if (tracks == null || !tracks.Any() || !tracks.Content.Any())
+                    string sessionKey = null;
+                    if (!string.IsNullOrEmpty(userSettings.SessionKeyLastFm))
                     {
-                        this._embed.NoScrobblesFoundErrorResponse(tracks?.Status, prfx, userSettings.UserNameLastFM);
-                        await ReplyAsync("", false, this._embed.Build());
-                        this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                        sessionKey = userSettings.SessionKeyLastFm;
+                    }
+
+                    var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+
+                    if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
+                    {
                         return;
                     }
 
-                    var currentTrack = tracks.Content[0];
-                    querystring = $"{currentTrack.ArtistName} {currentTrack.Name}";
+                    var currentTrack = recentScrobbles.Content.RecentTracks[0];
+                    querystring = $"{currentTrack.ArtistName} {currentTrack.TrackName}";
                 }
 
                 var songResult = await this._geniusService.SearchGeniusAsync(querystring);
@@ -87,7 +92,7 @@ namespace FMBot.Bot.Commands
                         $"By **[{songResult.Result.PrimaryArtist.Name}]({songResult.Result.PrimaryArtist.Url})**");
 
                     var rnd = new Random();
-                    if (rnd.Next(0, 5) == 1 && searchValues.Length < 1)
+                    if (rnd.Next(0, 7) == 1 && string.IsNullOrWhiteSpace(searchValue))
                     {
                         this._embedFooter.WithText("Tip: Search for other songs by simply adding the searchvalue behind .fmgenius.");
                         this._embed.WithFooter(this._embedFooter);
@@ -108,7 +113,7 @@ namespace FMBot.Bot.Commands
                 this.Context.LogCommandException(e);
                 await ReplyAsync(
                     "Unable to show Last.fm info via Genius due to an internal error. " +
-                    "Try setting a Last.fm name with the 'fmset' command, scrobbling something, and then use the command again.");
+                    "Please try again later or contact .fmbot support.");
             }
         }
     }

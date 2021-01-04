@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Discord.API.Rest;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
@@ -12,6 +13,8 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
@@ -20,8 +23,10 @@ using Serilog;
 
 namespace FMBot.Bot.Commands.LastFM
 {
+    [Name("User settings")]
     public class UserCommands : ModuleBase
     {
+        private readonly CrownService _crownService;
         private readonly FriendsService _friendsService;
         private readonly GuildService _guildService;
         private readonly IIndexService _indexService;
@@ -46,8 +51,8 @@ namespace FMBot.Bot.Commands.LastFM
                 LastFmService lastFmService,
                 SettingService settingService,
                 TimerService timer,
-                UserService userService
-            )
+                UserService userService,
+                CrownService crownService)
         {
             this._friendsService = friendsService;
             this._guildService = guildService;
@@ -57,6 +62,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._settingService = settingService;
             this._timer = timer;
             this._userService = userService;
+            this._crownService = crownService;
 
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
@@ -67,24 +73,25 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("stats", RunMode = RunMode.Async)]
         [Summary("Displays user stats related to Last.fm and .fmbot")]
         [UsernameSetRequired]
-        public async Task StatsAsync(params string[] userOptions)
+        public async Task StatsAsync([Remainder] string userOptions = null)
         {
-            var user = await this._userService.GetFullUserAsync(this.Context.User);
+            var user = await this._userService.GetFullUserAsync(this.Context.User.Id);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             try
             {
-                var userSettings = await this._settingService.GetUser(userOptions, user.UserNameLastFM, this.Context);
+                var userSettings = await this._settingService.GetUser(userOptions, user, this.Context);
 
                 string userTitle;
-                if (!userSettings.DifferentUser)
-                {
-                    userTitle = await this._userService.GetUserTitleAsync(this.Context);
-                }
-                else
+                if (userSettings.DifferentUser && userSettings.DiscordUserId.HasValue)
                 {
                     userTitle =
                         $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
+                    user = await this._userService.GetFullUserAsync(userSettings.DiscordUserId.Value);
+                }
+                else
+                {
+                    userTitle = await this._userService.GetUserTitleAsync(this.Context);
                 }
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
@@ -151,7 +158,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("featured", RunMode = RunMode.Async)]
         [Summary("Displays the featured avatar.")]
-        [Alias("fmfeaturedavatar", "fmfeatureduser", "fmfeaturedalbum")]
+        [Alias("featuredavatar", "featureduser", "featuredalbum", "avatar")]
         public async Task FeaturedAsync()
         {
             try
@@ -165,8 +172,15 @@ namespace FMBot.Bot.Commands.LastFM
                     this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues");
                 }
 
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                if (this.Context.InteractionData != null)
+                {
+                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+                }
+                else
+                {
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                }
+                
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)
@@ -182,13 +196,13 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary(
             "Sets your Last.fm name and FM mode. Please note that users in shared servers will be able to see and request your Last.fm username.")]
         [Alias("setname", "setmode", "fm set")]
-        public async Task SetAsync([Summary("Your Last.fm name")] string lastFMUserName = null,
+        public async Task SetAsync([Summary("Your Last.fm name")] string lastFmUserName = null,
             params string[] otherSettings)
         {
-            var prfx = ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
-            if (lastFMUserName == null || lastFMUserName == "help")
+            var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            if (lastFmUserName == null || lastFmUserName == "help")
             {
                 var replyString = $"{prfx}set is the command you use to set your last.fm username in the bot, so it knows who you are on the last.fm website. \n" +
                                   "Don't have a last.fm account yet? Register here: https://www.last.fm/join \n \n" +
@@ -200,6 +214,9 @@ namespace FMBot.Bot.Commands.LastFM
                     var differentMode = existingUserSettings.FmEmbedType == FmEmbedType.embedmini ? "embedfull" : "embedmini";
                     replyString += "Example of picking a different mode: \n" +
                                    $"`{prfx}set {existingUserSettings.UserNameLastFM} {differentMode} album`";
+
+                    replyString += "\n\n⚠️ Changing your Last.fm username with this command will clear all your crowns.\n" +
+                                   $"Please use `{prfx}login` instead when you changed your Last.fm username and want to keep your crowns.";
                 }
                 else
                 {
@@ -217,15 +234,15 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            lastFMUserName = lastFMUserName.Replace("'", "");
-            if (!await this._lastFmService.LastFmUserExistsAsync(lastFMUserName))
+            lastFmUserName = lastFmUserName.Replace("'", "");
+            if (!await this._lastFmService.LastFmUserExistsAsync(lastFmUserName))
             {
-                var reply = $"Last.fm user `{lastFMUserName}` could not be found. Please check if the name you entered is correct.";
+                var reply = $"Last.fm user `{lastFmUserName}` could not be found. Please check if the name you entered is correct.";
                 await ReplyAsync(reply.FilterOutMentions());
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
-            if (lastFMUserName == "lastfmusername")
+            if (lastFmUserName == "lastfmusername")
             {
                 await ReplyAsync("Please enter your own Last.fm username and not `lastfmusername`.\n");
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
@@ -233,18 +250,18 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var usernameChanged = !(existingUserSettings?.UserNameLastFM != null &&
-                                     string.Equals(existingUserSettings.UserNameLastFM, lastFMUserName, StringComparison.CurrentCultureIgnoreCase));
+                                     string.Equals(existingUserSettings.UserNameLastFM, lastFmUserName, StringComparison.CurrentCultureIgnoreCase));
 
             var userSettingsToAdd = new User
             {
-                UserNameLastFM = lastFMUserName
+                UserNameLastFM = lastFmUserName
             };
 
             userSettingsToAdd = this._userService.SetSettings(userSettingsToAdd, otherSettings);
 
-            this._userService.SetLastFm(this.Context.User, userSettingsToAdd);
+            await this._userService.SetLastFm(this.Context.User, userSettingsToAdd);
 
-            var setReply = $"Your Last.fm name has been set to '{lastFMUserName}' and your .fm mode to '{userSettingsToAdd.FmEmbedType}'";
+            var setReply = $"Your Last.fm name has been set to '{lastFmUserName}' and your .fm mode to '{userSettingsToAdd.FmEmbedType}'";
             if (userSettingsToAdd.FmCountType != null)
             {
                 setReply += $" with the '{userSettingsToAdd.FmCountType.ToString().ToLower()}' playcount.";
@@ -259,10 +276,11 @@ namespace FMBot.Bot.Commands.LastFM
 
             this.Context.LogCommandUsed();
 
-            var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
+            var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             if (usernameChanged)
             {
                 await this._indexService.IndexUser(newUserSettings);
+                await this._crownService.RemoveAllCrownsFromUser(newUserSettings.UserId);
             }
 
             if (!this._guildService.CheckIfDM(this.Context))
@@ -282,19 +300,96 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
+        [Command("mode", RunMode = RunMode.Async)]
+        [Summary("Change your settings for how your .fm looks")]
+        [Alias("m", "md", "fmmode")]
+        [UsernameSetRequired]
+        public async Task ModeAsync(params string[] otherSettings)
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            if (otherSettings == null || otherSettings.Length < 1 || otherSettings.First() == "help")
+            {
+                var replyString = $"Use {prfx}mode to change how your .fm command looks.";
+
+                this._embed.AddField("Options",
+                    "**Modes**: `embedmini/embedfull/textmini/textfull`\n" +
+                    "**Playcounts**: `artist/album/track`\n" +
+                    "*Note: Playcounts are only visible in non-text modes.*");
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}mode embedmini` \n" +
+                    $"`{prfx}mode embedfull track`\n" +
+                    $"`{prfx}mode textfull`\n" +
+                    $"`{prfx}mode embedmini album`");
+
+                this._embed.WithTitle("Changing your .fm command");
+                this._embed.WithUrl($"{Constants.DocsUrl}/commands/");
+
+                var countType = !userSettings.FmCountType.HasValue ? "No extra playcount" : userSettings.FmCountType.ToString();
+                this._embed.WithFooter(
+                    $"Current mode and playcount: {userSettings.FmEmbedType} - {countType}");
+                this._embed.WithDescription(replyString);
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            var newUserSettings = this._userService.SetSettings(userSettings, otherSettings);
+
+            await this._userService.SetLastFm(this.Context.User, newUserSettings);
+
+            var setReply = $"Your `.fm` has been set mode to '{newUserSettings.FmEmbedType}'";
+            if (newUserSettings.FmCountType != null)
+            {
+                setReply += $" with the '{newUserSettings.FmCountType.ToString().ToLower()}' playcount.";
+            }
+            else
+            {
+                setReply += $" with no extra playcount.";
+            }
+
+            if (this.Context.InteractionData != null)
+            {
+                await ReplyInteractionAsync(setReply.FilterOutMentions(), ghostMessage: true, type: InteractionMessageType.ChannelMessage);
+            }
+            else
+            {
+                await ReplyAsync(setReply.FilterOutMentions());
+            }
+
+            this.Context.LogCommandUsed();
+        }
+
         [Command("login", RunMode = RunMode.Async)]
-        [Summary(
-            "Logs you in using a link")]
-        public async Task LoginAsync()
+        [Summary("Logs you in using a link")]
+        public async Task LoginAsync([Remainder] string unusedValues = null)
         {
             var msg = this.Context.Message as SocketUserMessage;
             if (StackCooldownTarget.Contains(this.Context.Message.Author))
             {
                 if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMinutes(1) >= DateTimeOffset.Now)
                 {
-                    await ReplyAsync($"A login link has already been sent to your DMs.\n" +
-                                     $"Didn't receive a link? Please check if you have DMs enabled for this server.");
+                    if (this.Context.InteractionData != null)
+                    {
+                        await this.Context.Channel.SendInteractionMessageAsync(
+                            this.Context.InteractionData,
+                            "You have already requested a login link in the last minute. \n" +
+                            "Please check if you can login through that link, or try again later.",
+                            type: InteractionMessageType.ChannelMessage,
+                            ghostMessage: true);
+                    }
+                    else
+                    {
+                        await ReplyAsync($"A login link has already been sent to your DMs.\n" +
+                                         $"Didn't receive a link? Please check if you have DMs enabled for this server and try again.\n" +
+                                         $"Setting location: Click on the server name (top left) > `Privacy Settings` > `Allow direct messages from server members`.");
+                    }
+                    
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                    StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now.AddMinutes(-5);
                     return;
                 }
 
@@ -306,44 +401,67 @@ namespace FMBot.Bot.Commands.LastFM
                 StackCooldownTimer.Add(DateTimeOffset.Now);
             }
 
-            var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
+            var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var token = await this._lastFmService.GetAuthToken();
 
+            // TODO: When our Discord library supports follow up messages for interactions, add slash command support.
             var replyString =
-                $"[Click here authorize .fmbot on last.fm](http://www.last.fm/api/auth/?api_key={ConfigData.Data.LastFm.Key}&token={token.Content.Token})";
+                $"[Click here add your Last.fm account to .fmbot](http://www.last.fm/api/auth/?api_key={ConfigData.Data.LastFm.Key}&token={token.Content.Token})";
 
             this._embed.WithTitle("Logging into .fmbot...");
             this._embed.WithDescription(replyString);
 
-            this._embedFooter.WithText("Login will expire after 2 minutes.");
+            this._embedFooter.WithText("Link will expire after 2 minutes, please wait a moment after allowing access...");
             this._embed.WithFooter(this._embedFooter);
 
             var authorizeMessage = await this.Context.User.SendMessageAsync("", false, this._embed.Build());
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                await ReplyAsync("Check your DMs for a link to login!");
+                await ReplyAsync("Check your DMs for a link to connect your Last.fm account to .fmbot!");
             }
 
             var success = await GetAndStoreAuthSession(this.Context.User, token.Content.Token);
 
             if (success)
             {
-                var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User, true);
+                var newUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
                 await authorizeMessage.ModifyAsync(m =>
                 {
+                    var description =
+                        $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({Constants.LastFMUserUrl}{newUserSettings.UserNameLastFM})!\n\n" +
+                        $"Tip: Also check out `.fmmode` to change how your `.fm` command looks.";
+
+                    var sourceGuildId = this.Context.Guild?.Id;
+                    var sourceChannelId = this.Context.Channel?.Id;
+
+                    if (sourceGuildId != null && sourceChannelId != null)
+                    {
+                        description += "\n\n" +
+                                       $"**[Click here to go back to <#{sourceChannelId}>](https://discord.com/channels/{sourceGuildId}/{sourceChannelId}/)**";
+                    }
+
                     m.Embed = new EmbedBuilder()
-                        .WithDescription(
-                            $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({Constants.LastFMUserUrl}{newUserSettings.UserNameLastFM})!")
+                        .WithDescription(description)
                         .WithColor(DiscordConstants.SuccessColorGreen)
                         .Build();
                 });
 
                 this.Context.LogCommandUsed();
 
-                if (!string.Equals(existingUserSettings.UserNameLastFM, newUserSettings.UserNameLastFM, StringComparison.CurrentCultureIgnoreCase))
+                if (existingUserSettings != null && !string.Equals(existingUserSettings.UserNameLastFM, newUserSettings.UserNameLastFM, StringComparison.CurrentCultureIgnoreCase))
                 {
                     await this._indexService.IndexUser(newUserSettings);
+                }
+
+                if (!this._guildService.CheckIfDM(this.Context))
+                {
+                    var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+                    if (guild != null)
+                    {
+                        await this._indexService.GetOrAddUserToGuild(guild,
+                            await this.Context.Guild.GetUserAsync(this.Context.User.Id), newUserSettings);
+                    }
                 }
             }
             else
@@ -351,7 +469,8 @@ namespace FMBot.Bot.Commands.LastFM
                 await authorizeMessage.ModifyAsync(m =>
                 {
                     m.Embed = new EmbedBuilder()
-                        .WithDescription($"❌ Login failed.. link expired or something went wrong.")
+                        .WithDescription($"❌ Login failed.. link expired or something went wrong.\n\n" +
+                                         $"Having trouble connecting your Last.fm to .fmbot? Feel free to ask for help on our support server.")
                         .WithColor(DiscordConstants.WarningColorOrange)
                         .Build();
                 });
@@ -363,7 +482,7 @@ namespace FMBot.Bot.Commands.LastFM
         private async Task<bool> GetAndStoreAuthSession(IUser contextUser, string token)
         {
             var loginDelay = 7000;
-            for (var i = 0; i < 10; i++)
+            for (var i = 0; i < 9; i++)
             {
                 await Task.Delay(loginDelay);
 
@@ -377,20 +496,20 @@ namespace FMBot.Bot.Commands.LastFM
                         SessionKeyLastFm = authSession.Content.Session.Key
                     };
 
-                    Log.Information("User {userName} logged in with auth session", authSession.Content.Session.Name);
-                    this._userService.SetLastFm(contextUser, userSettings, true);
+                    Log.Information("LastfmAuth: User {userName} logged in with auth session (discordUserId: {discordUserId})", authSession.Content.Session.Name, contextUser.Id);
+                    await this._userService.SetLastFm(contextUser, userSettings, true);
                     return true;
                 }
 
-                if (!authSession.Success && i == 6)
+                if (!authSession.Success && i == 8)
                 {
-                    Log.Information("Login timed out or auth not successful");
+                    Log.Information("LastfmAuth: Login timed out or auth not successful (discordUserId: {discordUserId})", contextUser.Id);
                     return false;
                 }
                 if (!authSession.Success)
                 {
                     loginDelay += 2000;
-                    Log.Information("Login attempt {attempt} for {user} not succeeded yet ({errorCode}), delaying", i, contextUser.Username, authSession.Message);
+                    Log.Information("LastfmAuth: Login attempt {attempt} for {user} | {discordUserId} not succeeded yet ({errorCode}), delaying", i, contextUser.Username, contextUser.Id, authSession.Message);
                 }
             }
 
@@ -400,9 +519,10 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("remove", RunMode = RunMode.Async)]
         [Summary("Deletes your FMBot data.")]
         [Alias("delete", "removedata", "deletedata")]
-        public async Task RemoveAsync()
+        public async Task RemoveAsync([Remainder] string confirmation = null)
         {
-            var userSettings = await this._userService.GetFullUserAsync(this.Context.User);
+            var userSettings = await this._userService.GetFullUserAsync(this.Context.User.Id);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             if (userSettings == null)
             {
@@ -411,61 +531,55 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var sb = new StringBuilder();
-            sb.AppendLine("Are you sure you want to delete all your data from .fmbot?");
-            sb.AppendLine("This will remove the following data:");
-
-            sb.AppendLine("- Your last.fm username");
-            if (userSettings.Friends?.Count > 0)
+            if (string.IsNullOrEmpty(confirmation) || confirmation.ToLower() != "confirm")
             {
-                var friendString = userSettings.Friends?.Count == 1 ? "friend" : "friends";
-                sb.AppendLine($"- `{userSettings.Friends?.Count}` {friendString}");
+                var sb = new StringBuilder();
+                sb.AppendLine("Are you sure you want to delete all your data from .fmbot?");
+                sb.AppendLine("This will remove the following data:");
+
+                sb.AppendLine("- Your last.fm username");
+                if (userSettings.Friends?.Count > 0)
+                {
+                    var friendString = userSettings.Friends?.Count == 1 ? "friend" : "friends";
+                    sb.AppendLine($"- `{userSettings.Friends?.Count}` {friendString}");
+                }
+
+                if (userSettings.FriendedByUsers?.Count > 0)
+                {
+                    var friendString = userSettings.FriendedByUsers?.Count == 1 ? "friendlist" : "friendlists";
+                    sb.AppendLine($"- You from `{userSettings.FriendedByUsers?.Count}` other {friendString}");
+                }
+
+                sb.AppendLine("- Indexed artists, albums and tracks");
+                sb.AppendLine("- All crowns you've gained or lost");
+
+                if (userSettings.UserType != UserType.User)
+                {
+                    sb.AppendLine($"- `{userSettings.UserType}` account status");
+                    sb.AppendLine("*Account status has to be manually changed back by an .fmbot admin*");
+                }
+
+                sb.AppendLine();
+                sb.AppendLine($"Type `{prfx}remove confirm` to confirm deletion.");
+
+                this._embed.WithDescription(sb.ToString());
+
+                this._embed.WithFooter("Note: This will not delete any data from Last.fm, just from .fmbot.");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             }
-            if (userSettings.FriendedByUsers?.Count > 0)
+            else
             {
-                var friendString = userSettings.FriendedByUsers?.Count == 1 ? "friendlist" : "friendlists";
-                sb.AppendLine($"- You from `{userSettings.FriendedByUsers?.Count}` other {friendString}");
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                await this._friendsService.RemoveAllFriendsAsync(userSettings.UserId);
+                await this._friendsService.RemoveUserFromOtherFriendsAsync(userSettings.UserId);
+
+                await this._userService.DeleteUser(userSettings.UserId);
+
+                await ReplyAsync("Your settings, friends and any other data have been successfully deleted from .fmbot.");
             }
 
-            sb.AppendLine("- Indexed artists, albums and tracks");
-
-            if (userSettings.UserType != UserType.User)
-            {
-                sb.AppendLine($"- `{userSettings.UserType}` account status");
-                sb.AppendLine("*Account status has to be manually changed back by an .fmbot admin*");
-            }
-
-            sb.AppendLine();
-            sb.AppendLine("Type `.fmremoveconfirm` to confirm deletion.");
-
-            this._embed.WithDescription(sb.ToString());
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed();
-        }
-
-        [Command("removeconfirm", RunMode = RunMode.Async)]
-        [Summary("Deletes your FMBot data.")]
-        [Alias("deleteconfirm")]
-        public async Task RemoveConfirmAsync()
-        {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-            if (userSettings == null)
-            {
-                await ReplyAsync("Sorry, but we don't have any data from you in our database.");
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return;
-            }
-
-            _ = this.Context.Channel.TriggerTypingAsync();
-
-            await this._friendsService.RemoveAllFriendsAsync(userSettings.UserId);
-            await this._friendsService.RemoveUserFromOtherFriendsAsync(userSettings.UserId);
-
-            await this._userService.DeleteUser(userSettings.UserId);
-
-            await ReplyAsync("Your settings, friends and any other data have been successfully deleted from .fmbot.");
             this.Context.LogCommandUsed();
         }
 
@@ -485,9 +599,6 @@ namespace FMBot.Bot.Commands.LastFM
                 else
                 {
                 */
-
-
-
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 this._embedAuthor.WithName(this.Context.User.ToString());

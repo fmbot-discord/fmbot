@@ -2,11 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
 using Discord.Commands;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace FMBot.Bot.Services.WhoKnows
 {
@@ -20,37 +23,48 @@ namespace FMBot.Bot.Services.WhoKnows
         }
 
         public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForAlbum(ICommandContext context,
-            ICollection<GuildUser> guildUsers, string artistName, string albumName)
+            ICollection<GuildUser> guildUsers, int guildId, string artistName, string albumName)
         {
-            var userIds = guildUsers.Select(s => s.UserId);
+            const string sql = "SELECT ut.user_id, " +
+                               "ut.name, " +
+                               "ut.artist_name, " +
+                               "ut.playcount," +
+                               " u.user_name_last_fm, " +
+                               "u.discord_user_id " +
+                               "FROM user_albums AS ut " +
+                               "INNER JOIN users AS u ON ut.user_id = u.user_id " +
+                               "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                               "WHERE gu.guild_id = @guildId AND UPPER(ut.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                               "ORDER BY ut.playcount DESC " +
+                               "LIMIT 14";
 
-            await using var db = this._contextFactory.CreateDbContext();
-            var userAlbums = await db.UserAlbums
-                .Include(i => i.User)
-                .Where(w =>
-                        EF.Functions.ILike(w.Name, albumName) &&
-                        EF.Functions.ILike(w.ArtistName, artistName) &&
-                        userIds.Contains(w.UserId))
-                .OrderByDescending(o => o.Playcount)
-                .Take(14)
-                .ToListAsync();
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var userAlbums = await connection.QueryAsync<WhoKnowsAlbumDto>(sql, new
+            {
+                guildId,
+                albumName,
+                artistName
+            });
 
             var whoKnowsAlbumList = new List<WhoKnowsObjectWithUser>();
 
             foreach (var userAlbum in userAlbums)
             {
-                var discordUser = await context.Guild.GetUserAsync(userAlbum.User.DiscordUserId);
+                var discordUser = await context.Guild.GetUserAsync(userAlbum.DiscordUserId);
                 var guildUser = guildUsers.FirstOrDefault(f => f.UserId == userAlbum.UserId);
                 var userName = discordUser != null ?
                     discordUser.Nickname ?? discordUser.Username :
-                    guildUser?.UserName ?? userAlbum.User.UserNameLastFM;
+                    guildUser?.UserName ?? userAlbum.UserNameLastFm;
 
                 whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
                 {
-                    Name = $"{userAlbum.ArtistName} - {userAlbum.Name}",
                     DiscordName = userName,
+                    Name = $"{userAlbum.ArtistName} - {userAlbum.Name}",
                     Playcount = userAlbum.Playcount,
-                    LastFMUsername = userAlbum.User.UserNameLastFM,
+                    LastFMUsername = userAlbum.UserNameLastFm,
                     UserId = userAlbum.UserId,
                 });
             }
@@ -95,11 +109,12 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var db = this._contextFactory.CreateDbContext();
             return await db.UserPlays
                 .AsQueryable()
-                .CountAsync(ab => ab.TimePlayed.Date <= now.Date &&
-                                 ab.TimePlayed.Date > minDate.Date &&
-                                 ab.AlbumName.ToLower() == albumName.ToLower() &&
-                                 ab.ArtistName.ToLower() == artistName.ToLower() &&
-                                 userIds.Contains(ab.UserId));
+                .CountAsync(ab =>
+                                userIds.Contains(ab.UserId) &&
+                                ab.TimePlayed.Date <= now.Date &&
+                                ab.TimePlayed.Date > minDate.Date &&
+                                ab.AlbumName.ToLower() == albumName.ToLower() &&
+                                ab.ArtistName.ToLower() == artistName.ToLower());
         }
     }
 }

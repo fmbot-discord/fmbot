@@ -1,10 +1,12 @@
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -18,34 +20,34 @@ namespace FMBot.Bot.Services
     {
         private readonly IMemoryCache _cache;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly LastFmService _lastFmService;
 
-        public UserService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory)
+        public UserService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmService lastFmService)
         {
             this._cache = cache;
             this._contextFactory = contextFactory;
+            this._lastFmService = lastFmService;
         }
 
         // User settings
         public async Task<bool> UserRegisteredAsync(IUser discordUser)
         {
-            var cacheKey = $"user-isRegistered-{discordUser.Id}";
-
-            if (this._cache.TryGetValue(cacheKey, out bool isRegistered))
-            {
-                return isRegistered;
-            }
-
             await using var db = this._contextFactory.CreateDbContext();
-            isRegistered = await db.Users
+            var isRegistered = await db.Users
                 .AsQueryable()
                 .AnyAsync(f => f.DiscordUserId == discordUser.Id);
 
-            if (isRegistered)
-            {
-                this._cache.Set(cacheKey, isRegistered, TimeSpan.FromHours(24));
-            }
-
             return isRegistered;
+        }
+
+        public async Task<bool> UserBlockedAsync(IUser discordUser)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var isBlocked = await db.Users
+                .AsQueryable()
+                .AnyAsync(f => f.DiscordUserId == discordUser.Id && f.Blocked == true);
+
+            return isBlocked;
         }
 
         // User settings
@@ -55,6 +57,11 @@ namespace FMBot.Bot.Services
             var user = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+
+            if (user == null)
+            {
+                return false;
+            }
 
             return !string.IsNullOrEmpty(user.SessionKeyLastFm);
         }
@@ -85,47 +92,25 @@ namespace FMBot.Bot.Services
         }
 
         // User settings
-        public async Task<User> GetUserSettingsAsync(IUser discordUser, bool bypassCache = false)
+        public async Task<User> GetUserSettingsAsync(IUser discordUser)
         {
-            var cacheKey = $"user-settings-{discordUser.Id}";
-
-            if (!bypassCache && this._cache.TryGetValue(cacheKey, out User user))
-            {
-                return user;
-            }
-
             await using var db = this._contextFactory.CreateDbContext();
-            user = await db.Users
+            return await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
-
-            this._cache.Set(cacheKey, user, TimeSpan.FromHours(12));
-
-            return user;
         }
 
         // User settings
-        public async Task<User> GetUserAsync(ulong discurdUserId, bool bypassCache = false)
+        public async Task<User> GetUserAsync(ulong discordUserId)
         {
-            var cacheKey = $"user-settings-{discurdUserId}";
-
-            if (!bypassCache && this._cache.TryGetValue(cacheKey, out User user))
-            {
-                return user;
-            }
-
             await using var db = this._contextFactory.CreateDbContext();
-            user = await db.Users
+            return await db.Users
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordUserId == discurdUserId);
-
-            this._cache.Set(cacheKey, user, TimeSpan.FromHours(3));
-
-            return user;
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
         }
 
         // User settings
-        public async Task<User> GetFullUserAsync(IUser discordUser)
+        public async Task<User> GetFullUserAsync(ulong discordUserId)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var query = db.Users
@@ -133,7 +118,7 @@ namespace FMBot.Bot.Services
                 .Include(i => i.FriendedByUsers);
 
             return await query
-                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
         }
 
         // Discord nickname/username
@@ -152,23 +137,12 @@ namespace FMBot.Bot.Services
         // Rank
         public async Task<UserType> GetRankAsync(IUser discordUser)
         {
-            var cacheKey = $"user-userType-{discordUser.Id}";
-
-            if (this._cache.TryGetValue(cacheKey, out UserType rank))
-            {
-                return rank;
-            }
-
             await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
-            rank = user?.UserType ?? UserType.User;
-
-            this._cache.Set(cacheKey, rank, TimeSpan.FromHours(6));
-
-            return rank;
+            return user?.UserType ?? UserType.User;
         }
 
         // Featured
@@ -199,9 +173,11 @@ namespace FMBot.Bot.Services
                 }
             }
 
+            var filterDate = DateTime.UtcNow.AddDays(-14);
             var users = db.Users
                 .AsQueryable()
-                .Where(w => w.Blocked != true).ToList();
+                .Where(w => w.Blocked != true &&
+                            w.LastUsed > filterDate).ToList();
 
             var rand = new Random();
             var user = users[rand.Next(users.Count)];
@@ -315,7 +291,7 @@ namespace FMBot.Bot.Services
 
         public User SetSettings(User userSettings, string[] extraOptions)
         {
-
+            extraOptions = extraOptions.Select(s => s.ToLower()).ToArray();
             if (extraOptions.Contains("embedfull") || extraOptions.Contains("ef"))
             {
                 userSettings.FmEmbedType = FmEmbedType.embedfull;
@@ -332,7 +308,6 @@ namespace FMBot.Bot.Services
             {
                 userSettings.FmEmbedType = FmEmbedType.embedmini;
             }
-
 
             if (extraOptions.Contains("artist"))
             {
@@ -390,6 +365,12 @@ namespace FMBot.Bot.Services
 
                 await using var deleteTracks = new NpgsqlCommand($"DELETE FROM public.user_tracks WHERE user_id = {user.UserId};", connection);
                 await deleteTracks.ExecuteNonQueryAsync();
+                
+                await using var deleteFriends = new NpgsqlCommand($"DELETE FROM public.friends WHERE user_id = {user.UserId};", connection);
+                await deleteFriends.ExecuteNonQueryAsync();
+                
+                await using var deleteOtherFriends = new NpgsqlCommand($"DELETE FROM public.friends WHERE friend_user_id = {user.UserId};", connection);
+                await deleteOtherFriends.ExecuteNonQueryAsync();
 
                 db.Users.Remove(user);
 
@@ -398,9 +379,7 @@ namespace FMBot.Bot.Services
             catch (Exception e)
             {
                 Log.Error(e, "Error while deleting user!");
-                throw;
             }
-
         }
 
         public async Task<int> GetTotalUserCountAsync()
@@ -409,6 +388,53 @@ namespace FMBot.Bot.Services
             return await db.Users
                 .AsQueryable()
                 .CountAsync();
+        }
+
+        public async Task<int> GetTotalAuthorizedUserCountAsync()
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            return await db.Users
+                .AsQueryable()
+                .Where(w => w.SessionKeyLastFm != null)
+                .CountAsync();
+        }
+
+        public async Task<int> DeleteInactiveUsers()
+        {
+            var deletedInactiveUsers = 0;
+
+            await using var db = this._contextFactory.CreateDbContext();
+            var inactiveUsers = await db.InactiveUsers
+                .AsQueryable()
+                .Where(w => w.MissingParametersErrorCount >= 1 && w.Updated > DateTime.UtcNow.AddDays(-3))
+                .ToListAsync();
+
+            foreach (var inactiveUser in inactiveUsers)
+            {
+                var user = await db.Users
+                    .AsQueryable()
+                    .FirstOrDefaultAsync(f => f.UserId == inactiveUser.UserId &&
+                                              (f.LastUsed == null || f.LastUsed < DateTime.UtcNow.AddDays(-30)) &&
+                                              string.IsNullOrWhiteSpace(f.SessionKeyLastFm));
+
+                if (user != null)
+                {
+                    if (!await this._lastFmService.LastFmUserExistsAsync(user.UserNameLastFM))
+                    {
+                        await DeleteUser(user.UserId);
+                        Log.Information("DeleteInactiveUsers: User {userNameLastFm} | {userId} | {discordUserId} deleted", user.UserNameLastFM, user.UserId, user.DiscordUserId);
+                        deletedInactiveUsers++;
+                    }
+                    else
+                    {
+                        Log.Information("DeleteInactiveUsers: User {userNameLastFm} exists, so deletion cancelled", user.UserNameLastFM);
+                    }
+
+                    Thread.Sleep(250);
+                }
+            }
+
+            return deletedInactiveUsers;
         }
     }
 }

@@ -24,6 +24,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public string SessionKeyLastFm { get; set; }
 
+        public long? TotalPlaycount { get; set; }
+
         public FmEmbedType FmEmbedType { get; set; }
 
         public FmCountType? FmCountType { get; set; }
@@ -52,6 +54,10 @@ namespace FMBot.Persistence.Domain.Models
 
         public ICollection<UserPlay> Plays { get; set; }
 
+        public ICollection<UserCrown> Crowns { get; set; }
+
         public ICollection<GuildUser> GuildUsers { get; set; }
+
+        public ICollection<GuildBlockedUser> GuildBlockedUsers { get; set; }
     }
 }

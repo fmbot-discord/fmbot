@@ -82,6 +82,8 @@ namespace FMBot.Bot.Models
     public class GoogleConfig
     {
         public string ApiKey { get; set; }
+
+        public string InvidiousUrl { get; set; }
     }
 
     public class BotListConfig
@@ -89,5 +91,9 @@ namespace FMBot.Bot.Models
         public string TopGgApiToken { get; set; }
 
         public string BotsForDiscordToken { get; set; }
+
+        public string DiscordBoatsToken { get; set; }
+
+        public string BotsOnDiscordToken { get; set; }
     }
 }

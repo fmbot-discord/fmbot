@@ -9,9 +9,13 @@ using FMBot.Bot.Handlers;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
+using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.EntityFrameWork;
+using FMBot.Youtube.Services;
+using Interactivity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -65,6 +69,7 @@ namespace FMBot.Bot
             var provider = services.BuildServiceProvider(); // Build the service provider
             //provider.GetRequiredService<LoggingService>();      // Start the logging service
             provider.GetRequiredService<CommandHandler>();
+            provider.GetRequiredService<SlashCommandHandler>();
             provider.GetRequiredService<ClientLogHandler>();
             provider.GetRequiredService<UserEventHandler>();
 
@@ -77,8 +82,7 @@ namespace FMBot.Bot
             var discordClient = new DiscordShardedClient(new DiscordSocketConfig
             {
                 LogLevel = LogSeverity.Verbose,
-                MessageCacheSize = 0,
-                AlwaysDownloadUsers = true
+                MessageCacheSize = 0
             });
 
             services
@@ -91,32 +95,39 @@ namespace FMBot.Bot
                 .AddSingleton<AdminService>()
                 .AddSingleton<ArtistsService>()
                 .AddSingleton<CensorService>()
+                .AddSingleton<CrownService>()
                 .AddSingleton<ClientLogHandler>()
                 .AddSingleton<CommandHandler>()
                 .AddSingleton<FriendsService>()
                 .AddSingleton<GeniusService>()
                 .AddSingleton<GuildService>()
                 .AddSingleton<IChartService, ChartService>()
-                .AddSingleton<IDisabledCommandService, DisabledCommandService>()
+                .AddSingleton<IGuildDisabledCommandService, GuildDisabledCommandService>()
+                .AddSingleton<IChannelDisabledCommandService, ChannelDisabledCommandService>()
                 .AddSingleton<IIndexService, IndexService>()
                 .AddSingleton<IPrefixService, PrefixService>()
+                .AddSingleton<InteractivityService>()
                 .AddSingleton<IUserIndexQueue, UserIndexQueue>()
                 .AddSingleton<IUserUpdateQueue, UserUpdateQueue>()
                 .AddSingleton<PlayService>()
                 .AddSingleton<Random>()
                 .AddSingleton<SettingService>()
+                .AddSingleton<SlashCommandHandler>()
                 .AddSingleton<SpotifyService>()
                 .AddSingleton<StartupService>()
                 .AddSingleton<SupporterService>()
                 .AddSingleton<TimerService>()
                 .AddSingleton<UserEventHandler>()
                 .AddSingleton<UserService>()
+                .AddSingleton<WebhookService>()
                 .AddSingleton<WhoKnowsAlbumService>()
                 .AddSingleton<WhoKnowsArtistService>()
+                .AddSingleton<WhoKnowsPlayService>()
                 .AddSingleton<WhoKnowsService>()
                 .AddSingleton<WhoKnowsTrackService>()
                 .AddSingleton<YoutubeService>() // Add random to the collection
                 .AddSingleton(this.Configuration) // Add the configuration to the collection
+                .AddSingleton(new InteractivityService(discordClient, TimeSpan.FromMinutes(3)))
                 .AddHttpClient();
 
             // These services can only be added after the config is loaded
@@ -125,13 +136,11 @@ namespace FMBot.Bot
                 .AddSingleton<GlobalUpdateService>()
                 .AddSingleton<IUpdateService, UpdateService>()
                 .AddTransient<ILastfmApi, LastfmApi>()
-                .AddTransient<LastFmService>();
+                .AddTransient<LastFmService>()
+                .AddTransient<InvidiousApi>();
 
             services.AddDbContextFactory<FMBotDbContext>(b =>
-                b.UseNpgsql(ConfigData.Data.Database.ConnectionString, builder =>
-                {
-                    builder.EnableRetryOnFailure(3, TimeSpan.FromSeconds(10), null);
-                }));
+                b.UseNpgsql(ConfigData.Data.Database.ConnectionString));
 
             services.AddMemoryCache();
         }

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
@@ -21,15 +22,15 @@ namespace FMBot.Bot.Services
             this._contextFactory = contextFactory;
         }
 
-
-        public static TimeSettingsModel GetTimePeriod(
-            string[] extraOptions,
-            ChartTimePeriod defaultTimePeriod = ChartTimePeriod.Weekly
-            )
-
+        public static TimeSettingsModel GetTimePeriod(string options,
+            ChartTimePeriod defaultTimePeriod = ChartTimePeriod.Weekly)
         {
             var settingsModel = new TimeSettingsModel();
             var customTimePeriod = true;
+
+            options ??= "";
+
+            var extraOptions = options.Split(' ');
 
             // time period
             if (extraOptions.Contains("weekly") ||
@@ -70,7 +71,8 @@ namespace FMBot.Bot.Services
                 settingsModel.ApiParameter = "3month";
                 settingsModel.PlayDays = 90;
             }
-            else if (extraOptions.Contains("halfyearly") ||
+            else if (extraOptions.Contains("half-yearly") ||
+                     extraOptions.Contains("halfyearly") ||
                      extraOptions.Contains("half") ||
                      extraOptions.Contains("h") ||
                      extraOptions.Contains("6m") ||
@@ -99,6 +101,7 @@ namespace FMBot.Bot.Services
             }
             else if (extraOptions.Contains("overall") ||
                      extraOptions.Contains("alltime") ||
+                     extraOptions.Contains("all-time") ||
                      extraOptions.Contains("o") ||
                      extraOptions.Contains("at") ||
                      extraOptions.Contains("a"))
@@ -206,30 +209,103 @@ namespace FMBot.Bot.Services
         }
 
         public async Task<UserSettingsModel> GetUser(
-            string[] extraOptions,
-            string username,
+            string extraOptions,
+            User user,
             ICommandContext context)
         {
             var settingsModel = new UserSettingsModel
             {
                 DifferentUser = false,
-                UserNameLastFm = username,
+                UserNameLastFm = user.UserNameLastFM,
                 DiscordUserId = context.User.Id,
+                UserId = user.UserId
             };
 
-            foreach (var extraOption in extraOptions)
+            if (extraOptions == null)
             {
-                var user = await GetUserFromString(extraOption);
+                return settingsModel;
+            }
 
-                if (user != null)
+            var options = extraOptions.Split(' ');
+
+            foreach (var option in options)
+            {
+                var otherUser = await GetUserFromString(option);
+
+                if (otherUser != null)
                 {
                     settingsModel.DifferentUser = true;
-                    settingsModel.DiscordUserId = user.DiscordUserId;
-                    settingsModel.UserNameLastFm = user.UserNameLastFM;
+                    settingsModel.DiscordUserId = otherUser.DiscordUserId;
+                    settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
+                }
+            }
+
+            if (context.InteractionData != null && context.InteractionData.Choices.Any())
+            {
+                var userInteraction = context.InteractionData.Choices.FirstOrDefault(f => f.Name == "user");
+                if (userInteraction != null)
+                {
+                    var otherUser = await GetUserFromString(userInteraction.Value);
+
+                    if (otherUser != null)
+                    {
+                        settingsModel.DifferentUser = true;
+                        settingsModel.DiscordUserId = otherUser.DiscordUserId;
+                        settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
+                    }
                 }
             }
 
             return settingsModel;
+        }
+
+        public async Task<UserSettingsModel> GetFmBotUser(
+            string extraOptions,
+            User currentUser)
+        {
+            var settingsModel = new UserSettingsModel
+            {
+                DifferentUser = false,
+                UserNameLastFm = currentUser.UserNameLastFM,
+                UserId = currentUser.UserId
+            };
+
+            if (extraOptions == null)
+            {
+                return settingsModel;
+            }
+
+            var options = extraOptions.Split(' ');
+
+            foreach (var option in options)
+            {
+                var otherUser = await GetUserFromString(option);
+
+                if (otherUser != null)
+                {
+                    settingsModel.DifferentUser = true;
+                    settingsModel.DiscordUserId = otherUser.DiscordUserId;
+                    settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
+                }
+            }
+
+            return settingsModel;
+        }
+
+        public async Task<User> GetDifferentUser(string searchValue)
+        {
+            var otherUser = await GetUserFromString(searchValue);
+
+            if (otherUser == null)
+            {
+                await using var db = this._contextFactory.CreateDbContext();
+                return await db.Users
+                    .AsQueryable()
+                    .OrderByDescending(o => o.LastUsed)
+                    .FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == searchValue.ToLower());
+            }
+
+            return otherUser;
         }
 
         public async Task<User> GetUserFromString(string value)
@@ -253,13 +329,19 @@ namespace FMBot.Bot.Services
         }
 
         public static int GetAmount(
-            string[] extraOptions,
+            string extraOptions,
             int amount = 8,
-            int maxAmount = 16)
+            int maxAmount = 20)
         {
-            foreach (var extraOption in extraOptions)
+            if (extraOptions == null)
             {
-                if (int.TryParse(extraOption, out var result))
+                return amount;
+            }
+
+            var options = extraOptions.Split(' ');
+            foreach (var option in options)
+            {
+                if (int.TryParse(option, out var result))
                 {
                     if (result > 0 && result <= 100)
                     {
@@ -277,23 +359,29 @@ namespace FMBot.Bot.Services
         }
 
         public static long GetGoalAmount(
-            string[] extraOptions,
+            string extraOptions,
             long currentPlaycount)
         {
             var goalAmount = 100;
             var ownGoalSet = false;
-            foreach (var extraOption in extraOptions)
+
+            if (extraOptions != null)
             {
-                if (int.TryParse(extraOption, out var result))
+                var options = extraOptions.Split(' ');
+
+                foreach (var option in options)
                 {
-                    if (result > currentPlaycount)
+                    if (int.TryParse(option, out var result))
                     {
-                        goalAmount = result;
-                        ownGoalSet = true;
+                        if (result > currentPlaycount)
+                        {
+                            goalAmount = result;
+                            ownGoalSet = true;
+                        }
                     }
                 }
-
             }
+
 
             if (!ownGoalSet)
             {

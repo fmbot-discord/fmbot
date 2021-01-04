@@ -8,16 +8,19 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Commands
 {
+    [Name("Static commands")]
     public class StaticCommands : ModuleBase
     {
         private readonly CommandService _service;
@@ -59,22 +62,28 @@ namespace FMBot.Bot.Commands
         [Alias("server")]
         public async Task InviteAsync()
         {
-            var SelfID = this.Context.Client.CurrentUser.Id.ToString();
+            var selfId = this.Context.Client.CurrentUser.Id.ToString();
+            var embedDescription = new StringBuilder();
 
-            this._embed.AddField("Invite the bot to your own server with the link below:",
-                "https://discordapp.com/oauth2/authorize?client_id=" + SelfID + "&scope=bot&permissions=" +
-                Constants.InviteLinkPermissions);
+            embedDescription.AppendLine("- You can invite .fmbot to your own server by **[clicking here](" +
+                "https://discordapp.com/oauth2/authorize?" +
+                $"client_id={selfId}" +
+                "&scope=bot%20applications.commands.update%20applications.commands" +
+                $"&permissions={Constants.InviteLinkPermissions}).**");
 
-            this._embed.AddField("Join the FMBot server for support and updates:",
-                "https://discord.gg/srmpCaa");
+            embedDescription.AppendLine(
+                "- Join the [.fmbot server](https://discord.gg/srmpCaa) for support and updates.");
 
-            this._embed.AddField("Support us on OpenCollective:",
-                "https://opencollective.com/fmbot");
+            embedDescription.AppendLine(
+                "- Help us cover hosting and other costs on our [OpenCollective](https://opencollective.com/fmbot)");
+
+            this._embed.WithDescription(embedDescription.ToString());
 
             if (IsBotSelfHosted(this.Context.Client.CurrentUser.Id))
             {
                 this._embed.AddField("Note:",
-                    "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot.");
+                    "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot. " +
+                    "The invite link linked here invites the self-hosted instance and not the official .fmbot.");
             }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
@@ -89,7 +98,7 @@ namespace FMBot.Bot.Commands
             var selfId = this.Context.Client.CurrentUser.Id.ToString();
 
             this._embed.AddField("Invite the bot to your own server with the link below:",
-                "https://discordapp.com/oauth2/authorize?client_id=" + selfId + "&scope=bot&permissions=" +
+                "https://discordapp.com/oauth2/authorize?client_id=" + selfId + "&scope=bot%20applications.commands.update%20applications.commands&permissions=" +
                 Constants.InviteLinkPermissions);
 
             this._embed.AddField("Support the bot development and hosting:",
@@ -101,8 +110,8 @@ namespace FMBot.Bot.Commands
             this._embed.AddField("View the code on Github:",
                 "https://github.com/fmbot-discord/fmbot");
 
-            this._embed.AddField("Or on GitLab:",
-                "https://gitlab.com/Bitl/FMBot_Discord");
+            this._embed.AddField("Follow us on Twitter:",
+                "https://twitter.com/fmbotDiscord");
 
             this._embed.AddField("Join the FMBot server for support and updates:",
                 "https://discord.gg/srmpCaa");
@@ -188,8 +197,9 @@ namespace FMBot.Bot.Commands
             this._embed.AddField($"Main command `{prefix}{mainCommand}`",
                 "Displays last scrobbles, and looks different depending on the mode you've set.");
 
-            this._embed.AddField($"Setting up: `{prefix}set lastfmusername`",
-                $"For more settings, please use `{prefix}set help`.");
+            this._embed.AddField($"Connecting your Last.fm account: `{prefix}login`",
+                $"Not receiving a DM from .fmbot when logging in? Please check if you have DMs enabled in this servers privacy settings.\n" +
+                $"For changing how your .fm command looks use `{prefix}mode`.");
 
             if (customPrefix)
             {
@@ -304,7 +314,7 @@ namespace FMBot.Bot.Commands
 
             for (var i = countdown; i > 0; i--)
             {
-                _ =  ReplyAsync(i.ToString());
+                _ = ReplyAsync(i.ToString());
                 await Task.Delay(1000);
             }
 
@@ -319,60 +329,48 @@ namespace FMBot.Bot.Commands
         {
             var prefix = ConfigData.Data.Bot.Prefix;
 
-            string description = null;
-            var length = 0;
+            var embed = new EmbedBuilder();
 
-            var builder = new EmbedBuilder();
-
-            foreach (var module in this._service.Modules.OrderByDescending(o => o.Commands.Count()).Where(w =>
-                !w.Name.Contains("SecretCommands") && !w.Name.Contains("OwnerCommands") &&
-                !w.Name.Contains("AdminCommands") && !w.Name.Contains("GuildCommands")))
+            foreach (var module in this._service.Modules
+                .OrderByDescending(o => o.Commands.Count).Where(w =>
+                !w.Attributes.OfType<ExcludeFromHelp>().Any()))
             {
+                var moduleCommands = "";
                 foreach (var cmd in module.Commands)
                 {
                     var result = await cmd.CheckPreconditionsAsync(this.Context);
                     if (result.IsSuccess)
                     {
-                        if (!string.IsNullOrWhiteSpace(cmd.Summary))
+                        if (!string.IsNullOrEmpty(moduleCommands))
                         {
-                            description += $"{prefix}{cmd.Aliases.First()} - {cmd.Summary}\n";
+                            moduleCommands += ", ";
                         }
-                        else
-                        {
-                            description += $"{prefix}{cmd.Aliases.First()}\n";
-                        }
+
+                        moduleCommands += $"`{prefix}{cmd.Name}`";
                     }
                 }
 
-                if (description.Length < 1024)
+                var moduleSummary = string.IsNullOrEmpty(module.Summary) ? "" : $" - {module.Summary}";
+
+                if (!string.IsNullOrEmpty(module.Name) && !string.IsNullOrEmpty(moduleCommands))
                 {
-                    builder.AddField
-                    (module.Name + (module.Summary != null ? " - " + module.Summary : ""),
-                        description != null ? description : "");
+                    embed.AddField(
+                        module.Name + moduleSummary,
+                        moduleCommands,
+                        true);
                 }
 
-                length += description.Length;
-                description = null;
-
-                if (length < 1990)
-                {
-                    await this.Context.User.SendMessageAsync("", false, builder.Build());
-
-                    builder = new EmbedBuilder();
-                    length = 0;
-                }
             }
 
-            if (!this._guildService.CheckIfDM(this.Context))
-            {
-                await this.Context.Channel.SendMessageAsync("Check your DMs!");
-            }
+            embed.WithFooter("Add 'help' after a command to get more info. For example: .fmchart help");
+            await this.Context.Channel.SendMessageAsync("", false, embed.Build());
+
             this.Context.LogCommandUsed();
         }
 
         private static bool IsBotSelfHosted(ulong botId)
         {
-            return !botId.Equals(Constants.BotProductionId) && !botId.Equals(Constants.BotStagingId);
+            return !botId.Equals(Constants.BotProductionId) && !botId.Equals(Constants.BotDevelopId);
         }
     }
 }

@@ -8,6 +8,10 @@ namespace FMBot.Persistence.EntityFrameWork
     {
         public virtual DbSet<Friend> Friends { get; set; }
         public virtual DbSet<Guild> Guilds { get; set; }
+        public virtual DbSet<Channel> Channels { get; set; }
+        public virtual DbSet<Webhook> Webhooks { get; set; }
+
+        public virtual DbSet<GuildBlockedUser> GuildBlockedUsers { get; set; }
         public virtual DbSet<GuildUser> GuildUsers { get; set; }
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<Supporter> Supporters { get; set; }
@@ -18,6 +22,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<UserAlbum> UserAlbums { get; set; }
         public virtual DbSet<UserTrack> UserTracks { get; set; }
         public virtual DbSet<UserPlay> UserPlays { get; set; }
+        public virtual DbSet<UserCrown> UserCrowns { get; set; }
 
         public virtual DbSet<Artist> Artists { get; set; }
         public virtual DbSet<Album> Albums { get; set; }
@@ -27,6 +32,7 @@ namespace FMBot.Persistence.EntityFrameWork
 
         public virtual DbSet<ArtistGenre> ArtistGenres { get; set; }
         public virtual DbSet<ArtistAlias> ArtistAliases { get; set; }
+        
 
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -34,11 +40,7 @@ namespace FMBot.Persistence.EntityFrameWork
             if (!optionsBuilder.IsConfigured)
             {
                 // When creating migrations, make sure to enter the connection string below.
-                optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Username=postgres;Password=password;Database=fmbot;Command Timeout=1024;Timeout=1024;Persist Security Info=True"
-                   , builder =>
-                {
-                    builder.EnableRetryOnFailure(3, TimeSpan.FromSeconds(10), null);
-                });
+                optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Username=postgres;Password=password;Database=fmbot;Command Timeout=240;Timeout=240;Persist Security Info=True");
 
                 optionsBuilder.UseSnakeCaseNamingConvention();
             }
@@ -56,12 +58,14 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasOne(d => d.FriendUser)
                     .WithMany(p => p.FriendedByUsers)
                     .HasForeignKey(d => d.FriendUserId)
-                    .HasConstraintName("FK.Friends.Users_FriendUserID");
+                    .HasConstraintName("FK.Friends.Users_FriendUserID")
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(d => d.User)
                     .WithMany(p => p.Friends)
                     .HasForeignKey(d => d.UserId)
-                    .HasConstraintName("FK.Friends.Users_UserID");
+                    .HasConstraintName("FK.Friends.Users_UserID")
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<Guild>(entity =>
@@ -81,6 +85,24 @@ namespace FMBot.Persistence.EntityFrameWork
                         v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
             });
 
+            modelBuilder.Entity<Channel>(entity =>
+            {
+                entity.HasKey(e => e.ChannelId);
+
+                entity.HasIndex(i => i.DiscordChannelId);
+
+                entity.HasIndex(i => i.GuildId);
+
+                entity.HasOne(sc => sc.Guild)
+                    .WithMany(s => s.Channels)
+                    .HasForeignKey(sc => sc.GuildId);
+
+                entity.Property(e => e.DisabledCommands)
+                    .HasConversion(
+                        v => string.Join(',', v),
+                        v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
+            });
+
             modelBuilder.Entity<GuildUser>(entity =>
             {
                 entity.HasKey(e => new { e.GuildId, e.UserId });
@@ -91,6 +113,19 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.HasOne(sc => sc.User)
                     .WithMany(s => s.GuildUsers)
+                    .HasForeignKey(sc => sc.UserId);
+            });
+
+            modelBuilder.Entity<GuildBlockedUser>(entity =>
+            {
+                entity.HasKey(e => new { e.GuildId, e.UserId });
+
+                entity.HasOne(sc => sc.Guild)
+                    .WithMany(s => s.GuildBlockedUsers)
+                    .HasForeignKey(sc => sc.GuildId);
+
+                entity.HasOne(sc => sc.User)
+                    .WithMany(s => s.GuildBlockedUsers)
                     .HasForeignKey(sc => sc.UserId);
             });
 
@@ -112,10 +147,13 @@ namespace FMBot.Persistence.EntityFrameWork
             {
                 entity.HasKey(e => e.InactiveUserId);
 
+                entity.HasIndex(i => i.UserId);
+
                 entity
                     .HasOne<User>()
                     .WithMany()
-                    .HasForeignKey(p => p.UserId);
+                    .HasForeignKey(p => p.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<UserArtist>(entity =>
@@ -190,6 +228,26 @@ namespace FMBot.Persistence.EntityFrameWork
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
+            modelBuilder.Entity<UserCrown>(entity =>
+            {
+                entity.HasKey(e => e.CrownId);
+
+                entity.HasIndex(i => i.UserId);
+
+                entity.HasIndex(i => i.GuildId);
+
+                entity.Property(e => e.ArtistName)
+                    .HasColumnType("citext");
+
+                entity.HasOne(sc => sc.Guild)
+                    .WithMany(s => s.GuildCrowns)
+                    .HasForeignKey(sc => sc.GuildId);
+
+                entity.HasOne(sc => sc.User)
+                    .WithMany(s => s.Crowns)
+                    .HasForeignKey(sc => sc.UserId);
+            });
+
             modelBuilder.Entity<Artist>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -241,6 +299,15 @@ namespace FMBot.Persistence.EntityFrameWork
                     .WithMany(p => p.ArtistGenres)
                     .HasForeignKey(d => d.ArtistId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Webhook>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.HasOne(sc => sc.Guild)
+                    .WithMany(s => s.Webhooks)
+                    .HasForeignKey(sc => sc.GuildId);
             });
         }
     }

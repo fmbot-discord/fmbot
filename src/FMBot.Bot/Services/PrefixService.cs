@@ -12,9 +12,6 @@ namespace FMBot.Bot.Services
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-        /// <summary>
-        ///     The <see cref="ConcurrentDictionary{TKey,TValue}" /> that contains all the custom prefixes.
-        /// </summary>
         private static readonly ConcurrentDictionary<ulong, string> ServerPrefixes =
             new ConcurrentDictionary<ulong, string>();
 
@@ -23,7 +20,6 @@ namespace FMBot.Bot.Services
             this._contextFactory = contextFactory;
         }
 
-        /// <inheritdoc />
         public void StorePrefix(string prefix, ulong key)
         {
             if (ServerPrefixes.ContainsKey(key))
@@ -44,7 +40,6 @@ namespace FMBot.Bot.Services
         }
 
 
-        /// <inheritdoc />
         public string GetPrefix(ulong? key)
         {
             if (!key.HasValue)
@@ -56,7 +51,6 @@ namespace FMBot.Bot.Services
         }
 
 
-        /// <inheritdoc />
         public void RemovePrefix(ulong key)
         {
             if (!ServerPrefixes.ContainsKey(key))
@@ -71,7 +65,6 @@ namespace FMBot.Bot.Services
         }
 
 
-        /// <inheritdoc />
         public async Task LoadAllPrefixes()
         {
             await using var db = this._contextFactory.CreateDbContext();

@@ -18,5 +18,7 @@ namespace FMBot.Domain.Models
         public string UserNameLastFm { get; set; }
         public bool DifferentUser { get; set; }
         public ulong? DiscordUserId { get; set; }
+
+        public int UserId { get; set; }
     }
 }

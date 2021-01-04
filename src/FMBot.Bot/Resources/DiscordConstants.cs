@@ -10,5 +10,7 @@ namespace FMBot.Bot.Resources
         public static Color WarningColorOrange = new Color(255, 174, 66);
         
         public static Color SuccessColorGreen = new Color(50, 205, 50);
+        
+        public static Color SpotifyColorGreen = new Color(30, 215, 97);
     }
 }

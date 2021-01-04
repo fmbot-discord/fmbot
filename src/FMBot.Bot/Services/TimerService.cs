@@ -6,9 +6,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
-using DiscordBotsList.Api;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.LastFM.Services;
 using IF.Lastfm.Core.Api.Enums;
@@ -22,7 +23,6 @@ namespace FMBot.Bot.Services
     public class TimerService
     {
         private readonly Timer _timer;
-        private readonly Timer _externalStatsTimer;
         private readonly Timer _internalStatsTimer;
         private readonly Timer _userUpdateTimer;
         private readonly Timer _userIndexTimer;
@@ -33,10 +33,11 @@ namespace FMBot.Bot.Services
         private readonly IIndexService _indexService;
         private readonly GuildService _guildService;
         private readonly DiscordShardedClient _client;
+        private readonly WebhookService _webhookService;
 
         private bool _timerEnabled;
 
-        private string _trackString = "";
+        private string _trackString = "No featured picked since last bot startup. Please wait for a new featured user to be chosen.";
 
         public TimerService(DiscordShardedClient client,
             LastFmService lastFmService,
@@ -44,7 +45,8 @@ namespace FMBot.Bot.Services
             UserService userService,
             IIndexService indexService,
             CensorService censorService,
-            GuildService guildService)
+            GuildService guildService,
+            WebhookService webhookService)
         {
             this._client = client;
             this._lastFMService = lastFmService;
@@ -52,6 +54,7 @@ namespace FMBot.Bot.Services
             this._indexService = indexService;
             this._censorService = censorService;
             this._guildService = guildService;
+            this._webhookService = webhookService;
             this._updateService = updateService;
 
             this._timer = new Timer(async _ =>
@@ -113,8 +116,8 @@ namespace FMBot.Bot.Services
 
                                 var albumImages = await this._lastFMService.GetAlbumImagesAsync(trackToFeature.ArtistName, trackToFeature.AlbumName);
 
-                                this._trackString = $"{trackToFeature.AlbumName} \n" +
-                                                   $"by {trackToFeature.ArtistName} \n \n" +
+                                this._trackString = $"[{trackToFeature.AlbumName}]({trackToFeature.Url}) \n" +
+                                                   $"by [{trackToFeature.ArtistName}]({trackToFeature.ArtistUrl}) \n \n" +
                                                    $"{randomAvatarModeDesc} from {lastFmUserName}";
 
                                 Log.Information("Featured: Changing avatar to: " + this._trackString);
@@ -122,10 +125,11 @@ namespace FMBot.Bot.Services
                                 if (albumImages?.Large != null)
                                 {
                                     ChangeToNewAvatar(client, albumImages.Large.AbsoluteUri);
+                                    ScrobbleFeatured(client, trackToFeature);
                                 }
                                 else
                                 {
-                                    Log.Information("Featured: Album had no image, switching to alternative avatar mode");
+                                    Log.Information("Featured: Recent listen had no image, switching to alternative avatar mode");
                                     goto case 4;
                                 }
 
@@ -166,7 +170,7 @@ namespace FMBot.Bot.Services
 
                                     var albumImage = await this._lastFMService.GetAlbumImagesAsync(currentAlbum.ArtistName, currentAlbum.Name);
 
-                                    this._trackString = $"{currentAlbum.Name} \n" +
+                                    this._trackString = $"[{currentAlbum.Name}]({currentAlbum.Url}) \n" +
                                                         $"by {currentAlbum.ArtistName} \n \n" +
                                                         $"{randomAvatarModeDesc} from {lastFmUserName}";
 
@@ -192,7 +196,7 @@ namespace FMBot.Bot.Services
                     }
                     catch (Exception e)
                     {
-                        Log.Error("ChangeFeaturedAvatar", e);
+                        Log.Error(e, "ChangeFeaturedAvatar");
                     }
                 },
                 null,
@@ -206,11 +210,13 @@ namespace FMBot.Bot.Services
 
                     try
                     {
-                        Statistics.RegisteredUsers.Set(await this._userService.GetTotalUserCountAsync());
-                        Statistics.RegisteredGuilds.Set(await this._guildService.GetTotalGuildCountAsync());
+                        Statistics.RegisteredUserCount.Set(await this._userService.GetTotalUserCountAsync());
+                        Statistics.AuthorizedUserCount.Set(await this._userService.GetTotalAuthorizedUserCountAsync());
+                        Statistics.RegisteredGuildCount.Set(await this._guildService.GetTotalGuildCountAsync());
                     }
                     catch (Exception e)
                     {
+                        Log.Error(e, "UpdatingMetrics");
                         Console.WriteLine(e);
                     }
 
@@ -232,33 +238,6 @@ namespace FMBot.Bot.Services
                 TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds + 5),
                 TimeSpan.FromMinutes(2));
 
-            this._externalStatsTimer = new Timer(async _ =>
-                {
-                    if (client.CurrentUser.Id.Equals(Constants.BotProductionId) && ConfigData.Data.BotLists != null && !string.IsNullOrEmpty(ConfigData.Data.BotLists.TopGgApiToken))
-                    {
-                        Log.Information("Updating top.gg server count");
-                        var dblApi = new AuthDiscordBotListApi(Constants.BotProductionId, ConfigData.Data.BotLists.TopGgApiToken);
-
-                        try
-                        {
-                            var me = await dblApi.GetMeAsync();
-                            await me.UpdateStatsAsync(client.Guilds.Count);
-                        }
-                        catch (Exception e)
-                        {
-                            Log.Error("Exception while updating top.gg count!", e);
-                        }
-                    }
-                    else
-                    {
-                        Log.Information("Non-production bot found or top.gg token not entered, cancelling top.gg server count updater");
-                        this._externalStatsTimer.Change(Timeout.Infinite, Timeout.Infinite);
-                    }
-                },
-                null,
-                TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds + 10),
-                TimeSpan.FromMinutes(30));
-
             this._userUpdateTimer = new Timer(async _ =>
                 {
                     if (ConfigData.Data.LastFm.UserUpdateFrequencyInHours == null || ConfigData.Data.LastFm.UserUpdateFrequencyInHours == 0)
@@ -269,16 +248,17 @@ namespace FMBot.Bot.Services
                     }
 
                     Log.Information("Getting users to update");
-                    var timeToUpdate = DateTime.UtcNow.AddHours(-ConfigData.Data.LastFm.UserUpdateFrequencyInHours.Value);
+                    var authorizedTimeToUpdate = DateTime.UtcNow.AddHours(-ConfigData.Data.LastFm.UserUpdateFrequencyInHours.Value);
+                    var unauthorizedTimeToUpdate = DateTime.UtcNow.AddHours(-(ConfigData.Data.LastFm.UserUpdateFrequencyInHours.Value + 24));
 
-                    var usersToUpdate = await this._updateService.GetOutdatedUsers(timeToUpdate);
-                    Log.Information($"Found {usersToUpdate.Count} outdated users, adding them to queue");
+                    var usersToUpdate = await this._updateService.GetOutdatedUsers(authorizedTimeToUpdate, unauthorizedTimeToUpdate);
+                    Log.Information($"Found {usersToUpdate.Count} outdated users, adding them to update queue");
 
                     this._updateService.AddUsersToUpdateQueue(usersToUpdate);
                 },
                 null,
                 TimeSpan.FromMinutes(5),
-                TimeSpan.FromHours(4));
+                TimeSpan.FromHours(8));
 
             this._userIndexTimer = new Timer(async _ =>
                 {
@@ -359,12 +339,15 @@ namespace FMBot.Bot.Services
                     Log.Information("Avatar succesfully changed");
                 }
 
-                await Task.Delay(2500);
+                await Task.Delay(7500);
 
                 var builder = new EmbedBuilder();
                 var selfUser = client.CurrentUser;
                 builder.WithThumbnailUrl(selfUser.GetAvatarUrl());
                 builder.AddField("Featured:", this._trackString);
+
+                var botType = BotTypeExtension.GetBotType(client.CurrentUser.Id);
+                await this._webhookService.SendFeaturedWebhooks(botType, this._trackString, selfUser.GetAvatarUrl());
 
                 if (ConfigData.Data.Bot.BaseServerId != 0 && ConfigData.Data.Bot.FeaturedChannelId != 0)
                 {
@@ -381,6 +364,23 @@ namespace FMBot.Bot.Services
             catch (Exception exception)
             {
                 Log.Error(exception, nameof(ChangeToNewAvatar));
+            }
+        }
+
+        public async void ScrobbleFeatured(DiscordShardedClient client, LastTrack track)
+        {
+            try
+            {
+                var botUser = await this._userService.GetUserAsync(client.CurrentUser.Id);
+
+                if (botUser?.SessionKeyLastFm != null)
+                {
+                    await this._lastFMService.ScrobbleAsync(botUser, track.ArtistName, track.Name);
+                }
+            }
+            catch (Exception exception)
+            {
+                Log.Error(exception, nameof(ScrobbleFeatured));
             }
         }
 

@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
 using FMBot.Bot.Configurations;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -13,8 +15,9 @@ using SpotifyAPI.Web.Auth;
 using SpotifyAPI.Web.Enums;
 using SpotifyAPI.Web.Models;
 using Artist = FMBot.Persistence.Domain.Models.Artist;
+using Image = FMBot.LastFM.Domain.Models.Image;
 
-namespace FMBot.Bot.Services
+namespace FMBot.Bot.Services.ThirdParty
 {
     public class SpotifyService
     {
@@ -28,6 +31,9 @@ namespace FMBot.Bot.Services
         public async Task<SearchItem> GetSearchResultAsync(string searchValue, SearchType searchType = SearchType.Track)
         {
             var spotify = await GetSpotifyWebApi();
+
+            searchValue = searchValue.Replace("- Single", "");
+            searchValue = searchValue.Replace("- EP", "");
 
             return await spotify.SearchItemsAsync(searchValue, searchType);
         }
@@ -293,6 +299,18 @@ namespace FMBot.Bot.Services
                 AccessToken = token.AccessToken,
                 UseAuth = true
             };
-    }
+        }
+
+        public static RecentTrack SpotifyGameToRecentTrack(SpotifyGame spotifyActivity)
+        {
+            return new()
+            {
+                TrackName = spotifyActivity.TrackTitle,
+                AlbumName = spotifyActivity.AlbumTitle,
+                ArtistName = spotifyActivity.Artists.First(),
+                AlbumCoverUrl = spotifyActivity.AlbumArtUrl,
+                TrackUrl = spotifyActivity.TrackUrl
+            };
+        }
     }
 }

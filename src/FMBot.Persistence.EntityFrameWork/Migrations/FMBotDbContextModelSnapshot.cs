@@ -19,7 +19,7 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                 .HasPostgresExtension("pg_trgm")
                 .UseIdentityByDefaultColumns()
                 .HasAnnotation("Relational:MaxIdentifierLength", 63)
-                .HasAnnotation("ProductVersion", "5.0.0-rc.2.20475.6");
+                .HasAnnotation("ProductVersion", "5.0.1");
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.Album", b =>
                 {
@@ -216,6 +216,42 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.ToTable("censored_music");
                 });
 
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.Channel", b =>
+                {
+                    b.Property<int>("ChannelId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("channel_id")
+                        .UseIdentityByDefaultColumn();
+
+                    b.Property<string>("DisabledCommands")
+                        .HasColumnType("text")
+                        .HasColumnName("disabled_commands");
+
+                    b.Property<decimal>("DiscordChannelId")
+                        .HasColumnType("numeric(20,0)")
+                        .HasColumnName("discord_channel_id");
+
+                    b.Property<int>("GuildId")
+                        .HasColumnType("integer")
+                        .HasColumnName("guild_id");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("ChannelId")
+                        .HasName("pk_channels");
+
+                    b.HasIndex("DiscordChannelId")
+                        .HasDatabaseName("ix_channels_discord_channel_id");
+
+                    b.HasIndex("GuildId")
+                        .HasDatabaseName("ix_channels_guild_id");
+
+                    b.ToTable("channels");
+                });
+
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.Friend", b =>
                 {
                     b.Property<int>("FriendId")
@@ -256,6 +292,10 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnName("guild_id")
                         .UseIdentityByDefaultColumn();
 
+                    b.Property<int?>("ActivityThresholdDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("activity_threshold_days");
+
                     b.Property<bool?>("Blacklisted")
                         .HasColumnType("boolean")
                         .HasColumnName("blacklisted");
@@ -263,6 +303,18 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Property<int>("ChartTimePeriod")
                         .HasColumnType("integer")
                         .HasColumnName("chart_time_period");
+
+                    b.Property<int?>("CrownsActivityThresholdDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("crowns_activity_threshold_days");
+
+                    b.Property<bool?>("CrownsDisabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("crowns_disabled");
+
+                    b.Property<int?>("CrownsMinimumPlaycountThreshold")
+                        .HasColumnType("integer")
+                        .HasColumnName("crowns_minimum_playcount_threshold");
 
                     b.Property<bool?>("DisableSupporterMessages")
                         .HasColumnType("boolean")
@@ -313,6 +365,37 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.ToTable("guilds");
                 });
 
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.GuildBlockedUser", b =>
+                {
+                    b.Property<int>("GuildId")
+                        .HasColumnType("integer")
+                        .HasColumnName("guild_id");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.Property<bool>("BlockedFromCrowns")
+                        .HasColumnType("boolean")
+                        .HasColumnName("blocked_from_crowns");
+
+                    b.Property<bool>("BlockedFromWhoKnows")
+                        .HasColumnType("boolean")
+                        .HasColumnName("blocked_from_who_knows");
+
+                    b.Property<bool>("SelfBlockFromWhoKnows")
+                        .HasColumnType("boolean")
+                        .HasColumnName("self_block_from_who_knows");
+
+                    b.HasKey("GuildId", "UserId")
+                        .HasName("pk_guild_blocked_users");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_guild_blocked_users_user_id");
+
+                    b.ToTable("guild_blocked_users");
+                });
+
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.GuildUser", b =>
                 {
                     b.Property<int>("GuildId")
@@ -322,6 +405,10 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("integer")
                         .HasColumnName("user_id");
+
+                    b.Property<bool?>("Bot")
+                        .HasColumnType("boolean")
+                        .HasColumnName("bot");
 
                     b.Property<string>("UserName")
                         .HasColumnType("text")
@@ -352,6 +439,10 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("failure_error_count");
 
+                    b.Property<int?>("MissingParametersErrorCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("missing_parameters_error_count");
+
                     b.Property<int?>("NoScrobblesErrorCount")
                         .HasColumnType("integer")
                         .HasColumnName("no_scrobbles_error_count");
@@ -359,6 +450,10 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Property<int?>("RecentTracksPrivateCount")
                         .HasColumnType("integer")
                         .HasColumnName("recent_tracks_private_count");
+
+                    b.Property<bool?>("Removed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("removed");
 
                     b.Property<DateTime>("Updated")
                         .HasColumnType("timestamp without time zone")
@@ -554,6 +649,10 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("titles_enabled");
 
+                    b.Property<long?>("TotalPlaycount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("total_playcount");
+
                     b.Property<string>("UserNameLastFM")
                         .HasColumnType("text")
                         .HasColumnName("user_name_last_fm");
@@ -636,6 +735,58 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.ToTable("user_artists");
                 });
 
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserCrown", b =>
+                {
+                    b.Property<int>("CrownId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("crown_id")
+                        .UseIdentityByDefaultColumn();
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean")
+                        .HasColumnName("active");
+
+                    b.Property<string>("ArtistName")
+                        .HasColumnType("citext")
+                        .HasColumnName("artist_name");
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("created");
+
+                    b.Property<int>("CurrentPlaycount")
+                        .HasColumnType("integer")
+                        .HasColumnName("current_playcount");
+
+                    b.Property<int>("GuildId")
+                        .HasColumnType("integer")
+                        .HasColumnName("guild_id");
+
+                    b.Property<DateTime>("Modified")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("modified");
+
+                    b.Property<int>("StartPlaycount")
+                        .HasColumnType("integer")
+                        .HasColumnName("start_playcount");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("CrownId")
+                        .HasName("pk_user_crowns");
+
+                    b.HasIndex("GuildId")
+                        .HasDatabaseName("ix_user_crowns_guild_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_user_crowns_user_id");
+
+                    b.ToTable("user_crowns");
+                });
+
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserPlay", b =>
                 {
                     b.Property<int>("UserPlayId")
@@ -706,6 +857,43 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.ToTable("user_tracks");
                 });
 
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.Webhook", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id")
+                        .UseIdentityByDefaultColumn();
+
+                    b.Property<int>("BotType")
+                        .HasColumnType("integer")
+                        .HasColumnName("bot_type");
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("created");
+
+                    b.Property<decimal>("DiscordWebhookId")
+                        .HasColumnType("numeric(20,0)")
+                        .HasColumnName("discord_webhook_id");
+
+                    b.Property<int>("GuildId")
+                        .HasColumnType("integer")
+                        .HasColumnName("guild_id");
+
+                    b.Property<string>("Token")
+                        .HasColumnType("text")
+                        .HasColumnName("token");
+
+                    b.HasKey("Id")
+                        .HasName("pk_webhooks");
+
+                    b.HasIndex("GuildId")
+                        .HasDatabaseName("ix_webhooks_guild_id");
+
+                    b.ToTable("webhooks");
+                });
+
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.Album", b =>
                 {
                     b.HasOne("FMBot.Persistence.Domain.Models.Artist", "Artist")
@@ -742,12 +930,25 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Navigation("Artist");
                 });
 
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.Channel", b =>
+                {
+                    b.HasOne("FMBot.Persistence.Domain.Models.Guild", "Guild")
+                        .WithMany("Channels")
+                        .HasForeignKey("GuildId")
+                        .HasConstraintName("fk_channels_guilds_guild_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Guild");
+                });
+
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.Friend", b =>
                 {
                     b.HasOne("FMBot.Persistence.Domain.Models.User", "FriendUser")
                         .WithMany("FriendedByUsers")
                         .HasForeignKey("FriendUserId")
-                        .HasConstraintName("FK.Friends.Users_FriendUserID");
+                        .HasConstraintName("FK.Friends.Users_FriendUserID")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("FMBot.Persistence.Domain.Models.User", "User")
                         .WithMany("Friends")
@@ -757,6 +958,27 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .IsRequired();
 
                     b.Navigation("FriendUser");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.GuildBlockedUser", b =>
+                {
+                    b.HasOne("FMBot.Persistence.Domain.Models.Guild", "Guild")
+                        .WithMany("GuildBlockedUsers")
+                        .HasForeignKey("GuildId")
+                        .HasConstraintName("fk_guild_blocked_users_guilds_guild_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FMBot.Persistence.Domain.Models.User", "User")
+                        .WithMany("GuildBlockedUsers")
+                        .HasForeignKey("UserId")
+                        .HasConstraintName("fk_guild_blocked_users_users_user_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Guild");
 
                     b.Navigation("User");
                 });
@@ -787,7 +1009,8 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.HasOne("FMBot.Persistence.Domain.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .HasConstraintName("fk_inactive_users_users_user_id");
+                        .HasConstraintName("fk_inactive_users_users_user_id")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("FMBot.Persistence.Domain.Models.User", "User")
                         .WithMany()
@@ -836,6 +1059,27 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserCrown", b =>
+                {
+                    b.HasOne("FMBot.Persistence.Domain.Models.Guild", "Guild")
+                        .WithMany("GuildCrowns")
+                        .HasForeignKey("GuildId")
+                        .HasConstraintName("fk_user_crowns_guilds_guild_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FMBot.Persistence.Domain.Models.User", "User")
+                        .WithMany("Crowns")
+                        .HasForeignKey("UserId")
+                        .HasConstraintName("fk_user_crowns_users_user_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Guild");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserPlay", b =>
                 {
                     b.HasOne("FMBot.Persistence.Domain.Models.User", "User")
@@ -860,6 +1104,18 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("FMBot.Persistence.Domain.Models.Webhook", b =>
+                {
+                    b.HasOne("FMBot.Persistence.Domain.Models.Guild", "Guild")
+                        .WithMany("Webhooks")
+                        .HasForeignKey("GuildId")
+                        .HasConstraintName("fk_webhooks_guilds_guild_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Guild");
+                });
+
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.Album", b =>
                 {
                     b.Navigation("Tracks");
@@ -878,7 +1134,15 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.Guild", b =>
                 {
+                    b.Navigation("Channels");
+
+                    b.Navigation("GuildBlockedUsers");
+
+                    b.Navigation("GuildCrowns");
+
                     b.Navigation("GuildUsers");
+
+                    b.Navigation("Webhooks");
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.User", b =>
@@ -887,9 +1151,13 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
 
                     b.Navigation("Artists");
 
+                    b.Navigation("Crowns");
+
                     b.Navigation("FriendedByUsers");
 
                     b.Navigation("Friends");
+
+                    b.Navigation("GuildBlockedUsers");
 
                     b.Navigation("GuildUsers");
 

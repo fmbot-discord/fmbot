@@ -1,15 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>9.0</LangVersion>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <ApplicationIcon>avatar.ico</ApplicationIcon>
     <Authors>Bitl#3305 &amp; Frikandel#0001</Authors>
     <PackageId>FMBot</PackageId>
     <PackageProjectUrl>https://fmbot.xyz/</PackageProjectUrl>
     <RepositoryUrl>https://github.com/fmbot-discord/fmbot</RepositoryUrl>
+    <Version>1.0.0</Version>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -19,39 +20,43 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AsyncEnumerator" Version="4.0.2" />
-    <PackageReference Include="DiscordBotsList.Api" Version="1.4.0" />
-    <PackageReference Include="DNetPlus" Version="1.2.10" />
+    <PackageReference Include="Dapper" Version="2.0.78" />
+    <PackageReference Include="DNetPlus" Version="1.4.2" />
+    <PackageReference Include="DNetPlus-BotListAPI" Version="1.1.0" />
+    <PackageReference Include="DNetPlus-Interactivity" Version="1.0.0" />
     <PackageReference Include="Genius.NET" Version="4.0.1" />
     <PackageReference Include="Google.Apis" Version="1.49.0" />
-    <PackageReference Include="Google.Apis.YouTube.v3" Version="1.49.0.2120" />
+    <PackageReference Include="Google.Apis.YouTube.v3" Version="1.49.0.2173" />
     <PackageReference Include="Inflatable.Lastfm" Version="1.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.9" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="3.1.9" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.9" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="3.1.9" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="5.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.8" />
-    <PackageReference Include="Npgsql" Version="5.0.0-preview1" />
+    <PackageReference Include="Npgsql" Version="5.0.1.1" />
     <PackageReference Include="PostgreSQLCopyHelper" Version="2.7.0" />
-    <PackageReference Include="prometheus-net" Version="4.0.0" />
+    <PackageReference Include="prometheus-net" Version="4.1.1" />
     <PackageReference Include="Serilog" Version="2.10.0" />
-    <PackageReference Include="Serilog.Exceptions" Version="5.7.0" />
+    <PackageReference Include="Serilog.Exceptions" Version="6.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
     <PackageReference Include="Serilog.Sinks.Seq" Version="4.0.0" />
     <PackageReference Include="SkiaSharp" Version="2.80.2" />
     <PackageReference Include="SkiaSharp.Views.Desktop.Common" Version="2.80.2" />
     <PackageReference Include="SpotifyAPI.Web" Version="5.1.1" />
     <PackageReference Include="SpotifyAPI.Web.Auth" Version="5.1.1" />
-    <PackageReference Include="System.Drawing.Common" Version="4.7.0" />
-    <PackageReference Include="System.Reactive" Version="4.4.1" />
-    <PackageReference Include="System.Reactive.Linq" Version="4.4.1" />
+    <PackageReference Include="System.Drawing.Common" Version="5.0.0" />
+    <PackageReference Include="System.Reactive" Version="5.0.0" />
+    <PackageReference Include="System.Reactive.Linq" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FMBot.Domain\FMBot.Domain.csproj" />
     <ProjectReference Include="..\FMBot.LastFM.Domain\FMBot.LastFM.Domain.csproj" />
+    <ProjectReference Include="..\FMBot.Youtube.Domain\FMBot.Youtube.Domain.csproj" />
     <ProjectReference Include="..\FMBot.Persistence.Domain\FMBot.Persistence.Domain.csproj" />
     <ProjectReference Include="..\FMBot.Persistence.EntityFrameWork\FMBot.Persistence.EntityFrameWork.csproj" />
     <ProjectReference Include="..\FMBot.Logger\FMBot.Logger.csproj" />
     <ProjectReference Include="..\FMBot.LastFM\FMBot.LastFM.csproj" />
+    <ProjectReference Include="..\FMBot.Youtube\FMBot.Youtube.csproj" />
     <ProjectReference Include="..\FMBot.Logger\FMBot.Logger.csproj" />
   </ItemGroup>
   <ItemGroup>

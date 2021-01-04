@@ -14,14 +14,37 @@ using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
 {
-    [Summary("FMBot Owners Only")]
+    [Name("Owner commands")]
+    [Summary(".fmbot Owners Only")]
+    [ExcludeFromHelp]
     public class OwnerCommands : ModuleBase
     {
         private readonly AdminService _adminService;
+        private readonly UserService _userService;
 
-        public OwnerCommands(AdminService adminService)
+        public OwnerCommands(AdminService adminService, UserService userService)
         {
             this._adminService = adminService;
+            this._userService = userService;
+        }
+
+        [Command("say"), Summary("Says something")]
+        [UsernameSetRequired]
+        public async Task SayAsync([Remainder] string say)
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+            {
+                try
+                {
+                    await ReplyAsync(say);
+                    this.Context.LogCommandUsed();
+                }
+                catch (Exception e)
+                {
+                    this.Context.LogCommandException(e);
+                    await ReplyAsync("Unable to say something due to an internal error.");
+                }
+            }
         }
 
         [Command("setusertype"), Summary("Sets usertype for other users")]
@@ -89,25 +112,6 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        [Command("say"), Summary("Says something")]
-        [UsernameSetRequired]
-        public async Task SayAsync(string say)
-        {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
-            {
-                try
-                {
-                    await ReplyAsync(say);
-                    this.Context.LogCommandUsed();
-                }
-                catch (Exception e)
-                {
-                    this.Context.LogCommandException(e);
-                    await ReplyAsync("Unable to say something due to an internal error.");
-                }
-            }
-        }
-
         [Command("storagecheck"), Summary("Checks how much storage is left on the server.")]
         [Alias("checkstorage", "storage")]
         [UsernameSetRequired]
@@ -171,6 +175,31 @@ namespace FMBot.Bot.Commands
             else
             {
                 await ReplyAsync("Only .fmbot owners can execute this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+
+
+        [Command("deleteinactiveusers")]
+        [Summary("Deletes inactive users")]
+        public async Task TimerStatusAsync()
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+            {
+                try
+                {
+                    var deletedUsers = await this._userService.DeleteInactiveUsers();
+                    await ReplyAsync($"Deleted {deletedUsers} inactive users from the database");
+                }
+                catch (Exception e)
+                {
+                    this.Context.LogCommandException(e);
+                    await ReplyAsync("Error while attempting to delete inactive users");
+                }
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only FMBot admins can check timer.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }

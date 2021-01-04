@@ -48,7 +48,7 @@ namespace FMBot.Bot.Configurations
                     },
                     Genius = new GeniusConfig(),
                     Spotify = new SpotifyConfig(),
-                    Google = new GoogleConfig()
+                    Google = new GoogleConfig(),
                 };
 
                 var json = JsonConvert.SerializeObject(Data, Formatting.Indented);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using Discord.API.Rest;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
@@ -12,6 +13,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
@@ -19,6 +21,7 @@ using SkiaSharp;
 
 namespace FMBot.Bot.Commands.LastFM
 {
+    [Name("Charts")]
     public class ChartCommands : ModuleBase
     {
         private readonly GuildService _guildService;
@@ -67,11 +70,23 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task ChartAsync(params string[] otherSettings)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            if (otherSettings.Any() && otherSettings.First() == "help")
+            if (otherSettings != null && otherSettings.Any() && otherSettings.First() == "help")
             {
-                await ReplyAsync($"{prfx}chart '2x2-10x10' '{Constants.CompactTimePeriodList}' \n" +
-                                 "Optional extra settings: 'notitles', 'nt', 'skipemptyimages', 's'\n" +
-                                 "Options can be used in any order..");
+                this._embed.WithTitle($"{prfx}chart extra options");
+                this._embed.WithDescription($"- Time periods: `{Constants.CompactTimePeriodList}`\n" +
+                                            $"- Disable titles: `notitles` / `nt`\n" +
+                                            $"- Skip albums with no image: `skipemptyimages` / `s`\n" +
+                                            $"- Size: `2x2`, `3x3` up to `10x10`\n" +
+                                            $"- Other users: `user mention/id`");
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}c`\n" +
+                    $"`{prfx}c q 8x8 nt s`\n" +
+                    $"`{prfx}hart 8x8 quarterly notitles skip`\n" +
+                    $"`{prfx}c 10x10 alltime notitles skip`\n" +
+                    $"`{prfx}c @user 7x7 yearly`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
@@ -104,7 +119,12 @@ namespace FMBot.Bot.Commands.LastFM
 
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var userSettings = await this._settingService.GetUser(otherSettings, user.UserNameLastFM, this.Context);
+            var optionsAsString = "";
+            if (otherSettings != null && otherSettings.Any())
+            {
+                optionsAsString = string.Join(" ", otherSettings);
+            }
+            var userSettings = await this._settingService.GetUser(optionsAsString, user, this.Context);
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
@@ -122,10 +142,14 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                // Generating image
+                if (this.Context.InteractionData != null)
+                {
+                    _ = this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, "", type: InteractionMessageType.AcknowledgeWithSource);
+                }
+
                 var chartSettings = new ChartSettings(this.Context.User);
 
-                chartSettings = this._chartService.SetSettings(chartSettings, otherSettings);
+                chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, this.Context);
 
                 var extraAlbums = 0;
                 if (chartSettings.SkipArtistsWithoutImage)
@@ -156,29 +180,31 @@ namespace FMBot.Bot.Commands.LastFM
 
                 chartSettings.Albums = albums.Content.ToList();
 
+                var embedAuthorDescription = "";
                 if (!userSettings.DifferentUser)
                 {
-                    this._embedAuthor.WithName($"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} for " +
-                                               await this._userService.GetUserTitleAsync(this.Context));
+                    embedAuthorDescription = $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} for " +
+                                             await this._userService.GetUserTitleAsync(this.Context);
                 }
                 else
                 {
-                    this._embedAuthor.WithName(
-                        $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} for {userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}");
+                    embedAuthorDescription =
+                        $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} for {userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
                 }
 
+                this._embedAuthor.WithName(embedAuthorDescription);
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 this._embedAuthor.WithUrl(
                     $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?{chartSettings.TimespanUrlString}");
+
+                var embedDescription = "";
 
                 this._embed.WithAuthor(this._embedAuthor);
                 var userInfo = await this._lastFmService.GetUserInfoAsync(userSettings.UserNameLastFm);
 
                 var playCount = userInfo.Content.Playcount;
-
                 this._embedFooter.Text = $"{userSettings.UserNameLastFm} has {playCount} scrobbles.";
 
-                string embedDescription = "";
                 if (chartSettings.CustomOptionsEnabled)
                 {
                     embedDescription += "Chart options:\n";
@@ -194,6 +220,10 @@ namespace FMBot.Bot.Commands.LastFM
                 if (chartSettings.TitleSetting == TitleSetting.ClassicTitles)
                 {
                     embedDescription += "- Classic titles enabled\n";
+                }
+                if (chartSettings.RainbowSortingEnabled)
+                {
+                    embedDescription += "- Secret rainbow option enabled! (Not perfect but hey, it somewhat exists)\n";
                 }
 
                 var rnd = new Random();
@@ -232,10 +262,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this.Context.Channel.SendFileAsync(
                     stream,
-                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSpan.ToString()}-{userSettings.UserNameLastFm}.png",
-                    null,
-                    false,
-                    this._embed.Build());
+                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSpan}-{userSettings.UserNameLastFm}.png",
+                    embed: this._embed.Build());
 
                 this.Context.LogCommandUsed();
             }

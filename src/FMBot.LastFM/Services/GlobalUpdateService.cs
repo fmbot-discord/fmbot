@@ -4,10 +4,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FMBot.Domain;
+using FMBot.Domain.Models;
+using FMBot.LastFM.Domain.Enums;
+using FMBot.LastFM.Domain.Types;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using IF.Lastfm.Core.Api;
-using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
@@ -20,9 +21,7 @@ namespace FMBot.LastFM.Services
     public class GlobalUpdateService
 
     {
-        private readonly LastfmClient _lastFMClient;
-
-        private static readonly List<string> UserUpdateFailures = new List<string>();
+        private readonly LastFmService _lastFmService;
 
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
@@ -30,69 +29,106 @@ namespace FMBot.LastFM.Services
 
         private readonly IMemoryCache _cache;
 
-        public GlobalUpdateService(IConfigurationRoot configuration, IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory)
+        public GlobalUpdateService(IConfigurationRoot configuration, IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmService lastFmService)
         {
             this._cache = cache;
             this._contextFactory = contextFactory;
+            this._lastFmService = lastFmService;
             this._connectionString = configuration.GetSection("Database:ConnectionString").Value;
-            this._lastFMClient = new LastfmClient(configuration.GetSection("LastFm:Key").Value, configuration.GetSection("LastFm:Secret").Value);
         }
 
-
-        public async Task<int> UpdateUser(User user)
+        public async Task<Response<RecentTrackList>> UpdateUser(UpdateUserQueueItem queueItem)
         {
-            Thread.Sleep(1000);
+            Thread.Sleep(queueItem.TimeoutMs);
+
+            await using var db = this._contextFactory.CreateDbContext();
+            var user = await db.Users.FindAsync(queueItem.UserId);
 
             Log.Information("Update: Started on {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
 
-            if (UserUpdateFailures.Contains(user.UserNameLastFM))
+            var lastPlay = await GetLastStoredPlay(user);
+
+            string sessionKey = null;
+            if (!string.IsNullOrEmpty(user.SessionKeyLastFm))
             {
-                Log.Information("Update: Skipped {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
-                return 0;
+                sessionKey = user.SessionKeyLastFm;
             }
 
-            var lastPlay = await GetLastStoredPlay(user);
-            var recentTracks = await this._lastFMClient.User.GetRecentScrobbles(
+            var dateAgo = lastPlay?.TimePlayed.AddSeconds(-1) ?? DateTime.UtcNow.AddDays(-14);
+            var timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
+
+            var recentTracks = await this._lastFmService.GetRecentTracksAsync(
                 user.UserNameLastFM,
                 count: 1000,
-                from: lastPlay?.TimePlayed ?? DateTime.UtcNow.AddDays(-14));
+                useCache: true,
+                sessionKey,
+                timeFrom);
 
             Statistics.LastfmApiCalls.Inc();
 
             if (!recentTracks.Success)
             {
-                Log.Information("Update: Something went wrong getting tracks for {userId} | {userNameLastFm} | {responseStatus}", user.UserId, user.UserNameLastFM, recentTracks.Status);
-                UserUpdateFailures.Add(user.UserNameLastFM);
+                Log.Information("Update: Something went wrong getting tracks for {userId} | {userNameLastFm} | {responseStatus}", user.UserId, user.UserNameLastFM, recentTracks.Error);
 
-                Log.Information($"Added {user.UserNameLastFM} to update failure list");
-                return 0;
-            }
-            if(!recentTracks.Content.Any())
-            {
-                Log.Information("Update: No new tracks for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
-                return 0;
+                if (recentTracks.Error == ResponseStatus.MissingParameters)
+                {
+                    await AddOrUpdateInactiveUserMissingParameterError(user);
+                }
+                if (recentTracks.Error == ResponseStatus.LoginRequired)
+                {
+                    await AddOrUpdatePrivateUserMissingParameterError(user);
+                }
+
+                recentTracks.Content = new RecentTrackList
+                {
+                    NewRecentTracksAmount = 0
+                };
+                return recentTracks;
             }
 
-            var newScrobbles = recentTracks.Content
-                .Where(w => w.TimePlayed.HasValue && w.TimePlayed.Value.DateTime > user.LastScrobbleUpdate)
-                .ToList();
+            await RemoveInactiveUserIfExists(user);
 
             await using var connection = new NpgsqlConnection(this._connectionString);
             await connection.OpenAsync();
 
-            await UpdatePlaysForUser(user, recentTracks, connection);
+            if (!recentTracks.Content.RecentTracks.Any())
+            {
+                Log.Information("Update: No new tracks for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+                await SetUserUpdateTime(user, DateTime.UtcNow, connection);
+
+                recentTracks.Content.NewRecentTracksAmount = 0;
+                return recentTracks;
+            }
+
+            AddRecentPlayToMemoryCache(user.UserId, recentTracks.Content.RecentTracks.First());
+
+            var newScrobbles = recentTracks.Content.RecentTracks
+                .Where(w => (!w.NowPlaying) &&
+                            w.TimePlayed != null &&
+                            w.TimePlayed > user.LastScrobbleUpdate)
+                .ToList();
 
             if (!newScrobbles.Any())
             {
                 Log.Information("Update: After local filter no new tracks for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
                 await SetUserUpdateTime(user, DateTime.UtcNow, connection);
-                return 0;
+
+                if (!user.TotalPlaycount.HasValue)
+                {
+                    recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, newScrobbles.Count, connection);
+                }
+                recentTracks.Content.NewRecentTracksAmount = 0;
+                return recentTracks;
             }
 
             var cachedArtistAliases = await GetCachedArtistAliases();
 
             try
             {
+                recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, newScrobbles.Count, connection);
+
+                await UpdatePlaysForUser(user, newScrobbles, connection);
+
                 await UpdateArtistsForUser(user, newScrobbles, cachedArtistAliases, connection);
 
                 await UpdateAlbumsForUser(user, newScrobbles, cachedArtistAliases, connection);
@@ -107,8 +143,12 @@ namespace FMBot.LastFM.Services
                 Log.Error(e, "Update: Error in update process for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
             }
 
+            Statistics.UpdatedUsers.Inc();
+
             await connection.CloseAsync();
-            return newScrobbles.Count;
+
+            recentTracks.Content.NewRecentTracksAmount = newScrobbles.Count;
+            return recentTracks;
         }
 
         private async Task<IReadOnlyList<ArtistAlias>> GetCachedArtistAliases()
@@ -138,10 +178,10 @@ namespace FMBot.LastFM.Services
         }
 
 
-        private async Task UpdatePlaysForUser(User user, IEnumerable<LastTrack> newScrobbles,
+        private async Task UpdatePlaysForUser(User user, List<RecentTrack> newScrobbles,
             NpgsqlConnection connection)
         {
-            Log.Information("Update: Updating plays for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+            Log.Verbose("Update: Updating plays for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
 
             await using var deleteOldPlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
                                                                "WHERE user_id = @userId AND time_played < @playExpirationDate;", connection);
@@ -154,16 +194,22 @@ namespace FMBot.LastFM.Services
             var lastPlay = await GetLastStoredPlay(user);
 
             var userPlays = newScrobbles
-                .Where(w => w.TimePlayed.HasValue &&
-                            w.TimePlayed.Value.DateTime > (lastPlay?.TimePlayed ?? DateTime.UtcNow.AddDays(-Constants.DaysToStorePlays).Date))
+                .Where(w => !w.NowPlaying &&
+                            w.TimePlayed.HasValue &&
+                            w.TimePlayed > (lastPlay?.TimePlayed ?? DateTime.UtcNow.AddDays(-Constants.DaysToStorePlays).Date))
                 .Select(s => new UserPlay
                 {
-                    TrackName = s.Name,
-                    AlbumName = s.AlbumName,
                     ArtistName = s.ArtistName,
-                    TimePlayed = s.TimePlayed.Value.DateTime,
+                    AlbumName = s.AlbumName,
+                    TrackName = s.TrackName,
+                    TimePlayed = s.TimePlayed.Value,
                     UserId = user.UserId
                 }).ToList();
+
+            if (!userPlays.Any())
+            {
+                return;
+            }
 
             var copyHelper = new PostgreSQLCopyHelper<UserPlay>("public", "user_plays")
                 .MapText("track_name", x => x.TrackName)
@@ -173,9 +219,13 @@ namespace FMBot.LastFM.Services
                 .MapInteger("user_id", x => x.UserId);
 
             await copyHelper.SaveAllAsync(connection, userPlays);
+
+#if DEBUG
+            Log.Information($"Added {userPlays.Count} plays to database for {user.UserNameLastFM}");
+#endif
         }
 
-        private async Task UpdateArtistsForUser(User user, IEnumerable<LastTrack> newScrobbles,
+        private async Task UpdateArtistsForUser(User user, List<RecentTrack> newScrobbles,
             IReadOnlyList<ArtistAlias> cachedArtistAliases, NpgsqlConnection connection)
         {
             await using var db = this._contextFactory.CreateDbContext();
@@ -205,7 +255,10 @@ namespace FMBot.LastFM.Services
                     updateUserArtist.Parameters.AddWithValue("newPlaycount", existingUserArtist.Playcount + artist.Count());
                     updateUserArtist.Parameters.AddWithValue("userArtistId", existingUserArtist.UserArtistId);
 
-                    //Log.Information($"Updated artist {artistName} for {user.UserNameLastFM}");
+#if DEBUG
+                    Log.Information($"Updated artist {artistName} for {user.UserNameLastFM}");
+#endif
+
                     await updateUserArtist.ExecuteNonQueryAsync().ConfigureAwait(false);
                 }
                 else
@@ -219,16 +272,18 @@ namespace FMBot.LastFM.Services
                     addUserArtist.Parameters.AddWithValue("artistName", artistName);
                     addUserArtist.Parameters.AddWithValue("artistPlaycount", artist.Count());
 
-                    //Log.Information($"Added artist {artistName} for {user.UserNameLastFM}");
+#if DEBUG
+                    Log.Information($"Added artist {artistName} for {user.UserNameLastFM}");
+#endif
                     await addUserArtist.ExecuteNonQueryAsync().ConfigureAwait(false);
                 }
             }
 
-            Log.Information("Update: Updated artists for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+            Log.Verbose("Update: Updated artists for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
 
         }
 
-        private async Task UpdateAlbumsForUser(User user, IEnumerable<LastTrack> newScrobbles,
+        private async Task UpdateAlbumsForUser(User user, List<RecentTrack> newScrobbles,
             IReadOnlyList<ArtistAlias> cachedArtistAliases, NpgsqlConnection connection)
         {
             await using var db = this._contextFactory.CreateDbContext();
@@ -237,7 +292,9 @@ namespace FMBot.LastFM.Services
                 .Where(w => w.UserId == user.UserId)
                 .ToListAsync();
 
-            foreach (var album in newScrobbles.GroupBy(x => new { x.ArtistName, x.AlbumName }))
+            foreach (var album in newScrobbles
+                .Where(w => w.AlbumName != null)
+                .GroupBy(x => new { x.ArtistName, x.AlbumName }))
             {
                 var alias = cachedArtistAliases
                     .FirstOrDefault(f => f.Alias.ToLower() == album.Key.ArtistName.ToLower());
@@ -259,7 +316,9 @@ namespace FMBot.LastFM.Services
                     updateUserAlbum.Parameters.AddWithValue("newPlaycount", existingUserAlbum.Playcount + album.Count());
                     updateUserAlbum.Parameters.AddWithValue("userAlbumId", existingUserAlbum.UserAlbumId);
 
-                    //Log.Information($"Updated album {album.Key.AlbumName} for {user.UserNameLastFM}");
+#if DEBUG
+                    Log.Information($"Updated album {album.Key.AlbumName} for {user.UserNameLastFM} (+{album.Count()} plays)");
+#endif
                     await updateUserAlbum.ExecuteNonQueryAsync().ConfigureAwait(false);
                 }
                 else
@@ -274,15 +333,18 @@ namespace FMBot.LastFM.Services
                     addUserAlbum.Parameters.AddWithValue("artistName", artistName);
                     addUserAlbum.Parameters.AddWithValue("albumPlaycount", album.Count());
 
-                    //Log.Information($"Added album {album.Key.AlbumName} for {user.UserNameLastFM}");
+#if DEBUG
+                    Log.Information($"Added album {album.Key.ArtistName} - {album.Key.AlbumName} for {user.UserNameLastFM}");
+#endif
+
                     await addUserAlbum.ExecuteNonQueryAsync().ConfigureAwait(false);
                 }
             }
 
-            Log.Information("Update: Updated albums for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+            Log.Verbose("Update: Updated albums for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
         }
 
-        private async Task UpdateTracksForUser(User user, IEnumerable<LastTrack> newScrobbles,
+        private async Task UpdateTracksForUser(User user, List<RecentTrack> newScrobbles,
             IReadOnlyList<ArtistAlias> cachedArtistAliases, NpgsqlConnection connection)
         {
             await using var db = this._contextFactory.CreateDbContext();
@@ -291,7 +353,7 @@ namespace FMBot.LastFM.Services
                 .Where(w => w.UserId == user.UserId)
                 .ToListAsync();
 
-            foreach (var track in newScrobbles.GroupBy(x => new { x.ArtistName, x.Name }))
+            foreach (var track in newScrobbles.GroupBy(x => new { x.ArtistName, x.TrackName }))
             {
                 var alias = cachedArtistAliases
                     .FirstOrDefault(f => f.Alias.ToLower() == track.Key.ArtistName.ToLower());
@@ -299,7 +361,7 @@ namespace FMBot.LastFM.Services
                 var artistName = alias != null ? alias.Artist.Name : track.Key.ArtistName;
 
                 var existingUserTrack =
-                    userTracks.FirstOrDefault(a => a.Name.ToLower() == track.Key.Name.ToLower() &&
+                    userTracks.FirstOrDefault(a => a.Name.ToLower() == track.Key.TrackName.ToLower() &&
                                                    a.ArtistName.ToLower() == track.Key.ArtistName.ToLower());
 
                 if (existingUserTrack != null)
@@ -313,7 +375,10 @@ namespace FMBot.LastFM.Services
                     updateUserTrack.Parameters.AddWithValue("newPlaycount", existingUserTrack.Playcount + track.Count());
                     updateUserTrack.Parameters.AddWithValue("userTrackId", existingUserTrack.UserTrackId);
 
-                    //Log.Information($"Updated track {track.Key.Name} for {user.UserNameLastFM}");
+#if DEBUG
+                    Log.Information($"Updated track {track.Key.TrackName} for {user.UserNameLastFM} (+{track.Count()} plays)");
+#endif
+
                     await updateUserTrack.ExecuteNonQueryAsync().ConfigureAwait(false);
                 }
                 else
@@ -324,39 +389,182 @@ namespace FMBot.LastFM.Services
                             connection);
 
                     addUserTrack.Parameters.AddWithValue("userId", user.UserId);
-                    addUserTrack.Parameters.AddWithValue("trackName", track.Key.Name);
+                    addUserTrack.Parameters.AddWithValue("trackName", track.Key.TrackName);
                     addUserTrack.Parameters.AddWithValue("artistName", artistName);
                     addUserTrack.Parameters.AddWithValue("trackPlaycount", track.Count());
 
-                    //Log.Information($"Added track {track.Key.Name} for {user.UserNameLastFM}");
+#if DEBUG
+                    Log.Information($"Added track {track.Key.ArtistName} - {track.Key.TrackName} for {user.UserNameLastFM}");
+#endif
+
                     await addUserTrack.ExecuteNonQueryAsync().ConfigureAwait(false);
                 }
             }
-
-            Log.Information("Update: Updated tracks for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
         }
 
         private async Task SetUserUpdateAndScrobbleTime(User user, DateTime now, DateTime lastScrobble, NpgsqlConnection connection)
         {
+            user.LastUpdated = now;
+            user.LastScrobbleUpdate = lastScrobble;
             await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_updated = '{now:u}', last_scrobble_update = '{lastScrobble:u}' WHERE user_id = {user.UserId};", connection);
             await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
         private async Task SetUserUpdateTime(User user, DateTime now, NpgsqlConnection connection)
         {
+            user.LastUpdated = now;
             await using var setUpdateTime = new NpgsqlCommand($"UPDATE public.users SET last_updated = '{now:u}' WHERE user_id = {user.UserId};", connection);
             await setUpdateTime.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
-        private DateTime GetLatestScrobbleDate(User user, List<LastTrack> newScrobbles)
+        private async Task<long> SetOrUpdateUserPlaycount(User user, long playcountToAdd, NpgsqlConnection connection)
         {
-            if (!newScrobbles.Any(a => a.TimePlayed.HasValue))
+            if (!user.TotalPlaycount.HasValue)
+            {
+                var recentTracks = await this._lastFmService.GetRecentTracksAsync(
+                    user.UserNameLastFM,
+                    count: 1,
+                    useCache: false,
+                    user.SessionKeyLastFm);
+
+                await using var setPlaycount = new NpgsqlCommand($"UPDATE public.users SET total_playcount = {recentTracks.Content.TotalAmount} WHERE user_id = {user.UserId};", connection);
+                await setPlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
+
+                user.TotalPlaycount = recentTracks.Content.TotalAmount;
+
+                return recentTracks.Content.TotalAmount;
+            }
+            else
+            {
+                var updatedPlaycount = user.TotalPlaycount.Value + playcountToAdd;
+                await using var updatePlaycount = new NpgsqlCommand($"UPDATE public.users SET total_playcount = {updatedPlaycount} WHERE user_id = {user.UserId};", connection);
+                await updatePlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
+
+                return updatedPlaycount;
+            }
+        }
+
+        private DateTime GetLatestScrobbleDate(User user, List<RecentTrack> newScrobbles)
+        {
+            var scrobbleWithDate = newScrobbles
+                .FirstOrDefault(f => f.TimePlayed.HasValue && !f.NowPlaying);
+
+            if (scrobbleWithDate == null)
             {
                 Log.Information("Update: No recent scrobble date found for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
                 return DateTime.UtcNow;
             }
 
-            return newScrobbles.First(f => f.TimePlayed.HasValue).TimePlayed.Value.DateTime;
+            return scrobbleWithDate.TimePlayed.Value;
+        }
+
+        private void AddRecentPlayToMemoryCache(int userId, RecentTrack track)
+        {
+            if (track.NowPlaying || track.TimePlayed != null && track.TimePlayed > DateTime.UtcNow.AddMinutes(-8))
+            {
+                var userPlay = new UserPlay
+                {
+                    ArtistName = track.ArtistName,
+                    AlbumName = track.AlbumName,
+                    TrackName = track.TrackName,
+                    UserId = userId,
+                    TimePlayed = track.TimePlayed ?? DateTime.UtcNow
+                };
+
+                this._cache.Set($"{userId}-last-play", userPlay, TimeSpan.FromMinutes(15));
+            }
+        }
+
+        private async Task AddOrUpdateInactiveUserMissingParameterError(User user)
+        {
+            if (user.LastUsed > DateTime.UtcNow.AddDays(-20) || !string.IsNullOrEmpty(user.SessionKeyLastFm))
+            {
+                return;
+            }
+
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingInactiveUser = await db.InactiveUsers.FirstOrDefaultAsync(f => f.UserId == user.UserId);
+
+            if (existingInactiveUser == null)
+            {
+                var inactiveUser = new InactiveUsers
+                {
+                    UserNameLastFM = user.UserNameLastFM,
+                    UserId = user.UserId,
+                    Created = DateTime.UtcNow,
+                    Updated = DateTime.UtcNow,
+                    MissingParametersErrorCount = 1
+                };
+
+                await db.InactiveUsers.AddAsync(inactiveUser);
+
+                Log.Verbose("InactiveUsers: Added user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+            }
+            else
+            {
+                existingInactiveUser.MissingParametersErrorCount++;
+                existingInactiveUser.Updated = DateTime.UtcNow;
+
+                db.Entry(existingInactiveUser).State = EntityState.Modified;
+
+                Log.Verbose("InactiveUsers: Updated user {userId} | {userNameLastFm} (missingparameter +1)", user.UserId, user.UserNameLastFM);
+            }
+
+            await db.SaveChangesAsync();
+        }
+
+        private async Task AddOrUpdatePrivateUserMissingParameterError(User user)
+        {
+            if (user.LastUsed > DateTime.UtcNow.AddDays(-20) || !string.IsNullOrEmpty(user.SessionKeyLastFm))
+            {
+                return;
+            }
+
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingPrivateUser = await db.InactiveUsers.FirstOrDefaultAsync(f => f.UserId == user.UserId);
+
+            if (existingPrivateUser == null)
+            {
+                var inactiveUser = new InactiveUsers
+                {
+                    UserNameLastFM = user.UserNameLastFM,
+                    UserId = user.UserId,
+                    Created = DateTime.UtcNow,
+                    Updated = DateTime.UtcNow,
+                    RecentTracksPrivateCount = 1
+                };
+
+                await db.InactiveUsers.AddAsync(inactiveUser);
+
+                Log.Verbose("InactiveUsers: Added private user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+            }
+            else
+            {
+                existingPrivateUser.RecentTracksPrivateCount++;
+                existingPrivateUser.Updated = DateTime.UtcNow;
+
+                db.Entry(existingPrivateUser).State = EntityState.Modified;
+
+                Log.Verbose("InactiveUsers: Updated private user {userId} | {userNameLastFm} (RecentTracksPrivateCount +1)", user.UserId, user.UserNameLastFM);
+            }
+
+            await db.SaveChangesAsync();
+        }
+
+        private async Task RemoveInactiveUserIfExists(User user)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+
+            var existingInactiveUser = await db.InactiveUsers.FirstOrDefaultAsync(f => f.UserId == user.UserId);
+
+            if (existingInactiveUser != null)
+            {
+                db.InactiveUsers.Remove(existingInactiveUser);
+
+                Log.Verbose("InactiveUsers: Removed user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+
+                await db.SaveChangesAsync();
+            }
         }
     }
 }

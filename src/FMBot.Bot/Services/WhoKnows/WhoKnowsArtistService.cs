@@ -2,13 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
 using Dasync.Collections;
 using Discord.Commands;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Npgsql;
+using Serilog;
 
 namespace FMBot.Bot.Services.WhoKnows
 {
@@ -24,35 +28,46 @@ namespace FMBot.Bot.Services.WhoKnows
         }
 
         public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(ICommandContext context,
-            ICollection<GuildUser> guildUsers, string artistName)
+            ICollection<GuildUser> guildUsers, int guildId, string artistName)
         {
-            var userIds = guildUsers.Select(s => s.UserId);
+            const string sql = "SELECT ua.user_id, " +
+                               "ua.name, " +
+                               "ua.playcount, " +
+                               "u.user_name_last_fm, " +
+                               "u.discord_user_id " +
+                               "FROM user_artists AS ua " +
+                               "INNER JOIN users AS u ON ua.user_id = u.user_id " +
+                               "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                               "WHERE gu.guild_id = @guildId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))" +
+                               "ORDER BY ua.playcount DESC " +
+                               "LIMIT 14";
 
-            await using var db = this._contextFactory.CreateDbContext();
-            var userArtists = await db.UserArtists
-                .Include(i => i.User)
-                .Where(w => EF.Functions.ILike(w.Name, artistName)
-                            && userIds.Contains(w.UserId))
-                .OrderByDescending(o => o.Playcount)
-                .Take(14)
-                .ToListAsync();
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var userArtists = await connection.QueryAsync<WhoKnowsArtistDto>(sql, new
+            {
+                guildId,
+                artistName
+            });
 
             var whoKnowsArtistList = new List<WhoKnowsObjectWithUser>();
 
             foreach (var userArtist in userArtists)
             {
-                var discordUser = await context.Guild.GetUserAsync(userArtist.User.DiscordUserId);
+                var discordUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId);
                 var guildUser = guildUsers.FirstOrDefault(f => f.UserId == userArtist.UserId);
                 var userName = discordUser != null ?
                     discordUser.Nickname ?? discordUser.Username :
-                    guildUser?.UserName ?? userArtist.User.UserNameLastFM;
+                    guildUser?.UserName ?? userArtist.UserNameLastFm;
 
                 whoKnowsArtistList.Add(new WhoKnowsObjectWithUser
                 {
                     Name = userArtist.Name,
                     DiscordName = userName,
                     Playcount = userArtist.Playcount,
-                    LastFMUsername = userArtist.User.UserNameLastFM,
+                    LastFMUsername = userArtist.UserNameLastFm,
                     UserId = userArtist.UserId
                 });
             }
@@ -86,74 +101,97 @@ namespace FMBot.Bot.Services.WhoKnows
                 .ToListAsync();
         }
 
-        public async Task<int> GetArtistListenerCountForServer(ICollection<GuildUser> guildUsers, string artistName)
+        public async Task<int> GetArtistListenerCountForServer(int guildId, string artistName)
         {
-            var userIds = guildUsers.Select(s => s.UserId);
+            const string sql = "SELECT coalesce(count(ua.user_id), 0) " +
+                               "FROM user_artists AS ua " +
+                               "INNER JOIN users AS u ON ua.user_id = u.user_id " +
+                               "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                               "WHERE gu.guild_id = @guildId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))";
 
-            await using var db = this._contextFactory.CreateDbContext();
-            return await db.UserArtists
-                .AsQueryable()
-                .Where(w => EF.Functions.ILike(w.Name, artistName)
-                            && userIds.Contains(w.UserId))
-                .CountAsync();
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            return await connection.QuerySingleAsync<int>(sql, new
+            {
+                guildId,
+                artistName
+            });
         }
 
-        public async Task<int> GetArtistPlayCountForServer(ICollection<GuildUser> guildUsers, string artistName)
+        public async Task<int> GetArtistPlayCountForServer(int guildId, string artistName)
         {
-            var userIds = guildUsers.Select(s => s.UserId);
+            const string sql = "SELECT coalesce(sum(ua.playcount), 0) " +
+                               "FROM user_artists AS ua " +
+                               "INNER JOIN users AS u ON ua.user_id = u.user_id " +
+                               "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                               "WHERE gu.guild_id = @guildId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))";
 
-            await using var db = this._contextFactory.CreateDbContext();
-            var query = db.UserArtists
-                .AsQueryable()
-                .Where(w => EF.Functions.ILike(w.Name, artistName.ToLower())
-                            && userIds.Contains(w.UserId));
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
 
-            // This is bad practice, but it helps with speed. An exception gets thrown if the artist does not exist in the database.
-            // Checking if the records exist first would be an extra database call
-            try
+            return await connection.QuerySingleAsync<int>(sql, new
             {
-                return await query.SumAsync(s => s.Playcount);
-            }
-            catch
-            {
-                return 0;
-            }
+                guildId,
+                artistName
+            });
         }
 
-        public async Task<double> GetArtistAverageListenerPlaycountForServer(ICollection<GuildUser> guildUsers, string artistName)
+        public async Task<double> GetArtistAverageListenerPlaycountForServer(int guildId, string artistName)
         {
-            var userIds = guildUsers.Select(s => s.UserId);
+            const string sql = "SELECT coalesce(avg(ua.playcount), 0) " +
+                               "FROM user_artists AS ua " +
+                               "INNER JOIN users AS u ON ua.user_id = u.user_id " +
+                               "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                               "WHERE gu.guild_id = @guildId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))";
 
-            await using var db = this._contextFactory.CreateDbContext();
-            var query = db.UserArtists
-                .AsQueryable()
-                .Where(w => EF.Functions.ILike(w.Name, artistName.ToLower())
-                            && userIds.Contains(w.UserId));
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
 
-            try
+            return await connection.QuerySingleAsync<int>(sql, new
             {
-                return await query.AverageAsync(s => s.Playcount);
-            }
-            catch
-            {
-                return 0;
-            }
+                guildId,
+                artistName
+            });
         }
 
-        public async Task<int> GetWeekArtistPlaycountForGuildAsync(ICollection<GuildUser> guildUsers, string artistName)
+        public async Task<int?> GetArtistPlayCountForUser(string artistName, int userId)
         {
-            var now = DateTime.UtcNow;
+            await using var db = this._contextFactory.CreateDbContext();
+            var userArtist = await db.UserArtists
+                .AsQueryable()
+                .FirstOrDefaultAsync(w =>
+                    w.UserId == userId &&
+                    EF.Functions.ILike(w.Name, artistName));
+
+            return userArtist?.Playcount;
+        }
+
+        public async Task<int> GetWeekArtistPlaycountForGuildAsync(int guildId, string artistName)
+        {
             var minDate = DateTime.UtcNow.AddDays(-7);
 
-            var userIds = guildUsers.Select(s => s.UserId);
+            const string sql = "SELECT coalesce(count(up.user_play_id), 0) " +
+                               "FROM user_plays AS up " +
+                               "INNER JOIN users AS u ON up.user_id = u.user_id " +
+                               "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                               "WHERE gu.guild_id = @guildId AND " +
+                               "UPPER(up.artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
+                               "up.time_played >= @minDate";
 
-            await using var db = this._contextFactory.CreateDbContext();
-            return await db.UserPlays
-                .AsQueryable()
-                .CountAsync(a => a.TimePlayed.Date <= now.Date &&
-                                  a.TimePlayed.Date > minDate.Date &&
-                                  EF.Functions.ILike(a.ArtistName, artistName.ToLower()) &&
-                                  userIds.Contains(a.UserId));
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            return await connection.QuerySingleAsync<int>(sql, new
+            {
+                guildId,
+                artistName,
+                minDate
+            });
         }
 
         // TODO: figure out how to do this
@@ -169,10 +207,11 @@ namespace FMBot.Bot.Services.WhoKnows
                 await using var db = this._contextFactory.CreateDbContext();
                 return await db.UserPlays
                     .AsQueryable()
-                    .Where(w => w.TimePlayed.Date <= now.Date &&
-                                w.TimePlayed.Date > minDate.Date &&
-                                EF.Functions.ILike(w.ArtistName, artistName) &&
-                                userIds.Contains(w.UserId))
+                    .Where(w =>
+                        userIds.Contains(w.UserId) &&
+                        w.TimePlayed.Date <= now.Date &&
+                        w.TimePlayed.Date > minDate.Date &&
+                        EF.Functions.ILike(w.ArtistName, artistName))
                     .GroupBy(x => new { x.UserId, x.ArtistName, x.UserPlayId })
                     .CountAsync();
             }
@@ -191,11 +230,9 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var topArtistsForEveryoneInServer = new List<AffinityArtist>();
 
-            await using var db = this._contextFactory.CreateDbContext();
-
             await userIds.ParallelForEachAsync(async user =>
             {
-                var key = $"top-artists-{user}";
+                var key = $"top-affinity-artists-{user}";
 
                 if (this._cache.TryGetValue(key, out List<AffinityArtist> topArtistsForUser))
                 {
@@ -203,6 +240,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 }
                 else
                 {
+                    await using var db = this._contextFactory.CreateDbContext();
 
                     var topArtist = await db.UserArtists
                         .AsQueryable()
@@ -211,7 +249,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
                     var avgPlaycount = await db.UserArtists
                         .AsQueryable()
-                        .Where(w => w.Playcount > 29 && w.UserId == userId)
+                        .Where(w => w.UserId == userId && w.Playcount > 29)
                         .AverageAsync(a => a.Playcount);
 
                     if (topArtist != null)
@@ -238,9 +276,11 @@ namespace FMBot.Bot.Services.WhoKnows
                         }
                     }
 
-                    
+
                 }
             });
+
+            await using var db = this._contextFactory.CreateDbContext();
 
             var userTopArtist = await db.UserArtists
                 .AsQueryable()
@@ -255,8 +295,8 @@ namespace FMBot.Bot.Services.WhoKnows
             var topArtists = await db.UserArtists
                 .AsQueryable()
                 .Where(
-                    w => w.Playcount > 29 &&
-                         w.UserId == userId &&
+                    w => w.UserId == userId &&
+                         w.Playcount > 29 &&
                          w.Name != null)
                 .OrderByDescending(o => o.Playcount)
                 .Select(s => new AffinityArtist
@@ -284,6 +324,47 @@ namespace FMBot.Bot.Services.WhoKnows
                     Name = guildUsers.First(f => f.UserId == s.Key).UserNameLastFM
                 })
                 .ToList();
+        }
+
+        public async Task CorrectUserArtistPlaycount(int userId, string artistName, long correctPlaycount)
+        {
+            if (correctPlaycount < 20)
+            {
+                return;
+            }
+
+            await using var db = this._contextFactory.CreateDbContext();
+            var user = await db.Users
+                .AsQueryable()
+                .Include(i => i.Artists)
+                .FirstOrDefaultAsync(f => f.UserId == userId);
+
+            if (user?.LastUpdated == null || !user.Artists.Any() || user.LastUpdated < DateTime.UtcNow.AddMinutes(-2))
+            {
+                return;
+            }
+
+            var userArtist = user.Artists.FirstOrDefault(f => f.Name.ToLower() == artistName.ToLower());
+
+            if (userArtist == null ||
+                userArtist.Playcount < 20 ||
+                userArtist.Playcount > (correctPlaycount - 4) && userArtist.Playcount < (correctPlaycount + 4))
+            {
+                return;
+            }
+
+
+            this._cache.Remove($"top-artists-{user.UserId}");
+
+            Log.Information("Corrected playcount for user {userId} | {lastFmUserName} for artist {artistName} from {oldPlaycount} to {newPlaycount}",
+                user.UserId, user.UserNameLastFM, userArtist.Name, userArtist.Playcount, correctPlaycount);
+
+            userArtist.Playcount = (int)correctPlaycount;
+
+            db.Entry(userArtist).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
         }
     }
 }

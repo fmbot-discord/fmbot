@@ -4,10 +4,14 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FMBot.Domain;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Api;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Objects;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using PostgreSQLCopyHelper;
@@ -19,27 +23,42 @@ namespace FMBot.LastFM.Services
     {
         private readonly LastfmClient _lastFMClient;
 
+        private readonly IMemoryCache _cache;
+
         private readonly string _key;
         private readonly string _secret;
 
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+
         private readonly string _connectionString;
 
-        private readonly LastFmService lastFmService;
+        private readonly LastFmService _lastFmService;
 
         public GlobalIndexService(
             IConfigurationRoot configuration,
-            LastFmService lastFmService)
+            LastFmService lastFmService,
+            IDbContextFactory<FMBotDbContext> contextFactory,
+            IMemoryCache cache)
         {
-            this.lastFmService = lastFmService;
+            this._lastFmService = lastFmService;
+            this._contextFactory = contextFactory;
+            this._cache = cache;
             this._key = configuration.GetSection("LastFm:Key").Value;
             this._secret = configuration.GetSection("LastFm:Secret").Value;
             this._connectionString = configuration.GetSection("Database:ConnectionString").Value;
             this._lastFMClient = new LastfmClient(this._key, this._secret);
         }
 
-        public async Task IndexUser(User user)
+        public async Task IndexUser(IndexUserQueueItem queueItem)
         {
-            Thread.Sleep(10000);
+            Thread.Sleep(queueItem.TimeoutMs);
+
+            await using var db = this._contextFactory.CreateDbContext();
+            var user = await db.Users.FindAsync(queueItem.UserId);
+
+            this._cache.Remove($"top-artists-{user.UserId}");
+            this._cache.Remove($"top-albums-{user.UserId}");
+            this._cache.Remove($"top-tracks-{user.UserId}");
 
             Log.Information($"Starting index for {user.UserNameLastFM}");
             var now = DateTime.UtcNow;
@@ -47,6 +66,8 @@ namespace FMBot.LastFM.Services
             await using var connection = new NpgsqlConnection(this._connectionString);
             connection.Open();
 
+            await SetUserPlaycount(user, connection);
+            
             var plays = await GetPlaysForUserFromLastFm(user);
             await InsertPlaysIntoDatabase(plays, user.UserId, connection);
 
@@ -57,12 +78,7 @@ namespace FMBot.LastFM.Services
             await InsertAlbumsIntoDatabase(albums, user.UserId, connection);
 
             var tracks = await GetTracksForUserFromLastFm(user);
-
-            var tracksToInsert = tracks
-                .Where(w => w.Playcount >= 3)
-                .ToList();
-
-            await InsertTracksIntoDatabase(tracksToInsert, user.UserId, connection);
+            await InsertTracksIntoDatabase(tracks, user.UserId, connection);
 
             var latestScrobbleDate = await GetLatestScrobbleDate(user);
 
@@ -77,8 +93,9 @@ namespace FMBot.LastFM.Services
 
             var topArtists = new List<LastArtist>();
 
-            const int amountOfApiCalls = 4000 / 1000;
-            for (var i = 1; i < amountOfApiCalls + 1; i++)
+            var indexLimit = UserHasHigherIndexLimit(user) ? 25 : 4;
+
+            for (var i = 1; i < indexLimit + 1; i++)
             {
                 var artistResult = await this._lastFMClient.User.GetTopArtists(user.UserNameLastFM,
                     LastStatsTimeSpan.Overall, i, 1000);
@@ -137,8 +154,9 @@ namespace FMBot.LastFM.Services
 
             var topAlbums = new List<LastAlbum>();
 
-            const int amountOfApiCalls = 5000 / 1000;
-            for (var i = 1; i < amountOfApiCalls + 1; i++)
+            var indexLimit = UserHasHigherIndexLimit(user) ? 25 : 5;
+
+            for (var i = 1; i < indexLimit + 1; i++)
             {
                 var albumResult = await this._lastFMClient.User.GetTopAlbums(user.UserNameLastFM,
                     LastStatsTimeSpan.Overall, i, 1000);
@@ -170,7 +188,9 @@ namespace FMBot.LastFM.Services
         {
             Log.Information($"Getting tracks for user {user.UserNameLastFM}");
 
-            var trackResult = await this.lastFmService.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, 6);
+            var indexLimit = UserHasHigherIndexLimit(user) ? 25 : 6;
+
+            var trackResult = await this._lastFmService.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, indexLimit);
 
             if (!trackResult.Success || trackResult.Content.TopTracks.Track.Count == 0)
             {
@@ -189,7 +209,7 @@ namespace FMBot.LastFM.Services
         private static async Task InsertPlaysIntoDatabase(IReadOnlyList<UserPlay> userPlays, int userId,
             NpgsqlConnection connection)
         {
-            Log.Information($"Inserting plays for user {userId}");
+            Log.Information($"Inserting {userPlays.Count} plays for user {userId}");
 
             await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_plays " +
                                                                "WHERE user_id = @userId", connection);
@@ -211,7 +231,7 @@ namespace FMBot.LastFM.Services
         private static async Task InsertArtistsIntoDatabase(IReadOnlyList<UserArtist> artists, int userId,
             NpgsqlConnection connection)
         {
-            Log.Information($"Inserting artists for user {userId}");
+            Log.Information($"Inserting {artists.Count} artists for user {userId}");
 
             var copyHelper = new PostgreSQLCopyHelper<UserArtist>("public", "user_artists")
                 .MapText("name", x => x.Name)
@@ -227,7 +247,7 @@ namespace FMBot.LastFM.Services
         private static async Task InsertAlbumsIntoDatabase(IReadOnlyList<UserAlbum> albums, int userId,
             NpgsqlConnection connection)
         {
-            Log.Information($"Inserting albums for user {userId}");
+            Log.Information($"Inserting {albums.Count} albums for user {userId}");
 
             var copyHelper = new PostgreSQLCopyHelper<UserAlbum>("public", "user_albums")
                 .MapText("name", x => x.Name)
@@ -244,7 +264,7 @@ namespace FMBot.LastFM.Services
         private static async Task InsertTracksIntoDatabase(IReadOnlyList<UserTrack> artists, int userId,
             NpgsqlConnection connection)
         {
-            Log.Information($"Inserting tracks for user {userId}");
+            Log.Information($"Inserting {artists.Count} tracks for user {userId}");
 
             var copyHelper = new PostgreSQLCopyHelper<UserTrack>("public", "user_tracks")
                 .MapText("name", x => x.Name)
@@ -281,6 +301,38 @@ namespace FMBot.LastFM.Services
             }
 
             return recentTracks.Content.First(f => f.TimePlayed.HasValue).TimePlayed.Value.DateTime;
+        }
+        
+        private async Task SetUserPlaycount(User user, NpgsqlConnection connection)
+        {
+            var recentTracks = await this._lastFmService.GetRecentTracksAsync(
+                user.UserNameLastFM,
+                count: 1,
+                useCache: false,
+                user.SessionKeyLastFm);
+
+            await using var setPlaycount = new NpgsqlCommand($"UPDATE public.users SET total_playcount = {recentTracks.Content.TotalAmount} WHERE user_id = {user.UserId};", connection);
+
+            await setPlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+
+        private bool UserHasHigherIndexLimit(User user)
+        {
+            switch (user.UserType)
+            {
+                case UserType.Backer:
+                    return true;
+                case UserType.Contributor:
+                    return true;
+                case UserType.Admin:
+                    return true;
+                case UserType.Owner:
+                    return true;
+                case UserType.User:
+                    return false;
+                default:
+                    return false;
+            }
         }
     }
 }

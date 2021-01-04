@@ -4,7 +4,7 @@ using FMBot.Bot.Configurations;
 using Genius;
 using Genius.Models;
 
-namespace FMBot.Bot.Services
+namespace FMBot.Bot.Services.ThirdParty
 {
     public class GeniusService
     {
@@ -14,12 +14,12 @@ namespace FMBot.Bot.Services
 
             var result = await client.SearchClient.Search(searchValue);
 
-            if (!result.Response.Hits.Any())
+            if (result.Response?.Hits == null || !result.Response.Hits.Any())
             {
                 return null;
             }
 
-            return result.Response.Hits[0];
+            return result.Response.Hits.OrderByDescending(o => o.Result.PyongsCount).ToList()[0];
         }
     }
 }

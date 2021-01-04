@@ -6,24 +6,30 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using FMBot.Bot.Attributes;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
-namespace FMBot.Bot.Commands
+namespace FMBot.Bot.Commands.Guild
 {
-    [Summary("Server Staff Only")]
+    [Name("Server settings")]
+    [Summary("Server staff only")]
     public class GuildCommands : ModuleBase
     {
         private readonly AdminService _adminService;
         private readonly GuildService _guildService;
+        private readonly SettingService _settingService;
 
         private readonly IPrefixService _prefixService;
-        private readonly IDisabledCommandService _disabledCommandService;
+        private readonly IGuildDisabledCommandService _guildDisabledCommandService;
+        private readonly IChannelDisabledCommandService _channelDisabledCommandService;
 
         private readonly CommandService _commands;
 
@@ -35,12 +41,16 @@ namespace FMBot.Bot.Commands
             GuildService guildService,
             CommandService commands,
             AdminService adminService,
-            IDisabledCommandService disabledCommandService)
+            IGuildDisabledCommandService guildDisabledCommandService,
+            IChannelDisabledCommandService channelDisabledCommandService,
+            SettingService settingService)
         {
             this._prefixService = prefixService;
             this._guildService = guildService;
             this._commands = commands;
-            this._disabledCommandService = disabledCommandService;
+            this._guildDisabledCommandService = guildDisabledCommandService;
+            this._channelDisabledCommandService = channelDisabledCommandService;
+            this._settingService = settingService;
             this._adminService = adminService;
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFmColorRed);
@@ -51,17 +61,11 @@ namespace FMBot.Bot.Commands
         [Command("serverset", RunMode = RunMode.Async)]
         [Summary("Sets the global FMBot settings for the server.")]
         [Alias("serversetmode")]
+        [GuildOnly]
         public async Task SetServerAsync([Summary("The default mode you want to use.")]
             string chartType = "embedmini", [Summary("The default timeperiod you want to use.")]
             string chartTimePeriod = "monthly")
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -106,15 +110,9 @@ namespace FMBot.Bot.Commands
         [Command("serverreactions", RunMode = RunMode.Async)]
         [Summary("Sets reactions for some server commands.")]
         [Alias("serversetreactions")]
+        [GuildOnly]
         public async Task SetGuildReactionsAsync(params string[] emotes)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -161,15 +159,9 @@ namespace FMBot.Bot.Commands
         [Command("togglesupportermessages", RunMode = RunMode.Async)]
         [Summary("Sets reactions for some server commands.")]
         [Alias("togglesupporter", "togglesupporters", "togglesupport")]
+        [GuildOnly]
         public async Task ToggleSupportMessagesAsync()
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -197,15 +189,9 @@ namespace FMBot.Bot.Commands
         [Command("export", RunMode = RunMode.Async)]
         [Summary("Gets Last.fm usernames from your server members in json format.")]
         [Alias("getmembers", "exportmembers")]
+        [GuildOnly]
         public async Task GetMembersAsync()
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -253,15 +239,9 @@ namespace FMBot.Bot.Commands
         /// </summary>
         /// <param name="prefix">The desired prefix.</param>
         [Command("prefix", RunMode = RunMode.Async)]
+        [GuildOnly]
         public async Task SetPrefixAsync(string prefix = null)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -310,7 +290,7 @@ namespace FMBot.Bot.Commands
                                         $"- `{prefix}fm`\n" +
                                         $"- `{prefix}chart 8x8 monthly`\n" +
                                         $"- `{prefix}whoknows` \n \n" +
-                                        "Reminder that you can always ping the bot followed by your command. \n" +
+                                        "Reminder that you can always mention the bot followed by your command. \n" +
                                         $"The [.fmbot docs]({Constants.DocsUrl}) will still have the `.fm` prefix everywhere. " +
                                         $"Custom prefixes are still in the testing phase so please note that some error messages and other places might not show your prefix yet.\n\n" +
                                         $"To remove the custom prefix, do `{prefix}prefix remove`");
@@ -323,34 +303,33 @@ namespace FMBot.Bot.Commands
         /// <summary>
         /// Toggles commands for a server
         /// </summary>
-        [Command("togglecommand", RunMode = RunMode.Async)]
-        [Alias("togglecommands", "toggle")]
-        public async Task ToggleCommand(string command = null)
+        [Command("toggleservercommand", RunMode = RunMode.Async)]
+        [Alias("toggleservercommands", "toggleserver", "servertoggle")]
+        [GuildOnly]
+        public async Task ToggleGuildCommand(string command = null)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
+            var disabledCommandsForGuild = await this._guildService.GetDisabledCommandsForGuild(this.Context.Guild);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            var disabledCommands = await this._guildService.GetDisabledCommandsForGuild(this.Context.Guild);
+            this._embed.WithFooter(
+                $"Toggling server-wide for all channels\n" +
+                $"to toggle per channel use {prfx}togglecommand");
 
             if (string.IsNullOrEmpty(command))
             {
                 var description = new StringBuilder();
-                if (disabledCommands != null)
+                if (disabledCommandsForGuild != null && disabledCommandsForGuild.Length > 0)
                 {
                     description.AppendLine("Currently disabled commands in this server:");
-                    foreach (var disabledCommand in disabledCommands)
+                    foreach (var disabledCommand in disabledCommandsForGuild)
                     {
-                        description.AppendLine($"- {disabledCommand}");
+                        description.Append($"`{disabledCommand}` ");
                     }
                 }
                 else
                 {
                     description.Append("This server currently has all commands enabled. \n" +
-                                  "To disable a command, enter the command name like this: `.fmtogglecommand chart`");
+                                  $"To disable a command, enter the command name like this: `{prfx}toggleservercommand chart`");
                 }
 
                 this._embed.WithDescription(description.ToString());
@@ -371,7 +350,110 @@ namespace FMBot.Bot.Commands
 
             var searchResult = this._commands.Search(command.ToLower());
 
-            if (searchResult.Commands == null || command.ToLower() == "togglecommand")
+            if (searchResult.Commands == null || command.ToLower() == "togglecommand" || command.ToLower() == "toggleservercommand")
+            {
+                this._embed.WithDescription("No commands found or command can't be disabled.\n" +
+                                            "Remember to remove the `.fm` prefix.");
+                await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
+
+            if (disabledCommandsForGuild != null && disabledCommandsForGuild.Contains(command.ToLower()))
+            {
+                var newDisabledCommands = await this._guildService.RemoveGuildDisabledCommandAsync(this.Context.Guild, command.ToLower());
+
+                this._guildDisabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Guild.Id);
+
+                this._embed.WithDescription($"Re-enabled command `{command.ToLower()}` for this server.");
+            }
+            else
+            {
+                var newDisabledCommands = await this._guildService.AddGuildDisabledCommandAsync(this.Context.Guild, command.ToLower());
+
+                this._guildDisabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Guild.Id);
+
+                this._embed.WithDescription($"Disabled command `{command.ToLower()}` for this server.");
+            }
+
+            await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+            this.Context.LogCommandUsed();
+        }
+
+        [Command("togglecommand", RunMode = RunMode.Async)]
+        [Alias("togglecommands", "channeltoggle", "togglechannel", "togglechannelcommand", "togglechannelcommands")]
+        [GuildOnly]
+        public async Task ToggleChannelCommand(string command = null)
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+            if (guild == null)
+            {
+                await ReplyAsync("This server hasn't been stored yet.\n" +
+                                 $"Please run `{prfx}index` to store this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+
+            var disabledCommands = await this._guildService.GetDisabledCommandsForChannel(this.Context.Channel);
+
+            this._embed.WithFooter(
+                $"Toggling per channel\n" +
+                $"To toggle server-wide use {prfx}toggleservercommand");
+
+            if (string.IsNullOrEmpty(command))
+            {
+                var description = new StringBuilder();
+                if (disabledCommands != null &&  disabledCommands.Length > 0)
+                {
+                    description.AppendLine("Currently disabled commands in this channel:");
+                    foreach (var disabledCommand in disabledCommands)
+                    {
+                        description.AppendLine($"- `{disabledCommand}`");
+                    }
+                }
+
+                if (disabledCommands == null || disabledCommands.Length == 0)
+                {
+                    description.AppendLine("This channel currently has all commands enabled. \n" +
+                                           $"To disable a command, enter the command name like this: `{prfx}togglecommand chart`");
+                }
+
+                if (guild.Channels != null && guild.Channels.Any() && guild.Channels.Any(a => a.DisabledCommands != null && a.DisabledCommands.Length > 0))
+                {
+                    description.AppendLine("Currently disabled commands in this server per channel:");
+                    foreach (var channel in guild.Channels.Where(a => a.DisabledCommands != null && a.DisabledCommands.Length > 0))
+                    {
+                        description.Append($"<#{channel.DiscordChannelId}> - ");
+                        foreach (var disabledCommand in channel.DisabledCommands)
+                        {
+                            description.Append($"`{disabledCommand}` ");
+                        }
+                    }
+
+                    description.AppendLine();
+                }
+
+                this._embed.WithDescription(description.ToString());
+                await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            var serverUser = (IGuildUser)this.Context.Message.Author;
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
+                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync(
+                    "You are not authorized to toggle commands. Only users with the 'Ban Members' permission, server admins or FMBot admins disable/enable commands.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                return;
+            }
+
+            var searchResult = this._commands.Search(command.ToLower());
+
+            if (searchResult.Commands == null || command.ToLower() == "togglecommand" || command.ToLower() == "toggleservercommand")
             {
                 this._embed.WithDescription("No commands found or command can't be disabled.\n" +
                                             "Remember to remove the `.fm` prefix.");
@@ -382,19 +464,19 @@ namespace FMBot.Bot.Commands
 
             if (disabledCommands != null && disabledCommands.Contains(command.ToLower()))
             {
-                var newDisabledCommands = await this._guildService.RemoveDisabledCommandAsync(this.Context.Guild, command.ToLower());
+                var newDisabledCommands = await this._guildService.RemoveChannelDisabledCommandAsync(this.Context.Channel, command.ToLower());
 
-                this._disabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Guild.Id);
+                this._channelDisabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Channel.Id);
 
-                this._embed.WithDescription($"Re-enabled command `{command.ToLower()}` for this server.");
+                this._embed.WithDescription($"Re-enabled command `{command.ToLower()}` for this channel.");
             }
             else
             {
-                var newDisabledCommands = await this._guildService.AddDisabledCommandAsync(this.Context.Guild, command.ToLower());
+                var newDisabledCommands = await this._guildService.AddChannelDisabledCommandAsync(this.Context.Channel, guild.GuildId, command.ToLower());
 
-                this._disabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Guild.Id);
+                this._channelDisabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Channel.Id);
 
-                this._embed.WithDescription($"Disabled command `{command.ToLower()}` for this server.");
+                this._embed.WithDescription($"Disabled command `{command.ToLower()}` for this channel.");
             }
 
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);

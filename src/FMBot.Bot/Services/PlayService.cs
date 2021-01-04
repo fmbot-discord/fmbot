@@ -1,13 +1,16 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.LastFM.Domain.ResponseModels;
 using FMBot.LastFM.Domain.Types;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services
@@ -159,6 +162,119 @@ namespace FMBot.Bot.Services
                                  a.UserId == userId);
         }
 
+        public async Task<string> GetStreak(int userId, LastTrack nowPlayingTrack = null)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var lastPlays = await db.UserPlays
+                .AsQueryable()
+                .Where(w => w.UserId == userId)
+                .OrderByDescending(o => o.TimePlayed)
+                .ToListAsync();
+
+            if (!lastPlays.Any())
+            {
+                return null;
+            }
+
+            UserPlay firstPlay;
+            if (nowPlayingTrack == null)
+            {
+                firstPlay = lastPlays.First();
+            }
+            else
+            {
+                firstPlay = new UserPlay
+                {
+                    AlbumName = nowPlayingTrack.AlbumName,
+                    ArtistName = nowPlayingTrack.ArtistName,
+                    TrackName = nowPlayingTrack.Name
+                };
+            }
+
+            var artistCount = 1;
+            var albumCount = 1;
+            var trackCount = 1;
+
+            var artistContinue = true;
+            var albumContinue = true;
+            var trackContinue = true;
+            for (var i = 1; i < lastPlays.Count; i++)
+            {
+                var play = lastPlays[i];
+
+                if (firstPlay.ArtistName == play.ArtistName && artistContinue)
+                {
+                    artistCount += 1;
+                }
+                else
+                {
+                    artistContinue = false;
+                }
+
+                if (firstPlay.AlbumName == play.AlbumName && albumContinue)
+                {
+                    albumCount += 1;
+                }
+                else
+                {
+                    albumContinue = false;
+                }
+
+                if (firstPlay.TrackName == play.TrackName && trackContinue)
+                {
+                    trackCount += 1;
+                }
+                else
+                {
+                    trackContinue = false;
+                }
+
+                if (!artistContinue && !albumContinue && !trackContinue)
+                {
+                    break;
+                }
+            }
+
+            var description = new StringBuilder();
+            if (artistCount > 1)
+            {
+                description.AppendLine($"Artist: **[{firstPlay.ArtistName}](https://www.last.fm/music/{HttpUtility.UrlEncode(firstPlay.ArtistName)})** - " +
+                                       $"{GetEmojiForStreakCount(artistCount)}*{artistCount} plays in a row*");
+            }
+            if (albumCount > 1)
+            {
+                description.AppendLine($"Album: **[{firstPlay.AlbumName}](https://www.last.fm/music/{HttpUtility.UrlEncode(firstPlay.ArtistName)}/{HttpUtility.UrlEncode(firstPlay.AlbumName)})** - " +
+                                       $"{GetEmojiForStreakCount(albumCount)}*{albumCount} plays in a row*");
+            }
+            if (trackCount > 1)
+            {
+                description.AppendLine($"Track: **[{firstPlay.TrackName}](https://www.last.fm/music/{HttpUtility.UrlEncode(firstPlay.ArtistName)}/_/{HttpUtility.UrlEncode(firstPlay.TrackName)})** - " +
+                                       $"{GetEmojiForStreakCount(trackCount)}*{trackCount} plays in a row*");
+            }
+
+            if (description.Length > 0)
+            {
+                return description.ToString();
+            }
+
+            return "No active streak found.";
+        }
+
+        private string GetEmojiForStreakCount(int count)
+        {
+            if (count > 50 && count < 100 || count > 100)
+            {
+                return "🔥 ";
+            }
+
+            if (count == 100)
+            {
+                return "💯 ";
+            }
+
+            return null;
+        }
+
         public async Task<Response<TopTracksResponse>> GetTopTracks(int userId, int days)
         {
             var now = DateTime.UtcNow;
@@ -239,165 +355,29 @@ namespace FMBot.Bot.Services
                 .ToListAsync();
         }
 
-        public async Task<IReadOnlyList<ListArtist>> GetTopWeekArtistsForGuild(IReadOnlyList<User> guildUsers,
-            OrderType orderType)
+
+        public async Task<List<UserTrack>> GetTopTracksForArtist(int userId, int days, string artistName)
         {
             var now = DateTime.UtcNow;
-            var minDate = DateTime.UtcNow.AddDays(-7);
-
-            var userIds = guildUsers.Select(s => s.UserId);
+            var minDate = DateTime.UtcNow.AddDays(-days);
 
             await using var db = this._contextFactory.CreateDbContext();
-
-            var artistUserPlays = await db.UserPlays
+            return await db.UserPlays
                 .AsQueryable()
                 .Where(t => t.TimePlayed.Date <= now.Date &&
                             t.TimePlayed.Date > minDate.Date &&
-                            userIds.Contains(t.UserId))
-                .GroupBy(x => new { x.ArtistName, x.UserId })
-                .Select(s => new ArtistUserPlay
+                            EF.Functions.ILike(t.ArtistName, artistName) &&
+                            t.UserId == userId)
+                .GroupBy(x => new { x.ArtistName, x.TrackName })
+                .Select(s => new UserTrack
                 {
                     ArtistName = s.Key.ArtistName,
-                    UserId = s.Key.UserId,
+                    Name = s.Key.TrackName,
                     Playcount = s.Count()
                 })
+                .OrderByDescending(o => o.Playcount)
+                .Take(10)
                 .ToListAsync();
-
-            var query = artistUserPlays
-                .GroupBy(g => g.ArtistName)
-                .Select(s => new ListArtist
-                {
-                    ArtistName = s.Key,
-                    Playcount = s.Sum(su => su.Playcount),
-                    ListenerCount = s.Select(se => se.UserId).Distinct().Count()
-                });
-
-            query = orderType == OrderType.Playcount ?
-                query.OrderByDescending(o => o.Playcount).ThenByDescending(o => o.Playcount) :
-                query.OrderByDescending(o => o.ListenerCount).ThenByDescending(o => o.Playcount);
-
-            return query
-                .Take(14)
-                .ToList();
-        }
-
-        public async Task<IReadOnlyList<ListAlbum>> GetTopWeekAlbumsForGuild(IReadOnlyList<User> guildUsers,
-            OrderType orderType)
-        {
-            var now = DateTime.UtcNow;
-            var minDate = DateTime.UtcNow.AddDays(-7);
-
-            var userIds = guildUsers.Select(s => s.UserId);
-
-            await using var db = this._contextFactory.CreateDbContext();
-
-            var albumUserPlays = await db.UserPlays
-                .AsQueryable()
-                .Where(t => t.TimePlayed.Date <= now.Date &&
-                            t.TimePlayed.Date > minDate.Date &&
-                            userIds.Contains(t.UserId))
-                .GroupBy(x => new { x.ArtistName, x.AlbumName, x.UserId })
-                .Select(s => new AlbumUserPlay
-                {
-                    ArtistName = s.Key.ArtistName,
-                    AlbumName = s.Key.AlbumName,
-                    UserId = s.Key.UserId,
-                    Playcount = s.Count()
-                })
-                .ToListAsync();
-
-            var query = albumUserPlays
-                .GroupBy(g => new { g.ArtistName, g.AlbumName })
-                .Select(s => new ListAlbum
-                {
-                    ArtistName = s.Key.ArtistName,
-                    AlbumName = s.Key.AlbumName,
-                    Playcount = s.Sum(su => su.Playcount),
-                    ListenerCount = s.Select(se => se.UserId).Distinct().Count()
-                });
-
-            query = orderType == OrderType.Playcount ?
-                query.OrderByDescending(o => o.Playcount).ThenByDescending(o => o.Playcount) :
-                query.OrderByDescending(o => o.ListenerCount).ThenByDescending(o => o.Playcount);
-
-            return query
-                .Take(14)
-                .ToList();
-        }
-
-        public async Task<IReadOnlyList<ListTrack>> GetTopWeekTracksForGuild(IReadOnlyList<User> guildUsers,
-            OrderType orderType)
-        {
-            var now = DateTime.UtcNow;
-            var minDate = DateTime.UtcNow.AddDays(-7);
-
-            var userIds = guildUsers.Select(s => s.UserId);
-
-            await using var db = this._contextFactory.CreateDbContext();
-
-            var trackUserPlays = await db.UserPlays
-                .AsQueryable()
-                .Where(t => t.TimePlayed.Date <= now.Date &&
-                            t.TimePlayed.Date > minDate.Date &&
-                            userIds.Contains(t.UserId))
-                .GroupBy(x => new { x.ArtistName, x.TrackName, x.UserId })
-                .Select(s => new TrackUserPlay
-                {
-                    ArtistName = s.Key.ArtistName,
-                    TrackName = s.Key.TrackName,
-                    UserId = s.Key.UserId,
-                    Playcount = s.Count()
-                })
-                .ToListAsync();
-
-            var query = trackUserPlays
-                .GroupBy(g => new { g.ArtistName, g.TrackName })
-                .Select(s => new ListTrack
-                {
-                    ArtistName = s.Key.ArtistName,
-                    TrackName = s.Key.TrackName,
-                    Playcount = s.Sum(su => su.Playcount),
-                    ListenerCount = s.Select(se => se.UserId).Distinct().Count()
-                });
-
-            query = orderType == OrderType.Playcount ?
-                query.OrderByDescending(o => o.Playcount).ThenByDescending(o => o.Playcount) :
-                query.OrderByDescending(o => o.ListenerCount).ThenByDescending(o => o.Playcount);
-
-            return query
-                .Take(14)
-                .ToList();
-        }
-
-        private class ArtistUserPlay
-        {
-            public string ArtistName { get; set; }
-
-            public int UserId { get; set; }
-
-            public int Playcount { get; set; }
-        }
-
-        private class AlbumUserPlay
-        {
-            public string ArtistName { get; set; }
-
-            public string AlbumName { get; set; }
-
-            public int UserId { get; set; }
-
-            public int Playcount { get; set; }
-        }
-
-        private class TrackUserPlay
-        {
-            public string ArtistName { get; set; }
-
-            public string TrackName { get; set; }
-
-            public int UserId { get; set; }
-
-            public int Playcount { get; set; }
         }
     }
 }
