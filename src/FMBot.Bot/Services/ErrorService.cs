@@ -44,8 +44,8 @@ namespace FMBot.Bot.Services
         public static void SessionRequiredResponse(this EmbedBuilder embed, string prfx)
         {
             embed.WithTitle("Error while attempting get Last.fm information");
-            embed.WithDescription("You have not authorized .fmbot yet. \n" +
-                                $"Please use the `{prfx}login` command to authorize .fmbot.");
+            embed.WithDescription("While you have set your username, you haven't connected .fmbot to your Last.fm account yet, which is required for the command you're trying to use.\n" +
+                                $"Please use the `{prfx}login` command to receive a link to connect your Last.fm account.");
 
             embed.WithUrl($"{Constants.DocsUrl}/commands/");
 
