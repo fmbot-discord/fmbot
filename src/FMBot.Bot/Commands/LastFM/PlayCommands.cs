@@ -137,7 +137,7 @@ namespace FMBot.Bot.Commands.LastFM
                 if (parameters.Length > 0 && !string.IsNullOrEmpty(parameters.First()) && parameters.Count() == 1)
                 {
                     var alternativeLastFmUserName = await FindUser(parameters.First());
-                    if (!string.IsNullOrEmpty(alternativeLastFmUserName) && await this._lastFmService.LastFmUserExistsAsync(alternativeLastFmUserName))
+                    if (!string.IsNullOrEmpty(alternativeLastFmUserName))
                     {
                         lastFmUserName = alternativeLastFmUserName;
                         self = false;
@@ -767,13 +767,11 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                var guildUser = await this._guildService.FindUserFromGuildAsync(this.Context, user);
+                var guildUser = await this._settingService.GetUserFromString(user);
 
                 if (guildUser != null)
                 {
-                    var guildUserLastFm = await this._userService.GetUserSettingsAsync(guildUser);
-
-                    return guildUserLastFm?.UserNameLastFM;
+                    return guildUser.UserNameLastFM;
                 }
             }
 
