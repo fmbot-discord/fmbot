@@ -39,7 +39,7 @@ namespace FMBot.Bot.Services.Guild
                 .AsQueryable()
                 .Include(i => i.GuildBlockedUsers)
                     .ThenInclude(t => t.User)
-                .Include(i => i.GuildUsers)
+                .Include(i => i.GuildUsers.Where(w => w.Bot != true))
                     .ThenInclude(t => t.User)
                 .Include(i => i.Channels)
                 .Include(i => i.Webhooks)

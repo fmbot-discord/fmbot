@@ -154,6 +154,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 Response<RecentTrackList> recentTracks;
 
+                var totalPlaycount = userSettings.TotalPlaycount;
+
                 if (self)
                 {
                     if (userSettings.LastIndexed == null)
@@ -197,14 +199,16 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     currentTrack = recentTracks.Content.RecentTracks[0];
                     previousTrack = recentTracks.Content.RecentTracks[1];
+                    if (!self)
+                    {
+                        totalPlaycount = recentTracks.Content.TotalAmount;
+                    }
                 }
 
                 if (self)
                 {
                     this._whoKnowsPlayService.AddRecentPlayToCache(userSettings.UserId, currentTrack);
                 }
-
-                var playCount = recentTracks.Content.TotalAmount;
 
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
                 var embedTitle = self ? userTitle : $"{lastFmUserName}, requested by {userTitle}";
@@ -248,7 +252,7 @@ namespace FMBot.Bot.Commands.LastFM
                         throw new ArgumentOutOfRangeException();
                 }
 
-                footerText += $"{playCount} total scrobbles";
+                footerText += $"{totalPlaycount} total scrobbles";
 
                 switch (userSettings.FmEmbedType)
                 {
@@ -269,7 +273,7 @@ namespace FMBot.Bot.Commands.LastFM
                         }
 
                         fmText +=
-                            $"<{recentTracks.Content.UserUrl}> has {playCount} scrobbles";
+                            $"<{recentTracks.Content.UserUrl}> has {totalPlaycount} scrobbles";
 
                         await this.Context.Channel.SendMessageAsync(fmText.FilterOutMentions());
                         break;

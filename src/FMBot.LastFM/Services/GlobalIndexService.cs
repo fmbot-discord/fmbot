@@ -32,7 +32,7 @@ namespace FMBot.LastFM.Services
 
         private readonly string _connectionString;
 
-        private readonly LastFmService lastFmService;
+        private readonly LastFmService _lastFmService;
 
         public GlobalIndexService(
             IConfigurationRoot configuration,
@@ -40,7 +40,7 @@ namespace FMBot.LastFM.Services
             IDbContextFactory<FMBotDbContext> contextFactory,
             IMemoryCache cache)
         {
-            this.lastFmService = lastFmService;
+            this._lastFmService = lastFmService;
             this._contextFactory = contextFactory;
             this._cache = cache;
             this._key = configuration.GetSection("LastFm:Key").Value;
@@ -66,6 +66,8 @@ namespace FMBot.LastFM.Services
             await using var connection = new NpgsqlConnection(this._connectionString);
             connection.Open();
 
+            await SetUserPlaycount(user, connection);
+            
             var plays = await GetPlaysForUserFromLastFm(user);
             await InsertPlaysIntoDatabase(plays, user.UserId, connection);
 
@@ -188,7 +190,7 @@ namespace FMBot.LastFM.Services
 
             var indexLimit = UserHasHigherIndexLimit(user) ? 25 : 6;
 
-            var trackResult = await this.lastFmService.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, indexLimit);
+            var trackResult = await this._lastFmService.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, indexLimit);
 
             if (!trackResult.Success || trackResult.Content.TopTracks.Track.Count == 0)
             {
@@ -299,6 +301,19 @@ namespace FMBot.LastFM.Services
             }
 
             return recentTracks.Content.First(f => f.TimePlayed.HasValue).TimePlayed.Value.DateTime;
+        }
+        
+        private async Task SetUserPlaycount(User user, NpgsqlConnection connection)
+        {
+            var recentTracks = await this._lastFmService.GetRecentTracksAsync(
+                user.UserNameLastFM,
+                count: 1,
+                useCache: false,
+                user.SessionKeyLastFm);
+
+            await using var setPlaycount = new NpgsqlCommand($"UPDATE public.users SET total_playcount = {recentTracks.Content.TotalAmount} WHERE user_id = {user.UserId};", connection);
+
+            await setPlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
         private bool UserHasHigherIndexLimit(User user)

@@ -69,12 +69,12 @@ namespace FMBot.Bot.Commands
                 var guildRecentlyIndexed =
                     lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(20));
 
-                if (guildRecentlyIndexed)
-                {
-                    await ReplyAsync("An index was recently started on this server. Please wait before running this command again.");
-                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                    return;
-                }
+                //if (guildRecentlyIndexed)
+                //{
+                //    await ReplyAsync("An index was recently started on this server. Please wait before running this command again.");
+                //    this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                //    return;
+                //}
                 if (users != null && users.Count == 0 && lastIndex != null)
                 {
                     await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
@@ -211,23 +211,23 @@ namespace FMBot.Bot.Commands
             }
             else
             {
-                if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-10))
-                {
-                    var recentlyUpdatedText =
-                        $"You have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). " +
-                        $"Note that this also happens automatically, for example with commands that use indexed data.";
-                    if (this.Context.InteractionData != null)
-                    {
-                        await ReplyInteractionAsync(recentlyUpdatedText,
-                            ghostMessage: true, type: InteractionMessageType.Acknowledge);
-                    }
-                    else
-                    {
-                        await ReplyAsync(recentlyUpdatedText);
-                    }
-                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                    return;
-                }
+                //if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-3))
+                //{
+                //    var recentlyUpdatedText =
+                //        $"You have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). " +
+                //        $"Note that this also happens automatically, for example with commands that use indexed data.";
+                //    if (this.Context.InteractionData != null)
+                //    {
+                //        await ReplyInteractionAsync(recentlyUpdatedText,
+                //            ghostMessage: true, type: InteractionMessageType.Acknowledge);
+                //    }
+                //    else
+                //    {
+                //        await ReplyAsync(recentlyUpdatedText);
+                //    }
+                //    this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                //    return;
+                //}
 
                 if (userSettings.LastIndexed == null)
                 {

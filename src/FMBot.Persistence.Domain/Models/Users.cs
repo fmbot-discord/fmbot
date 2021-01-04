@@ -24,6 +24,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public string SessionKeyLastFm { get; set; }
 
+        public long? TotalPlaycount { get; set; }
+
         public FmEmbedType FmEmbedType { get; set; }
 
         public FmCountType? FmCountType { get; set; }

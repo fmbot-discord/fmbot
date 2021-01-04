@@ -85,7 +85,7 @@ namespace FMBot.Bot.Services
                 {
                     GuildId = existingGuild.GuildId,
                     UserId = s.UserId,
-                    User = s
+                    User = s,
                 })
                 .ToListAsync();
 
@@ -94,13 +94,15 @@ namespace FMBot.Bot.Services
                 var discordUser = discordGuildUsers.First(f => f.Id == user.User.DiscordUserId);
                 var name = discordUser.Nickname ?? discordUser.Username;
                 user.UserName = name;
+                user.Bot = discordUser.IsBot;
             }
 
             var connString = db.Database.GetDbConnection().ConnectionString;
             var copyHelper = new PostgreSQLCopyHelper<GuildUser>("public", "guild_users")
                 .MapInteger("guild_id", x => x.GuildId)
                 .MapInteger("user_id", x => x.UserId)
-                .MapText("user_name", x => x.UserName);
+                .MapText("user_name", x => x.UserName)
+                .MapBoolean("bot", x => x.Bot == true);
 
             await using var connection = new NpgsqlConnection(connString);
             connection.Open();
