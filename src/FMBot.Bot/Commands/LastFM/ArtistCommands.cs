@@ -155,7 +155,7 @@ namespace FMBot.Bot.Commands.LastFM
                     var serverListenersTask = this._whoKnowArtistService.GetArtistListenerCountForServer(guild.GuildId, artistInfo.Name);
                     var serverPlaycountTask = this._whoKnowArtistService.GetArtistPlayCountForServer(guild.GuildId, artistInfo.Name);
                     var avgServerListenerPlaycountTask = this._whoKnowArtistService.GetArtistAverageListenerPlaycountForServer(guild.GuildId, artistInfo.Name);
-                    var serverPlaycountLastWeekTask = this._whoKnowArtistService.GetWeekArtistPlaycountForGuildAsync(filteredGuildUsers, artistInfo.Name);
+                    var serverPlaycountLastWeekTask = this._whoKnowArtistService.GetWeekArtistPlaycountForGuildAsync(guild.GuildId, artistInfo.Name);
 
                     var serverListeners = await serverListenersTask;
                     var serverPlaycount = await serverPlaycountTask;

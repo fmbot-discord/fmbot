@@ -53,7 +53,7 @@ namespace FMBot.Bot.Services.WhoKnows
             });
 
             var whoKnowsArtistList = new List<WhoKnowsObjectWithUser>();
-            
+
             foreach (var userArtist in userArtists)
             {
                 var discordUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId);
@@ -103,30 +103,21 @@ namespace FMBot.Bot.Services.WhoKnows
 
         public async Task<int> GetArtistListenerCountForServer(int guildId, string artistName)
         {
-            try
-            {
-                const string sql = "SELECT coalesce(count(ua.user_id), 0) " +
-                                   "FROM user_artists AS ua " +
-                                   "INNER JOIN users AS u ON ua.user_id = u.user_id " +
-                                   "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
-                                   "WHERE gu.guild_id = @guildId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))";
+            const string sql = "SELECT coalesce(count(ua.user_id), 0) " +
+                               "FROM user_artists AS ua " +
+                               "INNER JOIN users AS u ON ua.user_id = u.user_id " +
+                               "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                               "WHERE gu.guild_id = @guildId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))";
 
-                DefaultTypeMap.MatchNamesWithUnderscores = true;
-                await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
-                await connection.OpenAsync();
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
 
-                return await connection.QuerySingleAsync<int>(sql, new
-                {
-                    guildId,
-                    artistName
-                });
-            }
-            catch (Exception e)
+            return await connection.QuerySingleAsync<int>(sql, new
             {
-                Console.WriteLine(e);
-                throw;
-            }
-            
+                guildId,
+                artistName
+            });
         }
 
         public async Task<int> GetArtistPlayCountForServer(int guildId, string artistName)
@@ -179,21 +170,28 @@ namespace FMBot.Bot.Services.WhoKnows
             return userArtist?.Playcount;
         }
 
-        public async Task<int> GetWeekArtistPlaycountForGuildAsync(ICollection<GuildUser> guildUsers, string artistName)
+        public async Task<int> GetWeekArtistPlaycountForGuildAsync(int guildId, string artistName)
         {
-            var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-7);
 
-            var userIds = guildUsers.Select(s => s.UserId);
+            const string sql = "SELECT coalesce(count(up.user_play_id), 0) " +
+                               "FROM user_plays AS up " +
+                               "INNER JOIN users AS u ON up.user_id = u.user_id " +
+                               "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                               "WHERE gu.guild_id = @guildId AND " +
+                               "UPPER(up.artist_name) = UPPER(CAST(@artistName AS CITEXT)) AND " +
+                               "up.time_played >= @minDate";
 
-            await using var db = this._contextFactory.CreateDbContext();
-            return await db.UserPlays
-                .AsQueryable()
-                .CountAsync(a =>
-                    userIds.Contains(a.UserId) &&
-                    a.TimePlayed.Date <= now.Date &&
-                    a.TimePlayed.Date > minDate.Date &&
-                    EF.Functions.ILike(a.ArtistName, artistName.ToLower()));
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            return await connection.QuerySingleAsync<int>(sql, new
+            {
+                guildId,
+                artistName,
+                minDate
+            });
         }
 
         // TODO: figure out how to do this
