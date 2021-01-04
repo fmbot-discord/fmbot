@@ -1,4 +1,5 @@
 using System;
+using FMBot.Domain.Models;
 
 namespace FMBot.Persistence.Domain.Models
 {

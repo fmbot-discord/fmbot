@@ -76,12 +76,7 @@ namespace FMBot.LastFM.Services
             await InsertAlbumsIntoDatabase(albums, user.UserId, connection);
 
             var tracks = await GetTracksForUserFromLastFm(user);
-
-            var tracksToInsert = tracks
-                .Where(w => w.Playcount >= 3)
-                .ToList();
-
-            await InsertTracksIntoDatabase(tracksToInsert, user.UserId, connection);
+            await InsertTracksIntoDatabase(tracks, user.UserId, connection);
 
             var latestScrobbleDate = await GetLatestScrobbleDate(user);
 

@@ -125,9 +125,9 @@ namespace FMBot.Bot.Services
             Log.Warning("Last.fm returned error: {message} | {responseStatus} | {discordUserName} / {discordUserId} | {messageContent}", message, responseStatus, context.User.Username, context.User.Id, context.Message.Content);
         }
 
-        public static bool RecentScrobbleCallFailed(Response<RecentTracksResponse> recentScrobbles, string lastFmUserName)
+        public static bool RecentScrobbleCallFailed(Response<RecentTrackList> recentScrobbles, string lastFmUserName)
         {
-            if (!recentScrobbles.Success || recentScrobbles.Content == null || !recentScrobbles.Content.RecentTracks.Track.Any())
+            if (!recentScrobbles.Success || recentScrobbles.Content == null || !recentScrobbles.Content.RecentTracks.Any())
             {
                 return true;
             }
@@ -135,7 +135,7 @@ namespace FMBot.Bot.Services
             return false;
         }
 
-        public static async Task<bool> RecentScrobbleCallFailedReply(Response<RecentTracksResponse> recentScrobbles, string lastFmUserName, ICommandContext context)
+        public static async Task<bool> RecentScrobbleCallFailedReply(Response<RecentTrackList> recentScrobbles, string lastFmUserName, ICommandContext context)
         {
             var embed = new EmbedBuilder();
             if (!recentScrobbles.Success || recentScrobbles.Content == null)
@@ -154,7 +154,7 @@ namespace FMBot.Bot.Services
                 return true;
             }
 
-            if (!recentScrobbles.Content.RecentTracks.Track.Any())
+            if (!recentScrobbles.Content.RecentTracks.Any())
             {
                 embed.NoScrobblesFoundErrorResponse(lastFmUserName);
                 context.LogCommandUsed(CommandResponse.NoScrobbles);

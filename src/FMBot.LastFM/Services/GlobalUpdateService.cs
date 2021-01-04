@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Design;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -68,7 +67,7 @@ namespace FMBot.LastFM.Services
                 sessionKey = user.SessionKeyLastFm;
             }
 
-            var dateAgo = lastPlay?.TimePlayed ?? DateTime.UtcNow.AddDays(-14);
+            var dateAgo = lastPlay?.TimePlayed.AddSeconds(-1) ?? DateTime.UtcNow.AddDays(-14);
             var timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
 
             var recentTracks = await this._lastFmService.GetRecentTracksAsync(
@@ -103,19 +102,19 @@ namespace FMBot.LastFM.Services
             await using var connection = new NpgsqlConnection(this._connectionString);
             await connection.OpenAsync();
 
-            if (!recentTracks.Content.RecentTracks.Track.Any())
+            if (!recentTracks.Content.RecentTracks.Any())
             {
                 Log.Information("Update: No new tracks for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
                 await SetUserUpdateTime(user, DateTime.UtcNow, connection);
                 return 0;
             }
 
-            AddRecentPlayToMemoryCache(user.UserId, recentTracks.Content.RecentTracks.Track.First());
+            AddRecentPlayToMemoryCache(user.UserId, recentTracks.Content.RecentTracks.First());
 
-            var newScrobbles = recentTracks.Content.RecentTracks.Track
-                .Where(w => (w.Attr == null || !w.Attr.Nowplaying) &&
-                            w.Date != null &&
-                            DateTime.UnixEpoch.AddSeconds(w.Date.Uts).ToUniversalTime() > user.LastScrobbleUpdate)
+            var newScrobbles = recentTracks.Content.RecentTracks
+                .Where(w => (!w.NowPlaying) &&
+                            w.TimePlayed != null &&
+                            w.TimePlayed > user.LastScrobbleUpdate)
                 .ToList();
 
             if (!newScrobbles.Any())
@@ -194,15 +193,15 @@ namespace FMBot.LastFM.Services
             var lastPlay = await GetLastStoredPlay(user);
 
             var userPlays = newScrobbles
-                .Where(w => (w.Attr == null || !w.Attr.Nowplaying) &&
-                            w.Date != null &&
-                            DateTime.UnixEpoch.AddSeconds(w.Date.Uts).ToUniversalTime() > (lastPlay?.TimePlayed ?? DateTime.UtcNow.AddDays(-Constants.DaysToStorePlays).Date))
+                .Where(w => !w.NowPlaying &&
+                            w.TimePlayed.HasValue &&
+                            w.TimePlayed > (lastPlay?.TimePlayed ?? DateTime.UtcNow.AddDays(-Constants.DaysToStorePlays).Date))
                 .Select(s => new UserPlay
                 {
-                    ArtistName = s.Artist.Text,
-                    AlbumName = !string.IsNullOrWhiteSpace(s.Album?.Text) ? s.Album.Text : null,
-                    TrackName = s.Name,
-                    TimePlayed = DateTime.UnixEpoch.AddSeconds(s.Date.Uts).ToUniversalTime(),
+                    ArtistName = s.ArtistName,
+                    AlbumName = s.AlbumName,
+                    TrackName = s.TrackName,
+                    TimePlayed = s.TimePlayed.Value,
                     UserId = user.UserId
                 }).ToList();
 
@@ -234,7 +233,7 @@ namespace FMBot.LastFM.Services
                 .Where(w => w.UserId == user.UserId)
                 .ToListAsync();
 
-            foreach (var artist in newScrobbles.GroupBy(g => g.Artist.Text))
+            foreach (var artist in newScrobbles.GroupBy(g => g.ArtistName))
             {
                 var alias = cachedArtistAliases
                             .FirstOrDefault(f => f.Alias.ToLower() == artist.Key.ToLower());
@@ -293,8 +292,8 @@ namespace FMBot.LastFM.Services
                 .ToListAsync();
 
             foreach (var album in newScrobbles
-                .Where(w => !string.IsNullOrWhiteSpace(w.Album?.Text))
-                .GroupBy(x => new { ArtistName = x.Artist.Text, AlbumName = x.Album.Text }))
+                .Where(w => w.AlbumName != null)
+                .GroupBy(x => new {x.ArtistName, x.AlbumName }))
             {
                 var alias = cachedArtistAliases
                     .FirstOrDefault(f => f.Alias.ToLower() == album.Key.ArtistName.ToLower());
@@ -353,7 +352,7 @@ namespace FMBot.LastFM.Services
                 .Where(w => w.UserId == user.UserId)
                 .ToListAsync();
 
-            foreach (var track in newScrobbles.GroupBy(x => new { ArtistName = x.Artist.Text, x.Name }))
+            foreach (var track in newScrobbles.GroupBy(x => new {x.ArtistName, x.TrackName }))
             {
                 var alias = cachedArtistAliases
                     .FirstOrDefault(f => f.Alias.ToLower() == track.Key.ArtistName.ToLower());
@@ -361,7 +360,7 @@ namespace FMBot.LastFM.Services
                 var artistName = alias != null ? alias.Artist.Name : track.Key.ArtistName;
 
                 var existingUserTrack =
-                    userTracks.FirstOrDefault(a => a.Name.ToLower() == track.Key.Name.ToLower() &&
+                    userTracks.FirstOrDefault(a => a.Name.ToLower() == track.Key.TrackName.ToLower() &&
                                                    a.ArtistName.ToLower() == track.Key.ArtistName.ToLower());
 
                 if (existingUserTrack != null)
@@ -376,7 +375,7 @@ namespace FMBot.LastFM.Services
                     updateUserTrack.Parameters.AddWithValue("userTrackId", existingUserTrack.UserTrackId);
 
 #if DEBUG
-                    Log.Information($"Updated track {track.Key.Name} for {user.UserNameLastFM} (+{track.Count()} plays)");
+                    Log.Information($"Updated track {track.Key.TrackName} for {user.UserNameLastFM} (+{track.Count()} plays)");
 #endif
 
                     await updateUserTrack.ExecuteNonQueryAsync().ConfigureAwait(false);
@@ -389,12 +388,12 @@ namespace FMBot.LastFM.Services
                             connection);
 
                     addUserTrack.Parameters.AddWithValue("userId", user.UserId);
-                    addUserTrack.Parameters.AddWithValue("trackName", track.Key.Name);
+                    addUserTrack.Parameters.AddWithValue("trackName", track.Key.TrackName);
                     addUserTrack.Parameters.AddWithValue("artistName", artistName);
                     addUserTrack.Parameters.AddWithValue("trackPlaycount", track.Count());
 
 #if DEBUG
-                    Log.Information($"Added track {track.Key.ArtistName} - {track.Key.Name} for {user.UserNameLastFM}");
+                    Log.Information($"Added track {track.Key.ArtistName} - {track.Key.TrackName} for {user.UserNameLastFM}");
 #endif
 
                     await addUserTrack.ExecuteNonQueryAsync().ConfigureAwait(false);
@@ -417,7 +416,7 @@ namespace FMBot.LastFM.Services
         private DateTime GetLatestScrobbleDate(User user, List<RecentTrack> newScrobbles)
         {
             var scrobbleWithDate = newScrobbles
-                .FirstOrDefault(f => f.Date != null && (f.Attr == null || !f.Attr.Nowplaying));
+                .FirstOrDefault(f => f.TimePlayed.HasValue && !f.NowPlaying);
 
             if (scrobbleWithDate == null)
             {
@@ -425,21 +424,20 @@ namespace FMBot.LastFM.Services
                 return DateTime.UtcNow;
             }
 
-            return DateTime.UnixEpoch.AddSeconds(scrobbleWithDate.Date.Uts).ToUniversalTime();
+            return scrobbleWithDate.TimePlayed.Value;
         }
 
         private void AddRecentPlayToMemoryCache(int userId, RecentTrack track)
         {
-            if (track.Attr != null && track.Attr.Nowplaying || track.Date != null &&
-                DateTime.UnixEpoch.AddSeconds(track.Date.Uts).ToUniversalTime() > DateTime.UtcNow.AddMinutes(-8))
+            if (track.NowPlaying || track.TimePlayed != null && track.TimePlayed > DateTime.UtcNow.AddMinutes(-8))
             {
                 var userPlay = new UserPlay
                 {
-                    ArtistName = track.Artist.Text.ToLower(),
-                    AlbumName = !string.IsNullOrWhiteSpace(track.Album?.Text) ? track.Album.Text.ToLower() : null,
-                    TrackName = track.Name.ToLower(),
+                    ArtistName = track.ArtistName,
+                    AlbumName = track.AlbumName,
+                    TrackName = track.TrackName,
                     UserId = userId,
-                    TimePlayed = track.Date != null ? DateTime.UnixEpoch.AddSeconds(track.Date.Uts).ToUniversalTime() : DateTime.UtcNow
+                    TimePlayed = track.TimePlayed ?? DateTime.UtcNow
                 };
 
                 this._cache.Set($"{userId}-last-play", userPlay, TimeSpan.FromMinutes(15));

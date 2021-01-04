@@ -74,11 +74,10 @@ namespace FMBot.Bot.Commands
                         return;
                     }
 
-                    var currentTrack = recentScrobbles.Content.RecentTracks.Track[0];
+                    var currentTrack = recentScrobbles.Content.RecentTracks[0];
 
-                    var albumName = string.IsNullOrWhiteSpace(currentTrack.Album?.Text) ? null : currentTrack.Album.Text;
 
-                    querystring = $"{currentTrack.Name} {currentTrack.Artist.Text} {albumName}";
+                    querystring = $"{currentTrack.TrackName} {currentTrack.ArtistName} {currentTrack.AlbumName}";
                 }
 
                 var item = await this._spotifyService.GetSearchResultAsync(querystring);

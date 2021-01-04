@@ -165,8 +165,8 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                var currentTrack = recentScrobbles.Content.RecentTracks.Track[0];
-                artist = currentTrack.Artist.Text;
+                var currentTrack = recentScrobbles.Content.RecentTracks[0];
+                artist = currentTrack.ArtistName;
             }
 
             var artistCrowns = await this._crownService.GetCrownsForArtist(guild, artist);

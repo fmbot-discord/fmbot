@@ -6,6 +6,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using FMBot.Domain;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.ResponseModels;
 using FMBot.LastFM.Domain.Types;
@@ -43,8 +44,9 @@ namespace FMBot.LastFM.Services
         }
 
         // Recent scrobbles
-        public async Task<Response<RecentTracksResponse>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false, string sessionKey = null, long? fromUnixTimestamp = null)
+        public async Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false, string sessionKey = null, long? fromUnixTimestamp = null)
         {
+            var cacheKey = $"{lastFmUserName}-lastfm-recent-tracks";
             var queryParams = new Dictionary<string, string>
             {
                 {"user", lastFmUserName },
@@ -64,10 +66,10 @@ namespace FMBot.LastFM.Services
 
             if (useCache)
             {
-                var cachedRecentTracks = this._cache.TryGetValue($"{lastFmUserName}-lastfm-recent-tracks", out RecentTracksResponse recentTrackResponse);
-                if (cachedRecentTracks && recentTrackResponse.RecentTracks.Track.Any() && recentTrackResponse.RecentTracks.Track.Length >= count)
+                var cachedRecentTracks = this._cache.TryGetValue(cacheKey, out RecentTrackList recentTrackResponse);
+                if (cachedRecentTracks && recentTrackResponse.RecentTracks.Any() && recentTrackResponse.RecentTracks.Count >= count)
                 {
-                    return new Response<RecentTracksResponse>
+                    return new Response<RecentTrackList>
                     {
                         Content = recentTrackResponse,
                         Success = true
@@ -75,14 +77,50 @@ namespace FMBot.LastFM.Services
                 }
             }
 
-            var recentTracksCall = await this._lastFmApi.CallApiAsync<RecentTracksResponse>(queryParams, Call.RecentTracks, authorizedCall);
+            var recentTracksCall = await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams, Call.RecentTracks, authorizedCall);
 
             if (recentTracksCall.Success)
             {
-                this._cache.Set($"{lastFmUserName}-lastfm-recent-tracks", recentTracksCall.Content, TimeSpan.FromSeconds(16));
+                var response = new Response<RecentTrackList>
+                {
+                    Content = new RecentTrackList
+                    {
+                        TotalAmount = recentTracksCall.Content.RecentTracks.AttributesLfm.Total,
+                        UserUrl = $"https://www.last.fm/user/{lastFmUserName}",
+                        UserRecentTracksUrl = $"https://www.last.fm/user/{lastFmUserName}/library",
+                        RecentTracks = recentTracksCall.Content.RecentTracks.Track.Select(s =>
+                            new RecentTrack
+                            {
+                                TrackName = s.Name,
+                                TrackUrl = s.Url.ToString(),
+                                ArtistName = s.Artist.Text,
+                                ArtistUrl = s.Artist.Url,
+                                AlbumName = !string.IsNullOrWhiteSpace(s.Album?.Text) ? s.Album.Text : null,
+                                AlbumUrl = s.Album?.Text,
+                                AlbumCoverUrl = s.Image?.FirstOrDefault(a => a.Size == "extralarge") != null &&
+                                                !s.Image.First(a => a.Size == "extralarge").Text.Contains(Constants.LastFmNonExistentImageName)
+                                    ? s.Image?.First(a => a.Size == "extralarge").Text
+                                    : null,
+                                NowPlaying = s.AttributesLfm != null && s.AttributesLfm.Nowplaying,
+                                TimePlayed = s.Date?.Uts != null
+                                    ? DateTime.UnixEpoch.AddSeconds(s.Date.Uts).ToUniversalTime()
+                                    : null
+                            }).ToList()
+                    },
+                    Success = true
+                };
+
+                this._cache.Set(cacheKey, response, TimeSpan.FromSeconds(14));
+
+                return response;
             }
 
-            return recentTracksCall;
+            return new Response<RecentTrackList>
+            {
+                Success = false,
+                Error = recentTracksCall.Error,
+                Message = recentTracksCall.Message
+            };
         }
 
         // Scrobble count from a certain unix timestamp
@@ -99,34 +137,33 @@ namespace FMBot.LastFM.Services
                 queryParams.Add("from", unixTimestamp.ToString());
             }
 
-            var recentTracksCall = await this._lastFmApi.CallApiAsync<RecentTracksResponse>(queryParams, Call.RecentTracks);
+            var recentTracksCall = await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams, Call.RecentTracks);
 
-            return recentTracksCall.Success ? recentTracksCall.Content.RecentTracks.Attr.Total : (long?)null;
+            return recentTracksCall.Success ? recentTracksCall.Content.RecentTracks.AttributesLfm.Total : (long?)null;
         }
-
 
         public static string TrackToLinkedString(RecentTrack track)
         {
-            if (track.Url == null ||
-                track.Url.ToString().IndexOfAny(new[] { '(', ')' }) >= 0)
+            if (track.TrackUrl != null &&
+                track.TrackUrl.IndexOfAny(new[] { '(', ')' }) >= 0)
             {
                 return TrackToString(track);
             }
 
-            return $"[{track.Name}]({track.Url})\n" +
-                   $"By **{track.Artist.Text}**" +
-                   (string.IsNullOrWhiteSpace(track.Album.Text)
+            return $"[{track.TrackName}]({track.TrackUrl})\n" +
+                   $"By **{track.ArtistName}**" +
+                   (string.IsNullOrWhiteSpace(track.AlbumName)
                        ? "\n"
-                       : $" | *{track.Album.Text}*\n");
+                       : $" | *{track.AlbumName}*\n");
         }
 
         public static string TrackToString(RecentTrack track)
         {
-            return $"{track.Name}\n" +
-                   $"By **{track.Artist.Text}**" +
-                   (string.IsNullOrWhiteSpace(track.Album.Text)
+            return $"{track.TrackName}\n" +
+                   $"By **{track.ArtistName}**" +
+                   (string.IsNullOrWhiteSpace(track.AlbumName)
                        ? "\n"
-                       : $" | *{track.Album.Text}*\n");
+                       : $" | *{track.AlbumName}*\n");
         }
 
         public static string ResponseTrackToLinkedString(ResponseTrack track)
@@ -152,9 +189,9 @@ namespace FMBot.LastFM.Services
                        : $" | *{track.Album.Title}*\n");
         }
 
-        public static string TrackToOneLinedString(RecentTrack track)
+        public static string TrackToOneLinedString(RecentTrack trackLfm)
         {
-            return $"**{track.Name}** by **{track.Artist.Text}**";
+            return $"**{trackLfm.TrackName}** by **{trackLfm.ArtistName}**";
         }
 
         public static string TagsToLinkedString(Tags tags)
@@ -225,7 +262,7 @@ namespace FMBot.LastFM.Services
             var queryParams = new Dictionary<string, string>
             {
                 {"artist", artistName },
-                {"track", trackName },
+                {"trackLfm", trackName },
                 {"username", username },
                 {"autocorrect", "1"}
             };
@@ -395,7 +432,7 @@ namespace FMBot.LastFM.Services
             var queryParams = new Dictionary<string, string>
             {
                 {"artist", artistName},
-                {"track", trackName},
+                {"trackLfm", trackName},
                 {"sk", user.SessionKeyLastFm}
             };
 
@@ -409,7 +446,7 @@ namespace FMBot.LastFM.Services
             var queryParams = new Dictionary<string, string>
             {
                 {"artist", artistName},
-                {"track", trackName},
+                {"trackLfm", trackName},
                 {"sk", user.SessionKeyLastFm}
             };
 
@@ -417,13 +454,13 @@ namespace FMBot.LastFM.Services
 
             return authSessionCall.Success;
         }
-        
+
         public async Task<Response<ScrobbledTrack>> ScrobbleAsync(User user, string artistName, string trackName, string albumName = null)
         {
             var queryParams = new Dictionary<string, string>
             {
                 {"artist", artistName},
-                {"track", trackName},
+                {"trackLfm", trackName},
                 {"sk", user.SessionKeyLastFm},
                 {"timestamp",  ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds().ToString() }
             };

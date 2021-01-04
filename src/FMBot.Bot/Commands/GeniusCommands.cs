@@ -76,8 +76,8 @@ namespace FMBot.Bot.Commands
                         return;
                     }
 
-                    var currentTrack = recentScrobbles.Content.RecentTracks.Track[0];
-                    querystring = $"{currentTrack.Artist.Text} {currentTrack.Name}";
+                    var currentTrack = recentScrobbles.Content.RecentTracks[0];
+                    querystring = $"{currentTrack.ArtistName} {currentTrack.TrackName}";
                 }
 
                 var songResult = await this._geniusService.SearchGeniusAsync(querystring);

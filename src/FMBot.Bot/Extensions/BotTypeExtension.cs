@@ -1,5 +1,6 @@
 using Discord.Commands;
 using FMBot.Domain;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Extensions

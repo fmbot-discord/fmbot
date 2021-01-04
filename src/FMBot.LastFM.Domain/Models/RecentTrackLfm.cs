@@ -4,20 +4,20 @@ using System.Text.Json.Serialization;
 
 namespace FMBot.LastFM.Domain.Models
 {
-    public class RecentTracksResponse
+    public class RecentTracksListLfmResponseModel
     {
-        public RecentTracks RecentTracks { get; set; }
+        public RecentTracksLfmList RecentTracks { get; set; }
     }
 
-    public class RecentTracks
+    public class RecentTracksLfmList
     {
         [JsonPropertyName("@attr")]
-        public Attr Attr { get; set; }
+        public AttributesLfm AttributesLfm { get; set; }
 
-        public RecentTrack[] Track { get; set; }
+        public RecentTrackLfm[] Track { get; set; }
     }
 
-    public class Attr
+    public class AttributesLfm
     {
         public long Page { get; set; }
 
@@ -30,10 +30,10 @@ namespace FMBot.LastFM.Domain.Models
         public long TotalPages { get; set; }
     }
 
-    public class RecentTrack
+    public class RecentTrackLfm
     {
         [JsonPropertyName("@attr")]
-        public TrackAttr Attr { get; set; }
+        public TrackAttributesLfm AttributesLfm { get; set; }
 
         public string Mbid { get; set; }
 
@@ -54,7 +54,7 @@ namespace FMBot.LastFM.Domain.Models
         public SmallAlbum Album { get; set; }
     }
 
-    public class TrackAttr
+    public class TrackAttributesLfm
     {
         public bool Nowplaying { get; set; }
     }

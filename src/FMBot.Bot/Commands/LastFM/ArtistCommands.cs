@@ -1298,7 +1298,7 @@ namespace FMBot.Bot.Commands.LastFM
                     return null;
                 }
 
-                artist = recentScrobbles.Content.RecentTracks.Track[0].Artist.Text;
+                artist = recentScrobbles.Content.RecentTracks[0].ArtistName;
             }
 
             return artist;

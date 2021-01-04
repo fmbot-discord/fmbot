@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using FMBot.Bot.Configurations;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -302,26 +303,13 @@ namespace FMBot.Bot.Services.ThirdParty
 
         public static RecentTrack SpotifyGameToRecentTrack(SpotifyGame spotifyActivity)
         {
-            return new RecentTrack
+            return new()
             {
-                Name = spotifyActivity.TrackTitle,
-                Album = new SmallAlbum
-                {
-                    Text = spotifyActivity.AlbumTitle
-                },
-                Artist = new SmallArtist
-                {
-                    Text = spotifyActivity.Artists.First()
-                },
-                Image = new[]
-                {
-                    new Image
-                    {
-                        Text = spotifyActivity.AlbumArtUrl,
-                        Size = "extralarge"
-                    }
-                },
-                Url = new Uri(spotifyActivity.TrackUrl)
+                TrackName = spotifyActivity.TrackTitle,
+                AlbumName = spotifyActivity.AlbumTitle,
+                ArtistName = spotifyActivity.Artists.First(),
+                AlbumCoverUrl = spotifyActivity.AlbumArtUrl,
+                TrackUrl = spotifyActivity.TrackUrl
             };
         }
     }

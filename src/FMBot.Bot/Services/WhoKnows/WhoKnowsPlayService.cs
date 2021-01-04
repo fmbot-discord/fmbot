@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -161,16 +162,15 @@ namespace FMBot.Bot.Services.WhoKnows
 
         public void AddRecentPlayToCache(int userId, RecentTrack track)
         {
-            if (track.Attr != null && track.Attr.Nowplaying || track.Date != null &&
-                DateTime.UnixEpoch.AddSeconds(track.Date.Uts).ToUniversalTime() > DateTime.UtcNow.AddMinutes(-8))
+            if (track.NowPlaying || track.TimePlayed != null && track.TimePlayed > DateTime.UtcNow.AddMinutes(-8))
             {
                 var userPlay = new UserPlay
                 {
-                    ArtistName = track.Artist.Text.ToLower(),
-                    AlbumName = !string.IsNullOrWhiteSpace(track.Album?.Text) ? track.Album.Text.ToLower() : null,
-                    TrackName = track.Name.ToLower(),
+                    ArtistName = track.ArtistName,
+                    AlbumName = track.AlbumName,
+                    TrackName = track.TrackName,
                     UserId = userId,
-                    TimePlayed = track.Date != null ? DateTime.UnixEpoch.AddSeconds(track.Date.Uts).ToUniversalTime() : DateTime.UtcNow
+                    TimePlayed = track.TimePlayed ?? DateTime.UtcNow
                 };
 
                 this._cache.Set($"{userId}-last-play", userPlay, TimeSpan.FromMinutes(15));
@@ -210,19 +210,19 @@ namespace FMBot.Bot.Services.WhoKnows
 
             if (foundUsers.Count == 1)
             {
-                return $"{foundUsers.First().UserName} was also listening to this track {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!";
+                return $"{foundUsers.First().UserName} was also listening to this trackLfm {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!";
             }
             if (foundUsers.Count == 2)
             {
-                return $"{foundUsers[0].UserName} and {foundUsers[1].UserName} were also recently listening to this track!";
+                return $"{foundUsers[0].UserName} and {foundUsers[1].UserName} were also recently listening to this trackLfm!";
             }
             if (foundUsers.Count == 3)
             {
-                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName} and {foundUsers[2].UserName} were also recently listening to this track!";
+                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName} and {foundUsers[2].UserName} were also recently listening to this trackLfm!";
             }
             if (foundUsers.Count > 3)
             {
-                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this track!";
+                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this trackLfm!";
             }
 
             return null;

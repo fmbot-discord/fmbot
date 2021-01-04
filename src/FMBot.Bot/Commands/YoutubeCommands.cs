@@ -72,8 +72,8 @@ namespace FMBot.Bot.Commands
                         return;
                     }
 
-                    var currentTrack = recentScrobbles.Content.RecentTracks.Track[0];
-                    querystring = currentTrack.Name + " - " + currentTrack.Artist.Text;
+                    var currentTrack = recentScrobbles.Content.RecentTracks[0];
+                    querystring = currentTrack.TrackName + " - " + currentTrack.ArtistName;
                 }
 
                 try

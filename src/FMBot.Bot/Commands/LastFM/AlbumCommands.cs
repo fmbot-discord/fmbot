@@ -374,9 +374,9 @@ namespace FMBot.Bot.Commands.LastFM
                 return new AlbumSearchModel(false);
             }
 
-            var currentTrack = recentScrobbles.Content.RecentTracks.Track[0];
+            var currentTrack = recentScrobbles.Content.RecentTracks[0];
 
-            return new AlbumSearchModel(true, currentTrack.Artist.Text, currentTrack.Artist.Url, currentTrack.Album.Text, currentTrack.Url.ToString());
+            return new AlbumSearchModel(true, currentTrack.ArtistName, currentTrack.ArtistName, currentTrack.AlbumName, currentTrack.TrackUrl);
         }
 
         [Command("topalbums", RunMode = RunMode.Async)]

@@ -899,13 +899,13 @@ namespace FMBot.Bot.Commands.LastFM
                     return null;
                 }
 
-                var trackResult = recentScrobbles.Content.RecentTracks.Track[0];
-                var trackInfo = await this._lastFmService.GetTrackInfoAsync(trackResult.Name, trackResult.Artist.Text,
+                var trackResult = recentScrobbles.Content.RecentTracks[0];
+                var trackInfo = await this._lastFmService.GetTrackInfoAsync(trackResult.TrackName, trackResult.ArtistName,
                     userSettings.UserNameLastFM);
 
                 if (trackInfo == null)
                 {
-                    this._embed.WithDescription($"Last.fm did not return a result for **{trackResult.Name}** by **{trackResult.Artist.Text}**.\n" +
+                    this._embed.WithDescription($"Last.fm did not return a result for **{trackResult.TrackName}** by **{trackResult.ArtistName}**.\n" +
                                                 $"This usually happens on recently released tracks. Please try again later.");
                     if (this.Context.InteractionData != null)
                     {

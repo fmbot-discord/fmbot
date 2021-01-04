@@ -7,6 +7,7 @@ using Discord.Commands;
 using Discord.Webhook;
 using Discord.WebSocket;
 using FMBot.Bot.Extensions;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;

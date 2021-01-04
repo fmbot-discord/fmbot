@@ -114,25 +114,24 @@ namespace FMBot.Bot.Commands
                     {
                         track = $"Friend could not be retrieved ({tracks.Error})";
                     }
-                    else if (!tracks.Content.RecentTracks.Track.Any())
+                    else if (!tracks.Content.RecentTracks.Any())
                     {
                         track = "No scrobbles found.";
                     }
                     else
                     {
-                        var lastTrack = tracks.Content.RecentTracks.Track[0];
+                        var lastTrack = tracks.Content.RecentTracks[0];
                         track = LastFmService.TrackToOneLinedString(lastTrack);
-                        if (lastTrack.Attr != null && lastTrack.Attr.Nowplaying)
+                        if (lastTrack.NowPlaying)
                         {
                             track += " 🎶";
                         }
-                        else if (lastTrack.Date != null)
+                        else if (lastTrack.TimePlayed.HasValue)
                         {
-                            var dateTime = DateTime.UnixEpoch.AddSeconds(lastTrack.Date.Uts).ToUniversalTime();
-                            track += $" ({StringExtensions.GetTimeAgoShortString(dateTime)})";
+                            track += $" ({StringExtensions.GetTimeAgoShortString(lastTrack.TimePlayed.Value)})";
                         }
 
-                        totalPlaycount += (int)tracks.Content.RecentTracks.Attr.Total;
+                        totalPlaycount += (int)tracks.Content.TotalAmount;
                     }
 
                     embedDescription += $"**[{friendUsername}]({Constants.LastFMUserUrl}{friendUsername})** | {track}\n";
