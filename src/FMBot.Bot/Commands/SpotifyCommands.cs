@@ -12,6 +12,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
+using SpotifyAPI.Web.Enums;
 
 namespace FMBot.Bot.Commands
 {
@@ -106,8 +107,147 @@ namespace FMBot.Bot.Commands
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync(
-                    "Unable to show Last.fm info via Spotify due to an internal error. " +
+                    "Unable to search for Spotify tracks due to an internal error.  " +
                     " Please try again later or contact .fmbot support.");
+            }
+        }
+        
+        [Command("spotifyalbum")]
+        [Summary("Shares a link to a Spotify track based on what a user is listening to")]
+        [Alias("spab")]
+        [UsernameSetRequired]
+        public async Task SpotifyAlbumAsync([Remainder] string searchValue = null)
+        {
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            try
+            {
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                string querystring;
+                if (!string.IsNullOrWhiteSpace(searchValue))
+                {
+                    querystring = searchValue;
+                }
+                else
+                {
+                    string sessionKey = null;
+                    if (!string.IsNullOrEmpty(userSettings.SessionKeyLastFm))
+                    {
+                        sessionKey = userSettings.SessionKeyLastFm;
+                    }
+
+                    var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+
+                    if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
+                    {
+                        return;
+                    }
+
+                    var currentTrack = recentScrobbles.Content.RecentTracks[0];
+
+                    querystring = $"{currentTrack.ArtistName} {currentTrack.AlbumName}";
+                }
+
+                var item = await this._spotifyService.GetSearchResultAsync(querystring, SearchType.Album);
+
+                if (item.Albums?.Items?.Any() == true)
+                {
+                    var album = item.Albums.Items.FirstOrDefault();
+                    var reply = $"https://open.spotify.com/album/{album.Id}";
+
+                    var rnd = new Random();
+                    if (rnd.Next(0, 7) == 1 && string.IsNullOrWhiteSpace(searchValue))
+                    {
+                        reply += $"\n*Tip: Search for other albums by simply adding the searchvalue behind `{prfx}spotifyalbum` (or `.fmspab`).*";
+                    }
+
+                    await ReplyAsync(reply);
+                    this.Context.LogCommandUsed();
+                }
+                else
+                {
+                    await ReplyAsync("No results have been found for this album. Querystring: `" + querystring.FilterOutMentions() + "`");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                }
+            }
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync(
+                    "Unable to search for Spotify albums due to an internal error. " +
+                    "Please try again later or contact .fmbot support.");
+            }
+        }
+
+        [Command("spotifyartist")]
+        [Summary("Shares a link to a Spotify artist based on what a user is listening to or searching for")]
+        [Alias("spa")]
+        [UsernameSetRequired]
+        public async Task SpotifyArtistAsync([Remainder] string searchValue = null)
+        {
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            try
+            {
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                string querystring;
+                if (!string.IsNullOrWhiteSpace(searchValue))
+                {
+                    querystring = searchValue;
+                }
+                else
+                {
+                    string sessionKey = null;
+                    if (!string.IsNullOrEmpty(userSettings.SessionKeyLastFm))
+                    {
+                        sessionKey = userSettings.SessionKeyLastFm;
+                    }
+
+                    var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+
+                    if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
+                    {
+                        return;
+                    }
+
+                    var currentTrack = recentScrobbles.Content.RecentTracks[0];
+
+
+                    querystring = $"{currentTrack.ArtistName}";
+                }
+
+                var item = await this._spotifyService.GetSearchResultAsync(querystring, SearchType.Artist);
+
+                if (item.Artists?.Items?.Any() == true)
+                {
+                    var artist = item.Artists.Items.OrderByDescending(o => o.Popularity).FirstOrDefault();
+                    var reply = $"https://open.spotify.com/artist/{artist.Id}";
+
+                    var rnd = new Random();
+                    if (rnd.Next(0, 7) == 1 && string.IsNullOrWhiteSpace(searchValue))
+                    {
+                        reply += $"\n*Tip: Search for other artists by simply adding the searchvalue behind `{prfx}spotifyartist` (or `.fmspa`).*";
+                    }
+
+                    await ReplyAsync(reply);
+                    this.Context.LogCommandUsed();
+                }
+                else
+                {
+                    await ReplyAsync("No results have been found for this artist. Querystring: `" + querystring.FilterOutMentions() + "`");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                }
+            }
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync(
+                    "Unable to search for Spotify artists due to an internal error. " +
+                    "Please try again later or contact .fmbot support.");
             }
         }
     }
