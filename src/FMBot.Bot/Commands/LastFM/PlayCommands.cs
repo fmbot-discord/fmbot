@@ -99,7 +99,8 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     await ReplyInteractionAsync("", embed: this._embed.Build());
                 }
-
+                
+                this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return;
             }
             if (parameters.Length > 0 && parameters.First() == "help")
