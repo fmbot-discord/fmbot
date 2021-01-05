@@ -226,7 +226,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("artisttracks", RunMode = RunMode.Async)]
         [Summary("Displays top tracks for an artist.")]
-        [Alias("at", "att", "artisttrack", "artist track", "artist tracks", "artistrack", "artisttoptracks", "artisttoptrack")]
+        [Alias("at", "att", "artisttrack", "artist track", "artist tracks", "artistrack", "artisttoptracks", "artisttoptrack", "favs")]
         [UsernameSetRequired]
         public async Task ArtistTracksAsync([Remainder] string artistValues = null)
         {
