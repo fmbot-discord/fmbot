@@ -7,7 +7,6 @@ using FMBot.Bot.Resources;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
-using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using IF.Lastfm.Core.Api.Enums;
 using Serilog;
@@ -53,22 +52,24 @@ namespace FMBot.Bot.Services
 
         public static void NoScrobblesFoundErrorResponse(this EmbedBuilder embed, LastResponseStatus? apiResponse, string prfx, string userName)
         {
-            embed.WithTitle("Error while attempting get Last.fm information");
             switch (apiResponse)
             {
                 case LastResponseStatus.Failure:
-                    embed.WithDescription("Can't retrieve scrobbles because Last.fm is having issues. Please try again later. \n" +
-                                          "Please note that .fmbot isn't affiliated with Last.fm.");
+                    embed.WithTitle("Error while attempting get Last.fm information");
+                    embed.WithDescription(
+                        "Can't retrieve scrobbles because Last.fm is having issues. Please try again later. \n" +
+                        "Please note that .fmbot isn't affiliated with Last.fm.");
                     break;
                 case LastResponseStatus.MissingParameters:
-                    embed.WithDescription("You or the user you're searching for has no scrobbles/artists on their profile, or Last.fm is having issues. Please try again later. \n \n" +
-                                          $"Recently changed your Last.fm username? Please change it here too using `{prfx}login` again.");
+                    embed.WithTitle("Error while attempting get Last.fm information");
+                    embed.WithDescription(
+                        "You or the user you're searching for has no scrobbles/artists on their profile, or Last.fm is having issues. Please try again later. \n \n" +
+                        $"Recently changed your Last.fm username? Please change it here too using `{prfx}login` again.");
                     break;
                 default:
                     embed.WithDescription(
-                        $"The user `{userName}` has no scrobbles/artists/albums/tracks on [their Last.fm profile]({Constants.LastFMUserUrl}{userName}).\n" +
-                        $"Just signed up for last.fm and added your account in the bot? Make sure you [track your music](https://www.last.fm/about/trackmymusic) and your Last.fm profile is showing the music that you're listening to.\n\n" +
-                        $"Note: this error can also appear when Last.fm is having issues, in that case please try again later. Please note that .fmbot is not affiliated with Last.fm.");
+                        $"The Last.fm user `{userName}` has no scrobbles/artists/albums/tracks on [their profile]({Constants.LastFMUserUrl}{userName}).\n" +
+                        $"Just signed up for last.fm and added your account in the bot? Make sure you [track your music](https://www.last.fm/about/trackmymusic) and your Last.fm profile is showing the music that you're listening to.");
                     break;
             }
 
@@ -80,10 +81,9 @@ namespace FMBot.Bot.Services
         {
             embed.WithTitle("Error while attempting get Last.fm information");
 
-            embed.WithDescription($"The user `{userName}` has no scrobbles/artists/albums/tracks on [their Last.fm profile]({Constants.LastFMUserUrl}{userName}).\n" +
+            embed.WithDescription($"The Last.fm user `{userName}` has no scrobbles/artists/albums/tracks on [their profile]({Constants.LastFMUserUrl}{userName}).\n" +
                                   $"Just signed up for last.fm and added your account in the bot? Make sure you [track your music](https://www.last.fm/about/trackmymusic), your recent tracks are not marked as private " +
-                                  $"and your Last.fm profile is showing the music that you're listening to.\n\n" +
-                                  $"Note: this error can also appear when Last.fm is having issues, in that case please try again later. Please note that .fmbot is not affiliated with Last.fm.");
+                                  $"and your [Last.fm profile]({Constants.LastFMUserUrl}{userName}) is showing the music that you're listening to.");
 
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
