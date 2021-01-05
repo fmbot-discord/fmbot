@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.API.Rest;
 using Discord.Commands;
+using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
@@ -87,8 +88,8 @@ namespace FMBot.Bot.Commands.LastFM
             }
             if (userSettings?.UserNameLastFM == null)
             {
-                this._embed.UsernameNotSetErrorResponse(prfx);
-                await ReplyAsync("", false, this._embed.Build());
+                var userNickname = (this.Context.User as SocketGuildUser)?.Nickname;
+                this._embed.UsernameNotSetErrorResponse(prfx, userNickname ?? this.Context.User.Username);
 
                 if (this.Context.InteractionData == null)
                 {

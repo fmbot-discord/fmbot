@@ -16,11 +16,11 @@ namespace FMBot.Bot.Services
 {
     public static class ErrorService
     {
-        public static void UsernameNotSetErrorResponse(this EmbedBuilder embed, string prfx)
+        public static void UsernameNotSetErrorResponse(this EmbedBuilder embed, string prfx, string name)
         {
-            embed.WithTitle("Error while attempting get Last.fm information");
-            embed.WithDescription("You have not added your Last.fm account to .fmbot yet.\n\n" +
-                                  $"Please use the `{prfx}login` command to receive a link to connect your Last.fm account.");
+            embed.WithDescription($"Hi {name}, welcome to .fmbot. \n" +
+                                  $"To use this bot you first need to add your Last.fm account.\n\n" +
+                                  $"Please use the `{prfx}login` command. The bot will then DM you a link so you can connect your Last.fm account.");
 
             embed.WithUrl($"{Constants.DocsUrl}/commands/");
 
@@ -43,7 +43,6 @@ namespace FMBot.Bot.Services
 
         public static void SessionRequiredResponse(this EmbedBuilder embed, string prfx)
         {
-            embed.WithTitle("Error while attempting get Last.fm information");
             embed.WithDescription("While you have set your username, you haven't connected .fmbot to your Last.fm account yet, which is required for the command you're trying to use.\n" +
                                 $"Please use the `{prfx}login` command to receive a link to connect your Last.fm account.");
 

@@ -162,7 +162,8 @@ namespace FMBot.Bot.Handlers
                 {
                     var embed = new EmbedBuilder()
                         .WithColor(DiscordConstants.LastFmColorRed);
-                    embed.UsernameNotSetErrorResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
+                    var userNickname = (context.User as SocketGuildUser)?.Nickname;
+                    embed.UsernameNotSetErrorResponse(customPrefix ?? ConfigData.Data.Bot.Prefix, userNickname ?? context.User.Username);
                     await context.Channel.SendMessageAsync("", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
                     return;
