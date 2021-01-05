@@ -19,8 +19,8 @@ namespace FMBot.Bot.Handlers
 {
     public class CommandHandler
     {
-        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
-        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new();
+        private static readonly List<SocketUser> StackCooldownTarget = new();
         private readonly CommandService _commands;
         private readonly UserService _userService;
         private readonly DiscordShardedClient _discord;
@@ -93,8 +93,7 @@ namespace FMBot.Bot.Handlers
         {
             if (StackCooldownTarget.Contains(msg.Author))
             {
-                //If they have used this command before, take the time the user last did something, add 800ms, and see if it's greater than this very moment.
-                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMilliseconds(800) >=
+                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMilliseconds(600) >=
                     DateTimeOffset.Now)
                 {
                     return;
@@ -104,7 +103,6 @@ namespace FMBot.Bot.Handlers
             }
             else
             {
-                //If they've never used this command before, add their username and when they just used this command.
                 StackCooldownTarget.Add(msg.Author);
                 StackCooldownTimer.Add(DateTimeOffset.Now);
             }

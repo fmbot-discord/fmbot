@@ -19,8 +19,8 @@ namespace FMBot.Bot.Handlers
 {
     public class SlashCommandHandler
     {
-        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
-        private static readonly List<IGuildUser> StackCooldownTarget = new List<IGuildUser>();
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new();
+        private static readonly List<IGuildUser> StackCooldownTarget = new();
         private readonly CommandService _commands;
         private readonly UserService _userService;
         private readonly DiscordShardedClient _discord;

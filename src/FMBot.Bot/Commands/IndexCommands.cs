@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.API.Rest;
 using Discord.Commands;
+using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
@@ -11,7 +14,6 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
 using Serilog;
 
 namespace FMBot.Bot.Commands
@@ -27,6 +29,9 @@ namespace FMBot.Bot.Commands
 
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
+
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
+        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
 
         public IndexCommands(
                 GuildService guildService,
@@ -176,13 +181,38 @@ namespace FMBot.Bot.Commands
 
             if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full" || force.ToLower() == "-force" || force.ToLower() == "force"))
             {
-                if (userSettings.LastIndexed > DateTime.UtcNow.AddDays(-1))
+                if (userSettings.LastIndexed > DateTime.UtcNow.AddHours(-10))
                 {
                     await ReplyAsync(
                         "You can't do a full index too often. Please remember that this command should only be used in case you edited your scrobble history.\n" +
                         "Experiencing issues with the normal update? Please contact us on the .fmbot support server.");
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
                     return;
+                }
+
+                var msg = this.Context.Message as SocketUserMessage;
+                if (StackCooldownTarget.Contains(this.Context.Message.Author))
+                {
+                    if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(30) >= DateTimeOffset.Now)
+                    {
+                        var secondsLeft = (int)(StackCooldownTimer[
+                                StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
+                            .AddSeconds(31) - DateTimeOffset.Now).TotalSeconds;
+                        if (secondsLeft <= 25)
+                        {
+                            await ReplyAsync("You recently started a full update. Please wait before starting a new one.");
+                            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                        }
+
+                        return;
+                    }
+
+                    StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
+                }
+                else
+                {
+                    StackCooldownTarget.Add(msg.Author);
+                    StackCooldownTimer.Add(DateTimeOffset.Now);
                 }
 
                 var indexDescription =
@@ -204,7 +234,7 @@ namespace FMBot.Bot.Commands
                 await message.ModifyAsync(m =>
                 {
                     m.Embed = new EmbedBuilder()
-                        .WithDescription($"✅ {userSettings.UserNameLastFM} has been fully indexed.")
+                        .WithDescription($"✅ {userSettings.UserNameLastFM} has been fully updated.")
                         .WithColor(DiscordConstants.SuccessColorGreen)
                         .Build();
                 });
@@ -215,7 +245,7 @@ namespace FMBot.Bot.Commands
                 {
                     var recentlyUpdatedText =
                         $"You have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). " +
-                        $"Note that this also happens automatically, for example with commands that use indexed data.";
+                        $"Note that this also happens automatically, for example with commands that use cached playcounts.";
                     if (this.Context.InteractionData != null)
                     {
                         await ReplyInteractionAsync(recentlyUpdatedText,
@@ -232,7 +262,7 @@ namespace FMBot.Bot.Commands
                 if (userSettings.LastIndexed == null)
                 {
                     await ReplyAsync(
-                        "You have to be indexed before you can update. (`.fmupdate full`)");
+                        "Please do a full update first. (`.fmupdate full`)");
                     this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                     return;
                 }
