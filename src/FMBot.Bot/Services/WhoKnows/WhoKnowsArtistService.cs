@@ -168,7 +168,7 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
             await connection.OpenAsync();
 
-            return await connection.QuerySingleAsync<int?>(sql, new
+            return await connection.QuerySingleOrDefaultAsync<int?>(sql, new
             {
                 userId,
                 artistName
