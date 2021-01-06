@@ -45,6 +45,37 @@ namespace FMBot.Bot.Services
 
             return true;
         }
+        
+        public async Task<bool> AlbumIsAllowedInNsfw(string albumName, string artistName)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+
+            if (db.CensoredMusic
+                    .AsQueryable()
+                    .Where(w => w.Artist && w.SafeForCommands)
+                    .Select(s => s.ArtistName.ToLower())
+                    .Contains(artistName.ToLower()))
+            {
+                return true;
+            }
+
+            if (db.CensoredMusic
+                    .AsQueryable()
+                    .Where(w => w.SafeForCommands)
+                    .Select(s => s.ArtistName.ToLower())
+                    .Contains(artistName.ToLower())
+                &&
+                db.CensoredMusic
+                    .AsQueryable()
+                    .Where(w => !w.Artist && w.AlbumName != null && w.SafeForCommands)
+                    .Select(s => s.AlbumName.ToLower())
+                    .Contains(albumName.ToLower()))
+            {
+                return true;
+            }
+
+            return false;
+        }
 
         public async Task AddCensoredAlbum(string albumName, string artistName)
         {

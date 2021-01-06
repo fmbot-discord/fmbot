@@ -247,7 +247,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithFooter(this._embedFooter);
 
-                var chart = await this._chartService.GenerateChartAsync(chartSettings);
+                var chart = await this._chartService.GenerateChartAsync(chartSettings, this.Context.Guild != null && ((SocketTextChannel)this.Context.Channel).IsNsfw);
 
                 if (chartSettings.CensoredAlbums.HasValue && chartSettings.CensoredAlbums > 0)
                 {

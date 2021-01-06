@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.API.Rest;
 using Discord.Commands;
+using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
@@ -177,7 +178,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             }
-            
+
             this.Context.LogCommandUsed();
         }
 
@@ -289,18 +290,32 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            var nsfw = false;
             if (!await this._censorService.AlbumIsSafe(searchResult.Name, searchResult.Artist))
             {
-                this._embed.WithDescription("Sorry, this album or artist is filtered due to the nsfw image.\n" +
-                                            "The ability to disable this error for nsfw channels will be added soon.");
-                await this.ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Censored);
-                return;
+                if (!await this._censorService.AlbumIsAllowedInNsfw(searchResult.Name, searchResult.Artist))
+                {
+                    this._embed.WithDescription("Sorry, this album or artist can't be posted due to discord ToS.\n" +
+                                                $"You can view the [album cover here]({searchResult.Url}).");
+                    await this.ReplyAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.Censored);
+                    return;
+                }
+                if (this.Context.Guild != null && !((SocketTextChannel)this.Context.Channel).IsNsfw)
+                {
+                    this._embed.WithDescription("Sorry, this album cover can only be posted in NSFW channels.\n" +
+                                                $"You can mark this channel as NSFW or view the [album cover here]({searchResult.Url}).");
+                    await this.ReplyAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.Censored);
+                    return;
+                }
+                nsfw = true;
             }
 
+            var nsfwDescription = nsfw ? " - NSFW" : "";
             this._embed.WithDescription($"**{searchResult.Artist} - [{searchResult.Name}]({searchResult.Url})**");
             this._embedFooter.WithText(
-                $"Album cover requested by {await this._userService.GetUserTitleAsync(this.Context)}");
+                $"Album cover requested by {await this._userService.GetUserTitleAsync(this.Context)}{nsfwDescription}");
             this._embed.WithFooter(this._embedFooter);
 
             var imageMemoryStream = new MemoryStream();
@@ -313,7 +328,7 @@ namespace FMBot.Bot.Commands.LastFM
                 null,
                 false,
                 this._embed.Build());
-            
+
             this.Context.LogCommandUsed();
         }
 

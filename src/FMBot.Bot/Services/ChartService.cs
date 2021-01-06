@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -10,7 +9,6 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Domain;
-using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
@@ -21,13 +19,14 @@ namespace FMBot.Bot.Services
     public class ChartService : IChartService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-
-        public ChartService(IDbContextFactory<FMBotDbContext> contextFactory)
+        private readonly CensorService _censorService;
+        public ChartService(IDbContextFactory<FMBotDbContext> contextFactory, CensorService censorService)
         {
             this._contextFactory = contextFactory;
+            this._censorService = censorService;
         }
 
-        public async Task<SKImage> GenerateChartAsync(ChartSettings chart)
+        public async Task<SKImage> GenerateChartAsync(ChartSettings chart, bool nsfwAllowed)
         {
             try
             {
@@ -94,17 +93,20 @@ namespace FMBot.Bot.Services
                             }
                         }
 
-                        if (!AlbumIsSafe(censoredMusic, album.Name, album.ArtistName))
+                        if (!await this._censorService.AlbumIsSafe(album.Name, album.ArtistName))
                         {
-                            chartImage = SKBitmap.Decode(FMBotUtil.GlobalVars.ImageFolder + "censored.png");
-                            validImage = false;
-                            if (chart.CensoredAlbums.HasValue)
+                            if (!nsfwAllowed || !await this._censorService.AlbumIsAllowedInNsfw(album.Name, album.ArtistName))
                             {
-                                chart.CensoredAlbums++;
-                            }
-                            else
-                            {
-                                chart.CensoredAlbums = 1;
+                                chartImage = SKBitmap.Decode(FMBotUtil.GlobalVars.ImageFolder + "censored.png");
+                                validImage = false;
+                                if (chart.CensoredAlbums.HasValue)
+                                {
+                                    chart.CensoredAlbums++;
+                                }
+                                else
+                                {
+                                    chart.CensoredAlbums = 1;
+                                }
                             }
                         }
 
@@ -407,31 +409,6 @@ namespace FMBot.Bot.Services
 
 
             return chartSettings;
-        }
-
-        public bool AlbumIsSafe(IReadOnlyList<CensoredMusic> censoredMusic, string albumName, string artistName)
-        {
-            if (censoredMusic
-                .Where(w => w.Artist)
-                .Select(s => s.ArtistName.ToLower())
-                .Contains(artistName.ToLower()))
-            {
-                return false;
-            }
-
-            if (censoredMusic
-                    .Select(s => s.ArtistName.ToLower())
-                    .Contains(artistName.ToLower())
-                &&
-                censoredMusic
-                    .Where(w => !w.Artist && w.AlbumName != null)
-                    .Select(s => s.AlbumName.ToLower())
-                    .Contains(albumName.ToLower()))
-            {
-                return false;
-            }
-
-            return true;
         }
     }
 }
