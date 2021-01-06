@@ -72,6 +72,26 @@ namespace FMBot.Bot.Services.WhoKnows
             return whoKnowsTrackList;
         }
 
+        public async Task<int?> GetTrackPlayCountForUser(string artistName, string trackName, int userId)
+        {
+            const string sql = "SELECT ut.playcount " +
+                               "FROM user_tracks AS ut " +
+                               "WHERE ut.user_id = @userId AND " +
+                               "UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND " +
+                               "UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT))";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            return await connection.QuerySingleAsync<int?>(sql, new
+            {
+                userId,
+                trackName,
+                artistName
+            });
+        }
+
         public async Task<IReadOnlyList<ListTrack>> GetTopTracksForGuild(IReadOnlyList<User> guildUsers,
             OrderType orderType)
         {

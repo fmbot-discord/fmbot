@@ -244,9 +244,6 @@ namespace FMBot.Bot.Services
             await using var db = this._contextFactory.CreateDbContext();
             var user = db.Users.FirstOrDefault(f => f.DiscordUserId == discordUser.Id);
 
-            this._cache.Remove($"user-settings-{discordUser.Id}");
-            this._cache.Remove($"user-isRegistered-{discordUser.Id}");
-
             if (user == null)
             {
                 var newUser = new User

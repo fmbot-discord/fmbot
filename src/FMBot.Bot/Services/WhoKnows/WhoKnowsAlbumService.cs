@@ -72,6 +72,26 @@ namespace FMBot.Bot.Services.WhoKnows
             return whoKnowsAlbumList;
         }
 
+        public async Task<int?> GetAlbumPlayCountForUser(string artistName, string albumName, int userId)
+        {
+            const string sql = "SELECT ua.playcount " +
+                               "FROM user_albums AS ua " +
+                               "WHERE ua.user_id = @userId AND " +
+                               "UPPER(ua.name) = UPPER(CAST(@albumName AS CITEXT)) AND " +
+                               "UPPER(ua.artist_name) = UPPER(CAST(@artistName AS CITEXT))";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            return await connection.QuerySingleAsync<int?>(sql, new
+            {
+                userId,
+                albumName,
+                artistName
+            });
+        }
+
         public async Task<IReadOnlyList<ListAlbum>> GetTopAlbumsForGuild(IReadOnlyList<User> guildUsers,
             OrderType orderType)
         {

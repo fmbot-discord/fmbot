@@ -31,7 +31,6 @@ namespace FMBot.Bot.Services
             try
             {
                 await using var db = this._contextFactory.CreateDbContext();
-                var censoredMusic = await db.CensoredMusic.AsQueryable().ToListAsync();
 
                 await chart.Albums.ParallelForEachAsync(async album =>
                     {

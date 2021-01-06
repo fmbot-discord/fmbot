@@ -117,6 +117,10 @@ namespace FMBot.LastFM.Services
                 {
                     recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, newScrobbles.Count, connection);
                 }
+                else
+                {
+                    recentTracks.Content.TotalAmount = user.TotalPlaycount.Value;
+                }
                 recentTracks.Content.NewRecentTracksAmount = 0;
                 return recentTracks;
             }

@@ -28,6 +28,7 @@ namespace FMBot.Bot.Commands.LastFM
     [Name("Plays")]
     public class PlayCommands : ModuleBase
     {
+        private readonly CensorService _censorService;
         private readonly GuildService _guildService;
         private readonly IIndexService _indexService;
         private readonly IPrefixService _prefixService;
@@ -37,6 +38,9 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly SettingService _settingService;
         private readonly UserService _userService;
         private readonly WhoKnowsPlayService _whoKnowsPlayService;
+        private readonly WhoKnowsArtistService _whoKnowsArtistService;
+        private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
+        private readonly WhoKnowsTrackService _whoKnowsTrackService;
 
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedBuilder _embed;
@@ -51,7 +55,11 @@ namespace FMBot.Bot.Commands.LastFM
                 PlayService playService,
                 SettingService settingService,
                 UserService userService,
-                WhoKnowsPlayService whoKnowsPlayService)
+                WhoKnowsPlayService whoKnowsPlayService,
+                CensorService censorService,
+                WhoKnowsArtistService whoKnowsArtistService,
+                WhoKnowsAlbumService whoKnowsAlbumService,
+                WhoKnowsTrackService whoKnowsTrackService)
         {
             this._guildService = guildService;
             this._indexService = indexService;
@@ -62,6 +70,10 @@ namespace FMBot.Bot.Commands.LastFM
             this._updateService = updateService;
             this._userService = userService;
             this._whoKnowsPlayService = whoKnowsPlayService;
+            this._censorService = censorService;
+            this._whoKnowsArtistService = whoKnowsArtistService;
+            this._whoKnowsAlbumService = whoKnowsAlbumService;
+            this._whoKnowsTrackService = whoKnowsTrackService;
 
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
@@ -99,7 +111,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     await ReplyInteractionAsync("", embed: this._embed.Build());
                 }
-                
+
                 this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return;
             }
@@ -163,7 +175,7 @@ namespace FMBot.Bot.Commands.LastFM
                         _ = this._indexService.IndexUser(userSettings);
                         recentTracks = await this._lastFmService.GetRecentTracksAsync(lastFmUserName, useCache: true, sessionKey: sessionKey);
                     }
-                    else 
+                    else
                     {
                         recentTracks = await this._updateService.UpdateUserAndGetRecentTracks(userSettings);
                     }
@@ -173,7 +185,7 @@ namespace FMBot.Bot.Commands.LastFM
                     recentTracks = await this._lastFmService.GetRecentTracksAsync(lastFmUserName, useCache: true);
                 }
 
-                var totalPlaycount = userSettings.TotalPlaycount ?? recentTracks.Content.TotalAmount;
+                var totalPlaycount = recentTracks.Content.TotalAmount;
 
                 var spotifyUsed = false;
 
@@ -221,37 +233,39 @@ namespace FMBot.Bot.Commands.LastFM
                 footerText +=
                     $"{lastFmUserName} has ";
 
-                switch (userSettings.FmCountType)
+                if (self)
                 {
-                    case FmCountType.Track:
-                        var trackInfo = await this._lastFmService.GetTrackInfoAsync(currentTrack.TrackName,
-                            currentTrack.ArtistName, lastFmUserName);
-                        if (trackInfo != null)
-                        {
-                            footerText += $"{trackInfo.Userplaycount} scrobbles on this track | ";
-                        }
-                        break;
-                    case FmCountType.Album:
-                        if (!string.IsNullOrEmpty(currentTrack.AlbumName))
-                        {
-                            var albumInfo = await this._lastFmService.GetAlbumInfoAsync(currentTrack.ArtistName, currentTrack.AlbumName, lastFmUserName);
-                            if (albumInfo.Success)
+                    switch (userSettings.FmCountType)
+                    {
+                        case FmCountType.Track:
+                            var trackPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(currentTrack.ArtistName, currentTrack.TrackName, userSettings.UserId);
+                            if (trackPlaycount.HasValue)
                             {
-                                footerText += $"{albumInfo.Content.Album.Userplaycount} scrobbles on this album | ";
+                                footerText += $"{trackPlaycount} scrobbles on this track | ";
                             }
-                        }
-                        break;
-                    case FmCountType.Artist:
-                        var artistInfo = await this._lastFmService.GetArtistInfoAsync(currentTrack.ArtistName, lastFmUserName);
-                        if (artistInfo.Success)
-                        {
-                            footerText += $"{artistInfo.Content.Artist.Stats.Userplaycount} scrobbles on this artist | ";
-                        }
-                        break;
-                    case null:
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
+                            break;
+                        case FmCountType.Album:
+                            if (!string.IsNullOrEmpty(currentTrack.AlbumName))
+                            {
+                                var albumPlaycount = await this._whoKnowsAlbumService.GetAlbumPlayCountForUser(currentTrack.ArtistName, currentTrack.AlbumName, userSettings.UserId);
+                                if (albumPlaycount.HasValue)
+                                {
+                                    footerText += $"{albumPlaycount} scrobbles on this album | ";
+                                }
+                            }
+                            break;
+                        case FmCountType.Artist:
+                            var artistPlaycount = await this._whoKnowsArtistService.GetArtistPlayCountForUser(currentTrack.ArtistName, userSettings.UserId);
+                            if (artistPlaycount.HasValue)
+                            {
+                                footerText += $"{artistPlaycount} scrobbles on this artist | ";
+                            }
+                            break;
+                        case null:
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
                 }
 
                 footerText += $"{totalPlaycount} total scrobbles";

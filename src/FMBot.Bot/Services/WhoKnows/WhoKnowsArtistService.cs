@@ -160,14 +160,19 @@ namespace FMBot.Bot.Services.WhoKnows
 
         public async Task<int?> GetArtistPlayCountForUser(string artistName, int userId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
-            var userArtist = await db.UserArtists
-                .AsQueryable()
-                .FirstOrDefaultAsync(w =>
-                    w.UserId == userId &&
-                    EF.Functions.ILike(w.Name, artistName));
+            const string sql = "SELECT ua.playcount "+
+                               "FROM user_artists AS ua "+
+                               "WHERE ua.user_id = @userId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))";
 
-            return userArtist?.Playcount;
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            return await connection.QuerySingleAsync<int?>(sql, new
+            {
+                userId,
+                artistName
+            });
         }
 
         public async Task<int> GetWeekArtistPlaycountForGuildAsync(int guildId, string artistName)
