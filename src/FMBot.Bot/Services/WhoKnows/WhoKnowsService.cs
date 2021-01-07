@@ -51,6 +51,8 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var spacer = crownModel?.Crown == null ? "" : " ";
 
+            // Note: You might not be able to see them, but this code contains specific spacers
+            // https://www.compart.com/en/unicode/category/Zs
             for (var index = 0; index < whoKnowsCount; index++)
             {
                 var user = usersToShow[index];
@@ -58,14 +60,17 @@ namespace FMBot.Bot.Services.WhoKnows
                 var nameWithLink = NameWithLink(user);
                 var playString = StringExtensions.GetPlaysString(user.Playcount);
 
-                var positionCounter = $"{spacer}{index + 1}. ";
+                var positionCounter = $"{spacer}{index + 1}.";
+                positionCounter = user.UserId == requestedUserId ? $"**{positionCounter}** " : $"{positionCounter} ";
 
                 if (crownModel?.Crown != null && crownModel.Crown.UserId == user.UserId)
                 {
-                    positionCounter = "👑 ";
+                    positionCounter = "👑 ";
                 }
 
-                reply += $"{positionCounter} {nameWithLink}";
+                var afterPositionSpacer = index + 1 == 10 ? "" : " ";
+
+                reply += $"{positionCounter}{afterPositionSpacer}{nameWithLink}";
 
                 reply += $" - **{user.Playcount}** {playString}\n";
             }
@@ -78,7 +83,7 @@ namespace FMBot.Bot.Services.WhoKnows
                     var nameWithLink = NameWithLink(requestedUser);
                     var playString = StringExtensions.GetPlaysString(requestedUser.Playcount);
 
-                    reply += $"{spacer}{whoKnowsObjects.IndexOf(requestedUser) + 1}.  {nameWithLink} ";
+                    reply += $"**{spacer}{whoKnowsObjects.IndexOf(requestedUser) + 1}.**  {nameWithLink} ";
 
                     reply += $" - **{requestedUser.Playcount}** {playString}\n";
                 }
