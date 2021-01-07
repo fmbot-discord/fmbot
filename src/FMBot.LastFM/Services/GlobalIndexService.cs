@@ -311,9 +311,12 @@ namespace FMBot.LastFM.Services
                 useCache: false,
                 user.SessionKeyLastFm);
 
-            await using var setPlaycount = new NpgsqlCommand($"UPDATE public.users SET total_playcount = {recentTracks.Content.TotalAmount} WHERE user_id = {user.UserId};", connection);
+            if (recentTracks.Success)
+            {
+                await using var setPlaycount = new NpgsqlCommand($"UPDATE public.users SET total_playcount = {recentTracks.Content.TotalAmount} WHERE user_id = {user.UserId};", connection);
 
-            await setPlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
+                await setPlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
+            }
         }
 
         private bool UserHasHigherIndexLimit(User user)
