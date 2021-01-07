@@ -652,7 +652,7 @@ namespace FMBot.Bot.Commands.LastFM
                     usersWithAlbum = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, currentUser, albumName, album.Userplaycount);
                 }
 
-                var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithAlbum);
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithAlbum, userSettings.UserId);
                 if (usersWithAlbum.Count == 0)
                 {
                     serverUsers = "Nobody in this server (not even you) has listened to this album.";

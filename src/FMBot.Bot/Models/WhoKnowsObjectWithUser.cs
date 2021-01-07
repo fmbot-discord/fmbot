@@ -11,7 +11,5 @@ namespace FMBot.Bot.Models
         public string DiscordName { get; set; }
 
         public int UserId { get; set; }
-
-        public bool NoPosition { get; set; }
     }
 }

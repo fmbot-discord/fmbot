@@ -12,7 +12,6 @@ namespace FMBot.Bot.Services.WhoKnows
     {
         public static IList<WhoKnowsObjectWithUser> AddOrReplaceUserToIndexList(IList<WhoKnowsObjectWithUser> users, GuildUser guildUser, string name, long? playcount)
         {
-            var userRemoved = false;
             var existingUsers = users
                 .Where(f => f.LastFMUsername.ToLower() == guildUser.User.UserNameLastFM.ToLower());
             if (existingUsers.Any())
@@ -20,7 +19,6 @@ namespace FMBot.Bot.Services.WhoKnows
                 users = users
                     .Where(f => f.LastFMUsername.ToLower() != guildUser.User.UserNameLastFM.ToLower())
                     .ToList();
-                userRemoved = true;
             }
 
             var userPlaycount = int.Parse(playcount.GetValueOrDefault(0).ToString());
@@ -31,32 +29,31 @@ namespace FMBot.Bot.Services.WhoKnows
                 Playcount = userPlaycount,
                 LastFMUsername = guildUser.User.UserNameLastFM,
                 DiscordName = guildUser.UserName,
-                NoPosition = !userRemoved
             });
 
             return users.OrderByDescending(o => o.Playcount).ToList();
         }
 
-        public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects, CrownModel crownModel = null)
+        public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId, CrownModel crownModel = null)
         {
             var reply = "";
 
-            var usersWithPositions = whoKnowsObjects
-                .Where(w => !w.NoPosition)
-                .ToList();
-
-            var artistsCount = usersWithPositions.Count;
-            if (artistsCount > 14)
+            var whoKnowsCount = whoKnowsObjects.Count;
+            if (whoKnowsCount > 14)
             {
-                artistsCount = 14;
+                whoKnowsCount = 14;
             }
 
-            var position = 0;
+            var usersToShow = whoKnowsObjects
+                .OrderByDescending(o => o.Playcount)
+                .Take(14)
+                .ToList();
+
             var spacer = crownModel?.Crown == null ? "" : " ";
 
-            for (var index = 0; index < artistsCount; index++)
+            for (var index = 0; index < whoKnowsCount; index++)
             {
-                var user = usersWithPositions[index];
+                var user = usersToShow[index];
 
                 var nameWithLink = NameWithLink(user);
                 var playString = StringExtensions.GetPlaysString(user.Playcount);
@@ -71,27 +68,23 @@ namespace FMBot.Bot.Services.WhoKnows
                 reply += $"{positionCounter} {nameWithLink}";
 
                 reply += $" - **{user.Playcount}** {playString}\n";
-                position++;
             }
 
-            var userWithNoPosition = whoKnowsObjects.FirstOrDefault(f => f.NoPosition);
-            if (userWithNoPosition != null)
+            if (!usersToShow.Select(s => s.UserId).Contains(requestedUserId))
             {
-                var nameWithLink = NameWithLink(userWithNoPosition);
-                var playString = StringExtensions.GetPlaysString(userWithNoPosition.Playcount);
+                var requestedUser = whoKnowsObjects.FirstOrDefault(f => f.UserId == requestedUserId);
+                if (requestedUser != null)
+                {
+                    var nameWithLink = NameWithLink(requestedUser);
+                    var playString = StringExtensions.GetPlaysString(requestedUser.Playcount);
 
-                if (position < 14)
-                {
-                    reply += $"{spacer}{position + 1}.  {nameWithLink} ";
+                    reply += $"{spacer}{whoKnowsObjects.IndexOf(requestedUser) + 1}.  {nameWithLink} ";
+
+                    reply += $" - **{requestedUser.Playcount}** {playString}\n";
                 }
-                else
-                {
-                    reply += $"  ...   {nameWithLink} ";
-                }
-                reply += $" - **{userWithNoPosition.Playcount}** {playString}\n";
             }
 
-            if (crownModel != null && crownModel.CrownResult != null)
+            if (crownModel?.CrownResult != null)
             {
                 reply += $"\n{crownModel.CrownResult}";
             }

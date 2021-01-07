@@ -691,7 +691,7 @@ namespace FMBot.Bot.Commands.LastFM
                     usersWithTrack = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, currentUser, trackName, track.Userplaycount);
                 }
 
-                var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithTrack);
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithTrack, userSettings.UserId);
                 if (usersWithTrack.Count == 0)
                 {
                     serverUsers = "Nobody in this server (not even you) has listened to this track.";

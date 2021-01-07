@@ -64,8 +64,6 @@ namespace FMBot.LastFM.Services
                 sessionKey,
                 timeFrom);
 
-            Statistics.LastfmApiCalls.Inc();
-
             if (!recentTracks.Success)
             {
                 Log.Information("Update: Something went wrong getting tracks for {userId} | {userNameLastFm} | {responseStatus}", user.UserId, user.UserNameLastFM, recentTracks.Error);

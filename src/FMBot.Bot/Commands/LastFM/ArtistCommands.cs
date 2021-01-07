@@ -751,7 +751,7 @@ namespace FMBot.Bot.Commands.LastFM
                     {
                         await ReplyAsync(errorReply);
                     }
-                    
+
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
@@ -849,7 +849,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     _ = this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, "", type: InteractionMessageType.AcknowledgeWithSource);
                 }
-                
+
                 var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
                 var artistQuery = await GetArtistOrHelp(artistValues, userSettings, "whoknows", prfx, null);
@@ -919,9 +919,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this._indexService.UpdateUserName(currentUser, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId));
 
-                var usersWithArtist = await this._whoKnowArtistService.GetIndexedUsersForArtist(this.Context, filteredGuildUsers,guild.GuildId, artistName);
-
-                Statistics.LastfmApiCalls.Inc();
+                var usersWithArtist = await this._whoKnowArtistService.GetIndexedUsersForArtist(this.Context, filteredGuildUsers, guild.GuildId, artistName);
 
                 if (userPlaycount != 0)
                 {
@@ -935,7 +933,7 @@ namespace FMBot.Bot.Commands.LastFM
                         await this._crownService.GetAndUpdateCrownForArtist(usersWithArtist, guild, artistName);
                 }
 
-                var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithArtist, crownModel);
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithArtist, userSettings.UserId, crownModel);
                 if (usersWithArtist.Count == 0)
                 {
                     serverUsers = "Nobody in this server (not even you) has listened to this artist.";

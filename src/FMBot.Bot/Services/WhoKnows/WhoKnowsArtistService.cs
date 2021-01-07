@@ -39,8 +39,7 @@ namespace FMBot.Bot.Services.WhoKnows
                                "INNER JOIN users AS u ON ua.user_id = u.user_id " +
                                "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
                                "WHERE gu.guild_id = @guildId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))" +
-                               "ORDER BY ua.playcount DESC " +
-                               "LIMIT 14";
+                               "ORDER BY ua.playcount DESC ";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
             await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
