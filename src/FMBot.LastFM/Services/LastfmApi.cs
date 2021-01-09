@@ -139,7 +139,7 @@ namespace FMBot.LastFM.Services
         {
             try
             {
-                var errorResponse = JsonSerializer.Deserialize<ErrorResponse>(requestBody, jsonSerializerOptions);
+                var errorResponse = JsonSerializer.Deserialize<ErrorResponseLfm>(requestBody, jsonSerializerOptions);
 
                 if (errorResponse != null)
                 {

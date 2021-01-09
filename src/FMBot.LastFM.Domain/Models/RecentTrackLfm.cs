@@ -41,7 +41,7 @@ namespace FMBot.LastFM.Domain.Models
 
         public SmallArtist Artist { get; set; }
 
-        public Image[] Image { get; set; }
+        public ImageLfm[] Image { get; set; }
 
         public Date Date { get; set; }
 

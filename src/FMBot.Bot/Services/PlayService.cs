@@ -6,12 +6,13 @@ using System.Threading.Tasks;
 using System.Web;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
-using FMBot.LastFM.Domain.ResponseModels;
+using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
+using Artist = FMBot.LastFM.Domain.Models.Artist;
 
 namespace FMBot.Bot.Services
 {
@@ -275,7 +276,7 @@ namespace FMBot.Bot.Services
             return null;
         }
 
-        public async Task<Response<TopTracksResponse>> GetTopTracks(int userId, int days)
+        public async Task<Response<TopTracksLfmResponse>> GetTopTracks(int userId, int days)
         {
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-days);
@@ -287,10 +288,10 @@ namespace FMBot.Bot.Services
                                  t.TimePlayed.Date > minDate.Date &&
                                  t.UserId == userId)
                 .GroupBy(x => new { x.ArtistName, x.TrackName })
-                .Select(s => new LastFM.Domain.ResponseModels.Track
+                .Select(s => new TopTrackLfm
                 {
                     Name = s.Key.TrackName,
-                    Artist = new LastFM.Domain.ResponseModels.Artist
+                    Artist = new Artist
                     {
                         Name = s.Key.ArtistName
                     },
@@ -299,12 +300,12 @@ namespace FMBot.Bot.Services
                 .OrderByDescending(o => o.Playcount)
                 .ToListAsync();
 
-            return new Response<TopTracksResponse>
+            return new Response<TopTracksLfmResponse>
             {
                 Success = true,
-                Content = new TopTracksResponse
+                Content = new TopTracksLfmResponse
                 {
-                    TopTracks = new TopTracks
+                    TopTracks = new TopTracksLfm
                     {
                         Track = tracks
                     }

@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace FMBot.LastFM.Domain.Models
 {
-    public class Image
+    public class ImageLfm
     {
         [JsonPropertyName("#text")]
         public string Text { get; set; }

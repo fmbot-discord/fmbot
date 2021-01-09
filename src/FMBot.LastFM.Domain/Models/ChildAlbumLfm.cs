@@ -1,11 +1,11 @@
 using System;
-using System.Text.Json.Serialization;
 
 namespace FMBot.LastFM.Domain.Models
 {
-    public class ChildArtist
+    public class ChildAlbumLfm
     {
-        public string Name { get; set; }
+        public string Artist { get; set; }
+        public string Title { get; set; }
         public Guid? Mbid { get; set; }
         public Uri Url { get; set; }
     }

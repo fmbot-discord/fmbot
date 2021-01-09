@@ -20,7 +20,6 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
-using FMBot.LastFM.Domain.ResponseModels;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
@@ -487,7 +486,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                Response<TopTracksResponse> topTracks;
+                Response<TopTracksLfmResponse> topTracks;
                 if (!timeSettings.UsePlays)
                 {
                     topTracks = await this._lastFmService.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings.ApiParameter, amount);
@@ -870,7 +869,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        private async Task<ResponseTrack> SearchTrack(string trackValues, User userSettings, string prfx)
+        private async Task<TrackInfoLfm> SearchTrack(string trackValues, User userSettings, string prfx)
         {
             string searchValue;
             if (!string.IsNullOrWhiteSpace(trackValues))

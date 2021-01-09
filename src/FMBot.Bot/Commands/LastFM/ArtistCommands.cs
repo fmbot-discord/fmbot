@@ -116,7 +116,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {"autocorrect", "1"}
             };
 
-            var artistCall = await this._lastFmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+            var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo);
             if (!artistCall.Success)
             {
                 this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context);
@@ -248,7 +248,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {"username", user.UserNameLastFM },
                 {"autocorrect", "1"}
             };
-            var artistCall = await this._lastFmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+            var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo);
             if (!artistCall.Success)
             {
                 this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context);
@@ -336,7 +336,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {"username", user.UserNameLastFM },
                 {"autocorrect", "1"}
             };
-            var artistCall = await this._lastFmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+            var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo);
             if (!artistCall.Success)
             {
                 this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context);
@@ -422,7 +422,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {"username", userSettings.UserNameLastFM },
                 {"autocorrect", "1"}
             };
-            var artistCall = await this._lastFmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+            var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo);
             if (!artistCall.Success)
             {
                 this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context);
@@ -883,7 +883,7 @@ namespace FMBot.Bot.Commands.LastFM
                         {"autocorrect", "1"}
                     };
 
-                    var artistCall = await this._lastFmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+                    var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo);
 
                     if (!artistCall.Success)
                     {

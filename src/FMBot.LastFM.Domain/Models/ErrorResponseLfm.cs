@@ -3,7 +3,7 @@ using FMBot.LastFM.Domain.Enums;
 
 namespace FMBot.LastFM.Domain.Models
 {
-    public class ErrorResponse
+    public class ErrorResponseLfm
     {
         [JsonIgnore]
         public bool Success { get; set; }

@@ -1,6 +1,6 @@
 namespace FMBot.LastFM.Domain.Models
 {
-    public class Wiki
+    public class WikiLfm
     {
         public string Published { get; set; }
         public string Summary { get; set; }

@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
-using FMBot.LastFM.Domain.ResponseModels;
 using FMBot.LastFM.Domain.Types;
 using FMBot.Persistence.Domain.Models;
 using IF.Lastfm.Core.Api;
@@ -166,27 +165,27 @@ namespace FMBot.LastFM.Services
                        : $" | *{track.AlbumName}*\n");
         }
 
-        public static string ResponseTrackToLinkedString(ResponseTrack track)
+        public static string ResponseTrackToLinkedString(TrackInfoLfm trackInfo)
         {
-            if (track.Url.IndexOfAny(new[] { '(', ')' }) >= 0)
+            if (trackInfo.Url.IndexOfAny(new[] { '(', ')' }) >= 0)
             {
-                return ResponseTrackToString(track);
+                return ResponseTrackToString(trackInfo);
             }
 
-            return $"[{track.Name}]({track.Url})\n" +
-                   $"By **{track.Artist.Name}**" +
-                   (track.Album == null || string.IsNullOrWhiteSpace(track.Album.Title)
+            return $"[{trackInfo.Name}]({trackInfo.Url})\n" +
+                   $"By **{trackInfo.Artist.Name}**" +
+                   (trackInfo.Album == null || string.IsNullOrWhiteSpace(trackInfo.Album.Title)
                        ? "\n"
-                       : $" | *{track.Album.Title}*\n");
+                       : $" | *{trackInfo.Album.Title}*\n");
         }
 
-        private static string ResponseTrackToString(ResponseTrack track)
+        private static string ResponseTrackToString(TrackInfoLfm trackInfo)
         {
-            return $"{track.Name}\n" +
-                   $"By **{track.Artist.Name}**" +
-                   (track.Album == null || string.IsNullOrWhiteSpace(track.Album.Title)
+            return $"{trackInfo.Name}\n" +
+                   $"By **{trackInfo.Artist.Name}**" +
+                   (trackInfo.Album == null || string.IsNullOrWhiteSpace(trackInfo.Album.Title)
                        ? "\n"
-                       : $" | *{track.Album.Title}*\n");
+                       : $" | *{trackInfo.Album.Title}*\n");
         }
 
         public static string TrackToOneLinedString(RecentTrack trackLfm)
@@ -210,7 +209,7 @@ namespace FMBot.LastFM.Services
             return tagString.ToString();
         }
 
-        public static string TopTagsToString(Toptags tags)
+        public static string TopTagsToString(TrackInfoTopTagsLfm tags)
         {
             var tagString = new StringBuilder();
             for (var i = 0; i < tags.Tag.Length; i++)
@@ -236,14 +235,14 @@ namespace FMBot.LastFM.Services
         }
 
         // User
-        public async Task<LastFmUser> GetFullUserInfoAsync(string lastFmUserName)
+        public async Task<UserLfm> GetFullUserInfoAsync(string lastFmUserName)
         {
             var queryParams = new Dictionary<string, string>
             {
                 {"user", lastFmUserName }
             };
 
-            var userCall = await this._lastFmApi.CallApiAsync<UserResponse>(queryParams, Call.UserInfo);
+            var userCall = await this._lastFmApi.CallApiAsync<UserResponseLfm>(queryParams, Call.UserInfo);
 
             return !userCall.Success ? null : userCall.Content.User;
         }
@@ -257,7 +256,7 @@ namespace FMBot.LastFM.Services
         }
 
         // Track info
-        public async Task<ResponseTrack> GetTrackInfoAsync(string trackName, string artistName, string username = null)
+        public async Task<TrackInfoLfm> GetTrackInfoAsync(string trackName, string artistName, string username = null)
         {
             var queryParams = new Dictionary<string, string>
             {
@@ -267,12 +266,12 @@ namespace FMBot.LastFM.Services
                 {"autocorrect", "1"}
             };
 
-            var trackCall = await this._lastFmApi.CallApiAsync<TrackResponse>(queryParams, Call.TrackInfo);
+            var trackCall = await this._lastFmApi.CallApiAsync<TrackInfoLfmResponse>(queryParams, Call.TrackInfo);
 
             return !trackCall.Success ? null : trackCall.Content.Track;
         }
 
-        public async Task<Response<ArtistResponse>> GetArtistInfoAsync(string artistName, string username = null)
+        public async Task<Response<ArtistInfoLfmResponse>> GetArtistInfoAsync(string artistName, string username = null)
         {
             var queryParams = new Dictionary<string, string>
             {
@@ -281,12 +280,12 @@ namespace FMBot.LastFM.Services
                 {"autocorrect", "1"}
             };
 
-            var artistCall = await this._lastFmApi.CallApiAsync<ArtistResponse>(queryParams, Call.ArtistInfo);
+            var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo);
 
             return artistCall;
         }
 
-        public async Task<Response<AlbumResponse>> GetAlbumInfoAsync(string artistName, string albumName, string username = null)
+        public async Task<Response<AlbumInfoLfmResponse>> GetAlbumInfoAsync(string artistName, string albumName, string username = null)
         {
             var queryParams = new Dictionary<string, string>
             {
@@ -295,7 +294,7 @@ namespace FMBot.LastFM.Services
                 {"username", username }
             };
 
-            var albumCall = await this._lastFmApi.CallApiAsync<AlbumResponse>(queryParams, Call.AlbumInfo);
+            var albumCall = await this._lastFmApi.CallApiAsync<AlbumInfoLfmResponse>(queryParams, Call.AlbumInfo);
 
             return albumCall;
         }
@@ -354,7 +353,7 @@ namespace FMBot.LastFM.Services
         }
 
         // Top tracks
-        public async Task<Response<TopTracksResponse>> GetTopTracksAsync(string lastFmUserName,
+        public async Task<Response<TopTracksLfmResponse>> GetTopTracksAsync(string lastFmUserName,
             string period, int count = 2, int amountOfPages = 1)
         {
             var queryParams = new Dictionary<string, string>
@@ -366,10 +365,10 @@ namespace FMBot.LastFM.Services
 
             if (amountOfPages == 1)
             {
-                return await this._lastFmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
+                return await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
             }
 
-            var response = await this._lastFmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
+            var response = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
             if (response.Success && response.Content.TopTracks.Track.Count > 998)
             {
                 for (var i = 1; i < amountOfPages; i++)
@@ -377,7 +376,7 @@ namespace FMBot.LastFM.Services
                     queryParams.Remove("page");
                     queryParams.Add("page", (i + 1).ToString());
 
-                    var pageResponse = await this._lastFmApi.CallApiAsync<TopTracksResponse>(queryParams, Call.TopTracks);
+                    var pageResponse = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
 
                     if (pageResponse.Success)
                     {

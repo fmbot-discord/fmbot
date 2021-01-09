@@ -2,11 +2,10 @@ using System;
 
 namespace FMBot.LastFM.Domain.Models
 {
-    public partial class ChildTrack
+    public class ChildArtistLfm
     {
         public string Name { get; set; }
+        public string Mbid { get; set; }
         public Uri Url { get; set; }
-        public long Duration { get; set; }
-        public ChildArtistLfm Artist { get; set; }
     }
 }

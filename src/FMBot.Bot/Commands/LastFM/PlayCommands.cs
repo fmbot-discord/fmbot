@@ -212,7 +212,7 @@ namespace FMBot.Bot.Commands.LastFM
                 else
                 {
                     currentTrack = recentTracks.Content.RecentTracks[0];
-                    previousTrack = recentTracks.Content.RecentTracks[1];
+                    previousTrack = recentTracks.Content.RecentTracks.Count > 1 ? recentTracks.Content.RecentTracks[1] : null;
                     if (!self)
                     {
                         totalPlaycount = recentTracks.Content.TotalAmount;

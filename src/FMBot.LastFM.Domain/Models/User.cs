@@ -3,13 +3,13 @@ using System.Text.Json.Serialization;
 
 namespace FMBot.LastFM.Domain.Models
 {
-    public class UserResponse
+    public class UserResponseLfm
     {
         [JsonPropertyName("user")]
-        public LastFmUser User { get; set; }
+        public UserLfm User { get; set; }
     }
 
-    public class LastFmUser
+    public class UserLfm
     {
         public long Playlists { get; set; }
 
@@ -25,7 +25,7 @@ namespace FMBot.LastFM.Domain.Models
 
         public string Country { get; set; }
 
-        public Image[] Image { get; set; }
+        public ImageLfm[] Image { get; set; }
 
         public Registered Registered { get; set; }
 

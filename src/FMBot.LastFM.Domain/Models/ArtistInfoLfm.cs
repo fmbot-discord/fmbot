@@ -2,12 +2,12 @@ using System;
 
 namespace FMBot.LastFM.Domain.Models
 {
-    public class ArtistResponse
+    public class ArtistInfoLfmResponse
     {
-        public Artist Artist { get; set; }
+        public ArtistInfoLfm Artist { get; set; }
     }
 
-    public class Artist
+    public class ArtistInfoLfm
     {
         public string Name { get; set; }
         public Guid? Mbid { get; set; }

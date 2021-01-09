@@ -54,7 +54,7 @@ namespace FMBot.LastFM.Services
                 sessionKey = user.SessionKeyLastFm;
             }
 
-            var dateAgo = lastPlay?.TimePlayed.AddSeconds(-1) ?? DateTime.UtcNow.AddDays(-14);
+            var dateAgo = lastPlay?.TimePlayed.AddMinutes(-30) ?? DateTime.UtcNow.AddDays(-14);
             var timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
 
             var recentTracks = await this._lastFmService.GetRecentTracksAsync(

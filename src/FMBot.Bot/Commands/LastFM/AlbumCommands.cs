@@ -114,7 +114,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {"username", userSettings.UserNameLastFM }
             };
 
-            var albumCall = await this._lastFmApi.CallApiAsync<AlbumResponse>(queryParams, Call.AlbumInfo);
+            var albumCall = await this._lastFmApi.CallApiAsync<AlbumInfoLfmResponse>(queryParams, Call.AlbumInfo);
 
             if (!albumCall.Success)
             {
@@ -214,7 +214,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {"username", userSettings.UserNameLastFM }
             };
 
-            var albumCall = await this._lastFmApi.CallApiAsync<AlbumResponse>(queryParams, Call.AlbumInfo);
+            var albumCall = await this._lastFmApi.CallApiAsync<AlbumInfoLfmResponse>(queryParams, Call.AlbumInfo);
 
             if (!albumCall.Success)
             {
@@ -616,7 +616,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {"username", userSettings.UserNameLastFM }
             };
 
-            var albumCall = await this._lastFmApi.CallApiAsync<AlbumResponse>(queryParams, Call.AlbumInfo);
+            var albumCall = await this._lastFmApi.CallApiAsync<AlbumInfoLfmResponse>(queryParams, Call.AlbumInfo);
 
             if (!albumCall.Success)
             {
