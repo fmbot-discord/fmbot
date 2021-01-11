@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Discord;
@@ -8,7 +9,7 @@ using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Services.WhoKnows
 {
-    public class WhoKnowsService
+    public static class WhoKnowsService
     {
         public static IList<WhoKnowsObjectWithUser> AddOrReplaceUserToIndexList(IList<WhoKnowsObjectWithUser> users, GuildUser guildUser, string name, long? playcount)
         {
@@ -32,6 +33,33 @@ namespace FMBot.Bot.Services.WhoKnows
             });
 
             return users.OrderByDescending(o => o.Playcount).ToList();
+        }
+
+        public static IList<WhoKnowsObjectWithUser> FilterGuildUsersAsync(IList<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild)
+        {
+            if (guild.ActivityThresholdDays.HasValue)
+            {
+                var usersToFilter = guild.GuildUsers.Where(w =>
+                        w.User.LastUsed == null ||
+                        w.User.LastUsed < DateTime.UtcNow.AddDays(-guild.ActivityThresholdDays.Value))
+                    .ToList();
+
+                users = users
+                    .Where(w => !usersToFilter.Select(s => s.UserId).Contains(w.UserId))
+                    .ToList();
+            }
+            if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromWhoKnows))
+            {
+                var usersToFilter = guild.GuildBlockedUsers
+                    .Where(w => w.BlockedFromWhoKnows)
+                    .ToList();
+
+                users = users
+                    .Where(w => !usersToFilter.Select(s => s.UserId).Contains(w.UserId))
+                    .ToList();
+            }
+
+            return users.ToList();
         }
 
         public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId, CrownModel crownModel = null)

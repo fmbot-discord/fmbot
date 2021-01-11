@@ -672,8 +672,6 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 var guild = await guildTask;
 
-                var filteredGuildUsers = this._guildService.FilterGuildUsersAsync(guild);
-
                 var currentUser = await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), userSettings);
 
                 if (!guild.GuildUsers.Select(s => s.UserId).Contains(userSettings.UserId))
@@ -683,15 +681,17 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this._indexService.UpdateUserName(currentUser, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId));
 
-                var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(this.Context, filteredGuildUsers, guild.GuildId, track.Artist.Name, track.Name);
+                var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(this.Context, guild.GuildId, track.Artist.Name, track.Name);
 
                 if (track.Userplaycount != 0)
                 {
                     usersWithTrack = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, currentUser, trackName, track.Userplaycount);
                 }
 
-                var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithTrack, userSettings.UserId);
-                if (usersWithTrack.Count == 0)
+                var filteredUsersWithTrack = WhoKnowsService.FilterGuildUsersAsync(usersWithTrack, guild);
+
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, userSettings.UserId);
+                if (filteredUsersWithTrack.Count == 0)
                 {
                     serverUsers = "Nobody in this server (not even you) has listened to this track.";
                 }
@@ -707,9 +707,20 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $"\nMissing members? Update with {prfx}index";
                 }
 
-                if (guild.GuildUsers.Count > filteredGuildUsers.Count)
+                if (filteredUsersWithTrack.Any())
                 {
-                    var filteredAmount = guild.GuildUsers.Count - filteredGuildUsers.Count;
+                    var serverListeners = filteredUsersWithTrack.Count;
+                    var serverPlaycount = filteredUsersWithTrack.Sum(a => a.Playcount);
+                    var avgServerPlaycount = filteredUsersWithTrack.Average(a => a.Playcount);
+
+                    footer += $"\n{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ";
+                    footer += $"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ";
+                    footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
+                }
+
+                if (usersWithTrack.Count > filteredUsersWithTrack.Count)
+                {
+                    var filteredAmount = usersWithTrack.Count - filteredUsersWithTrack.Count;
                     footer += $"\n{filteredAmount} inactive/blocked users filtered";
                 }
 

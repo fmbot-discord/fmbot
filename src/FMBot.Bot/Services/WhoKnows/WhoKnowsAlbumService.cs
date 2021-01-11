@@ -22,15 +22,15 @@ namespace FMBot.Bot.Services.WhoKnows
             this._contextFactory = contextFactory;
         }
 
-        public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForAlbum(ICommandContext context,
-            ICollection<GuildUser> guildUsers, int guildId, string artistName, string albumName)
+        public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForAlbum(ICommandContext context, int guildId, string artistName, string albumName)
         {
             const string sql = "SELECT ut.user_id, " +
                                "ut.name, " +
                                "ut.artist_name, " +
                                "ut.playcount," +
-                               " u.user_name_last_fm, " +
-                               "u.discord_user_id " +
+                               "u.user_name_last_fm, " +
+                               "u.discord_user_id, " +
+                               "gu.user_name " +
                                "FROM user_albums AS ut " +
                                "INNER JOIN users AS u ON ut.user_id = u.user_id " +
                                "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
@@ -53,10 +53,9 @@ namespace FMBot.Bot.Services.WhoKnows
             foreach (var userAlbum in userAlbums)
             {
                 var discordUser = await context.Guild.GetUserAsync(userAlbum.DiscordUserId);
-                var guildUser = guildUsers.FirstOrDefault(f => f.UserId == userAlbum.UserId);
                 var userName = discordUser != null ?
                     discordUser.Nickname ?? discordUser.Username :
-                    guildUser?.UserName ?? userAlbum.UserNameLastFm;
+                    userAlbum.UserName ?? userAlbum.UserNameLastFm;
 
                 whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
                 {

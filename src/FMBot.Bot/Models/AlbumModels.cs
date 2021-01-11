@@ -50,5 +50,7 @@ namespace FMBot.Bot.Models
         public string UserNameLastFm { get; set; }
 
         public ulong DiscordUserId { get; set; }
+
+        public string UserName { get; set; }
     }
 }

@@ -148,28 +148,25 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 var serverStats = "";
                 var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-                var filteredGuildUsers = this._guildService.FilterGuildUsersAsync(guild);
 
-                if (guild.LastIndexed != null)
+                var usersWithArtist = await this._whoKnowArtistService.GetIndexedUsersForArtist(this.Context, guild.GuildId, artistInfo.Name);
+                var filteredUsersWithArtist = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, guild);
+
+                if (guild.LastIndexed != null && filteredUsersWithArtist.Any())
                 {
-                    var serverListenersTask = this._whoKnowArtistService.GetArtistListenerCountForServer(guild.GuildId, artistInfo.Name);
-                    var serverPlaycountTask = this._whoKnowArtistService.GetArtistPlayCountForServer(guild.GuildId, artistInfo.Name);
-                    var avgServerListenerPlaycountTask = this._whoKnowArtistService.GetArtistAverageListenerPlaycountForServer(guild.GuildId, artistInfo.Name);
-                    var serverPlaycountLastWeekTask = this._whoKnowArtistService.GetWeekArtistPlaycountForGuildAsync(guild.GuildId, artistInfo.Name);
-
-                    var serverListeners = await serverListenersTask;
-                    var serverPlaycount = await serverPlaycountTask;
-                    var avgServerListenerPlaycount = await avgServerListenerPlaycountTask;
-                    var serverPlaycountLastWeek = await serverPlaycountLastWeekTask;
+                    var serverListeners = filteredUsersWithArtist.Count;
+                    var serverPlaycount = filteredUsersWithArtist.Sum(a => a.Playcount);
+                    var avgServerPlaycount = filteredUsersWithArtist.Average(a => a.Playcount);
+                    var serverPlaycountLastWeek = await this._whoKnowArtistService.GetWeekArtistPlaycountForGuildAsync(guild.GuildId, artistInfo.Name);
 
                     serverStats += $"`{serverListeners}` {StringExtensions.GetListenersString(serverListeners)}";
                     serverStats += $"\n`{serverPlaycount}` total {StringExtensions.GetPlaysString(serverPlaycount)}";
-                    serverStats += $"\n`{(int)avgServerListenerPlaycount}` avg {StringExtensions.GetPlaysString((int)avgServerListenerPlaycount)}";
+                    serverStats += $"\n`{(int)avgServerPlaycount}` avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
                     serverStats += $"\n`{serverPlaycountLastWeek}` {StringExtensions.GetPlaysString(serverPlaycountLastWeek)} last week";
 
-                    if (guild.GuildUsers.Count > filteredGuildUsers.Count)
+                    if (usersWithArtist.Count > filteredUsersWithArtist.Count)
                     {
-                        var filteredAmount = guild.GuildUsers.Count - filteredGuildUsers.Count;
+                        var filteredAmount = usersWithArtist.Count - filteredUsersWithArtist.Count;
                         serverStats += $"\n`{filteredAmount}` users filtered";
                     }
                 }
@@ -908,8 +905,6 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var guild = await guildTask;
 
-                var filteredGuildUsers = this._guildService.FilterGuildUsersAsync(guild);
-
                 var currentUser = await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), userSettings);
 
                 if (!guild.GuildUsers.Select(s => s.UserId).Contains(userSettings.UserId))
@@ -919,22 +914,24 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this._indexService.UpdateUserName(currentUser, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId));
 
-                var usersWithArtist = await this._whoKnowArtistService.GetIndexedUsersForArtist(this.Context, filteredGuildUsers, guild.GuildId, artistName);
+                var usersWithArtist = await this._whoKnowArtistService.GetIndexedUsersForArtist(this.Context, guild.GuildId, artistName);
 
                 if (userPlaycount != 0)
                 {
                     usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, currentUser, artistName, userPlaycount);
                 }
 
+                var filteredUsersWithArtist = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, guild);
+
                 CrownModel crownModel = null;
-                if (guild.CrownsDisabled != true && usersWithArtist.Count >= 1)
+                if (guild.CrownsDisabled != true && filteredUsersWithArtist.Count >= 1)
                 {
                     crownModel =
-                        await this._crownService.GetAndUpdateCrownForArtist(usersWithArtist, guild, artistName);
+                        await this._crownService.GetAndUpdateCrownForArtist(filteredUsersWithArtist, guild, artistName);
                 }
 
-                var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithArtist, userSettings.UserId, crownModel);
-                if (usersWithArtist.Count == 0)
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, userSettings.UserId, crownModel);
+                if (filteredUsersWithArtist.Count == 0)
                 {
                     serverUsers = "Nobody in this server (not even you) has listened to this artist.";
                 }
@@ -950,23 +947,15 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $"\nMissing members? Update with {prfx}index";
                 }
 
-                if (filteredGuildUsers.Count < 500)
+                if (filteredUsersWithArtist.Any())
                 {
-                    var serverListenersTask = this._whoKnowArtistService.GetArtistListenerCountForServer(guild.GuildId, artistName);
-                    var serverPlaycountTask = this._whoKnowArtistService.GetArtistPlayCountForServer(guild.GuildId, artistName);
-                    var avgServerListenerPlaycountTask = this._whoKnowArtistService.GetArtistAverageListenerPlaycountForServer(guild.GuildId, artistName);
-
-                    var serverListeners = await serverListenersTask;
-                    var serverPlaycount = await serverPlaycountTask;
-                    var avgServerListenerPlaycount = await avgServerListenerPlaycountTask;
+                    var serverListeners = filteredUsersWithArtist.Count;
+                    var serverPlaycount = filteredUsersWithArtist.Sum(a => a.Playcount);
+                    var avgServerPlaycount = filteredUsersWithArtist.Average(a => a.Playcount);
 
                     footer += $"\n{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ";
                     footer += $"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ";
-                    footer += $"{(int)avgServerListenerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerListenerPlaycount)}";
-                }
-                else if (filteredGuildUsers.Count < 550)
-                {
-                    footer += $"\nView server artist averages in `{prfx}artist`";
+                    footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
                 }
 
                 var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingArtist(userSettings.UserId,
@@ -978,9 +967,9 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += guildAlsoPlaying;
                 }
 
-                if (guild.GuildUsers.Count > filteredGuildUsers.Count)
+                if (usersWithArtist.Count > filteredUsersWithArtist.Count)
                 {
-                    var filteredAmount = guild.GuildUsers.Count - filteredGuildUsers.Count;
+                    var filteredAmount = usersWithArtist.Count - filteredUsersWithArtist.Count;
                     footer += $"\n{filteredAmount} inactive/blocked users filtered";
                 }
 

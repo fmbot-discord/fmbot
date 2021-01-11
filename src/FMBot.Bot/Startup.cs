@@ -123,7 +123,6 @@ namespace FMBot.Bot
                 .AddSingleton<WhoKnowsAlbumService>()
                 .AddSingleton<WhoKnowsArtistService>()
                 .AddSingleton<WhoKnowsPlayService>()
-                .AddSingleton<WhoKnowsService>()
                 .AddSingleton<WhoKnowsTrackService>()
                 .AddSingleton<YoutubeService>() // Add random to the collection
                 .AddSingleton(this.Configuration) // Add the configuration to the collection

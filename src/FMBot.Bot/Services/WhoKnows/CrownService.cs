@@ -116,11 +116,6 @@ namespace FMBot.Bot.Services.WhoKnows
                     };
                 }
 
-                if (currentCrownHolder.CurrentPlaycount != currentPlaycountForCrownHolder)
-                {
-                    currentCrownHolder.CurrentPlaycount = topUser.Playcount;
-                }
-
                 currentCrownHolder.Active = false;
                 currentCrownHolder.Modified = DateTime.UtcNow;
 
