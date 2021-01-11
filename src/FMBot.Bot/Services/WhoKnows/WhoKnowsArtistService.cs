@@ -99,63 +99,6 @@ namespace FMBot.Bot.Services.WhoKnows
                 .ToListAsync();
         }
 
-        public async Task<int> GetArtistListenerCountForServer(int guildId, string artistName)
-        {
-            const string sql = "SELECT coalesce(count(ua.user_id), 0) " +
-                               "FROM user_artists AS ua " +
-                               "INNER JOIN users AS u ON ua.user_id = u.user_id " +
-                               "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
-                               "WHERE gu.guild_id = @guildId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))";
-
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
-            await connection.OpenAsync();
-
-            return await connection.QuerySingleAsync<int>(sql, new
-            {
-                guildId,
-                artistName
-            });
-        }
-
-        public async Task<int> GetArtistPlayCountForServer(int guildId, string artistName)
-        {
-            const string sql = "SELECT coalesce(sum(ua.playcount), 0) " +
-                               "FROM user_artists AS ua " +
-                               "INNER JOIN users AS u ON ua.user_id = u.user_id " +
-                               "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
-                               "WHERE gu.guild_id = @guildId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))";
-
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
-            await connection.OpenAsync();
-
-            return await connection.QuerySingleAsync<int>(sql, new
-            {
-                guildId,
-                artistName
-            });
-        }
-
-        public async Task<double> GetArtistAverageListenerPlaycountForServer(int guildId, string artistName)
-        {
-            const string sql = "SELECT coalesce(avg(ua.playcount), 0) " +
-                               "FROM user_artists AS ua " +
-                               "INNER JOIN users AS u ON ua.user_id = u.user_id " +
-                               "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
-                               "WHERE gu.guild_id = @guildId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))";
-
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
-            await connection.OpenAsync();
-
-            return await connection.QuerySingleAsync<int>(sql, new
-            {
-                guildId,
-                artistName
-            });
-        }
-
         public async Task<int?> GetArtistPlayCountForUser(string artistName, int userId)
         {
             const string sql = "SELECT ua.playcount "+

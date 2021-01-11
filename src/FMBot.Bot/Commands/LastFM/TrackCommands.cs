@@ -707,7 +707,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $"\nMissing members? Update with {prfx}index";
                 }
 
-                if (filteredUsersWithTrack.Any())
+                if (filteredUsersWithTrack.Any() && filteredUsersWithTrack.Count > 1)
                 {
                     var serverListeners = filteredUsersWithTrack.Count;
                     var serverPlaycount = filteredUsersWithTrack.Sum(a => a.Playcount);
