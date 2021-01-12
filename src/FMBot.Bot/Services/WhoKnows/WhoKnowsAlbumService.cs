@@ -94,7 +94,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 artistName
             });
 
-            var whoKnowsAlbumLust = new List<WhoKnowsObjectWithUser>();
+            var whoKnowsAlbumList = new List<WhoKnowsObjectWithUser>();
 
             foreach (var userAlbum in userAlbums)
             {
@@ -103,7 +103,7 @@ namespace FMBot.Bot.Services.WhoKnows
                     discordUser.Nickname ?? discordUser.Username :
                     userAlbum.UserNameLastFm;
 
-                whoKnowsAlbumLust.Add(new WhoKnowsObjectWithUser
+                whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
                 {
                     Name = $"{userAlbum.ArtistName} - {userAlbum.Name}",
                     DiscordName = userName,
@@ -114,7 +114,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 });
             }
 
-            return whoKnowsAlbumLust;
+            return whoKnowsAlbumList;
         }
 
         public async Task<int?> GetAlbumPlayCountForUser(string artistName, string albumName, int userId)
