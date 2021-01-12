@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Web;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.Persistence.Domain.Models;
@@ -163,7 +164,7 @@ namespace FMBot.Bot.Services
                                  a.UserId == userId);
         }
 
-        public async Task<string> GetStreak(int userId, LastTrack nowPlayingTrack = null)
+        public async Task<string> GetStreak(int userId, Response<RecentTrackList> recentTracks)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var lastPlays = await db.UserPlays
@@ -177,20 +178,7 @@ namespace FMBot.Bot.Services
                 return null;
             }
 
-            UserPlay firstPlay;
-            if (nowPlayingTrack == null)
-            {
-                firstPlay = lastPlays.First();
-            }
-            else
-            {
-                firstPlay = new UserPlay
-                {
-                    AlbumName = nowPlayingTrack.AlbumName,
-                    ArtistName = nowPlayingTrack.ArtistName,
-                    TrackName = nowPlayingTrack.Name
-                };
-            }
+            var firstPlay = recentTracks.Content.RecentTracks.First();
 
             var artistCount = 1;
             var albumCount = 1;
@@ -203,27 +191,27 @@ namespace FMBot.Bot.Services
             {
                 var play = lastPlays[i];
 
-                if (firstPlay.ArtistName == play.ArtistName && artistContinue)
+                if (firstPlay.ArtistName.ToLower() == play.ArtistName.ToLower() && artistContinue)
                 {
-                    artistCount += 1;
+                    artistCount++;
                 }
                 else
                 {
                     artistContinue = false;
                 }
 
-                if (firstPlay.AlbumName == play.AlbumName && albumContinue)
+                if (firstPlay.AlbumName.ToLower() == play.AlbumName.ToLower() && albumContinue)
                 {
-                    albumCount += 1;
+                    albumCount++;
                 }
                 else
                 {
                     albumContinue = false;
                 }
 
-                if (firstPlay.TrackName == play.TrackName && trackContinue)
+                if (firstPlay.TrackName.ToLower() == play.TrackName.ToLower() && trackContinue)
                 {
-                    trackCount += 1;
+                    trackCount++;
                 }
                 else
                 {

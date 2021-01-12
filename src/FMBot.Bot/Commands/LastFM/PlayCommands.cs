@@ -742,23 +742,27 @@ namespace FMBot.Bot.Commands.LastFM
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
 
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             if (user.LastIndexed == null)
             {
-                _ = this.Context.Channel.TriggerTypingAsync();
                 await this._indexService.IndexUser(user);
-            }
-            else if (user.LastUpdated < DateTime.UtcNow.AddMinutes(-1))
-            {
-                _ = this.Context.Channel.TriggerTypingAsync();
-                await this._updateService.UpdateUser(user);
             }
 
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
 
-            var recentScrobbles = await this._lastFmService.GetRecentScrobblesAsync(userSettings.UserNameLastFm, 1);
-            var nowPlaying = recentScrobbles.FirstOrDefault(f => f.IsNowPlaying == true);
+            var discordUserId = userSettings.DiscordUserId ?? user.DiscordUserId;
 
-            var streak = await this._playService.GetStreak(userSettings.UserId, nowPlaying);
+            var userWithStreak = await this._userService.GetUserAsync(discordUserId);
+
+            var recentTracks = await this._updateService.UpdateUserAndGetRecentTracks(userWithStreak);
+
+            if (await ErrorService.RecentScrobbleCallFailedReply(recentTracks, userSettings.UserNameLastFm, this.Context))
+            {
+                return;
+            }
+
+            var streak = await this._playService.GetStreak(userSettings.UserId, recentTracks);
             this._embed.WithDescription(streak);
 
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
