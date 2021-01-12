@@ -375,12 +375,12 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 var replyString = $"Use {prfx}privacy to change your visibility to other .fmbot users.";
 
-                this._embed.AddField("Options",
+                this._embed.AddField("Options:",
                     "**Global**: You are visible in the global WhoKnows with your Last.fm username\n" +
                     "**Public**: You are not visible in global WhoKnows, but users in the same server will still see your name.\n\n" +
-                    "The default privacy setting is 'Public'. More privacy modes coming soon.");
+                    "The default privacy setting is 'Public'.");
 
-                this._embed.AddField("Examples",
+                this._embed.AddField("Examples:",
                     $"`{prfx}privacy global` \n" +
                     $"`{prfx}privacy public`");
 
@@ -389,7 +389,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(replyString);
 
                 this._embed.WithFooter(
-                    $"Current privacy: {userSettings.PrivacyLevel}");
+                    $"Current privacy mode: {userSettings.PrivacyLevel}");
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
@@ -400,7 +400,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             await this._userService.SetLastFm(this.Context.User, newUserSettings);
 
-            var setReply = $"Your privacy has been set mode to '{newUserSettings.PrivacyLevel}'";
+            var setReply = $"Your privacy mode has been set to '{newUserSettings.PrivacyLevel}'";
 
             if (this.Context.InteractionData != null)
             {
