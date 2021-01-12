@@ -1,5 +1,9 @@
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
+using Discord.Commands;
+using Discord.WebSocket;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +19,28 @@ namespace FMBot.Bot.Services
             this._contextFactory = contextFactory;
         }
 
+        public async Task<bool> IsSafeForChannel(ICommandContext context, string albumName, string artistName, string url, EmbedBuilder embed = null)
+        {
+            if (!await AlbumIsSafe(albumName, artistName))
+            {
+                if (!await AlbumIsAllowedInNsfw(albumName, artistName))
+                {
+                    embed?.WithDescription("Sorry, this album or artist can't be posted due to discord ToS.\n" +
+                                           $"You can view the [album cover here]({url}).");
+                    return false;
+                }
+                if (context.Guild != null && !((SocketTextChannel)context.Channel).IsNsfw)
+                {
+                    embed?.WithDescription("Sorry, this album cover can only be posted in NSFW channels.\n" +
+                                                $"You can mark this channel as NSFW or view the [album cover here]({url}).");
+                    return false; 
+                }
+
+                return true;
+            }
+
+            return true;
+        }
 
         public async Task<bool> AlbumIsSafe(string albumName, string artistName)
         {

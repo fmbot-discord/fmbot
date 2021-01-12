@@ -260,6 +260,8 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var searchResult = await this.SearchAlbum(albumValues, userSettings, prfx);
             if (!searchResult.AlbumFound)
             {
@@ -290,32 +292,18 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var nsfw = false;
-            if (!await this._censorService.AlbumIsSafe(searchResult.Name, searchResult.Artist))
+            var safeForChannel = await this._censorService.IsSafeForChannel(this.Context, 
+                searchResult.Name, searchResult.Artist, searchResult.Url, this._embed);
+            if (!safeForChannel)
             {
-                if (!await this._censorService.AlbumIsAllowedInNsfw(searchResult.Name, searchResult.Artist))
-                {
-                    this._embed.WithDescription("Sorry, this album or artist can't be posted due to discord ToS.\n" +
-                                                $"You can view the [album cover here]({searchResult.Url}).");
-                    await this.ReplyAsync("", false, this._embed.Build());
-                    this.Context.LogCommandUsed(CommandResponse.Censored);
-                    return;
-                }
-                if (this.Context.Guild != null && !((SocketTextChannel)this.Context.Channel).IsNsfw)
-                {
-                    this._embed.WithDescription("Sorry, this album cover can only be posted in NSFW channels.\n" +
-                                                $"You can mark this channel as NSFW or view the [album cover here]({searchResult.Url}).");
-                    await this.ReplyAsync("", false, this._embed.Build());
-                    this.Context.LogCommandUsed(CommandResponse.Censored);
-                    return;
-                }
-                nsfw = true;
+                await this.ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Censored);
+                return;
             }
 
-            var nsfwDescription = nsfw ? " - NSFW" : "";
             this._embed.WithDescription($"**{searchResult.Artist} - [{searchResult.Name}]({searchResult.Url})**");
             this._embedFooter.WithText(
-                $"Album cover requested by {await this._userService.GetUserTitleAsync(this.Context)}{nsfwDescription}");
+                $"Album cover requested by {await this._userService.GetUserTitleAsync(this.Context)}");
             this._embed.WithFooter(this._embedFooter);
 
             var imageMemoryStream = new MemoryStream();
