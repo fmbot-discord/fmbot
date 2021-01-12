@@ -121,6 +121,7 @@ namespace FMBot.LastFM.Services
                     response.Success = false;
                     response.Message = errorResponse.Message;
                     response.Error = errorResponse.Error;
+                    Statistics.LastfmErrors.Inc();
                 }
             }
             catch (Exception ex)
@@ -129,6 +130,7 @@ namespace FMBot.LastFM.Services
                 response.Message = "Something went wrong while deserializing the object last.fm returned";
                 Console.WriteLine(ex);
                 Log.Error("Something went wrong while deserializing the object Last.fm returned:", ex);
+                Statistics.LastfmErrors.Inc();
             }
 
             return response;

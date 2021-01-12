@@ -13,6 +13,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using Serilog;
 
@@ -181,6 +182,14 @@ namespace FMBot.Bot.Commands
 
             if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full" || force.ToLower() == "-force" || force.ToLower() == "force"))
             {
+                if (PublicProperties.IssuesAtLastFM)
+                {
+                    await ReplyAsync(
+                        "Doing a full update is disabled temporarily while Last.fm is having issues. Please try again later.");
+                    this.Context.LogCommandUsed(CommandResponse.Disabled);
+                    return;
+                }
+
                 if (userSettings.LastIndexed > DateTime.UtcNow.AddHours(-10))
                 {
                     await ReplyAsync(

@@ -275,6 +275,12 @@ namespace FMBot.Bot.Services
                         return;
                     }
 
+                    if (PublicProperties.IssuesAtLastFM)
+                    {
+                        Log.Information("Skipping index timer - issues at Last.fm");
+                        return;
+                    }
+
                     Log.Information("Getting users to index");
                     var timeToIndex = DateTime.UtcNow.AddDays(-ConfigData.Data.LastFm.UserIndexFrequencyInDays.Value);
 
