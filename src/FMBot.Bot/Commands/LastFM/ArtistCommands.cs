@@ -933,7 +933,7 @@ namespace FMBot.Bot.Commands.LastFM
                         await this._crownService.GetAndUpdateCrownForArtist(filteredUsersWithArtist, guild, artistName);
                 }
 
-                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, userSettings.UserId, PrivacyLevel.Public, crownModel);
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, userSettings.UserId, PrivacyLevel.Server, crownModel);
                 if (filteredUsersWithArtist.Count == 0)
                 {
                     serverUsers = "Nobody in this server (not even you) has listened to this artist.";
@@ -1156,7 +1156,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var rnd = new Random();
-                if (rnd.Next(0, 2) == 1 && userSettings.PrivacyLevel != PrivacyLevel.Global)
+                if (rnd.Next(0, 1) == 1 && userSettings.PrivacyLevel != PrivacyLevel.Global)
                 {
                     footer += $"\nYou are currently not globally visible - use '{prfx}privacy global' to enable.";
                 }

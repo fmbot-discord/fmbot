@@ -13,7 +13,7 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                 table: "users",
                 type: "integer",
                 nullable: false,
-                defaultValue: PrivacyLevel.Public);
+                defaultValue: PrivacyLevel.Server);
 
             migrationBuilder.CreateTable(
                 name: "botted_users",

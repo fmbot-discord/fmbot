@@ -275,7 +275,7 @@ namespace FMBot.Bot.Services
                     FmEmbedType = newUserSettings.FmEmbedType,
                     FmCountType = newUserSettings.FmCountType,
                     SessionKeyLastFm = newUserSettings.SessionKeyLastFm,
-                    PrivacyLevel = PrivacyLevel.Public
+                    PrivacyLevel = PrivacyLevel.Server
                 };
 
                 await db.Users.AddAsync(newUser);
@@ -353,9 +353,9 @@ namespace FMBot.Bot.Services
             {
                 userSettings.PrivacyLevel = PrivacyLevel.Global;
             }
-            else if (extraOptions.Contains("public") || extraOptions.Contains("Public"))
+            else if (extraOptions.Contains("server") || extraOptions.Contains("Server"))
             {
-                userSettings.PrivacyLevel = PrivacyLevel.Public;
+                userSettings.PrivacyLevel = PrivacyLevel.Server;
             }
 
             return userSettings;

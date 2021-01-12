@@ -693,7 +693,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var filteredUsersWithTrack = WhoKnowsService.FilterGuildUsersAsync(usersWithTrack, guild);
 
-                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, userSettings.UserId, PrivacyLevel.Public);
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, userSettings.UserId, PrivacyLevel.Server);
                 if (filteredUsersWithTrack.Count == 0)
                 {
                     serverUsers = "Nobody in this server (not even you) has listened to this track.";
@@ -840,7 +840,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var rnd = new Random();
-                if (rnd.Next(0, 2) == 1 && userSettings.PrivacyLevel != PrivacyLevel.Global)
+                if (rnd.Next(0, 1) == 1 && userSettings.PrivacyLevel != PrivacyLevel.Global)
                 {
                     footer += $"\nYou are currently not globally visible - use '{prfx}privacy global' to enable.";
                 }

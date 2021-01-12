@@ -4,7 +4,7 @@ namespace FMBot.Domain.Models
     {
         Global = 1,
 
-        Public = 2,
+        Server = 2,
 
         Private = 3
     }
