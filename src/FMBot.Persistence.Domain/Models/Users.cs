@@ -32,6 +32,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public ChartTimePeriod ChartTimePeriod { get; set; }
 
+        public PrivacyLevel PrivacyLevel { get; set; }
+
         public DateTime? LastGeneratedChartDateTimeUtc { get; set; }
 
         public DateTime? LastIndexed { get; set; }
@@ -59,5 +61,7 @@ namespace FMBot.Persistence.Domain.Models
         public ICollection<GuildUser> GuildUsers { get; set; }
 
         public ICollection<GuildBlockedUser> GuildBlockedUsers { get; set; }
+
+        public ICollection<FeaturedLog> FeaturedLogs { get; set; }
     }
 }

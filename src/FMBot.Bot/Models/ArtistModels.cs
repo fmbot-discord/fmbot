@@ -39,6 +39,21 @@ namespace FMBot.Bot.Models
         public string UserName { get; set; }
     }
 
+    public class WhoKnowsGlobalArtistDto
+    {
+        public int UserId { get; set; }
+
+        public string Name { get; set; }
+
+        public int Playcount { get; set; }
+
+        public string UserNameLastFm { get; set; }
+
+        public ulong DiscordUserId { get; set; }
+
+        public PrivacyLevel PrivacyLevel { get; set; }
+    }
+
     public class AffinityArtist
     {
         public int UserId { get; set; }

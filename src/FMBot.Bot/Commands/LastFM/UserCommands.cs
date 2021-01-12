@@ -40,8 +40,8 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
-        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new();
+        private static readonly List<SocketUser> StackCooldownTarget = new();
 
         public UserCommands(
                 FriendsService friendsService,
@@ -350,6 +350,57 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 setReply += $" with no extra playcount.";
             }
+
+            if (this.Context.InteractionData != null)
+            {
+                await ReplyInteractionAsync(setReply.FilterOutMentions(), ghostMessage: true, type: InteractionMessageType.ChannelMessage);
+            }
+            else
+            {
+                await ReplyAsync(setReply.FilterOutMentions());
+            }
+
+            this.Context.LogCommandUsed();
+        }
+
+        [Command("privacy", RunMode = RunMode.Async)]
+        [Summary("Change your privacy mode for .fmbot")]
+        [UsernameSetRequired]
+        public async Task PrivacyAsync(params string[] otherSettings)
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            if (otherSettings == null || otherSettings.Length < 1 || otherSettings.First() == "help")
+            {
+                var replyString = $"Use {prfx}privacy to change your visibility to other .fmbot users.";
+
+                this._embed.AddField("Options",
+                    "**Global**: You are visible in the global WhoKnows with your Last.fm username\n" +
+                    "**Public**: You are not visible in global WhoKnows, but users in the same server will still see your name.\n\n" +
+                    "The default privacy setting is 'Public'. More privacy modes coming soon.");
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}privacy global` \n" +
+                    $"`{prfx}privacy public`");
+
+                this._embed.WithTitle("Changing your .fmbot privacy mode");
+                this._embed.WithUrl($"{Constants.DocsUrl}/commands/");
+                this._embed.WithDescription(replyString);
+
+                this._embed.WithFooter(
+                    $"Current privacy: {userSettings.PrivacyLevel}");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            var newUserSettings = this._userService.SetPrivacy(userSettings, otherSettings);
+
+            await this._userService.SetLastFm(this.Context.User, newUserSettings);
+
+            var setReply = $"Your privacy has been set mode to '{newUserSettings.PrivacyLevel}'";
 
             if (this.Context.InteractionData != null)
             {

@@ -120,6 +120,7 @@ namespace FMBot.Bot
                 .AddSingleton<UserEventHandler>()
                 .AddSingleton<UserService>()
                 .AddSingleton<WebhookService>()
+                .AddSingleton<WhoKnowsService>()
                 .AddSingleton<WhoKnowsAlbumService>()
                 .AddSingleton<WhoKnowsArtistService>()
                 .AddSingleton<WhoKnowsPlayService>()

@@ -70,6 +70,53 @@ namespace FMBot.Bot.Services.WhoKnows
             return whoKnowsTrackList;
         }
 
+        public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForTrack(ICommandContext context, string artistName, string trackName)
+        {
+            const string sql = "SELECT ut.user_id, " +
+                               "ut.name, " +
+                               "ut.artist_name, " +
+                               "ut.playcount," +
+                               "u.user_name_last_fm, " +
+                               "u.discord_user_id, " +
+                               "u.privacy_level " +
+                               "FROM user_tracks AS ut " +
+                               "INNER JOIN users AS u ON ut.user_id = u.user_id " +
+                               "WHERE UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                               "ORDER BY ut.playcount DESC";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var userTracks = await connection.QueryAsync<WhoKnowsGlobalTrackDto>(sql, new
+            {
+                trackName,
+                artistName
+            });
+
+            var whoKnowsTrackList = new List<WhoKnowsObjectWithUser>();
+
+            foreach (var userTrack in userTracks)
+            {
+                var discordUser = await context.Guild.GetUserAsync(userTrack.DiscordUserId);
+                var userName = discordUser != null ?
+                    discordUser.Nickname ?? discordUser.Username :
+                    userTrack.UserNameLastFm;
+
+                whoKnowsTrackList.Add(new WhoKnowsObjectWithUser
+                {
+                    Name = $"{userTrack.ArtistName} - {userTrack.Name}",
+                    DiscordName = userName,
+                    Playcount = userTrack.Playcount,
+                    LastFMUsername = userTrack.UserNameLastFm,
+                    UserId = userTrack.UserId,
+                    PrivacyLevel = userTrack.PrivacyLevel
+                });
+            }
+
+            return whoKnowsTrackList;
+        }
+
         public async Task<int?> GetTrackPlayCountForUser(string artistName, string trackName, int userId)
         {
             const string sql = "SELECT ut.playcount " +

@@ -73,6 +73,58 @@ namespace FMBot.Bot.Services.WhoKnows
             return whoKnowsArtistList;
         }
 
+        public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForArtists(ICommandContext context, string artistName)
+        {
+            var cacheKey = $"global-whoknows-{artistName}";
+            if (this._cache.TryGetValue(cacheKey, out IList<WhoKnowsObjectWithUser> whoKnowsArtistList))
+            {
+                return whoKnowsArtistList.ToList();
+            }
+
+            const string sql = "SELECT ua.user_id, " +
+                               "ua.name, " +
+                               "ua.playcount, " +
+                               "u.user_name_last_fm, " +
+                               "u.discord_user_id, " +
+                               "u.privacy_level " +
+                               "FROM user_artists AS ua " +
+                               "INNER JOIN users AS u ON ua.user_id = u.user_id " +
+                               "WHERE UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))" +
+                               "ORDER BY ua.playcount DESC ";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var userArtists = await connection.QueryAsync<WhoKnowsGlobalArtistDto>(sql, new
+            {
+                artistName
+            });
+
+            whoKnowsArtistList = new List<WhoKnowsObjectWithUser>();
+
+            foreach (var userArtist in userArtists)
+            {
+                var discordUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId);
+                var userName = discordUser != null ?
+                    discordUser.Nickname ?? discordUser.Username :
+                    userArtist.UserNameLastFm;
+
+                whoKnowsArtistList.Add(new WhoKnowsObjectWithUser
+                {
+                    Name = userArtist.Name,
+                    DiscordName = userName,
+                    Playcount = userArtist.Playcount,
+                    LastFMUsername = userArtist.UserNameLastFm,
+                    UserId = userArtist.UserId,
+                    PrivacyLevel = userArtist.PrivacyLevel
+                });
+            }
+
+            this._cache.Set(cacheKey, whoKnowsArtistList, TimeSpan.FromSeconds(20));
+            return whoKnowsArtistList;
+        }
+
         public async Task<IReadOnlyList<ListArtist>> GetTopArtistsForGuild(IReadOnlyList<User> guildUsers,
             OrderType orderType)
         {

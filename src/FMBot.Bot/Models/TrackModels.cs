@@ -1,3 +1,5 @@
+using FMBot.Domain.Models;
+
 namespace FMBot.Bot.Models
 {
     public class ListTrack
@@ -24,6 +26,24 @@ namespace FMBot.Bot.Models
         public string UserNameLastFm { get; set; }
 
         public ulong DiscordUserId { get; set; }
+
         public string UserName { get; set; }
+    }
+
+    public class WhoKnowsGlobalTrackDto
+    {
+        public int UserId { get; set; }
+
+        public string Name { get; set; }
+
+        public string ArtistName { get; set; }
+
+        public int Playcount { get; set; }
+
+        public string UserNameLastFm { get; set; }
+
+        public ulong DiscordUserId { get; set; }
+
+        public PrivacyLevel PrivacyLevel { get; set; }
     }
 }

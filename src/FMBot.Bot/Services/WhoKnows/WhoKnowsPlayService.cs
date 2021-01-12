@@ -210,19 +210,19 @@ namespace FMBot.Bot.Services.WhoKnows
 
             if (foundUsers.Count == 1)
             {
-                return $"{foundUsers.First().UserName} was also listening to this trackLfm {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!";
+                return $"{foundUsers.First().UserName} was also listening to this track {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!";
             }
             if (foundUsers.Count == 2)
             {
-                return $"{foundUsers[0].UserName} and {foundUsers[1].UserName} were also recently listening to this trackLfm!";
+                return $"{foundUsers[0].UserName} and {foundUsers[1].UserName} were also recently listening to this track!";
             }
             if (foundUsers.Count == 3)
             {
-                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName} and {foundUsers[2].UserName} were also recently listening to this trackLfm!";
+                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName} and {foundUsers[2].UserName} were also recently listening to this track!";
             }
             if (foundUsers.Count > 3)
             {
-                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this trackLfm!";
+                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this track!";
             }
 
             return null;

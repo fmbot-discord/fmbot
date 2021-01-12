@@ -42,6 +42,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly UserService _userService;
         private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
         private readonly WhoKnowsPlayService _whoKnowsPlayService;
+        private readonly WhoKnowsService _whoKnowsService;
 
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedBuilder _embed;
@@ -59,7 +60,8 @@ namespace FMBot.Bot.Commands.LastFM
                 SettingService settingService,
                 UserService userService,
                 WhoKnowsAlbumService whoKnowsAlbumService,
-                WhoKnowsPlayService whoKnowsPlayService)
+                WhoKnowsPlayService whoKnowsPlayService,
+                WhoKnowsService whoKnowsService)
         {
             this._censorService = censorService;
             this._guildService = guildService;
@@ -73,6 +75,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._userService = userService;
             this._whoKnowsAlbumService = whoKnowsAlbumService;
             this._whoKnowsPlayService = whoKnowsPlayService;
+            this._whoKnowsService = whoKnowsService;
 
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
@@ -292,7 +295,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var safeForChannel = await this._censorService.IsSafeForChannel(this.Context, 
+            var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
                 searchResult.Name, searchResult.Artist, searchResult.Url, this._embed);
             if (!safeForChannel)
             {
@@ -640,7 +643,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var filteredUsersWithAlbum = WhoKnowsService.FilterGuildUsersAsync(usersWithAlbum, guild);
 
-                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, userSettings.UserId);
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, userSettings.UserId, PrivacyLevel.Public);
                 if (filteredUsersWithAlbum.Count == 0)
                 {
                     serverUsers = "Nobody in this server (not even you) has listened to this album.";
@@ -709,6 +712,164 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
+        [Command("globalwhoknowsalbum", RunMode = RunMode.Async)]
+        [Summary("Shows what other users listen to the same album on .fmbot")]
+        [Alias("gwa", "gwka", "gwab", "gwkab", "globalwhoknows album")]
+        [UsernameSetRequired]
+        [GuildOnly]
+        public async Task GlobalWhoKnowsAlbumAsync([Remainder] string albumValues = null)
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
+
+            if (lastIndex == null)
+            {
+                await ReplyAsync("This server hasn't been indexed yet.\n" +
+                                 $"Please run `{prfx}index` to index this server.\n" +
+                                 $" Note that this can take some time on large servers.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+            if (lastIndex < DateTime.UtcNow.AddDays(-100))
+            {
+                await ReplyAsync("Server index data is out of date, it was last updated over 100 days ago.\n" +
+                                 $"Please run `{prfx}index` to re-index this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+
+
+            var guildTask = this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            if (this.Context.InteractionData != null)
+            {
+                _ = this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, "", type: InteractionMessageType.AcknowledgeWithSource);
+            }
+
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            var searchResult = await this.SearchAlbum(albumValues, userSettings, prfx);
+            if (!searchResult.AlbumFound)
+            {
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            var queryParams = new Dictionary<string, string>
+                {
+                    {"artist", searchResult.Artist },
+                    {"album", searchResult.Name },
+                    {"username", userSettings.UserNameLastFM }
+                };
+
+            var albumCall = await this._lastFmApi.CallApiAsync<AlbumInfoLfmResponse>(queryParams, Call.AlbumInfo);
+
+            if (!albumCall.Success)
+            {
+                this._embed.ErrorResponse(albumCall.Error, albumCall.Message, this.Context);
+                await ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Error);
+                return;
+            }
+
+            var album = albumCall.Content.Album;
+
+            var albumName = $"{album.Artist} - {album.Name}";
+
+            try
+            {
+                var usersWithArtist = await this._whoKnowsAlbumService.GetGlobalUsersForAlbum(this.Context, album.Artist, album.Name);
+
+                if (albumCall.Content.Album.Userplaycount != 0 && this.Context.Guild != null)
+                {
+                    var discordGuildUser = await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId);
+                    var guildUser = new GuildUser
+                    {
+                        UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : userSettings.UserNameLastFM,
+                        User = userSettings
+                    };
+                    usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, guildUser, albumName, albumCall.Content.Album.Userplaycount);
+                }
+
+                var guild = await guildTask;
+
+                var filteredUsersWithAlbum = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithArtist);
+
+                filteredUsersWithAlbum =
+                    WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithAlbum, guild.GuildUsers.ToList());
+
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, userSettings.UserId, PrivacyLevel.Global);
+                if (filteredUsersWithAlbum.Count == 0)
+                {
+                    serverUsers = "Nobody that uses .fmbot has listened to this album.";
+                }
+
+                this._embed.WithDescription(serverUsers);
+
+                var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+                var footer = $"Global WhoKnows album requested by {userTitle}";
+
+                if (filteredUsersWithAlbum.Any() && filteredUsersWithAlbum.Count > 1)
+                {
+                    var serverListeners = filteredUsersWithAlbum.Count;
+                    var serverPlaycount = filteredUsersWithAlbum.Sum(a => a.Playcount);
+                    var avgServerPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
+
+                    footer += $"\n{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ";
+                    footer += $"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ";
+                    footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
+                }
+
+                var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingAlbum(userSettings.UserId,
+                    this.Context.Guild.Id, album.Artist, album.Name);
+
+                if (guildAlsoPlaying != null)
+                {
+                    footer += "\n";
+                    footer += guildAlsoPlaying;
+                }
+
+                if (userSettings.PrivacyLevel != PrivacyLevel.Global)
+                {
+                    footer += $"\nYou are currently not globally visible - use '{prfx}privacy' to set.";
+                }
+
+                this._embed.WithTitle($"Who knows {albumName} globally");
+
+                if (Uri.IsWellFormedUriString(album.Url, UriKind.Absolute))
+                {
+                    this._embed.WithUrl(album.Url);
+                }
+
+                this._embedFooter.WithText(footer);
+                this._embed.WithFooter(this._embedFooter);
+
+                if (album.Image.Any() && album.Image != null)
+                {
+                    this._embed.WithThumbnailUrl(album.Image.First(f => f.Size == "mega").Text.ToString());
+                }
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
+                {
+                    this.Context.LogCommandException(e);
+                    await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
+                                     "Make sure it has permission to 'Embed links' and 'Attach Images'");
+                }
+                else
+                {
+                    this.Context.LogCommandException(e);
+                    await ReplyAsync("Something went wrong while using global whoknows album.");
+                }
+            }
+        }
 
         [Command("serveralbums", RunMode = RunMode.Async)]
         [Summary("Shows top albums for your server")]

@@ -11,6 +11,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Objects;
@@ -61,20 +62,26 @@ namespace FMBot.Bot.Services
                 {
                     var random = new Random();
                     var randomAvatarMode = random.Next(1, 4);
+
+                    if (!Enum.TryParse(randomAvatarMode.ToString(), out FeaturedMode featuredMode))
+                    {
+                        return;
+                    }
+
                     var randomAvatarModeDesc = "";
 
-                    switch (randomAvatarMode)
+                    switch (featuredMode)
                     {
-                        case 1:
+                        case FeaturedMode.RecentPlays:
                             randomAvatarModeDesc = "Recent listens";
                             break;
-                        case 2:
+                        case FeaturedMode.TopAlbumsWeekly:
                             randomAvatarModeDesc = "Weekly albums";
                             break;
-                        case 3:
+                        case FeaturedMode.TopAlbumsMonthly:
                             randomAvatarModeDesc = "Monthly albums";
                             break;
-                        case 4:
+                        case FeaturedMode.TopAlbumsAllTime:
                             randomAvatarModeDesc = "Overall albums";
                             break;
                     }
@@ -86,16 +93,16 @@ namespace FMBot.Bot.Services
                         var lastFmUserName = await this._userService.GetRandomLastFMUserAsync();
                         Log.Information($"Featured: Picked user {lastFmUserName}");
 
-                        switch (randomAvatarMode)
+                        switch (featuredMode)
                         {
                             // Recent listens
-                            case 1:
+                            case FeaturedMode.RecentPlays:
                                 var tracks = await this._lastFMService.GetRecentScrobblesAsync(lastFmUserName, 50);
 
                                 if (!tracks.Success || !tracks.Content.Any())
                                 {
                                     Log.Information($"Featured: User {lastFmUserName} had no recent tracks, switching to alternative avatar mode");
-                                    goto case 2;
+                                    goto case FeaturedMode.TopAlbumsWeekly;
                                 }
 
                                 LastTrack trackToFeature = null;
@@ -111,7 +118,7 @@ namespace FMBot.Bot.Services
                                 if (trackToFeature == null)
                                 {
                                     Log.Information("Featured: No albums or nsfw filtered, switching to alternative avatar mode");
-                                    goto case 3;
+                                    goto case FeaturedMode.TopAlbumsMonthly;
                                 }
 
                                 var albumImages = await this._lastFMService.GetAlbumImagesAsync(trackToFeature.ArtistName, trackToFeature.AlbumName);
@@ -126,25 +133,25 @@ namespace FMBot.Bot.Services
                                 {
                                     ChangeToNewAvatar(client, albumImages.Large.AbsoluteUri);
                                     ScrobbleFeatured(client, trackToFeature);
+                                    // await this._userService.LogFeatured(, mode, description, artistName, albumName, trackName);
                                 }
                                 else
                                 {
                                     Log.Information("Featured: Recent listen had no image, switching to alternative avatar mode");
-                                    goto case 4;
+                                    goto case FeaturedMode.TopAlbumsAllTime;
                                 }
 
                                 break;
-                            // Weekly albums
-                            case 2:
-                            case 3:
-                            case 4:
+                            case FeaturedMode.TopAlbumsWeekly:
+                            case FeaturedMode.TopAlbumsMonthly:
+                            case FeaturedMode.TopAlbumsAllTime:
                                 var timespan = LastStatsTimeSpan.Week;
-                                switch (randomAvatarMode)
+                                switch (featuredMode)
                                 {
-                                    case 3:
+                                    case FeaturedMode.TopAlbumsMonthly:
                                         timespan = LastStatsTimeSpan.Month;
                                         break;
-                                    case 4:
+                                    case FeaturedMode.TopAlbumsAllTime:
                                         timespan = LastStatsTimeSpan.Overall;
                                         break;
                                 }

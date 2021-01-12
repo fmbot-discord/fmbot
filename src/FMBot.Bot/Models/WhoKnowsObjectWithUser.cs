@@ -1,3 +1,5 @@
+using FMBot.Domain.Models;
+
 namespace FMBot.Bot.Models
 {
     public class WhoKnowsObjectWithUser
@@ -11,5 +13,7 @@ namespace FMBot.Bot.Models
         public string DiscordName { get; set; }
 
         public int UserId { get; set; }
+
+        public PrivacyLevel? PrivacyLevel { get; set; }
     }
 }

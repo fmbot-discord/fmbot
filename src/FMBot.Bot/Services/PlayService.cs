@@ -11,7 +11,6 @@ using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
 using Artist = FMBot.LastFM.Domain.Models.Artist;
 
@@ -260,7 +259,6 @@ namespace FMBot.Bot.Services
             {
                 return "💯 ";
             }
-
             return null;
         }
 

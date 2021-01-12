@@ -78,7 +78,7 @@ namespace FMBot.Bot.Services
             {
                 user.LastUsed = DateTime.UtcNow;
 
-                db.Entry(user).State = EntityState.Modified;
+                db.Update(user);
 
                 try
                 {
@@ -101,6 +101,25 @@ namespace FMBot.Bot.Services
         }
 
         // User settings
+        public async Task LogFeatured(int userId, FeaturedMode mode, string description, string artistName, string albumName, string trackName)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+
+            var featuredLog = new FeaturedLog
+            {
+                UserId = userId,
+                Description = description,
+                AlbumName = albumName,
+                TrackName = trackName,
+                ArtistName = artistName
+            };
+
+            await db.FeaturedLogs.AddAsync(featuredLog);
+
+            await db.SaveChangesAsync();
+        }
+
+        // Log featured
         public async Task<User> GetUserAsync(ulong discordUserId)
         {
             await using var db = this._contextFactory.CreateDbContext();
@@ -255,7 +274,8 @@ namespace FMBot.Bot.Services
                     ChartTimePeriod = ChartTimePeriod.Monthly,
                     FmEmbedType = newUserSettings.FmEmbedType,
                     FmCountType = newUserSettings.FmCountType,
-                    SessionKeyLastFm = newUserSettings.SessionKeyLastFm
+                    SessionKeyLastFm = newUserSettings.SessionKeyLastFm,
+                    PrivacyLevel = PrivacyLevel.Public
                 };
 
                 await db.Users.AddAsync(newUser);
@@ -275,12 +295,13 @@ namespace FMBot.Bot.Services
                 user.UserNameLastFM = newUserSettings.UserNameLastFM;
                 user.FmEmbedType = newUserSettings.FmEmbedType;
                 user.FmCountType = newUserSettings.FmCountType;
+                user.PrivacyLevel = newUserSettings.PrivacyLevel;
                 if (updateSessionKey)
                 {
                     user.SessionKeyLastFm = newUserSettings.SessionKeyLastFm;
                 }
 
-                db.Entry(user).State = EntityState.Modified;
+                db.Update(user);
 
                 await db.SaveChangesAsync();
             }
@@ -326,6 +347,19 @@ namespace FMBot.Bot.Services
             return userSettings;
         }
 
+        public User SetPrivacy(User userSettings, string[] extraOptions)
+        {
+            if (extraOptions.Contains("global") || extraOptions.Contains("Global"))
+            {
+                userSettings.PrivacyLevel = PrivacyLevel.Global;
+            }
+            else if (extraOptions.Contains("public") || extraOptions.Contains("Public"))
+            {
+                userSettings.PrivacyLevel = PrivacyLevel.Public;
+            }
+
+            return userSettings;
+        }
 
         public async Task ResetChartTimerAsync(User user)
         {

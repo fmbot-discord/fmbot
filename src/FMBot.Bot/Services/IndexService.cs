@@ -12,6 +12,7 @@ using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Npgsql;
 using PostgreSQLCopyHelper;
 using Serilog;
@@ -23,13 +24,15 @@ namespace FMBot.Bot.Services
         private readonly IUserIndexQueue _userIndexQueue;
         private readonly GlobalIndexService _globalIndexService;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly IMemoryCache _cache;
 
-        public IndexService(IUserIndexQueue userIndexQueue, GlobalIndexService indexService, IDbContextFactory<FMBotDbContext> contextFactory)
+        public IndexService(IUserIndexQueue userIndexQueue, GlobalIndexService indexService, IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
         {
             this._userIndexQueue = userIndexQueue;
             this._userIndexQueue.UsersToIndex.SubscribeAsync(OnNextAsync);
             this._globalIndexService = indexService;
             this._contextFactory = contextFactory;
+            this._cache = cache;
         }
 
         private async Task OnNextAsync(IndexUserQueueItem user)
@@ -46,7 +49,14 @@ namespace FMBot.Bot.Services
         {
             Log.Information("Starting index for {UserNameLastFM}", user.UserNameLastFM);
 
-            await this._globalIndexService.IndexUser(new IndexUserQueueItem(user.UserId));
+            if (!this._cache.TryGetValue($"index-started-{user.UserId}", out bool _))
+            {
+                await this._globalIndexService.IndexUser(new IndexUserQueueItem(user.UserId));
+            }
+            else
+            {
+                Log.Information("Index for {UserNameLastFM} already in progress, skipping.", user.UserNameLastFM);
+            }
         }
 
         public async Task StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers)

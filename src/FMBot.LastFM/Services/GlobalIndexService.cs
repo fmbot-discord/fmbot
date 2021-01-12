@@ -51,14 +51,14 @@ namespace FMBot.LastFM.Services
 
         public async Task IndexUser(IndexUserQueueItem queueItem)
         {
+            var concurrencyCacheKey = $"index-started-{queueItem.UserId}";
+            this._cache.Set(concurrencyCacheKey, true);
+
             Thread.Sleep(queueItem.TimeoutMs);
 
             await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users.FindAsync(queueItem.UserId);
 
-            this._cache.Remove($"top-artists-{user.UserId}");
-            this._cache.Remove($"top-albums-{user.UserId}");
-            this._cache.Remove($"top-tracks-{user.UserId}");
 
             Log.Information($"Starting index for {user.UserNameLastFM}");
             var now = DateTime.UtcNow;
@@ -82,9 +82,10 @@ namespace FMBot.LastFM.Services
 
             var latestScrobbleDate = await GetLatestScrobbleDate(user);
 
-            Statistics.IndexedUsers.Inc();
-
             await SetUserIndexTime(user.UserId, now, latestScrobbleDate);
+
+            Statistics.IndexedUsers.Inc();
+            this._cache.Remove(concurrencyCacheKey);
         }
 
         private async Task<IReadOnlyList<UserArtist>> GetArtistsForUserFromLastFm(User user)

@@ -70,6 +70,53 @@ namespace FMBot.Bot.Services.WhoKnows
             return whoKnowsAlbumList;
         }
 
+        public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForAlbum(ICommandContext context, string artistName, string albumName)
+        {
+            const string sql = "SELECT ut.user_id, " +
+                               "ut.name, " +
+                               "ut.artist_name, " +
+                               "ut.playcount," +
+                               "u.user_name_last_fm, " +
+                               "u.discord_user_id, " +
+                               "u.privacy_level " +
+                               "FROM user_albums AS ut " +
+                               "INNER JOIN users AS u ON ut.user_id = u.user_id " +
+                               "WHERE UPPER(ut.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                               "ORDER BY ut.playcount DESC ";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var userAlbums = await connection.QueryAsync<WhoKnowsGlobalAlbumDto>(sql, new
+            {
+                albumName,
+                artistName
+            });
+
+            var whoKnowsAlbumLust = new List<WhoKnowsObjectWithUser>();
+
+            foreach (var userAlbum in userAlbums)
+            {
+                var discordUser = await context.Guild.GetUserAsync(userAlbum.DiscordUserId);
+                var userName = discordUser != null ?
+                    discordUser.Nickname ?? discordUser.Username :
+                    userAlbum.UserNameLastFm;
+
+                whoKnowsAlbumLust.Add(new WhoKnowsObjectWithUser
+                {
+                    Name = $"{userAlbum.ArtistName} - {userAlbum.Name}",
+                    DiscordName = userName,
+                    Playcount = userAlbum.Playcount,
+                    LastFMUsername = userAlbum.UserNameLastFm,
+                    UserId = userAlbum.UserId,
+                    PrivacyLevel = userAlbum.PrivacyLevel
+                });
+            }
+
+            return whoKnowsAlbumLust;
+        }
+
         public async Task<int?> GetAlbumPlayCountForUser(string artistName, string albumName, int userId)
         {
             const string sql = "SELECT ua.playcount " +

@@ -1,16 +1,28 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
+using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services.WhoKnows
 {
-    public static class WhoKnowsService
+    public class WhoKnowsService
     {
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+
+        public WhoKnowsService(IDbContextFactory<FMBotDbContext> contextFactory)
+        {
+            this._contextFactory = contextFactory;
+        }
+
+
         public static IList<WhoKnowsObjectWithUser> AddOrReplaceUserToIndexList(IList<WhoKnowsObjectWithUser> users, GuildUser guildUser, string name, long? playcount)
         {
             var existingUsers = users
@@ -62,7 +74,32 @@ namespace FMBot.Bot.Services.WhoKnows
             return users.ToList();
         }
 
-        public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId, CrownModel crownModel = null)
+        public async Task<IList<WhoKnowsObjectWithUser>> FilterGlobalUsersAsync(IList<WhoKnowsObjectWithUser> users)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var bottedUsers = await db.BottedUsers
+                .AsQueryable()
+                .ToListAsync();
+
+            return users
+                .Where(w =>
+                    !bottedUsers
+                    .Select(s => s.UserNameLastFM.ToLower())
+                    .Contains(w.LastFMUsername.ToLower()))
+                .ToList();
+        }
+
+        public static IList<WhoKnowsObjectWithUser> ShowGuildMembersInGlobalWhoKnowsAsync(IList<WhoKnowsObjectWithUser> users, IList<GuildUser> guildUsers)
+        {
+            foreach (var user in users.Where(w => guildUsers.Select(s => s.UserId).Contains(w.UserId)))
+            {
+                user.PrivacyLevel = PrivacyLevel.Global;
+            }
+
+            return users;
+        }
+
+        public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId, PrivacyLevel minPrivacyLevel, CrownModel crownModel = null)
         {
             var reply = "";
 
@@ -85,7 +122,16 @@ namespace FMBot.Bot.Services.WhoKnows
             {
                 var user = usersToShow[index];
 
-                var nameWithLink = NameWithLink(user);
+                string nameWithLink;
+                if (minPrivacyLevel == PrivacyLevel.Global && user.PrivacyLevel != PrivacyLevel.Global)
+                {
+                    nameWithLink = PrivateName();
+                }
+                else
+                {
+                    nameWithLink = NameWithLink(user);
+                }
+
                 var playString = StringExtensions.GetPlaysString(user.Playcount);
 
                 var positionCounter = $"{spacer}{index + 1}.";
@@ -136,6 +182,11 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var nameWithLink = $"[{discordName}]({Constants.LastFMUserUrl}{user.LastFMUsername})";
             return nameWithLink;
+        }
+
+        private static string PrivateName()
+        {
+            return "Private user";
         }
     }
 }
