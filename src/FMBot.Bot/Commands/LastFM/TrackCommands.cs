@@ -839,8 +839,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
                 }
 
-                var rnd = new Random();
-                if (rnd.Next(0, 1) == 1 && userSettings.PrivacyLevel != PrivacyLevel.Global)
+                if (userSettings.PrivacyLevel != PrivacyLevel.Global)
                 {
                     footer += $"\nYou are currently not globally visible - use '{prfx}privacy global' to enable.";
                 }
