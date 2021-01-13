@@ -75,6 +75,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 {
                     currentCrownHolder.CurrentPlaycount = topUser.Playcount;
                     currentCrownHolder.Modified = DateTime.UtcNow;
+                    currentCrownHolder.SeededCrown = false;
 
                     db.Entry(currentCrownHolder).State = EntityState.Modified;
                     await db.SaveChangesAsync();

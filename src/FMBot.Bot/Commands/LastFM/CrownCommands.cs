@@ -117,7 +117,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var claimTimeDescription = DateTime.UtcNow.AddDays(-3) < userCrown.Created
                     ? StringExtensions.GetTimeAgo(userCrown.Created)
-                    : userCrown.Created.Date.ToString("dddd MMMM d", CultureInfo.InvariantCulture);
+                    : userCrown.Created.Date.ToString("dddd MMM d", CultureInfo.InvariantCulture);
 
                 embedDescription.AppendLine($"{index + 1}. **{userCrown.ArtistName}** - **{userCrown.CurrentPlaycount}** plays (claimed {claimTimeDescription})");
             }
@@ -317,6 +317,12 @@ namespace FMBot.Bot.Commands.LastFM
                 this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
             }
+            if (guild.CrownsDisabled == true)
+            {
+                await ReplyAsync("Crown functionality has been disabled in this server.");
+                this.Context.LogCommandUsed(CommandResponse.Disabled);
+                return;
+            }
 
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
@@ -381,6 +387,12 @@ namespace FMBot.Bot.Commands.LastFM
                 this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
             }
+            if (guild.CrownsDisabled == true)
+            {
+                await ReplyAsync("Crown functionality has been disabled in this server.");
+                this.Context.LogCommandUsed(CommandResponse.Disabled);
+                return;
+            }
 
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
@@ -432,6 +444,12 @@ namespace FMBot.Bot.Commands.LastFM
                 await ReplyAsync("This server hasn't been stored yet.\n" +
                                  $"Please run `{prfx}index` to store this server.");
                 this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+            if (guild.CrownsDisabled == true)
+            {
+                await ReplyAsync("Crown functionality has been disabled in this server.");
+                this.Context.LogCommandUsed(CommandResponse.Disabled);
                 return;
             }
 
@@ -499,6 +517,12 @@ namespace FMBot.Bot.Commands.LastFM
                 await ReplyAsync("This server hasn't been stored yet.\n" +
                                  $"Please run `{prfx}index` to store this server.");
                 this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+            if (guild.CrownsDisabled == true)
+            {
+                await ReplyAsync("Crown functionality has been disabled in this server.");
+                this.Context.LogCommandUsed(CommandResponse.Disabled);
                 return;
             }
 
