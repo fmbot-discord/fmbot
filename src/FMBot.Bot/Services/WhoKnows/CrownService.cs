@@ -227,12 +227,10 @@ namespace FMBot.Bot.Services.WhoKnows
                     UserId = s.UserId,
                     Active = true,
                     ArtistName = s.Name,
-                    Created = existingCrowns.Any(a => a.ArtistName.ToLower() == s.Name.ToLower() && a.UserId == s.UserId) ?
-                        existingCrowns.First(f => f.ArtistName.ToLower() == s.Name.ToLower() && f.UserId == s.UserId).Created : now,
+                    Created = now,
                     Modified = now,
                     CurrentPlaycount = s.Playcount,
-                    StartPlaycount = existingCrowns.Any(a => a.ArtistName.ToLower() == s.Name.ToLower() && a.UserId == s.UserId) ?
-                        existingCrowns.First(f => f.ArtistName.ToLower() == s.Name.ToLower() && f.UserId == s.UserId).StartPlaycount : s.Playcount,
+                    StartPlaycount = s.Playcount,
                     GuildId = guild.GuildId,
                     SeededCrown = true
                 }).ToList();
