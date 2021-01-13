@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
 using Discord.WebSocket;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
@@ -10,6 +12,8 @@ using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using PostgreSQLCopyHelper;
 
 namespace FMBot.Bot.Services.WhoKnows
 {
@@ -130,7 +134,8 @@ namespace FMBot.Bot.Services.WhoKnows
                     Created = DateTime.UtcNow,
                     Modified = DateTime.UtcNow,
                     StartPlaycount = topUser.Playcount,
-                    CurrentPlaycount = topUser.Playcount
+                    CurrentPlaycount = topUser.Playcount,
+                    SeededCrown = false
                 };
 
                 await db.UserCrowns.AddAsync(newCrown);
@@ -160,7 +165,8 @@ namespace FMBot.Bot.Services.WhoKnows
                         Created = DateTime.UtcNow,
                         Modified = DateTime.UtcNow,
                         StartPlaycount = topUser.Playcount,
-                        CurrentPlaycount = topUser.Playcount
+                        CurrentPlaycount = topUser.Playcount,
+                        SeededCrown = false
                     };
 
                     await db.UserCrowns.AddAsync(newCrown);
@@ -186,6 +192,80 @@ namespace FMBot.Bot.Services.WhoKnows
             }
 
             return null;
+        }
+
+        public async Task<int> SeedCrownsForGuild(Persistence.Domain.Models.Guild guild, IList<UserCrown> existingCrowns)
+        {
+            const string sql = "SELECT DISTINCT ON(ua.name) " +
+                                   "ua.user_id, " +
+                                   "ua.name, " +
+                                   "ua.playcount " +
+                                   "FROM user_artists AS ua " +
+                                   "INNER JOIN users AS u ON ua.user_id = u.user_id " +
+                                   "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                                   "WHERE gu.guild_id = @guildId AND playcount > @minPlaycount " +
+                                   "ORDER BY ua.name, ua.playcount DESC;";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var minPlaycount = guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown;
+
+            var topUsersForPlaycount = await connection.QueryAsync<CrownSeedDto>(sql, new
+            {
+                guild.GuildId,
+                minPlaycount
+            });
+
+            var now = DateTime.UtcNow;
+            var crownsToSeed = topUsersForPlaycount.Select(s =>
+                new UserCrown
+                {
+                    UserId = s.UserId,
+                    Active = true,
+                    ArtistName = s.Name,
+                    Created = now,
+                    Modified = now,
+                    CurrentPlaycount = s.Playcount,
+                    StartPlaycount = s.Playcount,
+                    GuildId = guild.GuildId,
+                    SeededCrown = true
+                }).ToList();
+
+            if (existingCrowns != null && existingCrowns.Any())
+            {
+                crownsToSeed = crownsToSeed.Where(w =>
+                        !existingCrowns
+                            .Where(wh => !wh.SeededCrown)
+                            .Select(s => s.ArtistName.ToLower())
+                            .Contains(w.ArtistName.ToLower()))
+                    .ToList();
+            }
+
+            const string deleteOldSeededCrownsSql = "DELETE FROM public.user_crowns " +
+                                                    "WHERE guild_id = @guildId AND seeded_crown = true;";
+
+            await connection.ExecuteAsync(deleteOldSeededCrownsSql, new
+            {
+                guild.GuildId,
+            });
+
+            var copyHelper = new PostgreSQLCopyHelper<UserCrown>("public", "user_crowns")
+                .MapInteger("guild_id", x => x.GuildId)
+                .MapInteger("user_id", x => x.UserId)
+                .MapText("artist_name", x => x.ArtistName)
+                .MapInteger("current_playcount", x => x.CurrentPlaycount)
+                .MapInteger("start_playcount", x => x.StartPlaycount)
+                .MapTimeStamp("created", x => x.Created)
+                .MapTimeStamp("modified", x => x.Created)
+                .MapBoolean("active", x => x.Active)
+                .MapBoolean("seeded_crown", x => x.SeededCrown);
+
+            await copyHelper.SaveAllAsync(connection, crownsToSeed);
+            await connection.CloseAsync();
+
+            return crownsToSeed.Count;
         }
 
         private async Task<long?> GetCurrentPlaycountForUser(string artistName, string lastFmUserName)
@@ -261,12 +341,35 @@ namespace FMBot.Bot.Services.WhoKnows
                 .CountAsync();
         }
 
+        public async Task<IList<UserCrown>> GetAllCrownsForGuild(int guildId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            return await db.UserCrowns
+                .AsQueryable()
+                .Include(i => i.User)
+                .Where(w => w.GuildId == guildId)
+                .ToListAsync();
+        }
+
         public async Task RemoveAllCrownsFromGuild(Persistence.Domain.Models.Guild guild)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var guildCrowns = await db.UserCrowns
                 .AsQueryable()
-                .Where(f => f.GuildId == guild.GuildId)
+                .Where(w => w.GuildId == guild.GuildId)
+                .ToListAsync();
+
+            db.UserCrowns.RemoveRange(guildCrowns);
+
+            await db.SaveChangesAsync();
+        }
+
+        public async Task RemoveAllSeededCrownsFromGuild(Persistence.Domain.Models.Guild guild)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var guildCrowns = await db.UserCrowns
+                .AsQueryable()
+                .Where(w => w.GuildId == guild.GuildId && w.SeededCrown)
                 .ToListAsync();
 
             db.UserCrowns.RemoveRange(guildCrowns);
