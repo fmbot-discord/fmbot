@@ -205,6 +205,7 @@ namespace FMBot.Bot.Services.WhoKnows
                                    "INNER JOIN users AS u ON ua.user_id = u.user_id " +
                                    "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
                                    "WHERE gu.guild_id = @guildId AND playcount > @minPlaycount " +
+                                   "AND NOT ua.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_crowns = true AND guild_id = @guildId) " +
                                    "ORDER BY ua.name, ua.playcount DESC;";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -243,7 +244,6 @@ namespace FMBot.Bot.Services.WhoKnows
                             .Contains(w.ArtistName.ToLower()))
                     .ToList();
             }
-
             const string deleteOldSeededCrownsSql = "DELETE FROM public.user_crowns " +
                                                     "WHERE guild_id = @guildId AND seeded_crown = true;";
 
