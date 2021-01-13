@@ -404,15 +404,22 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            _ = this.Context.Channel.TriggerTypingAsync();
+            this._embed.WithDescription($"<a:loading:749715170682470461> Seeding crowns for your server...");
+            var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
             var guildCrowns = await this._crownService.GetAllCrownsForGuild(guild.GuildId);
 
-            var amountOfCrownsSeeded = await this._crownService.SeedCrownsForGuild(guild, guildCrowns);
+            var amountOfCrownsSeeded = await this._crownService.SeedCrownsForGuild(guild, guildCrowns).ConfigureAwait(false);
 
-            this._embed.WithDescription($"Seeded {amountOfCrownsSeeded} crowns for your server.\n\n" +
-                                        $"Tip: You can remove all crowns with `{prfx}killallcrowns` or remove all automatically seeded crowns with `{prfx}killallseededcrowns`.");
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+             await message.ModifyAsync(m =>
+             {
+                 m.Embed = new EmbedBuilder()
+                     .WithDescription($"Seeded {amountOfCrownsSeeded} crowns for your server.\n\n" +
+                                      $"Tip: You can remove all crowns with `{prfx}killallcrowns` or remove all automatically seeded crowns with `{prfx}killallseededcrowns`.")
+                     .WithColor(DiscordConstants.SuccessColorGreen)
+                     .Build();
+             });
+
             this.Context.LogCommandUsed();
         }
 
