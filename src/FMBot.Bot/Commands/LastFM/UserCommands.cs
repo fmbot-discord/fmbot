@@ -254,7 +254,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userSettingsToAdd = new User
             {
-                UserNameLastFM = lastFmUserName
+                UserNameLastFM = lastFmUserName,
             };
 
             userSettingsToAdd = this._userService.SetSettings(userSettingsToAdd, otherSettings);
@@ -396,17 +396,15 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var newUserSettings = this._userService.SetPrivacy(userSettings, otherSettings);
+            var newPrivacyLevel = await this._userService.SetPrivacy(userSettings, otherSettings);
 
-            await this._userService.SetLastFm(this.Context.User, newUserSettings);
+            var setReply = $"Your privacy mode has been set to '{newPrivacyLevel}'.";
 
-            var setReply = $"Your privacy mode has been set to '{newUserSettings.PrivacyLevel}'.";
-
-            if (newUserSettings.PrivacyLevel == PrivacyLevel.Global)
+            if (newPrivacyLevel == PrivacyLevel.Global)
             {
                 setReply += " You will now be visible in the global WhoKnows with your Last.fm username.";
             }
-            if (newUserSettings.PrivacyLevel == PrivacyLevel.Server)
+            if (newPrivacyLevel == PrivacyLevel.Server)
             {
                 setReply += " You will not be visible in the global WhoKnows with your Last.fm username, but users you share a server with will still see it.";
             }

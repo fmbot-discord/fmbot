@@ -295,7 +295,6 @@ namespace FMBot.Bot.Services
                 user.UserNameLastFM = newUserSettings.UserNameLastFM;
                 user.FmEmbedType = newUserSettings.FmEmbedType;
                 user.FmCountType = newUserSettings.FmCountType;
-                user.PrivacyLevel = newUserSettings.PrivacyLevel;
                 if (updateSessionKey)
                 {
                     user.SessionKeyLastFm = newUserSettings.SessionKeyLastFm;
@@ -305,6 +304,27 @@ namespace FMBot.Bot.Services
 
                 await db.SaveChangesAsync();
             }
+        }
+
+        // Set Privacy
+        public async Task<PrivacyLevel> SetPrivacy(User userToUpdate, string[] extraOptions)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+
+            if (extraOptions.Contains("global") || extraOptions.Contains("Global"))
+            {
+                userToUpdate.PrivacyLevel = PrivacyLevel.Global;
+            }
+            else if (extraOptions.Contains("server") || extraOptions.Contains("Server"))
+            {
+                userToUpdate.PrivacyLevel = PrivacyLevel.Server;
+            }
+
+            db.Update(userToUpdate);
+
+            await db.SaveChangesAsync();
+
+            return userToUpdate.PrivacyLevel;
         }
 
         public User SetSettings(User userSettings, string[] extraOptions)
@@ -347,20 +367,6 @@ namespace FMBot.Bot.Services
             return userSettings;
         }
 
-        public User SetPrivacy(User userSettings, string[] extraOptions)
-        {
-            if (extraOptions.Contains("global") || extraOptions.Contains("Global"))
-            {
-                userSettings.PrivacyLevel = PrivacyLevel.Global;
-            }
-            else if (extraOptions.Contains("server") || extraOptions.Contains("Server"))
-            {
-                userSettings.PrivacyLevel = PrivacyLevel.Server;
-            }
-
-            return userSettings;
-        }
-
         public async Task ResetChartTimerAsync(User user)
         {
             await using var db = this._contextFactory.CreateDbContext();
@@ -396,10 +402,10 @@ namespace FMBot.Bot.Services
 
                 await using var deleteTracks = new NpgsqlCommand($"DELETE FROM public.user_tracks WHERE user_id = {user.UserId};", connection);
                 await deleteTracks.ExecuteNonQueryAsync();
-                
+
                 await using var deleteFriends = new NpgsqlCommand($"DELETE FROM public.friends WHERE user_id = {user.UserId};", connection);
                 await deleteFriends.ExecuteNonQueryAsync();
-                
+
                 await using var deleteOtherFriends = new NpgsqlCommand($"DELETE FROM public.friends WHERE friend_user_id = {user.UserId};", connection);
                 await deleteOtherFriends.ExecuteNonQueryAsync();
 
