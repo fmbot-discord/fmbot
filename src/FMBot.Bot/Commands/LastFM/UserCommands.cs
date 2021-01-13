@@ -402,6 +402,15 @@ namespace FMBot.Bot.Commands.LastFM
 
             var setReply = $"Your privacy mode has been set to '{newUserSettings.PrivacyLevel}'.";
 
+            if (newUserSettings.PrivacyLevel == PrivacyLevel.Global)
+            {
+                setReply += " You will now be visible in the global WhoKnows with your Last.fm username.";
+            }
+            if (newUserSettings.PrivacyLevel == PrivacyLevel.Server)
+            {
+                setReply += " You will not be visible in the global WhoKnows with your Last.fm username, but users you share a server with will still see it.";
+            }
+
             if (this.Context.InteractionData != null)
             {
                 await ReplyInteractionAsync(setReply.FilterOutMentions(), ghostMessage: true, type: InteractionMessageType.ChannelMessage);
