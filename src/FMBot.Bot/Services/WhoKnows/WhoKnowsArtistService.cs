@@ -75,12 +75,6 @@ namespace FMBot.Bot.Services.WhoKnows
 
         public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForArtists(ICommandContext context, string artistName)
         {
-            var cacheKey = $"global-whoknows-{artistName}";
-            if (this._cache.TryGetValue(cacheKey, out IList<WhoKnowsObjectWithUser> whoKnowsArtistList))
-            {
-                return whoKnowsArtistList.ToList();
-            }
-
             const string sql = "SELECT ua.user_id, " +
                                "ua.name, " +
                                "ua.playcount, " +
@@ -101,7 +95,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 artistName
             });
 
-            whoKnowsArtistList = new List<WhoKnowsObjectWithUser>();
+            var whoKnowsArtistList = new List<WhoKnowsObjectWithUser>();
 
             foreach (var userArtist in userArtists)
             {
@@ -121,7 +115,6 @@ namespace FMBot.Bot.Services.WhoKnows
                 });
             }
 
-            this._cache.Set(cacheKey, whoKnowsArtistList, TimeSpan.FromSeconds(20));
             return whoKnowsArtistList;
         }
 
