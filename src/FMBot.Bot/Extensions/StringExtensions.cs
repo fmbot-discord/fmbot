@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Extensions
 {
@@ -18,17 +19,9 @@ namespace FMBot.Bot.Extensions
             }
         }
 
-        public static string Truncate(this string value, int maxLength)
-        {
-            maxLength -= 2;
-            
-            if (string.IsNullOrEmpty(value)) return value;
-            return value.Length <= maxLength ? value : $"{value.Substring(0, maxLength)}..";
-        }
-
         public static string FilterOutMentions(this string str)
         {
-            var pattern = new Regex("(@everyone|@here|<@|`)");
+            var pattern = new Regex("(@everyone|@here|<@|`|http://|https://)");
             return pattern.Replace(str, "");
         }
 
@@ -47,6 +40,23 @@ namespace FMBot.Bot.Extensions
         public static string ReplaceInvalidChars(string filename)
         {
             return string.Join("_", filename.Split(Path.GetInvalidFileNameChars()));
+        }
+
+        public static string UserTypeToIcon(this UserType userType)
+        {
+            switch (userType)
+            {
+                case UserType.Owner:
+                    return " 👑";
+                case UserType.Admin:
+                    return " 🛡";
+                case UserType.Contributor:
+                    return " 🔥";
+                case UserType.Backer:
+                    return " ⭐";
+                default:
+                    return "";
+            }
         }
 
         public static string TruncateLongString(string str, int maxLength)

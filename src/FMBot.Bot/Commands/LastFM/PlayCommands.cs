@@ -617,7 +617,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("pace", RunMode = RunMode.Async)]
         [Summary("Displays the date a goal amount of scrobbles is reached")]
         [UsernameSetRequired]
-        [Alias("p", "pc")]
+        [Alias("pc")]
         public async Task PaceAsync([Remainder] string extraOptions = null)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -734,6 +734,47 @@ namespace FMBot.Bot.Commands.LastFM
             this.Context.LogCommandUsed();
         }
 
+        [Command("plays", RunMode = RunMode.Async)]
+        [Summary("Displays track info and stats.")]
+        [Alias("p", "scrobbles")]
+        [UsernameSetRequired]
+        public async Task PlaysAsync([Remainder] string extraOptions = null)
+        {
+            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            if (!string.IsNullOrWhiteSpace(extraOptions) && extraOptions.ToLower() == "help")
+            {
+                this._embed.WithTitle($"{prfx}plays");
+                this._embed.WithDescription($"Shows your total plays from the track you're currently listening to or searching for.");
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}tp` \n" +
+                    $"`{prfx}trackplays` \n" +
+                    $"`{prfx}trackplays Mac DeMarco Here Comes The Cowboy` \n" +
+                    $"`{prfx}trackplays Cocteau Twins | Heaven or Las Vegas`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context, true);
+
+            var count = await this._lastFmService.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm);
+
+            var userTitle = $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}";
+
+            var reply =
+                $"**{userTitle}** has `{count}` total scrobbles";
+
+
+            await this.Context.Channel.SendMessageAsync(reply);
+            this.Context.LogCommandUsed();
+        }
+
         [Command("streak", RunMode = RunMode.Async)]
         [Summary("Shows you your streak")]
         [UsernameSetRequired]
@@ -751,9 +792,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
 
-            var discordUserId = userSettings.DiscordUserId ?? user.DiscordUserId;
-
-            var userWithStreak = await this._userService.GetUserAsync(discordUserId);
+            var userWithStreak = await this._userService.GetUserAsync(userSettings.DiscordUserId);
 
             var recentTracks = await this._updateService.UpdateUserAndGetRecentTracks(userWithStreak);
 

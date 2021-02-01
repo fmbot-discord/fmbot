@@ -247,7 +247,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithFooter(this._embedFooter);
 
-                var nsfwAllowed = this.Context.Guild != null && ((SocketTextChannel) this.Context.Channel).IsNsfw;
+                var nsfwAllowed = this.Context.Guild == null || ((SocketTextChannel) this.Context.Channel).IsNsfw;
                 var chart = await this._chartService.GenerateChartAsync(chartSettings, nsfwAllowed);
 
                 if (chartSettings.CensoredAlbums.HasValue && chartSettings.CensoredAlbums > 0)

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
@@ -230,29 +231,11 @@ namespace FMBot.Bot.Services
         public async Task<string> GetUserTitleAsync(ICommandContext context)
         {
             var name = await GetNameAsync(context);
-            var rank = await GetRankAsync(context.User);
+            var userType = await GetRankAsync(context.User);
 
             var title = name;
 
-            if (rank == UserType.Owner)
-            {
-                title += " 👑";
-            }
-
-            if (rank == UserType.Admin)
-            {
-                title += " 🛡️";
-            }
-
-            if (rank == UserType.Contributor)
-            {
-                title += " 🔥";
-            }
-
-            if (rank == UserType.Backer)
-            {
-                title += " ⭐";
-            }
+            title += $" {userType.UserTypeToIcon()}";
 
             return title;
         }

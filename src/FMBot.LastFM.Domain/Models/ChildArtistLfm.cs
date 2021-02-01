@@ -6,6 +6,6 @@ namespace FMBot.LastFM.Domain.Models
     {
         public string Name { get; set; }
         public string Mbid { get; set; }
-        public Uri Url { get; set; }
+        public string Url { get; set; }
     }
 }

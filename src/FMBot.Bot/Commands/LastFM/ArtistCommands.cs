@@ -435,21 +435,17 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
-            //this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            var desc =
-                $"{userTitle} has {artistInfo.Stats.Userplaycount} {StringExtensions.GetPlaysString(artistInfo.Stats.Userplaycount)} for **{artistInfo.Name}**";
+            var reply =
+                $"**{userTitle.FilterOutMentions()}** has `{artistInfo.Stats.Userplaycount}` {StringExtensions.GetPlaysString(artistInfo.Stats.Userplaycount)} for **{artistInfo.Name.FilterOutMentions()}**";
 
             if (userSettings.LastUpdated != null)
             {
                 var playsLastWeek =
                     await this._playService.GetWeekArtistPlaycountAsync(userSettings.UserId, artistInfo.Name);
-                desc += $" - {playsLastWeek} last week";
+                reply += $" ({playsLastWeek} last week)";
             }
-            this._embed.WithDescription(desc);
-            //this._embedAuthor.WithUrl(artistInfo.Url);
-            this._embed.WithAuthor(this._embedAuthor);
 
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            await this.Context.Channel.SendMessageAsync(reply);
             this.Context.LogCommandUsed();
         }
 
@@ -533,9 +529,9 @@ namespace FMBot.Bot.Commands.LastFM
                 else
                 {
                     int userId;
-                    if (userSettings.DifferentUser && userSettings.DiscordUserId.HasValue)
+                    if (userSettings.DifferentUser)
                     {
-                        var otherUser = await this._userService.GetUserAsync(userSettings.DiscordUserId.Value);
+                        var otherUser = await this._userService.GetUserAsync(userSettings.DiscordUserId);
                         if (otherUser.LastIndexed == null)
                         {
                             await this._indexService.IndexUser(otherUser);

@@ -83,11 +83,11 @@ namespace FMBot.Bot.Commands.LastFM
                 var userSettings = await this._settingService.GetUser(userOptions, user, this.Context);
 
                 string userTitle;
-                if (userSettings.DifferentUser && userSettings.DiscordUserId.HasValue)
+                if (userSettings.DifferentUser)
                 {
                     userTitle =
                         $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
-                    user = await this._userService.GetFullUserAsync(userSettings.DiscordUserId.Value);
+                    user = await this._userService.GetFullUserAsync(userSettings.DiscordUserId);
                 }
                 else
                 {

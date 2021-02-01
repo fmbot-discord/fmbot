@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
@@ -13,9 +14,11 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
+using SpotifyAPI.Web.Models;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -193,8 +196,10 @@ namespace FMBot.Bot.Commands.LastFM
 
             var name = await this._guildService.GetUserFromGuild(guild, currentCrown.UserId);
 
+            var artistUrl =
+                $"{Constants.LastFMUserUrl}{currentCrown.User.UserNameLastFM}/library/music/{HttpUtility.UrlEncode(artist)}";
             this._embed.AddField("Current crown holder",
-                $"**{name?.UserName ?? currentCrown.User.UserNameLastFM}** - **{currentCrown.CurrentPlaycount}** plays");
+                $"**[{name?.UserName ?? currentCrown.User.UserNameLastFM}]({artistUrl})** - **{currentCrown.CurrentPlaycount}** plays");
 
             var lastCrownCreateDate = currentCrown.Created;
             if (artistCrowns.Count > 1)
@@ -206,7 +211,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                     crownHistory.AppendLine($"**{crownUsername?.UserName ?? artistCrown.User.UserNameLastFM}** - " +
                                             $"**{artistCrown.Created:MMM dd yyyy}** to **{lastCrownCreateDate:MMM dd yyyy}** - " +
-                                            $"**{artistCrown.CurrentPlaycount}** to **{artistCrown.StartPlaycount}** plays");
+                                            $"**{artistCrown.StartPlaycount}** to **{artistCrown.CurrentPlaycount}** plays");
                     lastCrownCreateDate = artistCrown.Created;
                 }
 

@@ -114,7 +114,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var track = await this.SearchTrack(trackValues, userSettings, prfx);
+            var track = await this.SearchTrack(trackValues, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
             if (track == null)
             {
                 return;
@@ -199,7 +199,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         public async Task TrackPlaysAsync([Remainder] string trackValues = null)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             if (!string.IsNullOrWhiteSpace(trackValues) && trackValues.ToLower() == "help")
@@ -220,21 +220,25 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var track = await this.SearchTrack(trackValues, userSettings, prfx);
+            var userSettings = await this._settingService.GetUser(trackValues, user, this.Context);
+
+            var track = await this.SearchTrack(trackValues, userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
             if (track == null)
             {
                 return;
             }
 
-            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+            var reply =
+                $"**{userSettings.DiscordUserName.FilterOutMentions()} {userSettings.UserType.UserTypeToIcon()}** has `{track.Userplaycount}` {StringExtensions.GetPlaysString(track.Userplaycount)} for **{track.Name.FilterOutMentions()}** by **{track.Artist.Name.FilterOutMentions()}**";
 
-            this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            var playString = track.Userplaycount == 1 ? "play" : "plays";
-            this._embedAuthor.WithName($"{userTitle} has {track.Userplaycount} {playString} for {track.Name} by {track.Artist.Name}");
-            this._embed.WithUrl(track.Url);
-            this._embed.WithAuthor(this._embedAuthor);
+            if (!userSettings.DifferentUser && user.LastUpdated != null)
+            {
+                var playsLastWeek =
+                    await this._playService.GetWeekTrackPlaycountAsync(userSettings.UserId, track.Name, track.Artist.Name);
+                reply += $" ({playsLastWeek} last week)";
+            }
 
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            await this.Context.Channel.SendMessageAsync(reply);
             this.Context.LogCommandUsed();
         }
 
@@ -259,7 +263,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var track = await this.SearchTrack(trackValues, userSettings, prfx);
+            var track = await this.SearchTrack(trackValues, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
             if (track == null)
             {
                 return;
@@ -306,7 +310,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var track = await this.SearchTrack(trackValues, userSettings, prfx);
+            var track = await this.SearchTrack(trackValues, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
             if (track == null)
             {
                 return;
@@ -388,7 +392,7 @@ namespace FMBot.Bot.Commands.LastFM
                 StackCooldownTimer.Add(DateTimeOffset.Now);
             }
 
-            var track = await this.SearchTrack(trackValues, userSettings, prfx);
+            var track = await this.SearchTrack(trackValues, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
             if (track == null)
             {
                 return;
@@ -509,9 +513,9 @@ namespace FMBot.Bot.Commands.LastFM
                 else
                 {
                     int userId;
-                    if (userSettings.DifferentUser && userSettings.DiscordUserId.HasValue)
+                    if (userSettings.DifferentUser)
                     {
-                        var otherUser = await this._userService.GetUserAsync(userSettings.DiscordUserId.Value);
+                        var otherUser = await this._userService.GetUserAsync(userSettings.DiscordUserId);
                         if (otherUser.LastIndexed == null)
                         {
                             await this._indexService.IndexUser(otherUser);
@@ -663,7 +667,7 @@ namespace FMBot.Bot.Commands.LastFM
                 _ = this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, "", type: InteractionMessageType.AcknowledgeWithSource);
             }
 
-            var track = await this.SearchTrack(trackValues, userSettings, prfx);
+            var track = await this.SearchTrack(trackValues, userSettings.UserNameLastFM, userSettings.UserNameLastFM);
             if (track == null)
             {
                 return;
@@ -787,7 +791,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var track = await this.SearchTrack(trackValues, userSettings, prfx);
+            var track = await this.SearchTrack(trackValues, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
             if (track == null)
             {
                 return;
@@ -818,7 +822,7 @@ namespace FMBot.Bot.Commands.LastFM
                     WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithAlbum, guild.GuildUsers.ToList());
 
                 var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, userSettings.UserId, PrivacyLevel.Global);
-                if (filteredUsersWithAlbum.Count == 0)
+                if (!filteredUsersWithAlbum.Any())
                 {
                     serverUsers = "Nobody that uses .fmbot has listened to this track.";
                 }
@@ -828,9 +832,9 @@ namespace FMBot.Bot.Commands.LastFM
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
                 var footer = $"Global WhoKnows track requested by {userTitle}";
 
-                if (filteredUsersWithAlbum.Any() && filteredUsersWithAlbum.Count > 1)
+                if (filteredUsersWithAlbum.Any() && filteredUsersWithAlbum.Count() > 1)
                 {
-                    var serverListeners = filteredUsersWithAlbum.Count;
+                    var serverListeners = filteredUsersWithAlbum.Count();
                     var serverPlaycount = filteredUsersWithAlbum.Sum(a => a.Playcount);
                     var avgServerPlaycount = filteredUsersWithAlbum.Average(a => a.Playcount);
 
@@ -1009,7 +1013,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        private async Task<TrackInfoLfm> SearchTrack(string trackValues, User userSettings, string prfx)
+        private async Task<TrackInfoLfm> SearchTrack(string trackValues, string lastFmUserName, string sessionKey = null)
         {
             string searchValue;
             if (!string.IsNullOrWhiteSpace(trackValues))
@@ -1018,30 +1022,23 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (searchValue.Contains(" | "))
                 {
-
                     var trackInfo = await this._lastFmService.GetTrackInfoAsync(searchValue.Split(" | ")[1], searchValue.Split(" | ")[0],
-                        userSettings.UserNameLastFM);
+                        lastFmUserName);
                     return trackInfo;
                 }
             }
             else
             {
-                string sessionKey = null;
-                if (!string.IsNullOrEmpty(userSettings.SessionKeyLastFm))
-                {
-                    sessionKey = userSettings.SessionKeyLastFm;
-                }
+                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(lastFmUserName, 1, useCache: true, sessionKey: sessionKey);
 
-                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
-
-                if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
+                if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, lastFmUserName, this.Context))
                 {
                     return null;
                 }
 
                 var trackResult = recentScrobbles.Content.RecentTracks[0];
                 var trackInfo = await this._lastFmService.GetTrackInfoAsync(trackResult.TrackName, trackResult.ArtistName,
-                    userSettings.UserNameLastFM);
+                    lastFmUserName);
 
                 if (trackInfo == null)
                 {
@@ -1068,7 +1065,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var track = result.Content[0];
 
                 var trackInfo = await this._lastFmService.GetTrackInfoAsync(track.Name, track.ArtistName,
-                    userSettings.UserNameLastFM);
+                    lastFmUserName);
                 return trackInfo;
             }
 

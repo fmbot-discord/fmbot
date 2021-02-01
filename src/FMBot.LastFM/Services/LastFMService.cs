@@ -123,7 +123,7 @@ namespace FMBot.LastFM.Services
         }
 
         // Scrobble count from a certain unix timestamp
-        public async Task<long?> GetScrobbleCountFromDateAsync(string lastFmUserName, long? unixTimestamp)
+        public async Task<long?> GetScrobbleCountFromDateAsync(string lastFmUserName, long? unixTimestamp = null)
         {
             var queryParams = new Dictionary<string, string>
             {

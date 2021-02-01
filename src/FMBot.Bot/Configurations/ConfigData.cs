@@ -30,7 +30,7 @@ namespace FMBot.Bot.Configurations
                 {
                     Database = new DatabaseConfig
                     {
-                        ConnectionString = "Host=localhost;Port=5433;Username=postgres;Password=password;Database=fmbot;Command Timeout=15;Timeout=30;Persist Security Info=True"
+                        ConnectionString = "Host=localhost;Port=5432;Username=postgres;Password=password;Database=fmbot;Command Timeout=15;Timeout=30;Persist Security Info=True"
                     },
                     Bot = new BotConfig
                     {

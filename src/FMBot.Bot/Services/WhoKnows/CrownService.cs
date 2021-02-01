@@ -289,7 +289,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 .Include(i => i.User)
                 .OrderByDescending(o => o.CurrentPlaycount)
                 .Where(f => f.GuildId == guild.GuildId &&
-                            EF.Functions.ILike(f.ArtistName, artistName))
+                            f.ArtistName.ToLower() == artistName.ToLower())
                 .ToListAsync();
         }
 

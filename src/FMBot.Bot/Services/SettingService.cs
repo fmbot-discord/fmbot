@@ -211,14 +211,29 @@ namespace FMBot.Bot.Services
         public async Task<UserSettingsModel> GetUser(
             string extraOptions,
             User user,
-            ICommandContext context)
+            ICommandContext context,
+            bool firstOptionIsLfmUsername = false)
         {
+            string discordUserName;
+            if (context.Guild != null)
+            {
+                var discordGuildUser = await context.Guild.GetUserAsync(user.DiscordUserId);
+                discordUserName = discordGuildUser?.Nickname ?? context.User.Username;
+            }
+            else
+            {
+                discordUserName = context.User.Username;
+            }
+
             var settingsModel = new UserSettingsModel
             {
                 DifferentUser = false,
                 UserNameLastFm = user.UserNameLastFM,
+                SessionKeyLastFm = user.SessionKeyLastFm,
                 DiscordUserId = context.User.Id,
-                UserId = user.UserId
+                DiscordUserName = discordUserName,
+                UserId = user.UserId,
+                UserType = user.UserType
             };
 
             if (extraOptions == null)
@@ -228,15 +243,41 @@ namespace FMBot.Bot.Services
 
             var options = extraOptions.Split(' ');
 
+            if (firstOptionIsLfmUsername)
+            {
+                var otherUser = await GetDifferentUser(options.First());
+
+                if (otherUser != null)
+                {
+                    settingsModel.DiscordUserName = otherUser.UserNameLastFM;
+                    settingsModel.DifferentUser = true;
+                    settingsModel.DiscordUserId = otherUser.DiscordUserId;
+                    settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
+                    settingsModel.SessionKeyLastFm = otherUser.SessionKeyLastFm;
+                    settingsModel.UserType = otherUser.UserType;
+                }
+            }
+
             foreach (var option in options)
             {
                 var otherUser = await GetUserFromString(option);
 
                 if (otherUser != null)
                 {
+                    if (context.Guild != null)
+                    {
+                        var discordGuildUser = await context.Guild.GetUserAsync(otherUser.DiscordUserId);
+                        settingsModel.DiscordUserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : otherUser.UserNameLastFM;
+                    }
+                    else
+                    {
+                        settingsModel.DiscordUserName = otherUser.UserNameLastFM;
+                    }
+
                     settingsModel.DifferentUser = true;
                     settingsModel.DiscordUserId = otherUser.DiscordUserId;
                     settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
+                    settingsModel.UserType = otherUser.UserType;
                 }
             }
 
@@ -249,43 +290,21 @@ namespace FMBot.Bot.Services
 
                     if (otherUser != null)
                     {
+                        if (context.Guild != null)
+                        {
+                            var discordGuildUser = await context.Guild.GetUserAsync(otherUser.DiscordUserId);
+                            settingsModel.DiscordUserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : otherUser.UserNameLastFM;
+                        }
+                        else
+                        {
+                            settingsModel.DiscordUserName = otherUser.UserNameLastFM;
+                        }
+
                         settingsModel.DifferentUser = true;
                         settingsModel.DiscordUserId = otherUser.DiscordUserId;
                         settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
+                        settingsModel.UserType = otherUser.UserType;
                     }
-                }
-            }
-
-            return settingsModel;
-        }
-
-        public async Task<UserSettingsModel> GetFmBotUser(
-            string extraOptions,
-            User currentUser)
-        {
-            var settingsModel = new UserSettingsModel
-            {
-                DifferentUser = false,
-                UserNameLastFm = currentUser.UserNameLastFM,
-                UserId = currentUser.UserId
-            };
-
-            if (extraOptions == null)
-            {
-                return settingsModel;
-            }
-
-            var options = extraOptions.Split(' ');
-
-            foreach (var option in options)
-            {
-                var otherUser = await GetUserFromString(option);
-
-                if (otherUser != null)
-                {
-                    settingsModel.DifferentUser = true;
-                    settingsModel.DiscordUserId = otherUser.DiscordUserId;
-                    settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
                 }
             }
 

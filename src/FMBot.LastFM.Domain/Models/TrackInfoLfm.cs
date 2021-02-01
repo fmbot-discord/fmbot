@@ -10,7 +10,7 @@ namespace FMBot.LastFM.Domain.Models
     public class TrackInfoLfm
     {
         public string Name { get; set; }
-        public Guid Mbid { get; set; }
+        public string Mbid { get; set; }
         public string Url { get; set; }
         public long Duration { get; set; }
         public long Listeners { get; set; }

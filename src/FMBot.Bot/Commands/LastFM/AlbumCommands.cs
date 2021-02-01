@@ -231,16 +231,17 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
-            this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            var playstring = albumInfo.Userplaycount == 1 ? "play" : "plays";
-            this._embedAuthor.WithName($"{userTitle} has {albumInfo.Userplaycount} {playstring} for {albumInfo.Name} by {albumInfo.Artist}");
-            if (Uri.IsWellFormedUriString(albumInfo.Url, UriKind.Absolute))
-            {
-                this._embed.WithUrl(albumInfo.Url);
-            }
-            this._embed.WithAuthor(this._embedAuthor);
+            var reply =
+                $"**{userTitle.FilterOutMentions()}** has `{albumInfo.Userplaycount}` {StringExtensions.GetPlaysString(albumInfo.Userplaycount)} for **{albumInfo.Name.FilterOutMentions()}** by **{albumInfo.Artist.FilterOutMentions()}**";
 
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            if (userSettings.LastUpdated != null)
+            {
+                var playsLastWeek =
+                    await this._playService.GetWeekAlbumPlaycountAsync(userSettings.UserId, albumInfo.Name, albumInfo.Artist);
+                reply += $" ({playsLastWeek} last week)";
+            }
+
+            await this.Context.Channel.SendMessageAsync(reply);
             this.Context.LogCommandUsed();
         }
 
@@ -462,9 +463,9 @@ namespace FMBot.Bot.Commands.LastFM
                 else
                 {
                     int userId;
-                    if (userSettings.DifferentUser && userSettings.DiscordUserId.HasValue)
+                    if (userSettings.DifferentUser)
                     {
-                        var otherUser = await this._userService.GetUserAsync(userSettings.DiscordUserId.Value);
+                        var otherUser = await this._userService.GetUserAsync(userSettings.DiscordUserId);
                         if (otherUser.LastIndexed == null)
                         {
                             await this._indexService.IndexUser(otherUser);

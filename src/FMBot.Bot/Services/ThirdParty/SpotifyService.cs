@@ -56,7 +56,7 @@ namespace FMBot.Bot.Services.ThirdParty
                     {
                         Name = lastFmArtistInfoLfm.Artist.Name,
                         LastFmUrl = lastFmArtistInfoLfm.Artist.Url,
-                        Mbid = lastFmArtistInfoLfm.Artist.Mbid
+                        Mbid = !string.IsNullOrEmpty(lastFmArtistInfoLfm.Artist.Mbid) ? Guid.Parse(lastFmArtistInfoLfm.Artist.Mbid) : null
                     };
 
                     if (spotifyArtist != null)
