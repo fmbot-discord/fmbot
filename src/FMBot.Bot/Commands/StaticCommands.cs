@@ -98,7 +98,7 @@ namespace FMBot.Bot.Commands
             var selfId = this.Context.Client.CurrentUser.Id.ToString();
 
             this._embed.AddField("Invite the bot to your own server with the link below:",
-                "https://discordapp.com/oauth2/authorize?client_id=" + selfId + "&scope=bot%20applications.commands.update%20applications.commands&permissions=" +
+                "https://discordapp.com/oauth2/authorize?client_id=" + selfId + "&scope=bot%20applications.commands&permissions=" +
                 Constants.InviteLinkPermissions);
 
             this._embed.AddField("Support the bot development and hosting:",
