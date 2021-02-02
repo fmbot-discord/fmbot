@@ -68,7 +68,7 @@ namespace FMBot.Bot.Commands
             embedDescription.AppendLine("- You can invite .fmbot to your own server by **[clicking here](" +
                 "https://discordapp.com/oauth2/authorize?" +
                 $"client_id={selfId}" +
-                "&scope=bot%20applications.commands.update%20applications.commands" +
+                "&scope=bot%20applications.commands" +
                 $"&permissions={Constants.InviteLinkPermissions}).**");
 
             embedDescription.AppendLine(
