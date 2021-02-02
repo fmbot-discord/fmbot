@@ -667,7 +667,7 @@ namespace FMBot.Bot.Commands.LastFM
                 _ = this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, "", type: InteractionMessageType.AcknowledgeWithSource);
             }
 
-            var track = await this.SearchTrack(trackValues, userSettings.UserNameLastFM, userSettings.UserNameLastFM);
+            var track = await this.SearchTrack(trackValues, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
             if (track == null)
             {
                 return;
