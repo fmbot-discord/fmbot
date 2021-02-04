@@ -222,20 +222,24 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userSettings = await this._settingService.GetUser(trackValues, user, this.Context);
 
-            var track = await this.SearchTrack(trackValues, userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
+            var track = await this.SearchTrack(userSettings.NewSearchValue, user.UserNameLastFM, user.SessionKeyLastFm, userSettings.UserNameLastFm);
             if (track == null)
             {
                 return;
             }
 
             var reply =
-                $"**{userSettings.DiscordUserName.FilterOutMentions()} {userSettings.UserType.UserTypeToIcon()}** has `{track.Userplaycount}` {StringExtensions.GetPlaysString(track.Userplaycount)} for **{track.Name.FilterOutMentions()}** by **{track.Artist.Name.FilterOutMentions()}**";
+                $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has `{track.Userplaycount}` {StringExtensions.GetPlaysString(track.Userplaycount)} for **{track.Name.FilterOutMentions()}** " +
+                $"by **{track.Artist.Name.FilterOutMentions()}**";
 
             if (!userSettings.DifferentUser && user.LastUpdated != null)
             {
                 var playsLastWeek =
                     await this._playService.GetWeekTrackPlaycountAsync(userSettings.UserId, track.Name, track.Artist.Name);
-                reply += $" ({playsLastWeek} last week)";
+                if (playsLastWeek != 0)
+                {
+                    reply += $" (`{playsLastWeek}` last week)";
+                }
             }
 
             await this.Context.Channel.SendMessageAsync(reply);
@@ -355,7 +359,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.AddField("Search for a track to scrobble",
                     $"Format: `{prfx}scrobble SearchValue`\n" +
                     $"`{prfx}sb Stronger Kanye` *(scrobbles Stronger by Kanye West)*\n" +
-                    $"`{prfx}scrobble Loona Heart Attack` *(scrobbles Heart Attack (츄) by LOONA)*"); 
+                    $"`{prfx}scrobble Loona Heart Attack` *(scrobbles Heart Attack (츄) by LOONA)*");
 
                 this._embed.AddField("Or enter the exact name with separators",
                     $"Format: `{prfx}scrobble Artist | Track`\n" +
@@ -1013,14 +1017,14 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        private async Task<TrackInfoLfm> SearchTrack(string trackValues, string lastFmUserName, string sessionKey = null)
+        private async Task<TrackInfoLfm> SearchTrack(string trackValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null)
         {
             string searchValue;
-            if (!string.IsNullOrWhiteSpace(trackValues))
+            if (!string.IsNullOrWhiteSpace(trackValues) && trackValues.Length != 0)
             {
                 searchValue = trackValues;
 
-                if (searchValue.Contains(" | "))
+                if (trackValues.Contains(" | "))
                 {
                     var trackInfo = await this._lastFmService.GetTrackInfoAsync(searchValue.Split(" | ")[1], searchValue.Split(" | ")[0],
                         lastFmUserName);
@@ -1034,6 +1038,11 @@ namespace FMBot.Bot.Commands.LastFM
                 if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, lastFmUserName, this.Context))
                 {
                     return null;
+                }
+
+                if (otherUserUsername != null)
+                {
+                    lastFmUserName = otherUserUsername;
                 }
 
                 var trackResult = recentScrobbles.Content.RecentTracks[0];
@@ -1063,6 +1072,11 @@ namespace FMBot.Bot.Commands.LastFM
             if (result.Success && result.Content.Any())
             {
                 var track = result.Content[0];
+
+                if (otherUserUsername != null)
+                {
+                    lastFmUserName = otherUserUsername;
+                }
 
                 var trackInfo = await this._lastFmService.GetTrackInfoAsync(track.Name, track.ArtistName,
                     lastFmUserName);

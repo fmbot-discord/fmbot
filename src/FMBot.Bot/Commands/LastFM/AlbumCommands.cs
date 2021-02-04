@@ -191,7 +191,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         public async Task AlbumPlaysAsync([Remainder] string albumValues = null)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.ToLower() == "help")
@@ -203,7 +203,9 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var searchResult = await this.SearchAlbum(albumValues, userSettings, prfx);
+            var userSettings = await this._settingService.GetUser(albumValues, user, this.Context);
+
+            var searchResult = await this.SearchAlbum(userSettings.NewSearchValue, user, prfx);
             if (!searchResult.AlbumFound)
             {
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
@@ -214,7 +216,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 {"artist", searchResult.Artist },
                 {"album", searchResult.Name },
-                {"username", userSettings.UserNameLastFM }
+                {"username", userSettings.UserNameLastFm }
             };
 
             var albumCall = await this._lastFmApi.CallApiAsync<AlbumInfoLfmResponse>(queryParams, Call.AlbumInfo);
@@ -229,16 +231,18 @@ namespace FMBot.Bot.Commands.LastFM
 
             var albumInfo = albumCall.Content.Album;
 
-            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-
             var reply =
-                $"**{userTitle.FilterOutMentions()}** has `{albumInfo.Userplaycount}` {StringExtensions.GetPlaysString(albumInfo.Userplaycount)} for **{albumInfo.Name.FilterOutMentions()}** by **{albumInfo.Artist.FilterOutMentions()}**";
+                $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has `{albumInfo.Userplaycount}` {StringExtensions.GetPlaysString(albumInfo.Userplaycount)} " +
+                $"for **{albumInfo.Name.FilterOutMentions()}** by **{albumInfo.Artist.FilterOutMentions()}**";
 
-            if (userSettings.LastUpdated != null)
+            if (!userSettings.DifferentUser && user.LastUpdated != null)
             {
                 var playsLastWeek =
                     await this._playService.GetWeekAlbumPlaycountAsync(userSettings.UserId, albumInfo.Name, albumInfo.Artist);
-                reply += $" ({playsLastWeek} last week)";
+                if (playsLastWeek != 0)
+                {
+                    reply += $" (`{playsLastWeek}` last week)";
+                }
             }
 
             await this.Context.Channel.SendMessageAsync(reply);

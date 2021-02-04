@@ -1,9 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
 using Discord.Commands;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -30,14 +28,22 @@ namespace FMBot.Bot.Services
 
             options ??= "";
 
-            var extraOptions = options.Split(' ');
+            var oneDay = new[] { "1-day", "1day", "day1", "1d", "today" };
+            var twoDays = new[] { "2-day", "2day", "day2", "2d" };
+            var threeDays = new[] { "3-day", "3day", "day3", "3d" };
+            var fourDays = new[] { "4-day", "4day", "day4", "4d" };
+            var fiveDays = new[] { "5-day", "5day", "day5", "5d" };
+            var sixDays = new[] { "6-day", "6day", "day6", "6d" };
+            var weekly = new[] { "weekly", "week", "w", "7d" };
+            var monthly = new[] { "monthly", "month", "m", "1m", "30d" };
+            var quarterly = new[] { "quarterly", "quarter", "q", "3m", "90d" };
+            var halfYearly = new[] { "half-yearly", "halfyearly", "half", "h", "6m", "180d" };
+            var yearly = new[] { "yearly", "year", "y", "12m", "365d", "1y" };
+            var allTime = new[] { "overall", "alltime", "all-time", "a", "o", "at" };
 
-            // time period
-            if (extraOptions.Contains("weekly") ||
-                extraOptions.Contains("week") ||
-                extraOptions.Contains("w") ||
-                extraOptions.Contains("7d"))
+            if (ContainsAndRemove(options, weekly) != null)
             {
+                options = ContainsAndRemove(options, weekly);
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Weekly;
                 settingsModel.Description = "Weekly";
@@ -45,12 +51,9 @@ namespace FMBot.Bot.Services
                 settingsModel.ApiParameter = "7day";
                 settingsModel.PlayDays = 7;
             }
-            else if (extraOptions.Contains("monthly") ||
-                     extraOptions.Contains("month") ||
-                     extraOptions.Contains("m") ||
-                     extraOptions.Contains("1m") ||
-                     extraOptions.Contains("30d"))
+            else if (ContainsAndRemove(options, monthly) != null)
             {
+                options = ContainsAndRemove(options, monthly);
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Monthly;
                 settingsModel.Description = "Monthly";
@@ -58,12 +61,19 @@ namespace FMBot.Bot.Services
                 settingsModel.ApiParameter = "1month";
                 settingsModel.PlayDays = 30;
             }
-            else if (extraOptions.Contains("quarterly") ||
-                     extraOptions.Contains("quarter") ||
-                     extraOptions.Contains("q") ||
-                     extraOptions.Contains("3m") ||
-                     extraOptions.Contains("90d"))
+            else if (ContainsAndRemove(options, monthly) != null)
             {
+                options = ContainsAndRemove(options, monthly);
+                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;
+                settingsModel.ChartTimePeriod = ChartTimePeriod.Monthly;
+                settingsModel.Description = "Monthly";
+                settingsModel.UrlParameter = "date_preset=LAST_30_DAYS";
+                settingsModel.ApiParameter = "1month";
+                settingsModel.PlayDays = 30;
+            }
+            else if (ContainsAndRemove(options, quarterly) != null)
+            {
+                options = ContainsAndRemove(options, quarterly);
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Quarter;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Quarterly;
                 settingsModel.Description = "Quarterly";
@@ -71,13 +81,9 @@ namespace FMBot.Bot.Services
                 settingsModel.ApiParameter = "3month";
                 settingsModel.PlayDays = 90;
             }
-            else if (extraOptions.Contains("half-yearly") ||
-                     extraOptions.Contains("halfyearly") ||
-                     extraOptions.Contains("half") ||
-                     extraOptions.Contains("h") ||
-                     extraOptions.Contains("6m") ||
-                     extraOptions.Contains("180d"))
+            else if (ContainsAndRemove(options, halfYearly) != null)
             {
+                options = ContainsAndRemove(options, halfYearly);
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Half;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Half;
                 settingsModel.Description = "Half-yearly";
@@ -85,13 +91,9 @@ namespace FMBot.Bot.Services
                 settingsModel.ApiParameter = "6month";
                 settingsModel.PlayDays = 180;
             }
-            else if (extraOptions.Contains("yearly") ||
-                     extraOptions.Contains("year") ||
-                     extraOptions.Contains("y") ||
-                     extraOptions.Contains("1y") ||
-                     extraOptions.Contains("12m") ||
-                     extraOptions.Contains("365d"))
+            else if (ContainsAndRemove(options, yearly) != null)
             {
+                options = ContainsAndRemove(options, yearly);
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Year;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Yearly;
                 settingsModel.Description = "Yearly";
@@ -99,80 +101,63 @@ namespace FMBot.Bot.Services
                 settingsModel.ApiParameter = "12month";
                 settingsModel.PlayDays = 365;
             }
-            else if (extraOptions.Contains("overall") ||
-                     extraOptions.Contains("alltime") ||
-                     extraOptions.Contains("all-time") ||
-                     extraOptions.Contains("o") ||
-                     extraOptions.Contains("at") ||
-                     extraOptions.Contains("a"))
+            else if (ContainsAndRemove(options, allTime) != null)
             {
+                options = ContainsAndRemove(options, allTime);
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.AllTime;
                 settingsModel.Description = "Overall";
                 settingsModel.UrlParameter = "date_preset=ALL";
                 settingsModel.ApiParameter = "overall";
             }
-            else if (extraOptions.Contains("6day") ||
-                     extraOptions.Contains("6-day") ||
-                     extraOptions.Contains("day6") ||
-                     extraOptions.Contains("6d"))
+            else if (ContainsAndRemove(options, sixDays) != null)
             {
+                options = ContainsAndRemove(options, sixDays);
                 var dateString = DateTime.Today.AddDays(-6).ToString("yyyy-M-dd");
                 settingsModel.Description = "6-day";
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 6;
             }
-            else if (extraOptions.Contains("5day") ||
-                     extraOptions.Contains("5-day") ||
-                     extraOptions.Contains("day5") ||
-                     extraOptions.Contains("5d"))
+            else if (ContainsAndRemove(options, fiveDays) != null)
             {
+                options = ContainsAndRemove(options, fiveDays);
                 var dateString = DateTime.Today.AddDays(-5).ToString("yyyy-M-dd");
                 settingsModel.Description = "5-day";
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 5;
             }
-            else if (extraOptions.Contains("4day") ||
-                     extraOptions.Contains("4-day") ||
-                     extraOptions.Contains("day4") ||
-                     extraOptions.Contains("4d"))
+            else if (ContainsAndRemove(options, fourDays) != null)
             {
+                options = ContainsAndRemove(options, fourDays);
                 var dateString = DateTime.Today.AddDays(-4).ToString("yyyy-M-dd");
                 settingsModel.Description = "4-day";
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 4;
             }
-            else if (extraOptions.Contains("3day") ||
-                     extraOptions.Contains("3-day") ||
-                     extraOptions.Contains("day3") ||
-                     extraOptions.Contains("3d"))
+            else if (ContainsAndRemove(options, threeDays) != null)
             {
+                options = ContainsAndRemove(options, threeDays);
                 var dateString = DateTime.Today.AddDays(-3).ToString("yyyy-M-dd");
                 settingsModel.Description = "3-day";
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 3;
             }
-            else if (extraOptions.Contains("2day") ||
-                     extraOptions.Contains("2-day") ||
-                     extraOptions.Contains("day2") ||
-                     extraOptions.Contains("2d"))
+            else if (ContainsAndRemove(options, twoDays) != null)
             {
+                options = ContainsAndRemove(options, twoDays);
                 var dateString = DateTime.Today.AddDays(-2).ToString("yyyy-M-dd");
                 settingsModel.Description = "2-day";
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 2;
             }
-            else if (extraOptions.Contains("1day") ||
-                     extraOptions.Contains("1-day") ||
-                     extraOptions.Contains("day1") ||
-                     extraOptions.Contains("1d") ||
-                     extraOptions.Contains("today"))
+            else if (ContainsAndRemove(options, oneDay) != null)
             {
+                options = ContainsAndRemove(options, oneDay);
                 var dateString = DateTime.Today.AddDays(-1).ToString("yyyy-M-dd");
                 settingsModel.Description = "1-day";
                 settingsModel.UrlParameter = $"from={dateString}";
@@ -233,7 +218,8 @@ namespace FMBot.Bot.Services
                 DiscordUserId = context.User.Id,
                 DiscordUserName = discordUserName,
                 UserId = user.UserId,
-                UserType = user.UserType
+                UserType = user.UserType,
+                NewSearchValue = extraOptions
             };
 
             if (extraOptions == null)
@@ -249,6 +235,9 @@ namespace FMBot.Bot.Services
 
                 if (otherUser != null)
                 {
+                    extraOptions = ContainsAndRemove(extraOptions, new[] { options.First() }, true);
+                    settingsModel.NewSearchValue = extraOptions;
+
                     settingsModel.DiscordUserName = otherUser.UserNameLastFM;
                     settingsModel.DifferentUser = true;
                     settingsModel.DiscordUserId = otherUser.DiscordUserId;
@@ -264,6 +253,9 @@ namespace FMBot.Bot.Services
 
                 if (otherUser != null)
                 {
+                    extraOptions = ContainsAndRemove(extraOptions, new[] {"<", "@", ">", otherUser.DiscordUserId.ToString(), otherUser.UserNameLastFM.ToLower()}, true);
+                    settingsModel.NewSearchValue = extraOptions;
+
                     if (context.Guild != null)
                     {
                         var discordGuildUser = await context.Guild.GetUserAsync(otherUser.DiscordUserId);
@@ -461,6 +453,63 @@ namespace FMBot.Bot.Services
             }
 
             return setGuildRankingSettings;
+        }
+
+        public static string ContainsAndRemove(string extraOptions, string[] values, bool alwaysReturnValue = false)
+        {
+            extraOptions = extraOptions.ToLower();
+            var somethingFound = false;
+
+            foreach (var value in values)
+            {
+                if (extraOptions.Contains(value.ToLower()))
+                {
+                    extraOptions = extraOptions.Replace(value.ToLower(), "");
+                    somethingFound = true;
+                }
+            }
+
+            if (somethingFound || alwaysReturnValue)
+            {
+                return extraOptions;
+            }
+
+            return null;
+        }
+
+        public static string[] ContainsAndRemove(string[] extraOptions, string[] values, bool alwaysReturnValue = false)
+        {
+            var somethingFound = false;
+            var newOptions = extraOptions;
+
+            foreach (var value in values)
+            {
+                foreach (var extraOption in extraOptions)
+                {
+                    if (extraOption.ToLower().Contains(value.ToLower()) && newOptions != null)
+                    {
+                        var filteredOptions = newOptions.Where(w => !w.ToLower().Contains(value.ToLower()));
+                        if (filteredOptions.Any(a => !string.IsNullOrWhiteSpace(a)))
+                        {
+                            newOptions = filteredOptions.ToArray();
+                        }
+                        else
+                        {
+                            newOptions = null;
+                        }
+
+                        somethingFound = true;
+                    }
+
+                }
+                
+            }
+
+            if (somethingFound || alwaysReturnValue)
+            {
+                return newOptions;
+            }
+            return null;
         }
     }
 }

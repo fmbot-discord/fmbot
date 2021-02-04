@@ -404,22 +404,24 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         public async Task ArtistPlaysAsync([Remainder] string artistValues = null)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            var artist = await GetArtistOrHelp(artistValues, userSettings, "artistplays", prfx, null);
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            var userSettings = await this._settingService.GetUser(artistValues, user, this.Context);
+
+            var artist = await GetArtistOrHelp(userSettings.NewSearchValue, user, "artistplays", prfx, null);
             if (artist == null)
             {
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
 
-            _ = this.Context.Channel.TriggerTypingAsync();
-
             var queryParams = new Dictionary<string, string>
             {
                 {"artist", artist },
-                {"username", userSettings.UserNameLastFM },
+                {"username", userSettings.UserNameLastFm },
                 {"autocorrect", "1"}
             };
             var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo);
@@ -436,13 +438,16 @@ namespace FMBot.Bot.Commands.LastFM
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
             var reply =
-                $"**{userTitle.FilterOutMentions()}** has `{artistInfo.Stats.Userplaycount}` {StringExtensions.GetPlaysString(artistInfo.Stats.Userplaycount)} for **{artistInfo.Name.FilterOutMentions()}**";
+                $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has `{artistInfo.Stats.Userplaycount}` {StringExtensions.GetPlaysString(artistInfo.Stats.Userplaycount)} for **{artistInfo.Name.FilterOutMentions()}**";
 
-            if (userSettings.LastUpdated != null)
+            if (!userSettings.DifferentUser && user.LastUpdated != null)
             {
                 var playsLastWeek =
                     await this._playService.GetWeekArtistPlaycountAsync(userSettings.UserId, artistInfo.Name);
-                reply += $" ({playsLastWeek} last week)";
+                if (playsLastWeek != 0)
+                {
+                    reply += $" (`{playsLastWeek}` last week)";
+                }
             }
 
             await this.Context.Channel.SendMessageAsync(reply);
@@ -1119,7 +1124,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 filteredUsersWithArtist =
                     WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithArtist, guild.GuildUsers.ToList());
-                
+
                 var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, userSettings.UserId, PrivacyLevel.Global);
                 if (filteredUsersWithArtist.Count == 0)
                 {

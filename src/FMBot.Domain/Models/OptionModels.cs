@@ -22,5 +22,6 @@ namespace FMBot.Domain.Models
         public string DiscordUserName { get; set; }
         public int UserId { get; set; }
         public UserType UserType { get; set; }
+        public string NewSearchValue { get; set; }
     }
 }
