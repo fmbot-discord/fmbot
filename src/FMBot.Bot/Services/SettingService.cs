@@ -253,7 +253,7 @@ namespace FMBot.Bot.Services
 
                 if (otherUser != null)
                 {
-                    extraOptions = ContainsAndRemove(extraOptions, new[] {"<", "@", ">", otherUser.DiscordUserId.ToString(), otherUser.UserNameLastFM.ToLower()}, true);
+                    extraOptions = ContainsAndRemove(extraOptions, new[] {"<", "@","!", ">", otherUser.DiscordUserId.ToString(), otherUser.UserNameLastFM.ToLower()}, true);
                     settingsModel.NewSearchValue = extraOptions;
 
                     if (context.Guild != null)
