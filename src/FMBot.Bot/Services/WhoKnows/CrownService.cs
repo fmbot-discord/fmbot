@@ -8,6 +8,7 @@ using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -21,11 +22,13 @@ namespace FMBot.Bot.Services.WhoKnows
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
         private readonly LastFmService _lastFmService;
+        private readonly GlobalUpdateService _globalUpdateService;
 
-        public CrownService(IDbContextFactory<FMBotDbContext> contextFactory, LastFmService lastFmService)
+        public CrownService(IDbContextFactory<FMBotDbContext> contextFactory, LastFmService lastFmService, GlobalUpdateService globalUpdateService)
         {
             this._contextFactory = contextFactory;
             this._lastFmService = lastFmService;
+            this._globalUpdateService = globalUpdateService;
         }
 
         public async Task<CrownModel> GetAndUpdateCrownForArtist(IList<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
@@ -96,7 +99,7 @@ namespace FMBot.Bot.Services.WhoKnows
             if (currentCrownHolder != null && topUser.UserId != currentCrownHolder.UserId)
             {
                 var currentPlaycountForCrownHolder =
-                    await GetCurrentPlaycountForUser(artistName, currentCrownHolder.User.UserNameLastFM);
+                    await GetCurrentPlaycountForUser(artistName, currentCrownHolder.User.UserNameLastFM, currentCrownHolder.UserId);
 
                 if (currentPlaycountForCrownHolder == null)
                 {
@@ -269,14 +272,19 @@ namespace FMBot.Bot.Services.WhoKnows
             return crownsToSeed.Count;
         }
 
-        private async Task<long?> GetCurrentPlaycountForUser(string artistName, string lastFmUserName)
+        private async Task<long?> GetCurrentPlaycountForUser(string artistName, string lastFmUserName, int userId)
         {
             var artist = await this._lastFmService.GetArtistInfoAsync(artistName, lastFmUserName);
 
-            if (!artist.Success)
+            await this._globalUpdateService.UpdateUser(new UpdateUserQueueItem(userId, 0));
+
+            if (!artist.Success || !artist.Content.Artist.Stats.Userplaycount.HasValue)
             {
                 return null;
             }
+
+            await this._globalUpdateService.CorrectUserArtistPlaycount(userId, artistName,
+                artist.Content.Artist.Stats.Userplaycount.Value);
 
             return artist.Content.Artist.Stats.Userplaycount;
         }

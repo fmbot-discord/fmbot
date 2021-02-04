@@ -63,5 +63,10 @@ namespace FMBot.Bot.Services
                     .OrderBy(o => o.LastUpdated)
                     .ToListAsync();
         }
+
+        public async Task CorrectUserArtistPlaycount(int userId, string artistName, long correctPlaycount)
+        {
+            await this._globalUpdateService.CorrectUserArtistPlaycount(userId, artistName, correctPlaycount);
+        }
     }
 }

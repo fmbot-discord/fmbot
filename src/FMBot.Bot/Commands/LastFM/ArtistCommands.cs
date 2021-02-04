@@ -188,7 +188,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 globalStats += $"\n`{artistInfo.Stats.Userplaycount}` {StringExtensions.GetPlaysString(artistInfo.Stats.Userplaycount)} by you";
                 globalStats += $"\n`{await this._playService.GetWeekArtistPlaycountAsync(userSettings.UserId, artistInfo.Name)}` by you last week";
-                await this._whoKnowArtistService.CorrectUserArtistPlaycount(userSettings.UserId, artistInfo.Name,
+                await this._updateService.CorrectUserArtistPlaycount(userSettings.UserId, artistInfo.Name,
                     artistInfo.Stats.Userplaycount.Value);
             }
 
@@ -902,7 +902,7 @@ namespace FMBot.Bot.Commands.LastFM
                     userPlaycount = artistCall.Content.Artist.Stats.Userplaycount;
                     if (userPlaycount.HasValue)
                     {
-                        await this._whoKnowArtistService.CorrectUserArtistPlaycount(userSettings.UserId, artistCall.Content.Artist.Name,
+                        await this._updateService.CorrectUserArtistPlaycount(userSettings.UserId, artistCall.Content.Artist.Name,
                             userPlaycount.Value);
                     }
                 }
@@ -1100,7 +1100,7 @@ namespace FMBot.Bot.Commands.LastFM
                     userPlaycount = artistCall.Content.Artist.Stats.Userplaycount;
                     if (userPlaycount.HasValue)
                     {
-                        await this._whoKnowArtistService.CorrectUserArtistPlaycount(userSettings.UserId, artistCall.Content.Artist.Name,
+                        await this._updateService.CorrectUserArtistPlaycount(userSettings.UserId, artistCall.Content.Artist.Name,
                             userPlaycount.Value);
                     }
                 }

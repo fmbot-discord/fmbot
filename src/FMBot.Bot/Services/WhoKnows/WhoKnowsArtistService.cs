@@ -316,46 +316,5 @@ namespace FMBot.Bot.Services.WhoKnows
                 })
                 .ToList();
         }
-
-        public async Task CorrectUserArtistPlaycount(int userId, string artistName, long correctPlaycount)
-        {
-            if (correctPlaycount < 20)
-            {
-                return;
-            }
-
-            await using var db = this._contextFactory.CreateDbContext();
-            var user = await db.Users
-                .AsQueryable()
-                .Include(i => i.Artists)
-                .FirstOrDefaultAsync(f => f.UserId == userId);
-
-            if (user?.LastUpdated == null || !user.Artists.Any() || user.LastUpdated < DateTime.UtcNow.AddMinutes(-2))
-            {
-                return;
-            }
-
-            var userArtist = user.Artists.FirstOrDefault(f => f.Name.ToLower() == artistName.ToLower());
-
-            if (userArtist == null ||
-                userArtist.Playcount < 20 ||
-                userArtist.Playcount > (correctPlaycount - 4) && userArtist.Playcount < (correctPlaycount + 4))
-            {
-                return;
-            }
-
-
-            this._cache.Remove($"top-artists-{user.UserId}");
-
-            Log.Information("Corrected playcount for user {userId} | {lastFmUserName} for artist {artistName} from {oldPlaycount} to {newPlaycount}",
-                user.UserId, user.UserNameLastFM, userArtist.Name, userArtist.Playcount, correctPlaycount);
-
-            userArtist.Playcount = (int)correctPlaycount;
-
-            db.Entry(userArtist).State = EntityState.Modified;
-
-            await db.SaveChangesAsync();
-
-        }
     }
 }
