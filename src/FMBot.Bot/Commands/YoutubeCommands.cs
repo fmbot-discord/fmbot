@@ -89,16 +89,16 @@ namespace FMBot.Bot.Commands
 
                     var name = await this._userService.GetNameAsync(this.Context);
 
-                    var reply = $"{name} searched for: `{querystring}`";
+                    var reply = $"{name.FilterOutMentions()} searched for: `{querystring.FilterOutMentions()}`";
 
                     var user = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
                     if (user.GuildPermissions.EmbedLinks)
                     {
-                        reply += $"\nhttps://www.youtube.com/watch?v={youtubeResult.VideoId}";
+                        reply += $"\nhttps://youtube.com/watch?v={youtubeResult.VideoId}";
                     }
                     else
                     {
-                        reply += $"\n<https://www.youtube.com/watch?v={youtubeResult.VideoId}>" +
+                        reply += $"\n<https://youtube.com/watch?v={youtubeResult.VideoId}>" +
                                  $"\n`{youtubeResult.Title}`" +
                                  $"\n*Embed disabled because user that requested link is not allowed to embed links.*";
                     }
@@ -109,7 +109,7 @@ namespace FMBot.Bot.Commands
                         reply += $"\n*Tip: Search for other songs or videos by simply adding the searchvalue behind {prfx}youtube.*";
                     }
 
-                    await ReplyAsync(reply.FilterOutMentions());
+                    await ReplyAsync(reply);
                     this.Context.LogCommandUsed();
                 }
                 catch (Exception e)
