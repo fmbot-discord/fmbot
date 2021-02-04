@@ -303,7 +303,7 @@ namespace FMBot.Bot.Commands
                         friendUsername = enteredFriendParameter;
                     }
 
-                    if (existingFriends.Select(s => s.LastFMUserName.ToLower()).Contains(friendUsername.ToLower()) ||
+                    if (existingFriends.Where(w => w.LastFMUserName != null).Select(s => s.LastFMUserName.ToLower()).Contains(friendUsername.ToLower()) ||
                         existingFriends.Where(w => w.FriendUser != null).Select(s => s.FriendUser.UserNameLastFM.ToLower()).Contains(friendUsername.ToLower()))
                     {
                         var friendSuccessfullyRemoved = await this._friendsService.RemoveLastFmFriendAsync(userSettings.UserId, friendUsername);
