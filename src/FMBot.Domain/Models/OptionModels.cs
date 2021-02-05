@@ -11,6 +11,7 @@ namespace FMBot.Domain.Models
         public ChartTimePeriod ChartTimePeriod { get; set; }
         public bool UsePlays { get; set; }
         public int? PlayDays { get; set; }
+        public string NewSearchValue { get; set; }
     }
 
     public class UserSettingsModel
