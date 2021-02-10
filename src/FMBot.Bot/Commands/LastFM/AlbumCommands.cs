@@ -577,7 +577,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 await ReplyAsync("This server hasn't been indexed yet.\n" +
                                  $"Please run `{prfx}index` to index this server.\n" +
-                                 $" Note that this can take some time on large servers.");
+                                 $"Note that this can take some time on large servers.");
                 this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
             }
@@ -732,7 +732,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 await ReplyAsync("This server hasn't been indexed yet.\n" +
                                  $"Please run `{prfx}index` to index this server.\n" +
-                                 $" Note that this can take some time on large servers.");
+                                 $"Note that this can take some time on large servers.");
                 this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
             }
@@ -921,7 +921,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 await ReplyAsync("This server hasn't been indexed yet.\n" +
                                  $"Please run `{prfx}index` to index this server.\n" +
-                                 $" Note that this can take some time on large servers.");
+                                 $"Note that this can take some time on large servers.");
                 this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
             }

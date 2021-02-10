@@ -11,5 +11,9 @@ namespace FMBot.Bot.Interfaces
         void RemoveDisabledCommands(ulong key);
 
         Task LoadAllDisabledCommands();
+
+        Task RemoveDisabledCommandsForGuild(ulong discordGuildId);
+
+        Task ReloadDisabledCommands(ulong discordGuildId);
     }
 }

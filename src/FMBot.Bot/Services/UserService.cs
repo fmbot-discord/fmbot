@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,7 +31,6 @@ namespace FMBot.Bot.Services
             this._lastFmService = lastFmService;
         }
 
-        // User settings
         public async Task<bool> UserRegisteredAsync(IUser discordUser)
         {
             await using var db = this._contextFactory.CreateDbContext();
@@ -41,17 +41,26 @@ namespace FMBot.Bot.Services
             return isRegistered;
         }
 
-        public async Task<bool> UserBlockedAsync(IUser discordUser)
+        public async Task<bool> UserBlockedAsync(ulong discordUserId)
         {
             await using var db = this._contextFactory.CreateDbContext();
-            var isBlocked = await db.Users
-                .AsQueryable()
-                .AnyAsync(f => f.DiscordUserId == discordUser.Id && f.Blocked == true);
+            var cacheKey = "blocked-users";
 
-            return isBlocked;
+            if (this._cache.TryGetValue(cacheKey, out IReadOnlyList<User> blockedUsers))
+            {
+                return blockedUsers.Select(s => s.DiscordUserId).Contains(discordUserId);
+            }
+
+            blockedUsers = await db.Users
+                .AsQueryable()
+                .Where(w => w.Blocked == true)
+                .ToListAsync();
+
+            this._cache.Set(cacheKey, blockedUsers, TimeSpan.FromMinutes(15));
+
+            return blockedUsers.Select(s => s.DiscordUserId).Contains(discordUserId);
         }
 
-        // User settings
         public async Task<bool> UserHasSessionAsync(IUser discordUser)
         {
             await using var db = this._contextFactory.CreateDbContext();
@@ -67,13 +76,12 @@ namespace FMBot.Bot.Services
             return !string.IsNullOrEmpty(user.SessionKeyLastFm);
         }
 
-        // User settings
-        public async Task UpdateUserLastUsedAsync(IUser discordUser)
+        public async Task UpdateUserLastUsedAsync(ulong discordUserId)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
 
             if (user != null)
             {

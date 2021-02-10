@@ -772,38 +772,16 @@ namespace FMBot.Bot.Services.Guild
             }
         }
 
-        public async Task AddGuildAsync(SocketGuild guild)
+        public async Task RemoveGuildAsync(ulong discordGuildId)
         {
-            var newGuild = new Persistence.Domain.Models.Guild
-            {
-                DiscordGuildId = guild.Id,
-                ChartTimePeriod = ChartTimePeriod.Monthly,
-                FmEmbedType = FmEmbedType.embedmini,
-                Name = guild.Name,
-                TitlesEnabled = true
-            };
-
             await using var db = this._contextFactory.CreateDbContext();
-            await db.Guilds.AddAsync(newGuild);
+            var guild = await db.Guilds.AsQueryable().FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
 
-            await db.SaveChangesAsync();
-        }
-
-        public async Task RemoveGuildAsync(SocketGuild guild)
-        {
-            var newGuild = new Persistence.Domain.Models.Guild
+            if (guild != null)
             {
-                DiscordGuildId = guild.Id,
-                ChartTimePeriod = ChartTimePeriod.Monthly,
-                FmEmbedType = FmEmbedType.embedmini,
-                Name = guild.Name,
-                TitlesEnabled = true
-            };
-
-            await using var db = this._contextFactory.CreateDbContext();
-            await db.Guilds.AddAsync(newGuild);
-
-            await db.SaveChangesAsync();
+                db.Guilds.Remove(guild);
+                await db.SaveChangesAsync();
+            }
         }
 
         public async Task<bool> GuildExistsAsync(SocketGuild guild)

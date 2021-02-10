@@ -73,7 +73,7 @@ namespace FMBot.Bot.Commands
                 var indexedUserCount = await this._indexService.GetIndexedUsersCount(guildUsers);
 
                 var guildRecentlyIndexed =
-                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(20));
+                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(5));
 
                 if (guildRecentlyIndexed)
                 {
@@ -87,8 +87,7 @@ namespace FMBot.Bot.Commands
                     await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
 
                     var reply =
-                        "Stored guild users have been updated.\n" +
-                        "No new registered .fmbot members found on this server or all users have already been indexed. To update your indexed artist/albums/tracks, use `.fmupdate` (also happens automatically).";
+                        "Server index has been updated.";
 
                     await ReplyAsync(reply);
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
@@ -98,8 +97,7 @@ namespace FMBot.Bot.Commands
                 {
                     await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
                     await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow.AddDays(-1));
-                    await ReplyAsync("All users on this server have already been indexed or nobody is registered on .fmbot here.\n" +
-                                     "The server has now been registered anyway, so you can start using the commands that require indexing.");
+                    await ReplyAsync("Server has been indexed successfully. You can now use all commands that require indexing.");
                     this.Context.LogCommandUsed();
                     return;
                 }

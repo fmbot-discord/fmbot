@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -19,8 +18,6 @@ namespace FMBot.Bot.Handlers
 {
     public class SlashCommandHandler
     {
-        private static readonly List<DateTimeOffset> StackCooldownTimer = new();
-        private static readonly List<IGuildUser> StackCooldownTarget = new();
         private readonly CommandService _commands;
         private readonly UserService _userService;
         private readonly DiscordShardedClient _discord;
@@ -73,27 +70,8 @@ namespace FMBot.Bot.Handlers
 
         private async Task ExecuteCommand(Interaction interaction, ShardedCommandContext context)
         {
-            if (StackCooldownTarget.Contains(interaction.Author))
-            {
-                //If they have used this command before, take the time the user last did something, add 800ms, and see if it's greater than this very moment.
-                if (StackCooldownTimer[StackCooldownTarget.IndexOf(interaction.Author)].AddMilliseconds(800) >=
-                    DateTimeOffset.Now)
-                {
-                    return;
-                }
-
-                StackCooldownTimer[StackCooldownTarget.IndexOf(interaction.Author)] = DateTimeOffset.Now;
-            }
-            else
-            {
-                //If they've never used this command before, add their username and when they just used this command.
-                StackCooldownTarget.Add(interaction.Author);
-                StackCooldownTimer.Add(DateTimeOffset.Now);
-            }
-
             var searchResult = this._commands.Search(context, 0);
 
-            // If custom prefix is enabled, no commands found and message does not start with custom prefix, return
             if (searchResult.Commands == null || searchResult.Commands.Count == 0)
             {
                 return;
@@ -106,7 +84,7 @@ namespace FMBot.Bot.Handlers
                     disabledGuildCommands != null &&
                     disabledGuildCommands.Any(searchResult.Commands.First().Command.Name.Contains))
                 {
-                    await context.Channel.SendInteractionMessageAsync(context.InteractionData, "The command you're trying to execute has been disabled in this server.");
+                    await context.Channel.SendInteractionMessageAsync(context.InteractionData, "The slash command you're trying to execute has been disabled in this server.");
                     return;
                 }
 
@@ -116,7 +94,7 @@ namespace FMBot.Bot.Handlers
                     disabledChannelCommands.Any() &&
                     disabledChannelCommands.Any(searchResult.Commands.First().Command.Name.Contains))
                 {
-                    await context.Channel.SendInteractionMessageAsync(context.InteractionData, "The command you're trying to execute has been disabled in this channel.");
+                    await context.Channel.SendInteractionMessageAsync(context.InteractionData, "The slash command you're trying to execute has been disabled in this channel.");
                     return;
                 }
             }
@@ -136,7 +114,7 @@ namespace FMBot.Bot.Handlers
                     return;
                 }
 
-                var userBlocked = await this._userService.UserBlockedAsync(context.User);
+                var userBlocked = await this._userService.UserBlockedAsync(context.User.Id);
                 if (userBlocked)
                 {
                     var embed = new EmbedBuilder()
@@ -163,7 +141,7 @@ namespace FMBot.Bot.Handlers
                     return;
                 }
 
-                var userBlocked = await this._userService.UserBlockedAsync(context.User);
+                var userBlocked = await this._userService.UserBlockedAsync(context.User.Id);
                 if (userBlocked)
                 {
                     var embed = new EmbedBuilder()
@@ -179,7 +157,7 @@ namespace FMBot.Bot.Handlers
                 if (context.Guild == null)
                 {
                     await context.User.SendMessageAsync("This command is not supported in DMs.");
-                    context.LogCommandUsed(CommandResponse.UsernameNotSet);
+                    context.LogCommandUsed(CommandResponse.NotSupportedInDm);
                     return;
                 }
             }
@@ -189,7 +167,7 @@ namespace FMBot.Bot.Handlers
             if (result.IsSuccess)
             {
                 Statistics.SlashCommandsExecuted.Inc();
-                await this._userService.UpdateUserLastUsedAsync(context.User);
+                await this._userService.UpdateUserLastUsedAsync(context.User.Id);
             }
             else
             {

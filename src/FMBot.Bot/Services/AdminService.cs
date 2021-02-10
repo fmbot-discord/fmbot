@@ -2,19 +2,21 @@ using System;
 using System.Threading.Tasks;
 using Discord;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace FMBot.Bot.Services
 {
     public class AdminService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly IMemoryCache _cache;
 
-        public AdminService(IDbContextFactory<FMBotDbContext> contextFactory)
+        public AdminService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
         {
             this._contextFactory = contextFactory;
+            this._cache = cache;
         }
 
         public async Task<bool> HasCommandAccessAsync(IUser discordUser, UserType userType)
@@ -60,10 +62,10 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async Task<bool> SetUserTypeAsync(ulong discordUserID, UserType userType)
+        public async Task<bool> SetUserTypeAsync(ulong discordUserId, UserType userType)
         {
             await using var db = this._contextFactory.CreateDbContext();
-            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
+            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
 
             if (user == null)
             {
@@ -79,10 +81,10 @@ namespace FMBot.Bot.Services
             return true;
         }
 
-        public async Task<bool> AddUserToBlocklistAsync(ulong discordUserID)
+        public async Task<bool> AddUserToBlocklistAsync(ulong discordUserId)
         {
             await using var db = this._contextFactory.CreateDbContext();
-            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
+            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
 
             if (user == null)
             {
@@ -95,13 +97,15 @@ namespace FMBot.Bot.Services
 
             await db.SaveChangesAsync();
 
+            this._cache.Remove("blocked-users");
+
             return true;
         }
 
-        public async Task<bool> RemoveUserFromBlocklistAsync(ulong discordUserID)
+        public async Task<bool> RemoveUserFromBlocklistAsync(ulong discordUserId)
         {
             await using var db = this._contextFactory.CreateDbContext();
-            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserID);
+            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
 
             if (user == null)
             {
@@ -111,6 +115,8 @@ namespace FMBot.Bot.Services
             user.Blocked = false;
 
             db.Entry(user).State = EntityState.Modified;
+
+            this._cache.Remove("blocked-users");
 
             await db.SaveChangesAsync();
 

@@ -424,9 +424,12 @@ namespace FMBot.Bot.Services.WhoKnows
                                 f.GuildId == guild.GuildId)
                     .ToListAsync();
 
-                db.UserCrowns.RemoveRange(userGuildCrowns);
+                if (userGuildCrowns != null && userGuildCrowns.Any())
+                {
+                    db.UserCrowns.RemoveRange(userGuildCrowns);
 
-                await db.SaveChangesAsync();
+                    await db.SaveChangesAsync();
+                }
             }
         }
 
