@@ -103,6 +103,23 @@ namespace FMBot.Bot.Services.Guild
         }
 
 
+        public async Task<GuildUser> GetUserFromGuild(ulong discordGuildId, int userId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var guild = await db.Guilds
+                .AsQueryable()
+                .Include(i => i.GuildUsers)
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
+
+            if (guild?.GuildUsers != null && guild.GuildUsers.Any())
+            {
+                return guild.GuildUsers.FirstOrDefault(f => f.UserId == userId);
+            }
+
+            return null;
+        }
+
+
         // Get last.fm username from guild with searchvalue
         public async Task<string> MentionToLastFmUsernameAsync(string searchValue)
         {

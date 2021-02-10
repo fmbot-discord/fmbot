@@ -167,6 +167,17 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithThumbnailUrl(selfUser.GetAvatarUrl());
                 this._embed.AddField("Featured:", this._timer.GetTrackString());
 
+                if (this.Context.Guild != null)
+                {
+                    var guildUser =
+                        await this._guildService.GetUserFromGuild(this.Context.Guild.Id, this._timer.GetUserId());
+
+                    if (guildUser != null)
+                    {
+                        this._embed.WithFooter($"🥳 Congratulations! This user is in your server under the name {guildUser.UserName}.");
+                    }
+                }
+
                 if (PublicProperties.IssuesAtLastFM)
                 {
                     this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues");
@@ -180,7 +191,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 }
-                
+
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)
@@ -445,7 +456,7 @@ namespace FMBot.Bot.Commands.LastFM
                                          $"Didn't receive a link? Please check if you have DMs enabled for this server and try again.\n" +
                                          $"Setting location: Click on the server name (top left) > `Privacy Settings` > `Allow direct messages from server members`.");
                     }
-                    
+
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
                     StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now.AddMinutes(-5);
                     return;

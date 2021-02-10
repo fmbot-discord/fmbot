@@ -183,7 +183,7 @@ namespace FMBot.Bot.Services
         }
 
         // Random user
-        public async Task<string> GetRandomLastFMUserAsync()
+        public async Task<User> GetRandomUserAsync()
         {
             await using var db = this._contextFactory.CreateDbContext();
             var featuredUsers = await db.Users
@@ -201,7 +201,7 @@ namespace FMBot.Bot.Services
                 }
             }
 
-            var filterDate = DateTime.UtcNow.AddDays(-14);
+            var filterDate = DateTime.UtcNow.AddDays(-3);
             var users = db.Users
                 .AsQueryable()
                 .Where(w => w.Blocked != true &&
@@ -215,7 +215,7 @@ namespace FMBot.Bot.Services
             db.Entry(user).State = EntityState.Modified;
             await db.SaveChangesAsync();
 
-            return user.UserNameLastFM;
+            return user;
         }
 
 
