@@ -111,8 +111,8 @@ namespace FMBot.Bot.Handlers
             Log.Information(
                 "JoinedGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.MemberCount);
 
-            await this._channelDisabledCommandService.ReloadDisabledCommands(guild.Id);
-            await this._guildDisabledCommandService.ReloadDisabledCommands(guild.Id);
+            _ = this._channelDisabledCommandService.ReloadDisabledCommands(guild.Id);
+            _ = this._guildDisabledCommandService.ReloadDisabledCommands(guild.Id);
         }
 
         private async Task ClientLeftGuild(SocketGuild guild)
@@ -120,8 +120,8 @@ namespace FMBot.Bot.Handlers
             Log.Information(
                 "LeftGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.MemberCount);
 
-            await this._channelDisabledCommandService.RemoveDisabledCommandsForGuild(guild.Id);
-            await this._guildService.RemoveGuildAsync(guild.Id);
+            _ = this._channelDisabledCommandService.RemoveDisabledCommandsForGuild(guild.Id);
+            _ = this._guildService.RemoveGuildAsync(guild.Id);
         }
     }
 }

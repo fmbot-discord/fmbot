@@ -315,14 +315,11 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public void Restart() // 7) Example to restart the timer
+        public void Restart()
         {
-            if (!IsTimerActive())
-            {
-                this._timer.Change(TimeSpan.FromSeconds(Convert.ToDouble(ConfigData.Data.Bot.FeaturedTimerStartupDelayInSeconds)),
-                    TimeSpan.FromMinutes(Convert.ToDouble(ConfigData.Data.Bot.FeaturedTimerRepeatInMinutes)));
-                this._timerEnabled = true;
-            }
+            this._timer.Change(TimeSpan.FromSeconds(0),
+                TimeSpan.FromMinutes(Convert.ToDouble(ConfigData.Data.Bot.FeaturedTimerRepeatInMinutes)));
+            this._timerEnabled = true;
         }
 
         public async void ChangeToNewAvatar(DiscordShardedClient client, string imageUrl)
