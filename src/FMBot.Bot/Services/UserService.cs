@@ -109,8 +109,7 @@ namespace FMBot.Bot.Services
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
         }
 
-        // User settings
-        public async Task LogFeatured(int userId, FeaturedMode mode, string description, string artistName, string albumName, string trackName)
+        public async Task LogFeatured(int userId, FeaturedMode mode, BotType botType, string description, string artistName, string albumName, string trackName = null)
         {
             await using var db = this._contextFactory.CreateDbContext();
 
@@ -118,9 +117,12 @@ namespace FMBot.Bot.Services
             {
                 UserId = userId,
                 Description = description,
+                BotType = botType,
                 AlbumName = albumName,
                 TrackName = trackName,
-                ArtistName = artistName
+                ArtistName = artistName,
+                FeaturedMode = mode,
+                DateTime = DateTime.UtcNow
             };
 
             await db.FeaturedLogs.AddAsync(featuredLog);

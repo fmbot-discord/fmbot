@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -62,7 +63,7 @@ namespace FMBot.Bot.Services
                 &&
                 db.CensoredMusic
                     .AsQueryable()
-                    .Where(w => !w.Artist && w.AlbumName != null)
+                    .Where(w => !w.Artist && w.ArtistName.ToLower() == artistName.ToLower() && w.AlbumName != null)
                     .Select(s => s.AlbumName.ToLower())
                     .Contains(albumName.ToLower()))
             {
@@ -71,7 +72,26 @@ namespace FMBot.Bot.Services
 
             return true;
         }
-        
+
+        public async Task<bool> AlbumNotFeaturedRecently(string albumName, string artistName)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+
+            var filterDate = DateTime.UtcNow.AddDays(-7);
+            var recentlyFeaturedAlbums = await db.FeaturedLogs
+                .AsQueryable()
+                .Where(w => w.DateTime > filterDate)
+                .ToListAsync();
+
+            if (recentlyFeaturedAlbums.Select(s => $"{s.ArtistName.ToLower()}{s.AlbumName.ToLower()}")
+                .Contains($"{artistName.ToLower()}{albumName.ToLower()}"))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         public async Task<bool> AlbumIsAllowedInNsfw(string albumName, string artistName)
         {
             await using var db = this._contextFactory.CreateDbContext();

@@ -10,6 +10,6 @@ namespace FMBot.Domain.Models
 
         TopAlbumsMonthly = 3,
 
-        TopAlbumsAllTime = 4,
+        TopAlbumsAllTime = 4
     }
 }

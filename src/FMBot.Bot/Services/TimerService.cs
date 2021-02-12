@@ -134,8 +134,7 @@ namespace FMBot.Bot.Services
                                 if (albumImages?.Large != null)
                                 {
                                     ChangeToNewAvatar(client, albumImages.Large.AbsoluteUri);
-                                    ScrobbleFeatured(client, trackToFeature);
-                                    // await this._userService.LogFeatured(, mode, description, artistName, albumName, trackName);
+                                    LogFeaturedTrack(client, trackToFeature, user.UserId, featuredMode, this._featuredTrackString);
                                 }
                                 else
                                 {
@@ -164,7 +163,7 @@ namespace FMBot.Bot.Services
                                 {
                                     Log.Information($"Featured: User {user.UserNameLastFM} had no albums, switching to different user.");
                                     user = await this._userService.GetRandomUserAsync();
-                                    albums = await this._lastFMService.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 10);
+                                    albums = await this._lastFMService.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 15);
                                 }
 
                                 var albumList = albums
@@ -184,17 +183,21 @@ namespace FMBot.Bot.Services
                                                         $"{randomAvatarModeDesc} from {user.UserNameLastFM}";
                                     this._featuredUserId = user.UserId;
 
-                                    if (albumImage?.Large != null && await this._censorService.AlbumIsSafe(currentAlbum.Name, currentAlbum.ArtistName))
+                                    if (albumImage?.Large != null &&
+                                        await this._censorService.AlbumIsSafe(currentAlbum.Name, currentAlbum.ArtistName) &&
+                                        await this._censorService.AlbumNotFeaturedRecently(currentAlbum.Name, currentAlbum.ArtistName)
+                                        )
                                     {
                                         Log.Information($"Featured: Album {i} success, changing avatar to: \n" +
                                                          $"{this._featuredTrackString}");
 
                                         ChangeToNewAvatar(client, albumImage.Large.AbsoluteUri);
+                                        LogFeaturedAlbum(client, currentAlbum, user.UserId, featuredMode, this._featuredTrackString);
                                         albumFound = true;
                                     }
                                     else
                                     {
-                                        Log.Information($"Featured: Album {i} had no image or was nsfw, switching to alternative album");
+                                        Log.Information($"Featured: Album {i} had no image, recently featured or was nsfw, switching to alternative album");
                                         i++;
                                     }
                                 }
@@ -380,7 +383,7 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async void ScrobbleFeatured(DiscordShardedClient client, LastTrack track)
+        public async void LogFeaturedTrack(DiscordShardedClient client, LastTrack track, int userId, FeaturedMode featuredMode, string description)
         {
             try
             {
@@ -388,12 +391,30 @@ namespace FMBot.Bot.Services
 
                 if (botUser?.SessionKeyLastFm != null)
                 {
-                    await this._lastFMService.ScrobbleAsync(botUser, track.ArtistName, track.Name);
+                    await this._lastFMService.ScrobbleAsync(botUser, track.ArtistName, track.Name, track.AlbumName);
                 }
+
+                var botType = BotTypeExtension.GetBotType(client.CurrentUser.Id);
+
+                await this._userService.LogFeatured(userId, featuredMode, botType, description, track.ArtistName, track.AlbumName, track.Name);
             }
             catch (Exception exception)
             {
-                Log.Error(exception, nameof(ScrobbleFeatured));
+                Log.Error(exception, nameof(LogFeaturedTrack));
+            }
+        }
+
+        public async void LogFeaturedAlbum(DiscordShardedClient client, LastAlbum album, int userId, FeaturedMode featuredMode, string description)
+        {
+            try
+            {
+                var botType = BotTypeExtension.GetBotType(client.CurrentUser.Id);
+
+                await this._userService.LogFeatured(userId, featuredMode, botType, description, album.ArtistName, album.Name);
+            }
+            catch (Exception exception)
+            {
+                Log.Error(exception, nameof(LogFeaturedAlbum));
             }
         }
 

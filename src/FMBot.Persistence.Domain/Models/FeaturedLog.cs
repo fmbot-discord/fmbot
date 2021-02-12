@@ -1,3 +1,4 @@
+using System;
 using FMBot.Domain.Models;
 
 namespace FMBot.Persistence.Domain.Models
@@ -10,6 +11,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public BotType BotType { get; set; }
 
+        public FeaturedMode FeaturedMode { get; set; }
+
         public string Description { get; set; }
 
         public string TrackName { get; set; }
@@ -17,6 +20,8 @@ namespace FMBot.Persistence.Domain.Models
         public string ArtistName { get; set; }
 
         public string AlbumName { get; set; }
+
+        public DateTime DateTime { get; set; }
 
         public User User { get; set; }
     }
