@@ -790,37 +790,47 @@ namespace FMBot.Bot.Commands.LastFM
                 await this._indexService.IndexUser(user);
             }
 
-            var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
-
-            var userWithStreak = await this._userService.GetUserAsync(userSettings.DiscordUserId);
-
-            var recentTracks = await this._updateService.UpdateUserAndGetRecentTracks(userWithStreak);
-
-            if (await ErrorService.RecentScrobbleCallFailedReply(recentTracks, userSettings.UserNameLastFm, this.Context))
+            try
             {
-                return;
+                var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
+
+                var userWithStreak = await this._userService.GetUserAsync(userSettings.DiscordUserId);
+
+                var recentTracks = await this._updateService.UpdateUserAndGetRecentTracks(userWithStreak);
+
+                if (await ErrorService.RecentScrobbleCallFailedReply(recentTracks, userSettings.UserNameLastFm,
+                    this.Context))
+                {
+                    return;
+                }
+
+                var streak = await this._playService.GetStreak(userSettings.UserId, recentTracks);
+                this._embed.WithDescription(streak);
+
+                var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+
+                this._embedAuthor.WithName($"{userTitle} streak overview");
+                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library");
+                this._embed.WithAuthor(this._embedAuthor);
+
+                if (this.Context.InteractionData != null)
+                {
+                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData,
+                        embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+                }
+                else
+                {
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                }
+
+                this.Context.LogCommandUsed();
             }
-
-            var streak = await this._playService.GetStreak(userSettings.UserId, recentTracks);
-            this._embed.WithDescription(streak);
-
-            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-
-            this._embedAuthor.WithName($"{userTitle} streak overview");
-            this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library");
-            this._embed.WithAuthor(this._embedAuthor);
-
-            if (this.Context.InteractionData != null)
+            catch (Exception e)
             {
-                await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+                this.Context.LogCommandException(e);
+                await ReplyAsync("Something went wrong while showing streak and the error has been logged. Please try again later or contact staff on our support server.");
             }
-            else
-            {
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            }
-
-            this.Context.LogCommandUsed();
         }
 
         private async Task<string> FindUser(string user)
