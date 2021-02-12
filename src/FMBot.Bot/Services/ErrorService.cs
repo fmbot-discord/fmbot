@@ -68,7 +68,7 @@ namespace FMBot.Bot.Services
                     break;
                 default:
                     embed.WithDescription(
-                        $"The Last.fm user `{userName}` has no scrobbles/artists/albums/tracks on [their profile]({Constants.LastFMUserUrl}{userName}).\n" +
+                        $"The Last.fm user `{userName}` has no scrobbles/artists/albums/tracks on [their profile]({Constants.LastFMUserUrl}{userName}).\n\n" +
                         $"Just signed up for last.fm and added your account in the bot? Make sure you [track your music](https://www.last.fm/about/trackmymusic) and your Last.fm profile is showing the music that you're listening to.");
                     break;
             }
@@ -81,8 +81,8 @@ namespace FMBot.Bot.Services
         {
             embed.WithTitle("Error while attempting get Last.fm information");
 
-            embed.WithDescription($"The Last.fm user `{userName}` has no scrobbles/artists/albums/tracks on [their profile]({Constants.LastFMUserUrl}{userName}).\n" +
-                                  $"Just signed up for last.fm and added your account in the bot? Make sure you [track your music](https://www.last.fm/about/trackmymusic), your recent tracks are not marked as private " +
+            embed.WithDescription($"The Last.fm user `{userName}` has no scrobbles/artists/albums/tracks on [their Last.fm profile]({Constants.LastFMUserUrl}{userName}).\n\n" +
+                                  $"Just signed up for last.fm and added your account in the bot? Make sure you properly [track your plays](https://www.last.fm/about/trackmymusic) " +
                                   $"and your [Last.fm profile]({Constants.LastFMUserUrl}{userName}) is showing the music that you're listening to.");
 
             embed.WithColor(DiscordConstants.WarningColorOrange);
@@ -98,7 +98,7 @@ namespace FMBot.Bot.Services
                                           "Please note that .fmbot isn't affiliated with Last.fm.");
                     break;
                 case ResponseStatus.LoginRequired:
-                    embed.WithDescription("Can't retrieve data because your recent tracks are marked as private in your [Last.fm privacy settings](https://www.last.fm/settings/privacy).\n" +
+                    embed.WithDescription("Can't retrieve data because your recent tracks are marked as private in your [Last.fm privacy settings](https://www.last.fm/settings/privacy).\n\n" +
                                           "You can either change this setting or authorize .fmbot to access your private scrobbles with `.fmlogin`.\n\n" +
                                           "Please note that .fmbot isn't affiliated with Last.fm.");
                     break;
