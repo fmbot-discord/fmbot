@@ -75,7 +75,7 @@ namespace FMBot.Bot.Services
                     DiscordGuildId = discordGuild.Id,
                     TitlesEnabled = true,
                     ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = FmEmbedType.embedmini,
+                    FmEmbedType = FmEmbedType.EmbedMini,
                     Name = discordGuild.Name,
                 };
 

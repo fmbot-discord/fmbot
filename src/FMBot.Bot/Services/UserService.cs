@@ -323,19 +323,19 @@ namespace FMBot.Bot.Services
             extraOptions = extraOptions.Select(s => s.ToLower()).ToArray();
             if (extraOptions.Contains("embedfull") || extraOptions.Contains("ef"))
             {
-                userSettings.FmEmbedType = FmEmbedType.embedfull;
+                userSettings.FmEmbedType = FmEmbedType.EmbedFull;
             }
             else if (extraOptions.Contains("textmini") || extraOptions.Contains("tm"))
             {
-                userSettings.FmEmbedType = FmEmbedType.textmini;
+                userSettings.FmEmbedType = FmEmbedType.TextMini;
             }
             else if (extraOptions.Contains("textfull") || extraOptions.Contains("tf"))
             {
-                userSettings.FmEmbedType = FmEmbedType.textfull;
+                userSettings.FmEmbedType = FmEmbedType.TextFull;
             }
             else
             {
-                userSettings.FmEmbedType = FmEmbedType.embedmini;
+                userSettings.FmEmbedType = FmEmbedType.EmbedMini;
             }
 
             if (extraOptions.Contains("artist"))
@@ -356,16 +356,6 @@ namespace FMBot.Bot.Services
             }
 
             return userSettings;
-        }
-
-        public async Task ResetChartTimerAsync(User user)
-        {
-            await using var db = this._contextFactory.CreateDbContext();
-            user.LastGeneratedChartDateTimeUtc = DateTime.Now;
-
-            db.Entry(user).State = EntityState.Modified;
-
-            await db.SaveChangesAsync();
         }
 
         // Remove user

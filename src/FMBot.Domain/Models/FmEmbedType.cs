@@ -1,13 +1,13 @@
-﻿namespace FMBot.Domain.Models
+namespace FMBot.Domain.Models
 {
     public enum FmEmbedType
     {
-        embedmini = 0,
+        EmbedMini = 0,
 
-        embedfull = 1,
+        EmbedFull = 1,
 
-        textfull = 2,
+        TextFull = 2,
 
-        textmini = 3
+        TextMini = 3
     }
 }

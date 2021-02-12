@@ -128,7 +128,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                                   $"You can change your .fm mode and displayed count with the `{prfx}mode` command.\n";
 
-                var differentMode = userSettings.FmEmbedType == FmEmbedType.embedmini ? "embedfull" : "embedmini";
+                var differentMode = userSettings.FmEmbedType == FmEmbedType.EmbedMini ? "embedfull" : "embedmini";
                 replyString += $"`{prfx}mode {differentMode}` \n \n" +
                                $"For more info, use `{prfx}mode help`.";
 
@@ -272,9 +272,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                 switch (userSettings.FmEmbedType)
                 {
-                    case FmEmbedType.textmini:
-                    case FmEmbedType.textfull:
-                        if (userSettings.FmEmbedType == FmEmbedType.textmini)
+                    case FmEmbedType.TextMini:
+                    case FmEmbedType.TextFull:
+                        if (userSettings.FmEmbedType == FmEmbedType.TextMini)
                         {
                             fmText += $"Last track for {embedTitle}: \n";
 
@@ -294,7 +294,7 @@ namespace FMBot.Bot.Commands.LastFM
                         await this.Context.Channel.SendMessageAsync(fmText.FilterOutMentions());
                         break;
                     default:
-                        if (userSettings.FmEmbedType == FmEmbedType.embedmini)
+                        if (userSettings.FmEmbedType == FmEmbedType.EmbedMini)
                         {
                             fmText += LastFmService.TrackToLinkedString(currentTrack);
                             this._embed.WithDescription(fmText);
@@ -312,7 +312,7 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                         else
                         {
-                            headerText = userSettings.FmEmbedType == FmEmbedType.embedmini
+                            headerText = userSettings.FmEmbedType == FmEmbedType.EmbedMini
                                 ? "Last track for "
                                 : "Last tracks for ";
                         }

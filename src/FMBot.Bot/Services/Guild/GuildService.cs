@@ -228,7 +228,7 @@ namespace FMBot.Bot.Services.Guild
                     DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
                     ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = FmEmbedType.embedmini,
+                    FmEmbedType = FmEmbedType.EmbedMini,
                     EmoteReactions = reactions,
                     Name = guild.Name
                 };
@@ -262,7 +262,7 @@ namespace FMBot.Bot.Services.Guild
                     DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
                     ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = FmEmbedType.embedmini,
+                    FmEmbedType = FmEmbedType.EmbedMini,
                     Name = guild.Name,
                     DisableSupporterMessages = true
                 };
@@ -518,7 +518,7 @@ namespace FMBot.Bot.Services.Guild
                     DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
                     ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = FmEmbedType.embedmini,
+                    FmEmbedType = FmEmbedType.EmbedMini,
                     Name = guild.Name,
                     Prefix = prefix
                 };
@@ -562,7 +562,7 @@ namespace FMBot.Bot.Services.Guild
                     DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
                     ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = FmEmbedType.embedmini,
+                    FmEmbedType = FmEmbedType.EmbedMini,
                     Name = guild.Name,
                     DisabledCommands = new[] { command }
                 };
@@ -709,7 +709,7 @@ namespace FMBot.Bot.Services.Guild
                 {
                     DiscordGuildId = guild.Id,
                     ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = FmEmbedType.embedmini,
+                    FmEmbedType = FmEmbedType.EmbedMini,
                     Name = guild.Name,
                     TitlesEnabled = true,
                     LastIndexed = timestamp ?? DateTime.UtcNow

@@ -222,7 +222,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (existingUserSettings?.UserNameLastFM != null)
                 {
-                    var differentMode = existingUserSettings.FmEmbedType == FmEmbedType.embedmini ? "embedfull" : "embedmini";
+                    var differentMode = existingUserSettings.FmEmbedType == FmEmbedType.EmbedMini ? "embedfull" : "embedmini";
                     replyString += "Example of picking a different mode: \n" +
                                    $"`{prfx}set {existingUserSettings.UserNameLastFM} {differentMode} album`";
 
@@ -499,7 +499,8 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     var description =
                         $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({Constants.LastFMUserUrl}{newUserSettings.UserNameLastFM})!\n\n" +
-                        $"Tip: Also check out `.fmmode` to change how your `.fm` command looks.";
+                        $"`.fmmode` has been set to: `{newUserSettings.FmEmbedType}`\n" +
+                        $"`.fmprivacy` has been set to: `{newUserSettings.PrivacyLevel}`";
 
                     var sourceGuildId = this.Context.Guild?.Id;
                     var sourceChannelId = this.Context.Channel?.Id;
