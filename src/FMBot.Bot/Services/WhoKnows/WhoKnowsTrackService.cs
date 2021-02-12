@@ -108,7 +108,7 @@ namespace FMBot.Bot.Services.WhoKnows
             {
                 var userTrack = userTracks[i];
 
-                var userName = userTrack.Name ?? userTrack.UserNameLastFm;
+                var userName = userTrack.UserNameLastFm;
 
                 if (i < 15)
                 {

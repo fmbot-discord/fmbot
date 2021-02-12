@@ -109,7 +109,7 @@ namespace FMBot.Bot.Services.WhoKnows
             {
                 var userArtist = userArtists[i];
 
-                var userName = userArtist.Name ?? userArtist.UserNameLastFm;
+                var userName = userArtist.UserNameLastFm;
 
                 if (i < 15)
                 {
