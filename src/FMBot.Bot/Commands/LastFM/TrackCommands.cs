@@ -677,7 +677,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var trackName = $"{track.Artist.Name} - {track.Name}";
+            var trackName = $"{track.Name} by {track.Artist.Name}";
 
             try
             {
@@ -735,7 +735,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $"\n{filteredAmount} inactive/blocked users filtered";
                 }
 
-                this._embed.WithTitle($"Who knows {trackName} in {this.Context.Guild.Name}");
+                this._embed.WithTitle($"{trackName} in {this.Context.Guild.Name}");
 
                 if (Uri.IsWellFormedUriString(track.Url, UriKind.Absolute))
                 {
@@ -801,7 +801,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var trackName = $"{track.Artist.Name} - {track.Name}";
+            var trackName = $"{track.Name} by {track.Artist.Name}";
 
             try
             {
@@ -852,7 +852,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $"\nYou are currently not globally visible - use '{prfx}privacy global' to enable.";
                 }
 
-                this._embed.WithTitle($"Who knows {trackName} globally");
+                this._embed.WithTitle($"{trackName} globally");
 
                 if (Uri.IsWellFormedUriString(track.Url, UriKind.Absolute))
                 {

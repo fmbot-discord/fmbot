@@ -977,7 +977,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $"\n{filteredAmount} inactive/blocked users filtered";
                 }
 
-                this._embed.WithTitle($"Who knows {artistName} in {this.Context.Guild.Name}");
+                this._embed.WithTitle($"{artistName} in {this.Context.Guild.Name}");
 
                 if (Uri.IsWellFormedUriString(artistUrl, UriKind.Absolute))
                 {
@@ -1161,7 +1161,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $"\nYou are currently not globally visible - use '{prfx}privacy global' to enable.";
                 }
 
-                this._embed.WithTitle($"Who knows {artistName} globally");
+                this._embed.WithTitle($"{artistName} globally");
 
                 if (Uri.IsWellFormedUriString(artistUrl, UriKind.Absolute))
                 {

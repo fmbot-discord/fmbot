@@ -41,21 +41,29 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var userTracks = await connection.QueryAsync<WhoKnowsTrackDto>(sql, new
+            var userTracks = (await connection.QueryAsync<WhoKnowsTrackDto>(sql, new
             {
                 guildId,
                 trackName,
                 artistName
-            });
+            })).ToList();
 
             var whoKnowsTrackList = new List<WhoKnowsObjectWithUser>();
 
-            foreach (var userTrack in userTracks)
+            for (var i = 0; i < userTracks.Count; i++)
             {
-                var discordUser = await context.Guild.GetUserAsync(userTrack.DiscordUserId);
-                var userName = discordUser != null ?
-                    discordUser.Nickname ?? discordUser.Username :
-                    userTrack.UserName ?? userTrack.UserNameLastFm;
+                var userTrack = userTracks[i];
+
+                var userName = userTrack.Name ?? userTrack.UserNameLastFm;
+
+                if (i < 15)
+                {
+                    var discordUser = await context.Guild.GetUserAsync(userTrack.DiscordUserId);
+                    if (discordUser != null)
+                    {
+                        userName = discordUser.Nickname ?? discordUser.Username;
+                    }
+                }
 
                 whoKnowsTrackList.Add(new WhoKnowsObjectWithUser
                 {
@@ -88,20 +96,28 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var userTracks = await connection.QueryAsync<WhoKnowsGlobalTrackDto>(sql, new
+            var userTracks = (await connection.QueryAsync<WhoKnowsGlobalTrackDto>(sql, new
             {
                 trackName,
                 artistName
-            });
+            })).ToList();
 
             var whoKnowsTrackList = new List<WhoKnowsObjectWithUser>();
 
-            foreach (var userTrack in userTracks)
+            for (var i = 0; i < userTracks.Count; i++)
             {
-                var discordUser = await context.Guild.GetUserAsync(userTrack.DiscordUserId);
-                var userName = discordUser != null ?
-                    discordUser.Nickname ?? discordUser.Username :
-                    userTrack.UserNameLastFm;
+                var userTrack = userTracks[i];
+
+                var userName = userTrack.Name ?? userTrack.UserNameLastFm;
+
+                if (i < 15)
+                {
+                    var discordUser = await context.Guild.GetUserAsync(userTrack.DiscordUserId);
+                    if (discordUser != null)
+                    {
+                        userName = discordUser.Nickname ?? discordUser.Username;
+                    }
+                }
 
                 whoKnowsTrackList.Add(new WhoKnowsObjectWithUser
                 {

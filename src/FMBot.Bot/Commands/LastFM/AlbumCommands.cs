@@ -624,7 +624,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var album = albumCall.Content.Album;
 
-            var albumName = $"{album.Artist} - {album.Name}";
+            var albumName = $"{album.Name} by {album.Artist}";
 
             try
             {
@@ -691,7 +691,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += guildAlsoPlaying;
                 }
 
-                this._embed.WithTitle(StringExtensions.TruncateLongString($"Who knows {albumName} in {this.Context.Guild.Name}", 255));
+                this._embed.WithTitle(StringExtensions.TruncateLongString($"{albumName} in {this.Context.Guild.Name}", 255));
 
                 if (Uri.IsWellFormedUriString(album.Url, UriKind.Absolute))
                 {
@@ -781,7 +781,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var album = albumCall.Content.Album;
 
-            var albumName = $"{album.Artist} - {album.Name}";
+            var albumName = $"{album.Name} by {album.Artist}";
 
             try
             {
@@ -841,7 +841,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $"\nYou are currently not globally visible - use '{prfx}privacy global' to enable.";
                 }
 
-                this._embed.WithTitle($"Who knows {albumName} globally");
+                this._embed.WithTitle($"{albumName} globally");
 
                 if (Uri.IsWellFormedUriString(album.Url, UriKind.Absolute))
                 {

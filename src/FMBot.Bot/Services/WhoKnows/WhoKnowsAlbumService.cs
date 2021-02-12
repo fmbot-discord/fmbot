@@ -41,21 +41,29 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var userAlbums = await connection.QueryAsync<WhoKnowsAlbumDto>(sql, new
+            var userAlbums = (await connection.QueryAsync<WhoKnowsAlbumDto>(sql, new
             {
                 guildId,
                 albumName,
                 artistName
-            });
+            })).ToList();
 
             var whoKnowsAlbumList = new List<WhoKnowsObjectWithUser>();
 
-            foreach (var userAlbum in userAlbums)
+            for (var i = 0; i < userAlbums.Count; i++)
             {
-                var discordUser = await context.Guild.GetUserAsync(userAlbum.DiscordUserId);
-                var userName = discordUser != null ?
-                    discordUser.Nickname ?? discordUser.Username :
-                    userAlbum.UserName ?? userAlbum.UserNameLastFm;
+                var userAlbum = userAlbums[i];
+
+                var userName = userAlbum.Name ?? userAlbum.UserNameLastFm;
+
+                if (i < 15)
+                {
+                    var discordUser = await context.Guild.GetUserAsync(userAlbum.DiscordUserId);
+                    if (discordUser != null)
+                    {
+                        userName = discordUser.Nickname ?? discordUser.Username;
+                    }
+                }
 
                 whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
                 {
@@ -88,20 +96,28 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var userAlbums = await connection.QueryAsync<WhoKnowsGlobalAlbumDto>(sql, new
+            var userAlbums = (await connection.QueryAsync<WhoKnowsGlobalAlbumDto>(sql, new
             {
                 albumName,
                 artistName
-            });
+            })).ToList();
 
             var whoKnowsAlbumList = new List<WhoKnowsObjectWithUser>();
 
-            foreach (var userAlbum in userAlbums)
+            for (var i = 0; i < userAlbums.Count; i++)
             {
-                var discordUser = await context.Guild.GetUserAsync(userAlbum.DiscordUserId);
-                var userName = discordUser != null ?
-                    discordUser.Nickname ?? discordUser.Username :
-                    userAlbum.UserNameLastFm;
+                var userAlbum = userAlbums[i];
+
+                var userName = userAlbum.Name ?? userAlbum.UserNameLastFm;
+
+                if (i < 15)
+                {
+                    var discordUser = await context.Guild.GetUserAsync(userAlbum.DiscordUserId);
+                    if (discordUser != null)
+                    {
+                        userName = discordUser.Nickname ?? discordUser.Username;
+                    }
+                }
 
                 whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
                 {

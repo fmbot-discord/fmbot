@@ -45,20 +45,28 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var userArtists = await connection.QueryAsync<WhoKnowsArtistDto>(sql, new
+            var userArtists = (await connection.QueryAsync<WhoKnowsArtistDto>(sql, new
             {
                 guildId,
                 artistName
-            });
+            })).ToList();
 
             var whoKnowsArtistList = new List<WhoKnowsObjectWithUser>();
 
-            foreach (var userArtist in userArtists)
+            for (var i = 0; i < userArtists.Count; i++)
             {
-                var discordUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId);
-                var userName = discordUser != null ?
-                    discordUser.Nickname ?? discordUser.Username :
-                    userArtist.UserName ?? userArtist.UserNameLastFm;
+                var userArtist = userArtists[i];
+
+                var userName = userArtist.Name ?? userArtist.UserNameLastFm;
+
+                if (i < 15)
+                {
+                    var discordUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId);
+                    if (discordUser != null)
+                    {
+                        userName = discordUser.Nickname ?? discordUser.Username;
+                    }
+                }
 
                 whoKnowsArtistList.Add(new WhoKnowsObjectWithUser
                 {
@@ -90,19 +98,27 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var userArtists = await connection.QueryAsync<WhoKnowsGlobalArtistDto>(sql, new
+            var userArtists = (await connection.QueryAsync<WhoKnowsGlobalArtistDto>(sql, new
             {
                 artistName
-            });
+            })).ToList();
 
             var whoKnowsArtistList = new List<WhoKnowsObjectWithUser>();
 
-            foreach (var userArtist in userArtists)
+            for (var i = 0; i < userArtists.Count; i++)
             {
-                var discordUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId);
-                var userName = discordUser != null ?
-                    discordUser.Nickname ?? discordUser.Username :
-                    userArtist.UserNameLastFm;
+                var userArtist = userArtists[i];
+
+                var userName = userArtist.Name ?? userArtist.UserNameLastFm;
+
+                if (i < 15)
+                {
+                    var discordUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId);
+                    if (discordUser != null)
+                    {
+                        userName = discordUser.Nickname ?? discordUser.Username;
+                    }
+                }
 
                 whoKnowsArtistList.Add(new WhoKnowsObjectWithUser
                 {
@@ -146,8 +162,8 @@ namespace FMBot.Bot.Services.WhoKnows
 
         public async Task<int?> GetArtistPlayCountForUser(string artistName, int userId)
         {
-            const string sql = "SELECT ua.playcount "+
-                               "FROM user_artists AS ua "+
+            const string sql = "SELECT ua.playcount " +
+                               "FROM user_artists AS ua " +
                                "WHERE ua.user_id = @userId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
