@@ -303,7 +303,7 @@ namespace FMBot.Bot.Commands.LastFM
                             }
                             break;
                         case null:
-                            if (embedType != FmEmbedType.TextMini)
+                            if (embedType == FmEmbedType.TextMini)
                             {
                                 footerText = null;
                             }
