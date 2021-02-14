@@ -662,7 +662,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var guildTask = this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -785,7 +785,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
 
-            var guildTask = this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
             _ = this.Context.Channel.TriggerTypingAsync();
 
             if (this.Context.InteractionData != null)
@@ -890,7 +890,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task GuildTracksAsync(params string[] extraOptions)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             var filteredGuildUsers = this._guildService.FilterGuildUsersAsync(guild);
 

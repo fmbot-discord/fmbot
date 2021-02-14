@@ -189,7 +189,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild?.LastIndexed == null)
             {
@@ -263,7 +263,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild?.LastIndexed == null)
             {
@@ -303,7 +303,7 @@ namespace FMBot.Bot.Commands.Guild
         public async Task ToggleCrownsAsync([Remainder] string confirmation = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild == null)
             {

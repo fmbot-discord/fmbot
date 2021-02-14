@@ -8,6 +8,8 @@ namespace FMBot.Domain.Models
 
         TextFull = 2,
 
-        TextMini = 3
+        TextMini = 3,
+
+        Compact = 4
     }
 }

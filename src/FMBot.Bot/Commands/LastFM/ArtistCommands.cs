@@ -150,7 +150,7 @@ namespace FMBot.Bot.Commands.LastFM
             if (!this._guildService.CheckIfDM(this.Context))
             {
                 var serverStats = "";
-                var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+                var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
                 var usersWithArtist = await this._whoKnowArtistService.GetIndexedUsersForArtist(this.Context, guild.GuildId, artistInfo.Name);
                 var filteredUsersWithArtist = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, guild);
@@ -842,7 +842,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var guildTask = this._guildService.GetGuildAsync(this.Context.Guild.Id);
+                var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
                 _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -1041,7 +1041,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var guildTask = this._guildService.GetGuildAsync(this.Context.Guild.Id);
+                var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
                 _ = this.Context.Channel.TriggerTypingAsync();
 
                 if (this.Context.InteractionData != null)
@@ -1209,7 +1209,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             var filteredGuildUsers = this._guildService.FilterGuildUsersAsync(guild);
 
@@ -1353,7 +1353,7 @@ namespace FMBot.Bot.Commands.LastFM
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
             var filteredGuildUsers = this._guildService.FilterGuildUsersAsync(guild);
 
             if (guild.LastIndexed == null)

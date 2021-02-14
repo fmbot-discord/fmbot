@@ -99,7 +99,7 @@ namespace FMBot.Bot.Commands
         public async Task DebugGuildAsync(ulong? guildId = null)
         {
             var chosenGuild = guildId ?? this.Context.Guild.Id;
-            var guild = await this._guildService.GetGuildAsync(chosenGuild);
+            var guild = await this._guildService.GetFullGuildAsync(chosenGuild);
 
             if (guild == null)
             {

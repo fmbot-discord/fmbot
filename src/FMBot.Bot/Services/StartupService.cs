@@ -136,7 +136,6 @@ namespace FMBot.Bot.Services
             }
         }
 
-
         private Task StartMetricsServer()
         {
             Thread.Sleep(TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds));

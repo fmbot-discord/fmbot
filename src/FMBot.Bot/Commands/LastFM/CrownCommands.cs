@@ -69,7 +69,7 @@ namespace FMBot.Bot.Commands.LastFM
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild == null)
             {
@@ -142,7 +142,7 @@ namespace FMBot.Bot.Commands.LastFM
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild == null)
             {
@@ -236,7 +236,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task CrownLeaderboardAsync()
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild == null)
             {
@@ -299,7 +299,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task KillCrownAsync([Remainder] string killCrownValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (!string.IsNullOrWhiteSpace(killCrownValues) && killCrownValues.ToLower() == "help")
             {
@@ -369,7 +369,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task SeedCrownsAsync([Remainder] string helpValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (!string.IsNullOrWhiteSpace(helpValues) && helpValues.ToLower() == "help")
             {
@@ -435,7 +435,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task KillAllCrownsAsync([Remainder] string confirmation = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (!string.IsNullOrWhiteSpace(confirmation) && confirmation.ToLower() == "help")
             {
@@ -508,7 +508,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task KillAllSeededCrownsAsync([Remainder] string confirmation = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (!string.IsNullOrWhiteSpace(confirmation) && confirmation.ToLower() == "help")
             {

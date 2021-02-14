@@ -270,11 +270,22 @@ namespace FMBot.Bot.Commands.LastFM
 
                 footerText += $"{totalPlaycount} total scrobbles";
 
-                switch (userSettings.FmEmbedType)
+                var embedType = userSettings.FmEmbedType;
+
+                if (this.Context.Guild != null)
+                {
+                    var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+                    if (guild?.FmEmbedType != null)
+                    {
+                        embedType = guild.FmEmbedType.Value;
+                    }
+                }
+
+                switch (embedType)
                 {
                     case FmEmbedType.TextMini:
                     case FmEmbedType.TextFull:
-                        if (userSettings.FmEmbedType == FmEmbedType.TextMini)
+                        if (embedType == FmEmbedType.TextMini)
                         {
                             fmText += $"Last track for {embedTitle}: \n";
 
@@ -294,7 +305,7 @@ namespace FMBot.Bot.Commands.LastFM
                         await this.Context.Channel.SendMessageAsync(fmText.FilterOutMentions());
                         break;
                     default:
-                        if (userSettings.FmEmbedType == FmEmbedType.EmbedMini)
+                        if (embedType == FmEmbedType.EmbedMini)
                         {
                             fmText += LastFmService.TrackToLinkedString(currentTrack);
                             this._embed.WithDescription(fmText);
@@ -312,7 +323,7 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                         else
                         {
-                            headerText = userSettings.FmEmbedType == FmEmbedType.EmbedMini
+                            headerText = embedType == FmEmbedType.EmbedMini
                                 ? "Last track for "
                                 : "Last tracks for ";
                         }

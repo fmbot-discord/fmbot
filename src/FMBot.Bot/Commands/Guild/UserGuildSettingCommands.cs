@@ -124,7 +124,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild?.LastIndexed == null)
             {
@@ -199,7 +199,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild?.LastIndexed == null)
             {
@@ -270,7 +270,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild?.LastIndexed == null)
             {

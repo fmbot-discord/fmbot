@@ -296,7 +296,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+                var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
                 if (guild != null)
                 {
                     await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(this.Context.User.Id), newUserSettings);
@@ -327,7 +327,8 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.AddField("Options",
                     "**Modes**: `embedmini/embedfull/textmini/textfull`\n" +
                     "**Playcounts**: `artist/album/track`\n" +
-                    "*Note: Playcounts are only visible in non-text modes.*");
+                    "*Note: Playcounts are only visible in non-text modes.*\n\n" +
+                    $"Server mode can be set using `{prfx}servermode`. The server mode overrules any mode set by users.");
 
                 this._embed.AddField("Examples",
                     $"`{prfx}mode embedmini` \n" +
@@ -361,6 +362,9 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 setReply += $" with no extra playcount.";
             }
+
+            setReply +=
+                "\n\nNote that servers can force an .fm mode. The server setting will always overrule your own .fm mode.";
 
             if (this.Context.InteractionData != null)
             {
@@ -526,7 +530,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (!this._guildService.CheckIfDM(this.Context))
                 {
-                    var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+                    var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
                     if (guild != null)
                     {
                         await this._indexService.GetOrAddUserToGuild(guild,

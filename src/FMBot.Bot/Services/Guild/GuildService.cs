@@ -37,6 +37,14 @@ namespace FMBot.Bot.Services.Guild
             await using var db = this._contextFactory.CreateDbContext();
             return await db.Guilds
                 .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == guildId);
+        }
+
+        public async Task<Persistence.Domain.Models.Guild> GetFullGuildAsync(ulong guildId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            return await db.Guilds
+                .AsQueryable()
                 .Include(i => i.GuildBlockedUsers)
                     .ThenInclude(t => t.User)
                 .Include(i => i.GuildUsers.Where(w => w.Bot != true))
@@ -190,7 +198,7 @@ namespace FMBot.Bot.Services.Guild
             return usersObject.ToList();
         }
 
-        public async Task ChangeGuildSettingAsync(IGuild guild, ChartTimePeriod chartTimePeriod, FmEmbedType fmEmbedType)
+        public async Task ChangeGuildSettingAsync(IGuild guild, Persistence.Domain.Models.Guild newGuildSettings)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var existingGuild = await db.Guilds
@@ -202,13 +210,20 @@ namespace FMBot.Bot.Services.Guild
                 var newGuild = new Persistence.Domain.Models.Guild
                 {
                     DiscordGuildId = guild.Id,
-                    ChartTimePeriod = chartTimePeriod,
-                    FmEmbedType = fmEmbedType,
                     Name = guild.Name,
                     TitlesEnabled = true
                 };
 
                 await db.Guilds.AddAsync(newGuild);
+
+                await db.SaveChangesAsync();
+            }
+            else
+            {
+                existingGuild.Name = guild.Name;
+                existingGuild.FmEmbedType = newGuildSettings.FmEmbedType;
+
+                db.Entry(existingGuild).State = EntityState.Modified;
 
                 await db.SaveChangesAsync();
             }
@@ -227,8 +242,6 @@ namespace FMBot.Bot.Services.Guild
                 {
                     DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
-                    ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = FmEmbedType.EmbedMini,
                     EmoteReactions = reactions,
                     Name = guild.Name
                 };
@@ -261,8 +274,6 @@ namespace FMBot.Bot.Services.Guild
                 {
                     DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
-                    ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = FmEmbedType.EmbedMini,
                     Name = guild.Name,
                     DisableSupporterMessages = true
                 };
@@ -517,8 +528,6 @@ namespace FMBot.Bot.Services.Guild
                 {
                     DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
-                    ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = FmEmbedType.EmbedMini,
                     Name = guild.Name,
                     Prefix = prefix
                 };
@@ -561,8 +570,6 @@ namespace FMBot.Bot.Services.Guild
                 {
                     DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
-                    ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = FmEmbedType.EmbedMini,
                     Name = guild.Name,
                     DisabledCommands = new[] { command }
                 };
@@ -708,8 +715,6 @@ namespace FMBot.Bot.Services.Guild
                 var newGuild = new Persistence.Domain.Models.Guild
                 {
                     DiscordGuildId = guild.Id,
-                    ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = FmEmbedType.EmbedMini,
                     Name = guild.Name,
                     TitlesEnabled = true,
                     LastIndexed = timestamp ?? DateTime.UtcNow
@@ -815,6 +820,39 @@ namespace FMBot.Bot.Services.Guild
             return await db.Guilds
                 .AsQueryable()
                 .CountAsync();
+        }
+
+        public Persistence.Domain.Models.Guild SetSettings(Persistence.Domain.Models.Guild guildSettings, string[] extraOptions)
+        {
+            if (extraOptions == null)
+            {
+                guildSettings.FmEmbedType = null;
+                return guildSettings;
+            }
+
+            extraOptions = extraOptions.Select(s => s.ToLower()).ToArray();
+            if (extraOptions.Contains("embedfull") || extraOptions.Contains("ef"))
+            {
+                guildSettings.FmEmbedType = FmEmbedType.EmbedFull;
+            }
+            else if (extraOptions.Contains("textmini") || extraOptions.Contains("tm"))
+            {
+                guildSettings.FmEmbedType = FmEmbedType.TextMini;
+            }
+            else if (extraOptions.Contains("textfull") || extraOptions.Contains("tf"))
+            {
+                guildSettings.FmEmbedType = FmEmbedType.TextFull;
+            }
+            else if (extraOptions.Contains("embedmini") || extraOptions.Contains("em"))
+            {
+                guildSettings.FmEmbedType = FmEmbedType.EmbedMini;
+            }
+            else
+            {
+                guildSettings.FmEmbedType = null;
+            }
+
+            return guildSettings;
         }
     }
 }

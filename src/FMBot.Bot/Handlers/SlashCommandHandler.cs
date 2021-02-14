@@ -53,12 +53,12 @@ namespace FMBot.Bot.Handlers
                 return;
             }
 
-            if (this._discord?.CurrentUser != null && interaction.Author.Id == this._discord.CurrentUser.Id)
+            if (this._discord?.CurrentUser != null && interaction.User.Id == this._discord.CurrentUser.Id)
             {
                 return; // Ignore self when checking commands
             }
 
-            if (interaction.Author.IsBot)
+            if (interaction.User.IsBot)
             {
                 return; // Ignore bots
             }

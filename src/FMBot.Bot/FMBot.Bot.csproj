@@ -21,7 +21,7 @@
   <ItemGroup>
     <PackageReference Include="AsyncEnumerator" Version="4.0.2" />
     <PackageReference Include="Dapper" Version="2.0.78" />
-    <PackageReference Include="DNetPlus" Version="1.4.2" />
+    <PackageReference Include="DNetPlus" Version="1.4.5" />
     <PackageReference Include="DNetPlus-BotListAPI" Version="1.1.0" />
     <PackageReference Include="DNetPlus-Interactivity" Version="1.0.0" />
     <PackageReference Include="Genius.NET" Version="4.0.1" />
