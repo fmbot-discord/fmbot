@@ -269,12 +269,7 @@ namespace FMBot.Bot.Commands.LastFM
                             var trackPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(currentTrack.ArtistName, currentTrack.TrackName, userSettings.UserId);
                             if (trackPlaycount.HasValue)
                             {
-
-                                footerText += $"{trackPlaycount} scrobbles on this track";
-                                if (embedType != FmEmbedType.TextMini)
-                                {
-                                    footerText += " | ";
-                                }
+                                footerText += $"{trackPlaycount} scrobbles on this track | ";
                             }
                             break;
                         case FmCountType.Album:
@@ -283,11 +278,7 @@ namespace FMBot.Bot.Commands.LastFM
                                 var albumPlaycount = await this._whoKnowsAlbumService.GetAlbumPlayCountForUser(currentTrack.ArtistName, currentTrack.AlbumName, userSettings.UserId);
                                 if (albumPlaycount.HasValue)
                                 {
-                                    footerText += $"{albumPlaycount} scrobbles on this album";
-                                    if (embedType != FmEmbedType.TextMini)
-                                    {
-                                        footerText += " | ";
-                                    }
+                                    footerText += $"{albumPlaycount} scrobbles on this album | ";
                                 }
                             }
                             break;
@@ -295,28 +286,17 @@ namespace FMBot.Bot.Commands.LastFM
                             var artistPlaycount = await this._whoKnowsArtistService.GetArtistPlayCountForUser(currentTrack.ArtistName, userSettings.UserId);
                             if (artistPlaycount.HasValue)
                             {
-                                footerText += $"{artistPlaycount} scrobbles on this artist";
-                                if (embedType != FmEmbedType.TextMini)
-                                {
-                                    footerText += " | ";
-                                }
+                                footerText += $"{artistPlaycount} scrobbles on this artist | ";
                             }
                             break;
                         case null:
-                            if (embedType == FmEmbedType.TextMini)
-                            {
-                                footerText = null;
-                            }
                             break;
                         default:
                             throw new ArgumentOutOfRangeException();
                     }
                 }
 
-                if (embedType != FmEmbedType.EmbedTiny)
-                {
-                    footerText += $"{totalPlaycount} total scrobbles";
-                }
+                footerText += $"{totalPlaycount} total scrobbles";
 
                 switch (embedType)
                 {
