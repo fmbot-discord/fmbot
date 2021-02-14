@@ -245,7 +245,7 @@ namespace FMBot.Bot.Services
 
             var title = name;
 
-            title += $" {userType.UserTypeToIcon()}";
+            title += $"{userType.UserTypeToIcon()}";
 
             return title;
         }

@@ -230,8 +230,37 @@ namespace FMBot.Bot.Commands.LastFM
                 var fmText = "";
                 var footerText = "";
 
-                footerText +=
-                    $"{lastFmUserName} has ";
+                var embedType = userSettings.FmEmbedType;
+
+                if (this.Context.Guild != null)
+                {
+                    var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+                    if (guild?.FmEmbedType != null)
+                    {
+                        embedType = guild.FmEmbedType.Value;
+                    }
+                }
+
+
+                if (embedType == FmEmbedType.TextMini || embedType == FmEmbedType.TextFull)
+                {
+                    if (self)
+                    {
+                        footerText +=
+                            $"{userTitle} has ";
+                    }
+                    else
+                    {
+                        footerText +=
+                            $"{lastFmUserName} (requested by {userTitle}) has ";
+                    }
+                }
+                
+                else
+                {
+                    footerText +=
+                        $"{lastFmUserName} has ";
+                }
 
                 if (self)
                 {
@@ -270,16 +299,6 @@ namespace FMBot.Bot.Commands.LastFM
 
                 footerText += $"{totalPlaycount} total scrobbles";
 
-                var embedType = userSettings.FmEmbedType;
-
-                if (this.Context.Guild != null)
-                {
-                    var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
-                    if (guild?.FmEmbedType != null)
-                    {
-                        embedType = guild.FmEmbedType.Value;
-                    }
-                }
 
                 switch (embedType)
                 {
@@ -287,22 +306,24 @@ namespace FMBot.Bot.Commands.LastFM
                     case FmEmbedType.TextFull:
                         if (embedType == FmEmbedType.TextMini)
                         {
-                            fmText += $"Last track for {embedTitle}: \n";
-
-                            fmText += LastFmService.TrackToString(currentTrack);
+                            fmText += LastFmService.TrackToString(currentTrack).FilterOutMentions();
                         }
                         else if (previousTrack != null)
                         {
-                            fmText += $"Last tracks for {embedTitle}: \n";
+                            fmText += $"**Current track**:\n";
 
-                            fmText += LastFmService.TrackToString(currentTrack);
-                            fmText += LastFmService.TrackToString(previousTrack);
+                            fmText += LastFmService.TrackToString(currentTrack).FilterOutMentions();
+
+                            fmText += $"\n" +
+                                      $"**Previous track**:\n";
+
+                            fmText += LastFmService.TrackToString(previousTrack).FilterOutMentions();
                         }
 
                         fmText +=
-                            $"<{recentTracks.Content.UserUrl}> has {totalPlaycount} scrobbles";
+                            $"`{footerText.FilterOutMentions()}`";
 
-                        await this.Context.Channel.SendMessageAsync(fmText.FilterOutMentions());
+                        await this.Context.Channel.SendMessageAsync(fmText);
                         break;
                     default:
                         if (embedType == FmEmbedType.EmbedMini)
