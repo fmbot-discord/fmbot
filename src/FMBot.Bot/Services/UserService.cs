@@ -254,7 +254,9 @@ namespace FMBot.Bot.Services
         public async Task SetLastFm(IUser discordUser, User newUserSettings, bool updateSessionKey = false)
         {
             await using var db = this._contextFactory.CreateDbContext();
-            var user = db.Users.FirstOrDefault(f => f.DiscordUserId == discordUser.Id);
+            var user = await db.Users
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
             if (user == null)
             {
@@ -334,6 +336,10 @@ namespace FMBot.Bot.Services
             else if (extraOptions.Contains("textfull") || extraOptions.Contains("tf"))
             {
                 userSettings.FmEmbedType = FmEmbedType.TextFull;
+            }
+            else if (extraOptions.Contains("embedtiny") || extraOptions.Contains("et"))
+            {
+                userSettings.FmEmbedType = FmEmbedType.EmbedTiny;
             }
             else
             {

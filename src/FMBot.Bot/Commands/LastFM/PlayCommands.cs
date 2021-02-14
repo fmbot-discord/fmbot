@@ -255,7 +255,6 @@ namespace FMBot.Bot.Commands.LastFM
                             $"{lastFmUserName} (requested by {userTitle}) has ";
                     }
                 }
-                
                 else
                 {
                     footerText +=
@@ -270,7 +269,12 @@ namespace FMBot.Bot.Commands.LastFM
                             var trackPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(currentTrack.ArtistName, currentTrack.TrackName, userSettings.UserId);
                             if (trackPlaycount.HasValue)
                             {
-                                footerText += $"{trackPlaycount} scrobbles on this track | ";
+
+                                footerText += $"{trackPlaycount} scrobbles on this track";
+                                if (embedType != FmEmbedType.TextMini)
+                                {
+                                    footerText += " | ";
+                                }
                             }
                             break;
                         case FmCountType.Album:
@@ -279,7 +283,11 @@ namespace FMBot.Bot.Commands.LastFM
                                 var albumPlaycount = await this._whoKnowsAlbumService.GetAlbumPlayCountForUser(currentTrack.ArtistName, currentTrack.AlbumName, userSettings.UserId);
                                 if (albumPlaycount.HasValue)
                                 {
-                                    footerText += $"{albumPlaycount} scrobbles on this album | ";
+                                    footerText += $"{albumPlaycount} scrobbles on this album";
+                                    if (embedType != FmEmbedType.TextMini)
+                                    {
+                                        footerText += " | ";
+                                    }
                                 }
                             }
                             break;
@@ -287,18 +295,28 @@ namespace FMBot.Bot.Commands.LastFM
                             var artistPlaycount = await this._whoKnowsArtistService.GetArtistPlayCountForUser(currentTrack.ArtistName, userSettings.UserId);
                             if (artistPlaycount.HasValue)
                             {
-                                footerText += $"{artistPlaycount} scrobbles on this artist | ";
+                                footerText += $"{artistPlaycount} scrobbles on this artist";
+                                if (embedType != FmEmbedType.TextMini)
+                                {
+                                    footerText += " | ";
+                                }
                             }
                             break;
                         case null:
+                            if (embedType != FmEmbedType.TextMini)
+                            {
+                                footerText = null;
+                            }
                             break;
                         default:
                             throw new ArgumentOutOfRangeException();
                     }
                 }
 
-                footerText += $"{totalPlaycount} total scrobbles";
-
+                if (embedType != FmEmbedType.EmbedTiny)
+                {
+                    footerText += $"{totalPlaycount} total scrobbles";
+                }
 
                 switch (embedType)
                 {
@@ -326,7 +344,7 @@ namespace FMBot.Bot.Commands.LastFM
                         await this.Context.Channel.SendMessageAsync(fmText);
                         break;
                     default:
-                        if (embedType == FmEmbedType.EmbedMini)
+                        if (embedType == FmEmbedType.EmbedMini || embedType == FmEmbedType.EmbedTiny)
                         {
                             fmText += LastFmService.TrackToLinkedString(currentTrack);
                             this._embed.WithDescription(fmText);
@@ -378,16 +396,20 @@ namespace FMBot.Bot.Commands.LastFM
                                 $"\nSpotify status used due to Last.fm error ({recentTracks.Error})";
                         }
 
-                        this._embedFooter.WithText(footerText);
+                        if (!string.IsNullOrWhiteSpace(footerText))
+                        {
+                            this._embedFooter.WithText(footerText);
+                            this._embed.WithFooter(this._embedFooter);
+                        }
 
-                        this._embed.WithFooter(this._embedFooter);
+                        if (embedType != FmEmbedType.EmbedTiny)
+                        {
+                            this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+                            this._embed.WithAuthor(this._embedAuthor);
+                            this._embed.WithUrl(recentTracks.Content.UserUrl);
+                        }
 
-                        this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                        this._embed.WithAuthor(this._embedAuthor);
-                        this._embed.WithUrl(recentTracks.Content.UserUrl);
-
-
-                        if (currentTrack.AlbumCoverUrl != null)
+                        if (currentTrack.AlbumCoverUrl != null && embedType != FmEmbedType.EmbedTiny)
                         {
                             var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
                                 currentTrack.AlbumName, currentTrack.ArtistName, currentTrack.AlbumCoverUrl);

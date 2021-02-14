@@ -10,6 +10,6 @@ namespace FMBot.Domain.Models
 
         TextMini = 3,
 
-        Compact = 4
+        EmbedTiny = 4
     }
 }
