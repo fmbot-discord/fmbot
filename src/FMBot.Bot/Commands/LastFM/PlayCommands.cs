@@ -242,7 +242,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
 
-                if (embedType == FmEmbedType.TextMini || embedType == FmEmbedType.TextFull)
+                if (embedType == FmEmbedType.TextMini || embedType == FmEmbedType.TextFull || embedType == FmEmbedType.EmbedTiny)
                 {
                     if (self)
                     {
