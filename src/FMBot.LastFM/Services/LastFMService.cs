@@ -149,9 +149,12 @@ namespace FMBot.LastFM.Services
 
             if (!string.IsNullOrWhiteSpace(track.AlbumName))
             {
+                var albumQueryName = track.AlbumName.Replace(" - Single", "");
+                albumQueryName = albumQueryName.Replace(" - EP", "");
+
                 var escapedAlbumName = Regex.Replace(track.AlbumName, @"([|\\*])", @"\$1");
                 var albumRymUrl = @"https://duckduckgo.com/?q=%5Csite%3Arateyourmusic.com";
-                albumRymUrl += HttpUtility.UrlEncode($" \"{track.AlbumName}\" \"{track.ArtistName}\"");
+                albumRymUrl += HttpUtility.UrlEncode($" \"{albumQueryName}\" \"{track.ArtistName}\"");
 
                 return $"[{escapedTrackName}]({track.TrackUrl})\n" +
                        $"By **{track.ArtistName}**" +
