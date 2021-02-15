@@ -353,7 +353,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             await this._userService.SetLastFm(this.Context.User, newUserSettings);
 
-            var setReply = $"Your `.fm` has been set mode to '{newUserSettings.FmEmbedType}'";
+            var setReply = $"Your `.fm` mode has been set to '{newUserSettings.FmEmbedType}'";
             if (newUserSettings.FmCountType != null)
             {
                 setReply += $" with the '{newUserSettings.FmCountType.ToString().ToLower()}' playcount.";
