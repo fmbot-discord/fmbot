@@ -18,7 +18,6 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
-using SpotifyAPI.Web.Models;
 
 namespace FMBot.Bot.Commands.LastFM
 {

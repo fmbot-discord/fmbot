@@ -12,8 +12,6 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Auth;
-using SpotifyAPI.Web.Enums;
-using SpotifyAPI.Web.Models;
 using Artist = FMBot.Persistence.Domain.Models.Artist;
 
 namespace FMBot.Bot.Services.ThirdParty
@@ -27,14 +25,16 @@ namespace FMBot.Bot.Services.ThirdParty
             this._contextFactory = contextFactory;
         }
 
-        public async Task<SearchItem> GetSearchResultAsync(string searchValue, SearchType searchType = SearchType.Track)
+        public async Task<SearchResponse> GetSearchResultAsync(string searchValue, SearchRequest.Types searchType = SearchRequest.Types.Track)
         {
-            var spotify = await GetSpotifyWebApi();
+            var spotify = GetSpotifyWebApi();
 
             searchValue = searchValue.Replace("- Single", "");
             searchValue = searchValue.Replace("- EP", "");
 
-            return await spotify.SearchItemsAsync(searchValue, searchType);
+            var searchRequest = new SearchRequest(searchType, searchValue);
+
+            return await spotify.Search.Item(searchRequest);
         }
 
         public async Task<string> GetOrStoreArtistImageAsync(ArtistInfoLfmResponse lastFmArtistInfoLfm, string artistNameBeforeCorrect)
@@ -140,17 +140,19 @@ namespace FMBot.Bot.Services.ThirdParty
 
         private static async Task<FullArtist> GetArtistFromSpotify(string artistName)
         {
-            var spotify = await GetSpotifyWebApi();
+            var spotify = GetSpotifyWebApi();
 
-            var results = await spotify.SearchItemsAsync(artistName, SearchType.Artist);
+            var searchRequest = new SearchRequest(SearchRequest.Types.Artist, artistName);
 
-            if (results.Artists?.Items?.Any() == true)
+            var results = await spotify.Search.Item(searchRequest);
+
+            if (results.Artists.Items?.Any() == true)
             {
                 var spotifyArtist = results.Artists.Items
                     .OrderByDescending(o => o.Popularity)
                     .FirstOrDefault(w => w.Name.ToLower() == artistName.ToLower());
 
-                if (spotifyArtist != null && !spotifyArtist.HasError())
+                if (spotifyArtist != null)
                 {
                     return spotifyArtist;
                 }
@@ -168,7 +170,7 @@ namespace FMBot.Bot.Services.ThirdParty
 
             if (dbTrack == null)
             {
-                var trackToAdd = new FMBot.Persistence.Domain.Models.Track
+                var trackToAdd = new Track
                 {
                     Name = trackInfo.Name,
                     AlbumName = trackInfo.Album?.Title,
@@ -252,17 +254,19 @@ namespace FMBot.Bot.Services.ThirdParty
         private static async Task<FullTrack> GetTrackFromSpotify(string trackName, string artistName)
         {
             //Create the auth object
-            var spotify = await GetSpotifyWebApi();
+            var spotify = GetSpotifyWebApi();
 
-            var results = await spotify.SearchItemsAsync($"{trackName} {artistName}", SearchType.Track);
+            var searchRequest = new SearchRequest(SearchRequest.Types.Track, $"{trackName} {artistName}");
 
-            if (results.Tracks?.Items?.Any() == true)
+            var results = await spotify.Search.Item(searchRequest);
+
+            if (results.Tracks.Items?.Any() == true)
             {
                 var spotifyTrack = results.Tracks.Items
                     .OrderByDescending(o => o.Popularity)
                     .FirstOrDefault(w => w.Name.ToLower() == trackName.ToLower() && w.Artists.Select(s => s.Name.ToLower()).Contains(artistName.ToLower()));
 
-                if (spotifyTrack != null && !spotifyTrack.HasError())
+                if (spotifyTrack != null)
                 {
                     return spotifyTrack;
                 }
@@ -271,33 +275,23 @@ namespace FMBot.Bot.Services.ThirdParty
             return null;
         }
 
-        private static async Task<AudioFeatures> GetAudioFeaturesFromSpotify(string spotifyId)
+        private static async Task<TrackAudioFeatures> GetAudioFeaturesFromSpotify(string spotifyId)
         {
             //Create the auth object
-            var spotify = await GetSpotifyWebApi();
+            var spotify = GetSpotifyWebApi();
 
-            var result = await spotify.GetAudioFeaturesAsync(spotifyId);
+            var result = await spotify.Tracks.GetAudioFeatures(spotifyId);
 
-            if (!result.HasError())
-            {
-                return result;
-            }
-
-            return null;
+            return result;
         }
 
-        private static async Task<SpotifyWebAPI> GetSpotifyWebApi()
+        private static SpotifyClient GetSpotifyWebApi()
         {
-            var auth = new CredentialsAuth(ConfigData.Data.Spotify.Key, ConfigData.Data.Spotify.Secret);
+            var config = SpotifyClientConfig
+                .CreateDefault()
+                .WithAuthenticator(new ClientCredentialsAuthenticator(ConfigData.Data.Spotify.Key, ConfigData.Data.Spotify.Secret));
 
-            var token = await auth.GetToken();
-
-            return new SpotifyWebAPI
-            {
-                TokenType = token.TokenType,
-                AccessToken = token.AccessToken,
-                UseAuth = true
-            };
+            return new SpotifyClient(config);
         }
 
         public static RecentTrack SpotifyGameToRecentTrack(SpotifyGame spotifyActivity)

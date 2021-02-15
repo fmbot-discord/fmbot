@@ -511,8 +511,7 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                     }
 
-                    string trackString = null;
-                    trackString = resultAmount > 6 ? LastFmService.TrackToString(track) : LastFmService.TrackToLinkedString(track);
+                    var trackString = resultAmount > 6 ? LastFmService.TrackToString(track) : LastFmService.TrackToLinkedString(track);
 
                     if (track.NowPlaying)
                     {
