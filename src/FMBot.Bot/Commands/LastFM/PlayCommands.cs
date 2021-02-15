@@ -326,8 +326,6 @@ namespace FMBot.Bot.Commands.LastFM
                         if (embedType == FmEmbedType.EmbedMini || embedType == FmEmbedType.EmbedTiny)
                         {
                             fmText += LastFmService.TrackToLinkedString(currentTrack);
-
-                            Console.WriteLine(fmText);
                             this._embed.WithDescription(fmText);
                         }
                         else if (previousTrack != null)
