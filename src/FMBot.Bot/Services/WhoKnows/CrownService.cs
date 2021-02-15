@@ -146,10 +146,13 @@ namespace FMBot.Bot.Services.WhoKnows
 
                 await db.SaveChangesAsync();
 
+                var currentCrownHolderName = users.FirstOrDefault(f => f.UserId == currentCrownHolder.UserId)?.DiscordName;
+
                 return new CrownModel
                 {
                     Crown = newCrown,
-                    CrownResult = $"Crown stolen by {topUser.DiscordName}! (From **{currentCrownHolder.CurrentPlaycount}** to **{topUser.Playcount}** plays)."
+                    CrownResult = $"Crown stolen by {topUser.DiscordName} with `{topUser.Playcount}` plays! \n" +
+                                  $"*Previous owner: {currentCrownHolderName ?? currentCrownHolder.User.UserNameLastFM} with `{currentCrownHolder.CurrentPlaycount}` plays*."
                 };
             }
 
