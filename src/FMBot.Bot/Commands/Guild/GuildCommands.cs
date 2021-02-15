@@ -82,7 +82,7 @@ namespace FMBot.Bot.Commands.Guild
                 var replyString = $"Use {prfx}mode to force an .fm mode for everyone in the server.";
 
                 this._embed.AddField("Options",
-                    "**Modes**: `embedmini/embedfull/textmini/textfull`\n");
+                    "**Modes**: `embedtiny/embedmini/embedfull/textmini/textfull`\n");
 
                 this._embed.AddField("Examples",
                     $"`{prfx}servermode embedmini` \n" +

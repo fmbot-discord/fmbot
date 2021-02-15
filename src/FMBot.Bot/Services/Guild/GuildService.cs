@@ -835,6 +835,10 @@ namespace FMBot.Bot.Services.Guild
             {
                 guildSettings.FmEmbedType = FmEmbedType.EmbedFull;
             }
+            else if (extraOptions.Contains("embedtiny"))
+            {
+                guildSettings.FmEmbedType = FmEmbedType.EmbedTiny;
+            }
             else if (extraOptions.Contains("textmini") || extraOptions.Contains("tm"))
             {
                 guildSettings.FmEmbedType = FmEmbedType.TextMini;
