@@ -198,7 +198,9 @@ namespace FMBot.Bot.Commands.LastFM
             var artistUrl =
                 $"{Constants.LastFMUserUrl}{currentCrown.User.UserNameLastFM}/library/music/{HttpUtility.UrlEncode(artist)}";
             this._embed.AddField("Current crown holder",
-                $"**[{name?.UserName ?? currentCrown.User.UserNameLastFM}]({artistUrl})** - **{currentCrown.CurrentPlaycount}** plays");
+                $"**[{name?.UserName ?? currentCrown.User.UserNameLastFM}]({artistUrl})** - " +
+                $"Since **{currentCrown.Created:MMM dd yyyy}** - " +
+                $"`{currentCrown.StartPlaycount}` to `{currentCrown.CurrentPlaycount}` plays");
 
             var lastCrownCreateDate = currentCrown.Created;
             if (artistCrowns.Count > 1)
@@ -210,7 +212,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                     crownHistory.AppendLine($"**{crownUsername?.UserName ?? artistCrown.User.UserNameLastFM}** - " +
                                             $"**{artistCrown.Created:MMM dd yyyy}** to **{lastCrownCreateDate:MMM dd yyyy}** - " +
-                                            $"**{artistCrown.StartPlaycount}** to **{artistCrown.CurrentPlaycount}** plays");
+                                            $"`{artistCrown.StartPlaycount}` to `{artistCrown.CurrentPlaycount}` plays");
                     lastCrownCreateDate = artistCrown.Created;
                 }
 
