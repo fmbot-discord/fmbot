@@ -17,7 +17,6 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
-using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -201,7 +200,7 @@ namespace FMBot.Bot.Commands.LastFM
                 $"**[{name?.UserName ?? currentCrown.User.UserNameLastFM}]({artistUrl})** - " +
                 $"Since **{currentCrown.Created:MMM dd yyyy}** - " +
                 $"`{currentCrown.StartPlaycount}` to `{currentCrown.CurrentPlaycount}` plays");
-
+             
             var lastCrownCreateDate = currentCrown.Created;
             if (artistCrowns.Count > 1)
             {
