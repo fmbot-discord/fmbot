@@ -241,7 +241,6 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                 }
 
-
                 if (embedType == FmEmbedType.TextMini || embedType == FmEmbedType.TextFull || embedType == FmEmbedType.EmbedTiny)
                 {
                     if (self)
@@ -327,6 +326,8 @@ namespace FMBot.Bot.Commands.LastFM
                         if (embedType == FmEmbedType.EmbedMini || embedType == FmEmbedType.EmbedTiny)
                         {
                             fmText += LastFmService.TrackToLinkedString(currentTrack);
+
+                            Console.WriteLine(fmText);
                             this._embed.WithDescription(fmText);
                         }
                         else if (previousTrack != null)
@@ -459,7 +460,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!string.IsNullOrWhiteSpace(extraOptions) && extraOptions.ToLower() == "help")
             {
-                await ReplyAsync($"{prfx}recent 'number of items (max 10)' 'lastfm username/@discord user'");
+                await ReplyAsync($"{prfx}recent 'number of items (max 8)' 'lastfm username/@discord user'");
                 this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
@@ -493,7 +494,12 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithAuthor(this._embedAuthor);
 
                 var fmRecentText = "";
-                for (var i = 0; i < recentTracks.Content.RecentTracks.Count(); i++)
+                var resultAmount = recentTracks.Content.RecentTracks.Count;
+                if (recentTracks.Content.RecentTracks.Any(a => a.NowPlaying))
+                {
+                    resultAmount -= 1;
+                }
+                for (var i = 0; i < resultAmount; i++)
                 {
                     var track = recentTracks.Content.RecentTracks[i];
 
@@ -505,13 +511,16 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                     }
 
+                    string trackString = null;
+                    trackString = resultAmount > 6 ? LastFmService.TrackToString(track) : LastFmService.TrackToLinkedString(track);
+
                     if (track.NowPlaying)
                     {
-                        fmRecentText += $"🎶 - {LastFmService.TrackToLinkedString(track)}\n";
+                        fmRecentText += $"🎶 - {trackString}\n";
                     }
                     else
                     {
-                        fmRecentText += $"`{i + 1}` - {LastFmService.TrackToLinkedString(track)}\n";
+                        fmRecentText += $"`{i + 1}` - {trackString}\n";
                     }
                 }
 

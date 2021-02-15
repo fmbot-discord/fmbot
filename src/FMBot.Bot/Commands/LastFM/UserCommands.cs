@@ -325,7 +325,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var replyString = $"Use {prfx}mode to change how your .fm command looks.";
 
                 this._embed.AddField("Options",
-                    "**Modes**: `embedmini/embedfull/textmini/textfull`\n" +
+                    "**Modes**: `embedtiny/embedmini/embedfull/textmini/textfull`\n" +
                     "**Playcounts**: `artist/album/track`\n" +
                     "*Note: Playcounts are only visible in non-text modes.*\n\n" +
                     $"Server mode can be set using `{prfx}servermode`. The server mode overrules any mode set by users.");
@@ -334,7 +334,7 @@ namespace FMBot.Bot.Commands.LastFM
                     $"`{prfx}mode embedmini` \n" +
                     $"`{prfx}mode embedfull track`\n" +
                     $"`{prfx}mode textfull`\n" +
-                    $"`{prfx}mode embedmini album`");
+                    $"`{prfx}mode embedtiny album`");
 
                 this._embed.WithTitle("Changing your .fm command");
                 this._embed.WithUrl($"{Constants.DocsUrl}/commands/");

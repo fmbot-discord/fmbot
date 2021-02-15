@@ -4,7 +4,9 @@ using System.Drawing;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Web;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
@@ -143,17 +145,21 @@ namespace FMBot.LastFM.Services
 
         public static string TrackToLinkedString(RecentTrack track)
         {
-            if (track.TrackUrl != null &&
-                track.TrackUrl.IndexOfAny(new[] { '(', ')' }) >= 0)
+            var escapedTrackName = Regex.Replace(track.TrackName, @"([|\\*])", @"\$1");
+
+            if (!string.IsNullOrWhiteSpace(track.AlbumName))
             {
-                return TrackToString(track);
+                var escapedAlbumName = Regex.Replace(track.AlbumName, @"([|\\*])", @"\$1");
+                var albumRymUrl = @"https://duckduckgo.com/?q=%5Csite%3Arateyourmusic.com";
+                albumRymUrl += HttpUtility.UrlEncode($" \"{track.AlbumName}\" \"{track.ArtistName}\"");
+
+                return $"[{escapedTrackName}]({track.TrackUrl})\n" +
+                       $"By **{track.ArtistName}**" +
+                       $" | *[{escapedAlbumName}]({albumRymUrl})*\n";
             }
 
-            return $"[{track.TrackName}]({track.TrackUrl})\n" +
-                   $"By **{track.ArtistName}**" +
-                   (string.IsNullOrWhiteSpace(track.AlbumName)
-                       ? "\n"
-                       : $" | *{track.AlbumName}*\n");
+            return $"[{escapedTrackName}]({track.TrackUrl})\n" +
+                   $"By **{track.ArtistName}**\n";
         }
 
         public static string TrackToString(RecentTrack track)
