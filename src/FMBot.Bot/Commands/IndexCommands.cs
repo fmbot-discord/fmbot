@@ -253,15 +253,9 @@ namespace FMBot.Bot.Commands
                     var recentlyUpdatedText =
                         $"You have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). " +
                         $"Note that this also happens automatically, for example with commands that use cached playcounts.";
-                    if (this.Context.InteractionData != null)
-                    {
-                        await ReplyInteractionAsync(recentlyUpdatedText,
-                            ghostMessage: true, type: InteractionMessageType.Acknowledge);
-                    }
-                    else
-                    {
-                        await ReplyAsync(recentlyUpdatedText);
-                    }
+
+                    await ReplyAsync(recentlyUpdatedText);
+
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
                     return;
                 }
@@ -274,60 +268,50 @@ namespace FMBot.Bot.Commands
                     return;
                 }
 
-                if (this.Context.InteractionData != null)
+                this._embed.WithDescription(
+                    $"<a:loading:749715170682470461> Updating user {userSettings.UserNameLastFM}...");
+                var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+                var scrobblesUsed = await this._updateService.UpdateUser(userSettings);
+
+                await message.ModifyAsync(m =>
                 {
-                    var scrobblesUsed = await this._updateService.UpdateUser(userSettings);
-
-                    await ReplyInteractionAsync($"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new {StringExtensions.GetScrobblesString(scrobblesUsed)}.",
-                        ghostMessage: true, type: InteractionMessageType.Acknowledge);
-                }
-                else
-                {
-                    this._embed.WithDescription(
-                        $"<a:loading:749715170682470461> Updating user {userSettings.UserNameLastFM}...");
-                    var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-                    var scrobblesUsed = await this._updateService.UpdateUser(userSettings);
-
-                    await message.ModifyAsync(m =>
+                    if (scrobblesUsed == 0)
                     {
-                        if (scrobblesUsed == 0)
+                        var newEmbed =
+                            new EmbedBuilder()
+                                .WithDescription("No new scrobbles found since last update")
+                                .WithColor(DiscordConstants.SuccessColorGreen);
+
+                        if (userSettings.LastUpdated.HasValue)
                         {
-                            var newEmbed =
-                                new EmbedBuilder()
-                                    .WithDescription("No new scrobbles found since last update")
-                                    .WithColor(DiscordConstants.SuccessColorGreen);
-
-                            if (userSettings.LastUpdated.HasValue)
-                            {
-                                newEmbed.WithTimestamp(userSettings.LastUpdated.Value);
-                                this._embedFooter.WithText("Last update");
-                                newEmbed.WithFooter(this._embedFooter);
-                            }
-
-                            m.Embed = newEmbed.Build();
+                            newEmbed.WithTimestamp(userSettings.LastUpdated.Value);
+                            this._embedFooter.WithText("Last update");
+                            newEmbed.WithFooter(this._embedFooter);
                         }
-                        else
+
+                        m.Embed = newEmbed.Build();
+                    }
+                    else
+                    {
+                        var updatedDescription =
+                            $"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new {StringExtensions.GetScrobblesString(scrobblesUsed)}.";
+
+                        var rnd = new Random();
+                        if (rnd.Next(0, 4) == 1)
                         {
-                            var updatedDescription =
-                                $"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new {StringExtensions.GetScrobblesString(scrobblesUsed)}.";
-
-                            var rnd = new Random();
-                            if (rnd.Next(0, 4) == 1)
-                            {
-                                updatedDescription +=
-                                    $"\n\n" +
-                                    $"Please note that updates are only used for whoknows and that users are also automatically updated every 48 hours.\n" +
-                                    $"Other commands directly get their data from last.fm and are always up to date.";
-                            }
-
-                            m.Embed = new EmbedBuilder()
-                                .WithDescription(updatedDescription)
-                                .WithColor(DiscordConstants.SuccessColorGreen)
-                                .Build();
+                            updatedDescription +=
+                                $"\n\n" +
+                                $"Please note that updates are only used for whoknows and that users are also automatically updated every 48 hours.\n" +
+                                $"Other commands directly get their data from last.fm and are always up to date.";
                         }
-                    });
-                }
+
+                        m.Embed = new EmbedBuilder()
+                            .WithDescription(updatedDescription)
+                            .WithColor(DiscordConstants.SuccessColorGreen)
+                            .Build();
+                    }
+                });
             }
 
             this.Context.LogCommandUsed();

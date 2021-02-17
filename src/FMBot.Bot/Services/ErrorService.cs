@@ -141,14 +141,8 @@ namespace FMBot.Bot.Services
             {
                 embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, context);
                 context.LogCommandUsed(CommandResponse.LastFmError);
-                if (context.InteractionData == null)
-                {
-                    await context.Channel.SendMessageAsync("", false, embed.Build());
-                }
-                else
-                {
-                    await context.Channel.SendInteractionMessageAsync(context.InteractionData, "", embed: embed.Build());
-                }
+
+                await context.Channel.SendMessageAsync("", false, embed.Build());
 
                 return true;
             }
@@ -157,14 +151,7 @@ namespace FMBot.Bot.Services
             {
                 embed.NoScrobblesFoundErrorResponse(lastFmUserName);
                 context.LogCommandUsed(CommandResponse.NoScrobbles);
-                if (context.InteractionData == null)
-                {
-                    await context.Channel.SendMessageAsync("", false, embed.Build());
-                }
-                else
-                {
-                    await context.Channel.SendInteractionMessageAsync(context.InteractionData, "", embed: embed.Build());
-                }
+                await context.Channel.SendMessageAsync("", false, embed.Build());
 
                 return true;
             }

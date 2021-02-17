@@ -173,14 +173,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             this._embed.WithDescription(description);
 
-            if (this.Context.InteractionData != null)
-            {
-                await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
-            }
-            else
-            {
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            }
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
             this.Context.LogCommandUsed();
         }
@@ -350,25 +343,16 @@ namespace FMBot.Bot.Commands.LastFM
                 if (result.Success)
                 {
                     this._embed.WithDescription($"Album could not be found, please check your search values and try again.");
-                    if (this.Context.InteractionData != null)
-                    {
-                        await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
-                    }
-                    else
-                    {
-                        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                    }
+
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
                     return new AlbumSearchModel(false);
                 }
+
                 this._embed.WithDescription($"Last.fm returned an error: {result.Status}");
-                if (this.Context.InteractionData != null)
-                {
-                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
-                }
-                else
-                {
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                }
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
                 return new AlbumSearchModel(false);
             }
 
@@ -417,18 +401,8 @@ namespace FMBot.Bot.Commands.LastFM
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var timePeriodString = extraOptions;
-            if (this.Context.InteractionData != null)
-            {
-                var time = this.Context.InteractionData.Choices.FirstOrDefault(w => w.Name == "time");
-                timePeriodString = time?.Value?.ToLower();
-            }
 
             var amountString = extraOptions;
-            if (this.Context.InteractionData != null)
-            {
-                var time = this.Context.InteractionData.Choices.FirstOrDefault(w => w.Name == "amount");
-                amountString = time?.Value?.ToLower();
-            }
 
             var timeSettings = SettingService.GetTimePeriod(timePeriodString);
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
@@ -528,14 +502,8 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(description);
                 this._embed.WithFooter(this._embedFooter);
 
-                if (this.Context.InteractionData != null)
-                {
-                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
-                }
-                else
-                {
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                }
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)
@@ -592,11 +560,6 @@ namespace FMBot.Bot.Commands.LastFM
             var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             _ = this.Context.Channel.TriggerTypingAsync();
-
-            if (this.Context.InteractionData != null)
-            {
-                _ = this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, "", type: InteractionMessageType.AcknowledgeWithSource);
-            }
 
             var searchResult = await this.SearchAlbum(albumValues, userSettings, prfx);
             if (!searchResult.AlbumFound)
@@ -744,14 +707,8 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-
             var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
             _ = this.Context.Channel.TriggerTypingAsync();
-
-            if (this.Context.InteractionData != null)
-            {
-                _ = this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, "", type: InteractionMessageType.AcknowledgeWithSource);
-            }
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 

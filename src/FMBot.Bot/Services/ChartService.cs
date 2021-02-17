@@ -275,11 +275,7 @@ namespace FMBot.Bot.Services
             var chartSettings = currentChartSettings;
             chartSettings.CustomOptionsEnabled = false;
 
-            var interactionSize = commandContext.InteractionData?.Choices.FirstOrDefault(w => w.Name == "size");
-            var interactionTitles = commandContext.InteractionData?.Choices.FirstOrDefault(w => w.Name == "titles");
-            var interactionSkip = commandContext.InteractionData?.Choices.FirstOrDefault(w => w.Name == "skipalbums");
-
-            if (extraOptions.Contains("notitles") || extraOptions.Contains("nt") || interactionTitles != null && interactionTitles.Value == "False")
+            if (extraOptions.Contains("notitles") || extraOptions.Contains("nt"))
             {
                 chartSettings.TitleSetting = TitleSetting.TitlesDisabled;
                 chartSettings.CustomOptionsEnabled = true;
@@ -295,8 +291,7 @@ namespace FMBot.Bot.Services
                 extraOptions.Contains("skipemptyalbums") ||
                 extraOptions.Contains("skipalbums") ||
                 extraOptions.Contains("skip") ||
-                extraOptions.Contains("s") ||
-                interactionSkip != null && interactionSkip.Value == "True")
+                extraOptions.Contains("s"))
             {
                 chartSettings.SkipArtistsWithoutImage = true;
                 chartSettings.CustomOptionsEnabled = true;
@@ -311,55 +306,55 @@ namespace FMBot.Bot.Services
             }
 
             // chart size
-            if (extraOptions.Contains("1x1") || interactionSize != null && interactionSize.Value == "1x1")
+            if (extraOptions.Contains("1x1"))
             {
                 chartSettings.ImagesNeeded = 1;
                 chartSettings.Height = 1;
                 chartSettings.Width = 1;
             }
-            else if (extraOptions.Contains("2x2") || interactionSize != null && interactionSize.Value == "2x2")
+            else if (extraOptions.Contains("2x2"))
             {
                 chartSettings.ImagesNeeded = 4;
                 chartSettings.Height = 2;
                 chartSettings.Width = 2;
             }
-            else if (extraOptions.Contains("4x4") || interactionSize != null && interactionSize.Value == "4x4")
+            else if (extraOptions.Contains("4x4"))
             {
                 chartSettings.ImagesNeeded = 16;
                 chartSettings.Height = 4;
                 chartSettings.Width = 4;
             }
-            else if (extraOptions.Contains("5x5") || interactionSize != null && interactionSize.Value == "5x5")
+            else if (extraOptions.Contains("5x5"))
             {
                 chartSettings.ImagesNeeded = 25;
                 chartSettings.Height = 5;
                 chartSettings.Width = 5;
             }
-            else if (extraOptions.Contains("6x6") || interactionSize != null && interactionSize.Value == "6x6")
+            else if (extraOptions.Contains("6x6"))
             {
                 chartSettings.ImagesNeeded = 36;
                 chartSettings.Height = 6;
                 chartSettings.Width = 6;
             }
-            else if (extraOptions.Contains("7x7") || interactionSize != null && interactionSize.Value == "7x7")
+            else if (extraOptions.Contains("7x7"))
             {
                 chartSettings.ImagesNeeded = 49;
                 chartSettings.Height = 7;
                 chartSettings.Width = 7;
             }
-            else if (extraOptions.Contains("8x8") || interactionSize != null && interactionSize.Value == "8x8")
+            else if (extraOptions.Contains("8x8"))
             {
                 chartSettings.ImagesNeeded = 64;
                 chartSettings.Height = 8;
                 chartSettings.Width = 8;
             }
-            else if (extraOptions.Contains("9x9") || interactionSize != null && interactionSize.Value == "9x9")
+            else if (extraOptions.Contains("9x9"))
             {
                 chartSettings.ImagesNeeded = 81;
                 chartSettings.Height = 9;
                 chartSettings.Width = 9;
             }
-            else if (extraOptions.Contains("10x10") || interactionSize != null && interactionSize.Value == "10x10")
+            else if (extraOptions.Contains("10x10"))
             {
                 chartSettings.ImagesNeeded = 100;
                 chartSettings.Height = 10;
@@ -378,34 +373,18 @@ namespace FMBot.Bot.Services
                 optionsAsString = string.Join(" ", extraOptions);
             }
 
-            if (commandContext.InteractionData == null)
+            var timeSettings = SettingService.GetTimePeriod(optionsAsString);
+
+            if (timeSettings.UsePlays)
             {
-                var timeSettings = SettingService.GetTimePeriod(optionsAsString);
-
-                if (timeSettings.UsePlays)
-                {
-                    // Reset to weekly since using plays for charts is not supported yet
-                    chartSettings.UsePlays = true;
-                    timeSettings = SettingService.GetTimePeriod("weekly");
-                }
-
-                chartSettings.TimeSpan = timeSettings.LastStatsTimeSpan;
-                chartSettings.TimespanString = $"{timeSettings.Description} Chart";
-                chartSettings.TimespanUrlString = timeSettings.UrlParameter;
-            }
-            else
-            {
-                var time = commandContext.InteractionData.Choices.FirstOrDefault(w => w.Name == "time");
-                var timeValue = time?.Value?.ToLower();
-                var timeSettings = SettingService.GetTimePeriod(timeValue);
-
-                chartSettings.TimeSpan = timeSettings.LastStatsTimeSpan;
-                chartSettings.TimespanString = $"{timeSettings.Description} Chart";
-                chartSettings.TimespanUrlString = timeSettings.UrlParameter;
-
-                var size = commandContext.InteractionData.Choices.FirstOrDefault(w => w.Name == "size");
+                // Reset to weekly since using plays for charts is not supported yet
+                chartSettings.UsePlays = true;
+                timeSettings = SettingService.GetTimePeriod("weekly");
             }
 
+            chartSettings.TimeSpan = timeSettings.LastStatsTimeSpan;
+            chartSettings.TimespanString = $"{timeSettings.Description} Chart";
+            chartSettings.TimespanUrlString = timeSettings.UrlParameter;
 
             return chartSettings;
         }

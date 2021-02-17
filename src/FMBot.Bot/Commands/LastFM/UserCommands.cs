@@ -183,14 +183,7 @@ namespace FMBot.Bot.Commands.LastFM
                     this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues");
                 }
 
-                if (this.Context.InteractionData != null)
-                {
-                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
-                }
-                else
-                {
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                }
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
                 this.Context.LogCommandUsed();
             }
@@ -366,14 +359,7 @@ namespace FMBot.Bot.Commands.LastFM
             setReply +=
                 "\n\nNote that servers can force an .fm mode. The server setting will always overrule your own .fm mode.";
 
-            if (this.Context.InteractionData != null)
-            {
-                await ReplyInteractionAsync(setReply.FilterOutMentions(), ghostMessage: true, type: InteractionMessageType.ChannelMessage);
-            }
-            else
-            {
-                await ReplyAsync(setReply.FilterOutMentions());
-            }
+            await ReplyAsync(setReply.FilterOutMentions());
 
             this.Context.LogCommandUsed();
         }
@@ -424,14 +410,7 @@ namespace FMBot.Bot.Commands.LastFM
                 setReply += " You will not be visible in the global WhoKnows with your Last.fm username, but users you share a server with will still see it.";
             }
 
-            if (this.Context.InteractionData != null)
-            {
-                await ReplyInteractionAsync(setReply.FilterOutMentions(), ghostMessage: true, type: InteractionMessageType.ChannelMessage);
-            }
-            else
-            {
-                await ReplyAsync(setReply.FilterOutMentions());
-            }
+            await ReplyAsync(setReply.FilterOutMentions());
 
             this.Context.LogCommandUsed();
         }
@@ -445,21 +424,9 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMinutes(1) >= DateTimeOffset.Now)
                 {
-                    if (this.Context.InteractionData != null)
-                    {
-                        await this.Context.Channel.SendInteractionMessageAsync(
-                            this.Context.InteractionData,
-                            "You have already requested a login link in the last minute. \n" +
-                            "Please check if you can login through that link, or try again later.",
-                            type: InteractionMessageType.ChannelMessage,
-                            ghostMessage: true);
-                    }
-                    else
-                    {
-                        await ReplyAsync($"A login link has already been sent to your DMs.\n" +
-                                         $"Didn't receive a link? Please check if you have DMs enabled for this server and try again.\n" +
-                                         $"Setting location: Click on the server name (top left) > `Privacy Settings` > `Allow direct messages from server members`.");
-                    }
+                    await ReplyAsync($"A login link has already been sent to your DMs.\n" +
+                                     $"Didn't receive a link? Please check if you have DMs enabled for this server and try again.\n" +
+                                     $"Setting location: Click on the server name (top left) > `Privacy Settings` > `Allow direct messages from server members`.");
 
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
                     StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now.AddMinutes(-5);

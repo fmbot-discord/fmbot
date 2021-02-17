@@ -272,33 +272,6 @@ namespace FMBot.Bot.Services
                 }
             }
 
-            if (context.InteractionData != null && context.InteractionData.Choices.Any())
-            {
-                var userInteraction = context.InteractionData.Choices.FirstOrDefault(f => f.Name == "user");
-                if (userInteraction != null)
-                {
-                    var otherUser = await GetUserFromString(userInteraction.Value);
-
-                    if (otherUser != null)
-                    {
-                        if (context.Guild != null)
-                        {
-                            var discordGuildUser = await context.Guild.GetUserAsync(otherUser.DiscordUserId);
-                            settingsModel.DiscordUserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : otherUser.UserNameLastFM;
-                        }
-                        else
-                        {
-                            settingsModel.DiscordUserName = otherUser.UserNameLastFM;
-                        }
-
-                        settingsModel.DifferentUser = true;
-                        settingsModel.DiscordUserId = otherUser.DiscordUserId;
-                        settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
-                        settingsModel.UserType = otherUser.UserType;
-                    }
-                }
-            }
-
             return settingsModel;
         }
 

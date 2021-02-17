@@ -103,14 +103,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var userNickname = (this.Context.User as SocketGuildUser)?.Nickname;
                 this._embed.UsernameNotSetErrorResponse(prfx, userNickname ?? this.Context.User.Username);
 
-                if (this.Context.InteractionData == null)
-                {
-                    await ReplyAsync("", false, this._embed.Build());
-                }
-                else
-                {
-                    await ReplyInteractionAsync("", embed: this._embed.Build());
-                }
+                await ReplyAsync("", false, this._embed.Build());
 
                 this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return;
@@ -398,27 +391,20 @@ namespace FMBot.Bot.Commands.LastFM
                             }
                         }
 
-                        if (this.Context.InteractionData != null)
-                        {
-                            await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
-                        }
-                        else
-                        {
-                            var message = await ReplyAsync("", false, this._embed.Build());
+                        var message = await ReplyAsync("", false, this._embed.Build());
 
-                            try
+                        try
+                        {
+                            if (!this._guildService.CheckIfDM(this.Context))
                             {
-                                if (!this._guildService.CheckIfDM(this.Context))
-                                {
-                                    await this._guildService.AddReactionsAsync(message, this.Context.Guild);
-                                }
+                                await this._guildService.AddReactionsAsync(message, this.Context.Guild);
                             }
-                            catch (Exception e)
-                            {
-                                this.Context.LogCommandException(e, "Could not add emote reactions");
-                                await ReplyAsync(
-                                    "Couldn't add emote reactions to `.fm`. If you have recently changed changed any of the configured emotes please use `.fmserverreactions` to reset the automatic emote reactions.");
-                            }
+                        }
+                        catch (Exception e)
+                        {
+                            this.Context.LogCommandException(e, "Could not add emote reactions");
+                            await ReplyAsync(
+                                "Couldn't add emote reactions to `.fm`. If you have recently changed changed any of the configured emotes please use `.fmserverreactions` to reset the automatic emote reactions.");
                         }
 
                         break;
@@ -546,14 +532,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithFooter(this._embedFooter);
 
-                if (this.Context.InteractionData != null)
-                {
-                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
-                }
-                else
-                {
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                }
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
                 this.Context.LogCommandUsed();
             }
@@ -694,11 +673,7 @@ namespace FMBot.Bot.Commands.LastFM
             var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
 
             var timePeriodString = extraOptions;
-            if (this.Context.InteractionData != null)
-            {
-                var time = this.Context.InteractionData.Choices.FirstOrDefault(w => w.Name == "time");
-                timePeriodString = time?.Value?.ToLower();
-            }
+
             var timeType = SettingService.GetTimePeriod(timePeriodString, ChartTimePeriod.AllTime);
 
             long timeFrom;
@@ -717,14 +692,8 @@ namespace FMBot.Bot.Commands.LastFM
             if (count == null || count == 0)
             {
                 var errorReply = $"<@{this.Context.User.Id}> No plays found in the {timeType.Description} time period.";
-                if (this.Context.InteractionData != null)
-                {
-                    await ReplyInteractionAsync(errorReply.FilterOutMentions(), ghostMessage: true, type: InteractionMessageType.ChannelMessage);
-                }
-                else
-                {
-                    await this.Context.Channel.SendMessageAsync(errorReply);
-                }
+
+                await this.Context.Channel.SendMessageAsync(errorReply);
             }
 
             var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
@@ -762,14 +731,7 @@ namespace FMBot.Bot.Commands.LastFM
                     $"This is based on {determiner} avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day in the last {Math.Round(totalDays, 0)} days ({count} total)");
             }
 
-            if (this.Context.InteractionData != null)
-            {
-                await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, reply.ToString(), type: InteractionMessageType.ChannelMessageWithSource);
-            }
-            else
-            {
-                await this.Context.Channel.SendMessageAsync(reply.ToString());
-            }
+            await this.Context.Channel.SendMessageAsync(reply.ToString());
 
             this.Context.LogCommandUsed();
         }
@@ -854,15 +816,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library");
                 this._embed.WithAuthor(this._embedAuthor);
 
-                if (this.Context.InteractionData != null)
-                {
-                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData,
-                        embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
-                }
-                else
-                {
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                }
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
                 this.Context.LogCommandUsed();
             }

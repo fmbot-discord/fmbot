@@ -211,15 +211,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.AddField("Tags", tags);
             }
 
-
-            if (this.Context.InteractionData != null)
-            {
-                await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
-            }
-            else
-            {
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            }
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
             this.Context.LogCommandUsed();
         }
@@ -481,18 +473,8 @@ namespace FMBot.Bot.Commands.LastFM
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var timePeriodString = extraOptions;
-            if (this.Context.InteractionData != null)
-            {
-                var time = this.Context.InteractionData.Choices.FirstOrDefault(w => w.Name == "time");
-                timePeriodString = time?.Value?.ToLower();
-            }
 
             var amountString = extraOptions;
-            if (this.Context.InteractionData != null)
-            {
-                var time = this.Context.InteractionData.Choices.FirstOrDefault(w => w.Name == "amount");
-                amountString = time?.Value?.ToLower();
-            }
 
             var timeSettings = SettingService.GetTimePeriod(timePeriodString);
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
@@ -596,14 +578,8 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(description);
                 this._embed.WithFooter(this._embedFooter);
 
-                if (this.Context.InteractionData != null)
-                {
-                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
-                }
-                else
-                {
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                }
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)
@@ -675,11 +651,6 @@ namespace FMBot.Bot.Commands.LastFM
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var timePeriodString = extraOptions;
-            if (this.Context.InteractionData != null)
-            {
-                var time = this.Context.InteractionData.Choices.FirstOrDefault(w => w.Name == "time");
-                timePeriodString = time?.Value?.ToLower();
-            }
 
             var timeType = SettingService.GetTimePeriod(
                 timePeriodString,
@@ -725,14 +696,8 @@ namespace FMBot.Bot.Commands.LastFM
                                      $"Example: `{prfx}taste lastfmusername` or `{prfx}taste @user`.\n" +
                                      $"Make sure the user is registered in .fmbot or has a public Last.fm profile.";
 
-                    if (this.Context.InteractionData != null)
-                    {
-                        await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, errorReply, type: InteractionMessageType.ChannelMessage, ghostMessage: true);
-                    }
-                    else
-                    {
-                        await ReplyAsync(errorReply);
-                    }
+
+                    await ReplyAsync(errorReply);
 
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
@@ -744,14 +709,7 @@ namespace FMBot.Bot.Commands.LastFM
                         $"You can't compare your own taste with yourself. For viewing your top artists, use `{prfx}topartists`\n" +
                         $"Please enter a different last.fm username or mention another user.";
 
-                    if (this.Context.InteractionData != null)
-                    {
-                        await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, errorReply, type: InteractionMessageType.ChannelMessage, ghostMessage: true);
-                    }
-                    else
-                    {
-                        await ReplyAsync(errorReply);
-                    }
+                    await ReplyAsync(errorReply);
 
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
@@ -794,15 +752,7 @@ namespace FMBot.Bot.Commands.LastFM
                     this._embed.WithDescription(taste);
                 }
 
-                if (this.Context.InteractionData != null)
-                {
-                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.AcknowledgeWithSource);
-                }
-                else
-                {
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                }
-
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
                 this.Context.LogCommandUsed();
             }
@@ -845,11 +795,6 @@ namespace FMBot.Bot.Commands.LastFM
                 var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
                 _ = this.Context.Channel.TriggerTypingAsync();
-
-                if (this.Context.InteractionData != null)
-                {
-                    _ = this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, "", type: InteractionMessageType.AcknowledgeWithSource);
-                }
 
                 var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -1043,11 +988,6 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
                 _ = this.Context.Channel.TriggerTypingAsync();
-
-                if (this.Context.InteractionData != null)
-                {
-                    _ = this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, "", type: InteractionMessageType.AcknowledgeWithSource);
-                }
 
                 var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -1407,14 +1347,8 @@ namespace FMBot.Bot.Commands.LastFM
                         $"Usage: `{prfx}{command} 'name'`\n" +
                         "If you don't enter any artists name, it will get the info from the artist you're currently listening to.";
 
-                    if (this.Context.InteractionData != null)
-                    {
-                        await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, helpText, type: InteractionMessageType.ChannelMessageWithSource);
-                    }
-                    else
-                    {
-                        await this.Context.Channel.SendMessageAsync(helpText);
-                    }
+                    await this.Context.Channel.SendMessageAsync(helpText);
+
                     return null;
                 }
 
