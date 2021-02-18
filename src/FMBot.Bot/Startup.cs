@@ -125,11 +125,11 @@ namespace FMBot.Bot
                 .AddSingleton<WhoKnowsTrackService>()
                 .AddSingleton<YoutubeService>() // Add random to the collection
                 .AddSingleton(this.Configuration) // Add the configuration to the collection
-                .AddSingleton(new InteractivityService(discordClient, TimeSpan.FromMinutes(3)))
                 .AddHttpClient();
 
             // These services can only be added after the config is loaded
             services
+                .AddSingleton(new InteractivityService(discordClient, TimeSpan.FromMinutes(3)))
                 .AddSingleton<GlobalIndexService>()
                 .AddSingleton<GlobalUpdateService>()
                 .AddSingleton<IUpdateService, UpdateService>()

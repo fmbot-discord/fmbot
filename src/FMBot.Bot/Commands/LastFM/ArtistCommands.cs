@@ -37,7 +37,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly GuildService _guildService;
         private readonly IIndexService _indexService;
         private readonly ILastfmApi _lastFmApi;
-        private InteractivityService Interactivity { get; set; }
+
         private readonly IPrefixService _prefixService;
         private readonly IUpdateService _updateService;
         private readonly LastFmService _lastFmService;
@@ -52,6 +52,8 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
+
+        private InteractivityService Interactivity { get; }
 
         public ArtistCommands(
                 ArtistsService artistsService,
@@ -225,14 +227,16 @@ namespace FMBot.Bot.Commands.LastFM
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            var artist = await GetArtistOrHelp(artistValues, user, "artisttracks", prfx, null);
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            var timeSettings = SettingService.GetTimePeriod(artistValues, ChartTimePeriod.AllTime);
+
+            var artist = await GetArtistOrHelp(timeSettings.NewSearchValue, user, "artisttracks", prfx, null);
             if (artist == null)
             {
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
-
-            _ = this.Context.Channel.TriggerTypingAsync();
 
             var queryParams = new Dictionary<string, string>
             {
@@ -249,20 +253,26 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            var paginationEnabled = false;
+            var pages = new List<PageBuilder>();
+            var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
+            if (perms.ManageMessages)
+            {
+                paginationEnabled = true;
+            }
+
             var artistInfo = artistCall.Content.Artist;
 
-            var timeSettings = SettingService.GetTimePeriod(artistValues, ChartTimePeriod.AllTime);
-
-            var timeDescription = timeSettings.Description;
+            var timeDescription = timeSettings.Description.ToLower();
             List<UserTrack> topTracks;
             switch (timeSettings.ChartTimePeriod)
             {
-                //case ChartTimePeriod.Weekly:
-                //    topTracks = await this._playService.GetTopTracksForArtist(user.UserId, 7, artistInfo.Name);
-                //    break;
-                //case ChartTimePeriod.Monthly:
-                //    topTracks = await this._playService.GetTopTracksForArtist(user.UserId, 31, artistInfo.Name);
-                //    break;
+                case ChartTimePeriod.Weekly:
+                    topTracks = await this._playService.GetTopTracksForArtist(user.UserId, 7, artistInfo.Name);
+                    break;
+                case ChartTimePeriod.Monthly:
+                    topTracks = await this._playService.GetTopTracksForArtist(user.UserId, 31, artistInfo.Name);
+                    break;
                 default:
                     timeDescription = "alltime";
                     topTracks = await this._artistsService.GetTopTracksForArtist(user.UserId, artistInfo.Name);
@@ -278,10 +288,40 @@ namespace FMBot.Bot.Commands.LastFM
             }
             else
             {
+                var embedTitle = $"Your top {timeDescription} tracks for '{artistInfo.Name}'";
+                this._embed.WithTitle(embedTitle);
+
+                var footer = $"{userTitle} has {artistInfo.Stats.Userplaycount} total scrobbles on this artist";
+                this._embed.WithFooter(footer);
+
+
+                var url = $"{Constants.LastFMUserUrl}{user.UserNameLastFM}/library/music/{UrlEncoder.Default.Encode(artistInfo.Name)}";
+                if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+                {
+                    this._embed.WithUrl(url);
+                }
+
+                var amount = paginationEnabled ? 100 : 10;
+                amount = topTracks.Count < amount ? topTracks.Count : amount;
 
                 var description = new StringBuilder();
                 for (var i = 0; i < topTracks.Count; i++)
                 {
+                    if (paginationEnabled && (i > 0 && i % 10 == 0 || i == amount - 1))
+                    {
+                        var page = new PageBuilder()
+                            .WithDescription(description.ToString())
+                            .WithTitle(embedTitle)
+                            .WithFooter(footer);
+                        if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+                        {
+                            page.WithUrl(url);
+                        }
+
+                        pages.Add(page);
+                        description = new StringBuilder();
+                    }
+
                     var track = topTracks[i];
 
                     description.AppendLine($"{i + 1}. **{track.Name}** ({track.Playcount} plays)");
@@ -289,18 +329,23 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithDescription(description.ToString());
 
-                this._embed.WithFooter($"{userTitle} has {artistInfo.Stats.Userplaycount} total scrobbles on this artist");
             }
 
-            this._embed.WithTitle($"Your top tracks for '{artistInfo.Name}'");
-
-            var url = $"{Constants.LastFMUserUrl}{user.UserNameLastFM}/library/music/{UrlEncoder.Default.Encode(artistInfo.Name)}";
-            if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+            if (paginationEnabled)
             {
-                this._embed.WithUrl(url);
+                var paginator = new StaticPaginatorBuilder()
+                    .WithPages(pages)
+                    .WithFooter(PaginatorFooter.PageNumber)
+                    .WithEmotes(DiscordConstants.PaginationEmotes)
+                    .Build();
+
+                _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromMinutes(1));
+            }
+            else
+            {
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             }
 
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
         }
 
@@ -465,6 +510,9 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.AddField("Example",
                     $"`{prfx}topartists @drasil alltime 11`");
 
+                this._embed.AddField("Pagination",
+                    "This command supports pagination. To enable this you need to make sure the bot has the `Manage Messages` permission (server-wide).");
+
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
@@ -479,6 +527,33 @@ namespace FMBot.Bot.Commands.LastFM
             var timeSettings = SettingService.GetTimePeriod(timePeriodString);
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
             var amount = SettingService.GetAmount(amountString);
+
+            var paginationEnabled = false;
+            var pages = new List<PageBuilder>();
+            var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
+            if (perms.ManageMessages)
+            {
+                paginationEnabled = true;
+            }
+
+            string userTitle;
+            if (!userSettings.DifferentUser)
+            {
+                userTitle = await this._userService.GetUserTitleAsync(this.Context);
+            }
+            else
+            {
+                userTitle =
+                    $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
+            }
+
+            var artistsString = amount == 1 ? "artist" : "artists";
+
+            this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+            this._embedAuthor.WithName($"Top {amount} {timeSettings.Description.ToLower()} {artistsString} for {userTitle}");
+            this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/artists?{timeSettings.UrlParameter}");
+
+            amount = paginationEnabled ? 100 : amount;
 
             try
             {
@@ -496,11 +571,27 @@ namespace FMBot.Bot.Commands.LastFM
                         return;
                     }
 
-                    for (var i = 0; i < artists.Count(); i++)
+                    var footer = $"{artists.TotalItems} different artists in this time period";
+
+                    var rnd = new Random();
+                    if (rnd.Next(0, 2) == 1)
                     {
+                        footer += $"\nWant pagination? Enable the 'Manage Messages' permission for .fmbot.";
+                    }
+
+                    amount = artists.Content.Count;
+
+                    for (var i = 0; i < amount; i++)
+                    {
+                        if (paginationEnabled && (i > 0 && i % 10 == 0 || i == amount - 1))
+                        {
+                            pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor).WithFooter(footer));
+                            description = "";
+                        }
+
                         var artist = artists.Content[i];
 
-                        if (artists.Count() > 10)
+                        if (artists.Count() > 10 && !paginationEnabled)
                         {
                             description += $"{i + 1}. **{artist.Name}** ({artist.PlayCount} plays) \n";
                         }
@@ -508,10 +599,9 @@ namespace FMBot.Bot.Commands.LastFM
                         {
                             description += $"{i + 1}. **[{artist.Name}]({artist.Url})** ({artist.PlayCount} plays) \n";
                         }
-
                     }
 
-                    this._embedFooter.WithText($"{artists.TotalItems} different artists in this time period");
+                    this._embedFooter.WithText(footer);
                 }
                 else
                 {
@@ -547,38 +637,43 @@ namespace FMBot.Bot.Commands.LastFM
                     var artists = await this._playService.GetTopArtists(userId,
                         timeSettings.PlayDays.GetValueOrDefault());
 
-                    var amountAvailable = artists.Count < amount ? artists.Count : amount;
-                    for (var i = 0; i < amountAvailable; i++)
+                    var footer = $"{artists.Count} different artists in this time period";
+
+                    amount = artists.Count < amount ? artists.Count : amount;
+                    for (var i = 0; i < amount; i++)
                     {
+                        if (paginationEnabled && (i > 0 && i % 10 == 0 || i == amount - 1))
+                        {
+                            pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor).WithFooter(footer));
+                            description = "";
+                        }
+
                         var artist = artists[i];
 
                         description += $"{i + 1}. **{artist.Name}** ({artist.Playcount} {StringExtensions.GetPlaysString(artist.Playcount)}) \n";
                     }
 
-                    this._embedFooter.WithText($"{artists.Count} different artists in this time period");
+                    this._embedFooter.WithText(footer);
                 }
 
-                string userTitle;
-                if (!userSettings.DifferentUser)
+                if (paginationEnabled)
                 {
-                    userTitle = await this._userService.GetUserTitleAsync(this.Context);
+                    var paginator = new StaticPaginatorBuilder()
+                        .WithPages(pages)
+                        .WithFooter(PaginatorFooter.PageNumber)
+                        .WithEmotes(DiscordConstants.PaginationEmotes)
+                        .Build();
+
+                    _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromMinutes(1));
                 }
                 else
                 {
-                    userTitle =
-                        $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
+                    this._embed.WithAuthor(this._embedAuthor);
+                    this._embed.WithDescription(description);
+                    this._embed.WithFooter(this._embedFooter);
+
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 }
-
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                var artistsString = amount == 1 ? "artist" : "artists";
-                this._embedAuthor.WithName($"Top {amount} {timeSettings.Description.ToLower()} {artistsString} for {userTitle}");
-                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/artists?{timeSettings.UrlParameter}");
-                this._embed.WithAuthor(this._embedAuthor);
-
-                this._embed.WithDescription(description);
-                this._embed.WithFooter(this._embedFooter);
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
                 this.Context.LogCommandUsed();
             }
@@ -592,36 +687,38 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("lazypaginator")]
         public async Task LazyPaginatorAsync()
         {
-            //var paginator = new LazyPaginatorBuilder()
-            //    .WithPageFactory(PageFactory)
-            //    .WithMaxPageIndex(100)
-            //    .WithFooter(PaginatorFooter.PageNumber | PaginatorFooter.Users)
-            //    .WithDefaultEmotes()
-            //    .Build();
-
-            //return this.Interactivity.SendPaginatorAsync(paginator, Context.Channel, TimeSpan.FromMinutes(2));
-
-            //Task<PageBuilder> PageFactory(int page)
-            //{
-            //    return Task.FromResult(new PageBuilder()
-            //        .WithText((page + 1).ToString())
-            //        .WithTitle($"Title for page {page + 1}")
-            //        .WithColor(System.Drawing.Color.FromArgb(page * 1500)));
-            //}
-
             try
             {
-                var builder = new ReactionSelectionBuilder<string>()
-                    .WithValues("Hi", "How", "Hey", "Huh?!")
-                    .WithEmotes(new Emoji("💵"), new Emoji("🍭"), new Emoji("😩"), new Emoji("💠"));
-
-                var result =
-                    await this.Interactivity.SendSelectionAsync(builder.Build(), Context.Channel, TimeSpan.FromSeconds(50));
-
-                if (result.IsSuccess == true)
+                var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
+                if (!perms.ManageMessages)
                 {
-                    await this.Context.Channel.SendMessageAsync(result.Value.ToString());
+                    await ReplyAsync(
+                        "I'm missing the 'mng messages' permission in this server, so I can't post a chart.");
+                    this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                    return;
                 }
+
+                var pages = new PageBuilder[] {
+                    new PageBuilder().WithTitle("I"),
+                    new PageBuilder().WithTitle("am"),
+                    new PageBuilder().WithTitle("cool"),
+                    new PageBuilder().WithTitle(":sunglasses:"),
+                    new PageBuilder().WithText("I am cool :crown:")
+                };
+
+                var paginator = new StaticPaginatorBuilder()
+                    .WithPages(pages)
+                    .WithFooter(PaginatorFooter.PageNumber)
+                    .WithEmotes(new Dictionary<IEmote, PaginatorAction>
+                    {
+                        { new Emoji("⏮️"), PaginatorAction.SkipToStart},
+                        { new Emoji("⬅️"), PaginatorAction.Backward},
+                        { new Emoji("➡️"), PaginatorAction.Forward},
+                        { new Emoji("⏭️"), PaginatorAction.SkipToEnd}
+                    })
+                    .Build();
+
+                await this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromMinutes(2));
             }
             catch (Exception e)
             {

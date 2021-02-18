@@ -363,7 +363,6 @@ namespace FMBot.Bot.Services
                     Playcount = s.Count()
                 })
                 .OrderByDescending(o => o.Playcount)
-                .Take(10)
                 .ToListAsync();
         }
     }

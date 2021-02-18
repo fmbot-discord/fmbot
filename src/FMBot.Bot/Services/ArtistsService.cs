@@ -219,7 +219,6 @@ namespace FMBot.Bot.Services
                 .Where(w => EF.Functions.ILike(w.ArtistName, artistName)
                             && w.UserId == userId)
                 .OrderByDescending(o => o.Playcount)
-                .Take(12)
                 .ToListAsync();
         }
 

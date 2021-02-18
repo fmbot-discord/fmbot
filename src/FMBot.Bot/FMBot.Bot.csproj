@@ -22,8 +22,10 @@
     <PackageReference Include="AsyncEnumerator" Version="4.0.2" />
     <PackageReference Include="BotListAPI" Version="5.5.2" />
     <PackageReference Include="Dapper" Version="2.0.78" />
-    <PackageReference Include="Discord.InteractivityAddon" Version="2.1.1" />
+    <PackageReference Include="Discord.InteractivityAddon" Version="2.4.0-dev-20210218.1" />
     <PackageReference Include="Discord.Net" Version="2.3.0" />
+    <PackageReference Include="Discord.Net.Core" Version="2.3.0" />
+    <PackageReference Include="Discord.Net.WebSocket" Version="2.3.0" />
     <PackageReference Include="Genius.NET" Version="4.0.1" />
     <PackageReference Include="Google.Apis" Version="1.49.0" />
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.49.0.2173" />
