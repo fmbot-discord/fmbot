@@ -205,14 +205,27 @@ namespace FMBot.Bot.Commands.LastFM
             if (artistCrowns.Count > 1)
             {
                 var crownHistory = new StringBuilder();
-                foreach (var artistCrown in artistCrowns.Where(w => !w.Active))
+
+                foreach (var artistCrown in artistCrowns.Take(10).Where(w => !w.Active))
                 {
                     var crownUsername = await this._guildService.GetUserFromGuild(guild, artistCrown.UserId);
 
+                    var toStringFormat = lastCrownCreateDate.Year != artistCrown.Created.Year ? "MMM dd yyyy" : "MMM dd";
+
                     crownHistory.AppendLine($"**{crownUsername?.UserName ?? artistCrown.User.UserNameLastFM}** - " +
-                                            $"**{artistCrown.Created:MMM dd yyyy}** to **{lastCrownCreateDate:MMM dd yyyy}** - " +
+                                            $"**{artistCrown.Created.ToString(toStringFormat)}** to **{lastCrownCreateDate.ToString(toStringFormat)}** - " +
                                             $"`{artistCrown.StartPlaycount}` to `{artistCrown.CurrentPlaycount}` plays");
                     lastCrownCreateDate = artistCrown.Created;
+
+                }
+
+                if (artistCrowns.Count > 10)
+                {
+                    var firstCrown = artistCrowns.OrderBy(o => o.Created).First();
+                    var crownUsername = await this._guildService.GetUserFromGuild(guild, firstCrown.UserId);
+                    crownHistory.AppendLine($"**{crownUsername?.UserName ?? firstCrown.User.UserNameLastFM}** - " +
+                                            $"**{firstCrown.Created:MMM dd yyyy}** to **{lastCrownCreateDate:MMM dd yyyy}** - " +
+                                            $"`{firstCrown.StartPlaycount}` to `{firstCrown.CurrentPlaycount}` plays");
                 }
 
                 this._embed.AddField("Crown history", crownHistory.ToString());

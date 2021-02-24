@@ -494,6 +494,59 @@ namespace FMBot.Bot.Commands.Guild
             this.Context.LogCommandUsed();
         }
 
+        [Command("cooldown", RunMode = RunMode.Async)]
+        [GuildOnly]
+        public async Task FmSetFmCooldownCommand(string command = null)
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+
+            if (guild == null)
+            {
+                await ReplyAsync("This server hasn't been stored yet.\n" +
+                                 $"Please run `{prfx}index` to store this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+
+            int? newCooldown = null;
+
+            if (int.TryParse(command, out var parsedNewCooldown))
+            {
+                if (parsedNewCooldown > 1 && parsedNewCooldown < 600)
+                {
+                    newCooldown = parsedNewCooldown;
+                }
+            }
+
+            var existingFmCooldown = await this._guildService.GetChannelCooldown(this.Context.Channel.Id);
+
+            var serverUser = (IGuildUser)this.Context.Message.Author;
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
+                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync(
+                    "You are not authorized to change the `.fm` cooldown. Only users with the 'Ban Members' permission, server admins or FMBot admins can change this.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                return;
+            }
+
+            this._embed.AddField("Previous .fm cooldown",
+                existingFmCooldown.HasValue ? $"{existingFmCooldown.Value} seconds" : "No cooldown");
+
+            var newFmCooldown = await this._guildService.SetChannelCooldownAsync(this.Context.Channel, guild.GuildId, newCooldown);
+
+            this._embed.AddField("New .fm cooldown",
+                newFmCooldown.HasValue ? $"{newFmCooldown.Value} seconds" : "No cooldown");
+
+            this._embed.WithFooter($"Adjusting .fm cooldown for #{this.Context.Channel.Name}.\n" +
+                                   "Min 2 seconds - Max 600 seconds - Cooldown is per-user.\n" +
+                                   "Note that this cooldown can also expire after a bot restart.");
+
+            await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+            this.Context.LogCommandUsed();
+        }
+
         private static Stream StringToStream(string str)
         {
             var stream = new MemoryStream();

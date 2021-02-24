@@ -623,11 +623,11 @@ namespace FMBot.Bot.Services.Guild
         public async Task<string[]> GetDisabledCommandsForChannel(IChannel channel)
         {
             await using var db = this._contextFactory.CreateDbContext();
-            var existingGuild = await db.Channels
+            var existingChannel = await db.Channels
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordChannelId == channel.Id);
 
-            return existingGuild?.DisabledCommands;
+            return existingChannel?.DisabledCommands;
         }
 
         public async Task<string[]> AddChannelDisabledCommandAsync(IChannel channel, int guildId, string command)
@@ -691,6 +691,51 @@ namespace FMBot.Bot.Services.Guild
             await db.SaveChangesAsync();
 
             return existingChannel.DisabledCommands;
+        }
+
+        public async Task<int?> GetChannelCooldown(ulong discordChannelId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingChannel = await db.Channels
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannelId);
+
+            return existingChannel?.FmCooldown;
+        }
+
+        public async Task<int?> SetChannelCooldownAsync(IChannel channel, int guildId, int? cooldown)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingChannel = await db.Channels
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordChannelId == channel.Id);
+
+            if (existingChannel == null)
+            {
+                var newChannel = new Channel
+                {
+                    DiscordChannelId = channel.Id,
+                    Name = channel.Name,
+                    GuildId = guildId,
+                    FmCooldown = cooldown
+                };
+
+                await db.Channels.AddAsync(newChannel);
+
+                await db.SaveChangesAsync();
+
+                return newChannel.FmCooldown;
+            }
+
+            existingChannel.FmCooldown = cooldown;
+
+            existingChannel.Name = existingChannel.Name;
+
+            db.Entry(existingChannel).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            return existingChannel.FmCooldown;
         }
 
         public async Task<DateTime?> GetGuildIndexTimestampAsync(IGuild guild)

@@ -60,9 +60,15 @@ namespace FMBot.LastFM.Services
 
             var count = 1000;
             var totalPlaycountCorrect = false;
-            if (dateAgo > DateTime.UtcNow.AddMinutes(-30)) 
+            if (dateAgo > DateTime.UtcNow.AddHours(-1)) 
             {
-                count = 40;
+                count = 60;
+                timeFrom = null;
+                totalPlaycountCorrect = true;
+            }
+            else if (dateAgo > DateTime.UtcNow.AddHours(-12))
+            {
+                count = 500;
                 timeFrom = null;
                 totalPlaycountCorrect = true;
             }

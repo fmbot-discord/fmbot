@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -22,6 +23,7 @@ using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
+using Interactivity;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -41,10 +43,15 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly WhoKnowsArtistService _whoKnowsArtistService;
         private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
         private readonly WhoKnowsTrackService _whoKnowsTrackService;
+        private InteractivityService Interactivity { get; }
 
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
+
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new();
+        private static readonly List<SocketUser> StackCooldownTarget = new();
+
 
         public PlayCommands(
                 GuildService guildService,
@@ -59,7 +66,8 @@ namespace FMBot.Bot.Commands.LastFM
                 CensorService censorService,
                 WhoKnowsArtistService whoKnowsArtistService,
                 WhoKnowsAlbumService whoKnowsAlbumService,
-                WhoKnowsTrackService whoKnowsTrackService)
+                WhoKnowsTrackService whoKnowsTrackService,
+                InteractivityService interactivity)
         {
             this._guildService = guildService;
             this._indexService = indexService;
@@ -74,6 +82,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._whoKnowsArtistService = whoKnowsArtistService;
             this._whoKnowsAlbumService = whoKnowsAlbumService;
             this._whoKnowsTrackService = whoKnowsTrackService;
+            this.Interactivity = interactivity;
 
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
@@ -138,6 +147,38 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
+                var existingFmCooldown = await this._guildService.GetChannelCooldown(this.Context.Channel.Id);
+                if (existingFmCooldown.HasValue)
+                {
+                    var msg = this.Context.Message as SocketUserMessage;
+                    if (StackCooldownTarget.Contains(this.Context.Message.Author))
+                    {
+                        if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(existingFmCooldown.Value) >= DateTimeOffset.Now)
+                        {
+                            var secondsLeft = (int)(StackCooldownTimer[
+                                    StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
+                                .AddSeconds(existingFmCooldown.Value) - DateTimeOffset.Now).TotalSeconds;
+                            if (secondsLeft <= existingFmCooldown.Value - 2)
+                            {
+                                this.Interactivity.DelayedDeleteMessageAsync(
+                                    await this.Context.Channel.SendMessageAsync($"This channel has a `{existingFmCooldown.Value}` second cooldown on `.fm`. Please wait for this to expire before using this command again."),
+                                    TimeSpan.FromSeconds(6));
+                                this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                            }
+
+                            return;
+                        }
+
+                        StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
+                    }
+                    else
+                    {
+                        StackCooldownTarget.Add(msg.Author);
+                        StackCooldownTimer.Add(DateTimeOffset.Now);
+                    }
+                }
+
+
                 var lastFmUserName = userSettings.UserNameLastFM;
                 var self = true;
 
@@ -178,7 +219,7 @@ namespace FMBot.Bot.Commands.LastFM
                     recentTracks = await this._lastFmService.GetRecentTracksAsync(lastFmUserName, useCache: true);
                 }
 
-                var totalPlaycount = recentTracks.Content.TotalAmount;
+                long totalPlaycount = 0;
 
                 var spotifyUsed = false;
 
@@ -204,6 +245,8 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else
                 {
+                    totalPlaycount = recentTracks.Content.TotalAmount;
+
                     currentTrack = recentTracks.Content.RecentTracks[0];
                     previousTrack = recentTracks.Content.RecentTracks.Count > 1 ? recentTracks.Content.RecentTracks[1] : null;
                     if (!self)
