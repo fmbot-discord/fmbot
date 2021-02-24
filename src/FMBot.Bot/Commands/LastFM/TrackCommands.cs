@@ -364,6 +364,12 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            var track = await this.SearchTrack(trackValues, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
+            if (track == null)
+            {
+                return;
+            }
+
             var msg = this.Context.Message as SocketUserMessage;
             if (StackCooldownTarget.Contains(this.Context.Message.Author))
             {
@@ -387,12 +393,6 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 StackCooldownTarget.Add(msg.Author);
                 StackCooldownTimer.Add(DateTimeOffset.Now);
-            }
-
-            var track = await this.SearchTrack(trackValues, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
-            if (track == null)
-            {
-                return;
             }
 
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
