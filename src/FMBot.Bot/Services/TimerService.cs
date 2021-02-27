@@ -480,6 +480,7 @@ namespace FMBot.Bot.Services
                 ChangeToNewAvatar(this._client, link);
 
                 this._featuredTrackString = desc;
+                this._featuredUserId = 0;
                 Log.Information("Changed featured to: " + this._featuredTrackString);
             }
             catch (Exception e)
