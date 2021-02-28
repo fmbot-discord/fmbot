@@ -391,10 +391,10 @@ namespace FMBot.Bot.Commands.LastFM
             switch (timeSettings.ChartTimePeriod)
             {
                 //case ChartTimePeriod.Weekly:
-                //    topTracks = await this._playService.GetTopTracksForArtist(user.UserId, 7, artistInfo.Name);
+                //    topAlbums = await this._playService.GetTopAlbumsForArtist(user.UserId, 7, artistInfo.Name);
                 //    break;
                 //case ChartTimePeriod.Monthly:
-                //    topTracks = await this._playService.GetTopTracksForArtist(user.UserId, 31, artistInfo.Name);
+                //    topAlbums = await this._playService.GetTopAlbumsForArtist(user.UserId, 31, artistInfo.Name);
                 //    break;
                 default:
                     timeDescription = "alltime";

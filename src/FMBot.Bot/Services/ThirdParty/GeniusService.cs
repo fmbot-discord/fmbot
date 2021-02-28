@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Configurations;
@@ -8,7 +9,7 @@ namespace FMBot.Bot.Services.ThirdParty
 {
     public class GeniusService
     {
-        public async Task<SearchHit> SearchGeniusAsync(string searchValue)
+        public async Task<List<SearchHit>> SearchGeniusAsync(string searchValue)
         {
             var client = new GeniusClient(ConfigData.Data.Genius.AccessToken);
 
@@ -19,7 +20,7 @@ namespace FMBot.Bot.Services.ThirdParty
                 return null;
             }
 
-            return result.Response.Hits.OrderByDescending(o => o.Result.PyongsCount).ToList()[0];
+            return result.Response.Hits.OrderByDescending(o => o.Result.PyongsCount).ToList();
         }
     }
 }

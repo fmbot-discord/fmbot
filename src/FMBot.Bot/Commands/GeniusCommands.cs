@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -56,6 +57,9 @@ namespace FMBot.Bot.Commands
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
 
+                var currentTrackName = "";
+                var currentTrackArtist = "";
+
                 string querystring;
                 if (!string.IsNullOrWhiteSpace(searchValue))
                 {
@@ -78,25 +82,55 @@ namespace FMBot.Bot.Commands
 
                     var currentTrack = recentScrobbles.Content.RecentTracks[0];
                     querystring = $"{currentTrack.ArtistName} {currentTrack.TrackName}";
+
+                    currentTrackName = currentTrack.TrackName;
+                    currentTrackArtist = currentTrack.ArtistName;
                 }
 
-                var songResult = await this._geniusService.SearchGeniusAsync(querystring);
+                var geniusResults = await this._geniusService.SearchGeniusAsync(querystring);
 
-                if (songResult != null)
+                if (geniusResults != null && geniusResults.Any())
                 {
-                    this._embed.WithTitle(songResult.Result.Url);
-                    this._embed.WithThumbnailUrl(songResult.Result.SongArtImageThumbnailUrl);
-
-                    this._embed.AddField(
-                        $"{songResult.Result.TitleWithFeatured}",
-                        $"By **[{songResult.Result.PrimaryArtist.Name}]({songResult.Result.PrimaryArtist.Url})**");
-
                     var rnd = new Random();
                     if (rnd.Next(0, 7) == 1 && string.IsNullOrWhiteSpace(searchValue))
                     {
                         this._embedFooter.WithText("Tip: Search for other songs by simply adding the searchvalue behind .fmgenius.");
                         this._embed.WithFooter(this._embedFooter);
                     }
+
+                    var firstResult = geniusResults.First().Result;
+                    if (firstResult.TitleWithFeatured.ToLower().StartsWith(currentTrackName.ToLower()) &&
+                        firstResult.PrimaryArtist.Name.ToLower().Equals(currentTrackArtist.ToLower()) ||
+                        geniusResults.Count == 1)
+                    {
+                        this._embed.WithTitle(firstResult.Url);
+                        this._embed.WithThumbnailUrl(firstResult.SongArtImageThumbnailUrl);
+
+                        this._embed.AddField(
+                            $"{firstResult.TitleWithFeatured}",
+                            $"By **[{firstResult.PrimaryArtist.Name}]({firstResult.PrimaryArtist.Url})**");
+
+                        await ReplyAsync("", false, this._embed.Build());
+                        this.Context.LogCommandUsed();
+                        return;
+                    }
+
+                    this._embed.WithTitle($"Genius results for {querystring}");
+                    this._embed.WithThumbnailUrl(firstResult.SongArtImageThumbnailUrl);
+
+                    var embedDescription = new StringBuilder();
+
+                    var amount = geniusResults.Count > 5 ? 5 : geniusResults.Count;
+                    for (var i = 0; i < amount; i++)
+                    {
+                        var geniusResult = geniusResults[i].Result;
+
+                        embedDescription.AppendLine($"{i + 1}. [{geniusResult.TitleWithFeatured}]({geniusResult.Url})");
+                        embedDescription.AppendLine($"By **[{geniusResult.PrimaryArtist.Name}]({geniusResult.PrimaryArtist.Url})**");
+                        embedDescription.AppendLine();
+                    }
+
+                    this._embed.WithDescription(embedDescription.ToString());
 
                     await ReplyAsync("", false, this._embed.Build());
 
