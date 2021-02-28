@@ -480,7 +480,7 @@ namespace FMBot.Bot.Services
 
             if (somethingFound || alwaysReturnValue)
             {
-                return extraOptions;
+                return extraOptions.TrimEnd();
             }
 
             return null;
