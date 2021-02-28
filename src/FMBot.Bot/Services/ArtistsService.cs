@@ -216,7 +216,7 @@ namespace FMBot.Bot.Services
             await using var db = this._contextFactory.CreateDbContext();
             return await db.UserTracks
                 .AsQueryable()
-                .Where(w => EF.Functions.ILike(w.ArtistName, artistName)
+                .Where(w => w.ArtistName.ToLower() == artistName.ToLower()
                             && w.UserId == userId)
                 .OrderByDescending(o => o.Playcount)
                 .ToListAsync();
@@ -227,7 +227,7 @@ namespace FMBot.Bot.Services
             await using var db = this._contextFactory.CreateDbContext();
             return await db.UserAlbums
                 .AsQueryable()
-                .Where(w => EF.Functions.ILike(w.ArtistName, artistName)
+                .Where(w => w.ArtistName.ToLower() == artistName.ToLower()
                             && w.UserId == userId)
                 .OrderByDescending(o => o.Playcount)
                 .Take(12)

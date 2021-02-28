@@ -305,7 +305,7 @@ namespace FMBot.Bot.Commands.LastFM
                 amount = topTracks.Count < amount ? topTracks.Count : amount;
 
                 var description = new StringBuilder();
-                for (var i = 0; i < topTracks.Count; i++)
+                for (var i = 0; i < amount; i++)
                 {
                     if (paginationEnabled && (i > 0 && i % 10 == 0 || i == amount - 1))
                     {
