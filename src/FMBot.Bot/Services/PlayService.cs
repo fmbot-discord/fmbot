@@ -199,7 +199,7 @@ namespace FMBot.Bot.Services
                     artistContinue = false;
                 }
 
-                if (firstPlay.AlbumName.ToLower() == play.AlbumName.ToLower() && albumContinue)
+                if (firstPlay.AlbumName != null && play.AlbumName != null && firstPlay.AlbumName.ToLower() == play.AlbumName.ToLower() && albumContinue)
                 {
                     albumCount++;
                 }
