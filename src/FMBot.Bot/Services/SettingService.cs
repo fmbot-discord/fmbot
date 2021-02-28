@@ -194,6 +194,25 @@ namespace FMBot.Bot.Services
             return settingsModel;
         }
 
+        public WhoKnowsSettings SetWhoKnowsSettings(WhoKnowsSettings currentWhoKnowsSettings, string extraOptions)
+        {
+            var whoKnowsSettings = currentWhoKnowsSettings;
+
+            if (extraOptions == null)
+            {
+                return whoKnowsSettings;
+            }
+
+            var hidePrivateUsers = new[] {"hp", "hideprivate", "hideprivateusers"};
+            if (Contains(extraOptions, hidePrivateUsers))
+            {
+                whoKnowsSettings.NewSearchValue = ContainsAndRemove(whoKnowsSettings.NewSearchValue, hidePrivateUsers);
+                whoKnowsSettings.HidePrivateUsers = true;
+            }
+
+            return whoKnowsSettings;
+        }
+
         public async Task<UserSettingsModel> GetUser(
             string extraOptions,
             User user,

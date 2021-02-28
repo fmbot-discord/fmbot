@@ -42,6 +42,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 Playcount = userPlaycount,
                 LastFMUsername = guildUser.User.UserNameLastFM,
                 DiscordName = guildUser.UserName,
+                PrivacyLevel = PrivacyLevel.Global
             });
 
             return users.OrderByDescending(o => o.Playcount).ToList();
@@ -99,7 +100,8 @@ namespace FMBot.Bot.Services.WhoKnows
             return users;
         }
 
-        public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId, PrivacyLevel minPrivacyLevel, CrownModel crownModel = null)
+        public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId,
+            PrivacyLevel minPrivacyLevel, CrownModel crownModel = null, bool hidePrivateUsers = false)
         {
             var reply = "";
 
@@ -111,14 +113,15 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var usersToShow = whoKnowsObjects
                 .OrderByDescending(o => o.Playcount)
-                .Take(14)
                 .ToList();
 
             var spacer = crownModel?.Crown == null ? "" : " ";
 
             // Note: You might not be able to see them, but this code contains specific spacers
             // https://www.compart.com/en/unicode/category/Zs
-            for (var index = 0; index < whoKnowsCount; index++)
+            var indexNumber = 1;
+            var timesNameAdded = 0;
+            for (var index = 0; timesNameAdded < whoKnowsCount; index++)
             {
                 var user = usersToShow[index];
 
@@ -126,6 +129,11 @@ namespace FMBot.Bot.Services.WhoKnows
                 if (minPrivacyLevel == PrivacyLevel.Global && user.PrivacyLevel != PrivacyLevel.Global)
                 {
                     nameWithLink = PrivateName();
+                    if (hidePrivateUsers)
+                    {
+                        indexNumber += 1;
+                        continue;
+                    }
                 }
                 else
                 {
@@ -134,7 +142,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
                 var playString = StringExtensions.GetPlaysString(user.Playcount);
 
-                var positionCounter = $"{spacer}{index + 1}.";
+                var positionCounter = $"{spacer}{indexNumber}.";
                 positionCounter = user.UserId == requestedUserId ? $"**{positionCounter}** " : $"{positionCounter} ";
 
                 if (crownModel?.Crown != null && crownModel.Crown.UserId == user.UserId)
@@ -147,9 +155,12 @@ namespace FMBot.Bot.Services.WhoKnows
                 reply += $"{positionCounter}{afterPositionSpacer}{nameWithLink}";
 
                 reply += $" - **{user.Playcount}** {playString}\n";
+
+                indexNumber += 1;
+                timesNameAdded += 1;
             }
 
-            if (!usersToShow.Select(s => s.UserId).Contains(requestedUserId))
+            if (!usersToShow.Take(whoKnowsCount).Select(s => s.UserId).Contains(requestedUserId))
             {
                 var requestedUser = whoKnowsObjects.FirstOrDefault(f => f.UserId == requestedUserId);
                 if (requestedUser != null)

@@ -5,9 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
-using Discord.API.Rest;
 using Discord.Commands;
-using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
@@ -774,7 +772,14 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var searchResult = await this.SearchAlbum(albumValues, userSettings, prfx);
+            var currentSettings = new WhoKnowsSettings
+            {
+                HidePrivateUsers = false,
+                NewSearchValue = albumValues
+            };
+            var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues);
+
+            var searchResult = await this.SearchAlbum(settings.NewSearchValue, userSettings, prfx);
             if (!searchResult.AlbumFound)
             {
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
@@ -824,7 +829,7 @@ namespace FMBot.Bot.Commands.LastFM
                 filteredUsersWithAlbum =
                     WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithAlbum, guild.GuildUsers.ToList());
 
-                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, userSettings.UserId, PrivacyLevel.Global);
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, userSettings.UserId, PrivacyLevel.Global, hidePrivateUsers: settings.HidePrivateUsers);
                 if (filteredUsersWithAlbum.Count == 0)
                 {
                     serverUsers = "Nobody that uses .fmbot has listened to this album.";
@@ -858,6 +863,10 @@ namespace FMBot.Bot.Commands.LastFM
                 if (userSettings.PrivacyLevel != PrivacyLevel.Global)
                 {
                     footer += $"\nYou are currently not globally visible - use '{prfx}privacy global' to enable.";
+                }
+                if (settings.HidePrivateUsers)
+                {
+                    footer += "\nAll private users are hidden from results";
                 }
 
                 this._embed.WithTitle($"{albumName} globally");

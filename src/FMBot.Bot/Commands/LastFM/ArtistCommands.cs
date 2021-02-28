@@ -1090,7 +1090,13 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-                var artistQuery = await GetArtistOrHelp(artistValues, userSettings, "whoknows", prfx, null);
+                var currentSettings = new WhoKnowsSettings
+                {
+                    HidePrivateUsers = false,
+                    NewSearchValue = artistValues
+                };
+                var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues);
+                var artistQuery = await GetArtistOrHelp(settings.NewSearchValue, userSettings, "whoknows", prfx, null);
                 if (artistQuery == null)
                 {
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
@@ -1164,7 +1170,7 @@ namespace FMBot.Bot.Commands.LastFM
                 filteredUsersWithArtist =
                     WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithArtist, guild.GuildUsers.ToList());
 
-                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, userSettings.UserId, PrivacyLevel.Global);
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, userSettings.UserId, PrivacyLevel.Global, hidePrivateUsers: settings.HidePrivateUsers);
                 if (filteredUsersWithArtist.Count == 0)
                 {
                     serverUsers = "Nobody that uses .fmbot has listened to this artist.";
@@ -1198,6 +1204,11 @@ namespace FMBot.Bot.Commands.LastFM
                 if (userSettings.PrivacyLevel != PrivacyLevel.Global)
                 {
                     footer += $"\nYou are currently not globally visible - use '{prfx}privacy global' to enable.";
+                }
+
+                if (settings.HidePrivateUsers)
+                {
+                    footer += "\nAll private users are hidden from results";
                 }
 
                 this._embed.WithTitle($"{artistName} globally");

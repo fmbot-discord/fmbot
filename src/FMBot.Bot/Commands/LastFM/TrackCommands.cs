@@ -809,7 +809,14 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var track = await this.SearchTrack(trackValues, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
+            var currentSettings = new WhoKnowsSettings
+            {
+                HidePrivateUsers = false,
+                NewSearchValue = trackValues
+            };
+            var settings = this._settingService.SetWhoKnowsSettings(currentSettings, trackValues);
+
+            var track = await this.SearchTrack(settings.NewSearchValue, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
             if (track == null)
             {
                 return;
@@ -839,7 +846,7 @@ namespace FMBot.Bot.Commands.LastFM
                 filteredUsersWithAlbum =
                     WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithAlbum, guild.GuildUsers.ToList());
 
-                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, userSettings.UserId, PrivacyLevel.Global);
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, userSettings.UserId, PrivacyLevel.Global, hidePrivateUsers: settings.HidePrivateUsers);
                 if (!filteredUsersWithAlbum.Any())
                 {
                     serverUsers = "Nobody that uses .fmbot has listened to this track.";
@@ -864,6 +871,11 @@ namespace FMBot.Bot.Commands.LastFM
                 if (userSettings.PrivacyLevel != PrivacyLevel.Global)
                 {
                     footer += $"\nYou are currently not globally visible - use '{prfx}privacy global' to enable.";
+                }
+
+                if (settings.HidePrivateUsers)
+                {
+                    footer += "\nAll private users are hidden from results";
                 }
 
                 this._embed.WithTitle($"{trackName} globally");

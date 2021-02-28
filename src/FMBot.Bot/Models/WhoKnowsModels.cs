@@ -16,4 +16,11 @@ namespace FMBot.Bot.Models
 
         public PrivacyLevel? PrivacyLevel { get; set; }
     }
+
+    public class WhoKnowsSettings
+    {
+        public bool HidePrivateUsers { get; set; }
+
+        public string NewSearchValue { get; set; }
+    }
 }
