@@ -230,7 +230,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     var listeningActivity =
                         this.Context.User.Activities.FirstOrDefault(a => a.Type == ActivityType.Listening);
-                    if (listeningActivity != null && PublicProperties.IssuesAtLastFM)
+                    if (listeningActivity != null)
                     {
                         var spotifyActivity = (SpotifyGame)listeningActivity;
                         currentTrack = SpotifyService.SpotifyGameToRecentTrack(spotifyActivity);
@@ -407,8 +407,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                         if (spotifyUsed)
                         {
-                            footerText +=
-                                $"\nSpotify status used due to Last.fm error ({recentTracks.Error})";
+                            footerText = "\nSpotify status used due to no playing tracks on Last.fm";
                         }
 
                         if (!string.IsNullOrWhiteSpace(footerText))

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -17,6 +18,8 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
+using Interactivity;
+using Interactivity.Pagination;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -35,13 +38,16 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
 
+        private InteractivityService Interactivity { get; }
+
         public CrownCommands(CrownService crownService,
             GuildService guildService,
             IPrefixService prefixService,
             UserService userService,
             AdminService adminService,
             LastFmService lastFmService,
-            SettingService settingService)
+            SettingService settingService,
+            InteractivityService interactivity)
         {
             this._crownService = crownService;
             this._guildService = guildService;
@@ -50,6 +56,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._adminService = adminService;
             this._lastFmService = lastFmService;
             this._settingService = settingService;
+            this.Interactivity = interactivity;
 
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
@@ -99,9 +106,9 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userCrowns = await this._crownService.GetCrownsForUser(guild, user.UserId);
 
-            this._embed.WithTitle(differentUser
+            var title = differentUser
                 ? $"Crowns for {user.UserNameLastFM}, requested by {userTitle}"
-                : $"Crowns for {userTitle}");
+                : $"Crowns for {userTitle}";
 
             if (!userCrowns.Any())
             {
@@ -111,23 +118,66 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var embedDescription = new StringBuilder();
-            for (var index = 0; index < userCrowns.Count && index < 15; index++)
+            var footer = $"{userCrowns.Count} total crowns";
+
+            try
             {
-                var userCrown = userCrowns[index];
+                var paginationEnabled = false;
+                var maxAmount = userCrowns.Count > 15 ? 15 : userCrowns.Count;
+                var pages = new List<PageBuilder>();
+                var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
+                if (perms.ManageMessages && userCrowns.Count > 15)
+                {
+                    paginationEnabled = true;
+                    maxAmount = userCrowns.Count;
+                }
 
-                var claimTimeDescription = DateTime.UtcNow.AddDays(-3) < userCrown.Created
-                    ? StringExtensions.GetTimeAgo(userCrown.Created)
-                    : userCrown.Created.Date.ToString("dddd MMM d", CultureInfo.InvariantCulture);
+                var embedDescription = new StringBuilder();
+                for (var index = 0; index < maxAmount; index++)
+                {
+                    if (paginationEnabled && (index > 0 && index % 10 == 0 || index == maxAmount - 1))
+                    {
+                        pages.Add(new PageBuilder().WithDescription(embedDescription.ToString()).WithTitle(title).WithFooter(footer));
+                        embedDescription = new StringBuilder();
+                    }
 
-                embedDescription.AppendLine($"{index + 1}. **{userCrown.ArtistName}** - **{userCrown.CurrentPlaycount}** plays (claimed {claimTimeDescription})");
+                    var userCrown = userCrowns[index];
+
+                    var claimTimeDescription = DateTime.UtcNow.AddDays(-3) < userCrown.Created
+                        ? StringExtensions.GetTimeAgo(userCrown.Created)
+                        : userCrown.Created.Date.ToString("dddd MMM d", CultureInfo.InvariantCulture);
+
+                    embedDescription.AppendLine($"{index + 1}. **{userCrown.ArtistName}** - **{userCrown.CurrentPlaycount}** plays (claimed {claimTimeDescription})");
+                }
+
+                if (paginationEnabled)
+                {
+                    var paginator = new StaticPaginatorBuilder()
+                        .WithPages(pages)
+                        .WithFooter(PaginatorFooter.PageNumber)
+                        .WithEmotes(DiscordConstants.PaginationEmotes)
+                        .WithTimoutedEmbed(null)
+                        .WithCancelledEmbed(null)
+                        .WithDeletion(DeletionOptions.Valid)
+                        .Build();
+
+                    _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
+                }
+                else
+                {
+                    footer += "\nWant pagination? Enable the 'Manage Messages' permission for .fmbot.";
+                    this._embed.WithTitle(title);
+                    this._embed.WithDescription(embedDescription.ToString());
+                    this._embed.WithFooter(footer);
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
             }
 
-            this._embed.WithDescription(embedDescription.ToString());
-
-            this._embed.WithFooter($"{userCrowns.Count} total crowns");
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
         }
 
@@ -200,7 +250,7 @@ namespace FMBot.Bot.Commands.LastFM
                 $"**[{name?.UserName ?? currentCrown.User.UserNameLastFM}]({artistUrl})** - " +
                 $"Since **{currentCrown.Created:MMM dd yyyy}** - " +
                 $"`{currentCrown.StartPlaycount}` to `{currentCrown.CurrentPlaycount}` plays");
-             
+
             var lastCrownCreateDate = currentCrown.Created;
             if (artistCrowns.Count > 1)
             {
@@ -275,10 +325,33 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var embedDescription = new StringBuilder();
-
-            for (var index = 0; index < topCrownUsers.Count && index < 15; index++)
+            var paginationEnabled = false;
+            var maxAmount = topCrownUsers.Count > 15 ? 15 : topCrownUsers.Count;
+            var pages = new List<PageBuilder>();
+            var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
+            if (perms.ManageMessages && topCrownUsers.Count > 15)
             {
+                paginationEnabled = true;
+                maxAmount = topCrownUsers.Count;
+            }
+
+            var title = $"Users with most crowns in {this.Context.Guild.Name}";
+            var embedDescription = new StringBuilder();
+            var footer = $"{guildCrownCount} total active crowns in this server";
+
+            if (topCrownUsers.Count < 15)
+            {
+                paginationEnabled = false;
+            }
+
+            for (var index = 0; index < maxAmount; index++)
+            {
+                if (paginationEnabled && (index > 0 && index % 10 == 0 || index == maxAmount - 1))
+                {
+                    pages.Add(new PageBuilder().WithDescription(embedDescription.ToString()).WithTitle(title).WithFooter(footer));
+                    embedDescription = new StringBuilder();
+                }
+
                 var crownUser = topCrownUsers[index];
 
                 var guildUser = guild
@@ -295,13 +368,27 @@ namespace FMBot.Bot.Commands.LastFM
                 embedDescription.AppendLine($"{index + 1}. **{name ?? crownUser.First().User.UserNameLastFM}** - **{crownUser.Count()}** {StringExtensions.GetCrownsString(crownUser.Count())}");
             }
 
-            this._embed.WithTitle($"Users with most crowns in {this.Context.Guild.Name}");
+            if (paginationEnabled)
+            {
+                var paginator = new StaticPaginatorBuilder()
+                    .WithPages(pages)
+                    .WithFooter(PaginatorFooter.PageNumber)
+                    .WithEmotes(DiscordConstants.PaginationEmotes)
+                    .WithTimoutedEmbed(null)
+                    .WithCancelledEmbed(null)
+                    .WithDeletion(DeletionOptions.Valid)
+                    .Build();
 
-            this._embed.WithDescription(embedDescription.ToString());
+                _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
+            }
+            else
+            {
+                this._embed.WithTitle(title);
+                this._embed.WithDescription(embedDescription.ToString());
+                this._embed.WithFooter(footer);
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            }
 
-            this._embed.WithFooter($"{guildCrownCount} total active crowns in this server");
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
         }
 
@@ -429,14 +516,14 @@ namespace FMBot.Bot.Commands.LastFM
 
             var amountOfCrownsSeeded = await this._crownService.SeedCrownsForGuild(guild, guildCrowns).ConfigureAwait(false);
 
-             await message.ModifyAsync(m =>
-             {
-                 m.Embed = new EmbedBuilder()
-                     .WithDescription($"Seeded {amountOfCrownsSeeded} crowns for your server.\n\n" +
-                                      $"Tip: You can remove all crowns with `{prfx}killallcrowns` or remove all automatically seeded crowns with `{prfx}killallseededcrowns`.")
-                     .WithColor(DiscordConstants.SuccessColorGreen)
-                     .Build();
-             });
+            await message.ModifyAsync(m =>
+            {
+                m.Embed = new EmbedBuilder()
+                    .WithDescription($"Seeded {amountOfCrownsSeeded} crowns for your server.\n\n" +
+                                     $"Tip: You can remove all crowns with `{prfx}killallcrowns` or remove all automatically seeded crowns with `{prfx}killallseededcrowns`.")
+                    .WithColor(DiscordConstants.SuccessColorGreen)
+                    .Build();
+            });
 
             this.Context.LogCommandUsed();
         }

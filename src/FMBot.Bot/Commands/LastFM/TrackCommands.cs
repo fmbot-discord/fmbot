@@ -25,6 +25,7 @@ using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using Interactivity;
 using Interactivity.Confirmation;
+using Interactivity.Pagination;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -47,7 +48,8 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedAuthorBuilder _embedAuthor;
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
-        private readonly InteractivityService _interactivity;
+        private InteractivityService Interactivity { get; }
+
 
         private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
         private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
@@ -78,7 +80,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._userService = userService;
             this._whoKnowsTrackService = whoKnowsTrackService;
             this._whoKnowsPlayService = whoKnowsPlayService;
-            this._interactivity = interactivity;
+            this.Interactivity = interactivity;
             this._whoKnowsService = whoKnowsService;
 
             this._embedAuthor = new EmbedAuthorBuilder();
@@ -478,6 +480,35 @@ namespace FMBot.Bot.Commands.LastFM
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
             var amount = SettingService.GetAmount(amountString);
 
+            var paginationEnabled = false;
+            var pages = new List<PageBuilder>();
+            var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
+            if (perms.ManageMessages)
+            {
+                paginationEnabled = true;
+            }
+
+
+            string userTitle;
+            if (!userSettings.DifferentUser)
+            {
+                userTitle = await this._userService.GetUserTitleAsync(this.Context);
+            }
+            else
+            {
+                userTitle =
+                    $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
+            }
+
+            var userUrl = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/tracks?{timeSettings.UrlParameter}";
+            this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+            var trackStrings = amount == 1 ? "track" : "tracks";
+            this._embedAuthor.WithName($"Top {amount} {timeSettings.Description.ToLower()} {trackStrings} for {userTitle}");
+            this._embedAuthor.WithUrl(userUrl);
+
+            var footer = "";
+            amount = paginationEnabled ? 100 : amount;
+
             try
             {
                 Response<TopTracksLfmResponse> topTracks;
@@ -494,7 +525,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                     if (topTracks.Content?.TopTracks?.Attr != null)
                     {
-                        this._embedFooter.WithText($"{topTracks.Content.TopTracks.Attr.Total} different tracks in this time period");
+                        footer = $"{topTracks.Content.TopTracks.Attr.Total} different tracks in this time period";
                     }
                 }
                 else
@@ -531,12 +562,10 @@ namespace FMBot.Bot.Commands.LastFM
                     topTracks = await this._playService.GetTopTracks(userId,
                         timeSettings.PlayDays.GetValueOrDefault());
 
-                    this._embedFooter.WithText($"{topTracks.Content.TopTracks.Track.Count} different tracks in this time period");
+                    footer = $"{topTracks.Content.TopTracks.Track.Count} different tracks in this time period";
 
                     topTracks.Content.TopTracks.Track = topTracks.Content.TopTracks.Track.Take(amount).ToList();
                 }
-
-                var userUrl = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/tracks?{timeSettings.UrlParameter}";
 
                 if (!topTracks.Content.TopTracks.Track.Any())
                 {
@@ -548,29 +577,31 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                string userTitle;
-                if (!userSettings.DifferentUser)
+                var rnd = new Random();
+                if (rnd.Next(0, 2) == 1 && topTracks.Content.TopTracks.Track.Count > 10 && !paginationEnabled)
                 {
-                    userTitle = await this._userService.GetUserTitleAsync(this.Context);
-                }
-                else
-                {
-                    userTitle =
-                        $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
+                    footer += $"\nWant pagination? Enable the 'Manage Messages' permission for .fmbot.";
                 }
 
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                var trackStrings = amount == 1 ? "track" : "tracks";
-                this._embedAuthor.WithName($"Top {amount} {timeSettings.Description.ToLower()} {trackStrings} for {userTitle}");
-                this._embedAuthor.WithUrl(userUrl);
+                if (topTracks.Content.TopTracks.Track.Count <= 10)
+                {
+                    paginationEnabled = false;
+                }
+
                 this._embed.WithAuthor(this._embedAuthor);
 
                 var description = "";
                 for (var i = 0; i < topTracks.Content.TopTracks.Track.Count; i++)
                 {
+                    if (paginationEnabled && (i > 0 && i % 10 == 0 || i == amount - 1))
+                    {
+                        pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor).WithFooter(footer));
+                        description = "";
+                    }
+
                     var track = topTracks.Content.TopTracks.Track[i];
 
-                    if (topTracks.Content.TopTracks.Track.Count > 10)
+                    if (topTracks.Content.TopTracks.Track.Count > 10 && !paginationEnabled)
                     {
                         description += $"{i + 1}. **{track.Artist.Name}** - **{track.Name}** ({track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)}) \n";
                     }
@@ -581,10 +612,26 @@ namespace FMBot.Bot.Commands.LastFM
 
                 }
 
-                this._embed.WithDescription(description);
-                this._embed.WithFooter(this._embedFooter);
+                if (paginationEnabled)
+                {
+                    var paginator = new StaticPaginatorBuilder()
+                        .WithPages(pages)
+                        .WithFooter(PaginatorFooter.PageNumber)
+                        .WithEmotes(DiscordConstants.PaginationEmotes)
+                        .WithTimoutedEmbed(null)
+                        .WithCancelledEmbed(null)
+                        .WithDeletion(DeletionOptions.Valid)
+                        .Build();
 
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
+                }
+                else
+                {
+                    this._embed.WithAuthor(this._embedAuthor);
+                    this._embed.WithDescription(description);
+                    this._embed.WithFooter(footer);
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                }
 
                 this.Context.LogCommandUsed();
             }

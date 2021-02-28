@@ -453,10 +453,14 @@ namespace FMBot.Bot.Commands.LastFM
                         return;
                     }
 
+                    if (albums.Count() <= 10)
+                    {
+                        paginationEnabled = false;
+                    }
                     var footer = $"{albums.TotalItems} different albums in this time period";
 
                     var rnd = new Random();
-                    if (rnd.Next(0, 2) == 1)
+                    if (rnd.Next(0, 2) == 1 && albums.Count() > 10 && !paginationEnabled)
                     {
                         footer += $"\nWant pagination? Enable the 'Manage Messages' permission for .fmbot.";
                     }
@@ -517,6 +521,11 @@ namespace FMBot.Bot.Commands.LastFM
                     var albums = await this._playService.GetTopAlbums(userId,
                         timeSettings.PlayDays.GetValueOrDefault());
 
+                    if (albums.Count <= 10)
+                    {
+                        paginationEnabled = false;
+                    }
+
                     var footer = $"{albums.Count} different albums in this time period";
 
                     var amountAvailable = albums.Count < amount ? albums.Count : amount;
@@ -546,7 +555,7 @@ namespace FMBot.Bot.Commands.LastFM
                         .WithDeletion(DeletionOptions.Valid)
                         .Build();
 
-                    _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(5));
+                    _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
                 }
                 else
                 {

@@ -15,12 +15,14 @@ namespace FMBot.Bot.Resources
 
         public static Color SpotifyColorGreen = new Color(30, 215, 97);
 
-        public static Dictionary<IEmote, PaginatorAction> PaginationEmotes = new Dictionary<IEmote, PaginatorAction>
+        public static readonly Dictionary<IEmote, PaginatorAction> PaginationEmotes = new Dictionary<IEmote, PaginatorAction>
         {
             { new Emoji("⏮️"), PaginatorAction.SkipToStart},
             { new Emoji("⬅️"), PaginatorAction.Backward},
             { new Emoji("➡️"), PaginatorAction.Forward},
             { new Emoji("⏭️"), PaginatorAction.SkipToEnd}
         };
+
+        public static int PaginationTimeoutInSeconds = 90;
     }
 }

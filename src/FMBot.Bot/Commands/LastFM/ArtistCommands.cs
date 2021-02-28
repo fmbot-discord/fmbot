@@ -661,10 +661,12 @@ namespace FMBot.Bot.Commands.LastFM
                     var paginator = new StaticPaginatorBuilder()
                         .WithPages(pages)
                         .WithFooter(PaginatorFooter.PageNumber)
+                        .WithTimoutedEmbed(null)
+                        .WithCancelledEmbed(null)
                         .WithEmotes(DiscordConstants.PaginationEmotes)
                         .Build();
 
-                    _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromMinutes(1));
+                    _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
                 }
                 else
                 {
