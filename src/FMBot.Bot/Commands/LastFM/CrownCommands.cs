@@ -269,13 +269,16 @@ namespace FMBot.Bot.Commands.LastFM
 
                 }
 
-                if (artistCrowns.Count > 10)
+                if (artistCrowns.Count(w => !w.Active) > 10)
                 {
+                    crownHistory.AppendLine($"*{artistCrowns.Count(w => !w.Active) - 11} more steals hidden..*");
+
                     var firstCrown = artistCrowns.OrderBy(o => o.Created).First();
                     var crownUsername = await this._guildService.GetUserFromGuild(guild, firstCrown.UserId);
-                    crownHistory.AppendLine($"**{crownUsername?.UserName ?? firstCrown.User.UserNameLastFM}** - " +
-                                            $"**{firstCrown.Created:MMM dd yyyy}** to **{lastCrownCreateDate:MMM dd yyyy}** - " +
-                                            $"`{firstCrown.StartPlaycount}` to `{firstCrown.CurrentPlaycount}` plays");
+                    this._embed.AddField("First crownholder",
+                         $"**{crownUsername?.UserName ?? firstCrown.User.UserNameLastFM}** - " +
+                         $"**{firstCrown.Created:MMM dd yyyy}** to **{lastCrownCreateDate:MMM dd yyyy}** - " +
+                         $"`{firstCrown.StartPlaycount}` to `{firstCrown.CurrentPlaycount}` plays");
                 }
 
                 this._embed.AddField("Crown history", crownHistory.ToString());
