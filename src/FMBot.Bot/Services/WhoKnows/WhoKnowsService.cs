@@ -123,7 +123,7 @@ namespace FMBot.Bot.Services.WhoKnows
             var timesNameAdded = 0;
             for (var index = 0; timesNameAdded < whoKnowsCount; index++)
             {
-                if (index > whoKnowsCount)
+                if (index > usersToShow.Count)
                 {
                     break;
                 }
