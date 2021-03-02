@@ -358,13 +358,13 @@ namespace FMBot.Bot.Commands.LastFM
                     default:
                         if (embedType == FmEmbedType.EmbedMini || embedType == FmEmbedType.EmbedTiny)
                         {
-                            fmText += LastFmService.TrackToLinkedString(currentTrack);
+                            fmText += LastFmService.TrackToLinkedString(currentTrack, userSettings.RymEnabled);
                             this._embed.WithDescription(fmText);
                         }
                         else if (previousTrack != null)
                         {
-                            this._embed.AddField("Current:", LastFmService.TrackToLinkedString(currentTrack));
-                            this._embed.AddField("Previous:", LastFmService.TrackToLinkedString(previousTrack));
+                            this._embed.AddField("Current:", LastFmService.TrackToLinkedString(currentTrack, userSettings.RymEnabled));
+                            this._embed.AddField("Previous:", LastFmService.TrackToLinkedString(previousTrack, userSettings.RymEnabled));
                         }
 
                         string headerText;
@@ -534,7 +534,7 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                     }
 
-                    var trackString = resultAmount > 6 ? LastFmService.TrackToString(track) : LastFmService.TrackToLinkedString(track);
+                    var trackString = resultAmount > 6 ? LastFmService.TrackToString(track) : LastFmService.TrackToLinkedString(track, user.RymEnabled);
 
                     if (track.NowPlaying)
                     {

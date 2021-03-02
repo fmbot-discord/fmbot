@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Web;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
@@ -479,7 +481,15 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                         else
                         {
-                            description += $"{i + 1}. **{album.ArtistName}** - **[{album.Name}]({album.Url})** ({album.PlayCount}  {StringExtensions.GetPlaysString(album.PlayCount)}) \n";
+                            var url = album.Url;
+                            var escapedAlbumName = Regex.Replace(album.Name, @"([|\\*])", @"\$1");
+
+                            if (user.RymEnabled == true)
+                            {
+                                url = new Uri(StringExtensions.GetRymUrl(album.Name, album.ArtistName));
+                            }
+
+                            description += $"{i + 1}. **{album.ArtistName}** - **[{escapedAlbumName}]({url})** ({album.PlayCount}  {StringExtensions.GetPlaysString(album.PlayCount)}) \n";
                         }
                     }
 
@@ -718,7 +728,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (Uri.IsWellFormedUriString(album.Url, UriKind.Absolute))
                 {
-                    this._embed.WithUrl(album.Url);
+                    this._embed.WithUrl(userSettings.RymEnabled == true
+                        ? StringExtensions.GetRymUrl(album.Name, album.Artist)
+                        : album.Url);
                 }
 
                 this._embedFooter.WithText(footer);
@@ -873,7 +885,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (Uri.IsWellFormedUriString(album.Url, UriKind.Absolute))
                 {
-                    this._embed.WithUrl(album.Url);
+                    this._embed.WithUrl(userSettings.RymEnabled == true
+                        ? StringExtensions.GetRymUrl(album.Name, album.Artist)
+                        : album.Url);
                 }
 
                 this._embedFooter.WithText(footer);

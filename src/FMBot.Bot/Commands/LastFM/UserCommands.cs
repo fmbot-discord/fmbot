@@ -196,6 +196,46 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
+        [Command("rateyourmusic", RunMode = RunMode.Async)]
+        [Summary("Enables or disables the rateyourmusic links.")]
+        [Alias("rym")]
+        public async Task RateYourMusicAsync()
+        {
+            try
+            {
+                var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+                var newRymSetting = await this._userService.ToggleRymAsync(user);
+
+                if (newRymSetting == true)
+                {
+                    this._embed.WithDescription(
+                        "**RateYourMusic** integration has now been enabled for your account.\n\n" +
+                        "All album links should now link to RateYourMusic. Please note that since RYM does not provide an API, you might be routed through DuckDuckGo.\n" +
+                        "This is not the best solution, but it should work for most albums.");
+                }
+                else
+                {
+                    this._embed.WithDescription(
+                        "**RateYourMusic** integration has now been disabled.\n\n" +
+                        "All available album links should now link to Last.fm.\n" +
+                        "To re-enable the integration, simply do this command again.");
+                }
+
+                this._embed.WithColor(32, 62, 121);
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync(
+                    "Unable to show the featured avatar on FMBot due to an internal error. \n" +
+                    "The bot might not have changed its avatar since its last startup. Please wait until a new featured user is chosen.");
+            }
+        }
+
         [Command("set", RunMode = RunMode.Async)]
         [Summary(
             "Sets your Last.fm name and FM mode. Please note that users in shared servers will be able to see and request your Last.fm username.")]

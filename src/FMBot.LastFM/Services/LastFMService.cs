@@ -143,22 +143,29 @@ namespace FMBot.LastFM.Services
             return recentTracksCall.Success ? recentTracksCall.Content.RecentTracks.AttributesLfm.Total : (long?)null;
         }
 
-        public static string TrackToLinkedString(RecentTrack track)
+        public static string TrackToLinkedString(RecentTrack track, bool? rymEnabled = null)
         {
             var escapedTrackName = Regex.Replace(track.TrackName, @"([|\\*])", @"\$1");
 
             if (!string.IsNullOrWhiteSpace(track.AlbumName))
             {
-                var albumQueryName = track.AlbumName.Replace(" - Single", "");
-                albumQueryName = albumQueryName.Replace(" - EP", "");
+                if (rymEnabled == true)
+                {
+                    var albumQueryName = track.AlbumName.Replace(" - Single", "");
+                    albumQueryName = albumQueryName.Replace(" - EP", "");
 
-                var escapedAlbumName = Regex.Replace(track.AlbumName, @"([|\\*])", @"\$1");
-                var albumRymUrl = @"https://duckduckgo.com/?q=%5Csite%3Arateyourmusic.com";
-                albumRymUrl += HttpUtility.UrlEncode($" \"{albumQueryName}\" \"{track.ArtistName}\"");
+                    var escapedAlbumName = Regex.Replace(track.AlbumName, @"([|\\*])", @"\$1");
+                    var albumRymUrl = @"https://duckduckgo.com/?q=%5Csite%3Arateyourmusic.com";
+                    albumRymUrl += HttpUtility.UrlEncode($" \"{albumQueryName}\" \"{track.ArtistName}\"");
+
+                    return $"[{escapedTrackName}]({track.TrackUrl})\n" +
+                           $"By **{track.ArtistName}**" +
+                           $" | *[{escapedAlbumName}]({albumRymUrl})*\n";
+                }
 
                 return $"[{escapedTrackName}]({track.TrackUrl})\n" +
                        $"By **{track.ArtistName}**" +
-                       $" | *[{escapedAlbumName}]({albumRymUrl})*\n";
+                       $" | *{track.AlbumName}*\n";
             }
 
             return $"[{escapedTrackName}]({track.TrackUrl})\n" +

@@ -408,6 +408,26 @@ namespace FMBot.Bot.Services
             }
         }
 
+        public async Task<bool?> ToggleRymAsync(User user)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+
+            if (user.RymEnabled != true)
+            {
+                user.RymEnabled = true;
+            }
+            else
+            {
+                user.RymEnabled = false;
+            }
+
+            db.Update(user);
+
+            await db.SaveChangesAsync();
+
+            return user.RymEnabled;
+        }
+
         public async Task<int> GetTotalUserCountAsync()
         {
             await using var db = this._contextFactory.CreateDbContext();

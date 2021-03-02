@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Web;
 using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Extensions
@@ -107,6 +108,16 @@ namespace FMBot.Bot.Extensions
         public static string GetCrownsString(long? crowns)
         {
             return crowns == 1 ? "crown" : "crowns";
+        }
+
+        public static string GetRymUrl(string albumName, string artistName)
+        {
+            var albumQueryName = albumName.Replace(" - Single", "");
+            albumQueryName = albumQueryName.Replace(" - EP", "");
+
+            var albumRymUrl = @"https://duckduckgo.com/?q=%5Csite%3Arateyourmusic.com";
+            albumRymUrl += HttpUtility.UrlEncode($" \"{albumQueryName}\" \"{artistName}\"");
+            return albumRymUrl;
         }
 
         public static string GetTimeAgo(DateTime timeAgo)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection.Metadata;
 using FMBot.Domain.Models;
 
 namespace FMBot.Persistence.Domain.Models
@@ -25,6 +26,8 @@ namespace FMBot.Persistence.Domain.Models
         public string SessionKeyLastFm { get; set; }
 
         public long? TotalPlaycount { get; set; }
+
+        public bool? RymEnabled { get; set; }
 
         public FmEmbedType FmEmbedType { get; set; }
 
