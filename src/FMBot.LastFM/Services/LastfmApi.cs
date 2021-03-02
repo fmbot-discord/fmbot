@@ -122,6 +122,11 @@ namespace FMBot.LastFM.Services
                     response.Message = errorResponse.Message;
                     response.Error = errorResponse.Error;
                     Statistics.LastfmErrors.Inc();
+
+                    if (response.Error == ResponseStatus.Failure)
+                    {
+                        Statistics.LastfmFailureErrors.Inc();
+                    }
                 }
             }
             catch (Exception ex)

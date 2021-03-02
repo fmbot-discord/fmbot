@@ -26,6 +26,9 @@ namespace FMBot.Domain
         public static readonly Counter LastfmErrors = Metrics
             .CreateCounter("lastfm_errors", "Amount of errors Last.fm is returning");
 
+        public static readonly Counter LastfmFailureErrors = Metrics
+            .CreateCounter("lastfm_errors_failure", "Amount of failure errors Last.fm is returning");
+
 
         public static readonly Counter CommandsExecuted = Metrics
             .CreateCounter("bot_commands_executed", "Amount of commands executed");
