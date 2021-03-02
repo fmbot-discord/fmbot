@@ -1311,7 +1311,7 @@ namespace FMBot.Bot.Commands.LastFM
             var description = "";
             var footer = "";
 
-            if (guild.GuildUsers != null && guild.GuildUsers.Count > 1500 && serverArtistSettings.ChartTimePeriod == ChartTimePeriod.Monthly)
+            if (guild.GuildUsers != null && guild.GuildUsers.Count > 500 && serverArtistSettings.ChartTimePeriod == ChartTimePeriod.Monthly)
             {
                 serverArtistSettings.AmountOfDays = 7;
                 serverArtistSettings.ChartTimePeriod = ChartTimePeriod.Weekly;
