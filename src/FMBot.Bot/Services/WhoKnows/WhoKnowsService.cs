@@ -117,10 +117,13 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var spacer = crownModel?.Crown == null ? "" : " ";
 
-            // Note: You might not be able to see them, but this code contains specific spacers
-            // https://www.compart.com/en/unicode/category/Zs
             var indexNumber = 1;
             var timesNameAdded = 0;
+            var requestedUserAdded = false;
+
+
+            // Note: You might not be able to see them, but this code contains specific spacers
+            // https://www.compart.com/en/unicode/category/Zs
             for (var index = 0; timesNameAdded < whoKnowsCount; index++)
             {
                 if (index >= usersToShow.Count)
@@ -163,9 +166,14 @@ namespace FMBot.Bot.Services.WhoKnows
 
                 indexNumber += 1;
                 timesNameAdded += 1;
+
+                if (user.UserId == requestedUserId)
+                {
+                    requestedUserAdded = true;
+                }
             }
 
-            if (!usersToShow.Take(whoKnowsCount).Select(s => s.UserId).Contains(requestedUserId))
+            if (!requestedUserAdded)
             {
                 var requestedUser = whoKnowsObjects.FirstOrDefault(f => f.UserId == requestedUserId);
                 if (requestedUser != null)
