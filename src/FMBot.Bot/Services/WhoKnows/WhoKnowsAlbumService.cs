@@ -153,31 +153,32 @@ namespace FMBot.Bot.Services.WhoKnows
             });
         }
 
-        public async Task<IReadOnlyList<ListAlbum>> GetTopAlbumsForGuild(IReadOnlyList<User> guildUsers,
+        public static async Task<IReadOnlyList<ListAlbum>> GetTopAllTimeAlbumsForGuild(int guildId,
             OrderType orderType)
         {
-            var userIds = guildUsers.Select(s => s.UserId);
+            var sql = "SELECT ub.name AS album_name, ub.artist_name, " +
+                      "SUM(ub.playcount) AS total_playcount, " +
+                      "COUNT(ub.user_id) AS listener_count " +
+                      "FROM user_albums AS ub   " +
+                      "INNER JOIN users AS u ON ub.user_id = u.user_id   " +
+                      "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id  " +
+                      "WHERE gu.guild_id = @guildId " +
+                      "GROUP BY ub.name, ub.artist_name ";
 
-            await using var db = this._contextFactory.CreateDbContext();
-            var query = db.UserAlbums
-                .AsQueryable()
-                .Where(w => userIds.Contains(w.UserId))
-                .GroupBy(g => new { g.ArtistName, g.Name });
+            sql += orderType == OrderType.Playcount ?
+                "ORDER BY total_playcount DESC, listener_count DESC " :
+                "ORDER BY listener_count DESC, total_playcount DESC ";
 
-            query = orderType == OrderType.Playcount ?
-                query.OrderByDescending(o => o.Sum(s => s.Playcount)).ThenByDescending(o => o.Count()) :
-                query.OrderByDescending(o => o.Count()).ThenByDescending(o => o.Sum(s => s.Playcount));
+            sql += "LIMIT 14";
 
-            return await query
-                .Take(14)
-                .Select(s => new ListAlbum
-                {
-                    ArtistName = s.Key.ArtistName,
-                    AlbumName = s.Key.Name,
-                    Playcount = s.Sum(su => su.Playcount),
-                    ListenerCount = s.Count()
-                })
-                .ToListAsync();
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            return (await connection.QueryAsync<ListAlbum>(sql, new
+            {
+                guildId
+            })).ToList();
         }
 
         public async Task<int> GetWeekAlbumPlaycountForGuildAsync(IEnumerable<User> guildUsers, string albumName, string artistName)

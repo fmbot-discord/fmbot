@@ -34,7 +34,7 @@ namespace FMBot.Bot.Models
 
         public string AlbumName { get; set; }
 
-        public int Playcount { get; set; }
+        public int TotalPlaycount { get; set; }
 
         public int ListenerCount { get; set; }
     }

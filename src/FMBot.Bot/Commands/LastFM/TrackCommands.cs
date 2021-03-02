@@ -711,7 +711,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this._indexService.UpdateUserName(currentUser, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId));
 
-                var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(this.Context, guild.GuildId, track.Artist.Name, track.Name);
+                var usersWithTrack = await WhoKnowsTrackService.GetIndexedUsersForTrack(this.Context, guild.GuildId, track.Artist.Name, track.Name);
 
                 if (track.Userplaycount != 0)
                 {
@@ -826,7 +826,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var usersWithArtist = await this._whoKnowsTrackService.GetGlobalUsersForTrack(this.Context, track.Artist.Name, track.Name);
+                var usersWithArtist = await WhoKnowsTrackService.GetGlobalUsersForTrack(this.Context, track.Artist.Name, track.Name);
 
                 if (track.Userplaycount != 0 && this.Context.Guild != null)
                 {
@@ -927,7 +927,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var helpDescription = new StringBuilder();
                 helpDescription.AppendLine("Shows the top tracks for your server.");
                 helpDescription.AppendLine();
-                helpDescription.AppendLine("Available time periods: `weekly` and `alltime`");
+                helpDescription.AppendLine("Available time periods: `weekly`, `monthly` and `alltime`");
                 helpDescription.AppendLine("Available order options: `plays` and `listeners`");
 
                 this._embed.WithDescription(helpDescription.ToString());
@@ -938,6 +938,8 @@ namespace FMBot.Bot.Commands.LastFM
                     $"`{prfx}servertracks` \n" +
                     $"`{prfx}servertracks alltime` \n" +
                     $"`{prfx}servertracks listeners weekly`");
+
+                this._embed.WithFooter("Users that are filtered from whoknows also get filtered from these charts.");
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
@@ -965,10 +967,21 @@ namespace FMBot.Bot.Commands.LastFM
             var serverTrackSettings = new GuildRankingSettings
             {
                 ChartTimePeriod = ChartTimePeriod.Weekly,
-                OrderType = OrderType.Listeners
+                OrderType = OrderType.Listeners,
+                AmountOfDays = 7
             };
 
             serverTrackSettings = SettingService.SetGuildRankingSettings(serverTrackSettings, extraOptions);
+
+            var description = "";
+            var footer = "";
+
+            if (guild.GuildUsers != null && guild.GuildUsers.Count > 1500 && serverTrackSettings.ChartTimePeriod == ChartTimePeriod.Monthly)
+            {
+                serverTrackSettings.AmountOfDays = 7;
+                serverTrackSettings.ChartTimePeriod = ChartTimePeriod.Weekly;
+                footer += "Sorry, monthly time period is not supported on large servers.\n";
+            }
 
             try
             {
@@ -976,17 +989,19 @@ namespace FMBot.Bot.Commands.LastFM
                 var users = filteredGuildUsers.Select(s => s.User).ToList();
                 if (serverTrackSettings.ChartTimePeriod == ChartTimePeriod.AllTime)
                 {
-                    topGuildTracks = await this._whoKnowsTrackService.GetTopTracksForGuild(users, serverTrackSettings.OrderType);
+                    topGuildTracks = await WhoKnowsTrackService.GetTopAllTimeTracksForGuild(guild.GuildId, serverTrackSettings.OrderType);
                     this._embed.WithTitle($"Top alltime tracks in {this.Context.Guild.Name}");
+                }
+                else if(serverTrackSettings.ChartTimePeriod == ChartTimePeriod.Weekly)
+                {
+                    topGuildTracks = await WhoKnowsPlayService.GetTopTracksForGuild(guild.GuildId, serverTrackSettings.OrderType, serverTrackSettings.AmountOfDays);
+                    this._embed.WithTitle($"Top weekly tracks in {this.Context.Guild.Name}");
                 }
                 else
                 {
-                    topGuildTracks = await this._whoKnowsPlayService.GetTopWeekTracksForGuild(users, serverTrackSettings.OrderType);
-                    this._embed.WithTitle($"Top weekly tracks in {this.Context.Guild.Name}");
+                    topGuildTracks = await WhoKnowsPlayService.GetTopTracksForGuild(guild.GuildId, serverTrackSettings.OrderType, serverTrackSettings.AmountOfDays);
+                    this._embed.WithTitle($"Top monthly tracks in {this.Context.Guild.Name}");
                 }
-
-                var description = "";
-                var footer = "";
 
                 if (serverTrackSettings.OrderType == OrderType.Listeners)
                 {
@@ -999,7 +1014,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 foreach (var track in topGuildTracks)
                 {
-                    description += $"`{track.ListenerCount}` / `{track.Playcount}` | **{track.TrackName}** by **{track.ArtistName}**\n";
+                    description += $"`{track.ListenerCount}` / `{track.TotalPlaycount}` | **{track.TrackName}** by **{track.ArtistName}**\n";
                 }
 
                 this._embed.WithDescription(description);

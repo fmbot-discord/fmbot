@@ -426,9 +426,15 @@ namespace FMBot.Bot.Services
         {
             var setGuildRankingSettings = guildRankingSettings;
 
-            if (extraOptions.Contains("w") || extraOptions.Contains("week") || extraOptions.Contains("weekly"))
+            if (extraOptions.Contains("w") || extraOptions.Contains("week") || extraOptions.Contains("weekly") || extraOptions.Contains("7d"))
             {
                 setGuildRankingSettings.ChartTimePeriod = ChartTimePeriod.Weekly;
+                setGuildRankingSettings.AmountOfDays = 7;
+            }
+            else if (extraOptions.Contains("m") || extraOptions.Contains("month") || extraOptions.Contains("monthly") || extraOptions.Contains("30d"))
+            {
+                setGuildRankingSettings.ChartTimePeriod = ChartTimePeriod.Monthly;
+                setGuildRankingSettings.AmountOfDays = 30;
             }
             if (extraOptions.Contains("a") || extraOptions.Contains("at") || extraOptions.Contains("alltime"))
             {

@@ -22,7 +22,7 @@ namespace FMBot.Bot.Services.WhoKnows
             this._contextFactory = contextFactory;
         }
 
-        public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(ICommandContext context, int guildId, string artistName, string trackName)
+        public static async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(ICommandContext context, int guildId, string artistName, string trackName)
         {
             const string sql = "SELECT ut.user_id, " +
                                "ut.name, " +
@@ -78,7 +78,7 @@ namespace FMBot.Bot.Services.WhoKnows
             return whoKnowsTrackList;
         }
 
-        public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForTrack(ICommandContext context, string artistName, string trackName)
+        public static async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForTrack(ICommandContext context, string artistName, string trackName)
         {
             const string sql = "SELECT ut.user_id, " +
                                "ut.name, " +
@@ -133,7 +133,7 @@ namespace FMBot.Bot.Services.WhoKnows
             return whoKnowsTrackList;
         }
 
-        public async Task<int?> GetTrackPlayCountForUser(string artistName, string trackName, int userId)
+        public static async Task<int?> GetTrackPlayCountForUser(string artistName, string trackName, int userId)
         {
             const string sql = "SELECT ut.playcount " +
                                "FROM user_tracks AS ut " +
@@ -153,31 +153,32 @@ namespace FMBot.Bot.Services.WhoKnows
             });
         }
 
-        public async Task<IReadOnlyList<ListTrack>> GetTopTracksForGuild(IReadOnlyList<User> guildUsers,
+        public static async Task<IReadOnlyList<ListTrack>> GetTopAllTimeTracksForGuild(int guildId,
             OrderType orderType)
         {
-            var userIds = guildUsers.Select(s => s.UserId);
+            var sql = "SELECT ut.name AS track_name, ut.artist_name, " +
+                      "SUM(ut.playcount) AS total_playcount, " +
+                      "COUNT(ut.user_id) AS listener_count " +
+                      "FROM user_tracks AS ut   " +
+                      "INNER JOIN users AS u ON ut.user_id = u.user_id   " +
+                      "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id  " +
+                      "WHERE gu.guild_id = @guildId " +
+                      "GROUP BY ut.name, ut.artist_name ";
 
-            await using var db = this._contextFactory.CreateDbContext();
-            var query = db.UserTracks
-                .AsQueryable()
-                .Where(w => userIds.Contains(w.UserId))
-                .GroupBy(g => new { g.ArtistName, g.Name });
+            sql += orderType == OrderType.Playcount ?
+                "ORDER BY total_playcount DESC, listener_count DESC " :
+                "ORDER BY listener_count DESC, total_playcount DESC ";
 
-            query = orderType == OrderType.Playcount ?
-                query.OrderByDescending(o => o.Sum(s => s.Playcount)).ThenByDescending(o => o.Count()) :
-                query.OrderByDescending(o => o.Count()).ThenByDescending(o => o.Sum(s => s.Playcount));
+            sql += "LIMIT 14";
 
-            return await query
-                .Take(14)
-                .Select(s => new ListTrack
-                {
-                    ArtistName = s.Key.ArtistName,
-                    TrackName = s.Key.Name,
-                    Playcount = s.Sum(su => su.Playcount),
-                    ListenerCount = s.Count()
-                })
-                .ToListAsync();
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            return (await connection.QueryAsync<ListTrack>(sql, new
+            {
+                guildId
+            })).ToList();
         }
 
         public async Task<int> GetWeekTrackPlaycountForGuildAsync(IEnumerable<User> guildUsers, string trackName, string artistName)

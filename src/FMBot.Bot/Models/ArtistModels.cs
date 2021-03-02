@@ -7,6 +7,8 @@ namespace FMBot.Bot.Models
         public OrderType OrderType { get; set; }
 
         public ChartTimePeriod ChartTimePeriod { get; set; }
+
+        public int AmountOfDays { get; set; }
     }
 
     public enum OrderType
@@ -19,7 +21,7 @@ namespace FMBot.Bot.Models
     {
         public string ArtistName { get; set; }
 
-        public int Playcount { get; set; }
+        public int TotalPlaycount { get; set; }
 
         public int ListenerCount { get; set; }
     }
@@ -52,6 +54,15 @@ namespace FMBot.Bot.Models
         public ulong DiscordUserId { get; set; }
 
         public PrivacyLevel PrivacyLevel { get; set; }
+    }
+
+    public class TopGuildArtistsDto
+    {
+        public string Name { get; set; }
+
+        public int TotalPlaycount { get; set; }
+
+        public int TotalUsers { get; set; }
     }
 
     public class AffinityArtist

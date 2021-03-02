@@ -8,7 +8,7 @@ namespace FMBot.Bot.Models
 
         public string TrackName { get; set; }
 
-        public int Playcount { get; set; }
+        public int TotalPlaycount { get; set; }
 
         public int ListenerCount { get; set; }
     }

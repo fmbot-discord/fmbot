@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
-using Discord.API.Rest;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
@@ -19,10 +18,8 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
-using FMBot.Persistence.Domain.Models;
 using Interactivity;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -301,7 +298,7 @@ namespace FMBot.Bot.Commands.LastFM
                     switch (userSettings.FmCountType)
                     {
                         case FmCountType.Track:
-                            var trackPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(currentTrack.ArtistName, currentTrack.TrackName, userSettings.UserId);
+                            var trackPlaycount = await WhoKnowsTrackService.GetTrackPlayCountForUser(currentTrack.ArtistName, currentTrack.TrackName, userSettings.UserId);
                             if (trackPlaycount.HasValue)
                             {
                                 footerText += $"{trackPlaycount} scrobbles on this track | ";
@@ -318,7 +315,7 @@ namespace FMBot.Bot.Commands.LastFM
                             }
                             break;
                         case FmCountType.Artist:
-                            var artistPlaycount = await this._whoKnowsArtistService.GetArtistPlayCountForUser(currentTrack.ArtistName, userSettings.UserId);
+                            var artistPlaycount = await WhoKnowsArtistService.GetArtistPlayCountForUser(currentTrack.ArtistName, userSettings.UserId);
                             if (artistPlaycount.HasValue)
                             {
                                 footerText += $"{artistPlaycount} scrobbles on this artist | ";

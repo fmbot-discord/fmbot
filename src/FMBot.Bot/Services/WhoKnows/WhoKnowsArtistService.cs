@@ -27,7 +27,7 @@ namespace FMBot.Bot.Services.WhoKnows
             this._contextFactory = contextFactory;
         }
 
-        public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(ICommandContext context, int guildId, string artistName)
+        public static async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(ICommandContext context, int guildId, string artistName)
         {
             const string sql = "SELECT ua.user_id, " +
                                "ua.name, " +
@@ -81,7 +81,7 @@ namespace FMBot.Bot.Services.WhoKnows
             return whoKnowsArtistList;
         }
 
-        public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForArtists(ICommandContext context, string artistName)
+        public static async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForArtists(ICommandContext context, string artistName)
         {
             const string sql = "SELECT ua.user_id, " +
                                "ua.name, " +
@@ -134,33 +134,35 @@ namespace FMBot.Bot.Services.WhoKnows
             return whoKnowsArtistList;
         }
 
-        public async Task<IReadOnlyList<ListArtist>> GetTopArtistsForGuild(IReadOnlyList<User> guildUsers,
+        public static async Task<IReadOnlyList<ListArtist>> GetTopAllTimeArtistsForGuild(int guildId,
             OrderType orderType)
         {
-            var userIds = guildUsers.Select(s => s.UserId);
+            var sql = "SELECT ua.name AS artist_name, " +
+                                "SUM(ua.playcount) AS total_playcount, " +
+                                "COUNT(ua.user_id) AS listener_count " +
+                                "FROM user_artists AS ua   " +
+                                "INNER JOIN users AS u ON ua.user_id = u.user_id   " +
+                                "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id  " +
+                                "WHERE gu.guild_id = @guildId " +
+                                "GROUP BY ua.name ";
 
-            await using var db = this._contextFactory.CreateDbContext();
-            var query = db.UserArtists
-                .AsQueryable()
-                .Where(w => userIds.Contains(w.UserId))
-                .GroupBy(o => o.Name);
+            sql += orderType == OrderType.Playcount ?
+                "ORDER BY total_playcount DESC, listener_count DESC " :
+                "ORDER BY listener_count DESC, total_playcount DESC ";
 
-            query = orderType == OrderType.Playcount ?
-                query.OrderByDescending(o => o.Sum(s => s.Playcount)).ThenByDescending(o => o.Count()) :
-                query.OrderByDescending(o => o.Count()).ThenByDescending(o => o.Sum(s => s.Playcount));
+            sql += "LIMIT 14";
 
-            return await query
-                .Take(14)
-                .Select(s => new ListArtist
-                {
-                    ArtistName = s.Key,
-                    Playcount = s.Sum(su => su.Playcount),
-                    ListenerCount = s.Count()
-                })
-                .ToListAsync();
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            return (await connection.QueryAsync<ListArtist>(sql, new
+            {
+                guildId
+            })).ToList();
         }
 
-        public async Task<int?> GetArtistPlayCountForUser(string artistName, int userId)
+        public static async Task<int?> GetArtistPlayCountForUser(string artistName, int userId)
         {
             const string sql = "SELECT ua.playcount " +
                                "FROM user_artists AS ua " +
@@ -177,7 +179,7 @@ namespace FMBot.Bot.Services.WhoKnows
             });
         }
 
-        public async Task<int> GetWeekArtistPlaycountForGuildAsync(int guildId, string artistName)
+        public static async Task<int> GetWeekArtistPlaycountForGuildAsync(int guildId, string artistName)
         {
             var minDate = DateTime.UtcNow.AddDays(-7);
 

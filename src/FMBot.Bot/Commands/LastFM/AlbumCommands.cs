@@ -919,8 +919,6 @@ namespace FMBot.Bot.Commands.LastFM
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
-            var filteredGuildUsers = this._guildService.FilterGuildUsersAsync(guild);
-
             if (extraOptions.Any() && extraOptions.First() == "help")
             {
                 this._embed.WithTitle($"{prfx}serveralbums");
@@ -928,7 +926,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var helpDescription = new StringBuilder();
                 helpDescription.AppendLine("Shows the top albums for your server.");
                 helpDescription.AppendLine();
-                helpDescription.AppendLine("Available time periods: `weekly` and `alltime`");
+                helpDescription.AppendLine("Available time periods: `weekly`, `monthly` and `alltime`");
                 helpDescription.AppendLine("Available order options: `plays` and `listeners`");
 
                 this._embed.WithDescription(helpDescription.ToString());
@@ -939,6 +937,8 @@ namespace FMBot.Bot.Commands.LastFM
                     $"`{prfx}serveralbums` \n" +
                     $"`{prfx}serveralbums alltime` \n" +
                     $"`{prfx}serveralbums listeners weekly`");
+
+                this._embed.WithFooter("Users that are filtered from whoknows also get filtered from these charts.");
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
@@ -966,28 +966,40 @@ namespace FMBot.Bot.Commands.LastFM
             var serverAlbumSettings = new GuildRankingSettings
             {
                 ChartTimePeriod = ChartTimePeriod.Weekly,
-                OrderType = OrderType.Listeners
+                OrderType = OrderType.Listeners,
+                AmountOfDays = 7
             };
 
             serverAlbumSettings = SettingService.SetGuildRankingSettings(serverAlbumSettings, extraOptions);
 
+            var description = "";
+            var footer = "";
+
+            if (guild.GuildUsers != null && guild.GuildUsers.Count > 1500 && serverAlbumSettings.ChartTimePeriod == ChartTimePeriod.Monthly)
+            {
+                serverAlbumSettings.AmountOfDays = 7;
+                serverAlbumSettings.ChartTimePeriod = ChartTimePeriod.Weekly;
+                footer += "Sorry, monthly time period is not supported on large servers.\n";
+            }
+
             try
             {
                 IReadOnlyList<ListAlbum> topGuildAlbums;
-                var users = filteredGuildUsers.Select(s => s.User).ToList();
                 if (serverAlbumSettings.ChartTimePeriod == ChartTimePeriod.AllTime)
                 {
-                    topGuildAlbums = await this._whoKnowsAlbumService.GetTopAlbumsForGuild(users, serverAlbumSettings.OrderType);
+                    topGuildAlbums = await WhoKnowsAlbumService.GetTopAllTimeAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType);
                     this._embed.WithTitle($"Top alltime albums in {this.Context.Guild.Name}");
+                }
+                else if(serverAlbumSettings.ChartTimePeriod == ChartTimePeriod.Weekly)
+                {
+                    topGuildAlbums = await this._whoKnowsPlayService.GetTopAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType, serverAlbumSettings.AmountOfDays);
+                    this._embed.WithTitle($"Top weekly albums in {this.Context.Guild.Name}");
                 }
                 else
                 {
-                    topGuildAlbums = await this._whoKnowsPlayService.GetTopWeekAlbumsForGuild(users, serverAlbumSettings.OrderType);
-                    this._embed.WithTitle($"Top weekly albums in {this.Context.Guild.Name}");
+                    topGuildAlbums = await this._whoKnowsPlayService.GetTopAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType, serverAlbumSettings.AmountOfDays);
+                    this._embed.WithTitle($"Top monthly albums in {this.Context.Guild.Name}");
                 }
-
-                var description = "";
-                var footer = "";
 
                 if (serverAlbumSettings.OrderType == OrderType.Listeners)
                 {
@@ -1000,7 +1012,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 foreach (var album in topGuildAlbums)
                 {
-                    description += $"`{album.ListenerCount}` / `{album.Playcount}` | **{album.AlbumName}** by **{album.ArtistName}**\n";
+                    description += $"`{album.ListenerCount}` / `{album.TotalPlaycount}` | **{album.AlbumName}** by **{album.ArtistName}**\n";
                 }
 
                 this._embed.WithDescription(description);
@@ -1022,12 +1034,6 @@ namespace FMBot.Bot.Commands.LastFM
                 if (guild.LastIndexed < DateTime.UtcNow.AddDays(-15) && randomHintNumber == 4)
                 {
                     footer += $"Missing members? Update with {prfx}index\n";
-                }
-
-                if (guild.GuildUsers.Count > filteredGuildUsers.Count)
-                {
-                    var filteredAmount = guild.GuildUsers.Count - filteredGuildUsers.Count;
-                    footer += $"{filteredAmount} inactive/blocked users filtered";
                 }
 
                 this._embedFooter.WithText(footer);
