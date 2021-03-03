@@ -918,8 +918,6 @@ namespace FMBot.Bot.Commands.LastFM
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
-            var filteredGuildUsers = this._guildService.FilterGuildUsersAsync(guild);
-
             if (extraOptions.Any() && extraOptions.First() == "help")
             {
                 this._embed.WithTitle($"{prfx}servertracks");
@@ -986,7 +984,6 @@ namespace FMBot.Bot.Commands.LastFM
             try
             {
                 IReadOnlyList<ListTrack> topGuildTracks;
-                var users = filteredGuildUsers.Select(s => s.User).ToList();
                 if (serverTrackSettings.ChartTimePeriod == ChartTimePeriod.AllTime)
                 {
                     topGuildTracks = await WhoKnowsTrackService.GetTopAllTimeTracksForGuild(guild.GuildId, serverTrackSettings.OrderType);
@@ -1036,12 +1033,6 @@ namespace FMBot.Bot.Commands.LastFM
                 if (guild.LastIndexed < DateTime.UtcNow.AddDays(-7) && randomHintNumber == 4)
                 {
                     footer += $"Missing members? Update with {prfx}index\n";
-                }
-
-                if (guild.GuildUsers.Count > filteredGuildUsers.Count)
-                {
-                    var filteredAmount = guild.GuildUsers.Count - filteredGuildUsers.Count;
-                    footer += $"{filteredAmount} inactive/blocked users filtered";
                 }
 
                 this._embedFooter.WithText(footer);
