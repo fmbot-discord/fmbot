@@ -563,7 +563,7 @@ namespace FMBot.Bot.Commands.LastFM
                         .WithDeletion(DeletionOptions.Valid)
                         .Build();
 
-                    _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
+                    _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds), runOnGateway: false);
                 }
                 else
                 {
@@ -1004,7 +1004,7 @@ namespace FMBot.Bot.Commands.LastFM
                     topGuildAlbums = await WhoKnowsAlbumService.GetTopAllTimeAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType);
                     this._embed.WithTitle($"Top alltime albums in {this.Context.Guild.Name}");
                 }
-                else if(serverAlbumSettings.ChartTimePeriod == ChartTimePeriod.Weekly)
+                else if (serverAlbumSettings.ChartTimePeriod == ChartTimePeriod.Weekly)
                 {
                     topGuildAlbums = await this._whoKnowsPlayService.GetTopAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType, serverAlbumSettings.AmountOfDays);
                     this._embed.WithTitle($"Top weekly albums in {this.Context.Guild.Name}");

@@ -161,7 +161,7 @@ namespace FMBot.Bot.Commands.LastFM
                         .WithDeletion(DeletionOptions.Valid)
                         .Build();
 
-                    _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
+                    _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds), runOnGateway: false);
                 }
                 else
                 {
@@ -382,7 +382,7 @@ namespace FMBot.Bot.Commands.LastFM
                     .WithDeletion(DeletionOptions.Valid)
                     .Build();
 
-                _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
+                _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds), runOnGateway: false);
             }
             else
             {
