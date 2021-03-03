@@ -126,7 +126,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!albumCall.Success)
             {
-                this._embed.ErrorResponse(albumCall.Error, albumCall.Message, this.Context);
+                this._embed.ErrorResponse(albumCall.Error, albumCall.Message, this.Context, "album");
                 await ReplyAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Error);
                 return;
@@ -221,7 +221,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!albumCall.Success)
             {
-                this._embed.ErrorResponse(albumCall.Error, albumCall.Message, this.Context);
+                this._embed.ErrorResponse(albumCall.Error, albumCall.Message, this.Context, "album");
                 await ReplyAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Error);
                 return;
@@ -649,7 +649,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!albumCall.Success)
             {
-                this._embed.ErrorResponse(albumCall.Error, albumCall.Message, this.Context);
+                this._embed.ErrorResponse(albumCall.Error, albumCall.Message, this.Context, "album");
                 await ReplyAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Error);
                 return;
@@ -809,7 +809,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!albumCall.Success)
             {
-                this._embed.ErrorResponse(albumCall.Error, albumCall.Message, this.Context);
+                this._embed.ErrorResponse(albumCall.Error, albumCall.Message, this.Context, "album");
                 await ReplyAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Error);
                 return;

@@ -1,3 +1,4 @@
+using System.ComponentModel.Design;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -88,7 +89,7 @@ namespace FMBot.Bot.Services
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
-        public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus? responseStatus, string message, ICommandContext context)
+        public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus? responseStatus, string message, ICommandContext context, string expectedResultType = null)
         {
             embed.WithTitle("Error while attempting get Last.fm information");
             switch (responseStatus)
@@ -110,6 +111,17 @@ namespace FMBot.Bot.Services
                     embed.WithDescription("Can't retrieve data because your Last.fm session is expired or invalid.\n" +
                                           "Please re-login to the bot with `.fmlogin`.");
                     break;
+                case ResponseStatus.MissingParameters:
+                    if (expectedResultType != null)
+                    {
+                        embed.Title = null;
+                        embed.WithDescription($"Sorry, Last.fm did not return an {expectedResultType} for the name you searched for.");
+                    }
+                    else
+                    {
+                        goto default;
+                    }
+                    break;
                 default:
                     embed.WithDescription(message);
                     break;
@@ -121,7 +133,7 @@ namespace FMBot.Bot.Services
             }
 
             embed.WithColor(DiscordConstants.WarningColorOrange);
-            Log.Warning("Last.fm returned error: {message} | {responseStatus} | {discordUserName} / {discordUserId} | {messageContent}", message, responseStatus, context.User.Username, context.User.Id, context.Message.Content);
+            Log.Information("Last.fm returned error: {message} | {responseStatus} | {discordUserName} / {discordUserId} | {messageContent}", message, responseStatus, context.User.Username, context.User.Id, context.Message.Content);
         }
 
         public static bool RecentScrobbleCallFailed(Response<RecentTrackList> recentScrobbles, string lastFmUserName)
