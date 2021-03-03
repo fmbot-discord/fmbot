@@ -434,7 +434,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
             var artistsString = amount == 1 ? "album" : "albums";
-            this._embedAuthor.WithName($"Top {amount} {timeSettings.Description.ToLower()} {artistsString} for {userTitle}");
+            this._embedAuthor.WithName($"Top {timeSettings.Description.ToLower()} {artistsString} for {userTitle}");
             this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?{timeSettings.UrlParameter}");
 
             amount = paginationEnabled ? 100 : amount;

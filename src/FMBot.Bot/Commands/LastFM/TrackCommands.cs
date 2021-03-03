@@ -503,7 +503,7 @@ namespace FMBot.Bot.Commands.LastFM
             var userUrl = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/tracks?{timeSettings.UrlParameter}";
             this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
             var trackStrings = amount == 1 ? "track" : "tracks";
-            this._embedAuthor.WithName($"Top {amount} {timeSettings.Description.ToLower()} {trackStrings} for {userTitle}");
+            this._embedAuthor.WithName($"Top {timeSettings.Description.ToLower()} {trackStrings} for {userTitle}");
             this._embedAuthor.WithUrl(userUrl);
 
             var footer = "";
