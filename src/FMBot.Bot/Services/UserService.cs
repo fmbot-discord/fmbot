@@ -383,20 +383,15 @@ namespace FMBot.Bot.Services
                 await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
                 connection.Open();
 
-                await using var deleteArtists = new NpgsqlCommand($"DELETE FROM public.user_artists WHERE user_id = {user.UserId};", connection);
-                await deleteArtists.ExecuteNonQueryAsync();
+                await using var deleteRelatedTables = new NpgsqlCommand(
+                    $"DELETE FROM public.user_artists WHERE user_id = {user.UserId}; " +
+                    $"DELETE FROM public.user_albums WHERE user_id = {user.UserId}; " +
+                    $"DELETE FROM public.user_tracks WHERE user_id = {user.UserId}; " +
+                    $"DELETE FROM public.friends WHERE user_id = {user.UserId} OR friend_user_id = {user.UserId}; " +
+                    $"DELETE FROM public.featured_logs WHERE user_id = {user.UserId}; ",
+                    connection);
 
-                await using var deleteAlbums = new NpgsqlCommand($"DELETE FROM public.user_albums WHERE user_id = {user.UserId};", connection);
-                await deleteAlbums.ExecuteNonQueryAsync();
-
-                await using var deleteTracks = new NpgsqlCommand($"DELETE FROM public.user_tracks WHERE user_id = {user.UserId};", connection);
-                await deleteTracks.ExecuteNonQueryAsync();
-
-                await using var deleteFriends = new NpgsqlCommand($"DELETE FROM public.friends WHERE user_id = {user.UserId};", connection);
-                await deleteFriends.ExecuteNonQueryAsync();
-
-                await using var deleteOtherFriends = new NpgsqlCommand($"DELETE FROM public.friends WHERE friend_user_id = {user.UserId};", connection);
-                await deleteOtherFriends.ExecuteNonQueryAsync();
+                await deleteRelatedTables.ExecuteNonQueryAsync();
 
                 db.Users.Remove(user);
 
