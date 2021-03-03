@@ -23,6 +23,6 @@ namespace FMBot.Bot.Resources
             { new Emoji("⏭️"), PaginatorAction.SkipToEnd}
         };
 
-        public static int PaginationTimeoutInSeconds = 90;
+        public const int PaginationTimeoutInSeconds = 120;
     }
 }
