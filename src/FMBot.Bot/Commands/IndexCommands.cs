@@ -180,7 +180,7 @@ namespace FMBot.Bot.Commands
 
             if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full" || force.ToLower() == "-force" || force.ToLower() == "force"))
             {
-                if (PublicProperties.IssuesAtLastFM)
+                if (PublicProperties.IssuesAtLastFm)
                 {
                     await ReplyAsync(
                         "Doing a full update is disabled temporarily while Last.fm is having issues. Please try again later.");

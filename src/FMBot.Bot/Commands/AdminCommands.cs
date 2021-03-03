@@ -176,15 +176,15 @@ namespace FMBot.Bot.Commands
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
-                if (!PublicProperties.IssuesAtLastFM)
+                if (!PublicProperties.IssuesAtLastFm)
                 {
-                    PublicProperties.IssuesAtLastFM = true;
+                    PublicProperties.IssuesAtLastFm = true;
                     await ReplyAsync("Enabled issue mode");
 
                 }
                 else
                 {
-                    PublicProperties.IssuesAtLastFM = false;
+                    PublicProperties.IssuesAtLastFm = false;
                     await ReplyAsync("Disabled issue mode");
                 }
 

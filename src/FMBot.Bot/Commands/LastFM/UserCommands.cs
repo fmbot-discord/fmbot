@@ -178,7 +178,7 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                 }
 
-                if (PublicProperties.IssuesAtLastFM)
+                if (PublicProperties.IssuesAtLastFm)
                 {
                     this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues");
                 }

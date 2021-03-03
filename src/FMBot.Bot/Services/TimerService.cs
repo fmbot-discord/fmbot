@@ -236,7 +236,7 @@ namespace FMBot.Bot.Services
                     if (string.IsNullOrEmpty(ConfigData.Data.Bot.Status))
                     {
                         Log.Information("Updating status");
-                        if (!PublicProperties.IssuesAtLastFM)
+                        if (!PublicProperties.IssuesAtLastFm)
                         {
                             await client.SetGameAsync($"{ConfigData.Data.Bot.Prefix} | {client.Guilds.Count} servers | fmbot.xyz");
                         }
@@ -288,7 +288,7 @@ namespace FMBot.Bot.Services
                         return;
                     }
 
-                    if (PublicProperties.IssuesAtLastFM)
+                    if (PublicProperties.IssuesAtLastFm)
                     {
                         Log.Information("Skipping index timer - issues at Last.fm");
                         return;

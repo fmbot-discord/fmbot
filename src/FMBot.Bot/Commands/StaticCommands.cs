@@ -213,7 +213,7 @@ namespace FMBot.Bot.Commands
                     "Keep in mind that the instance might not be fully up to date or other users might not be registered.");
             }
 
-            if (PublicProperties.IssuesAtLastFM)
+            if (PublicProperties.IssuesAtLastFm)
             {
                 this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues");
             }
