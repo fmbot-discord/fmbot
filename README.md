@@ -18,7 +18,7 @@ Documentation: https://fmbot.xyz/
 
 Feel free to join our Discord server: https://discord.gg/srmpCaa
 
-[Click here to add the bot to your server](https://invite.fmbot.xyz/).
+[Click here to add the bot to your server](http://invite.fmbot.xyz/).
 
 <h3>Download Binaries</h3>
 Get them from https://github.com/fmbot-discord/fmbot/releases (Stable) or https://ci.appveyor.com/project/fmbotdiscord/fmbot/build/artifacts (Latest).
