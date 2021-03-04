@@ -89,7 +89,7 @@ namespace FMBot.Bot.Services.Guild
             }
         }
 
-        public async Task SendFeaturedWebhooks(BotType botType, string trackString, string imageUrl)
+        public async Task SendFeaturedWebhooks(BotType botType, string trackString, int featuredUserId, string imageUrl)
         {
             var embed = new EmbedBuilder();
             embed.WithThumbnailUrl(imageUrl);
@@ -103,17 +103,33 @@ namespace FMBot.Bot.Services.Guild
 
             foreach (var webhook in webhooks)
             {
-                await SendWebhookEmbed(webhook, embed.Build());
+                await SendWebhookEmbed(webhook, embed, featuredUserId);
             }
         }
 
-        private async Task<bool> SendWebhookEmbed(Webhook webhook, Embed embed)
+        private async Task<bool> SendWebhookEmbed(Webhook webhook, EmbedBuilder embed, int featuredUserId)
         {
             try
             {
                 var webhookClient = new DiscordWebhookClient(webhook.DiscordWebhookId, webhook.Token);
 
-                await webhookClient.SendMessageAsync(embeds: new[] { embed });
+                await using var db = this._contextFactory.CreateDbContext();
+                var guild = await db.Guilds
+                    .AsQueryable()
+                    .Include(i => i.GuildUsers)
+                    .FirstOrDefaultAsync(f => f.GuildId == webhook.GuildId);
+
+                if (guild?.GuildUsers != null && guild.GuildUsers.Any())
+                {
+                    var guildUser = guild.GuildUsers.FirstOrDefault(f => f.UserId == featuredUserId);
+
+                    if (guildUser != null)
+                    {
+                        embed.WithFooter($"🥳 Congratulations! This user is in your server under the name {guildUser.UserName}.");
+                    }
+                }
+
+                await webhookClient.SendMessageAsync(embeds: new[] { embed.Build() });
 
                 return true;
             }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection.Metadata;
 using FMBot.Domain.Models;
 
 namespace FMBot.Persistence.Domain.Models
@@ -26,11 +27,15 @@ namespace FMBot.Persistence.Domain.Models
 
         public long? TotalPlaycount { get; set; }
 
+        public bool? RymEnabled { get; set; }
+
         public FmEmbedType FmEmbedType { get; set; }
 
         public FmCountType? FmCountType { get; set; }
 
         public ChartTimePeriod ChartTimePeriod { get; set; }
+
+        public PrivacyLevel PrivacyLevel { get; set; }
 
         public DateTime? LastGeneratedChartDateTimeUtc { get; set; }
 
@@ -59,5 +64,7 @@ namespace FMBot.Persistence.Domain.Models
         public ICollection<GuildUser> GuildUsers { get; set; }
 
         public ICollection<GuildBlockedUser> GuildBlockedUsers { get; set; }
+
+        public ICollection<FeaturedLog> FeaturedLogs { get; set; }
     }
 }

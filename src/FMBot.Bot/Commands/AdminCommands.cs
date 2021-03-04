@@ -99,7 +99,7 @@ namespace FMBot.Bot.Commands
         public async Task DebugGuildAsync(ulong? guildId = null)
         {
             var chosenGuild = guildId ?? this.Context.Guild.Id;
-            var guild = await this._guildService.GetGuildAsync(chosenGuild);
+            var guild = await this._guildService.GetFullGuildAsync(chosenGuild);
 
             if (guild == null)
             {
@@ -176,15 +176,15 @@ namespace FMBot.Bot.Commands
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
-                if (!PublicProperties.IssuesAtLastFM)
+                if (!PublicProperties.IssuesAtLastFm)
                 {
-                    PublicProperties.IssuesAtLastFM = true;
+                    PublicProperties.IssuesAtLastFm = true;
                     await ReplyAsync("Enabled issue mode");
 
                 }
                 else
                 {
-                    PublicProperties.IssuesAtLastFM = false;
+                    PublicProperties.IssuesAtLastFm = false;
                     await ReplyAsync("Disabled issue mode");
                 }
 
@@ -338,9 +338,9 @@ namespace FMBot.Bot.Commands
         //    }
         //}
 
-        [Command("restarttimer")]
-        [Summary("Restarts the internal bot avatar timer.")]
-        [Alias("starttimer", "timerstart", "timerrestart")]
+        [Command("resetfeatured")]
+        [Summary("Restarts the featured timer.")]
+        [Alias("restarttimer", "timerstart", "timerrestart")]
         public async Task RestartTimerAsync()
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -348,7 +348,7 @@ namespace FMBot.Bot.Commands
                 try
                 {
                     this._timer.Restart();
-                    await ReplyAsync("Timer restarted");
+                    await ReplyAsync("Featured timer restarted (note: max 3 times / hour)");
                     this.Context.LogCommandUsed();
                 }
                 catch (Exception e)
@@ -359,7 +359,7 @@ namespace FMBot.Bot.Commands
             }
             else
             {
-                await ReplyAsync("Error: Insufficient rights. Only FMBot owners can restart timer.");
+                await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can restart timer.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }

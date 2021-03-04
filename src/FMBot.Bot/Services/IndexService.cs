@@ -12,6 +12,7 @@ using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Npgsql;
 using PostgreSQLCopyHelper;
 using Serilog;
@@ -23,13 +24,15 @@ namespace FMBot.Bot.Services
         private readonly IUserIndexQueue _userIndexQueue;
         private readonly GlobalIndexService _globalIndexService;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly IMemoryCache _cache;
 
-        public IndexService(IUserIndexQueue userIndexQueue, GlobalIndexService indexService, IDbContextFactory<FMBotDbContext> contextFactory)
+        public IndexService(IUserIndexQueue userIndexQueue, GlobalIndexService indexService, IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
         {
             this._userIndexQueue = userIndexQueue;
             this._userIndexQueue.UsersToIndex.SubscribeAsync(OnNextAsync);
             this._globalIndexService = indexService;
             this._contextFactory = contextFactory;
+            this._cache = cache;
         }
 
         private async Task OnNextAsync(IndexUserQueueItem user)
@@ -46,7 +49,14 @@ namespace FMBot.Bot.Services
         {
             Log.Information("Starting index for {UserNameLastFM}", user.UserNameLastFM);
 
-            await this._globalIndexService.IndexUser(new IndexUserQueueItem(user.UserId));
+            if (!this._cache.TryGetValue($"index-started-{user.UserId}", out bool _))
+            {
+                await this._globalIndexService.IndexUser(new IndexUserQueueItem(user.UserId));
+            }
+            else
+            {
+                Log.Information("Index for {UserNameLastFM} already in progress, skipping.", user.UserNameLastFM);
+            }
         }
 
         public async Task StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers)
@@ -64,8 +74,6 @@ namespace FMBot.Bot.Services
                 {
                     DiscordGuildId = discordGuild.Id,
                     TitlesEnabled = true,
-                    ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = FmEmbedType.embedmini,
                     Name = discordGuild.Name,
                 };
 
@@ -218,21 +226,17 @@ namespace FMBot.Bot.Services
                 .Include(i => i.GuildUsers)
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == user.Guild.Id);
 
-            if (guild != null && guild.GuildUsers.Select(g => g.UserId).Contains(userThatLeft.UserId))
+            if (guild?.GuildUsers != null && guild.GuildUsers.Any() && guild.GuildUsers.Select(g => g.UserId).Contains(userThatLeft.UserId))
             {
-                var guildUser = guild.GuildUsers.FirstOrDefault(f => f.UserId == userThatLeft.UserId && f.GuildId == guild.GuildId);
+                var guildUser = guild
+                    .GuildUsers
+                    .FirstOrDefault(f => f.UserId == userThatLeft.UserId && f.GuildId == guild.GuildId);
 
                 if (guildUser != null)
                 {
                     db.GuildUsers.Remove(guildUser);
 
-                    Log.Information("Removed user {userId} from guild {guildName}", userThatLeft.UserId, guild.Name);
-
                     await db.SaveChangesAsync();
-                }
-                else
-                {
-                    Log.Warning("Tried removing user {userId} from guild {guildName}, but user was not stored in guild", userThatLeft.UserId, guild.Name);
                 }
             }
         }

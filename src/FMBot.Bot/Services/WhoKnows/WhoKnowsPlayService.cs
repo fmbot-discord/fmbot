@@ -1,18 +1,17 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
+using Dapper;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Npgsql;
 
 namespace FMBot.Bot.Services.WhoKnows
 {
@@ -27,137 +26,88 @@ namespace FMBot.Bot.Services.WhoKnows
             this._cache = cache;
         }
 
-        public async Task<IReadOnlyList<ListArtist>> GetTopWeekArtistsForGuild(IReadOnlyList<User> guildUsers,
-            OrderType orderType)
+        public static async Task<IReadOnlyList<ListArtist>> GetTopArtistsForGuild(int guildId, OrderType orderType, int amountOfDays)
         {
-            var now = DateTime.UtcNow;
-            var minDate = DateTime.UtcNow.AddDays(-7);
+            var sql = "SELECT up.artist_name, " +
+                      "COUNT(up.user_play_id) AS total_playcount, " +
+                      "COUNT(DISTINCT up.user_id) AS listener_count " +
+                      "FROM user_plays AS up " +
+                      "INNER JOIN users AS u ON up.user_id = u.user_id  " +
+                      "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                      $"WHERE gu.guild_id = @guildId AND time_played > current_date - interval '{amountOfDays}' day " +
+                      "AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
+                      "GROUP BY up.artist_name ";
 
-            var userIds = guildUsers.Select(s => s.UserId);
+            sql += orderType == OrderType.Playcount ?
+                "ORDER BY total_playcount DESC, listener_count DESC " :
+                "ORDER BY listener_count DESC, total_playcount DESC ";
 
-            await using var db = this._contextFactory.CreateDbContext();
+            sql += "LIMIT 14";
 
-            var artistUserPlays = await db.UserPlays
-                .AsQueryable()
-                .Where(t =>
-                    userIds.Contains(t.UserId) &&
-                    t.TimePlayed.Date <= now.Date &&
-                    t.TimePlayed.Date > minDate.Date)
-                .GroupBy(x => new { x.ArtistName, x.UserId })
-                .Select(s => new ArtistUserPlay
-                {
-                    ArtistName = s.Key.ArtistName,
-                    UserId = s.Key.UserId,
-                    Playcount = s.Count()
-                })
-                .ToListAsync();
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
 
-            var query = artistUserPlays
-                .GroupBy(g => g.ArtistName)
-                .Select(s => new ListArtist
-                {
-                    ArtistName = s.Key,
-                    Playcount = s.Sum(su => su.Playcount),
-                    ListenerCount = s.Select(se => se.UserId).Distinct().Count()
-                });
-
-            query = orderType == OrderType.Playcount ?
-                query.OrderByDescending(o => o.Playcount).ThenByDescending(o => o.Playcount) :
-                query.OrderByDescending(o => o.ListenerCount).ThenByDescending(o => o.Playcount);
-
-            return query
-                .Take(14)
-                .ToList();
+            return (await connection.QueryAsync<ListArtist>(sql, new
+            {
+                guildId
+            })).ToList();
         }
 
-        public async Task<IReadOnlyList<ListAlbum>> GetTopWeekAlbumsForGuild(IReadOnlyList<User> guildUsers,
-            OrderType orderType)
+        public async Task<IReadOnlyList<ListAlbum>> GetTopAlbumsForGuild(int guildId, OrderType orderType, int amountOfDays)
         {
-            var now = DateTime.UtcNow;
-            var minDate = DateTime.UtcNow.AddDays(-7);
+            var sql = "SELECT up.artist_name, up.album_name, " +
+                      "COUNT(up.user_play_id) AS total_playcount, " +
+                      "COUNT(DISTINCT up.user_id) AS listener_count " +
+                      "FROM user_plays AS up " +
+                      "INNER JOIN users AS u ON up.user_id = u.user_id  " +
+                      "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                      $"WHERE gu.guild_id = @guildId AND time_played > current_date - interval '{amountOfDays}' day " +
+                      "AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
+                      "GROUP BY up.artist_name, album_name ";
 
-            var userIds = guildUsers.Select(s => s.UserId);
+            sql += orderType == OrderType.Playcount ?
+                "ORDER BY total_playcount DESC, listener_count DESC " :
+                "ORDER BY listener_count DESC, total_playcount DESC ";
 
-            await using var db = this._contextFactory.CreateDbContext();
+            sql += "LIMIT 14";
 
-            var albumUserPlays = await db.UserPlays
-                .AsQueryable()
-                .Where(t =>
-                    userIds.Contains(t.UserId) &&
-                    t.TimePlayed.Date <= now.Date &&
-                    t.TimePlayed.Date > minDate.Date)
-                .GroupBy(x => new { x.ArtistName, x.AlbumName, x.UserId })
-                .Select(s => new AlbumUserPlay
-                {
-                    ArtistName = s.Key.ArtistName,
-                    AlbumName = s.Key.AlbumName,
-                    UserId = s.Key.UserId,
-                    Playcount = s.Count()
-                })
-                .ToListAsync();
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
 
-            var query = albumUserPlays
-                .GroupBy(g => new { g.ArtistName, g.AlbumName })
-                .Select(s => new ListAlbum
-                {
-                    ArtistName = s.Key.ArtistName,
-                    AlbumName = s.Key.AlbumName,
-                    Playcount = s.Sum(su => su.Playcount),
-                    ListenerCount = s.Select(se => se.UserId).Distinct().Count()
-                });
-
-            query = orderType == OrderType.Playcount ?
-                query.OrderByDescending(o => o.Playcount).ThenByDescending(o => o.Playcount) :
-                query.OrderByDescending(o => o.ListenerCount).ThenByDescending(o => o.Playcount);
-
-            return query
-                .Take(14)
-                .ToList();
+            return (await connection.QueryAsync<ListAlbum>(sql, new
+            {
+                guildId
+            })).ToList();
         }
 
-        public async Task<IReadOnlyList<ListTrack>> GetTopWeekTracksForGuild(IReadOnlyList<User> guildUsers,
-            OrderType orderType)
+        public static async Task<IReadOnlyList<ListTrack>> GetTopTracksForGuild(int guildId, OrderType orderType, int amountOfDays)
         {
-            var now = DateTime.UtcNow;
-            var minDate = DateTime.UtcNow.AddDays(-7);
+            var sql = "SELECT up.artist_name, up.track_name, " +
+                      "COUNT(up.user_play_id) AS total_playcount, " +
+                      "COUNT(DISTINCT up.user_id) AS listener_count " +
+                      "FROM user_plays AS up " +
+                      "INNER JOIN users AS u ON up.user_id = u.user_id  " +
+                      "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                      $"WHERE gu.guild_id = @guildId AND time_played > current_date - interval '{amountOfDays}' day " +
+                      "AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
+                      "GROUP BY up.artist_name, track_name ";
 
-            var userIds = guildUsers.Select(s => s.UserId);
+            sql += orderType == OrderType.Playcount ?
+                "ORDER BY total_playcount DESC, listener_count DESC " :
+                "ORDER BY listener_count DESC, total_playcount DESC ";
 
-            await using var db = this._contextFactory.CreateDbContext();
+            sql += "LIMIT 14";
 
-            var trackUserPlays = await db.UserPlays
-                .AsQueryable()
-                .Where(t =>
-                    userIds.Contains(t.UserId) &&
-                    t.TimePlayed.Date <= now.Date &&
-                    t.TimePlayed.Date > minDate.Date)
-                .GroupBy(x => new { x.ArtistName, x.TrackName, x.UserId })
-                .Select(s => new TrackUserPlay
-                {
-                    ArtistName = s.Key.ArtistName,
-                    TrackName = s.Key.TrackName,
-                    UserId = s.Key.UserId,
-                    Playcount = s.Count()
-                })
-                .ToListAsync();
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
 
-            var query = trackUserPlays
-                .GroupBy(g => new { g.ArtistName, g.TrackName })
-                .Select(s => new ListTrack
-                {
-                    ArtistName = s.Key.ArtistName,
-                    TrackName = s.Key.TrackName,
-                    Playcount = s.Sum(su => su.Playcount),
-                    ListenerCount = s.Select(se => se.UserId).Distinct().Count()
-                });
-
-            query = orderType == OrderType.Playcount ?
-                query.OrderByDescending(o => o.Playcount).ThenByDescending(o => o.Playcount) :
-                query.OrderByDescending(o => o.ListenerCount).ThenByDescending(o => o.Playcount);
-
-            return query
-                .Take(14)
-                .ToList();
+            return (await connection.QueryAsync<ListTrack>(sql, new
+            {
+                guildId
+            })).ToList();
         }
 
         public void AddRecentPlayToCache(int userId, RecentTrack track)
@@ -210,19 +160,19 @@ namespace FMBot.Bot.Services.WhoKnows
 
             if (foundUsers.Count == 1)
             {
-                return $"{foundUsers.First().UserName} was also listening to this trackLfm {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!";
+                return $"{foundUsers.First().UserName} was also listening to this track {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!";
             }
             if (foundUsers.Count == 2)
             {
-                return $"{foundUsers[0].UserName} and {foundUsers[1].UserName} were also recently listening to this trackLfm!";
+                return $"{foundUsers[0].UserName} and {foundUsers[1].UserName} were also recently listening to this track!";
             }
             if (foundUsers.Count == 3)
             {
-                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName} and {foundUsers[2].UserName} were also recently listening to this trackLfm!";
+                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName} and {foundUsers[2].UserName} were also recently listening to this track!";
             }
             if (foundUsers.Count > 3)
             {
-                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this trackLfm!";
+                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this track!";
             }
 
             return null;

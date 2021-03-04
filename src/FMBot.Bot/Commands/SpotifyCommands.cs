@@ -12,7 +12,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
-using SpotifyAPI.Web.Enums;
+using SpotifyAPI.Web;
 
 namespace FMBot.Bot.Commands
 {
@@ -111,7 +111,7 @@ namespace FMBot.Bot.Commands
                     " Please try again later or contact .fmbot support.");
             }
         }
-        
+
         [Command("spotifyalbum")]
         [Summary("Shares a link to a Spotify track based on what a user is listening to")]
         [Alias("spab")]
@@ -150,7 +150,7 @@ namespace FMBot.Bot.Commands
                     querystring = $"{currentTrack.ArtistName} {currentTrack.AlbumName}";
                 }
 
-                var item = await this._spotifyService.GetSearchResultAsync(querystring, SearchType.Album);
+                var item = await this._spotifyService.GetSearchResultAsync(querystring, SearchRequest.Types.Album);
 
                 if (item.Albums?.Items?.Any() == true)
                 {
@@ -220,17 +220,19 @@ namespace FMBot.Bot.Commands
                     querystring = $"{currentTrack.ArtistName}";
                 }
 
-                var item = await this._spotifyService.GetSearchResultAsync(querystring, SearchType.Artist);
+                var item = await this._spotifyService.GetSearchResultAsync(querystring, SearchRequest.Types.Artist);
 
-                if (item.Artists?.Items?.Any() == true)
+                if (item.Artists.Items?.Any() == true)
                 {
-                    var artist = item.Artists.Items.OrderByDescending(o => o.Popularity).FirstOrDefault();
+                    var artist = item.Artists.Items.OrderByDescending(o => o.Popularity).FirstOrDefault(f => f.Name.ToLower() == querystring.ToLower()) ??
+                                 item.Artists.Items.OrderByDescending(o => o.Popularity).FirstOrDefault();
+
                     var reply = $"https://open.spotify.com/artist/{artist.Id}";
 
                     var rnd = new Random();
                     if (rnd.Next(0, 7) == 1 && string.IsNullOrWhiteSpace(searchValue))
                     {
-                        reply += $"\n*Tip: Search for other artists by simply adding the searchvalue behind `{prfx}spotifyartist` (or `.fmspa`).*";
+                        reply += $"\n*Tip: Search for other artists by simply adding the searchvalue behind `{prfx}spotifyartist` (or `{prfx}spa`).*";
                     }
 
                     await ReplyAsync(reply);

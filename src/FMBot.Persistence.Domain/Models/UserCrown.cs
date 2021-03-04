@@ -25,5 +25,7 @@ namespace FMBot.Persistence.Domain.Models
         public DateTime Modified { get; set; }
 
         public bool Active { get; set; }
+
+        public bool SeededCrown { get; set; }
     }
 }

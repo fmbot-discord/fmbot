@@ -76,7 +76,25 @@ namespace FMBot.Bot.Services.Guild
             var servers = await db.Guilds
                 .Where(w => w.DisabledCommands != null && w.DisabledCommands.Length > 0)
                 .ToListAsync();
+
             foreach (var server in servers)
+            {
+                StoreDisabledCommands(server.DisabledCommands, server.DiscordGuildId);
+            }
+        }
+
+        public async Task ReloadDisabledCommands(ulong discordGuildId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var server = await db.Guilds
+                .Where(w => w.DiscordGuildId == discordGuildId)
+                .FirstOrDefaultAsync();
+
+            if (server == null)
+            {
+                RemoveDisabledCommands(discordGuildId);
+            }
+            else
             {
                 StoreDisabledCommands(server.DisabledCommands, server.DiscordGuildId);
             }

@@ -13,5 +13,7 @@ namespace FMBot.Persistence.Domain.Models
         public Guild Guild { get; set; }
 
         public string[] DisabledCommands { get; set; }
+
+        public int? FmCooldown { get; set; }
     }
 }

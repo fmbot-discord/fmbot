@@ -11,6 +11,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Objects;
@@ -37,7 +38,8 @@ namespace FMBot.Bot.Services
 
         private bool _timerEnabled;
 
-        private string _trackString = "No featured picked since last bot startup. Please wait for a new featured user to be chosen.";
+        private string _featuredTrackString = "No featured picked since last bot startup. Please wait for a new featured user to be chosen.";
+        private int _featuredUserId = 0;
 
         public TimerService(DiscordShardedClient client,
             LastFmService lastFmService,
@@ -61,20 +63,26 @@ namespace FMBot.Bot.Services
                 {
                     var random = new Random();
                     var randomAvatarMode = random.Next(1, 4);
+
+                    if (!Enum.TryParse(randomAvatarMode.ToString(), out FeaturedMode featuredMode))
+                    {
+                        return;
+                    }
+
                     var randomAvatarModeDesc = "";
 
-                    switch (randomAvatarMode)
+                    switch (featuredMode)
                     {
-                        case 1:
+                        case FeaturedMode.RecentPlays:
                             randomAvatarModeDesc = "Recent listens";
                             break;
-                        case 2:
+                        case FeaturedMode.TopAlbumsWeekly:
                             randomAvatarModeDesc = "Weekly albums";
                             break;
-                        case 3:
+                        case FeaturedMode.TopAlbumsMonthly:
                             randomAvatarModeDesc = "Monthly albums";
                             break;
-                        case 4:
+                        case FeaturedMode.TopAlbumsAllTime:
                             randomAvatarModeDesc = "Overall albums";
                             break;
                     }
@@ -83,19 +91,19 @@ namespace FMBot.Bot.Services
 
                     try
                     {
-                        var lastFmUserName = await this._userService.GetRandomLastFMUserAsync();
-                        Log.Information($"Featured: Picked user {lastFmUserName}");
+                        var user = await this._userService.GetRandomUserAsync();
+                        Log.Information($"Featured: Picked user {user.UserId} / {user.UserNameLastFM}");
 
-                        switch (randomAvatarMode)
+                        switch (featuredMode)
                         {
                             // Recent listens
-                            case 1:
-                                var tracks = await this._lastFMService.GetRecentScrobblesAsync(lastFmUserName, 50);
+                            case FeaturedMode.RecentPlays:
+                                var tracks = await this._lastFMService.GetRecentScrobblesAsync(user.UserNameLastFM, 50);
 
                                 if (!tracks.Success || !tracks.Content.Any())
                                 {
-                                    Log.Information($"Featured: User {lastFmUserName} had no recent tracks, switching to alternative avatar mode");
-                                    goto case 2;
+                                    Log.Information($"Featured: User {user.UserNameLastFM} had no recent tracks, switching to alternative avatar mode");
+                                    goto case FeaturedMode.TopAlbumsWeekly;
                                 }
 
                                 LastTrack trackToFeature = null;
@@ -111,51 +119,51 @@ namespace FMBot.Bot.Services
                                 if (trackToFeature == null)
                                 {
                                     Log.Information("Featured: No albums or nsfw filtered, switching to alternative avatar mode");
-                                    goto case 3;
+                                    goto case FeaturedMode.TopAlbumsMonthly;
                                 }
 
                                 var albumImages = await this._lastFMService.GetAlbumImagesAsync(trackToFeature.ArtistName, trackToFeature.AlbumName);
 
-                                this._trackString = $"[{trackToFeature.AlbumName}]({trackToFeature.Url}) \n" +
+                                this._featuredTrackString = $"[{trackToFeature.AlbumName}]({trackToFeature.Url}) \n" +
                                                    $"by [{trackToFeature.ArtistName}]({trackToFeature.ArtistUrl}) \n \n" +
-                                                   $"{randomAvatarModeDesc} from {lastFmUserName}";
+                                                   $"{randomAvatarModeDesc} from {user.UserNameLastFM}";
+                                this._featuredUserId = user.UserId;
 
-                                Log.Information("Featured: Changing avatar to: " + this._trackString);
+                                Log.Information("Featured: Changing avatar to: " + this._featuredTrackString);
 
                                 if (albumImages?.Large != null)
                                 {
                                     ChangeToNewAvatar(client, albumImages.Large.AbsoluteUri);
-                                    ScrobbleFeatured(client, trackToFeature);
+                                    LogFeaturedTrack(client, trackToFeature, user.UserId, featuredMode, this._featuredTrackString);
                                 }
                                 else
                                 {
                                     Log.Information("Featured: Recent listen had no image, switching to alternative avatar mode");
-                                    goto case 4;
+                                    goto case FeaturedMode.TopAlbumsAllTime;
                                 }
 
                                 break;
-                            // Weekly albums
-                            case 2:
-                            case 3:
-                            case 4:
+                            case FeaturedMode.TopAlbumsWeekly:
+                            case FeaturedMode.TopAlbumsMonthly:
+                            case FeaturedMode.TopAlbumsAllTime:
                                 var timespan = LastStatsTimeSpan.Week;
-                                switch (randomAvatarMode)
+                                switch (featuredMode)
                                 {
-                                    case 3:
+                                    case FeaturedMode.TopAlbumsMonthly:
                                         timespan = LastStatsTimeSpan.Month;
                                         break;
-                                    case 4:
+                                    case FeaturedMode.TopAlbumsAllTime:
                                         timespan = LastStatsTimeSpan.Overall;
                                         break;
                                 }
 
-                                var albums = await this._lastFMService.GetTopAlbumsAsync(lastFmUserName, timespan, 10);
+                                var albums = await this._lastFMService.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 10);
 
                                 if (!albums.Any())
                                 {
-                                    Log.Information($"Featured: User {lastFmUserName} had no albums, switching to different user.");
-                                    lastFmUserName = await this._userService.GetRandomLastFMUserAsync();
-                                    albums = await this._lastFMService.GetTopAlbumsAsync(lastFmUserName, timespan, 10);
+                                    Log.Information($"Featured: User {user.UserNameLastFM} had no albums, switching to different user.");
+                                    user = await this._userService.GetRandomUserAsync();
+                                    albums = await this._lastFMService.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 15);
                                 }
 
                                 var albumList = albums
@@ -170,21 +178,26 @@ namespace FMBot.Bot.Services
 
                                     var albumImage = await this._lastFMService.GetAlbumImagesAsync(currentAlbum.ArtistName, currentAlbum.Name);
 
-                                    this._trackString = $"[{currentAlbum.Name}]({currentAlbum.Url}) \n" +
+                                    this._featuredTrackString = $"[{currentAlbum.Name}]({currentAlbum.Url}) \n" +
                                                         $"by {currentAlbum.ArtistName} \n \n" +
-                                                        $"{randomAvatarModeDesc} from {lastFmUserName}";
+                                                        $"{randomAvatarModeDesc} from {user.UserNameLastFM}";
+                                    this._featuredUserId = user.UserId;
 
-                                    if (albumImage?.Large != null && await this._censorService.AlbumIsSafe(currentAlbum.Name, currentAlbum.ArtistName))
+                                    if (albumImage?.Large != null &&
+                                        await this._censorService.AlbumIsSafe(currentAlbum.Name, currentAlbum.ArtistName) &&
+                                        await this._censorService.AlbumNotFeaturedRecently(currentAlbum.Name, currentAlbum.ArtistName)
+                                        )
                                     {
                                         Log.Information($"Featured: Album {i} success, changing avatar to: \n" +
-                                                         $"{this._trackString}");
+                                                         $"{this._featuredTrackString}");
 
                                         ChangeToNewAvatar(client, albumImage.Large.AbsoluteUri);
+                                        LogFeaturedAlbum(client, currentAlbum, user.UserId, featuredMode, this._featuredTrackString);
                                         albumFound = true;
                                     }
                                     else
                                     {
-                                        Log.Information($"Featured: Album {i} had no image or was nsfw, switching to alternative album");
+                                        Log.Information($"Featured: Album {i} had no image, recently featured or was nsfw, switching to alternative album");
                                         i++;
                                     }
                                 }
@@ -223,7 +236,7 @@ namespace FMBot.Bot.Services
                     if (string.IsNullOrEmpty(ConfigData.Data.Bot.Status))
                     {
                         Log.Information("Updating status");
-                        if (!PublicProperties.IssuesAtLastFM)
+                        if (!PublicProperties.IssuesAtLastFm)
                         {
                             await client.SetGameAsync($"{ConfigData.Data.Bot.Prefix} | {client.Guilds.Count} servers | fmbot.xyz");
                         }
@@ -275,6 +288,12 @@ namespace FMBot.Bot.Services
                         return;
                     }
 
+                    if (PublicProperties.IssuesAtLastFm)
+                    {
+                        Log.Information("Skipping index timer - issues at Last.fm");
+                        return;
+                    }
+
                     Log.Information("Getting users to index");
                     var timeToIndex = DateTime.UtcNow.AddDays(-ConfigData.Data.LastFm.UserIndexFrequencyInDays.Value);
 
@@ -302,14 +321,11 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public void Restart() // 7) Example to restart the timer
+        public void Restart()
         {
-            if (!IsTimerActive())
-            {
-                this._timer.Change(TimeSpan.FromSeconds(Convert.ToDouble(ConfigData.Data.Bot.FeaturedTimerStartupDelayInSeconds)),
-                    TimeSpan.FromMinutes(Convert.ToDouble(ConfigData.Data.Bot.FeaturedTimerRepeatInMinutes)));
-                this._timerEnabled = true;
-            }
+            this._timer.Change(TimeSpan.FromSeconds(0),
+                TimeSpan.FromMinutes(Convert.ToDouble(ConfigData.Data.Bot.FeaturedTimerRepeatInMinutes)));
+            this._timerEnabled = true;
         }
 
         public async void ChangeToNewAvatar(DiscordShardedClient client, string imageUrl)
@@ -344,10 +360,10 @@ namespace FMBot.Bot.Services
                 var builder = new EmbedBuilder();
                 var selfUser = client.CurrentUser;
                 builder.WithThumbnailUrl(selfUser.GetAvatarUrl());
-                builder.AddField("Featured:", this._trackString);
+                builder.AddField("Featured:", this._featuredTrackString);
 
                 var botType = BotTypeExtension.GetBotType(client.CurrentUser.Id);
-                await this._webhookService.SendFeaturedWebhooks(botType, this._trackString, selfUser.GetAvatarUrl());
+                await this._webhookService.SendFeaturedWebhooks(botType, this._featuredTrackString, this._featuredUserId, imageUrl);
 
                 if (ConfigData.Data.Bot.BaseServerId != 0 && ConfigData.Data.Bot.FeaturedChannelId != 0)
                 {
@@ -367,7 +383,7 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async void ScrobbleFeatured(DiscordShardedClient client, LastTrack track)
+        public async void LogFeaturedTrack(DiscordShardedClient client, LastTrack track, int userId, FeaturedMode featuredMode, string description)
         {
             try
             {
@@ -375,12 +391,30 @@ namespace FMBot.Bot.Services
 
                 if (botUser?.SessionKeyLastFm != null)
                 {
-                    await this._lastFMService.ScrobbleAsync(botUser, track.ArtistName, track.Name);
+                    await this._lastFMService.ScrobbleAsync(botUser, track.ArtistName, track.Name, track.AlbumName);
                 }
+
+                var botType = BotTypeExtension.GetBotType(client.CurrentUser.Id);
+
+                await this._userService.LogFeatured(userId, featuredMode, botType, description, track.ArtistName, track.AlbumName, track.Name);
             }
             catch (Exception exception)
             {
-                Log.Error(exception, nameof(ScrobbleFeatured));
+                Log.Error(exception, nameof(LogFeaturedTrack));
+            }
+        }
+
+        public async void LogFeaturedAlbum(DiscordShardedClient client, LastAlbum album, int userId, FeaturedMode featuredMode, string description)
+        {
+            try
+            {
+                var botType = BotTypeExtension.GetBotType(client.CurrentUser.Id);
+
+                await this._userService.LogFeatured(userId, featuredMode, botType, description, album.ArtistName, album.Name);
+            }
+            catch (Exception exception)
+            {
+                Log.Error(exception, nameof(LogFeaturedAlbum));
             }
         }
 
@@ -388,8 +422,8 @@ namespace FMBot.Bot.Services
         {
             try
             {
-                this._trackString = "FMBot Default Avatar";
-                Log.Information("Changed avatar to: " + this._trackString);
+                this._featuredTrackString = "FMBot Default Avatar";
+                Log.Information("Changed avatar to: " + this._featuredTrackString);
                 var fileStream = new FileStream(GlobalVars.ImageFolder + "avatar.png", FileMode.Open);
                 var image = new Image(fileStream);
                 await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
@@ -405,8 +439,8 @@ namespace FMBot.Bot.Services
         {
             try
             {
-                this._trackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                Log.Information("Changed avatar to: " + this._trackString);
+                this._featuredTrackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
+                Log.Information("Changed avatar to: " + this._featuredTrackString);
                 var fileStream = new FileStream(GlobalVars.ImageFolder + "censored.png", FileMode.Open);
                 var image = new Image(fileStream);
                 await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
@@ -420,7 +454,7 @@ namespace FMBot.Bot.Services
                 var builder = new EmbedBuilder();
                 var SelfUser = client.CurrentUser;
                 builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
-                builder.AddField("Featured:", this._trackString);
+                builder.AddField("Featured:", this._featuredTrackString);
 
                 await channel.SendMessageAsync("", false, builder.Build());
             }
@@ -445,8 +479,9 @@ namespace FMBot.Bot.Services
             {
                 ChangeToNewAvatar(this._client, link);
 
-                this._trackString = desc;
-                Log.Information("Changed featured to: " + this._trackString);
+                this._featuredTrackString = desc;
+                this._featuredUserId = 0;
+                Log.Information("Changed featured to: " + this._featuredTrackString);
             }
             catch (Exception e)
             {
@@ -456,7 +491,11 @@ namespace FMBot.Bot.Services
 
         public string GetTrackString()
         {
-            return this._trackString;
+            return this._featuredTrackString;
+        }
+        public int GetUserId()
+        {
+            return this._featuredUserId;
         }
 
         public bool IsTimerActive()

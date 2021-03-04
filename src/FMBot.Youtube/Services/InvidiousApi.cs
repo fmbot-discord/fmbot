@@ -18,6 +18,7 @@ namespace FMBot.Youtube.Services
         private readonly HttpClient _client;
 
         // https://instances.invidio.us/
+        // https://ytprivate.com/api/v1/search?q=linus
         private readonly string _url;
 
         public InvidiousApi(IConfigurationRoot configuration, IHttpClientFactory httpClientFactory)

@@ -69,7 +69,6 @@ namespace FMBot.Bot
             var provider = services.BuildServiceProvider(); // Build the service provider
             //provider.GetRequiredService<LoggingService>();      // Start the logging service
             provider.GetRequiredService<CommandHandler>();
-            provider.GetRequiredService<SlashCommandHandler>();
             provider.GetRequiredService<ClientLogHandler>();
             provider.GetRequiredService<UserEventHandler>();
 
@@ -112,7 +111,6 @@ namespace FMBot.Bot
                 .AddSingleton<PlayService>()
                 .AddSingleton<Random>()
                 .AddSingleton<SettingService>()
-                .AddSingleton<SlashCommandHandler>()
                 .AddSingleton<SpotifyService>()
                 .AddSingleton<StartupService>()
                 .AddSingleton<SupporterService>()
@@ -120,18 +118,18 @@ namespace FMBot.Bot
                 .AddSingleton<UserEventHandler>()
                 .AddSingleton<UserService>()
                 .AddSingleton<WebhookService>()
+                .AddSingleton<WhoKnowsService>()
                 .AddSingleton<WhoKnowsAlbumService>()
                 .AddSingleton<WhoKnowsArtistService>()
                 .AddSingleton<WhoKnowsPlayService>()
-                .AddSingleton<WhoKnowsService>()
                 .AddSingleton<WhoKnowsTrackService>()
                 .AddSingleton<YoutubeService>() // Add random to the collection
                 .AddSingleton(this.Configuration) // Add the configuration to the collection
-                .AddSingleton(new InteractivityService(discordClient, TimeSpan.FromMinutes(3)))
                 .AddHttpClient();
 
             // These services can only be added after the config is loaded
             services
+                .AddSingleton(new InteractivityService(discordClient, TimeSpan.FromMinutes(3)))
                 .AddSingleton<GlobalIndexService>()
                 .AddSingleton<GlobalUpdateService>()
                 .AddSingleton<IUpdateService, UpdateService>()

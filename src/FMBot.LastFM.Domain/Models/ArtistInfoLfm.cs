@@ -2,15 +2,15 @@ using System;
 
 namespace FMBot.LastFM.Domain.Models
 {
-    public class ArtistResponse
+    public class ArtistInfoLfmResponse
     {
-        public Artist Artist { get; set; }
+        public ArtistInfoLfm Artist { get; set; }
     }
 
-    public class Artist
+    public class ArtistInfoLfm
     {
         public string Name { get; set; }
-        public Guid? Mbid { get; set; }
+        public string Mbid { get; set; }
         public string Url { get; set; }
         public long Streamable { get; set; }
         public long Ontour { get; set; }

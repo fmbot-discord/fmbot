@@ -36,8 +36,8 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
-        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new();
+        private static readonly List<SocketUser> StackCooldownTarget = new();
 
         public ChartCommands(
                 GuildService guildService,
@@ -142,11 +142,6 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                if (this.Context.InteractionData != null)
-                {
-                    _ = this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, "", type: InteractionMessageType.AcknowledgeWithSource);
-                }
-
                 var chartSettings = new ChartSettings(this.Context.User);
 
                 chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, this.Context);
@@ -247,12 +242,22 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithFooter(this._embedFooter);
 
-                var chart = await this._chartService.GenerateChartAsync(chartSettings);
+                var nsfwAllowed = this.Context.Guild == null || ((SocketTextChannel) this.Context.Channel).IsNsfw;
+                var chart = await this._chartService.GenerateChartAsync(chartSettings, nsfwAllowed);
 
                 if (chartSettings.CensoredAlbums.HasValue && chartSettings.CensoredAlbums > 0)
                 {
-                    embedDescription +=
-                        $"{chartSettings.CensoredAlbums.Value} album(s) filtered due to nsfw images.\n";
+                    if (nsfwAllowed)
+                    {
+                        embedDescription +=
+                            $"{chartSettings.CensoredAlbums.Value} album(s) filtered due to images that are not allowed to be posted on Discord.\n";
+                    }
+                    else
+                    {
+                        embedDescription +=
+                            $"{chartSettings.CensoredAlbums.Value} album(s) filtered due to nsfw images.\n";
+                    }
+                    
                 }
 
                 this._embed.WithDescription(embedDescription);

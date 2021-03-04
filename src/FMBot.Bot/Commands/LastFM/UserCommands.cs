@@ -40,8 +40,8 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
-        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new();
+        private static readonly List<SocketUser> StackCooldownTarget = new();
 
         public UserCommands(
                 FriendsService friendsService,
@@ -83,11 +83,11 @@ namespace FMBot.Bot.Commands.LastFM
                 var userSettings = await this._settingService.GetUser(userOptions, user, this.Context);
 
                 string userTitle;
-                if (userSettings.DifferentUser && userSettings.DiscordUserId.HasValue)
+                if (userSettings.DifferentUser)
                 {
                     userTitle =
                         $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
-                    user = await this._userService.GetFullUserAsync(userSettings.DiscordUserId.Value);
+                    user = await this._userService.GetFullUserAsync(userSettings.DiscordUserId);
                 }
                 else
                 {
@@ -167,20 +167,64 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithThumbnailUrl(selfUser.GetAvatarUrl());
                 this._embed.AddField("Featured:", this._timer.GetTrackString());
 
-                if (PublicProperties.IssuesAtLastFM)
+                if (this.Context.Guild != null)
+                {
+                    var guildUser =
+                        await this._guildService.GetUserFromGuild(this.Context.Guild.Id, this._timer.GetUserId());
+
+                    if (guildUser != null)
+                    {
+                        this._embed.WithFooter($"🥳 Congratulations! This user is in your server under the name {guildUser.UserName}.");
+                    }
+                }
+
+                if (PublicProperties.IssuesAtLastFm)
                 {
                     this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues");
                 }
 
-                if (this.Context.InteractionData != null)
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync(
+                    "Unable to show the featured avatar on FMBot due to an internal error. \n" +
+                    "The bot might not have changed its avatar since its last startup. Please wait until a new featured user is chosen.");
+            }
+        }
+
+        [Command("rateyourmusic", RunMode = RunMode.Async)]
+        [Summary("Enables or disables the rateyourmusic links.")]
+        [Alias("rym")]
+        public async Task RateYourMusicAsync()
+        {
+            try
+            {
+                var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+                var newRymSetting = await this._userService.ToggleRymAsync(user);
+
+                if (newRymSetting == true)
                 {
-                    await this.Context.Channel.SendInteractionMessageAsync(this.Context.InteractionData, embed: this._embed.Build(), type: InteractionMessageType.ChannelMessageWithSource);
+                    this._embed.WithDescription(
+                        "**RateYourMusic** integration has now been enabled for your account.\n\n" +
+                        "All album links should now link to RateYourMusic. Please note that since RYM does not provide an API, you might be routed through DuckDuckGo.\n" +
+                        "This is not the best solution, but it should work for most albums.");
                 }
                 else
                 {
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    this._embed.WithDescription(
+                        "**RateYourMusic** integration has now been disabled.\n\n" +
+                        "All available album links should now link to Last.fm.\n" +
+                        "To re-enable the integration, simply do this command again.");
                 }
-                
+
+                this._embed.WithColor(32, 62, 121);
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)
@@ -211,7 +255,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (existingUserSettings?.UserNameLastFM != null)
                 {
-                    var differentMode = existingUserSettings.FmEmbedType == FmEmbedType.embedmini ? "embedfull" : "embedmini";
+                    var differentMode = existingUserSettings.FmEmbedType == FmEmbedType.EmbedMini ? "embedfull" : "embedmini";
                     replyString += "Example of picking a different mode: \n" +
                                    $"`{prfx}set {existingUserSettings.UserNameLastFM} {differentMode} album`";
 
@@ -254,7 +298,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userSettingsToAdd = new User
             {
-                UserNameLastFM = lastFmUserName
+                UserNameLastFM = lastFmUserName,
             };
 
             userSettingsToAdd = this._userService.SetSettings(userSettingsToAdd, otherSettings);
@@ -285,7 +329,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+                var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
                 if (guild != null)
                 {
                     await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(this.Context.User.Id), newUserSettings);
@@ -314,15 +358,16 @@ namespace FMBot.Bot.Commands.LastFM
                 var replyString = $"Use {prfx}mode to change how your .fm command looks.";
 
                 this._embed.AddField("Options",
-                    "**Modes**: `embedmini/embedfull/textmini/textfull`\n" +
+                    "**Modes**: `embedtiny/embedmini/embedfull/textmini/textfull`\n" +
                     "**Playcounts**: `artist/album/track`\n" +
-                    "*Note: Playcounts are only visible in non-text modes.*");
+                    "*Note: Playcounts are only visible in non-text modes.*\n\n" +
+                    $"Server mode can be set using `{prfx}servermode`. The server mode overrules any mode set by users.");
 
                 this._embed.AddField("Examples",
                     $"`{prfx}mode embedmini` \n" +
                     $"`{prfx}mode embedfull track`\n" +
                     $"`{prfx}mode textfull`\n" +
-                    $"`{prfx}mode embedmini album`");
+                    $"`{prfx}mode embedtiny album`");
 
                 this._embed.WithTitle("Changing your .fm command");
                 this._embed.WithUrl($"{Constants.DocsUrl}/commands/");
@@ -341,7 +386,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             await this._userService.SetLastFm(this.Context.User, newUserSettings);
 
-            var setReply = $"Your `.fm` has been set mode to '{newUserSettings.FmEmbedType}'";
+            var setReply = $"Your `.fm` mode has been set to '{newUserSettings.FmEmbedType}'";
             if (newUserSettings.FmCountType != null)
             {
                 setReply += $" with the '{newUserSettings.FmCountType.ToString().ToLower()}' playcount.";
@@ -351,14 +396,61 @@ namespace FMBot.Bot.Commands.LastFM
                 setReply += $" with no extra playcount.";
             }
 
-            if (this.Context.InteractionData != null)
+            setReply +=
+                "\n\nNote that servers can force an .fm mode. The server setting will always overrule your own .fm mode.";
+
+            await ReplyAsync(setReply.FilterOutMentions());
+
+            this.Context.LogCommandUsed();
+        }
+
+        [Command("privacy", RunMode = RunMode.Async)]
+        [Summary("Change your privacy mode for .fmbot")]
+        [UsernameSetRequired]
+        public async Task PrivacyAsync(params string[] otherSettings)
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            if (otherSettings == null || otherSettings.Length < 1 || otherSettings.First() == "help")
             {
-                await ReplyInteractionAsync(setReply.FilterOutMentions(), ghostMessage: true, type: InteractionMessageType.ChannelMessage);
+                var replyString = $"Use {prfx}privacy to change your visibility to other .fmbot users.";
+
+                this._embed.AddField("Options:",
+                    "**Global**: You are visible in the global WhoKnows with your Last.fm username\n" +
+                    "**Server**: You are not visible in global WhoKnows, but users in the same server will still see your name.\n\n" +
+                    "The default privacy setting is 'Server'.");
+
+                this._embed.AddField("Examples:",
+                    $"`{prfx}privacy global` \n" +
+                    $"`{prfx}privacy server`");
+
+                this._embed.WithTitle("Changing your .fmbot privacy mode");
+                this._embed.WithUrl($"{Constants.DocsUrl}/commands/");
+                this._embed.WithDescription(replyString);
+
+                this._embed.WithFooter(
+                    $"Current privacy mode: {userSettings.PrivacyLevel}");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
             }
-            else
+
+            var newPrivacyLevel = await this._userService.SetPrivacy(userSettings, otherSettings);
+
+            var setReply = $"Your privacy mode has been set to '{newPrivacyLevel}'.";
+
+            if (newPrivacyLevel == PrivacyLevel.Global)
             {
-                await ReplyAsync(setReply.FilterOutMentions());
+                setReply += " You will now be visible in the global WhoKnows with your Last.fm username.";
             }
+            if (newPrivacyLevel == PrivacyLevel.Server)
+            {
+                setReply += " You will not be visible in the global WhoKnows with your Last.fm username, but users you share a server with will still see it.";
+            }
+
+            await ReplyAsync(setReply.FilterOutMentions());
 
             this.Context.LogCommandUsed();
         }
@@ -372,22 +464,10 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMinutes(1) >= DateTimeOffset.Now)
                 {
-                    if (this.Context.InteractionData != null)
-                    {
-                        await this.Context.Channel.SendInteractionMessageAsync(
-                            this.Context.InteractionData,
-                            "You have already requested a login link in the last minute. \n" +
-                            "Please check if you can login through that link, or try again later.",
-                            type: InteractionMessageType.ChannelMessage,
-                            ghostMessage: true);
-                    }
-                    else
-                    {
-                        await ReplyAsync($"A login link has already been sent to your DMs.\n" +
-                                         $"Didn't receive a link? Please check if you have DMs enabled for this server and try again.\n" +
-                                         $"Setting location: Click on the server name (top left) > `Privacy Settings` > `Allow direct messages from server members`.");
-                    }
-                    
+                    await ReplyAsync($"A login link has already been sent to your DMs.\n" +
+                                     $"Didn't receive a link? Please check if you have DMs enabled for this server and try again.\n" +
+                                     $"Setting location: Click on the server name (top left) > `Privacy Settings` > `Allow direct messages from server members`.");
+
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
                     StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now.AddMinutes(-5);
                     return;
@@ -430,7 +510,8 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     var description =
                         $"✅ You have been logged in to .fmbot with the username [{newUserSettings.UserNameLastFM}]({Constants.LastFMUserUrl}{newUserSettings.UserNameLastFM})!\n\n" +
-                        $"Tip: Also check out `.fmmode` to change how your `.fm` command looks.";
+                        $"`.fmmode` has been set to: `{newUserSettings.FmEmbedType}`\n" +
+                        $"`.fmprivacy` has been set to: `{newUserSettings.PrivacyLevel}`";
 
                     var sourceGuildId = this.Context.Guild?.Id;
                     var sourceChannelId = this.Context.Channel?.Id;
@@ -456,7 +537,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (!this._guildService.CheckIfDM(this.Context))
                 {
-                    var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+                    var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
                     if (guild != null)
                     {
                         await this._indexService.GetOrAddUserToGuild(guild,

@@ -37,6 +37,14 @@ namespace FMBot.Bot.Services.Guild
             await using var db = this._contextFactory.CreateDbContext();
             return await db.Guilds
                 .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == guildId);
+        }
+
+        public async Task<Persistence.Domain.Models.Guild> GetFullGuildAsync(ulong guildId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            return await db.Guilds
+                .AsQueryable()
                 .Include(i => i.GuildBlockedUsers)
                     .ThenInclude(t => t.User)
                 .Include(i => i.GuildUsers.Where(w => w.Bot != true))
@@ -100,6 +108,23 @@ namespace FMBot.Bot.Services.Guild
         {
             return guild.GuildUsers
                 .FirstOrDefault(f => f.UserId == userId);
+        }
+
+
+        public async Task<GuildUser> GetUserFromGuild(ulong discordGuildId, int userId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var guild = await db.Guilds
+                .AsQueryable()
+                .Include(i => i.GuildUsers)
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
+
+            if (guild?.GuildUsers != null && guild.GuildUsers.Any())
+            {
+                return guild.GuildUsers.FirstOrDefault(f => f.UserId == userId);
+            }
+
+            return null;
         }
 
 
@@ -173,7 +198,7 @@ namespace FMBot.Bot.Services.Guild
             return usersObject.ToList();
         }
 
-        public async Task ChangeGuildSettingAsync(IGuild guild, ChartTimePeriod chartTimePeriod, FmEmbedType fmEmbedType)
+        public async Task ChangeGuildSettingAsync(IGuild guild, Persistence.Domain.Models.Guild newGuildSettings)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var existingGuild = await db.Guilds
@@ -185,13 +210,20 @@ namespace FMBot.Bot.Services.Guild
                 var newGuild = new Persistence.Domain.Models.Guild
                 {
                     DiscordGuildId = guild.Id,
-                    ChartTimePeriod = chartTimePeriod,
-                    FmEmbedType = fmEmbedType,
                     Name = guild.Name,
                     TitlesEnabled = true
                 };
 
                 await db.Guilds.AddAsync(newGuild);
+
+                await db.SaveChangesAsync();
+            }
+            else
+            {
+                existingGuild.Name = guild.Name;
+                existingGuild.FmEmbedType = newGuildSettings.FmEmbedType;
+
+                db.Entry(existingGuild).State = EntityState.Modified;
 
                 await db.SaveChangesAsync();
             }
@@ -210,8 +242,6 @@ namespace FMBot.Bot.Services.Guild
                 {
                     DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
-                    ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = FmEmbedType.embedmini,
                     EmoteReactions = reactions,
                     Name = guild.Name
                 };
@@ -244,8 +274,6 @@ namespace FMBot.Bot.Services.Guild
                 {
                     DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
-                    ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = FmEmbedType.embedmini,
                     Name = guild.Name,
                     DisableSupporterMessages = true
                 };
@@ -500,8 +528,6 @@ namespace FMBot.Bot.Services.Guild
                 {
                     DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
-                    ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = FmEmbedType.embedmini,
                     Name = guild.Name,
                     Prefix = prefix
                 };
@@ -544,8 +570,6 @@ namespace FMBot.Bot.Services.Guild
                 {
                     DiscordGuildId = guild.Id,
                     TitlesEnabled = true,
-                    ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = FmEmbedType.embedmini,
                     Name = guild.Name,
                     DisabledCommands = new[] { command }
                 };
@@ -599,11 +623,11 @@ namespace FMBot.Bot.Services.Guild
         public async Task<string[]> GetDisabledCommandsForChannel(IChannel channel)
         {
             await using var db = this._contextFactory.CreateDbContext();
-            var existingGuild = await db.Channels
+            var existingChannel = await db.Channels
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordChannelId == channel.Id);
 
-            return existingGuild?.DisabledCommands;
+            return existingChannel?.DisabledCommands;
         }
 
         public async Task<string[]> AddChannelDisabledCommandAsync(IChannel channel, int guildId, string command)
@@ -669,6 +693,51 @@ namespace FMBot.Bot.Services.Guild
             return existingChannel.DisabledCommands;
         }
 
+        public async Task<int?> GetChannelCooldown(ulong discordChannelId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingChannel = await db.Channels
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannelId);
+
+            return existingChannel?.FmCooldown;
+        }
+
+        public async Task<int?> SetChannelCooldownAsync(IChannel channel, int guildId, int? cooldown)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingChannel = await db.Channels
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordChannelId == channel.Id);
+
+            if (existingChannel == null)
+            {
+                var newChannel = new Channel
+                {
+                    DiscordChannelId = channel.Id,
+                    Name = channel.Name,
+                    GuildId = guildId,
+                    FmCooldown = cooldown
+                };
+
+                await db.Channels.AddAsync(newChannel);
+
+                await db.SaveChangesAsync();
+
+                return newChannel.FmCooldown;
+            }
+
+            existingChannel.FmCooldown = cooldown;
+
+            existingChannel.Name = existingChannel.Name;
+
+            db.Entry(existingChannel).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            return existingChannel.FmCooldown;
+        }
+
         public async Task<DateTime?> GetGuildIndexTimestampAsync(IGuild guild)
         {
             await using var db = this._contextFactory.CreateDbContext();
@@ -691,8 +760,6 @@ namespace FMBot.Bot.Services.Guild
                 var newGuild = new Persistence.Domain.Models.Guild
                 {
                     DiscordGuildId = guild.Id,
-                    ChartTimePeriod = ChartTimePeriod.Monthly,
-                    FmEmbedType = FmEmbedType.embedmini,
                     Name = guild.Name,
                     TitlesEnabled = true,
                     LastIndexed = timestamp ?? DateTime.UtcNow
@@ -772,38 +839,16 @@ namespace FMBot.Bot.Services.Guild
             }
         }
 
-        public async Task AddGuildAsync(SocketGuild guild)
+        public async Task RemoveGuildAsync(ulong discordGuildId)
         {
-            var newGuild = new Persistence.Domain.Models.Guild
-            {
-                DiscordGuildId = guild.Id,
-                ChartTimePeriod = ChartTimePeriod.Monthly,
-                FmEmbedType = FmEmbedType.embedmini,
-                Name = guild.Name,
-                TitlesEnabled = true
-            };
-
             await using var db = this._contextFactory.CreateDbContext();
-            await db.Guilds.AddAsync(newGuild);
+            var guild = await db.Guilds.AsQueryable().FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
 
-            await db.SaveChangesAsync();
-        }
-
-        public async Task RemoveGuildAsync(SocketGuild guild)
-        {
-            var newGuild = new Persistence.Domain.Models.Guild
+            if (guild != null)
             {
-                DiscordGuildId = guild.Id,
-                ChartTimePeriod = ChartTimePeriod.Monthly,
-                FmEmbedType = FmEmbedType.embedmini,
-                Name = guild.Name,
-                TitlesEnabled = true
-            };
-
-            await using var db = this._contextFactory.CreateDbContext();
-            await db.Guilds.AddAsync(newGuild);
-
-            await db.SaveChangesAsync();
+                db.Guilds.Remove(guild);
+                await db.SaveChangesAsync();
+            }
         }
 
         public async Task<bool> GuildExistsAsync(SocketGuild guild)
@@ -820,6 +865,43 @@ namespace FMBot.Bot.Services.Guild
             return await db.Guilds
                 .AsQueryable()
                 .CountAsync();
+        }
+
+        public Persistence.Domain.Models.Guild SetSettings(Persistence.Domain.Models.Guild guildSettings, string[] extraOptions)
+        {
+            if (extraOptions == null)
+            {
+                guildSettings.FmEmbedType = null;
+                return guildSettings;
+            }
+
+            extraOptions = extraOptions.Select(s => s.ToLower()).ToArray();
+            if (extraOptions.Contains("embedfull") || extraOptions.Contains("ef"))
+            {
+                guildSettings.FmEmbedType = FmEmbedType.EmbedFull;
+            }
+            else if (extraOptions.Contains("embedtiny"))
+            {
+                guildSettings.FmEmbedType = FmEmbedType.EmbedTiny;
+            }
+            else if (extraOptions.Contains("textmini") || extraOptions.Contains("tm"))
+            {
+                guildSettings.FmEmbedType = FmEmbedType.TextMini;
+            }
+            else if (extraOptions.Contains("textfull") || extraOptions.Contains("tf"))
+            {
+                guildSettings.FmEmbedType = FmEmbedType.TextFull;
+            }
+            else if (extraOptions.Contains("embedmini") || extraOptions.Contains("em"))
+            {
+                guildSettings.FmEmbedType = FmEmbedType.EmbedMini;
+            }
+            else
+            {
+                guildSettings.FmEmbedType = null;
+            }
+
+            return guildSettings;
         }
     }
 }

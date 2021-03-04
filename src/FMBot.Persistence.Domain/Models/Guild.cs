@@ -18,9 +18,9 @@ namespace FMBot.Persistence.Domain.Models
 
         public bool? TitlesEnabled { get; set; }
 
-        public FmEmbedType FmEmbedType { get; set; }
+        public FmEmbedType? FmEmbedType { get; set; }
 
-        public ChartTimePeriod ChartTimePeriod { get; set; }
+        public ChartTimePeriod? ChartTimePeriod { get; set; }
 
         public string[] EmoteReactions { get; set; }
 

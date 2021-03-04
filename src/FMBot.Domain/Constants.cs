@@ -9,7 +9,7 @@ namespace FMBot.Domain
 
         public const string LastFmNonExistentImageName = "2a96cbd8b46e442fc41c2b86b821562f.png";
 
-        public const int InviteLinkPermissions = 1074056256;
+        public const int InviteLinkPermissions = 322624;
 
         public const ulong BotProductionId = 356268235697553409;
 

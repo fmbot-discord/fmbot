@@ -58,52 +58,63 @@ namespace FMBot.Bot.Commands.Guild
             this._embedFooter = new EmbedFooterBuilder();
         }
 
-        [Command("serverset", RunMode = RunMode.Async)]
-        [Summary("Sets the global FMBot settings for the server.")]
-        [Alias("serversetmode")]
+        [Command("servermode", RunMode = RunMode.Async)]
+        [Summary("Sets the .fm mode for the server.")]
+        [Alias("guildmode")]
         [GuildOnly]
-        public async Task SetServerAsync([Summary("The default mode you want to use.")]
-            string chartType = "embedmini", [Summary("The default timeperiod you want to use.")]
-            string chartTimePeriod = "monthly")
+        public async Task SetServerModeAsync(params string[] otherSettings)
         {
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync(
-                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or .fmbot admins can use this command.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
 
-            if (chartType == "help")
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+            if (otherSettings != null && otherSettings.Any() && otherSettings.First() == "help")
             {
-                await ReplyAsync(
-                    "Sets the global default for your server. `.fmserverset 'embedfull/embedmini/textfull/textmini' 'Weekly/Monthly/Yearly/AllTime'` command.");
+                var replyString = $"Use {prfx}mode to force an .fm mode for everyone in the server.";
+
+                this._embed.AddField("Options",
+                    "**Modes**: `embedtiny/embedmini/embedfull/textmini/textfull`\n");
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}servermode embedmini` \n" +
+                    $"`{prfx}servermode` (no option disables it)");
+
+                this._embed.WithTitle("Setting a server-wide .fm mode");
+                this._embed.WithUrl($"{Constants.DocsUrl}/commands/");
+
+                var guildMode = !guild.FmEmbedType.HasValue ? "No forced mode" : guild.FmEmbedType.ToString();
+                this._embed.WithFooter($"Current .fm server mode: {guildMode}");
+                this._embed.WithDescription(replyString);
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
             }
 
+            var newGuildSettings = this._guildService.SetSettings(guild, otherSettings);
 
-            if (!Enum.TryParse(chartType, true, out FmEmbedType chartTypeEnum))
+            await this._guildService.ChangeGuildSettingAsync(this.Context.Guild, newGuildSettings);
+
+            if (newGuildSettings.FmEmbedType.HasValue)
             {
-                await ReplyAsync("Invalid mode. Please use 'embedmini', 'embedfull', 'textfull', or 'textmini'.");
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                return;
+                await ReplyAsync($"The default .fm mode for your server has been set to {newGuildSettings.FmEmbedType}.\n\n" +
+                                 $"All .fm commands in this server will use this mode regardless of user settings, so make sure to inform your users of this change.");
             }
-
-
-            if (!Enum.TryParse(chartTimePeriod, true, out ChartTimePeriod chartTimePeriodEnum))
+            else
             {
-                await ReplyAsync("Invalid mode. Please use 'weekly', 'monthly', 'yearly', or 'overall'.");
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                return;
+                await ReplyAsync(
+                    $"The default .fm mode has been disabled for this server. Users can now set their mode using `{prfx}mode`.\n\n" +
+                    $"To view all available modes, use `{prfx}servermode help`.");
             }
-
-            await this._guildService.ChangeGuildSettingAsync(this.Context.Guild, chartTimePeriodEnum, chartTypeEnum);
-
-            await ReplyAsync("The .fmset default chart type for your server has been set to " + chartTypeEnum +
-                             " with the time period " + chartTimePeriodEnum + ".");
             this.Context.LogCommandUsed();
         }
 
@@ -386,7 +397,7 @@ namespace FMBot.Bot.Commands.Guild
         public async Task ToggleChannelCommand(string command = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild == null)
             {
@@ -478,6 +489,59 @@ namespace FMBot.Bot.Commands.Guild
 
                 this._embed.WithDescription($"Disabled command `{command.ToLower()}` for this channel.");
             }
+
+            await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+            this.Context.LogCommandUsed();
+        }
+
+        [Command("cooldown", RunMode = RunMode.Async)]
+        [GuildOnly]
+        public async Task FmSetFmCooldownCommand(string command = null)
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+
+            if (guild == null)
+            {
+                await ReplyAsync("This server hasn't been stored yet.\n" +
+                                 $"Please run `{prfx}index` to store this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+
+            int? newCooldown = null;
+
+            if (int.TryParse(command, out var parsedNewCooldown))
+            {
+                if (parsedNewCooldown > 1 && parsedNewCooldown < 600)
+                {
+                    newCooldown = parsedNewCooldown;
+                }
+            }
+
+            var existingFmCooldown = await this._guildService.GetChannelCooldown(this.Context.Channel.Id);
+
+            var serverUser = (IGuildUser)this.Context.Message.Author;
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
+                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync(
+                    "You are not authorized to change the `.fm` cooldown. Only users with the 'Ban Members' permission, server admins or FMBot admins can change this.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                return;
+            }
+
+            this._embed.AddField("Previous .fm cooldown",
+                existingFmCooldown.HasValue ? $"{existingFmCooldown.Value} seconds" : "No cooldown");
+
+            var newFmCooldown = await this._guildService.SetChannelCooldownAsync(this.Context.Channel, guild.GuildId, newCooldown);
+
+            this._embed.AddField("New .fm cooldown",
+                newFmCooldown.HasValue ? $"{newFmCooldown.Value} seconds" : "No cooldown");
+
+            this._embed.WithFooter($"Adjusting .fm cooldown for #{this.Context.Channel.Name}.\n" +
+                                   "Min 2 seconds - Max 600 seconds - Cooldown is per-user.\n" +
+                                   "Note that this cooldown can also expire after a bot restart.");
 
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
             this.Context.LogCommandUsed();

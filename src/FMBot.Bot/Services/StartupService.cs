@@ -99,11 +99,13 @@ namespace FMBot.Bot.Services
                     Assembly.GetEntryAssembly(),
                     this._provider); // Load commands and modules into the command service
 
+            var shardTimeOut = 5000;
             foreach (var shard in this._client.Shards)
             {
                 Log.Information("ShardStartConnection: shard {shardId}", shard.ShardId);
                 await shard.StartAsync();
-                await Task.Delay(6000);
+                await Task.Delay(shardTimeOut);
+                shardTimeOut += 250;
             }
 
             Log.Information("Preparing cache folder");
@@ -135,7 +137,6 @@ namespace FMBot.Bot.Services
                 Log.Information("Last.fm API test successful");
             }
         }
-
 
         private Task StartMetricsServer()
         {

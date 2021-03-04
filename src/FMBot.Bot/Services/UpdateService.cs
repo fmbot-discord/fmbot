@@ -10,6 +10,7 @@ using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Serilog;
 
 namespace FMBot.Bot.Services
@@ -19,13 +20,15 @@ namespace FMBot.Bot.Services
         private readonly IUserUpdateQueue _userUpdateQueue;
         private readonly GlobalUpdateService _globalUpdateService;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly IMemoryCache _cache;
 
-        public UpdateService(IUserUpdateQueue userUpdateQueue, GlobalUpdateService updateService, IDbContextFactory<FMBotDbContext> contextFactory)
+        public UpdateService(IUserUpdateQueue userUpdateQueue, GlobalUpdateService updateService, IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
         {
             this._userUpdateQueue = userUpdateQueue;
             this._userUpdateQueue.UsersToUpdate.SubscribeAsync(OnNextAsync);
             this._globalUpdateService = updateService;
             this._contextFactory = contextFactory;
+            this._cache = cache;
         }
 
         private async Task OnNextAsync(UpdateUserQueueItem user)
@@ -48,6 +51,16 @@ namespace FMBot.Bot.Services
 
         public async Task<Response<RecentTrackList>> UpdateUserAndGetRecentTracks(User user)
         {
+            if (this._cache.TryGetValue($"index-started-{user.UserId}", out bool _))
+            {
+                return new Response<RecentTrackList>
+                {
+                    Success = false,
+                    Message =
+                        "All your data is still being fetched from Last.fm for .fmbot. Please wait a moment for this to complete and try again.",
+                };
+            }
+
             return await this._globalUpdateService.UpdateUser(new UpdateUserQueueItem(user.UserId));
         }
 
@@ -62,6 +75,11 @@ namespace FMBot.Bot.Services
                                  f.SessionKeyLastFm == null && f.LastUpdated <= timeUnauthorizedFilter))
                     .OrderBy(o => o.LastUpdated)
                     .ToListAsync();
+        }
+
+        public async Task CorrectUserArtistPlaycount(int userId, string artistName, long correctPlaycount)
+        {
+            await this._globalUpdateService.CorrectUserArtistPlaycount(userId, artistName, correctPlaycount);
         }
     }
 }

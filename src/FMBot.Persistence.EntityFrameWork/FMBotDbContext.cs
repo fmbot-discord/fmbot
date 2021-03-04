@@ -16,6 +16,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<Supporter> Supporters { get; set; }
 
+        public virtual DbSet<BottedUser> BottedUsers { get; set; }
         public virtual DbSet<InactiveUsers> InactiveUsers { get; set; }
 
         public virtual DbSet<UserArtist> UserArtists { get; set; }
@@ -29,6 +30,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<Track> Tracks { get; set; }
 
         public virtual DbSet<CensoredMusic> CensoredMusic { get; set; }
+        public virtual DbSet<FeaturedLog> FeaturedLogs { get; set; }
 
         public virtual DbSet<ArtistGenre> ArtistGenres { get; set; }
         public virtual DbSet<ArtistAlias> ArtistAliases { get; set; }
@@ -143,6 +145,11 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasKey(e => e.SupporterId);
             });
 
+            modelBuilder.Entity<BottedUser>(entity =>
+            {
+                entity.HasKey(e => e.BottedUserId);
+            });
+
             modelBuilder.Entity<InactiveUsers>(entity =>
             {
                 entity.HasKey(e => e.InactiveUserId);
@@ -245,6 +252,26 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.HasOne(sc => sc.User)
                     .WithMany(s => s.Crowns)
+                    .HasForeignKey(sc => sc.UserId);
+            });
+
+            modelBuilder.Entity<FeaturedLog>(entity =>
+            {
+                entity.HasKey(e => e.FeaturedLogId);
+
+                entity.HasIndex(i => i.UserId);
+
+                entity.Property(e => e.ArtistName)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.AlbumName)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.TrackName)
+                    .HasColumnType("citext");
+
+                entity.HasOne(sc => sc.User)
+                    .WithMany(s => s.FeaturedLogs)
                     .HasForeignKey(sc => sc.UserId);
             });
 

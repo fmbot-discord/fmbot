@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Dasync.Collections;
+using System.Linq;
 using FMBot.Bot.Interfaces;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -44,7 +45,6 @@ namespace FMBot.Bot.Services.Guild
             }
         }
 
-
         public string[] GetDisabledCommands(ulong? key)
         {
             if (!key.HasValue)
@@ -69,16 +69,54 @@ namespace FMBot.Bot.Services.Guild
             }
         }
 
-
         public async Task LoadAllDisabledCommands()
         {
             await using var db = this._contextFactory.CreateDbContext();
             var channels = await db
-                .Channels.Where(w => w.DisabledCommands != null && w.DisabledCommands.Length > 0)
+                .Channels
+                .AsQueryable()
+                .Where(w => w.DisabledCommands != null)
                 .ToListAsync();
-            foreach (var channel in channels)
+
+            foreach (var channel in channels.Where(w => w.DisabledCommands.Length > 0))
             {
                 StoreDisabledCommands(channel.DisabledCommands, channel.DiscordChannelId);
+            }
+        }
+
+        public async Task RemoveDisabledCommandsForGuild(ulong discordGuildId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var guild = await db
+                .Guilds
+                .Include(i => i.Channels)
+                .Where(w => w.DiscordGuildId == discordGuildId && w.Channels != null && w.Channels.Any())
+                .FirstOrDefaultAsync();
+
+            if (guild != null)
+            {
+                foreach (var channel in guild.Channels)
+                {
+                    RemoveDisabledCommands(channel.DiscordChannelId);
+                }
+            }
+        }
+
+        public async Task ReloadDisabledCommands(ulong discordGuildId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var guild = await db
+                .Guilds
+                .Include(i => i.Channels)
+                .Where(w => w.DiscordGuildId == discordGuildId && w.Channels != null && w.Channels.Any())
+                .FirstOrDefaultAsync();
+
+            if (guild != null)
+            {
+                foreach (var channel in guild.Channels)
+                {
+                    StoreDisabledCommands(channel.DisabledCommands, channel.DiscordChannelId);
+                }
             }
         }
     }

@@ -6,12 +6,13 @@ using System.Threading.Tasks;
 using System.Web;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
-using FMBot.LastFM.Domain.ResponseModels;
+using FMBot.Domain.Models;
+using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
+using Artist = FMBot.LastFM.Domain.Models.Artist;
 
 namespace FMBot.Bot.Services
 {
@@ -162,7 +163,7 @@ namespace FMBot.Bot.Services
                                  a.UserId == userId);
         }
 
-        public async Task<string> GetStreak(int userId, LastTrack nowPlayingTrack = null)
+        public async Task<string> GetStreak(int userId, Response<RecentTrackList> recentTracks)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var lastPlays = await db.UserPlays
@@ -176,20 +177,7 @@ namespace FMBot.Bot.Services
                 return null;
             }
 
-            UserPlay firstPlay;
-            if (nowPlayingTrack == null)
-            {
-                firstPlay = lastPlays.First();
-            }
-            else
-            {
-                firstPlay = new UserPlay
-                {
-                    AlbumName = nowPlayingTrack.AlbumName,
-                    ArtistName = nowPlayingTrack.ArtistName,
-                    TrackName = nowPlayingTrack.Name
-                };
-            }
+            var firstPlay = recentTracks.Content.RecentTracks.First();
 
             var artistCount = 1;
             var albumCount = 1;
@@ -202,27 +190,27 @@ namespace FMBot.Bot.Services
             {
                 var play = lastPlays[i];
 
-                if (firstPlay.ArtistName == play.ArtistName && artistContinue)
+                if (firstPlay.ArtistName.ToLower() == play.ArtistName.ToLower() && artistContinue)
                 {
-                    artistCount += 1;
+                    artistCount++;
                 }
                 else
                 {
                     artistContinue = false;
                 }
 
-                if (firstPlay.AlbumName == play.AlbumName && albumContinue)
+                if (firstPlay.AlbumName != null && play.AlbumName != null && firstPlay.AlbumName.ToLower() == play.AlbumName.ToLower() && albumContinue)
                 {
-                    albumCount += 1;
+                    albumCount++;
                 }
                 else
                 {
                     albumContinue = false;
                 }
 
-                if (firstPlay.TrackName == play.TrackName && trackContinue)
+                if (firstPlay.TrackName.ToLower() == play.TrackName.ToLower() && trackContinue)
                 {
-                    trackCount += 1;
+                    trackCount++;
                 }
                 else
                 {
@@ -271,11 +259,10 @@ namespace FMBot.Bot.Services
             {
                 return "💯 ";
             }
-
             return null;
         }
 
-        public async Task<Response<TopTracksResponse>> GetTopTracks(int userId, int days)
+        public async Task<Response<TopTracksLfmResponse>> GetTopTracks(int userId, int days)
         {
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-days);
@@ -287,10 +274,10 @@ namespace FMBot.Bot.Services
                                  t.TimePlayed.Date > minDate.Date &&
                                  t.UserId == userId)
                 .GroupBy(x => new { x.ArtistName, x.TrackName })
-                .Select(s => new LastFM.Domain.ResponseModels.Track
+                .Select(s => new TopTrackLfm
                 {
                     Name = s.Key.TrackName,
-                    Artist = new LastFM.Domain.ResponseModels.Artist
+                    Artist = new Artist
                     {
                         Name = s.Key.ArtistName
                     },
@@ -299,12 +286,12 @@ namespace FMBot.Bot.Services
                 .OrderByDescending(o => o.Playcount)
                 .ToListAsync();
 
-            return new Response<TopTracksResponse>
+            return new Response<TopTracksLfmResponse>
             {
                 Success = true,
-                Content = new TopTracksResponse
+                Content = new TopTracksLfmResponse
                 {
-                    TopTracks = new TopTracks
+                    TopTracks = new TopTracksLfm
                     {
                         Track = tracks
                     }
@@ -376,7 +363,6 @@ namespace FMBot.Bot.Services
                     Playcount = s.Count()
                 })
                 .OrderByDescending(o => o.Playcount)
-                .Take(10)
                 .ToListAsync();
         }
     }

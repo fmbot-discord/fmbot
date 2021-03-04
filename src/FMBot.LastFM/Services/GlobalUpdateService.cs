@@ -46,7 +46,6 @@ namespace FMBot.LastFM.Services
 
             Log.Information("Update: Started on {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
 
-            var lastPlay = await GetLastStoredPlay(user);
 
             string sessionKey = null;
             if (!string.IsNullOrEmpty(user.SessionKeyLastFm))
@@ -54,17 +53,32 @@ namespace FMBot.LastFM.Services
                 sessionKey = user.SessionKeyLastFm;
             }
 
-            var dateAgo = lastPlay?.TimePlayed.AddSeconds(-1) ?? DateTime.UtcNow.AddDays(-14);
-            var timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
+            var lastStoredPlay = await GetLastStoredPlay(user);
+
+            var dateAgo = lastStoredPlay?.TimePlayed.AddMinutes(-10) ?? DateTime.UtcNow.AddDays(-14);
+            var timeFrom = (long?)((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
+
+            var count = 1000;
+            var totalPlaycountCorrect = false;
+            if (dateAgo > DateTime.UtcNow.AddHours(-1)) 
+            {
+                count = 60;
+                timeFrom = null;
+                totalPlaycountCorrect = true;
+            }
+            else if (dateAgo > DateTime.UtcNow.AddHours(-12))
+            {
+                count = 500;
+                timeFrom = null;
+                totalPlaycountCorrect = true;
+            }
 
             var recentTracks = await this._lastFmService.GetRecentTracksAsync(
                 user.UserNameLastFM,
-                count: 1000,
-                useCache: true,
+                count,
+                true,
                 sessionKey,
                 timeFrom);
-
-            Statistics.LastfmApiCalls.Inc();
 
             if (!recentTracks.Success)
             {
@@ -103,9 +117,9 @@ namespace FMBot.LastFM.Services
             AddRecentPlayToMemoryCache(user.UserId, recentTracks.Content.RecentTracks.First());
 
             var newScrobbles = recentTracks.Content.RecentTracks
-                .Where(w => (!w.NowPlaying) &&
+                .Where(w => !w.NowPlaying &&
                             w.TimePlayed != null &&
-                            w.TimePlayed > user.LastScrobbleUpdate)
+                            (lastStoredPlay?.TimePlayed == null || w.TimePlayed > lastStoredPlay.TimePlayed))
                 .ToList();
 
             if (!newScrobbles.Any())
@@ -115,7 +129,15 @@ namespace FMBot.LastFM.Services
 
                 if (!user.TotalPlaycount.HasValue)
                 {
-                    recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, newScrobbles.Count, connection);
+                    recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, newScrobbles.Count, connection, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null);
+                }
+                else if (totalPlaycountCorrect)
+                {
+                    await SetOrUpdateUserPlaycount(user, newScrobbles.Count, connection, recentTracks.Content.TotalAmount);
+                }
+                else
+                {
+                    recentTracks.Content.TotalAmount = user.TotalPlaycount.Value;
                 }
                 recentTracks.Content.NewRecentTracksAmount = 0;
                 return recentTracks;
@@ -125,7 +147,7 @@ namespace FMBot.LastFM.Services
 
             try
             {
-                recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, newScrobbles.Count, connection);
+                recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, newScrobbles.Count, connection, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null);
 
                 await UpdatePlaysForUser(user, newScrobbles, connection);
 
@@ -135,8 +157,13 @@ namespace FMBot.LastFM.Services
 
                 await UpdateTracksForUser(user, newScrobbles, cachedArtistAliases, connection);
 
-                var latestScrobbleDate = GetLatestScrobbleDate(user, newScrobbles);
-                await SetUserUpdateAndScrobbleTime(user, DateTime.UtcNow, latestScrobbleDate, connection);
+                var lastNewScrobble = newScrobbles.OrderByDescending(o => o.TimePlayed).FirstOrDefault();
+                if (lastNewScrobble?.TimePlayed != null)
+                {
+                    await SetUserLastScrobbleTime(user, lastNewScrobble.TimePlayed.Value, connection);
+                }
+
+                await SetUserUpdateTime(user, DateTime.UtcNow, connection);
             }
             catch (Exception e)
             {
@@ -176,7 +203,6 @@ namespace FMBot.LastFM.Services
                 .OrderByDescending(o => o.TimePlayed)
                 .FirstOrDefaultAsync(f => f.UserId == user.UserId);
         }
-
 
         private async Task UpdatePlaysForUser(User user, List<RecentTrack> newScrobbles,
             NpgsqlConnection connection)
@@ -402,60 +428,51 @@ namespace FMBot.LastFM.Services
             }
         }
 
-        private async Task SetUserUpdateAndScrobbleTime(User user, DateTime now, DateTime lastScrobble, NpgsqlConnection connection)
+        private async Task SetUserLastScrobbleTime(User user, DateTime lastScrobble, NpgsqlConnection connection)
         {
-            user.LastUpdated = now;
             user.LastScrobbleUpdate = lastScrobble;
-            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_updated = '{now:u}', last_scrobble_update = '{lastScrobble:u}' WHERE user_id = {user.UserId};", connection);
+            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_scrobble_update = '{lastScrobble:u}' WHERE user_id = {user.UserId};", connection);
             await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
-        private async Task SetUserUpdateTime(User user, DateTime now, NpgsqlConnection connection)
+        private async Task SetUserUpdateTime(User user, DateTime updateTime, NpgsqlConnection connection)
         {
-            user.LastUpdated = now;
-            await using var setUpdateTime = new NpgsqlCommand($"UPDATE public.users SET last_updated = '{now:u}' WHERE user_id = {user.UserId};", connection);
+            user.LastUpdated = updateTime;
+            await using var setUpdateTime = new NpgsqlCommand($"UPDATE public.users SET last_updated = '{updateTime:u}' WHERE user_id = {user.UserId};", connection);
             await setUpdateTime.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
-        private async Task<long> SetOrUpdateUserPlaycount(User user, long playcountToAdd, NpgsqlConnection connection)
+        private async Task<long> SetOrUpdateUserPlaycount(User user, long playcountToAdd, NpgsqlConnection connection, long? correctPlaycount = null)
         {
-            if (!user.TotalPlaycount.HasValue)
+            if (!correctPlaycount.HasValue)
             {
-                var recentTracks = await this._lastFmService.GetRecentTracksAsync(
-                    user.UserNameLastFM,
-                    count: 1,
-                    useCache: false,
-                    user.SessionKeyLastFm);
+                if (!user.TotalPlaycount.HasValue)
+                {
+                    var recentTracks = await this._lastFmService.GetRecentTracksAsync(
+                        user.UserNameLastFM,
+                        count: 1,
+                        useCache: false,
+                        user.SessionKeyLastFm);
 
-                await using var setPlaycount = new NpgsqlCommand($"UPDATE public.users SET total_playcount = {recentTracks.Content.TotalAmount} WHERE user_id = {user.UserId};", connection);
-                await setPlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
+                    await using var setPlaycount = new NpgsqlCommand($"UPDATE public.users SET total_playcount = {recentTracks.Content.TotalAmount} WHERE user_id = {user.UserId};", connection);
+                    await setPlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
 
-                user.TotalPlaycount = recentTracks.Content.TotalAmount;
+                    user.TotalPlaycount = recentTracks.Content.TotalAmount;
 
-                return recentTracks.Content.TotalAmount;
-            }
-            else
-            {
+                    return recentTracks.Content.TotalAmount;
+                }
+
                 var updatedPlaycount = user.TotalPlaycount.Value + playcountToAdd;
                 await using var updatePlaycount = new NpgsqlCommand($"UPDATE public.users SET total_playcount = {updatedPlaycount} WHERE user_id = {user.UserId};", connection);
                 await updatePlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
 
                 return updatedPlaycount;
             }
-        }
 
-        private DateTime GetLatestScrobbleDate(User user, List<RecentTrack> newScrobbles)
-        {
-            var scrobbleWithDate = newScrobbles
-                .FirstOrDefault(f => f.TimePlayed.HasValue && !f.NowPlaying);
+            await using var updateCorrectPlaycount = new NpgsqlCommand($"UPDATE public.users SET total_playcount = {correctPlaycount} WHERE user_id = {user.UserId};", connection);
+            await updateCorrectPlaycount.ExecuteNonQueryAsync().ConfigureAwait(false);
 
-            if (scrobbleWithDate == null)
-            {
-                Log.Information("Update: No recent scrobble date found for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
-                return DateTime.UtcNow;
-            }
-
-            return scrobbleWithDate.TimePlayed.Value;
+            return correctPlaycount.Value;
         }
 
         private void AddRecentPlayToMemoryCache(int userId, RecentTrack track)
@@ -565,6 +582,45 @@ namespace FMBot.LastFM.Services
 
                 await db.SaveChangesAsync();
             }
+        }
+
+        public async Task CorrectUserArtistPlaycount(int userId, string artistName, long correctPlaycount)
+        {
+            if (correctPlaycount < 20)
+            {
+                return;
+            }
+
+            await using var db = this._contextFactory.CreateDbContext();
+            var user = await db.Users
+                .AsQueryable()
+                .Include(i => i.Artists)
+                .FirstOrDefaultAsync(f => f.UserId == userId);
+
+            if (user?.LastUpdated == null || !user.Artists.Any() || user.LastUpdated < DateTime.UtcNow.AddMinutes(-1))
+            {
+                return;
+            }
+
+            var userArtist = user.Artists.FirstOrDefault(f => f.Name.ToLower() == artistName.ToLower());
+
+            if (userArtist == null ||
+                userArtist.Playcount < 20 ||
+                userArtist.Playcount > (correctPlaycount - 4) && userArtist.Playcount < (correctPlaycount + 4))
+            {
+                return;
+            }
+
+
+            Log.Information("Corrected playcount for user {userId} | {lastFmUserName} for artist {artistName} from {oldPlaycount} to {newPlaycount}",
+                user.UserId, user.UserNameLastFM, userArtist.Name, userArtist.Playcount, correctPlaycount);
+
+            userArtist.Playcount = (int)correctPlaycount;
+
+            db.Entry(userArtist).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
         }
     }
 }

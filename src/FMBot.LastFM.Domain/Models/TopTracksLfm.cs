@@ -1,20 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
-using FMBot.LastFM.Domain.Models;
 
-namespace FMBot.LastFM.Domain.ResponseModels
+namespace FMBot.LastFM.Domain.Models
 {
-    public class TopTracksResponse
+    public class TopTracksLfmResponse
     {
-        public TopTracks TopTracks { get; set; }
+        public TopTracksLfm TopTracks { get; set; }
     }
 
-    public class TopTracks
+    public class TopTracksLfm
     {
         [JsonPropertyName("@attr")]
         public TopTracksAttr Attr { get; set; }
-        public List<Track> Track { get; set; }
+        public List<TopTrackLfm> Track { get; set; }
     }
 
     public partial class TopTracksAttr
@@ -26,12 +25,12 @@ namespace FMBot.LastFM.Domain.ResponseModels
         public long TotalPages { get; set; }
     }
 
-    public class Track
+    public class TopTrackLfm
     {
         public long Duration { get; set; }
         public long Playcount { get; set; }
         public Artist Artist { get; set; }
-        public List<Image> Image { get; set; }
+        public List<ImageLfm> Image { get; set; }
         public string Mbid { get; set; }
         public string Name { get; set; }
         public Uri Url { get; set; }

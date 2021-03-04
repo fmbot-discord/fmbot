@@ -1,18 +1,30 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Discord;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.EntityFrameWork;
+using Microsoft.EntityFrameworkCore;
 
 namespace FMBot.Bot.Services.WhoKnows
 {
     public class WhoKnowsService
     {
+        private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+
+        public WhoKnowsService(IDbContextFactory<FMBotDbContext> contextFactory)
+        {
+            this._contextFactory = contextFactory;
+        }
+
+
         public static IList<WhoKnowsObjectWithUser> AddOrReplaceUserToIndexList(IList<WhoKnowsObjectWithUser> users, GuildUser guildUser, string name, long? playcount)
         {
-            var userRemoved = false;
             var existingUsers = users
                 .Where(f => f.LastFMUsername.ToLower() == guildUser.User.UserNameLastFM.ToLower());
             if (existingUsers.Any())
@@ -20,7 +32,6 @@ namespace FMBot.Bot.Services.WhoKnows
                 users = users
                     .Where(f => f.LastFMUsername.ToLower() != guildUser.User.UserNameLastFM.ToLower())
                     .ToList();
-                userRemoved = true;
             }
 
             var userPlaycount = int.Parse(playcount.GetValueOrDefault(0).ToString());
@@ -31,67 +42,152 @@ namespace FMBot.Bot.Services.WhoKnows
                 Playcount = userPlaycount,
                 LastFMUsername = guildUser.User.UserNameLastFM,
                 DiscordName = guildUser.UserName,
-                NoPosition = !userRemoved
+                PrivacyLevel = PrivacyLevel.Global
             });
 
             return users.OrderByDescending(o => o.Playcount).ToList();
         }
 
-        public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects, CrownModel crownModel = null)
+        public static IList<WhoKnowsObjectWithUser> FilterGuildUsersAsync(IList<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild)
+        {
+            if (guild.ActivityThresholdDays.HasValue)
+            {
+                var usersToFilter = guild.GuildUsers.Where(w =>
+                        w.User.LastUsed == null ||
+                        w.User.LastUsed < DateTime.UtcNow.AddDays(-guild.ActivityThresholdDays.Value))
+                    .ToList();
+
+                users = users
+                    .Where(w => !usersToFilter.Select(s => s.UserId).Contains(w.UserId))
+                    .ToList();
+            }
+            if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromWhoKnows))
+            {
+                var usersToFilter = guild.GuildBlockedUsers
+                    .Where(w => w.BlockedFromWhoKnows)
+                    .ToList();
+
+                users = users
+                    .Where(w => !usersToFilter.Select(s => s.UserId).Contains(w.UserId))
+                    .ToList();
+            }
+
+            return users.ToList();
+        }
+
+        public async Task<IList<WhoKnowsObjectWithUser>> FilterGlobalUsersAsync(IList<WhoKnowsObjectWithUser> users)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var bottedUsers = await db.BottedUsers
+                .AsQueryable()
+                .ToListAsync();
+
+            return users
+                .Where(w =>
+                    !bottedUsers
+                    .Select(s => s.UserNameLastFM.ToLower())
+                    .Contains(w.LastFMUsername.ToLower()))
+                .ToList();
+        }
+
+        public static IList<WhoKnowsObjectWithUser> ShowGuildMembersInGlobalWhoKnowsAsync(IList<WhoKnowsObjectWithUser> users, IList<GuildUser> guildUsers)
+        {
+            foreach (var user in users.Where(w => guildUsers.Select(s => s.UserId).Contains(w.UserId)))
+            {
+                user.PrivacyLevel = PrivacyLevel.Global;
+            }
+
+            return users;
+        }
+
+        public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId,
+            PrivacyLevel minPrivacyLevel, CrownModel crownModel = null, bool hidePrivateUsers = false)
         {
             var reply = "";
 
-            var usersWithPositions = whoKnowsObjects
-                .Where(w => !w.NoPosition)
+            var whoKnowsCount = whoKnowsObjects.Count;
+            if (whoKnowsCount > 14)
+            {
+                whoKnowsCount = 14;
+            }
+
+            var usersToShow = whoKnowsObjects
+                .OrderByDescending(o => o.Playcount)
                 .ToList();
 
-            var artistsCount = usersWithPositions.Count;
-            if (artistsCount > 14)
-            {
-                artistsCount = 14;
-            }
-
-            var position = 0;
             var spacer = crownModel?.Crown == null ? "" : " ";
 
-            for (var index = 0; index < artistsCount; index++)
+            var indexNumber = 1;
+            var timesNameAdded = 0;
+            var requestedUserAdded = false;
+
+
+            // Note: You might not be able to see them, but this code contains specific spacers
+            // https://www.compart.com/en/unicode/category/Zs
+            for (var index = 0; timesNameAdded < whoKnowsCount; index++)
             {
-                var user = usersWithPositions[index];
-
-                var nameWithLink = NameWithLink(user);
-                var playString = StringExtensions.GetPlaysString(user.Playcount);
-
-                var positionCounter = $"{spacer}{index + 1}. ";
-
-                if (crownModel?.Crown != null && crownModel.Crown.UserId == user.UserId)
+                if (index >= usersToShow.Count)
                 {
-                    positionCounter = "👑 ";
+                    break;
                 }
 
-                reply += $"{positionCounter} {nameWithLink}";
+                var user = usersToShow[index];
 
-                reply += $" - **{user.Playcount}** {playString}\n";
-                position++;
-            }
-
-            var userWithNoPosition = whoKnowsObjects.FirstOrDefault(f => f.NoPosition);
-            if (userWithNoPosition != null)
-            {
-                var nameWithLink = NameWithLink(userWithNoPosition);
-                var playString = StringExtensions.GetPlaysString(userWithNoPosition.Playcount);
-
-                if (position < 14)
+                string nameWithLink;
+                if (minPrivacyLevel == PrivacyLevel.Global && user.PrivacyLevel != PrivacyLevel.Global)
                 {
-                    reply += $"{spacer}{position + 1}.  {nameWithLink} ";
+                    nameWithLink = PrivateName();
+                    if (hidePrivateUsers)
+                    {
+                        indexNumber += 1;
+                        continue;
+                    }
                 }
                 else
                 {
-                    reply += $"  ...   {nameWithLink} ";
+                    nameWithLink = NameWithLink(user);
                 }
-                reply += $" - **{userWithNoPosition.Playcount}** {playString}\n";
+
+                var playString = StringExtensions.GetPlaysString(user.Playcount);
+
+                var positionCounter = $"{spacer}{indexNumber}.";
+                positionCounter = user.UserId == requestedUserId ? $"**{positionCounter}** " : $"{positionCounter} ";
+
+                if (crownModel?.Crown != null && crownModel.Crown.UserId == user.UserId)
+                {
+                    positionCounter = "👑 ";
+                }
+
+                var afterPositionSpacer = index + 1 == 10 ? "" : " ";
+
+                reply += $"{positionCounter}{afterPositionSpacer}{nameWithLink}";
+
+                reply += $" - **{user.Playcount}** {playString}\n";
+
+                indexNumber += 1;
+                timesNameAdded += 1;
+
+                if (user.UserId == requestedUserId)
+                {
+                    requestedUserAdded = true;
+                }
             }
 
-            if (crownModel != null && crownModel.CrownResult != null)
+            if (!requestedUserAdded)
+            {
+                var requestedUser = whoKnowsObjects.FirstOrDefault(f => f.UserId == requestedUserId);
+                if (requestedUser != null)
+                {
+                    var nameWithLink = NameWithLink(requestedUser);
+                    var playString = StringExtensions.GetPlaysString(requestedUser.Playcount);
+
+                    reply += $"**{spacer}{whoKnowsObjects.IndexOf(requestedUser) + 1}.**  {nameWithLink} ";
+
+                    reply += $" - **{requestedUser.Playcount}** {playString}\n";
+                }
+            }
+
+            if (crownModel?.CrownResult != null)
             {
                 reply += $"\n{crownModel.CrownResult}";
             }
@@ -110,6 +206,11 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var nameWithLink = $"[{discordName}]({Constants.LastFMUserUrl}{user.LastFMUsername})";
             return nameWithLink;
+        }
+
+        private static string PrivateName()
+        {
+            return "Private user";
         }
     }
 }

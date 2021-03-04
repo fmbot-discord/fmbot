@@ -1,3 +1,5 @@
+using FMBot.Domain.Models;
+
 namespace FMBot.Bot.Models
 {
     public class AlbumSearchModel
@@ -32,7 +34,7 @@ namespace FMBot.Bot.Models
 
         public string AlbumName { get; set; }
 
-        public int Playcount { get; set; }
+        public int TotalPlaycount { get; set; }
 
         public int ListenerCount { get; set; }
     }
@@ -50,5 +52,24 @@ namespace FMBot.Bot.Models
         public string UserNameLastFm { get; set; }
 
         public ulong DiscordUserId { get; set; }
+
+        public string UserName { get; set; }
+    }
+
+    public class WhoKnowsGlobalAlbumDto
+    {
+        public int UserId { get; set; }
+
+        public string Name { get; set; }
+
+        public string ArtistName { get; set; }
+
+        public int Playcount { get; set; }
+
+        public string UserNameLastFm { get; set; }
+
+        public ulong DiscordUserId { get; set; }
+
+        public PrivacyLevel PrivacyLevel { get; set; }
     }
 }

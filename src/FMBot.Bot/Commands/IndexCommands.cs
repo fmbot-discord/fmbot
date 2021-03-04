@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.API.Rest;
 using Discord.Commands;
+using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
@@ -10,8 +13,8 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
 using Serilog;
 
 namespace FMBot.Bot.Commands
@@ -27,6 +30,9 @@ namespace FMBot.Bot.Commands
 
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
+
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
+        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
 
         public IndexCommands(
                 GuildService guildService,
@@ -67,7 +73,7 @@ namespace FMBot.Bot.Commands
                 var indexedUserCount = await this._indexService.GetIndexedUsersCount(guildUsers);
 
                 var guildRecentlyIndexed =
-                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(20));
+                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(5));
 
                 if (guildRecentlyIndexed)
                 {
@@ -81,8 +87,7 @@ namespace FMBot.Bot.Commands
                     await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
 
                     var reply =
-                        "Stored guild users have been updated.\n" +
-                        "No new registered .fmbot members found on this server or all users have already been indexed. To update your indexed artist/albums/tracks, use `.fmupdate` (also happens automatically).";
+                        "Server index has been updated.";
 
                     await ReplyAsync(reply);
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
@@ -92,8 +97,7 @@ namespace FMBot.Bot.Commands
                 {
                     await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
                     await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow.AddDays(-1));
-                    await ReplyAsync("All users on this server have already been indexed or nobody is registered on .fmbot here.\n" +
-                                     "The server has now been registered anyway, so you can start using the commands that require indexing.");
+                    await ReplyAsync("Server has been indexed successfully. You can now use all commands that require indexing.");
                     this.Context.LogCommandUsed();
                     return;
                 }
@@ -176,13 +180,46 @@ namespace FMBot.Bot.Commands
 
             if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full" || force.ToLower() == "-force" || force.ToLower() == "force"))
             {
-                if (userSettings.LastIndexed > DateTime.UtcNow.AddDays(-1))
+                if (PublicProperties.IssuesAtLastFm)
+                {
+                    await ReplyAsync(
+                        "Doing a full update is disabled temporarily while Last.fm is having issues. Please try again later.");
+                    this.Context.LogCommandUsed(CommandResponse.Disabled);
+                    return;
+                }
+
+                if (userSettings.LastIndexed > DateTime.UtcNow.AddHours(-10))
                 {
                     await ReplyAsync(
                         "You can't do a full index too often. Please remember that this command should only be used in case you edited your scrobble history.\n" +
                         "Experiencing issues with the normal update? Please contact us on the .fmbot support server.");
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
                     return;
+                }
+
+                var msg = this.Context.Message as SocketUserMessage;
+                if (StackCooldownTarget.Contains(this.Context.Message.Author))
+                {
+                    if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(30) >= DateTimeOffset.Now)
+                    {
+                        var secondsLeft = (int)(StackCooldownTimer[
+                                StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]
+                            .AddSeconds(31) - DateTimeOffset.Now).TotalSeconds;
+                        if (secondsLeft <= 25)
+                        {
+                            await ReplyAsync("You recently started a full update. Please wait before starting a new one.");
+                            this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                        }
+
+                        return;
+                    }
+
+                    StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
+                }
+                else
+                {
+                    StackCooldownTarget.Add(msg.Author);
+                    StackCooldownTimer.Add(DateTimeOffset.Now);
                 }
 
                 var indexDescription =
@@ -204,7 +241,7 @@ namespace FMBot.Bot.Commands
                 await message.ModifyAsync(m =>
                 {
                     m.Embed = new EmbedBuilder()
-                        .WithDescription($"✅ {userSettings.UserNameLastFM} has been fully indexed.")
+                        .WithDescription($"✅ {userSettings.UserNameLastFM} has been fully updated.")
                         .WithColor(DiscordConstants.SuccessColorGreen)
                         .Build();
                 });
@@ -215,16 +252,10 @@ namespace FMBot.Bot.Commands
                 {
                     var recentlyUpdatedText =
                         $"You have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). " +
-                        $"Note that this also happens automatically, for example with commands that use indexed data.";
-                    if (this.Context.InteractionData != null)
-                    {
-                        await ReplyInteractionAsync(recentlyUpdatedText,
-                            ghostMessage: true, type: InteractionMessageType.Acknowledge);
-                    }
-                    else
-                    {
-                        await ReplyAsync(recentlyUpdatedText);
-                    }
+                        $"Note that this also happens automatically, for example with commands that use cached playcounts.";
+
+                    await ReplyAsync(recentlyUpdatedText);
+
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
                     return;
                 }
@@ -232,65 +263,55 @@ namespace FMBot.Bot.Commands
                 if (userSettings.LastIndexed == null)
                 {
                     await ReplyAsync(
-                        "You have to be indexed before you can update. (`.fmupdate full`)");
+                        "Please do a full update first. (`.fmupdate full`)");
                     this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                     return;
                 }
 
-                if (this.Context.InteractionData != null)
+                this._embed.WithDescription(
+                    $"<a:loading:749715170682470461> Updating user {userSettings.UserNameLastFM}...");
+                var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+                var scrobblesUsed = await this._updateService.UpdateUser(userSettings);
+
+                await message.ModifyAsync(m =>
                 {
-                    var scrobblesUsed = await this._updateService.UpdateUser(userSettings);
-
-                    await ReplyInteractionAsync($"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new {StringExtensions.GetScrobblesString(scrobblesUsed)}.",
-                        ghostMessage: true, type: InteractionMessageType.Acknowledge);
-                }
-                else
-                {
-                    this._embed.WithDescription(
-                        $"<a:loading:749715170682470461> Updating user {userSettings.UserNameLastFM}...");
-                    var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-                    var scrobblesUsed = await this._updateService.UpdateUser(userSettings);
-
-                    await message.ModifyAsync(m =>
+                    if (scrobblesUsed == 0)
                     {
-                        if (scrobblesUsed == 0)
+                        var newEmbed =
+                            new EmbedBuilder()
+                                .WithDescription("No new scrobbles found since last update")
+                                .WithColor(DiscordConstants.SuccessColorGreen);
+
+                        if (userSettings.LastUpdated.HasValue)
                         {
-                            var newEmbed =
-                                new EmbedBuilder()
-                                    .WithDescription("No new scrobbles found since last update")
-                                    .WithColor(DiscordConstants.SuccessColorGreen);
-
-                            if (userSettings.LastUpdated.HasValue)
-                            {
-                                newEmbed.WithTimestamp(userSettings.LastUpdated.Value);
-                                this._embedFooter.WithText("Last update");
-                                newEmbed.WithFooter(this._embedFooter);
-                            }
-
-                            m.Embed = newEmbed.Build();
+                            newEmbed.WithTimestamp(userSettings.LastUpdated.Value);
+                            this._embedFooter.WithText("Last update");
+                            newEmbed.WithFooter(this._embedFooter);
                         }
-                        else
+
+                        m.Embed = newEmbed.Build();
+                    }
+                    else
+                    {
+                        var updatedDescription =
+                            $"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new {StringExtensions.GetScrobblesString(scrobblesUsed)}.";
+
+                        var rnd = new Random();
+                        if (rnd.Next(0, 4) == 1)
                         {
-                            var updatedDescription =
-                                $"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new {StringExtensions.GetScrobblesString(scrobblesUsed)}.";
-
-                            var rnd = new Random();
-                            if (rnd.Next(0, 4) == 1)
-                            {
-                                updatedDescription +=
-                                    $"\n\n" +
-                                    $"Please note that updates are only used for whoknows and that users are also automatically updated every 48 hours.\n" +
-                                    $"Other commands directly get their data from last.fm and are always up to date.";
-                            }
-
-                            m.Embed = new EmbedBuilder()
-                                .WithDescription(updatedDescription)
-                                .WithColor(DiscordConstants.SuccessColorGreen)
-                                .Build();
+                            updatedDescription +=
+                                $"\n\n" +
+                                $"Please note that updates are only used for whoknows and that users are also automatically updated every 48 hours.\n" +
+                                $"Other commands directly get their data from last.fm and are always up to date.";
                         }
-                    });
-                }
+
+                        m.Embed = new EmbedBuilder()
+                            .WithDescription(updatedDescription)
+                            .WithColor(DiscordConstants.SuccessColorGreen)
+                            .Build();
+                    }
+                });
             }
 
             this.Context.LogCommandUsed();

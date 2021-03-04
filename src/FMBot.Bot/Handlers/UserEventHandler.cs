@@ -21,8 +21,8 @@ namespace FMBot.Bot.Handlers
 
         private async Task UserLeftGuild(SocketGuildUser guildUser)
         {
-            await this._indexService.RemoveUserFromGuild(guildUser);
-            await this._crownService.RemoveAllCrownsFromDiscordUser(guildUser);
+            _ = this._indexService.RemoveUserFromGuild(guildUser);
+            _ = this._crownService.RemoveAllCrownsFromDiscordUser(guildUser);
         }
     }
 }

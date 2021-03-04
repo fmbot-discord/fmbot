@@ -59,16 +59,16 @@ namespace FMBot.Bot.Commands
 
         [Command("invite", RunMode = RunMode.Async)]
         [Summary("Info for inviting the bot to a server")]
-        [Alias("server")]
+        [Alias("server", "info")]
         public async Task InviteAsync()
         {
             var selfId = this.Context.Client.CurrentUser.Id.ToString();
             var embedDescription = new StringBuilder();
 
             embedDescription.AppendLine("- You can invite .fmbot to your own server by **[clicking here](" +
-                "https://discordapp.com/oauth2/authorize?" +
+                "https://discord.com/oauth2/authorize?" +
                 $"client_id={selfId}" +
-                "&scope=bot%20applications.commands.update%20applications.commands" +
+                "&scope=bot%20applications.commands" +
                 $"&permissions={Constants.InviteLinkPermissions}).**");
 
             embedDescription.AppendLine(
@@ -76,6 +76,9 @@ namespace FMBot.Bot.Commands
 
             embedDescription.AppendLine(
                 "- Help us cover hosting and other costs on our [OpenCollective](https://opencollective.com/fmbot)");
+
+            embedDescription.AppendLine(
+                "- Check our [website](https://fmbot.xyz/) for more information.");
 
             this._embed.WithDescription(embedDescription.ToString());
 
@@ -90,37 +93,31 @@ namespace FMBot.Bot.Commands
             this.Context.LogCommandUsed();
         }
 
-        [Command("info", RunMode = RunMode.Async)]
+        [Command("donate", RunMode = RunMode.Async)]
         [Summary("Please donate if you like this bot!")]
-        [Alias("donate", "github", "gitlab", "issues", "bugs")]
-        public async Task InfoAsync()
+        [Alias("support")]
+        public async Task DonateAsync()
         {
-            var selfId = this.Context.Client.CurrentUser.Id.ToString();
+            var embedDescription = new StringBuilder();
 
-            this._embed.AddField("Invite the bot to your own server with the link below:",
-                "https://discordapp.com/oauth2/authorize?client_id=" + selfId + "&scope=bot%20applications.commands.update%20applications.commands&permissions=" +
-                Constants.InviteLinkPermissions);
-
-            this._embed.AddField("Support the bot development and hosting:",
-                "https://opencollective.com/fmbot");
-
-            this._embed.AddField("Post issues and feature requests here:",
-                "https://github.com/fmbot-discord/fmbot/issues/new/choose");
-
-            this._embed.AddField("View the code on Github:",
-                "https://github.com/fmbot-discord/fmbot");
-
-            this._embed.AddField("Follow us on Twitter:",
-                "https://twitter.com/fmbotDiscord");
-
-            this._embed.AddField("Join the FMBot server for support and updates:",
-                "https://discord.gg/srmpCaa");
+            embedDescription.AppendLine(".fmbot is non-commercial and is hosted and maintained by volunteers.");
+            embedDescription.AppendLine("You can help us cover hosting and other costs on our [OpenCollective](https://opencollective.com/fmbot).");
+            embedDescription.AppendLine();
+            embedDescription.AppendLine("We use OpenCollective so we can be transparent about our expenses. If you decide to sponsor us, you can see exactly where your money goes.");
+            embedDescription.AppendLine();
+            embedDescription.AppendLine("**.fmbot supporter advantages include**:\n" +
+                                        "- An emote behind their name (⭐)\n" +
+                                        "- Their name added to `.fmsupporters`\n" +
+                                        $"- A 1/{Constants.SupporterMessageChance} chance of sponsoring a chart\n" +
+                                        "- WhoKnows tracking increased to top 25K (instead of top 4/5/6k artist/albums/tracks)");
 
             if (IsBotSelfHosted(this.Context.Client.CurrentUser.Id))
             {
                 this._embed.AddField("Note:",
-                    "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot.");
+                    "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot. Any supporter advantages will not apply on this bot.");
             }
+
+            this._embed.WithDescription(embedDescription.ToString());
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
@@ -155,15 +152,13 @@ namespace FMBot.Bot.Commands
             var description = "";
             description += $"**Bot Uptime:** `{startTime.ToReadableString()}`\n";
             description += $"**Server Uptime:** `{upTimeInSeconds.ToReadableString()}`\n";
-            description += $"**Usercount:** `{(await this._userService.GetTotalUserCountAsync()).ToString()}`\n";
+            description += $"**Usercount:** `{(await this._userService.GetTotalUserCountAsync()).ToString()}`  (Discord: `{client.Guilds.Select(s => s.MemberCount).Sum()}`)\n";
             description += $"**Friendcount:** `{await this._friendService.GetTotalFriendCountAsync()}`\n";
-            description += $"**Discord usercount:** `{client.Guilds.Select(s => s.MemberCount).Sum()}`\n";
-            description += $"**Servercount:** `{client.Guilds.Count}`\n";
+            description += $"**Servercount:** `{client.Guilds.Count}`  (Shards: `{client.Shards.Count}`)\n";
             description += $"**Commands used:** `{Statistics.CommandsExecuted.Value}`\n";
-            description += $"**Last.fm API calls:** `{Statistics.LastfmApiCalls.Value}`\n";
-            description += $"**Memory usage:** `{currentMemoryUsage.ToFormattedByteString()}` (Peak: `{peakMemoryUsage.ToFormattedByteString()}`)\n";
-            description += $"**Average latency:** `{Math.Round(client.Shards.Select(s => s.Latency).Average(), 2) + "ms`"}\n";
-            description += $"**Shards:** `{client.Shards.Count}`\n";
+            description += $"**Last.fm API calls:** `{Statistics.LastfmApiCalls.Value}`  (Ex. authorized: `{Statistics.LastfmAuthorizedApiCalls.Value}`)\n";
+            description += $"**Memory usage:** `{currentMemoryUsage.ToFormattedByteString()}`  (Peak: `{peakMemoryUsage.ToFormattedByteString()}`)\n";
+            description += $"**Average shard latency:** `{Math.Round(client.Shards.Select(s => s.Latency).Average(), 2) + "ms`"}\n";
             description += $"**Bot version:** `{assemblyVersion}`\n";
             description += $"**Self-hosted:** `{IsBotSelfHosted(this.Context.Client.CurrentUser.Id).ToString()}`\n";
 
@@ -218,7 +213,7 @@ namespace FMBot.Bot.Commands
                     "Keep in mind that the instance might not be fully up to date or other users might not be registered.");
             }
 
-            if (PublicProperties.IssuesAtLastFM)
+            if (PublicProperties.IssuesAtLastFm)
             {
                 this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues");
             }
@@ -229,7 +224,7 @@ namespace FMBot.Bot.Commands
 
 
         [Command("supporters", RunMode = RunMode.Async)]
-        [Summary("Displays this list.")]
+        [Summary("Displays all .fmbot supporters.")]
         [Alias("donators", "donors", "backers")]
         public async Task AllSupportersAsync()
         {
@@ -253,7 +248,8 @@ namespace FMBot.Bot.Commands
             }
 
             description.AppendLine();
-            description.AppendLine("Thank you to all our supporters that help keep .fmbot running. If you would like to be on this list too, please check out our [OpenCollective](https://opencollective.com/fmbot).");
+            description.AppendLine("Thank you to all our supporters that help keep .fmbot running. If you would like to be on this list too, please check out our [OpenCollective](https://opencollective.com/fmbot). \n" +
+                                   "For all information on donating to .fmbot you can check out `.fmdonate`.");
 
             this._embed.WithDescription(description.ToString());
 

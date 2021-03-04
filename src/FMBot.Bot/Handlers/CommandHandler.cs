@@ -19,8 +19,6 @@ namespace FMBot.Bot.Handlers
 {
     public class CommandHandler
     {
-        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
-        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
         private readonly CommandService _commands;
         private readonly UserService _userService;
         private readonly DiscordShardedClient _discord;
@@ -57,7 +55,7 @@ namespace FMBot.Bot.Handlers
                 return;
             }
 
-            if (this._discord?.CurrentUser != null && (msg.Author.Id == this._discord.CurrentUser.Id))
+            if (this._discord?.CurrentUser != null && msg.Author.Id == this._discord.CurrentUser.Id)
             {
                 return; // Ignore self when checking commands
             }
@@ -71,18 +69,24 @@ namespace FMBot.Bot.Handlers
 
             var argPos = 0; // Check if the message has a valid command prefix
             var customPrefix = this._prefixService.GetPrefix(context.Guild?.Id);
+
+            // No custom prefix or mention
             if (msg.HasStringPrefix(ConfigData.Data.Bot.Prefix, ref argPos, StringComparison.CurrentCultureIgnoreCase) && customPrefix == null || msg.HasMentionPrefix(this._discord.CurrentUser, ref argPos))
             {
                 await ExecuteCommand(msg, context, argPos);
             }
+
+            // Custom prefix
             else if (!string.IsNullOrWhiteSpace(customPrefix) && msg.HasStringPrefix(customPrefix, ref argPos, StringComparison.CurrentCultureIgnoreCase))
             {
                 await ExecuteCommand(msg, context, argPos, customPrefix);
             }
+
+            // No custom prefix and command equals .fm
             else if (string.IsNullOrWhiteSpace(customPrefix) && msg.HasStringPrefix(".", ref argPos))
             {
                 var searchResult = this._commands.Search(context, argPos);
-                if (searchResult.IsSuccess && searchResult.Commands.FirstOrDefault().Command.Name == "fm")
+                if (searchResult.IsSuccess && searchResult.Commands != null && searchResult.Commands.Any() &&searchResult.Commands.FirstOrDefault().Command.Name == "fm")
                 {
                     await ExecuteCommand(msg, context, argPos);
                 }
@@ -91,24 +95,6 @@ namespace FMBot.Bot.Handlers
 
         private async Task ExecuteCommand(SocketUserMessage msg, ShardedCommandContext context, int argPos, string customPrefix = null)
         {
-            if (StackCooldownTarget.Contains(msg.Author))
-            {
-                //If they have used this command before, take the time the user last did something, add 800ms, and see if it's greater than this very moment.
-                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddMilliseconds(800) >=
-                    DateTimeOffset.Now)
-                {
-                    return;
-                }
-
-                StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)] = DateTimeOffset.Now;
-            }
-            else
-            {
-                //If they've never used this command before, add their username and when they just used this command.
-                StackCooldownTarget.Add(msg.Author);
-                StackCooldownTimer.Add(DateTimeOffset.Now);
-            }
-
             var searchResult = this._commands.Search(context, argPos);
 
             // If custom prefix is enabled, no commands found and message does not start with custom prefix, return
@@ -139,6 +125,7 @@ namespace FMBot.Bot.Handlers
                 }
             }
 
+            // If command equals .fm
             if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && msg.Content.StartsWith(ConfigData.Data.Bot.Prefix))
             {
                 var commandPrefixResult = await this._commands.ExecuteAsync(context, 1, this._provider);
@@ -155,6 +142,11 @@ namespace FMBot.Bot.Handlers
                 return;
             }
 
+            if (searchResult.Commands == null || !searchResult.Commands.Any())
+            {
+                return;
+            }
+
             if (searchResult.Commands[0].Command.Attributes.OfType<UsernameSetRequired>().Any())
             {
                 var userRegistered = await this._userService.UserRegisteredAsync(context.User);
@@ -162,13 +154,14 @@ namespace FMBot.Bot.Handlers
                 {
                     var embed = new EmbedBuilder()
                         .WithColor(DiscordConstants.LastFmColorRed);
-                    embed.UsernameNotSetErrorResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
+                    var userNickname = (context.User as SocketGuildUser)?.Nickname;
+                    embed.UsernameNotSetErrorResponse(customPrefix ?? ConfigData.Data.Bot.Prefix, userNickname ?? context.User.Username);
                     await context.Channel.SendMessageAsync("", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
                     return;
                 }
 
-                var userBlocked = await this._userService.UserBlockedAsync(context.User);
+                var userBlocked = await this._userService.UserBlockedAsync(context.User.Id);
                 if (userBlocked)
                 {
                     var embed = new EmbedBuilder()
@@ -193,7 +186,7 @@ namespace FMBot.Bot.Handlers
                     return;
                 }
 
-                var userBlocked = await this._userService.UserBlockedAsync(context.User);
+                var userBlocked = await this._userService.UserBlockedAsync(context.User.Id);
                 if (userBlocked)
                 {
                     var embed = new EmbedBuilder()
@@ -209,7 +202,7 @@ namespace FMBot.Bot.Handlers
                 if (context.Guild == null)
                 {
                     await context.User.SendMessageAsync("This command is not supported in DMs.");
-                    context.LogCommandUsed(CommandResponse.UsernameNotSet);
+                    context.LogCommandUsed(CommandResponse.NotSupportedInDm);
                     return;
                 }
             }
@@ -219,7 +212,7 @@ namespace FMBot.Bot.Handlers
             if (result.IsSuccess)
             {
                 Statistics.CommandsExecuted.Inc();
-                await this._userService.UpdateUserLastUsedAsync(context.User);
+                await this._userService.UpdateUserLastUsedAsync(context.User.Id);
             }
             else
             {

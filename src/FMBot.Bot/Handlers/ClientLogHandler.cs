@@ -2,6 +2,8 @@ using System;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
+using FMBot.Bot.Interfaces;
+using FMBot.Bot.Services.Guild;
 using Serilog;
 
 namespace FMBot.Bot.Handlers
@@ -9,10 +11,19 @@ namespace FMBot.Bot.Handlers
     public class ClientLogHandler
     {
         private readonly DiscordShardedClient _client;
+        private readonly IChannelDisabledCommandService _channelDisabledCommandService;
+        private readonly IGuildDisabledCommandService _guildDisabledCommandService;
+        private readonly GuildService _guildService;
 
-        public ClientLogHandler(DiscordShardedClient client)
+        public ClientLogHandler(DiscordShardedClient client,
+            IChannelDisabledCommandService channelDisabledCommandService,
+            IGuildDisabledCommandService guildDisabledCommandService,
+            GuildService guildService)
         {
             this._client = client;
+            this._channelDisabledCommandService = channelDisabledCommandService;
+            this._guildDisabledCommandService = guildDisabledCommandService;
+            this._guildService = guildService;
             this._client.Log += LogEvent;
             this._client.ShardLatencyUpdated += ShardLatencyEvent;
             this._client.ShardDisconnected += ShardDisconnectedEvent;
@@ -95,16 +106,22 @@ namespace FMBot.Bot.Handlers
                 shard.ShardId, oldPing, updatePing);
         }
 
-        private void ClientJoinedGuild(SocketGuild guild)
+        private async Task ClientJoinedGuild(SocketGuild guild)
         {
             Log.Information(
                 "JoinedGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.MemberCount);
+
+            _ = this._channelDisabledCommandService.ReloadDisabledCommands(guild.Id);
+            _ = this._guildDisabledCommandService.ReloadDisabledCommands(guild.Id);
         }
 
         private async Task ClientLeftGuild(SocketGuild guild)
         {
             Log.Information(
                 "LeftGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.MemberCount);
+
+            _ = this._channelDisabledCommandService.RemoveDisabledCommandsForGuild(guild.Id);
+            _ = this._guildService.RemoveGuildAsync(guild.Id);
         }
     }
 }

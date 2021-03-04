@@ -2,6 +2,6 @@ namespace FMBot.Domain
 {
     public static class PublicProperties
     {
-        public static bool IssuesAtLastFM = false;
+        public static bool IssuesAtLastFm = false;
     }
 }

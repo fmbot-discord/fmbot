@@ -1,3 +1,4 @@
+using System.ComponentModel.Design;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -7,7 +8,6 @@ using FMBot.Bot.Resources;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
-using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using IF.Lastfm.Core.Api.Enums;
 using Serilog;
@@ -16,11 +16,11 @@ namespace FMBot.Bot.Services
 {
     public static class ErrorService
     {
-        public static void UsernameNotSetErrorResponse(this EmbedBuilder embed, string prfx)
+        public static void UsernameNotSetErrorResponse(this EmbedBuilder embed, string prfx, string name)
         {
-            embed.WithTitle("Error while attempting get Last.fm information");
-            embed.WithDescription("You have not added your Last.fm account to .fmbot yet.\n\n" +
-                                  $"Please use the `{prfx}login` command to receive a link to connect your Last.fm account.");
+            embed.WithDescription($"Hi {name}, welcome to .fmbot. \n" +
+                                  $"To use this bot you first need to add your Last.fm account.\n\n" +
+                                  $"Please use the `{prfx}login` command. The bot will then DM you a link so you can connect your Last.fm account.");
 
             embed.WithUrl($"{Constants.DocsUrl}/commands/");
 
@@ -43,7 +43,6 @@ namespace FMBot.Bot.Services
 
         public static void SessionRequiredResponse(this EmbedBuilder embed, string prfx)
         {
-            embed.WithTitle("Error while attempting get Last.fm information");
             embed.WithDescription("While you have set your username, you haven't connected .fmbot to your Last.fm account yet, which is required for the command you're trying to use.\n" +
                                 $"Please use the `{prfx}login` command to receive a link to connect your Last.fm account.");
 
@@ -54,22 +53,24 @@ namespace FMBot.Bot.Services
 
         public static void NoScrobblesFoundErrorResponse(this EmbedBuilder embed, LastResponseStatus? apiResponse, string prfx, string userName)
         {
-            embed.WithTitle("Error while attempting get Last.fm information");
             switch (apiResponse)
             {
                 case LastResponseStatus.Failure:
-                    embed.WithDescription("Can't retrieve scrobbles because Last.fm is having issues. Please try again later. \n" +
-                                          "Please note that .fmbot isn't affiliated with Last.fm.");
+                    embed.WithTitle("Error while attempting get Last.fm information");
+                    embed.WithDescription(
+                        "Can't retrieve scrobbles because Last.fm is having issues. Please try again later. \n" +
+                        "Please note that .fmbot isn't affiliated with Last.fm.");
                     break;
                 case LastResponseStatus.MissingParameters:
-                    embed.WithDescription("You or the user you're searching for has no scrobbles/artists on their profile, or Last.fm is having issues. Please try again later. \n \n" +
-                                          $"Recently changed your Last.fm username? Please change it here too using `{prfx}login` again.");
+                    embed.WithTitle("Error while attempting get Last.fm information");
+                    embed.WithDescription(
+                        "You or the user you're searching for has no scrobbles/artists on their profile, or Last.fm is having issues. Please try again later. \n \n" +
+                        $"Recently changed your Last.fm username? Please change it here too using `{prfx}login` again.");
                     break;
                 default:
                     embed.WithDescription(
-                        $"The user `{userName}` has no scrobbles/artists/albums/tracks on [their Last.fm profile]({Constants.LastFMUserUrl}{userName}).\n" +
-                        $"Just signed up for last.fm and added your account in the bot? Make sure you [track your music](https://www.last.fm/about/trackmymusic) and your Last.fm profile is showing the music that you're listening to.\n\n" +
-                        $"Note: this error can also appear when Last.fm is having issues, in that case please try again later. Please note that .fmbot is not affiliated with Last.fm.");
+                        $"The Last.fm user `{userName}` has no scrobbles/artists/albums/tracks on [their profile]({Constants.LastFMUserUrl}{userName}).\n\n" +
+                        $"Just signed up for last.fm and added your account in the bot? Make sure you [track your music](https://www.last.fm/about/trackmymusic) and your Last.fm profile is showing the music that you're listening to.");
                     break;
             }
 
@@ -81,15 +82,14 @@ namespace FMBot.Bot.Services
         {
             embed.WithTitle("Error while attempting get Last.fm information");
 
-            embed.WithDescription($"The user `{userName}` has no scrobbles/artists/albums/tracks on [their Last.fm profile]({Constants.LastFMUserUrl}{userName}).\n" +
-                                  $"Just signed up for last.fm and added your account in the bot? Make sure you [track your music](https://www.last.fm/about/trackmymusic), your recent tracks are not marked as private " +
-                                  $"and your Last.fm profile is showing the music that you're listening to.\n\n" +
-                                  $"Note: this error can also appear when Last.fm is having issues, in that case please try again later. Please note that .fmbot is not affiliated with Last.fm.");
+            embed.WithDescription($"The Last.fm user `{userName}` has no scrobbles/artists/albums/tracks on [their Last.fm profile]({Constants.LastFMUserUrl}{userName}).\n\n" +
+                                  $"Just signed up for last.fm and added your account in the bot? Make sure you properly [track your plays](https://www.last.fm/about/trackmymusic) " +
+                                  $"and your [Last.fm profile]({Constants.LastFMUserUrl}{userName}) is showing the music that you're listening to.");
 
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
-        public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus? responseStatus, string message, ICommandContext context)
+        public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus? responseStatus, string message, ICommandContext context, string expectedResultType = null)
         {
             embed.WithTitle("Error while attempting get Last.fm information");
             switch (responseStatus)
@@ -99,7 +99,7 @@ namespace FMBot.Bot.Services
                                           "Please note that .fmbot isn't affiliated with Last.fm.");
                     break;
                 case ResponseStatus.LoginRequired:
-                    embed.WithDescription("Can't retrieve data because your recent tracks are marked as private in your [Last.fm privacy settings](https://www.last.fm/settings/privacy).\n" +
+                    embed.WithDescription("Can't retrieve data because your recent tracks are marked as private in your [Last.fm privacy settings](https://www.last.fm/settings/privacy).\n\n" +
                                           "You can either change this setting or authorize .fmbot to access your private scrobbles with `.fmlogin`.\n\n" +
                                           "Please note that .fmbot isn't affiliated with Last.fm.");
                     break;
@@ -110,6 +110,17 @@ namespace FMBot.Bot.Services
                 case ResponseStatus.SessionExpired:
                     embed.WithDescription("Can't retrieve data because your Last.fm session is expired or invalid.\n" +
                                           "Please re-login to the bot with `.fmlogin`.");
+                    break;
+                case ResponseStatus.MissingParameters:
+                    if (expectedResultType != null)
+                    {
+                        embed.Title = null;
+                        embed.WithDescription($"Sorry, Last.fm did not return an {expectedResultType} for the name you searched for.");
+                    }
+                    else
+                    {
+                        goto default;
+                    }
                     break;
                 default:
                     embed.WithDescription(message);
@@ -122,7 +133,7 @@ namespace FMBot.Bot.Services
             }
 
             embed.WithColor(DiscordConstants.WarningColorOrange);
-            Log.Warning("Last.fm returned error: {message} | {responseStatus} | {discordUserName} / {discordUserId} | {messageContent}", message, responseStatus, context.User.Username, context.User.Id, context.Message.Content);
+            Log.Information("Last.fm returned error: {message} | {responseStatus} | {discordUserName} / {discordUserId} | {messageContent}", message, responseStatus, context.User.Username, context.User.Id, context.Message.Content);
         }
 
         public static bool RecentScrobbleCallFailed(Response<RecentTrackList> recentScrobbles, string lastFmUserName)
@@ -142,14 +153,8 @@ namespace FMBot.Bot.Services
             {
                 embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, context);
                 context.LogCommandUsed(CommandResponse.LastFmError);
-                if (context.InteractionData == null)
-                {
-                    await context.Channel.SendMessageAsync("", false, embed.Build());
-                }
-                else
-                {
-                    await context.Channel.SendInteractionMessageAsync(context.InteractionData, "", embed: embed.Build());
-                }
+
+                await context.Channel.SendMessageAsync("", false, embed.Build());
 
                 return true;
             }
@@ -158,14 +163,7 @@ namespace FMBot.Bot.Services
             {
                 embed.NoScrobblesFoundErrorResponse(lastFmUserName);
                 context.LogCommandUsed(CommandResponse.NoScrobbles);
-                if (context.InteractionData == null)
-                {
-                    await context.Channel.SendMessageAsync("", false, embed.Build());
-                }
-                else
-                {
-                    await context.Channel.SendInteractionMessageAsync(context.InteractionData, "", embed: embed.Build());
-                }
+                await context.Channel.SendMessageAsync("", false, embed.Build());
 
                 return true;
             }
