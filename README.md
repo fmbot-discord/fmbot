@@ -16,7 +16,7 @@
 
 Documentation: https://fmbot.xyz/
 
-Feel free to join our Discord server: https://discord.gg/srmpCaa
+Feel free to join our Discord server: http://server.fmbot.xyz/
 
 [Click here to add the bot to your server](http://invite.fmbot.xyz/).
 
