@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://ci.appveyor.com/project/fmbotdiscord/fmbot"><img src="https://ci.appveyor.com/api/projects/status/wy7md66rtm8ov1ej?svg=true" alt="Build status"></a>
   <a href="https://www.codacy.com/gh/fmbot-discord/fmbot/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=fmbot-discord/fmbot&amp;utm_campaign=Badge_Grade"><img src="https://app.codacy.com/project/badge/Grade/e793453ce7d048f696357408b3abbb8c" alt="Codacy code quality"/></a>
-  <a href="https://discord.gg/srmpCaa"><img src="https://img.shields.io/badge/chat-on%20discord-7289da.svg" alt="Join our server"></a>
+  <a href="http://server.fmbot.xyz/"><img src="https://img.shields.io/badge/chat-on%20discord-7289da.svg" alt="Join our server"></a>
   <a href="https://top.gg/bot/356268235697553409"><img src="https://top.gg/api/widget/status/356268235697553409.svg?noavatar=true" alt="Discord bot status"></a>
   <a href="https://top.gg/bot/356268235697553409"><img src="https://top.gg/api/widget/servers/356268235697553409.svg?noavatar=true" alt="Discord bot server amount"></a>
   <a href="https://www.jetbrains.com/?from=fmbot"><img src="https://img.shields.io/badge/Powered%20by%20JetBrains-gray.svg?logo=resharper" alt="Powered by Resharper"></a>
