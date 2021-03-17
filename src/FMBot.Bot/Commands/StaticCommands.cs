@@ -72,7 +72,7 @@ namespace FMBot.Bot.Commands
                 $"&permissions={Constants.InviteLinkPermissions}).**");
 
             embedDescription.AppendLine(
-                "- Join the [.fmbot server](https://discord.gg/srmpCaa) for support and updates.");
+                "- Join the [.fmbot server](http://invite.fmbot.xyz/) for support and updates.");
 
             embedDescription.AppendLine(
                 "- Help us cover hosting and other costs on our [OpenCollective](https://opencollective.com/fmbot)");
