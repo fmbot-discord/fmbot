@@ -206,9 +206,9 @@ namespace FMBot.Bot.Commands.LastFM
                 }
             }
 
-            if (artistInfo.Tags.Tag.Any())
+            if (artistInfo.TagsLfm.Tag.Any())
             {
-                var tags = LastFmService.TagsToLinkedString(artistInfo.Tags);
+                var tags = LastFmService.TagsToLinkedString(artistInfo.TagsLfm);
 
                 this._embed.AddField("Tags", tags);
             }
@@ -1461,7 +1461,7 @@ namespace FMBot.Bot.Commands.LastFM
                         "If you don't enter any artists name, it will get the info from the artist you're currently listening to.";
 
                     await this.Context.Channel.SendMessageAsync(helpText);
-
+                      
                     return null;
                 }
 

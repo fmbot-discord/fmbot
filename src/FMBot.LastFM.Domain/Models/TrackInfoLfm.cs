@@ -25,6 +25,6 @@ namespace FMBot.LastFM.Domain.Models
 
     public class TrackInfoTopTagsLfm
     {
-        public Tag[] Tag { get; set; }
+        public TagLfm[] Tag { get; set; }
     }
 }

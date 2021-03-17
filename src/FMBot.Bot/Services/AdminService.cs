@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Discord;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -121,6 +122,13 @@ namespace FMBot.Bot.Services
             await db.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task<BottedUser> GetBottedUserAsync(string lastFmUserName)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            return await db.BottedUsers
+                .FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == lastFmUserName.ToLower());
         }
 
         public string FormatBytes(long bytes)

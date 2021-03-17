@@ -2,9 +2,9 @@ using System;
 
 namespace FMBot.LastFM.Domain.Models
 {
-    public class Tag
+    public class TagLfm
     {
         public string Name { get; set; }
-        public Uri Url { get; set; }
+        public string Url { get; set; }
     }
 }

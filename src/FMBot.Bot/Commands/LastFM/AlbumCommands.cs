@@ -167,9 +167,9 @@ namespace FMBot.Bot.Commands.LastFM
                 }
             }
 
-            if (albumInfo.Tags.Tag.Any())
+            if (albumInfo.TagsLfm.Tag.Any())
             {
-                var tags = LastFmService.TagsToLinkedString(albumInfo.Tags);
+                var tags = LastFmService.TagsToLinkedString(albumInfo.TagsLfm);
 
                 this._embed.AddField("Tags", tags);
             }

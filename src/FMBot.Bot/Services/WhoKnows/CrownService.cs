@@ -101,6 +101,14 @@ namespace FMBot.Bot.Services.WhoKnows
                 var currentPlaycountForCrownHolder =
                     await GetCurrentPlaycountForUser(artistName, currentCrownHolder.User.UserNameLastFM, currentCrownHolder.UserId);
 
+                if (PublicProperties.IssuesAtLastFm)
+                {
+                    return new CrownModel
+                    {
+                        Crown = currentCrownHolder,
+                        CrownResult = "*Crown stealing is currently disabled due to issues with the Last.fm API*"
+                    };
+                }
                 if (currentPlaycountForCrownHolder == null)
                 {
                     return new CrownModel

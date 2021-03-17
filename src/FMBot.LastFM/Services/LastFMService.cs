@@ -18,6 +18,7 @@ using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Tag = FMBot.Domain.Models.Tag;
 
 namespace FMBot.LastFM.Services
 {
@@ -143,65 +144,27 @@ namespace FMBot.LastFM.Services
             return recentTracksCall.Success ? recentTracksCall.Content.RecentTracks.AttributesLfm.Total : (long?)null;
         }
 
-        public static string TrackToLinkedString(RecentTrack track, bool? rymEnabled = null)
+        public static string ResponseTrackToLinkedString(TrackInfo trackInfo)
         {
-            var escapedTrackName = Regex.Replace(track.TrackName, @"([|\\*])", @"\$1");
-
-            if (!string.IsNullOrWhiteSpace(track.AlbumName))
-            {
-                if (rymEnabled == true)
-                {
-                    var albumQueryName = track.AlbumName.Replace(" - Single", "");
-                    albumQueryName = albumQueryName.Replace(" - EP", "");
-
-                    var escapedAlbumName = Regex.Replace(track.AlbumName, @"([|\\*])", @"\$1");
-                    var albumRymUrl = @"https://duckduckgo.com/?q=%5Csite%3Arateyourmusic.com";
-                    albumRymUrl += HttpUtility.UrlEncode($" \"{albumQueryName}\" \"{track.ArtistName}\"");
-
-                    return $"[{escapedTrackName}]({track.TrackUrl})\n" +
-                           $"By **{track.ArtistName}**" +
-                           $" | *[{escapedAlbumName}]({albumRymUrl})*\n";
-                }
-
-                return $"[{escapedTrackName}]({track.TrackUrl})\n" +
-                       $"By **{track.ArtistName}**" +
-                       $" | *{track.AlbumName}*\n";
-            }
-
-            return $"[{escapedTrackName}]({track.TrackUrl})\n" +
-                   $"By **{track.ArtistName}**\n";
-        }
-
-        public static string TrackToString(RecentTrack track)
-        {
-            return $"{track.TrackName}\n" +
-                   $"By **{track.ArtistName}**" +
-                   (string.IsNullOrWhiteSpace(track.AlbumName)
-                       ? "\n"
-                       : $" | *{track.AlbumName}*\n");
-        }
-
-        public static string ResponseTrackToLinkedString(TrackInfoLfm trackInfo)
-        {
-            if (trackInfo.Url.IndexOfAny(new[] { '(', ')' }) >= 0)
+            if (trackInfo.TrackUrl.IndexOfAny(new[] { '(', ')' }) >= 0)
             {
                 return ResponseTrackToString(trackInfo);
             }
 
-            return $"[{trackInfo.Name}]({trackInfo.Url})\n" +
-                   $"By **{trackInfo.Artist.Name}**" +
-                   (trackInfo.Album == null || string.IsNullOrWhiteSpace(trackInfo.Album.Title)
+            return $"[{trackInfo.TrackName}]({trackInfo.TrackUrl})\n" +
+                   $"By **{trackInfo.ArtistName}**" +
+                   (string.IsNullOrWhiteSpace(trackInfo.AlbumName)
                        ? "\n"
-                       : $" | *{trackInfo.Album.Title}*\n");
+                       : $" | *{trackInfo.AlbumName}*\n");
         }
 
-        private static string ResponseTrackToString(TrackInfoLfm trackInfo)
+        private static string ResponseTrackToString(TrackInfo trackInfo)
         {
-            return $"{trackInfo.Name}\n" +
-                   $"By **{trackInfo.Artist.Name}**" +
-                   (trackInfo.Album == null || string.IsNullOrWhiteSpace(trackInfo.Album.Title)
+            return $"{trackInfo.TrackName}\n" +
+                   $"By **{trackInfo.ArtistName}**" +
+                   (string.IsNullOrWhiteSpace(trackInfo.AlbumName)
                        ? "\n"
-                       : $" | *{trackInfo.Album.Title}*\n");
+                       : $" | *{trackInfo.AlbumName}*\n");
         }
 
         public static string TrackToOneLinedString(RecentTrack trackLfm)
@@ -209,16 +172,32 @@ namespace FMBot.LastFM.Services
             return $"**{trackLfm.TrackName}** by **{trackLfm.ArtistName}**";
         }
 
-        public static string TagsToLinkedString(Tags tags)
+        public static string TagsToLinkedString(TagsLfm tagsLfm)
         {
             var tagString = new StringBuilder();
-            for (var i = 0; i < tags.Tag.Length; i++)
+            for (var i = 0; i < tagsLfm.Tag.Length; i++)
             {
                 if (i != 0)
                 {
                     tagString.Append(" - ");
                 }
-                var tag = tags.Tag[i];
+                var tag = tagsLfm.Tag[i];
+                tagString.Append($"[{tag.Name}]({tag.Url})");
+            }
+
+            return tagString.ToString();
+        }
+
+        public static string TagsToLinkedString(List<Tag> tags)
+        {
+            var tagString = new StringBuilder();
+            for (var i = 0; i < tags.Count; i++)
+            {
+                if (i != 0)
+                {
+                    tagString.Append(" - ");
+                }
+                var tag = tags[i];
                 tagString.Append($"[{tag.Name}]({tag.Url})");
             }
 
@@ -272,19 +251,63 @@ namespace FMBot.LastFM.Services
         }
 
         // Track info
-        public async Task<TrackInfoLfm> GetTrackInfoAsync(string trackName, string artistName, string username = null)
+        public async Task<Response<TrackInfo>> GetTrackInfoAsync(string trackName, string artistName, string username = null)
         {
             var queryParams = new Dictionary<string, string>
             {
                 {"artist", artistName },
                 {"track", trackName },
-                {"username", username },
+                {"username", username }, 
                 {"autocorrect", "1"}
             };
 
             var trackCall = await this._lastFmApi.CallApiAsync<TrackInfoLfmResponse>(queryParams, Call.TrackInfo);
+            if (trackCall.Success)
+            {
+                var linkToFilter = $"<a href=\"{trackCall.Content.Track.Url.Replace("https", "http")}\">Read more on Last.fm</a>";
+                var filteredSummary = trackCall.Content.Track.Wiki?.Summary.Replace(linkToFilter, "");
 
-            return !trackCall.Success ? null : trackCall.Content.Track;
+                return new Response<TrackInfo>
+                {
+                    Success = true,
+                    Content = new TrackInfo
+                    {
+                        TrackName = trackCall.Content.Track.Name,
+                        TrackUrl = Uri.IsWellFormedUriString(trackCall.Content.Track.Url, UriKind.Absolute)
+                            ? trackCall.Content.Track.Url
+                            : null,
+                        AlbumName = trackCall.Content.Track.Album?.Title,
+                        AlbumArtist = trackCall.Content.Track.Album?.Artist,
+                        AlbumUrl = trackCall.Content.Track.Album?.Url,
+                        ArtistName = trackCall.Content.Track.Artist?.Name,
+                        ArtistUrl = trackCall.Content.Track.Artist?.Name,
+                        ArtistMbid = !string.IsNullOrWhiteSpace(trackCall.Content.Track.Artist?.Mbid)
+                            ? Guid.Parse(trackCall.Content.Track.Artist?.Mbid)
+                            : null,
+                        Mbid = !string.IsNullOrWhiteSpace(trackCall.Content.Track.Mbid)
+                            ? Guid.Parse(trackCall.Content.Track.Mbid)
+                            : null,
+                        Description = filteredSummary,
+                        TotalPlaycount = trackCall.Content.Track.Playcount,
+                        TotalListeners = trackCall.Content.Track.Listeners,
+                        Duration = trackCall.Content.Track.Duration,
+                        UserPlaycount = trackCall.Content.Track.Userplaycount,
+                        Tags = trackCall.Content.Track.Toptags.Tag.Select(s => new Tag
+                        {
+                            Name = s.Name,
+                            Url = s.Url
+                        }).ToList(),
+                    }
+                };
+            }
+
+            return new Response<TrackInfo>
+            {
+                Success = false,
+                Error = trackCall.Error,
+                Message = trackCall.Message
+            };
+
         }
 
         public async Task<Response<ArtistInfoLfmResponse>> GetArtistInfoAsync(string artistName, string username = null)
@@ -415,10 +438,9 @@ namespace FMBot.LastFM.Services
         // Check if Last.fm user exists
         public async Task<bool> LastFmUserExistsAsync(string lastFmUserName)
         {
-            var lastFmUser = await this._lastFmClient.User.GetInfoAsync(lastFmUserName);
-            Statistics.LastfmApiCalls.Inc();
+            var lastFmUser = await this.GetFullUserInfoAsync(lastFmUserName);
 
-            return lastFmUser.Success;
+            return lastFmUser != null;
         }
 
         public async Task<Response<TokenResponse>> GetAuthToken()

@@ -336,18 +336,18 @@ namespace FMBot.Bot.Commands.LastFM
                     case FmEmbedType.TextFull:
                         if (embedType == FmEmbedType.TextMini)
                         {
-                            fmText += LastFmService.TrackToString(currentTrack).FilterOutMentions();
+                            fmText += StringService.TrackToString(currentTrack).FilterOutMentions();
                         }
                         else if (previousTrack != null)
                         {
                             fmText += $"**Current track**:\n";
 
-                            fmText += LastFmService.TrackToString(currentTrack).FilterOutMentions();
+                            fmText += StringService.TrackToString(currentTrack).FilterOutMentions();
 
                             fmText += $"\n" +
                                       $"**Previous track**:\n";
 
-                            fmText += LastFmService.TrackToString(previousTrack).FilterOutMentions();
+                            fmText += StringService.TrackToString(previousTrack).FilterOutMentions();
                         }
 
                         fmText +=
@@ -358,13 +358,13 @@ namespace FMBot.Bot.Commands.LastFM
                     default:
                         if (embedType == FmEmbedType.EmbedMini || embedType == FmEmbedType.EmbedTiny)
                         {
-                            fmText += LastFmService.TrackToLinkedString(currentTrack, userSettings.RymEnabled);
+                            fmText += StringService.TrackToLinkedString(currentTrack, userSettings.RymEnabled);
                             this._embed.WithDescription(fmText);
                         }
                         else if (previousTrack != null)
                         {
-                            this._embed.AddField("Current:", LastFmService.TrackToLinkedString(currentTrack, userSettings.RymEnabled));
-                            this._embed.AddField("Previous:", LastFmService.TrackToLinkedString(previousTrack, userSettings.RymEnabled));
+                            this._embed.AddField("Current:", StringService.TrackToLinkedString(currentTrack, userSettings.RymEnabled));
+                            this._embed.AddField("Previous:", StringService.TrackToLinkedString(previousTrack, userSettings.RymEnabled));
                         }
 
                         string headerText;
@@ -534,7 +534,7 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                     }
 
-                    var trackString = resultAmount > 6 ? LastFmService.TrackToString(track) : LastFmService.TrackToLinkedString(track, user.RymEnabled);
+                    var trackString = resultAmount > 6 ? StringService.TrackToString(track) : StringService.TrackToLinkedString(track, user.RymEnabled);
 
                     if (track.NowPlaying)
                     {

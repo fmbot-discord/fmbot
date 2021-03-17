@@ -11,6 +11,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands
@@ -24,6 +25,7 @@ namespace FMBot.Bot.Commands
         private readonly CensorService _censorService;
         private readonly GuildService _guildService;
         private readonly TimerService _timer;
+        private readonly LastFmService _lastFmService;
 
         private readonly EmbedBuilder _embed;
 
@@ -31,13 +33,14 @@ namespace FMBot.Bot.Commands
                 AdminService adminService,
                 CensorService censorService,
                 GuildService guildService,
-                TimerService timer
-            )
+                TimerService timer,
+                LastFmService lastFmService)
         {
             this._adminService = adminService;
             this._censorService = censorService;
             this._guildService = guildService;
             this._timer = timer;
+            this._lastFmService = lastFmService;
 
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFmColorRed);
@@ -243,6 +246,56 @@ namespace FMBot.Bot.Commands
             else
             {
                 await ReplyAsync("Error: Insufficient rights. Only FMBot admins add censored artists.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+
+        [Command("checkbotted")]
+        [Summary("Checks some stats for a user and if they're banned from global whoknows")]
+        public async Task CheckBottedUserAsync(string user)
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                if (string.IsNullOrEmpty(user))
+                {
+                    await ReplyAsync("Enter a correct artist to be censored\n" +
+                                     "Example: `.fmaddcensoredartist \"Last Days of Humanity\"");
+                    return;
+                }
+
+                var bottedUser = await this._adminService.GetBottedUserAsync(user);
+
+                this._embed.WithTitle($"Botted check for {user}");
+                this._embed.WithDescription($"[Profile]({Constants.LastFMUserUrl}{user}) - " +
+                                            $"[Library]({Constants.LastFMUserUrl}{user}/library) - " +
+                                            $"[Last.week]({Constants.LastFMUserUrl}{user}/listening-report) - " +
+                                            $"[Last.year]({Constants.LastFMUserUrl}{user}/listening-report/year)");
+
+                var dateAgo = DateTime.UtcNow.AddDays(-365);
+                var timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
+
+                var count = await this._lastFmService.GetScrobbleCountFromDateAsync(user, timeFrom);
+
+                var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
+                var totalDays = (DateTime.UtcNow - age).TotalDays;
+
+                var avgPerDay = count / totalDays;
+                this._embed.AddField("Avg scrobbles / day in last year", Math.Round(avgPerDay.GetValueOrDefault(0), 1));
+
+                this._embed.AddField("Banned from GlobalWhoKnows", bottedUser == null ? "No" : "Yes");
+                if (bottedUser != null)
+                {
+                    this._embed.AddField("Reason / additional notes", bottedUser.Notes ?? "*No reason/notes*");
+                }
+
+                this._embed.WithFooter("Command not intended for use in public channels");
+
+                await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+                this.Context.LogCommandUsed();
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can check botted users");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }

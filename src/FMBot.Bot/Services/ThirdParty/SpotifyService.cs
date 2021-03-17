@@ -161,32 +161,32 @@ namespace FMBot.Bot.Services.ThirdParty
             return null;
         }
 
-        public async Task<Track> GetOrStoreTrackAsync(TrackInfoLfm trackInfo)
+        public async Task<Track> GetOrStoreTrackAsync(TrackInfo trackInfo)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var dbTrack = await db.Tracks
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.Name.ToLower() == trackInfo.Name.ToLower() && f.ArtistName.ToLower() == trackInfo.Artist.Name.ToLower());
+                .FirstOrDefaultAsync(f => f.Name.ToLower() == trackInfo.TrackName.ToLower() && f.ArtistName.ToLower() == trackInfo.ArtistName.ToLower());
 
             if (dbTrack == null)
             {
                 var trackToAdd = new Track
                 {
-                    Name = trackInfo.Name,
-                    AlbumName = trackInfo.Album?.Title,
-                    ArtistName = trackInfo.Artist?.Name
+                    Name = trackInfo.TrackName,
+                    AlbumName = trackInfo.AlbumName,
+                    ArtistName = trackInfo.ArtistName
                 };
 
                 var artist = await db.Artists
                     .AsQueryable()
-                    .FirstOrDefaultAsync(f => f.Name.ToLower() == trackInfo.Artist.Name.ToLower());
+                    .FirstOrDefaultAsync(f => f.Name.ToLower() == trackInfo.ArtistName.ToLower());
 
                 if (artist != null)
                 {
                     trackToAdd.Artist = artist;
                 }
 
-                var spotifyTrack = await GetTrackFromSpotify(trackInfo.Name, trackInfo.Artist.Name.ToLower());
+                var spotifyTrack = await GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
 
                 if (spotifyTrack != null)
                 {
@@ -215,7 +215,7 @@ namespace FMBot.Bot.Services.ThirdParty
                 {
                     var artist = await db.Artists
                         .AsQueryable()
-                        .FirstOrDefaultAsync(f => f.Name.ToLower() == trackInfo.Artist.Name.ToLower());
+                        .FirstOrDefaultAsync(f => f.Name.ToLower() == trackInfo.ArtistName.ToLower());
 
                     if (artist != null)
                     {
@@ -225,7 +225,7 @@ namespace FMBot.Bot.Services.ThirdParty
                 }
                 if (string.IsNullOrEmpty(dbTrack.SpotifyId) && dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddMonths(-2))
                 {
-                    var spotifyTrack = await GetTrackFromSpotify(trackInfo.Name, trackInfo.Artist.Name.ToLower());
+                    var spotifyTrack = await GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
 
                     if (spotifyTrack != null)
                     {
