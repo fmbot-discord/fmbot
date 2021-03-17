@@ -512,7 +512,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            this._embed.WithDescription($"<a:loading:749715170682470461> Seeding crowns for your server...");
+            this._embed.WithDescription($"<a:loading:821676038102056991> Seeding crowns for your server...");
             var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
             var guildCrowns = await this._crownService.GetAllCrownsForGuild(guild.GuildId);

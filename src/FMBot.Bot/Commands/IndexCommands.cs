@@ -223,7 +223,7 @@ namespace FMBot.Bot.Commands
                 }
 
                 var indexDescription =
-                    $"<a:loading:749715170682470461> Fully indexing user {userSettings.UserNameLastFM}..." +
+                    $"<a:loading:821676038102056991> Fully indexing user {userSettings.UserNameLastFM}..." +
                     $"\n\nThis can take a while. Please don't fully update too often, if you have any issues with the normal update feel free to let us know.";
 
                 if (userSettings.UserType != UserType.User)
@@ -269,7 +269,7 @@ namespace FMBot.Bot.Commands
                 }
 
                 this._embed.WithDescription(
-                    $"<a:loading:749715170682470461> Updating user {userSettings.UserNameLastFM}...");
+                    $"<a:loading:821676038102056991> Updating user {userSettings.UserNameLastFM}...");
                 var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
                 var scrobblesUsed = await this._updateService.UpdateUser(userSettings);
