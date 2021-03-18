@@ -13,17 +13,20 @@ namespace FMBot.Bot.Handlers
         private readonly DiscordShardedClient _client;
         private readonly IChannelDisabledCommandService _channelDisabledCommandService;
         private readonly IGuildDisabledCommandService _guildDisabledCommandService;
+        private readonly IPrefixService _prefixService;
         private readonly GuildService _guildService;
 
         public ClientLogHandler(DiscordShardedClient client,
             IChannelDisabledCommandService channelDisabledCommandService,
             IGuildDisabledCommandService guildDisabledCommandService,
-            GuildService guildService)
+            GuildService guildService,
+            IPrefixService prefixService)
         {
             this._client = client;
             this._channelDisabledCommandService = channelDisabledCommandService;
             this._guildDisabledCommandService = guildDisabledCommandService;
             this._guildService = guildService;
+            this._prefixService = prefixService;
             this._client.Log += LogEvent;
             this._client.ShardLatencyUpdated += ShardLatencyEvent;
             this._client.ShardDisconnected += ShardDisconnectedEvent;
@@ -113,6 +116,7 @@ namespace FMBot.Bot.Handlers
 
             _ = this._channelDisabledCommandService.ReloadDisabledCommands(guild.Id);
             _ = this._guildDisabledCommandService.ReloadDisabledCommands(guild.Id);
+            _ = this._prefixService.ReloadPrefix(guild.Id);
         }
 
         private async Task ClientLeftGuild(SocketGuild guild)
