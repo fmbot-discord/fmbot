@@ -154,11 +154,11 @@ namespace FMBot.Bot.Commands.LastFM
                 var serverStats = "";
                 var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
-                var usersWithArtist = await WhoKnowsArtistService.GetIndexedUsersForArtist(this.Context, guild.GuildId, artistInfo.Name);
-                var filteredUsersWithArtist = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, guild);
-
-                if (guild.LastIndexed != null && filteredUsersWithArtist.Any())
+                if (guild?.LastIndexed != null)
                 {
+                    var usersWithArtist = await WhoKnowsArtistService.GetIndexedUsersForArtist(this.Context, guild.GuildId, artistInfo.Name);
+                    var filteredUsersWithArtist = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, guild);
+
                     var serverListeners = filteredUsersWithArtist.Count;
                     var serverPlaycount = filteredUsersWithArtist.Sum(a => a.Playcount);
                     var avgServerPlaycount = filteredUsersWithArtist.Average(a => a.Playcount);
@@ -206,9 +206,9 @@ namespace FMBot.Bot.Commands.LastFM
                 }
             }
 
-            if (artistInfo.TagsLfm.Tag.Any())
+            if (artistInfo.Tags.Tag.Any())
             {
-                var tags = LastFmService.TagsToLinkedString(artistInfo.TagsLfm);
+                var tags = LastFmService.TagsToLinkedString(artistInfo.Tags);
 
                 this._embed.AddField("Tags", tags);
             }
