@@ -34,7 +34,7 @@ namespace FMBot.Bot.Services.WhoKnows
                       "FROM user_plays AS up " +
                       "INNER JOIN users AS u ON up.user_id = u.user_id  " +
                       "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
-                      $"WHERE gu.guild_id = @guildId AND time_played > current_date - interval '{amountOfDays}' day " +
+                      $"WHERE gu.guild_id = @guildId AND gu.bot != true AND time_played > current_date - interval '{amountOfDays}' day " +
                       "AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                       "GROUP BY up.artist_name ";
 
@@ -62,7 +62,7 @@ namespace FMBot.Bot.Services.WhoKnows
                       "FROM user_plays AS up " +
                       "INNER JOIN users AS u ON up.user_id = u.user_id  " +
                       "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
-                      $"WHERE gu.guild_id = @guildId AND time_played > current_date - interval '{amountOfDays}' day " +
+                      $"WHERE gu.guild_id = @guildId AND gu.bot != true AND time_played > current_date - interval '{amountOfDays}' day " +
                       "AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                       "GROUP BY up.artist_name, album_name ";
 
@@ -90,7 +90,7 @@ namespace FMBot.Bot.Services.WhoKnows
                       "FROM user_plays AS up " +
                       "INNER JOIN users AS u ON up.user_id = u.user_id  " +
                       "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
-                      $"WHERE gu.guild_id = @guildId AND time_played > current_date - interval '{amountOfDays}' day " +
+                      $"WHERE gu.guild_id = @guildId  AND gu.bot != true AND time_played > current_date - interval '{amountOfDays}' day " +
                       "AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                       "GROUP BY up.artist_name, track_name ";
 
