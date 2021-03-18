@@ -359,7 +359,7 @@ namespace FMBot.Bot.Services
 
                 var builder = new EmbedBuilder();
                 var selfUser = client.CurrentUser;
-                builder.WithThumbnailUrl(selfUser.GetAvatarUrl());
+                builder.WithThumbnailUrl(imageUrl);
                 builder.AddField("Featured:", this._featuredTrackString);
 
                 var botType = BotTypeExtension.GetBotType(client.CurrentUser.Id);
