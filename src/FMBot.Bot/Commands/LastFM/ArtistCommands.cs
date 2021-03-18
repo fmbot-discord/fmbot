@@ -284,7 +284,9 @@ namespace FMBot.Bot.Commands.LastFM
             if (topTracks.Count == 0)
             {
                 this._embed.WithDescription(
-                    $"{userTitle} has no scrobbles for this artist.");
+                    $"{userTitle} has no registered tracks for {artistInfo.Name} in .fmbot.");
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                return;
             }
             else
             {
