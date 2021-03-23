@@ -706,6 +706,8 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
             var userInfo = await this._lastFmService.GetFullUserInfoAsync(userSettings.UserNameLastFm);
 
@@ -772,6 +774,90 @@ namespace FMBot.Bot.Commands.LastFM
 
             await this.Context.Channel.SendMessageAsync(reply.ToString());
 
+            this.Context.LogCommandUsed();
+        }
+
+
+        [Command("milestone", RunMode = RunMode.Async)]
+        [Summary("Displays the date a goal amount of scrobbles is reached")]
+        [UsernameSetRequired]
+        [Alias("m")]
+        public async Task MilestoneAsync([Remainder] string extraOptions = null)
+        {
+            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            if (!string.IsNullOrWhiteSpace(extraOptions) && extraOptions.ToLower() == "help")
+            {
+                this._embed.WithTitle($"{prfx}milestone");
+
+                var helpDescription = new StringBuilder();
+                helpDescription.AppendLine("Displays the date you reach a scrobble goal based on average scrobbles per day.");
+                helpDescription.AppendLine();
+                helpDescription.AppendLine($"Time periods: {Constants.CompactTimePeriodList}");
+                helpDescription.AppendLine("Optional goal amount: For example `10000`");
+                helpDescription.AppendLine("User to check pace for: Mention or user id");
+
+                this._embed.WithDescription(helpDescription.ToString());
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}pc` \n" +
+                    $"`{prfx}pc 100000 q` \n" +
+                    $"`{prfx}pc 40000 h @user` \n" +
+                    $"`{prfx}pace` \n" +
+                    $"`{prfx}pace yearly @user 250000`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
+            var userInfo = await this._lastFmService.GetFullUserInfoAsync(userSettings.UserNameLastFm);
+
+            var goalAmount = SettingService.GetMilestoneAmount(extraOptions, userInfo.Playcount);
+
+            var mileStonePlay = await this._lastFmService.GetMilestoneScrobbleAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm, userInfo.Playcount, goalAmount);
+
+            if (!mileStonePlay.Success || mileStonePlay.Content == null)
+            {
+                this._embed.ErrorResponse(mileStonePlay.Error, mileStonePlay.Message, this.Context, "artist");
+                await ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandWithLastFmError(mileStonePlay.Error);
+                return;
+            }
+
+            var reply = new StringBuilder();
+
+            reply.AppendLine(StringService.TrackToLinkedString(mileStonePlay.Content));
+
+            var userTitle = $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}";
+
+            this._embed.WithTitle($"{goalAmount}th scrobble from {userTitle}");
+            this._embed.WithDescription(reply.ToString());
+
+            if (mileStonePlay.Content.AlbumCoverUrl != null)
+            {
+                var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
+                    mileStonePlay.Content.AlbumName, mileStonePlay.Content.ArtistName, mileStonePlay.Content.AlbumCoverUrl);
+                if (safeForChannel)
+                {
+                    this._embed.WithThumbnailUrl(mileStonePlay.Content.AlbumCoverUrl);
+                }
+            }
+
+            if (mileStonePlay.Content.TimePlayed.HasValue)
+            {
+                var dateString = mileStonePlay.Content.TimePlayed.Value.ToString("yyyy-M-dd");
+                this._embed.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library?from={dateString}&to={dateString}");
+
+                this._embed.WithFooter("Date played ");
+                this._embed.WithTimestamp(mileStonePlay.Content.TimePlayed.Value);
+            }
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
         }
 

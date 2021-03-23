@@ -90,24 +90,7 @@ namespace FMBot.LastFM.Services
                         TotalAmount = recentTracksCall.Content.RecentTracks.AttributesLfm.Total,
                         UserUrl = $"https://www.last.fm/user/{lastFmUserName}",
                         UserRecentTracksUrl = $"https://www.last.fm/user/{lastFmUserName}/library",
-                        RecentTracks = recentTracksCall.Content.RecentTracks.Track.Select(s =>
-                            new RecentTrack
-                            {
-                                TrackName = s.Name,
-                                TrackUrl = s.Url.ToString(),
-                                ArtistName = s.Artist.Text,
-                                ArtistUrl = s.Artist.Url,
-                                AlbumName = !string.IsNullOrWhiteSpace(s.Album?.Text) ? s.Album.Text : null,
-                                AlbumUrl = s.Album?.Text,
-                                AlbumCoverUrl = s.Image?.FirstOrDefault(a => a.Size == "extralarge") != null &&
-                                                !s.Image.First(a => a.Size == "extralarge").Text.Contains(Constants.LastFmNonExistentImageName)
-                                    ? s.Image?.First(a => a.Size == "extralarge").Text
-                                    : null,
-                                NowPlaying = s.AttributesLfm != null && s.AttributesLfm.Nowplaying,
-                                TimePlayed = s.Date?.Uts != null
-                                    ? DateTime.UnixEpoch.AddSeconds(s.Date.Uts).ToUniversalTime()
-                                    : null
-                            }).ToList()
+                        RecentTracks = recentTracksCall.Content.RecentTracks.Track.Select(LastfmTrackToRecentTrack).ToList()
                     },
                     Success = true
                 };
@@ -122,6 +105,28 @@ namespace FMBot.LastFM.Services
                 Success = false,
                 Error = recentTracksCall.Error,
                 Message = recentTracksCall.Message
+            };
+        }
+
+        private RecentTrack LastfmTrackToRecentTrack(RecentTrackLfm recentTrackLfm)
+        {
+            return new()
+            {
+                TrackName = recentTrackLfm.Name,
+                TrackUrl = recentTrackLfm.Url.ToString(),
+                ArtistName = recentTrackLfm.Artist.Text,
+                ArtistUrl = recentTrackLfm.Artist.Url,
+                AlbumName = !string.IsNullOrWhiteSpace(recentTrackLfm.Album?.Text) ? recentTrackLfm.Album.Text : null,
+                AlbumUrl = recentTrackLfm.Album?.Text,
+                AlbumCoverUrl = recentTrackLfm.Image?.FirstOrDefault(a => a.Size == "extralarge") != null &&
+                                !recentTrackLfm.Image.First(a => a.Size == "extralarge").Text
+                                    .Contains(Constants.LastFmNonExistentImageName)
+                    ? recentTrackLfm.Image?.First(a => a.Size == "extralarge").Text
+                    : null,
+                NowPlaying = recentTrackLfm.AttributesLfm != null && recentTrackLfm.AttributesLfm.Nowplaying,
+                TimePlayed = recentTrackLfm.Date?.Uts != null
+                    ? DateTime.UnixEpoch.AddSeconds(recentTrackLfm.Date.Uts).ToUniversalTime()
+                    : null
             };
         }
 
@@ -142,6 +147,49 @@ namespace FMBot.LastFM.Services
             var recentTracksCall = await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams, Call.RecentTracks);
 
             return recentTracksCall.Success ? recentTracksCall.Content.RecentTracks.AttributesLfm.Total : (long?)null;
+        }
+
+        // Scrobble count from a certain unix timestamp
+        public async Task<Response<RecentTrack>> GetMilestoneScrobbleAsync(string lastFmUserName, string sessionKey, long totalScrobbles, long milestoneScrobble)
+        {
+            var queryParams = new Dictionary<string, string>
+            {
+                {"user", lastFmUserName },
+                {"limit", "1"}
+                
+            };
+
+            var authorizedCall = false;
+
+            if (!string.IsNullOrEmpty(sessionKey))
+            {
+                queryParams.Add("sk", sessionKey);
+                authorizedCall = true;
+            }
+
+            var pageNumber = totalScrobbles - milestoneScrobble;
+
+            queryParams.Add("page", pageNumber.ToString());
+
+            var recentTracksCall = await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams, Call.RecentTracks, authorizedCall);
+
+            if (recentTracksCall.Success && recentTracksCall.Content.RecentTracks.Track.Any(w => w.AttributesLfm == null || !w.AttributesLfm.Nowplaying))
+            {
+                var response = new Response<RecentTrack>
+                {
+                    Content = LastfmTrackToRecentTrack(recentTracksCall.Content.RecentTracks.Track.First(w => w.AttributesLfm == null || !w.AttributesLfm.Nowplaying)),
+                    Success = true
+                };
+
+                return response;
+            }
+
+            return new Response<RecentTrack>
+            {
+                Success = false,
+                Error = recentTracksCall.Error,
+                Message = recentTracksCall.Message
+            };
         }
 
         public static string ResponseTrackToLinkedString(TrackInfo trackInfo)

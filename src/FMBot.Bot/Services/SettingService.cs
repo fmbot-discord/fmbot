@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord.Commands;
 using FMBot.Bot.Models;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -203,7 +204,7 @@ namespace FMBot.Bot.Services
                 return whoKnowsSettings;
             }
 
-            var hidePrivateUsers = new[] {"hp", "hideprivate", "hideprivateusers"};
+            var hidePrivateUsers = new[] { "hp", "hideprivate", "hideprivateusers" };
             if (Contains(extraOptions, hidePrivateUsers))
             {
                 whoKnowsSettings.NewSearchValue = ContainsAndRemove(whoKnowsSettings.NewSearchValue, hidePrivateUsers);
@@ -272,7 +273,7 @@ namespace FMBot.Bot.Services
 
                 if (otherUser != null)
                 {
-                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] {"<", "@","!", ">", otherUser.DiscordUserId.ToString(), otherUser.UserNameLastFM.ToLower()}, true);
+                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { "<", "@", "!", ">", otherUser.DiscordUserId.ToString(), otherUser.UserNameLastFM.ToLower() }, true);
 
                     if (context.Guild != null)
                     {
@@ -373,13 +374,23 @@ namespace FMBot.Bot.Services
 
                 foreach (var option in options)
                 {
-                    if (int.TryParse(option, out var result))
+                    if (option.ToLower().EndsWith("k"))
                     {
-                        if (result > currentPlaycount)
+                        if (int.TryParse(option.ToLower().Replace("k", ""), out var kResult))
                         {
-                            goalAmount = result;
-                            ownGoalSet = true;
+                            kResult *= 1000;
+                            if (kResult > currentPlaycount)
+                            {
+                                goalAmount = kResult;
+                                ownGoalSet = true;
+                                break;
+                            }
                         }
+                    }
+                    else if (int.TryParse(option, out var result) && result > currentPlaycount)
+                    {
+                        goalAmount = result;
+                        ownGoalSet = true;
                     }
                 }
             }
@@ -387,31 +398,60 @@ namespace FMBot.Bot.Services
 
             if (!ownGoalSet)
             {
-                int[] breakPoints =
-                {
-                    100,
-                    1000,
-                    5000,
-                    10000,
-                    25000,
-                    50000,
-                    100000,
-                    150000,
-                    200000,
-                    250000,
-                    300000,
-                    350000,
-                    400000,
-                    450000,
-                    500000,
-                    1000000,
-                    2000000,
-                    5000000
-                };
-
-                foreach (var breakPoint in breakPoints)
+                foreach (var breakPoint in Constants.playCountBreakPoints)
                 {
                     if (currentPlaycount < breakPoint)
+                    {
+                        goalAmount = breakPoint;
+                        break;
+                    }
+                }
+            }
+
+            return goalAmount;
+        }
+
+
+        public static long GetMilestoneAmount(
+            string extraOptions,
+            long currentPlaycount)
+        {
+            var goalAmount = 100;
+            var ownGoalSet = false;
+
+            if (extraOptions != null)
+            {
+                var options = extraOptions.Split(' ');
+
+                foreach (var option in options)
+                {
+                    if (option.ToLower().EndsWith("k"))
+                    {
+                        if (int.TryParse(option.ToLower().Replace("k", ""), out var kResult))
+                        {
+                            kResult *= 1000;
+                            if (kResult < currentPlaycount)
+                            {
+                                goalAmount = kResult;
+                                ownGoalSet = true;
+                                break;
+                            }
+                        }
+                    }
+                    else if (int.TryParse(option, out var result) && result < currentPlaycount)
+                    {
+                        goalAmount = result;
+                        ownGoalSet = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!ownGoalSet)
+            {
+                foreach (var breakPoint in Constants.playCountBreakPoints.OrderByDescending(o => o))
+                {
+                    if (currentPlaycount > breakPoint)
                     {
                         goalAmount = breakPoint;
                         break;
