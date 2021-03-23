@@ -689,14 +689,14 @@ namespace FMBot.Bot.Commands.LastFM
                 helpDescription.AppendLine("Displays the date you reach a scrobble goal based on average scrobbles per day.");
                 helpDescription.AppendLine();
                 helpDescription.AppendLine($"Time periods: {Constants.CompactTimePeriodList}");
-                helpDescription.AppendLine("Optional goal amount: For example `10000`");
+                helpDescription.AppendLine("Optional goal amount: For example `10000` or `10k`");
                 helpDescription.AppendLine("User to check pace for: Mention or user id");
 
                 this._embed.WithDescription(helpDescription.ToString());
 
                 this._embed.AddField("Examples",
                     $"`{prfx}pc` \n" +
-                    $"`{prfx}pc 100000 q` \n" +
+                    $"`{prfx}pc 100k q` \n" +
                     $"`{prfx}pc 40000 h @user` \n" +
                     $"`{prfx}pace` \n" +
                     $"`{prfx}pace yearly @user 250000`");
@@ -792,20 +792,19 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithTitle($"{prfx}milestone");
 
                 var helpDescription = new StringBuilder();
-                helpDescription.AppendLine("Displays the date you reach a scrobble goal based on average scrobbles per day.");
+                helpDescription.AppendLine("Displays a milestone scrobble.");
                 helpDescription.AppendLine();
-                helpDescription.AppendLine($"Time periods: {Constants.CompactTimePeriodList}");
-                helpDescription.AppendLine("Optional goal amount: For example `10000`");
+                helpDescription.AppendLine("Optional milestone amount: For example `10000` or `10k`");
                 helpDescription.AppendLine("User to check pace for: Mention or user id");
 
                 this._embed.WithDescription(helpDescription.ToString());
 
                 this._embed.AddField("Examples",
-                    $"`{prfx}pc` \n" +
-                    $"`{prfx}pc 100000 q` \n" +
-                    $"`{prfx}pc 40000 h @user` \n" +
-                    $"`{prfx}pace` \n" +
-                    $"`{prfx}pace yearly @user 250000`");
+                    $"`{prfx}m` \n" +
+                    $"`{prfx}m 10k` \n" +
+                    $"`{prfx}milestone 500 @user` \n" +
+                    $"`{prfx}milestone` \n" +
+                    $"`{prfx}milestone @user 250k`");
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
@@ -817,9 +816,9 @@ namespace FMBot.Bot.Commands.LastFM
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
             var userInfo = await this._lastFmService.GetFullUserInfoAsync(userSettings.UserNameLastFm);
 
-            var goalAmount = SettingService.GetMilestoneAmount(extraOptions, userInfo.Playcount);
+            var mileStoneAmount = SettingService.GetMilestoneAmount(extraOptions, userInfo.Playcount);
 
-            var mileStonePlay = await this._lastFmService.GetMilestoneScrobbleAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm, userInfo.Playcount, goalAmount);
+            var mileStonePlay = await this._lastFmService.GetMilestoneScrobbleAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm, userInfo.Playcount, mileStoneAmount);
 
             if (!mileStonePlay.Success || mileStonePlay.Content == null)
             {
@@ -835,7 +834,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userTitle = $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}";
 
-            this._embed.WithTitle($"{goalAmount}th scrobble from {userTitle}");
+            this._embed.WithTitle($"{mileStoneAmount}th scrobble from {userTitle}");
             this._embed.WithDescription(reply.ToString());
 
             if (mileStonePlay.Content.AlbumCoverUrl != null)
