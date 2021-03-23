@@ -167,7 +167,7 @@ namespace FMBot.LastFM.Services
                 authorizedCall = true;
             }
 
-            var pageNumber = totalScrobbles - milestoneScrobble;
+            var pageNumber = totalScrobbles - milestoneScrobble + 1;
 
             queryParams.Add("page", pageNumber.ToString());
 

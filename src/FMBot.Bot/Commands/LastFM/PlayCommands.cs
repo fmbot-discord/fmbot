@@ -781,7 +781,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("milestone", RunMode = RunMode.Async)]
         [Summary("Displays the date a goal amount of scrobbles is reached")]
         [UsernameSetRequired]
-        [Alias("m")]
+        [Alias("m", "ms")]
         public async Task MilestoneAsync([Remainder] string extraOptions = null)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
