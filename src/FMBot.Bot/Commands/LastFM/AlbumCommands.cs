@@ -726,11 +726,13 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithTitle(StringExtensions.TruncateLongString($"{albumName} in {this.Context.Guild.Name}", 255));
 
-                if (Uri.IsWellFormedUriString(album.Url, UriKind.Absolute))
+                var url = userSettings.RymEnabled == true
+                    ? StringExtensions.GetRymUrl(album.Name, album.Artist)
+                    : album.Url;
+
+                if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
                 {
-                    this._embed.WithUrl(userSettings.RymEnabled == true
-                        ? StringExtensions.GetRymUrl(album.Name, album.Artist)
-                        : album.Url);
+                    this._embed.WithUrl(url);
                 }
 
                 this._embedFooter.WithText(footer);
@@ -883,11 +885,13 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithTitle($"{albumName} globally");
 
-                if (Uri.IsWellFormedUriString(album.Url, UriKind.Absolute))
+                var url = userSettings.RymEnabled == true
+                    ? StringExtensions.GetRymUrl(album.Name, album.Artist)
+                    : album.Url;
+
+                if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
                 {
-                    this._embed.WithUrl(userSettings.RymEnabled == true
-                        ? StringExtensions.GetRymUrl(album.Name, album.Artist)
-                        : album.Url);
+                    this._embed.WithUrl(url);
                 }
 
                 this._embedFooter.WithText(footer);

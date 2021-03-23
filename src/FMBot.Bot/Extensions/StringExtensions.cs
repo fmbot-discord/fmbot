@@ -117,6 +117,7 @@ namespace FMBot.Bot.Extensions
 
             var albumRymUrl = @"https://duckduckgo.com/?q=%5Csite%3Arateyourmusic.com";
             albumRymUrl += HttpUtility.UrlEncode($" \"{albumQueryName}\" \"{artistName}\"");
+
             return albumRymUrl;
         }
 
