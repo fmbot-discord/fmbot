@@ -121,6 +121,24 @@ namespace FMBot.Bot.Extensions
             return albumRymUrl;
         }
 
+        public static string GetAmountEnd(long amount)
+        {
+            if (amount.ToString().EndsWith("1"))
+            {
+                return "st";
+            }
+            if (amount.ToString().EndsWith("2"))
+            {
+                return "nd";
+            }
+            if (amount.ToString().EndsWith("3"))
+            {
+                return "rd";
+            }
+
+            return "th";
+        }
+
         public static string GetTimeAgo(DateTime timeAgo)
         {
             var ts = new TimeSpan(DateTime.UtcNow.Ticks - timeAgo.Ticks);

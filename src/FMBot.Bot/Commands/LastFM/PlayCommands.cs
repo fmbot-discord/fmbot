@@ -834,7 +834,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userTitle = $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}";
 
-            this._embed.WithTitle($"{mileStoneAmount}th scrobble from {userTitle}");
+            this._embed.WithTitle($"{mileStoneAmount}{StringExtensions.GetAmountEnd(mileStoneAmount)} scrobble from {userTitle}");
             this._embed.WithDescription(reply.ToString());
 
             if (mileStonePlay.Content.AlbumCoverUrl != null)
