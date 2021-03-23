@@ -278,14 +278,22 @@ namespace FMBot.LastFM.Services
         }
 
         // User
-        public async Task<UserLfm> GetFullUserInfoAsync(string lastFmUserName)
+        public async Task<UserLfm> GetFullUserInfoAsync(string lastFmUserName, string sessionKey)
         {
             var queryParams = new Dictionary<string, string>
             {
                 {"user", lastFmUserName }
             };
 
-            var userCall = await this._lastFmApi.CallApiAsync<UserResponseLfm>(queryParams, Call.UserInfo);
+            var authorizedCall = false;
+
+            if (!string.IsNullOrEmpty(sessionKey))
+            {
+                queryParams.Add("sk", sessionKey);
+                authorizedCall = true;
+            }
+
+            var userCall = await this._lastFmApi.CallApiAsync<UserResponseLfm>(queryParams, Call.UserInfo, authorizedCall);
 
             return !userCall.Success ? null : userCall.Content.User;
         }
@@ -486,7 +494,7 @@ namespace FMBot.LastFM.Services
         // Check if Last.fm user exists
         public async Task<bool> LastFmUserExistsAsync(string lastFmUserName)
         {
-            var lastFmUser = await this.GetFullUserInfoAsync(lastFmUserName);
+            var lastFmUser = await this.GetFullUserInfoAsync(lastFmUserName, null);
 
             return lastFmUser != null;
         }

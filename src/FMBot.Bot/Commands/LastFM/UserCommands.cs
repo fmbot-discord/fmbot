@@ -103,7 +103,7 @@ namespace FMBot.Bot.Commands.LastFM
                     $"To see stats for other .fmbot users, use {prfx}stats '@user'");
                 this._embed.WithFooter(this._embedFooter);
 
-                var userInfo = await this._lastFmService.GetFullUserInfoAsync(userSettings.UserNameLastFm);
+                var userInfo = await this._lastFmService.GetFullUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
 
                 var userImages = userInfo.Image;
                 var userAvatar = userImages.FirstOrDefault(f => f.Size == "extralarge");
