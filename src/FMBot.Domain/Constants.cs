@@ -31,7 +31,7 @@ namespace FMBot.Domain
 
         public const int DefaultPlaysForCrown = 30;
 
-        public static readonly int[] playCountBreakPoints = {
+        public static readonly int[] PlayCountBreakPoints = {
             100,
             420,
             1000,

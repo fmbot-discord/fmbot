@@ -398,7 +398,7 @@ namespace FMBot.Bot.Services
 
             if (!ownGoalSet)
             {
-                foreach (var breakPoint in Constants.playCountBreakPoints)
+                foreach (var breakPoint in Constants.PlayCountBreakPoints)
                 {
                     if (currentPlaycount < breakPoint)
                     {
@@ -449,7 +449,7 @@ namespace FMBot.Bot.Services
 
             if (!ownGoalSet)
             {
-                foreach (var breakPoint in Constants.playCountBreakPoints.OrderByDescending(o => o))
+                foreach (var breakPoint in Constants.PlayCountBreakPoints.OrderByDescending(o => o))
                 {
                     if (currentPlaycount > breakPoint)
                     {
