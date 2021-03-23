@@ -602,7 +602,7 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                     else
                     {
-                        description += $"{i + 1}. **[{track.Artist.Name}]({track.Artist.Url})** - **[{track.Name}]({track.Url})** ({track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)}) \n";
+                        description += $"{i + 1}. **{track.Artist.Name}** - **[{track.Name}]({track.Url})** ({track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)}) \n";
                     }
 
                 }
