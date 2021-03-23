@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
 using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
@@ -147,10 +149,19 @@ namespace FMBot.Bot.Services
                         UserName = discordGuildUser.Nickname ?? discordGuildUser.Username
                     };
 
-                    await db.GuildUsers.AddAsync(guildUserToAdd);
-                    await db.SaveChangesAsync();
+                    const string sql = "INSERT INTO guild_users (guild_id, user_id, user_name, bot) VALUES (@guildId, @userId, @userName, false) " +
+                                       "ON CONFLICT DO NOTHING";
 
-                    db.Entry(guildUserToAdd).State = EntityState.Detached;
+                    DefaultTypeMap.MatchNamesWithUnderscores = true;
+                    await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+                    await connection.OpenAsync();
+
+                    await connection.ExecuteAsync(sql, new
+                    {
+                        guildUserToAdd.GuildId,
+                        guildUserToAdd.UserId,
+                        guildUserToAdd.UserName
+                    });
 
                     Log.Information("Added user {userId} to guild {guildName}", user.UserId, guild.Name);
 
