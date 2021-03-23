@@ -800,8 +800,8 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(helpDescription.ToString());
 
                 this._embed.AddField("Examples",
-                    $"`{prfx}m` \n" +
-                    $"`{prfx}m 10k` \n" +
+                    $"`{prfx}ms` \n" +
+                    $"`{prfx}ms 10k` \n" +
                     $"`{prfx}milestone 500 @user` \n" +
                     $"`{prfx}milestone` \n" +
                     $"`{prfx}milestone @user 250k`");
