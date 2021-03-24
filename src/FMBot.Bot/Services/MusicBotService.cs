@@ -52,7 +52,7 @@ namespace FMBot.Bot.Services
                 return;
             }
 
-            await RegisterTrack(usersInChannel, trackResult);
+            _ = RegisterTrack(usersInChannel, trackResult);
         }
 
         private async Task RegisterTrack(List<User> users, TrackSearchResult result)
