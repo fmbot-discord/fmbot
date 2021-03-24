@@ -429,11 +429,11 @@ namespace FMBot.Bot.Services
 
             if (string.IsNullOrWhiteSpace(option) || option.ToLower() == "on" || option.ToLower() == "true" || option.ToLower() == "yes")
             {
-                user.MusicBotTrackingDisabled = true;
+                user.MusicBotTrackingDisabled = false;
             }
             else
             {
-                user.MusicBotTrackingDisabled = false;
+                user.MusicBotTrackingDisabled = true;
             }
 
             db.Update(user);

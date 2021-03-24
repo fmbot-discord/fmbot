@@ -244,7 +244,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 var user = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-                var newBotScrobbleSetting = await this._userService.ToggleBotScrobblingAsync(user, option);
+                var newBotScrobblingDisabledSetting = await this._userService.ToggleBotScrobblingAsync(user, option);
 
                 this._embed.WithDescription("Bot scrobbling allows you to automatically scrobble music from Discord music bots to your Last.fm account. " +
                                             "For this to work properly you need to make sure .fmbot can see the voice channel and use a supported music bot.\n\n" +
@@ -252,12 +252,12 @@ namespace FMBot.Bot.Commands.LastFM
                                             "Currently supported bots:\n" +
                                             "- Groovy\n");
 
-                if ((newBotScrobbleSetting == null || newBotScrobbleSetting == true) && !string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
+                if ((newBotScrobblingDisabledSetting == null || newBotScrobblingDisabledSetting == false) && !string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
                 {
                     this._embed.AddField("Status", "✅ Enabled and ready.");
-                    this._embed.WithFooter("Use `.fmbotscrobbling off` to disable.");
+                    this._embed.WithFooter("Use '.fmbotscrobbling off' to disable.");
                 }
-                else if (newBotScrobbleSetting == true && string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
+                else if (newBotScrobblingDisabledSetting == false && string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
                 {
                     this._embed.AddField("Status", "⚠️ Bot scrobbling is enabled, but you need to login through `.fmlogin` first.");
                 }

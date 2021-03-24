@@ -40,7 +40,7 @@ namespace FMBot.Bot.Services
 
             var usersInChannel = await GetUsersInVoice(context, msg.Author.Id);
 
-            if (usersInChannel == null)
+            if (usersInChannel == null || usersInChannel.Count == 0)
             {
                 return;
             }
@@ -95,6 +95,7 @@ namespace FMBot.Bot.Services
                 return await db.Users
                     .AsQueryable()
                     .Where(w => userIds.Contains(w.DiscordUserId) &&
+                                w.MusicBotTrackingDisabled != true &&
                                 w.SessionKeyLastFm != null)
                     .ToListAsync();
             }
