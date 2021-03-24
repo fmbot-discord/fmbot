@@ -4,9 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Net;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Web;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
@@ -313,9 +311,13 @@ namespace FMBot.LastFM.Services
             {
                 {"artist", artistName },
                 {"track", trackName },
-                {"username", username }, 
                 {"autocorrect", "1"}
             };
+
+            if (username != null)
+            {
+                queryParams.Add("username", username);
+            }
 
             var trackCall = await this._lastFmApi.CallApiAsync<TrackInfoLfmResponse>(queryParams, Call.TrackInfo);
             if (trackCall.Success)
@@ -546,6 +548,26 @@ namespace FMBot.LastFM.Services
             var authSessionCall = await this._lastFmApi.CallApiAsync<AuthSessionResponse>(queryParams, Call.TrackUnLove, true);
 
             return authSessionCall.Success;
+        }
+
+        public async Task<Response<ScrobbledTrack>> SetNowPlayingAsync(User user, string artistName, string trackName, string albumName = null)
+        {
+            var queryParams = new Dictionary<string, string>
+            {
+                {"artist", artistName},
+                {"track", trackName},
+                {"sk", user.SessionKeyLastFm},
+                {"timestamp",  ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds().ToString() }
+            };
+
+            if (!string.IsNullOrWhiteSpace(albumName))
+            {
+                queryParams.Add("album", albumName);
+            }
+
+            var authSessionCall = await this._lastFmApi.CallApiAsync<ScrobbledTrack>(queryParams, Call.TrackUpdateNowPlaying, true);
+
+            return authSessionCall;
         }
 
         public async Task<Response<ScrobbledTrack>> ScrobbleAsync(User user, string artistName, string trackName, string albumName = null)

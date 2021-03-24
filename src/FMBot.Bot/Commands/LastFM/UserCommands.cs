@@ -231,8 +231,49 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync(
-                    "Unable to show the featured avatar on FMBot due to an internal error. \n" +
-                    "The bot might not have changed its avatar since its last startup. Please wait until a new featured user is chosen.");
+                    "Error while attempting to toggle rateyourmusic integration");
+            }
+        }
+
+        [Command("botscrobbling", RunMode = RunMode.Async)]
+        [Summary("Enables or disables the bot scrobbling.")]
+        [Alias("botscrobble", "bottrack", "bottracking")]
+        public async Task BotTrackingAsync([Remainder]string option = null)
+        {
+            try
+            {
+                var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+                var newBotScrobbleSetting = await this._userService.ToggleBotScrobblingAsync(user, option);
+
+                this._embed.WithDescription("Bot scrobbling allows you to automatically scrobble music from Discord music bots to your Last.fm account. " +
+                                            "For this to work properly you need to make sure .fmbot can see the voice channel and use a supported music bot.\n\n" +
+                                            "Only tracks that already exist on Last.fm will be scrobbled.\n\n" +
+                                            "Currently supported bots:\n" +
+                                            "- Groovy\n");
+
+                if ((newBotScrobbleSetting == null || newBotScrobbleSetting == true) && !string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
+                {
+                    this._embed.AddField("Status", "✅ Enabled and ready.");
+                    this._embed.WithFooter("Use `.fmbotscrobbling off` to disable.");
+                }
+                else if (newBotScrobbleSetting == true && string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
+                {
+                    this._embed.AddField("Status", "⚠️ Bot scrobbling is enabled, but you need to login through `.fmlogin` first.");
+                }
+                else
+                {
+                    this._embed.AddField("Status", "❌ Disabled. Do '.fmbotscrobbling on' to enable.");
+                }
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync(
+                    "Error while attempting to change bot scrobbling setting");
             }
         }
 

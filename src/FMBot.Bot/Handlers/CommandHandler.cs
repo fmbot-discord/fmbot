@@ -22,6 +22,7 @@ namespace FMBot.Bot.Handlers
         private readonly CommandService _commands;
         private readonly UserService _userService;
         private readonly DiscordShardedClient _discord;
+        private readonly MusicBotService _musicBotService;
         private readonly IPrefixService _prefixService;
         private readonly IGuildDisabledCommandService _guildDisabledCommandService;
         private readonly IChannelDisabledCommandService _channelDisabledCommandService;
@@ -35,7 +36,8 @@ namespace FMBot.Bot.Handlers
             IPrefixService prefixService,
             IGuildDisabledCommandService guildDisabledCommandService,
             IChannelDisabledCommandService channelDisabledCommandService,
-            UserService userService)
+            UserService userService,
+            MusicBotService musicBotService)
         {
             this._discord = discord;
             this._commands = commands;
@@ -44,6 +46,7 @@ namespace FMBot.Bot.Handlers
             this._guildDisabledCommandService = guildDisabledCommandService;
             this._channelDisabledCommandService = channelDisabledCommandService;
             this._userService = userService;
+            this._musicBotService = musicBotService;
             this._discord.MessageReceived += OnMessageReceivedAsync;
         }
 
@@ -60,12 +63,18 @@ namespace FMBot.Bot.Handlers
                 return; // Ignore self when checking commands
             }
 
+            // Create the command context
+            var context = new ShardedCommandContext(this._discord, msg);
+
             if (msg.Author.IsBot)
             {
-                return; // Ignore bots
+                if (msg.Author.Username.StartsWith("Groovy"))
+                {
+                    await this._musicBotService.ScrobbleGroovy(msg, context);
+                }
+                return; // Ignore other bots
             }
 
-            var context = new ShardedCommandContext(this._discord, msg); // Create the command context
 
             var argPos = 0; // Check if the message has a valid command prefix
             var customPrefix = this._prefixService.GetPrefix(context.Guild?.Id);
@@ -219,6 +228,5 @@ namespace FMBot.Bot.Handlers
                 Log.Error(result.ToString(), context.Message.Content);
             }
         }
-
     }
 }

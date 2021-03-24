@@ -275,6 +275,14 @@ namespace FMBot.Bot.Services.ThirdParty
             return null;
         }
 
+        public static async Task<FullTrack> GetTrackById(string spotifyId)
+        {
+            //Create the auth object
+            var spotify = GetSpotifyWebApi();
+
+            return await spotify.Tracks.Get(spotifyId);
+        }
+
         private static async Task<TrackAudioFeatures> GetAudioFeaturesFromSpotify(string spotifyId)
         {
             //Create the auth object

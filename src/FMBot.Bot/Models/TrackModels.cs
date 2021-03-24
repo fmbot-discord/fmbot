@@ -46,4 +46,12 @@ namespace FMBot.Bot.Models
 
         public PrivacyLevel PrivacyLevel { get; set; }
     }
+
+
+    public class TrackSearchResult
+    {
+        public string TrackName { get; set; }
+        public string ArtistName { get; set; }
+        public string AlbumName { get; set; }
+    }
 }

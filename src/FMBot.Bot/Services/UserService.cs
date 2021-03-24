@@ -423,6 +423,26 @@ namespace FMBot.Bot.Services
             return user.RymEnabled;
         }
 
+        public async Task<bool?> ToggleBotScrobblingAsync(User user, string option)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+
+            if (string.IsNullOrWhiteSpace(option) || option.ToLower() == "on" || option.ToLower() == "true" || option.ToLower() == "yes")
+            {
+                user.MusicBotTrackingDisabled = true;
+            }
+            else
+            {
+                user.MusicBotTrackingDisabled = false;
+            }
+
+            db.Update(user);
+
+            await db.SaveChangesAsync();
+
+            return user.MusicBotTrackingDisabled;
+        }
+
         public async Task<int> GetTotalUserCountAsync()
         {
             await using var db = this._contextFactory.CreateDbContext();
