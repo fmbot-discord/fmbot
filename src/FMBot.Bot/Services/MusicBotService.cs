@@ -62,7 +62,7 @@ namespace FMBot.Bot.Services
                 var nowPlayingResult = await this._lastFmService.SetNowPlayingAsync(user, result.ArtistName, result.TrackName, result.AlbumName);
 
                 this._cache.Set($"now-playing-{user.UserId}", true, TimeSpan.FromSeconds(59));
-                Thread.Sleep(60000);
+                await Task.Delay(TimeSpan.FromSeconds(60));
 
                 if (!this._cache.TryGetValue($"now-playing-{user.UserId}", out bool _))
                 {
