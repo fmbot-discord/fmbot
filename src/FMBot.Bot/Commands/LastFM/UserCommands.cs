@@ -239,7 +239,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Enables or disables the bot scrobbling.")]
         [Alias("botscrobble", "bottrack", "bottracking")]
         public async Task BotTrackingAsync([Remainder]string option = null)
-        {
+        { 
             try
             {
                 var user = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -257,7 +257,7 @@ namespace FMBot.Bot.Commands.LastFM
                     this._embed.AddField("Status", "✅ Enabled and ready.");
                     this._embed.WithFooter("Use '.fmbotscrobbling off' to disable.");
                 }
-                else if (newBotScrobblingDisabledSetting == false && string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
+                else if ((newBotScrobblingDisabledSetting == null || newBotScrobblingDisabledSetting == false) && string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
                 {
                     this._embed.AddField("Status", "⚠️ Bot scrobbling is enabled, but you need to login through `.fmlogin` first.");
                 }
