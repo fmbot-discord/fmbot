@@ -53,7 +53,7 @@ namespace FMBot.Bot.Services
 
             if (usersInChannel == null || usersInChannel.Count == 0)
             {
-                Log.Information("Skipped scrobble for {guildName} / {guildId} because no found listeners", context.Guild.Name, context.Guild.Name);
+                Log.Information("Skipped scrobble for {guildName} / {guildId} because no found listeners", context.Guild.Name, context.Guild.Id);
                 return;
             }
 
@@ -61,7 +61,7 @@ namespace FMBot.Bot.Services
 
             if (trackResult == null)
             {
-                Log.Information("Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", usersInChannel.Count, context.Guild.Name, context.Guild.Name, msg.Embeds.First().Description);
+                Log.Information("Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
                 return;
             }
 
@@ -84,7 +84,7 @@ namespace FMBot.Bot.Services
                 await context.Channel.SendMessageAsync(embed: embed.Build()),
                 TimeSpan.FromSeconds(90));
 
-            Log.Information("Scrobbled {trackName} by {artistName} for {listenerCount} users in {guildName} / {guildId}", trackResult.TrackName, trackResult.ArtistName, listenerCount, context.Guild.Name, context.Guild.Name);
+            Log.Information("Scrobbled {trackName} by {artistName} for {listenerCount} users in {guildName} / {guildId}", trackResult.TrackName, trackResult.ArtistName, listenerCount, context.Guild.Name, context.Guild.Id);
         }
 
 
