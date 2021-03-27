@@ -239,7 +239,9 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Enables or disables the bot scrobbling.")]
         [Alias("botscrobble", "bottrack", "bottracking")]
         public async Task BotTrackingAsync([Remainder]string option = null)
-        { 
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
             try
             {
                 var user = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -255,15 +257,15 @@ namespace FMBot.Bot.Commands.LastFM
                 if ((newBotScrobblingDisabledSetting == null || newBotScrobblingDisabledSetting == false) && !string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
                 {
                     this._embed.AddField("Status", "✅ Enabled and ready.");
-                    this._embed.WithFooter("Use '.fmbotscrobbling off' to disable.");
+                    this._embed.WithFooter($"Use '{prfx}botscrobbling off' to disable.");
                 }
                 else if ((newBotScrobblingDisabledSetting == null || newBotScrobblingDisabledSetting == false) && string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
                 {
-                    this._embed.AddField("Status", "⚠️ Bot scrobbling is enabled, but you need to login through `.fmlogin` first.");
+                    this._embed.AddField("Status", $"⚠️ Bot scrobbling is enabled, but you need to login through `{prfx}login` first.");
                 }
                 else
                 {
-                    this._embed.AddField("Status", "❌ Disabled. Do '.fmbotscrobbling on' to enable.");
+                    this._embed.AddField("Status", $"❌ Disabled. Do '{prfx}botscrobbling on' to enable.");
                 }
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());

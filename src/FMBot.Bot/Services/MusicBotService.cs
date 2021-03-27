@@ -7,7 +7,9 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.LastFM.Services;
@@ -26,16 +28,18 @@ namespace FMBot.Bot.Services
         private readonly LastFmService _lastFmService;
         private readonly TrackService _trackService;
         private readonly IMemoryCache _cache;
+        private readonly IPrefixService _prefixService;
 
         private InteractivityService Interactivity { get; }
 
-        public MusicBotService(IDbContextFactory<FMBotDbContext> contextFactory, LastFmService lastFmService, TrackService trackService, IMemoryCache cache, InteractivityService interactivity)
+        public MusicBotService(IDbContextFactory<FMBotDbContext> contextFactory, LastFmService lastFmService, TrackService trackService, IMemoryCache cache, InteractivityService interactivity, IPrefixService prefixService)
         {
             this._contextFactory = contextFactory;
             this._lastFmService = lastFmService;
             this._trackService = trackService;
             this._cache = cache;
             this.Interactivity = interactivity;
+            this._prefixService = prefixService;
         }
 
         public async Task ScrobbleGroovy(SocketUserMessage msg, ICommandContext context)
@@ -62,10 +66,11 @@ namespace FMBot.Bot.Services
             _ = RegisterTrack(usersInChannel, trackResult);
 
             var embed = new EmbedBuilder().WithColor(DiscordConstants.LastFmColorRed);
+            var prfx = this._prefixService.GetPrefix(context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             embed.WithDescription(
                 $"Scrobbling **{trackResult.TrackName}** by **{trackResult.ArtistName}** for {usersInChannel.Count} {StringExtensions.GetListenersString(usersInChannel.Count)}");
-            embed.WithFooter("Use '.fmbotscrobbling' for more information.");
+            embed.WithFooter($"Use '{prfx}botscrobbling' for more information.");
 
             this.Interactivity.DelayedDeleteMessageAsync(
                 await context.Channel.SendMessageAsync(embed: embed.Build()),

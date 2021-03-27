@@ -427,11 +427,11 @@ namespace FMBot.Bot.Services
         {
             await using var db = this._contextFactory.CreateDbContext();
 
-            if (option.ToLower() == "on" || option.ToLower() == "true" || option.ToLower() == "yes")
+            if (option != null && (option.ToLower() == "on" || option.ToLower() == "true" || option.ToLower() == "yes"))
             {
                 user.MusicBotTrackingDisabled = false;
             }
-            else if (option.ToLower() == "off" || option.ToLower() == "false" || option.ToLower() == "no")
+            else if (option != null && (option.ToLower() == "off" || option.ToLower() == "false" || option.ToLower() == "no"))
             {
                 user.MusicBotTrackingDisabled = true;
             }
