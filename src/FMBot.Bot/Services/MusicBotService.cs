@@ -53,6 +53,7 @@ namespace FMBot.Bot.Services
 
             if (usersInChannel == null || usersInChannel.Count == 0)
             {
+                Log.Information("Skipped scrobble for {guildName} / {guildId} because no found listeners", context.Guild.Name, context.Guild.Name);
                 return;
             }
 
@@ -60,24 +61,32 @@ namespace FMBot.Bot.Services
 
             if (trackResult == null)
             {
+                Log.Information("Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", usersInChannel.Count, context.Guild.Name, context.Guild.Name, msg.Embeds.First().Description);
                 return;
             }
 
             _ = RegisterTrack(usersInChannel, trackResult);
 
+            _ = SendScrobbleMessage(context, trackResult, usersInChannel.Count);
+        }
+
+        private async Task SendScrobbleMessage(ICommandContext context, TrackSearchResult trackResult,
+            int listenerCount)
+        {
             var embed = new EmbedBuilder().WithColor(DiscordConstants.LastFmColorRed);
             var prfx = this._prefixService.GetPrefix(context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             embed.WithDescription(
-                $"Scrobbling **{trackResult.TrackName}** by **{trackResult.ArtistName}** for {usersInChannel.Count} {StringExtensions.GetListenersString(usersInChannel.Count)}");
+                $"Scrobbling **{trackResult.TrackName}** by **{trackResult.ArtistName}** for {listenerCount} {StringExtensions.GetListenersString(listenerCount)}");
             embed.WithFooter($"Use '{prfx}botscrobbling' for more information.");
 
             this.Interactivity.DelayedDeleteMessageAsync(
                 await context.Channel.SendMessageAsync(embed: embed.Build()),
                 TimeSpan.FromSeconds(60));
 
-            Log.Information("Scrobbled {trackName} by {artistName} for {listenerCount} users in {guildName} / {guildId}", trackResult.TrackName, trackResult.ArtistName, usersInChannel.Count, context.Guild.Name, context.Guild.Name);
+            Log.Information("Scrobbled {trackName} by {artistName} for {listenerCount} users in {guildName} / {guildId}", trackResult.TrackName, trackResult.ArtistName, listenerCount, context.Guild.Name, context.Guild.Name);
         }
+
 
         private async Task RegisterTrack(IEnumerable<User> users, TrackSearchResult result)
         {
