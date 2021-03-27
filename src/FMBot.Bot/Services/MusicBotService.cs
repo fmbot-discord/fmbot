@@ -82,7 +82,7 @@ namespace FMBot.Bot.Services
 
             this.Interactivity.DelayedDeleteMessageAsync(
                 await context.Channel.SendMessageAsync(embed: embed.Build()),
-                TimeSpan.FromSeconds(60));
+                TimeSpan.FromSeconds(90));
 
             Log.Information("Scrobbled {trackName} by {artistName} for {listenerCount} users in {guildName} / {guildId}", trackResult.TrackName, trackResult.ArtistName, listenerCount, context.Guild.Name, context.Guild.Name);
         }

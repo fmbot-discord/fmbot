@@ -163,7 +163,7 @@ namespace FMBot.Bot.Commands
             if (force == "help")
             {
                 this._embed.WithTitle($"{prfx}update");
-                this._embed.WithDescription($"Updates your top artists/albums/genres based on your latest scrobbles.\n" +
+                this._embed.WithDescription($"Updates your playcount cache on your latest scrobbles.\n" +
                                             $"Add `full` to fully update your account in case you edited your scrobble history.\n" +
                                             $"Note that updating also happens automatically.");
 
@@ -223,7 +223,7 @@ namespace FMBot.Bot.Commands
                 }
 
                 var indexDescription =
-                    $"<a:loading:821676038102056991> Fully indexing user {userSettings.UserNameLastFM}..." +
+                    $"<a:loading:821676038102056991> Fully rebuilding playcount cache for user {userSettings.UserNameLastFM}..." +
                     $"\n\nThis can take a while. Please don't fully update too often, if you have any issues with the normal update feel free to let us know.";
 
                 if (userSettings.UserType != UserType.User)
@@ -251,8 +251,8 @@ namespace FMBot.Bot.Commands
                 if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-3))
                 {
                     var recentlyUpdatedText =
-                        $"You have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). " +
-                        $"Note that this also happens automatically, for example with commands that use cached playcounts.";
+                        $"Your cached playcounts have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). " +
+                        $"Note that this also happens automatically for most commands.";
 
                     await ReplyAsync(recentlyUpdatedText);
 
@@ -295,15 +295,15 @@ namespace FMBot.Bot.Commands
                     else
                     {
                         var updatedDescription =
-                            $"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new {StringExtensions.GetScrobblesString(scrobblesUsed)}.";
+                            $"✅ Cached playcounts have been updated for {userSettings.UserNameLastFM} based on {scrobblesUsed} new {StringExtensions.GetScrobblesString(scrobblesUsed)}.";
 
                         var rnd = new Random();
                         if (rnd.Next(0, 4) == 1)
                         {
                             updatedDescription +=
                                 $"\n\n" +
-                                $"Please note that updates are only used for whoknows and that users are also automatically updated every 48 hours.\n" +
-                                $"Other commands directly get their data from last.fm and are always up to date.";
+                                $"Please note that updating only updates your cached playcounts and that users are also automatically updated.\n" +
+                                $"Updating will not fix Spotify connection issues to Last.fm, especially since .fmbot is not affiliated with Last.fm. [*More info here..*](https://fmbot.xyz/faq/#commands-are-showing-the-wrong-songs-its-not-showing-what-i-listen-to-on-spotify)";
                         }
 
                         m.Embed = new EmbedBuilder()
