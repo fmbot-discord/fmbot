@@ -260,7 +260,7 @@ namespace FMBot.LastFM.Services
                 .Where(w => w.UserId == user.UserId)
                 .ToListAsync();
 
-            foreach (var artist in newScrobbles.GroupBy(g => g.ArtistName))
+            foreach (var artist in newScrobbles.GroupBy(g => g.ArtistName.ToLower()))
             {
                 var alias = cachedArtistAliases
                             .FirstOrDefault(f => f.Alias.ToLower() == artist.Key.ToLower());
@@ -320,7 +320,11 @@ namespace FMBot.LastFM.Services
 
             foreach (var album in newScrobbles
                 .Where(w => w.AlbumName != null)
-                .GroupBy(x => new { x.ArtistName, x.AlbumName }))
+                .GroupBy(x => new
+                {
+                    ArtistName = x.ArtistName.ToLower(),
+                    AlbumName = x.AlbumName.ToLower()
+                }))
             {
                 var alias = cachedArtistAliases
                     .FirstOrDefault(f => f.Alias.ToLower() == album.Key.ArtistName.ToLower());
@@ -379,7 +383,10 @@ namespace FMBot.LastFM.Services
                 .Where(w => w.UserId == user.UserId)
                 .ToListAsync();
 
-            foreach (var track in newScrobbles.GroupBy(x => new { x.ArtistName, x.TrackName }))
+            foreach (var track in newScrobbles.GroupBy(x => new {
+                ArtistName = x.ArtistName.ToLower(),
+                TrackName = x.TrackName.ToLower()
+            }))
             {
                 var alias = cachedArtistAliases
                     .FirstOrDefault(f => f.Alias.ToLower() == track.Key.ArtistName.ToLower());
