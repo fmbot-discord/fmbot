@@ -12,6 +12,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
+using FMBot.Domain;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -99,6 +100,7 @@ namespace FMBot.Bot.Services
         private async Task RegisterTrackForUser(User user, TrackSearchResult result)
         {
             await this._lastFmService.SetNowPlayingAsync(user, result.ArtistName, result.TrackName, result.AlbumName);
+            Statistics.LastfmNowPlayingUpdates.Inc();
 
             this._cache.Set($"now-playing-{user.UserId}", true, TimeSpan.FromSeconds(59));
             await Task.Delay(TimeSpan.FromSeconds(60));
@@ -106,6 +108,7 @@ namespace FMBot.Bot.Services
             if (!this._cache.TryGetValue($"now-playing-{user.UserId}", out bool _))
             {
                 await this._lastFmService.ScrobbleAsync(user, result.ArtistName, result.TrackName, result.AlbumName);
+                Statistics.LastfmScrobbles.Inc();
             }
         } 
 

@@ -398,6 +398,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (trackScrobbled.Success && trackScrobbled.Content.Scrobbles.Attr.Accepted > 0)
             {
+                Statistics.LastfmScrobbles.Inc();
                 this._embed.WithTitle($"Scrobbled track for {userTitle}");
                 this._embed.WithDescription(LastFmService.ResponseTrackToLinkedString(track.Content));
             }

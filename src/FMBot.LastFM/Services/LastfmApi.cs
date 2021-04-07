@@ -127,6 +127,10 @@ namespace FMBot.LastFM.Services
                     {
                         Statistics.LastfmFailureErrors.Inc();
                     }
+                    if (response.Error == ResponseStatus.BadAuth)
+                    {
+                        Statistics.LastfmBadAuthErrors.Inc();
+                    }
                 }
             }
             catch (Exception ex)

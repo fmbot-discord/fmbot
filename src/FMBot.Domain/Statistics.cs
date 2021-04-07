@@ -23,11 +23,22 @@ namespace FMBot.Domain
         public static readonly Histogram LastfmApiResponseTime = Metrics
             .CreateHistogram("lastfm_api_response_time", "Histogram of Last.fm API response time");
 
+
+        public static readonly Counter LastfmNowPlayingUpdates = Metrics
+            .CreateCounter("lastfm_scrobbling_nowplaying", "Amount of now playing updates sent to Last.fm");
+
+        public static readonly Counter LastfmScrobbles = Metrics
+            .CreateCounter("lastfm_scrobbling_scrobbled", "Amount of scrobbles sent to Last.fm");
+
+
         public static readonly Counter LastfmErrors = Metrics
             .CreateCounter("lastfm_errors", "Amount of errors Last.fm is returning");
 
         public static readonly Counter LastfmFailureErrors = Metrics
             .CreateCounter("lastfm_errors_failure", "Amount of failure errors Last.fm is returning");
+
+        public static readonly Counter LastfmBadAuthErrors = Metrics
+            .CreateCounter("lastfm_errors_badauth", "Amount of badauth errors Last.fm is returning");
 
 
         public static readonly Counter CommandsExecuted = Metrics
