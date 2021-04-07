@@ -52,7 +52,8 @@ namespace FMBot.Bot.Services.WhoKnows
             }
 
             var topUser = users
-                .Where(w => eligibleUsers.Select(s => s.UserId).Contains(w.UserId))
+                .Where(w => eligibleUsers.Select(s => s.UserId).Contains(w.UserId) &&
+                            (guild.CrownsMinimumPlaycountThreshold.HasValue ? w.Playcount >= guild.CrownsMinimumPlaycountThreshold : w.Playcount >= Constants.DefaultPlaysForCrown))
                 .OrderByDescending(o => o.Playcount)
                 .FirstOrDefault();
 
