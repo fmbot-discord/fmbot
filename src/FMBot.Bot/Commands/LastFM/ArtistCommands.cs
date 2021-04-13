@@ -782,7 +782,7 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                     else
                     {
-                        var otherUser = await this._settingService.GetUserFromString(user);
+                        var otherUser = await this._settingService.StringWithDiscordIdForUser(user);
 
                         alternativeLastFmUserName = otherUser?.UserNameLastFM;
                     }

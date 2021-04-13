@@ -279,10 +279,10 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        [Command("set", RunMode = RunMode.Async)]
+        //[Command("set", RunMode = RunMode.Async)]
         [Summary(
             "Sets your Last.fm name and FM mode. Please note that users in shared servers will be able to see and request your Last.fm username.")]
-        [Alias("setname", "setmode", "fm set")]
+        //[Alias("setname", "setmode", "fm set")]
         public async Task SetAsync([Summary("Your Last.fm name")] string lastFmUserName = null,
             params string[] otherSettings)
         {
@@ -500,8 +500,11 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("login", RunMode = RunMode.Async)]
         [Summary("Logs you in using a link")]
+        [Alias("set", "setusername", "fm set")]
         public async Task LoginAsync([Remainder] string unusedValues = null)
         {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
             var msg = this.Context.Message as SocketUserMessage;
             if (StackCooldownTarget.Contains(this.Context.Message.Author))
             {
@@ -534,14 +537,22 @@ namespace FMBot.Bot.Commands.LastFM
             this._embed.WithTitle("Logging into .fmbot...");
             this._embed.WithDescription(replyString);
 
-            this._embedFooter.WithText("Link will expire after 2 minutes, please wait a moment after allowing access...");
+            this._embedFooter.WithText("Link will expire after 3 minutes, please wait a moment after allowing access...");
             this._embed.WithFooter(this._embedFooter);
 
             var authorizeMessage = await this.Context.User.SendMessageAsync("", false, this._embed.Build());
 
+
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                await ReplyAsync("Check your DMs for a link to connect your Last.fm account to .fmbot!");
+                var reply = "Check your DMs for a link to connect your Last.fm account to .fmbot!";
+
+                if (this.Context.Message.Content.Contains("set"))
+                {
+                    reply += $"\nPlease use `{prfx}mode` to change how your .fm command looks.";
+                }
+
+                await ReplyAsync(reply);
             }
 
             var success = await GetAndStoreAuthSession(this.Context.User, token.Content.Token);

@@ -960,7 +960,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                var guildUser = await this._settingService.GetUserFromString(user);
+                var guildUser = await this._settingService.StringWithDiscordIdForUser(user);
 
                 if (guildUser != null)
                 {

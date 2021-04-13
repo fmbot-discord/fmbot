@@ -95,7 +95,7 @@ namespace FMBot.Bot.Commands.LastFM
             var differentUser = false;
             if (!string.IsNullOrWhiteSpace(extraOptions))
             {
-                var userSettings = await this._settingService.GetUserFromString(extraOptions);
+                var userSettings = await this._settingService.StringWithDiscordIdForUser(extraOptions);
 
                 if (userSettings != null)
                 {

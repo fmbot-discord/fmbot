@@ -264,12 +264,14 @@ namespace FMBot.Bot.Services
                     settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
                     settingsModel.SessionKeyLastFm = otherUser.SessionKeyLastFm;
                     settingsModel.UserType = otherUser.UserType;
+
+                    return settingsModel;
                 }
             }
 
             foreach (var option in options)
             {
-                var otherUser = await GetUserFromString(option);
+                var otherUser = await StringWithDiscordIdForUser(option);
 
                 if (otherUser != null)
                 {
@@ -290,6 +292,35 @@ namespace FMBot.Bot.Services
                     settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
                     settingsModel.UserType = otherUser.UserType;
                 }
+
+                if (option.StartsWith("lfm:") && option.Length > 4)
+                {
+                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { "lfm:" }, true);
+
+                    var lfmUserName = option.Replace("lfm:", "");
+
+                    var foundLfmUser = await GetDifferentUser(lfmUserName);
+
+                    if (foundLfmUser != null)
+                    {
+                        settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName }, true);
+
+                        settingsModel.DiscordUserName = foundLfmUser.UserNameLastFM;
+                        settingsModel.DifferentUser = true;
+                        settingsModel.DiscordUserId = foundLfmUser.DiscordUserId;
+                        settingsModel.UserNameLastFm = foundLfmUser.UserNameLastFM;
+                        settingsModel.SessionKeyLastFm = foundLfmUser.SessionKeyLastFm;
+                        settingsModel.UserType = foundLfmUser.UserType;
+
+                        return settingsModel;
+                    }
+
+                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName }, true);
+                    settingsModel.UserNameLastFm = lfmUserName;
+                    settingsModel.DifferentUser = true;
+
+                    return settingsModel;
+                }
             }
 
             return settingsModel;
@@ -297,7 +328,7 @@ namespace FMBot.Bot.Services
 
         public async Task<User> GetDifferentUser(string searchValue)
         {
-            var otherUser = await GetUserFromString(searchValue);
+            var otherUser = await StringWithDiscordIdForUser(searchValue);
 
             if (otherUser == null)
             {
@@ -311,7 +342,7 @@ namespace FMBot.Bot.Services
             return otherUser;
         }
 
-        public async Task<User> GetUserFromString(string value)
+        public async Task<User> StringWithDiscordIdForUser(string value)
         {
             if (!value.Contains("<@") && value.Length != 18)
             {
