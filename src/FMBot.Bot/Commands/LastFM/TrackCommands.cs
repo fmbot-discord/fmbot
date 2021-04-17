@@ -390,6 +390,16 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var recentTracks = await this._lastFmService.GetLovedTracksAsync(userSettings.UserNameLastFm, amount, sessionKey: sessionKey);
 
+                if (!recentTracks.Content.RecentTracks.Any())
+                {
+                    this._embed.WithDescription(
+                        $"The Last.fm user `{userSettings.UserNameLastFm}` has no loved tracks yet! \n" +
+                        $"Use `{prfx}love` to add tracks to your list.");
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    return;
+                }
+
                 if (await ErrorService.RecentScrobbleCallFailedReply(recentTracks, userSettings.UserNameLastFm, this.Context))
                 {
                     return;
