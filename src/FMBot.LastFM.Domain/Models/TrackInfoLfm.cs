@@ -18,7 +18,7 @@ namespace FMBot.LastFM.Domain.Models
         public ChildArtistLfm Artist { get; set; }
         public ChildAlbumLfm Album { get; set; }
         public long Userplaycount { get; set; }
-        public long Userloved { get; set; }
+        public string Userloved { get; set; }
         public TrackInfoTopTagsLfm Toptags { get; set; }
         public WikiLfm Wiki { get; set; }
     }

@@ -134,20 +134,20 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var embedDescription = new StringBuilder();
                 for (var index = 0; index < maxAmount; index++)
-                {
-                    if (paginationEnabled && (index > 0 && index % 10 == 0 || index == maxAmount - 1))
-                    {
-                        pages.Add(new PageBuilder().WithDescription(embedDescription.ToString()).WithTitle(title).WithFooter(footer));
-                        embedDescription = new StringBuilder();
-                    }
-
-                    var userCrown = userCrowns[index];
+                { var userCrown = userCrowns[index];
 
                     var claimTimeDescription = DateTime.UtcNow.AddDays(-3) < userCrown.Created
                         ? StringExtensions.GetTimeAgo(userCrown.Created)
                         : userCrown.Created.Date.ToString("dddd MMM d", CultureInfo.InvariantCulture);
 
                     embedDescription.AppendLine($"{index + 1}. **{userCrown.ArtistName}** - **{userCrown.CurrentPlaycount}** plays (claimed {claimTimeDescription})");
+
+                    var pageAmount = index + 1;
+                    if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == maxAmount))
+                    {
+                        pages.Add(new PageBuilder().WithDescription(embedDescription.ToString()).WithTitle(title).WithFooter(footer));
+                        embedDescription = new StringBuilder();
+                    }
                 }
 
                 if (paginationEnabled)
@@ -349,12 +349,6 @@ namespace FMBot.Bot.Commands.LastFM
 
             for (var index = 0; index < maxAmount; index++)
             {
-                if (paginationEnabled && (index > 0 && index % 10 == 0 || index == maxAmount - 1))
-                {
-                    pages.Add(new PageBuilder().WithDescription(embedDescription.ToString()).WithTitle(title).WithFooter(footer));
-                    embedDescription = new StringBuilder();
-                }
-
                 var crownUser = topCrownUsers[index];
 
                 var guildUser = guild
@@ -369,6 +363,13 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 embedDescription.AppendLine($"{index + 1}. **{name ?? crownUser.First().User.UserNameLastFM}** - **{crownUser.Count()}** {StringExtensions.GetCrownsString(crownUser.Count())}");
+
+                var pageAmount = index + 1;
+                if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == maxAmount))
+                {
+                    pages.Add(new PageBuilder().WithDescription(embedDescription.ToString()).WithTitle(title).WithFooter(footer));
+                    embedDescription = new StringBuilder();
+                }
             }
 
             if (paginationEnabled)

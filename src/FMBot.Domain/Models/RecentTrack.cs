@@ -18,7 +18,9 @@ namespace FMBot.Domain.Models
     {
         public bool NowPlaying { get; set; }
         public DateTime? TimePlayed { get; set; }
-        
+
+        public bool Loved { get; set; }
+
         public string TrackName { get; set; }
         public string TrackUrl { get; set; }
 

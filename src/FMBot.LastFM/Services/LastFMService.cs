@@ -50,7 +50,8 @@ namespace FMBot.LastFM.Services
             var queryParams = new Dictionary<string, string>
             {
                 {"user", lastFmUserName },
-                {"limit", count.ToString()}
+                {"limit", count.ToString()},
+                {"extended", "1" }
             };
             var authorizedCall = false;
 
@@ -106,12 +107,60 @@ namespace FMBot.LastFM.Services
             };
         }
 
+        public async Task<Response<RecentTrackList>> GetLovedTracksAsync(string lastFmUserName, int count = 2, string sessionKey = null, long? fromUnixTimestamp = null)
+        {
+            var queryParams = new Dictionary<string, string>
+            {
+                {"limit", count.ToString() },
+                {"username", lastFmUserName },
+            };
+
+            var authorizedCall = false;
+
+            if (!string.IsNullOrEmpty(sessionKey))
+            {
+                queryParams.Add("sk", sessionKey);
+                authorizedCall = true;
+            }
+            if (fromUnixTimestamp != null)
+            {
+                queryParams.Add("from", fromUnixTimestamp.ToString());
+            }
+
+            var recentTracksCall = await this._lastFmApi.CallApiAsync<LovedTracksListLfmResponseModel>(queryParams, Call.LovedTracks, authorizedCall);
+
+            if (recentTracksCall.Success)
+            {
+                var response = new Response<RecentTrackList>
+                {
+                    Content = new RecentTrackList
+                    {
+                        TotalAmount = recentTracksCall.Content.LovedTracks.AttributesLfm.Total,
+                        UserUrl = $"https://www.last.fm/user/{lastFmUserName}",
+                        UserRecentTracksUrl = $"https://www.last.fm/user/{lastFmUserName}/loved",
+                        RecentTracks = recentTracksCall.Content.LovedTracks.Track.Select(LastfmTrackToRecentTrack).ToList()
+                    },
+                    Success = true
+                };
+
+                return response;
+            }
+
+            return new Response<RecentTrackList>
+            {
+                Success = false,
+                Error = recentTracksCall.Error,
+                Message = recentTracksCall.Message
+            };
+        }
+
         private RecentTrack LastfmTrackToRecentTrack(RecentTrackLfm recentTrackLfm)
         {
             return new()
             {
                 TrackName = recentTrackLfm.Name,
                 TrackUrl = recentTrackLfm.Url.ToString(),
+                Loved = recentTrackLfm.Loved == "1",
                 ArtistName = recentTrackLfm.Artist.Text,
                 ArtistUrl = recentTrackLfm.Artist.Url,
                 AlbumName = !string.IsNullOrWhiteSpace(recentTrackLfm.Album?.Text) ? recentTrackLfm.Album.Text : null,
@@ -218,6 +267,11 @@ namespace FMBot.LastFM.Services
             return $"**{trackLfm.TrackName}** by **{trackLfm.ArtistName}**";
         }
 
+        public static string TrackToOneLinedLinkedString(RecentTrack trackLfm)
+        {
+            return $"**[{trackLfm.TrackName}]({trackLfm.TrackUrl})** by **{trackLfm.ArtistName}**";
+        }
+
         public static string TagsToLinkedString(TagsLfm tagsLfm)
         {
             var tagString = new StringBuilder();
@@ -311,7 +365,8 @@ namespace FMBot.LastFM.Services
             {
                 {"artist", artistName },
                 {"track", trackName },
-                {"autocorrect", "1"}
+                {"autocorrect", "1"},
+                {"extended", "1" }
             };
 
             if (username != null)
@@ -350,6 +405,7 @@ namespace FMBot.LastFM.Services
                         TotalListeners = trackCall.Content.Track.Listeners,
                         Duration = trackCall.Content.Track.Duration,
                         UserPlaycount = trackCall.Content.Track.Userplaycount,
+                        Loved = trackCall.Content.Track.Userloved == "1",
                         Tags = trackCall.Content.Track.Toptags.Tag.Select(s => new Tag
                         {
                             Name = s.Name,

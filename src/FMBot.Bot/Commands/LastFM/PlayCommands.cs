@@ -274,6 +274,12 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                 }
 
+                if (currentTrack.Loved)
+                {
+                    footerText +=
+                        $"❤️ Loved track | ";
+                }
+
                 if (embedType == FmEmbedType.TextMini || embedType == FmEmbedType.TextFull || embedType == FmEmbedType.EmbedTiny)
                 {
                     if (self)
@@ -292,6 +298,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footerText +=
                         $"{lastFmUserName} has ";
                 }
+
 
                 if (self)
                 {

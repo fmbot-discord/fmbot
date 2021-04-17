@@ -21,6 +21,7 @@ namespace FMBot.Domain.Models
         public long TotalListeners { get; set; }
         public long TotalPlaycount { get; set; }
         public long? UserPlaycount { get; set; }
+        public bool Loved { get; set; }
 
         public string Description { get; set; }
 

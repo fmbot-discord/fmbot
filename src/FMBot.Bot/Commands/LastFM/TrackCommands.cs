@@ -265,19 +265,28 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
-            var trackLoved = await this._lastFmService.LoveTrackAsync(userSettings, track.Content.ArtistName, track.Content.TrackName);
 
-            if (trackLoved)
+            if (track.Content.Loved)
             {
-                this._embed.WithTitle($"❤️ Loved track for {userTitle}");
+                this._embed.WithTitle($"❤️ Track already loved");
                 this._embed.WithDescription(LastFmService.ResponseTrackToLinkedString(track.Content));
             }
             else
             {
-                await this.Context.Message.Channel.SendMessageAsync(
-                    "Something went wrong while adding loved track.");
-                this.Context.LogCommandUsed(CommandResponse.Error);
-                return;
+                var trackLoved = await this._lastFmService.LoveTrackAsync(userSettings, track.Content.ArtistName, track.Content.TrackName);
+
+                if (trackLoved)
+                {
+                    this._embed.WithTitle($"❤️ Loved track for {userTitle}");
+                    this._embed.WithDescription(LastFmService.ResponseTrackToLinkedString(track.Content));
+                }
+                else
+                {
+                    await this.Context.Message.Channel.SendMessageAsync(
+                        "Something went wrong while adding loved track.");
+                    this.Context.LogCommandUsed(CommandResponse.Error);
+                    return;
+                }
             }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
@@ -312,23 +321,157 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
-            var trackLoved = await this._lastFmService.UnLoveTrackAsync(userSettings, track.Content.ArtistName, track.Content.TrackName);
-
-            if (trackLoved)
+            if (!track.Content.Loved)
             {
-                this._embed.WithTitle($"💔 Unloved track for {userTitle}");
+                this._embed.WithTitle($"💔 Track wasn't loved");
                 this._embed.WithDescription(LastFmService.ResponseTrackToLinkedString(track.Content));
             }
             else
             {
-                await this.Context.Message.Channel.SendMessageAsync(
-                    "Something went wrong while unloving track.");
-                this.Context.LogCommandUsed(CommandResponse.Error);
-                return;
+                var trackLoved = await this._lastFmService.UnLoveTrackAsync(userSettings, track.Content.ArtistName, track.Content.TrackName);
+
+                if (trackLoved)
+                {
+                    this._embed.WithTitle($"💔 Unloved track for {userTitle}");
+                    this._embed.WithDescription(LastFmService.ResponseTrackToLinkedString(track.Content));
+                }
+                else
+                {
+                    await this.Context.Message.Channel.SendMessageAsync(
+                        "Something went wrong while unloving track.");
+                    this.Context.LogCommandUsed(CommandResponse.Error);
+                    return;
+                }
             }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
+        }
+
+        [Command("loved", RunMode = RunMode.Async)]
+        [Summary("Displays a user's recent tracks.")]
+        [Alias("lovedtracks", "lt")]
+        [UserSessionRequired]
+        public async Task LovedAsync([Remainder] string extraOptions = null)
+        {
+            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            if (!string.IsNullOrWhiteSpace(extraOptions) && extraOptions.ToLower() == "help")
+            {
+                await ReplyAsync($"{prfx}loved 'number of items (max 8)' 'lastfm username/@discord user'");
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
+            var amount = SettingService.GetAmount(extraOptions, 8, 12);
+
+
+            var paginationEnabled = false;
+            var pages = new List<PageBuilder>();
+            var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
+            if (perms.ManageMessages)
+            {
+                paginationEnabled = true;
+            }
+
+            try
+            {
+                string sessionKey = null;
+                if (!userSettings.DifferentUser && !string.IsNullOrEmpty(user.SessionKeyLastFm))
+                {
+                    sessionKey = user.SessionKeyLastFm;
+                }
+
+                amount = paginationEnabled ? 100 : amount;
+
+                var recentTracks = await this._lastFmService.GetLovedTracksAsync(userSettings.UserNameLastFm, amount, sessionKey: sessionKey);
+
+                if (await ErrorService.RecentScrobbleCallFailedReply(recentTracks, userSettings.UserNameLastFm, this.Context))
+                {
+                    return;
+                }
+
+                var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+                var title = !userSettings.DifferentUser ? userTitle : $"{userSettings.UserNameLastFm}, requested by {userTitle}";
+                this._embedAuthor.WithName($"Last loved tracks for {title}");
+
+                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+                this._embedAuthor.WithUrl(recentTracks.Content.UserRecentTracksUrl);
+
+                string footer;
+                var firstTrack = recentTracks.Content.RecentTracks[0];
+
+                footer =
+                    $"{userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount} loved tracks";
+
+                if (!firstTrack.NowPlaying && firstTrack.TimePlayed.HasValue)
+                {
+                    footer += " | Last loved track:";
+                    this._embed.WithTimestamp(firstTrack.TimePlayed.Value);
+                }
+
+                this._embedFooter.WithText(footer);
+
+                var description = "";
+                var resultAmount = recentTracks.Content.RecentTracks.Count;
+                amount = resultAmount < amount ? resultAmount : amount;
+                for (var i = 0; i < resultAmount; i++)
+                {
+                    var track = recentTracks.Content.RecentTracks[i];
+
+                    if (i == 0)
+                    {
+                        if (track.AlbumCoverUrl != null)
+                        {
+                            this._embed.WithThumbnailUrl(track.AlbumCoverUrl);
+                        }
+                    }
+
+                    var trackString = LastFmService.TrackToOneLinedLinkedString(track);
+
+                    description += $"`{recentTracks.Content.TotalAmount - i}` - {trackString}\n";
+
+                    var pageAmount = i + 1;
+                    if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == amount))
+                    {
+                        pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor).WithFooter(footer));
+                        description = "";
+                    }
+                }
+
+                if (paginationEnabled)
+                {
+                    var paginator = new StaticPaginatorBuilder()
+                        .WithPages(pages)
+                        .WithFooter(PaginatorFooter.PageNumber)
+                        .WithTimoutedEmbed(null)
+                        .WithCancelledEmbed(null)
+                        .WithEmotes(DiscordConstants.PaginationEmotes)
+                        .Build();
+
+                    _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds), runOnGateway: false);
+                }
+                else
+                {
+                    this._embed.WithAuthor(this._embedAuthor);
+                    this._embed.WithDescription(description);
+                    this._embed.WithFooter(this._embedFooter);
+
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                }
+
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync(
+                    "Unable to show your recent tracks on Last.fm due to an internal error. Please try again later or contact .fmbot support.");
+            }
         }
 
         [Command("scrobble", RunMode = RunMode.Async)]
@@ -484,7 +627,6 @@ namespace FMBot.Bot.Commands.LastFM
                 paginationEnabled = true;
             }
 
-
             string userTitle;
             if (!userSettings.DifferentUser)
             {
@@ -589,12 +731,6 @@ namespace FMBot.Bot.Commands.LastFM
                 var description = "";
                 for (var i = 0; i < topTracks.Content.TopTracks.Track.Count; i++)
                 {
-                    if (paginationEnabled && (i > 0 && i % 10 == 0 || i == amount - 1))
-                    {
-                        pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor).WithFooter(footer));
-                        description = "";
-                    }
-
                     var track = topTracks.Content.TopTracks.Track[i];
 
                     if (topTracks.Content.TopTracks.Track.Count > 10 && !paginationEnabled)
@@ -606,6 +742,12 @@ namespace FMBot.Bot.Commands.LastFM
                         description += $"{i + 1}. **{track.Artist.Name}** - **[{track.Name}]({track.Url})** ({track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)}) \n";
                     }
 
+                    var pageAmount = i + 1;
+                    if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == amount))
+                    {
+                        pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor).WithFooter(footer));
+                        description = "";
+                    }
                 }
 
                 if (paginationEnabled)

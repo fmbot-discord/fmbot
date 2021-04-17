@@ -368,9 +368,12 @@ namespace FMBot.Bot.Services
                 if (ConfigData.Data.Bot.BaseServerId != 0 && ConfigData.Data.Bot.FeaturedChannelId != 0)
                 {
                     var guild = client.GetGuild(ConfigData.Data.Bot.BaseServerId);
-                    var channel = guild.GetTextChannel(ConfigData.Data.Bot.FeaturedChannelId);
+                    if (guild != null)
+                    {
+                        var channel = guild.GetTextChannel(ConfigData.Data.Bot.FeaturedChannelId);
 
-                    await channel.SendMessageAsync("", false, builder.Build());
+                        await channel.SendMessageAsync("", false, builder.Build());
+                    }
                 }
                 else
                 {

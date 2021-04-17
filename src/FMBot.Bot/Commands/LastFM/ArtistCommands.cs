@@ -309,7 +309,12 @@ namespace FMBot.Bot.Commands.LastFM
                 var description = new StringBuilder();
                 for (var i = 0; i < amount; i++)
                 {
-                    if (paginationEnabled && (i > 0 && i % 10 == 0 || i == amount - 1))
+                    var track = topTracks[i];
+
+                    description.AppendLine($"{i + 1}. **{track.Name}** ({track.Playcount} plays)");
+
+                    var pageAmount = i + 1;
+                    if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == amount))
                     {
                         var page = new PageBuilder()
                             .WithDescription(description.ToString())
@@ -323,10 +328,6 @@ namespace FMBot.Bot.Commands.LastFM
                         pages.Add(page);
                         description = new StringBuilder();
                     }
-
-                    var track = topTracks[i];
-
-                    description.AppendLine($"{i + 1}. **{track.Name}** ({track.Playcount} plays)");
                 }
 
                 this._embed.WithDescription(description.ToString());
@@ -588,12 +589,6 @@ namespace FMBot.Bot.Commands.LastFM
 
                     for (var i = 0; i < amount; i++)
                     {
-                        if (paginationEnabled && (i > 0 && i % 10 == 0 || i == amount - 1))
-                        {
-                            pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor).WithFooter(footer));
-                            description = "";
-                        }
-
                         var artist = artists.Content[i];
 
                         if (artists.Count() > 10 && !paginationEnabled)
@@ -603,6 +598,13 @@ namespace FMBot.Bot.Commands.LastFM
                         else
                         {
                             description += $"{i + 1}. **[{artist.Name}]({artist.Url})** ({artist.PlayCount} plays) \n";
+                        }
+
+                        var pageAmount = i + 1;
+                        if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == amount))
+                        {
+                            pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor).WithFooter(footer));
+                            description = "";
                         }
                     }
 
@@ -647,15 +649,16 @@ namespace FMBot.Bot.Commands.LastFM
                     amount = artists.Count < amount ? artists.Count : amount;
                     for (var i = 0; i < amount; i++)
                     {
-                        if (paginationEnabled && (i > 0 && i % 10 == 0 || i == amount - 1))
+                        var artist = artists[i];
+
+                        description += $"{i + 1}. **{artist.Name}** ({artist.Playcount} {StringExtensions.GetPlaysString(artist.Playcount)}) \n";
+
+                        var pageAmount = i + 1;
+                        if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == amount))
                         {
                             pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor).WithFooter(footer));
                             description = "";
                         }
-
-                        var artist = artists[i];
-
-                        description += $"{i + 1}. **{artist.Name}** ({artist.Playcount} {StringExtensions.GetPlaysString(artist.Playcount)}) \n";
                     }
 
                     this._embedFooter.WithText(footer);

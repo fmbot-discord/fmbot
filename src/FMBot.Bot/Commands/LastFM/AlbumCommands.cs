@@ -467,12 +467,6 @@ namespace FMBot.Bot.Commands.LastFM
 
                     for (var i = 0; i < albums.Count(); i++)
                     {
-                        if (paginationEnabled && (i > 0 && i % 10 == 0 || i == amount - 1))
-                        {
-                            pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor).WithFooter(footer));
-                            description = "";
-                        }
-
                         var album = albums.Content[i];
 
                         if (albums.Count() > 10 && !paginationEnabled)
@@ -490,6 +484,13 @@ namespace FMBot.Bot.Commands.LastFM
                             }
 
                             description += $"{i + 1}. **{album.ArtistName}** - **[{escapedAlbumName}]({url})** ({album.PlayCount}  {StringExtensions.GetPlaysString(album.PlayCount)}) \n";
+                        }
+
+                        var pageAmount = i + 1;
+                        if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == amount))
+                        {
+                            pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor).WithFooter(footer));
+                            description = "";
                         }
                     }
 
@@ -539,14 +540,15 @@ namespace FMBot.Bot.Commands.LastFM
                     var amountAvailable = albums.Count < amount ? albums.Count : amount;
                     for (var i = 0; i < amountAvailable; i++)
                     {
-                        if (paginationEnabled && (i > 0 && i % 10 == 0 || i == amount - 1))
+                        var album = albums[i];
+                        description += $"{i + 1}. **{album.ArtistName}** - **{album.Name}** ({album.Playcount} {StringExtensions.GetPlaysString(album.Playcount)}) \n";
+
+                        var pageAmount = i + 1;
+                        if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == amount))
                         {
                             pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor).WithFooter(footer));
                             description = "";
                         }
-
-                        var album = albums[i];
-                        description += $"{i + 1}. **{album.ArtistName}** - **{album.Name}** ({album.Playcount} {StringExtensions.GetPlaysString(album.Playcount)}) \n";
                     }
 
                     this._embedFooter.WithText(footer);
