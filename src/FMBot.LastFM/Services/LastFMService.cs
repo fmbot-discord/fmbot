@@ -183,7 +183,8 @@ namespace FMBot.LastFM.Services
             var queryParams = new Dictionary<string, string>
             {
                 {"user", lastFmUserName },
-                {"limit", "1"}
+                {"limit", "1"},
+                {"extended", "1" }
             };
 
             if (unixTimestamp != null)
@@ -202,8 +203,8 @@ namespace FMBot.LastFM.Services
             var queryParams = new Dictionary<string, string>
             {
                 {"user", lastFmUserName },
-                {"limit", "1"}
-                
+                {"limit", "1"},
+                {"extended", "1" }
             };
 
             var authorizedCall = false;
