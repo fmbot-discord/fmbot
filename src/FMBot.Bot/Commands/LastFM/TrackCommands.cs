@@ -238,9 +238,9 @@ namespace FMBot.Bot.Commands.LastFM
 
 
         [Command("love", RunMode = RunMode.Async)]
+        [Alias("l", "heart", "favorite", "affection", "appreciation", "lust", "fuckyeah", "fukk")]
         [Summary("Add track to loved tracks")]
         [UserSessionRequired]
-        [Alias("l", "heart")]
         public async Task LoveAsync([Remainder] string trackValues = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -294,9 +294,9 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("unlove", RunMode = RunMode.Async)]
-        [Summary("Add track to loved tracks")]
-        [UserSessionRequired]
         [Alias("ul", "unheart", "hate", "fuck")]
+        [Summary("Remove track from loved tracks")]
+        [UserSessionRequired]
         public async Task UnLoveAsync([Remainder] string trackValues = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
