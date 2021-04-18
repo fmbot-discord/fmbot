@@ -58,7 +58,7 @@ namespace FMBot.LastFM.Services
             var dateAgo = lastStoredPlay?.TimePlayed.AddMinutes(-10) ?? DateTime.UtcNow.AddDays(-14);
             var timeFrom = (long?)((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
 
-            var count = 1000;
+            var count = 900;
             var totalPlaycountCorrect = false;
             if (dateAgo > DateTime.UtcNow.AddHours(-1)) 
             {
