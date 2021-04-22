@@ -116,7 +116,6 @@ namespace FMBot.Bot.Commands
                 await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild);
 
                 registeredUserCount = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
-                this._indexService.AddUsersToIndexQueue(usersToFullyUpdate);
 
                 await indexMessage.ModifyAsync(m =>
                 {
@@ -128,6 +127,8 @@ namespace FMBot.Bot.Commands
                 });
 
                 this.Context.LogCommandUsed();
+
+                this._indexService.AddUsersToIndexQueue(usersToFullyUpdate);
             }
             catch (Exception e)
             {
