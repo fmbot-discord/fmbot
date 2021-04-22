@@ -252,7 +252,7 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> discordGuildUsers)
+        public async Task<IReadOnlyList<User>> GetUsersToFullyUpdate(IReadOnlyCollection<IGuildUser> discordGuildUsers)
         {
             var userIds = discordGuildUsers.Select(s => s.Id).ToList();
 

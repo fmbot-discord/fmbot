@@ -23,7 +23,7 @@ namespace FMBot.Bot.Interfaces
 
         Task StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers);
 
-        Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> discordGuildUsers);
+        Task<IReadOnlyList<User>> GetUsersToFullyUpdate(IReadOnlyCollection<IGuildUser> discordGuildUsers);
 
         Task<int> GetIndexedUsersCount(IReadOnlyCollection<IGuildUser> discordGuildUsers);
 

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
-using Discord.API.Rest;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
@@ -31,8 +30,8 @@ namespace FMBot.Bot.Commands
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
-        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new();
+        private static readonly List<SocketUser> StackCooldownTarget = new();
 
         public IndexCommands(
                 GuildService guildService,
@@ -63,91 +62,77 @@ namespace FMBot.Bot.Commands
 
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
+            this._embed.WithDescription("<a:loading:821676038102056991> Server index started, this can take a while on larger servers...");
+            var indexMessage = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
             try
             {
                 var guildUsers = await this.Context.Guild.GetUsersAsync();
                 Log.Information("Downloaded {guildUserCount} users for guild {guildId} / {guildName} from Discord",
                     guildUsers.Count, this.Context.Guild.Id, this.Context.Guild.Name);
 
-                var users = await this._indexService.GetUsersToIndex(guildUsers);
-                var indexedUserCount = await this._indexService.GetIndexedUsersCount(guildUsers);
+                var users = await this._indexService.GetUsersToFullyUpdate(guildUsers);
 
-                var guildRecentlyIndexed =
-                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(5));
-
-                if (guildRecentlyIndexed)
-                {
-                    await ReplyAsync("An index was recently started on this server. Please wait before running this command again.");
-                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                    return;
-                }
                 if (users != null && users.Count == 0 && lastIndex != null)
                 {
                     await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
                     await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
 
-                    var reply =
-                        "Server index has been updated.";
+                    var reply = $"✅ Server index has been updated. \n\n" +
+                                $"This server has a total {guildUsers.Count} registered .fmbot members.";
 
-                    await ReplyAsync(reply);
-                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                    await indexMessage.ModifyAsync(m =>
+                    {
+                        m.Embed = new EmbedBuilder()
+                            .WithDescription(reply)
+                            .WithColor(DiscordConstants.SuccessColorGreen)
+                            .Build();
+                    });
+
+                    this.Context.LogCommandUsed();
                     return;
                 }
                 if (users == null || users.Count == 0 && lastIndex == null)
                 {
                     await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
                     await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow.AddDays(-1));
-                    await ReplyAsync("Server has been indexed successfully. You can now use all commands that require indexing.");
+                    var reply =
+                        "✅ Server has been indexed successfully. \n\n" +
+                        "You can now use all commands that require indexing.";
+
+                    await indexMessage.ModifyAsync(m =>
+                    {
+                        m.Embed = new EmbedBuilder()
+                            .WithDescription(reply)
+                            .WithColor(DiscordConstants.SuccessColorGreen)
+                            .Build();
+                    });
+
                     this.Context.LogCommandUsed();
                     return;
                 }
 
-                string usersString = "";
-                if (users.Count == 1)
-                {
-                    usersString += "user";
-                }
-                else
-                {
-                    usersString += "users";
-                }
-
-                this._embed.WithTitle($"Added {users.Count} {usersString} to bot indexing queue");
-
-                var expectedTime = TimeSpan.FromSeconds(8 * users.Count);
-                var indexStartedReply =
-                    $"Indexing stores which .fmbot members are on your server and stores their initial top artist, albums and tracks. " +
-                    $"Updating these records happens automatically, but you can also use `.fmupdate` to update your own account.\n" +
-                    $"Confused about how indexing has been changed? [Please read this.](https://fmbot.xyz/commands/whoknows/)\n\n" +
-                    $"`{users.Count}` new users or users that have never been indexed added to index queue.";
-
-                indexStartedReply += $"\n`{indexedUserCount}` users already indexed on this server.\n \n";
-
-                if (expectedTime.TotalMinutes >= 1)
-                {
-                    indexStartedReply += $"**This will take approximately {(int)expectedTime.TotalMinutes} minutes. \n" +
-                                         $"⚠️ Commands might display incomplete results until this process is done.**\n";
-                }
-
-                indexStartedReply += "*Note: You will currently not be alerted when the index is finished.*";
-
-                this._embed.WithDescription(indexStartedReply);
-
                 await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild);
 
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
+                this._indexService.AddUsersToIndexQueue(users);
+
+                await indexMessage.ModifyAsync(m =>
+                {
+                    m.Embed = new EmbedBuilder()
+                        .WithDescription($"✅ Server index has been updated.\n\n" +
+                                         $"This server has a total {guildUsers.Count} registered .fmbot members.")
+                        .WithColor(DiscordConstants.SuccessColorGreen)
+                        .Build();
+                });
 
                 this.Context.LogCommandUsed();
-
-                await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
-
-                this._indexService.AddUsersToIndexQueue(users);
             }
             catch (Exception e)
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync(
-                    "Something went wrong while indexing users. Please let us know as this feature is in beta.");
+                    "Something went wrong while indexing users. Please report this issue.");
                 await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
             }
         }
