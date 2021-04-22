@@ -300,6 +300,33 @@ namespace FMBot.Bot.Commands
             }
         }
 
+        [Command("addsupporter")]
+        public async Task AddSupporterAsync(string user = null, string internalNotes = null, string name = null)
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(internalNotes) || user == "help")
+                {
+                    await ReplyAsync("Make sure to follow the correct format when adding a supporter\n" +
+                                     "Examples: \n" +
+                                     "`.fmaddsupporter \"125740103539621888\" \"lifetime supporter\" \"Drasil\"`\n"+
+                                     "`.fmaddsupporter \"278633844763262976\" \"monthly supporter\" \"Aetheling\"`\n"+
+                                     "No name mention: `.fmaddsupporter \"278633844763262976\" \"monthly supporter\"`");
+                    this.Context.LogCommandUsed(CommandResponse.Help);
+                    return;
+                }
+
+                this._embed.WithFooter("Command not intended for use in public channels");
+
+                await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+                this.Context.LogCommandUsed();
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can check botted users");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
 
         [Command("fmfeaturedoverride"), Summary("Changes the avatar to be an album.")]
         public async Task fmalbumoverrideAsync(string url, bool stopTimer, string desc = "Custom featured event")

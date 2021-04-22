@@ -237,7 +237,7 @@ namespace FMBot.Bot.Commands.LastFM
                 if (!string.IsNullOrEmpty(supporter))
                 {
                     embedDescription +=
-                        $"*This chart was brought to you by .fmbot supporter {supporter}.*\n";
+                        $"*This chart was brought to you by .fmbot supporter {supporter}. Also want to support .fmbot? Check out {prfx}donate.*\n";
                 }
 
                 this._embed.WithFooter(this._embedFooter);

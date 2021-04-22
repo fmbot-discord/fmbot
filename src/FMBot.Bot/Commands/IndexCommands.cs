@@ -210,7 +210,7 @@ namespace FMBot.Bot.Commands
 
                 var indexDescription =
                     $"<a:loading:821676038102056991> Fully rebuilding playcount cache for user {userSettings.UserNameLastFM}..." +
-                    $"\n\nThis can take a while. Please don't fully update too often, if you have any issues with the normal update feel free to let us know.";
+                    $"\n\nThis can take a while. Note that you can only do a full update once a day.";
 
                 if (userSettings.UserType != UserType.User)
                 {
@@ -224,10 +224,19 @@ namespace FMBot.Bot.Commands
 
                 await this._indexService.IndexUser(userSettings);
 
+                var updatedDescription = $"✅ {userSettings.UserNameLastFM} has been fully updated.";
+
+                var rnd = new Random();
+                if (rnd.Next(0, 4) == 1 && userSettings.UserType == UserType.User)
+                {
+                    updatedDescription += "\n\n" +
+                                          $"*Did you know that .fmbot stores the top 25k artists/albums/tracks instead of the top 4k/5k/6k for supporters? See {prfx}donate on how to become an .fmbot supporter.*";
+                }
+
                 await message.ModifyAsync(m =>
                 {
                     m.Embed = new EmbedBuilder()
-                        .WithDescription($"✅ {userSettings.UserNameLastFM} has been fully updated.")
+                        .WithDescription(updatedDescription)
                         .WithColor(DiscordConstants.SuccessColorGreen)
                         .Build();
                 });

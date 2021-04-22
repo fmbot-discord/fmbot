@@ -98,6 +98,8 @@ namespace FMBot.Bot.Commands
         [Alias("support")]
         public async Task DonateAsync()
         {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
             var embedDescription = new StringBuilder();
 
             embedDescription.AppendLine(".fmbot is non-commercial and is hosted and maintained by volunteers.");
@@ -105,9 +107,11 @@ namespace FMBot.Bot.Commands
             embedDescription.AppendLine();
             embedDescription.AppendLine("We use OpenCollective so we can be transparent about our expenses. If you decide to sponsor us, you can see exactly where your money goes.");
             embedDescription.AppendLine();
+            embedDescription.AppendLine($"Use `{prfx}supporters` to see everyone who has supported us so far!");
+            embedDescription.AppendLine();
             embedDescription.AppendLine("**.fmbot supporter advantages include**:\n" +
                                         "- An emote behind their name (⭐)\n" +
-                                        "- Their name added to `.fmsupporters`\n" +
+                                        "- Their name added to the list of supporters.\n" +
                                         $"- A 1/{Constants.SupporterMessageChance} chance of sponsoring a chart\n" +
                                         "- WhoKnows tracking increased to top 25K (instead of top 4/5/6k artist/albums/tracks)");
 
@@ -213,8 +217,8 @@ namespace FMBot.Bot.Commands
                     "Keep in mind that the instance might not be fully up to date or other users might not be registered.");
             }
 
-            if (PublicProperties.IssuesAtLastFm)
             {
+            if (PublicProperties.IssuesAtLastFm)
                 this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues");
             }
 
