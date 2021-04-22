@@ -71,15 +71,16 @@ namespace FMBot.Bot.Commands
                 Log.Information("Downloaded {guildUserCount} users for guild {guildId} / {guildName} from Discord",
                     guildUsers.Count, this.Context.Guild.Id, this.Context.Guild.Name);
 
-                var users = await this._indexService.GetUsersToFullyUpdate(guildUsers);
+                var usersToFullyUpdate = await this._indexService.GetUsersToFullyUpdate(guildUsers);
+                int registeredUserCount;
 
-                if (users != null && users.Count == 0 && lastIndex != null)
+                if (usersToFullyUpdate != null && usersToFullyUpdate.Count == 0 && lastIndex != null)
                 {
-                    await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
+                    registeredUserCount = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
                     await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
 
-                    var reply = $"✅ Server index has been updated. \n\n" +
-                                $"This server has a total {guildUsers.Count} registered .fmbot members.";
+                    var reply = $"✅ Server index has been updated.\n\n" +
+                                $"This server has a total {registeredUserCount} registered .fmbot members.";
 
                     await indexMessage.ModifyAsync(m =>
                     {
@@ -92,13 +93,13 @@ namespace FMBot.Bot.Commands
                     this.Context.LogCommandUsed();
                     return;
                 }
-                if (users == null || users.Count == 0 && lastIndex == null)
+                if (usersToFullyUpdate == null || usersToFullyUpdate.Count == 0 && lastIndex == null)
                 {
-                    await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
+                    registeredUserCount = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
                     await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow.AddDays(-1));
                     var reply =
-                        "✅ Server has been indexed successfully. \n\n" +
-                        "You can now use all commands that require indexing.";
+                        "✅ Server has been indexed successfully.\n\n" +
+                        $"This server has a total {registeredUserCount} registered .fmbot members.";
 
                     await indexMessage.ModifyAsync(m =>
                     {
@@ -114,14 +115,14 @@ namespace FMBot.Bot.Commands
 
                 await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild);
 
-                await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
-                this._indexService.AddUsersToIndexQueue(users);
+                registeredUserCount = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
+                this._indexService.AddUsersToIndexQueue(usersToFullyUpdate);
 
                 await indexMessage.ModifyAsync(m =>
                 {
                     m.Embed = new EmbedBuilder()
                         .WithDescription($"✅ Server index has been updated.\n\n" +
-                                         $"This server has a total {guildUsers.Count} registered .fmbot members.")
+                                         $"This server has a total {registeredUserCount} registered .fmbot members.")
                         .WithColor(DiscordConstants.SuccessColorGreen)
                         .Build();
                 });

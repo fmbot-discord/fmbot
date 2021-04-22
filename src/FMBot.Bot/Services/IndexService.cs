@@ -61,7 +61,7 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async Task StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers)
+        public async Task<int> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers)
         {
             var userIds = discordGuildUsers.Select(s => s.Id).ToList();
 
@@ -123,6 +123,8 @@ namespace FMBot.Bot.Services
             await copyHelper.SaveAllAsync(connection, users).ConfigureAwait(false);
 
             Log.Information("Stored guild users for guild with id {guildId}", existingGuild.GuildId);
+
+            return users.Count;
         }
 
         public async Task<GuildUser> GetOrAddUserToGuild(Persistence.Domain.Models.Guild guild, IGuildUser discordGuildUser, User user)
