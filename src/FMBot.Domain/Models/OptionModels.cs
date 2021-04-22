@@ -7,6 +7,7 @@ namespace FMBot.Domain.Models
         public string UrlParameter { get; set; }
         public string ApiParameter { get; set; }
         public string Description { get; set; }
+        public string AltDescription { get; set; }
         public LastStatsTimeSpan LastStatsTimeSpan { get; set; }
         public ChartTimePeriod ChartTimePeriod { get; set; }
         public bool UsePlays { get; set; }

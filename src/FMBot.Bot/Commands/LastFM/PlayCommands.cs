@@ -879,13 +879,13 @@ namespace FMBot.Bot.Commands.LastFM
             if (!string.IsNullOrWhiteSpace(extraOptions) && extraOptions.ToLower() == "help")
             {
                 this._embed.WithTitle($"{prfx}plays");
-                this._embed.WithDescription($"Shows your total plays from the track you're currently listening to or searching for.");
+                this._embed.WithDescription($"Shows your total scrobblecount.");
 
                 this._embed.AddField("Examples",
                     $"`{prfx}tp` \n" +
-                    $"`{prfx}trackplays` \n" +
-                    $"`{prfx}trackplays Mac DeMarco Here Comes The Cowboy` \n" +
-                    $"`{prfx}trackplays Cocteau Twins | Heaven or Las Vegas`");
+                    $"`{prfx}plays` \n" +
+                    $"`{prfx}plays @Frikandel` \n" +
+                    $"`{prfx}plays monthly`");
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
@@ -896,15 +896,30 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context, true);
 
-            var count = await this._lastFmService.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm);
+            var timeType = SettingService.GetTimePeriod(extraOptions, ChartTimePeriod.AllTime);
+
+            long? timeFrom = null;
+            if (timeType.ChartTimePeriod != ChartTimePeriod.AllTime && timeType.PlayDays != null)
+            {
+                var dateAgo = DateTime.UtcNow.AddDays(-timeType.PlayDays.Value);
+                timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
+            }
+
+            var count = await this._lastFmService.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom);
 
             var userTitle = $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}";
 
             var reply =
                 $"**{userTitle}** has `{count}` total scrobbles";
 
-
-            await this.Context.Channel.SendMessageAsync(reply);
+            if (timeType.ChartTimePeriod == ChartTimePeriod.AllTime)
+            {
+                await this.Context.Channel.SendMessageAsync($"**{userTitle}** has `{count}` total scrobbles");
+            }
+            else
+            {
+                await this.Context.Channel.SendMessageAsync($"**{userTitle}** has `{count}` scrobbles in the {timeType.AltDescription}");
+            }
             this.Context.LogCommandUsed();
         }
 

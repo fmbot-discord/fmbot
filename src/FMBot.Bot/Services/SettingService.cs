@@ -49,6 +49,7 @@ namespace FMBot.Bot.Services
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Weekly;
                 settingsModel.Description = "Weekly";
+                settingsModel.AltDescription = "last week";
                 settingsModel.UrlParameter = "date_preset=LAST_7_DAYS";
                 settingsModel.ApiParameter = "7day";
                 settingsModel.PlayDays = 7;
@@ -59,16 +60,7 @@ namespace FMBot.Bot.Services
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Monthly;
                 settingsModel.Description = "Monthly";
-                settingsModel.UrlParameter = "date_preset=LAST_30_DAYS";
-                settingsModel.ApiParameter = "1month";
-                settingsModel.PlayDays = 30;
-            }
-            else if (Contains(options, monthly))
-            {
-                settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, monthly);
-                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;
-                settingsModel.ChartTimePeriod = ChartTimePeriod.Monthly;
-                settingsModel.Description = "Monthly";
+                settingsModel.AltDescription = "last month";
                 settingsModel.UrlParameter = "date_preset=LAST_30_DAYS";
                 settingsModel.ApiParameter = "1month";
                 settingsModel.PlayDays = 30;
@@ -79,6 +71,7 @@ namespace FMBot.Bot.Services
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Quarter;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Quarterly;
                 settingsModel.Description = "Quarterly";
+                settingsModel.AltDescription = "last quarter";
                 settingsModel.UrlParameter = "date_preset=LAST_90_DAYS";
                 settingsModel.ApiParameter = "3month";
                 settingsModel.PlayDays = 90;
@@ -89,6 +82,7 @@ namespace FMBot.Bot.Services
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Half;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Half;
                 settingsModel.Description = "Half-yearly";
+                settingsModel.AltDescription = "last half year";
                 settingsModel.UrlParameter = "date_preset=LAST_180_DAYS";
                 settingsModel.ApiParameter = "6month";
                 settingsModel.PlayDays = 180;
@@ -99,6 +93,7 @@ namespace FMBot.Bot.Services
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Year;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Yearly;
                 settingsModel.Description = "Yearly";
+                settingsModel.AltDescription = "last year";
                 settingsModel.UrlParameter = "date_preset=LAST_365_DAYS";
                 settingsModel.ApiParameter = "12month";
                 settingsModel.PlayDays = 365;
@@ -109,6 +104,7 @@ namespace FMBot.Bot.Services
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.AllTime;
                 settingsModel.Description = "Overall";
+                settingsModel.AltDescription = "all-time";
                 settingsModel.UrlParameter = "date_preset=ALL";
                 settingsModel.ApiParameter = "overall";
             }
@@ -117,6 +113,7 @@ namespace FMBot.Bot.Services
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, sixDays);
                 var dateString = DateTime.Today.AddDays(-6).ToString("yyyy-M-dd");
                 settingsModel.Description = "6-day";
+                settingsModel.AltDescription = "last 6 days";
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 6;
@@ -126,6 +123,7 @@ namespace FMBot.Bot.Services
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, fiveDays);
                 var dateString = DateTime.Today.AddDays(-5).ToString("yyyy-M-dd");
                 settingsModel.Description = "5-day";
+                settingsModel.AltDescription = "last 5 days";
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 5;
@@ -135,6 +133,7 @@ namespace FMBot.Bot.Services
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, fourDays);
                 var dateString = DateTime.Today.AddDays(-4).ToString("yyyy-M-dd");
                 settingsModel.Description = "4-day";
+                settingsModel.AltDescription = "last 4 days";
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 4;
@@ -144,6 +143,7 @@ namespace FMBot.Bot.Services
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, threeDays);
                 var dateString = DateTime.Today.AddDays(-3).ToString("yyyy-M-dd");
                 settingsModel.Description = "3-day";
+                settingsModel.AltDescription = "last 3 days";
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 3;
@@ -153,6 +153,7 @@ namespace FMBot.Bot.Services
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, twoDays);
                 var dateString = DateTime.Today.AddDays(-2).ToString("yyyy-M-dd");
                 settingsModel.Description = "2-day";
+                settingsModel.AltDescription = "last 2 days";
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 2;
@@ -162,6 +163,7 @@ namespace FMBot.Bot.Services
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, oneDay);
                 var dateString = DateTime.Today.AddDays(-1).ToString("yyyy-M-dd");
                 settingsModel.Description = "1-day";
+                settingsModel.AltDescription = "last 24 hours";
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 1;
@@ -178,6 +180,7 @@ namespace FMBot.Bot.Services
                     settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;
                     settingsModel.ChartTimePeriod = ChartTimePeriod.AllTime;
                     settingsModel.Description = "Overall";
+                    settingsModel.AltDescription = "all-time";
                     settingsModel.UrlParameter = "date_preset=ALL";
                     settingsModel.ApiParameter = "overall";
                 }
@@ -186,6 +189,7 @@ namespace FMBot.Bot.Services
                     settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;
                     settingsModel.ChartTimePeriod = ChartTimePeriod.Weekly;
                     settingsModel.Description = "Weekly";
+                    settingsModel.AltDescription = "last week";
                     settingsModel.UrlParameter = "date_preset=LAST_7_DAYS";
                     settingsModel.ApiParameter = "7day";
                     settingsModel.PlayDays = 7;
@@ -317,6 +321,7 @@ namespace FMBot.Bot.Services
 
                     settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName }, true);
                     settingsModel.UserNameLastFm = lfmUserName;
+                    settingsModel.DiscordUserName = lfmUserName;
                     settingsModel.DifferentUser = true;
 
                     return settingsModel;
