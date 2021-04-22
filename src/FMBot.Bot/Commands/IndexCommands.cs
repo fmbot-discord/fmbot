@@ -80,7 +80,7 @@ namespace FMBot.Bot.Commands
                     await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
 
                     var reply = $"✅ Server index has been updated.\n\n" +
-                                $"This server has a total {registeredUserCount} registered .fmbot members.";
+                                $"This server has a total of {registeredUserCount} registered .fmbot members.";
 
                     await indexMessage.ModifyAsync(m =>
                     {
@@ -99,7 +99,7 @@ namespace FMBot.Bot.Commands
                     await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow.AddDays(-1));
                     var reply =
                         "✅ Server has been indexed successfully.\n\n" +
-                        $"This server has a total {registeredUserCount} registered .fmbot members.";
+                        $"This server has a total of {registeredUserCount} registered .fmbot members.";
 
                     await indexMessage.ModifyAsync(m =>
                     {
@@ -122,7 +122,7 @@ namespace FMBot.Bot.Commands
                 {
                     m.Embed = new EmbedBuilder()
                         .WithDescription($"✅ Server index has been updated.\n\n" +
-                                         $"This server has a total {registeredUserCount} registered .fmbot members.")
+                                         $"This server has a total of {registeredUserCount} registered .fmbot members.")
                         .WithColor(DiscordConstants.SuccessColorGreen)
                         .Build();
                 });
