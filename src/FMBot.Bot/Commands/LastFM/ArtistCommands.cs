@@ -478,8 +478,6 @@ namespace FMBot.Bot.Commands.LastFM
 
             var artistInfo = artistCall.Content.Artist;
 
-            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-
             var reply =
                 $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has `{artistInfo.Stats.Userplaycount}` {StringExtensions.GetPlaysString(artistInfo.Stats.Userplaycount)} for **{artistInfo.Name.FilterOutMentions()}**";
 
