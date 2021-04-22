@@ -742,7 +742,12 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (album.Image.Any() && album.Image != null)
                 {
-                    this._embed.WithThumbnailUrl(album.Image.First(f => f.Size == "mega").Text.ToString());
+                    var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
+                        searchResult.Name, searchResult.Artist, album.Image.First(f => f.Size == "mega").Text.ToString());
+                    if (safeForChannel)
+                    {
+                        this._embed.WithThumbnailUrl(album.Image.First(f => f.Size == "mega").Text.ToString());
+                    }
                 }
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
@@ -901,7 +906,12 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (album.Image.Any() && album.Image != null)
                 {
-                    this._embed.WithThumbnailUrl(album.Image.First(f => f.Size == "mega").Text.ToString());
+                    var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
+                        searchResult.Name, searchResult.Artist, album.Image.First(f => f.Size == "mega").Text.ToString());
+                    if (safeForChannel)
+                    {
+                        this._embed.WithThumbnailUrl(album.Image.First(f => f.Size == "mega").Text.ToString());
+                    }
                 }
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
