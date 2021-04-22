@@ -237,11 +237,13 @@ namespace FMBot.Bot.Commands
                 if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-3))
                 {
                     var recentlyUpdatedText =
-                        $"Your cached playcounts have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). " +
-                        $"Note that this also happens automatically for most commands.";
+                        $"Your cached playcounts have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). \n\n" +
+                        $"Any commands that require updating will also update your playcount automatically.\n\n" +
+                        $"Note that updating will not fix Spotify connection issues to Last.fm, especially since .fmbot is not affiliated with Last.fm. " +
+                        $"[*More info here..*](https://fmbot.xyz/faq/#commands-are-showing-the-wrong-songs-its-not-showing-what-i-listen-to-on-spotify)";
 
-                    await ReplyAsync(recentlyUpdatedText);
-
+                    this._embed.WithDescription(recentlyUpdatedText);
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
                     return;
                 }
@@ -266,7 +268,9 @@ namespace FMBot.Bot.Commands
                     {
                         var newEmbed =
                             new EmbedBuilder()
-                                .WithDescription("No new scrobbles found since last update")
+                                .WithDescription("No new scrobbles found since last update\n\n" +
+                                                 $"Note that updating will not fix Spotify connection issues to Last.fm, especially since .fmbot is not affiliated with Last.fm.  " +
+                                                 $"[*More info here..*](https://fmbot.xyz/faq/#commands-are-showing-the-wrong-songs-its-not-showing-what-i-listen-to-on-spotify)")
                                 .WithColor(DiscordConstants.SuccessColorGreen);
 
                         if (userSettings.LastUpdated.HasValue)
@@ -288,8 +292,9 @@ namespace FMBot.Bot.Commands
                         {
                             updatedDescription +=
                                 $"\n\n" +
-                                $"Please note that updating only updates your cached playcounts and that users are also automatically updated.\n" +
-                                $"Updating will not fix Spotify connection issues to Last.fm, especially since .fmbot is not affiliated with Last.fm. [*More info here..*](https://fmbot.xyz/faq/#commands-are-showing-the-wrong-songs-its-not-showing-what-i-listen-to-on-spotify)";
+                                $"Any commands that require updating will also update your playcount automatically.\n\n" +
+                                $"Note that updating will not fix Spotify connection issues to Last.fm, especially since .fmbot is not affiliated with Last.fm. " +
+                                $"[*More info here..*](https://fmbot.xyz/faq/#commands-are-showing-the-wrong-songs-its-not-showing-what-i-listen-to-on-spotify)";
                         }
 
                         m.Embed = new EmbedBuilder()
