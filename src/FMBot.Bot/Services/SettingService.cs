@@ -30,18 +30,18 @@ namespace FMBot.Bot.Services
             options ??= "";
             settingsModel.NewSearchValue = options;
 
-            var oneDay = new[] { "1-day", "1day", "day1", "1d", "today" };
-            var twoDays = new[] { "2-day", "2day", "day2", "2d" };
-            var threeDays = new[] { "3-day", "3day", "day3", "3d" };
-            var fourDays = new[] { "4-day", "4day", "day4", "4d" };
-            var fiveDays = new[] { "5-day", "5day", "day5", "5d" };
-            var sixDays = new[] { "6-day", "6day", "day6", "6d" };
+            var oneDay = new[] { "1-day", "1day", "1d", "today" };
+            var twoDays = new[] { "2-day", "2day", "2d" };
+            var threeDays = new[] { "3-day", "3day", "3d" };
+            var fourDays = new[] { "4-day", "4day", "4d" };
+            var fiveDays = new[] { "5-day", "5day", "5d" };
+            var sixDays = new[] { "6-day", "6day", "6d" };
             var weekly = new[] { "weekly", "week", "w", "7d" };
             var monthly = new[] { "monthly", "month", "m", "1m", "30d" };
             var quarterly = new[] { "quarterly", "quarter", "q", "3m", "90d" };
             var halfYearly = new[] { "half-yearly", "halfyearly", "half", "h", "6m", "180d" };
             var yearly = new[] { "yearly", "year", "y", "12m", "365d", "1y" };
-            var allTime = new[] { "overall", "alltime", "all-time", "a", "o", "at" };
+            var allTime = new[] { "overall", "alltime", "all-time", "all", "a", "o", "at" };
 
             if (Contains(options, weekly))
             {
