@@ -1168,7 +1168,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var randomHintNumber = rnd.Next(0, 5);
                 if (randomHintNumber == 1)
                 {
-                    footer += $"View specific album listeners with {prfx}whoknowstrack\n";
+                    footer += $"View specific track listeners with {prfx}whoknowstrack\n";
                 }
                 else if (randomHintNumber == 2)
                 {
