@@ -45,30 +45,42 @@ namespace FMBot.Bot.Services
 
         public async Task ScrobbleGroovy(SocketUserMessage msg, ICommandContext context)
         {
-            if (msg.Embeds == null || msg.Embeds.Any(a => a.Title == null || a.Title != "Now playing"))
+            try
             {
-                return;
+                if (context.Guild == null ||
+                    msg.Embeds == null ||
+                    !msg.Embeds.Any() ||
+                    msg.Embeds.Any(a => a.Title == null) ||
+                    msg.Embeds.Any(a => a.Title != "Now playing") ||
+                    msg.Embeds.Any(a => a.Description == null))
+                {
+                    return;
+                }
+
+                var usersInChannel = await GetUsersInVoice(context, msg.Author.Id);
+
+                if (usersInChannel == null || usersInChannel.Count == 0)
+                {
+                    Log.Information("Skipped scrobble for {guildName} / {guildId} because no found listeners", context.Guild.Name, context.Guild.Id);
+                    return;
+                }
+
+                var trackResult = await this._trackService.GetTrackFromLink(msg.Embeds.First().Description);
+
+                if (trackResult == null)
+                {
+                    Log.Information("Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
+                    return;
+                }
+
+                _ = RegisterTrack(usersInChannel, trackResult);
+
+                _ = SendScrobbleMessage(context, trackResult, usersInChannel.Count);
             }
-
-            var usersInChannel = await GetUsersInVoice(context, msg.Author.Id);
-
-            if (usersInChannel == null || usersInChannel.Count == 0)
+            catch (Exception e)
             {
-                Log.Information("Skipped scrobble for {guildName} / {guildId} because no found listeners", context.Guild.Name, context.Guild.Id);
-                return;
+                Log.Error("Error in music bot scrobbler", e);
             }
-
-            var trackResult = await this._trackService.GetTrackFromLink(msg.Embeds.First().Description);
-
-            if (trackResult == null)
-            {
-                Log.Information("Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
-                return;
-            }
-
-            _ = RegisterTrack(usersInChannel, trackResult);
-
-            _ = SendScrobbleMessage(context, trackResult, usersInChannel.Count);
         }
 
         private async Task SendScrobbleMessage(ICommandContext context, TrackSearchResult trackResult,
@@ -110,7 +122,7 @@ namespace FMBot.Bot.Services
                 await this._lastFmService.ScrobbleAsync(user, result.ArtistName, result.TrackName, result.AlbumName);
                 Statistics.LastfmScrobbles.Inc();
             }
-        } 
+        }
 
         private async Task<List<User>> GetUsersInVoice(ICommandContext context, ulong botId)
         {

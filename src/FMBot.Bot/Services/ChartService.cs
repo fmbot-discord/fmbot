@@ -12,6 +12,7 @@ using FMBot.Domain;
 using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using SkiaSharp;
 
 namespace FMBot.Bot.Services
@@ -44,7 +45,7 @@ namespace FMBot.Bot.Services
 
 
                         var fileName = localAlbumId + ".png";
-                        var localPath = FMBotUtil.GlobalVars.CacheFolder + fileName;
+                        var localPath = Path.Combine(FMBotUtil.GlobalVars.CacheFolder + fileName);
 
                         if (File.Exists(localPath))
                         {
@@ -69,9 +70,10 @@ namespace FMBot.Bot.Services
 
                                     bitmap = SKBitmap.Decode(stream);
                                 }
-                                catch
+                                catch (Exception e)
                                 {
-                                    bitmap = SKBitmap.Decode(FMBotUtil.GlobalVars.ImageFolder + "loading-error.png");
+                                    Log.Error("Error while loading image for generated chart", e);
+                                    bitmap = SKBitmap.Decode(Path.Combine(FMBotUtil.GlobalVars.ImageFolder + "loading-error.png"));
                                     validImage = false;
                                 }
 
