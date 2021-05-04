@@ -967,7 +967,7 @@ namespace FMBot.Bot.Commands.LastFM
                     var description = new StringBuilder();
                     for (var i = 0; i < albumTracks.Count; i++)
                     {
-                        var albumTrack = albumTracks[i];
+                        var albumTrack = albumTracks.OrderBy(o => o.Rank).ToList()[i];
                         var albumTrackWithPlaycount = albumTracksPlaycounts.FirstOrDefault(f => f.Name.ToLower() == albumTrack.TrackName.ToLower());
 
                         if (albumTrackWithPlaycount != null)
