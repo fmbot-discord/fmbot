@@ -440,7 +440,7 @@ namespace FMBot.LastFM.Services
             return artistCall;
         }
 
-        public async Task<Response<AlbumInfoLfmResponse>> GetAlbumInfoAsync(string artistName, string albumName, string username = null)
+        public async Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, string username = null)
         {
             var queryParams = new Dictionary<string, string>
             {
@@ -450,8 +450,57 @@ namespace FMBot.LastFM.Services
             };
 
             var albumCall = await this._lastFmApi.CallApiAsync<AlbumInfoLfmResponse>(queryParams, Call.AlbumInfo);
+            if (albumCall.Success)
+            {
+                var linkToFilter = $"<a href=\"{albumCall.Content.Album.Url.Replace("https", "http")}\">Read more on Last.fm</a>";
+                var filteredSummary = albumCall.Content.Album.Wiki?.Summary.Replace(linkToFilter, "");
 
-            return albumCall;
+                return new Response<AlbumInfo>
+                {
+                    Success = true,
+                    Content = new AlbumInfo
+                    {
+                        AlbumName = albumCall.Content.Album.Name,
+                        AlbumUrl = Uri.IsWellFormedUriString(albumCall.Content.Album.Url, UriKind.Absolute)
+                            ? albumCall.Content.Album.Url
+                            : null,
+                        ArtistName = albumCall.Content.Album.Artist,
+                        Mbid = !string.IsNullOrWhiteSpace(albumCall.Content.Album.Mbid)
+                            ? Guid.Parse(albumCall.Content.Album.Mbid)
+                            : null,
+                        Description = filteredSummary,
+                        TotalPlaycount = albumCall.Content.Album.Playcount,
+                        TotalListeners = albumCall.Content.Album.Listeners,
+                        TotalDuration = albumCall.Content.Album.Tracks?.Track?.Sum(s => s.Duration),
+                        UserPlaycount = albumCall.Content.Album.Userplaycount,
+                        AlbumTracks = albumCall.Content.Album.Tracks?.Track?.Select(s => new AlbumTrack
+                        {
+                            ArtistName = s.Artist?.Name,
+                            TrackName = s.Name,
+                            TrackUrl = s.Url,
+                            Duration = s.Duration,
+                            Rank = s.Attr?.Rank
+                        }).ToList(),
+                        Tags = albumCall.Content.Album.Tags?.Tag?.Select(s => new Tag
+                        {
+                            Name = s.Name,
+                            Url = s.Url
+                        }).ToList(),
+                        AlbumCoverUrl = albumCall.Content.Album.Image?.FirstOrDefault(a => a.Size == "extralarge") != null &&
+                                        !albumCall.Content.Album.Image.First(a => a.Size == "extralarge").Text
+                                            .Contains(Constants.LastFmNonExistentImageName)
+                            ? albumCall.Content.Album.Image?.First(a => a.Size == "extralarge").Text
+                            : null,
+                    }
+                };
+            }
+
+            return new Response<AlbumInfo>
+            {
+                Success = false,
+                Error = albumCall.Error,
+                Message = albumCall.Message
+            };
         }
 
         public async Task<PageResponse<LastAlbum>> SearchAlbumAsync(string searchQuery)
@@ -471,11 +520,11 @@ namespace FMBot.LastFM.Services
             return album?.Content?.Images;
         }
 
-        public static async Task<Bitmap> GetAlbumImageAsBitmapAsync(Uri largestImageSize)
+        public static async Task<Bitmap> GetAlbumImageAsBitmapAsync(string imageUrl)
         {
             try
             {
-                var request = WebRequest.Create(largestImageSize);
+                var request = WebRequest.Create(imageUrl);
                 using var response = await request.GetResponseAsync();
                 await using var responseStream = response.GetResponseStream();
 

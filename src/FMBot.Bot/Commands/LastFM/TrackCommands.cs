@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
-using Discord.API.Rest;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
@@ -24,7 +23,6 @@ using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
 using FMBot.Persistence.Domain.Models;
 using Interactivity;
-using Interactivity.Confirmation;
 using Interactivity.Pagination;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -1225,13 +1223,13 @@ namespace FMBot.Bot.Commands.LastFM
                     lastFmUserName = otherUserUsername;
                 }
 
-                var trackResult = recentScrobbles.Content.RecentTracks[0];
-                var trackInfo = await this._lastFmRepository.GetTrackInfoAsync(trackResult.TrackName, trackResult.ArtistName,
+                var lastPlayedTrack = recentScrobbles.Content.RecentTracks[0];
+                var trackInfo = await this._lastFmRepository.GetTrackInfoAsync(lastPlayedTrack.TrackName, lastPlayedTrack.ArtistName,
                     lastFmUserName);
 
                 if (trackInfo == null)
                 {
-                    this._embed.WithDescription($"Last.fm did not return a result for **{trackResult.TrackName}** by **{trackResult.ArtistName}**.\n" +
+                    this._embed.WithDescription($"Last.fm did not return a result for **{lastPlayedTrack.TrackName}** by **{lastPlayedTrack.ArtistName}**.\n" +
                                                 $"This usually happens on recently released tracks. Please try again later.");
 
                     await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());

@@ -11,7 +11,7 @@ namespace FMBot.LastFM.Domain.Models
     {
         public string Name { get; set; }
         public string Artist { get; set; }
-        public Guid Mbid { get; set; }
+        public string Mbid { get; set; }
         public string Url { get; set; }
         public ImageLfm[] Image { get; set; }
         public long Listeners { get; set; }

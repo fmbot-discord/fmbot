@@ -209,46 +209,44 @@ namespace FMBot.Bot.Services.ThirdParty
 
                 return trackToAdd;
             }
-            else
+
+            if (dbTrack.Artist == null)
             {
-                if (dbTrack.Artist == null)
+                var artist = await db.Artists
+                    .AsQueryable()
+                    .FirstOrDefaultAsync(f => f.Name.ToLower() == trackInfo.ArtistName.ToLower());
+
+                if (artist != null)
                 {
-                    var artist = await db.Artists
-                        .AsQueryable()
-                        .FirstOrDefaultAsync(f => f.Name.ToLower() == trackInfo.ArtistName.ToLower());
-
-                    if (artist != null)
-                    {
-                        dbTrack.Artist = artist;
-                        db.Entry(dbTrack).State = EntityState.Modified;
-                    }
-                }
-                if (string.IsNullOrEmpty(dbTrack.SpotifyId) && dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddMonths(-2))
-                {
-                    var spotifyTrack = await GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
-
-                    if (spotifyTrack != null)
-                    {
-                        dbTrack.SpotifyId = spotifyTrack.Id;
-                        dbTrack.DurationMs = spotifyTrack.DurationMs;
-
-                        var audioFeatures = await GetAudioFeaturesFromSpotify(spotifyTrack.Id);
-
-                        if (audioFeatures != null)
-                        {
-                            dbTrack.Key = audioFeatures.Key;
-                            dbTrack.Tempo = audioFeatures.Tempo;
-                        }
-                    }
-
-                    dbTrack.SpotifyLastUpdated = DateTime.UtcNow;
+                    dbTrack.Artist = artist;
                     db.Entry(dbTrack).State = EntityState.Modified;
                 }
-
-                await db.SaveChangesAsync();
-
-                return dbTrack;
             }
+            if (string.IsNullOrEmpty(dbTrack.SpotifyId) && dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddMonths(-2))
+            {
+                var spotifyTrack = await GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
+
+                if (spotifyTrack != null)
+                {
+                    dbTrack.SpotifyId = spotifyTrack.Id;
+                    dbTrack.DurationMs = spotifyTrack.DurationMs;
+
+                    var audioFeatures = await GetAudioFeaturesFromSpotify(spotifyTrack.Id);
+
+                    if (audioFeatures != null)
+                    {
+                        dbTrack.Key = audioFeatures.Key;
+                        dbTrack.Tempo = audioFeatures.Tempo;
+                    }
+                }
+
+                dbTrack.SpotifyLastUpdated = DateTime.UtcNow;
+                db.Entry(dbTrack).State = EntityState.Modified;
+            }
+
+            await db.SaveChangesAsync();
+
+            return dbTrack;
         }
 
         private static async Task<FullTrack> GetTrackFromSpotify(string trackName, string artistName)
