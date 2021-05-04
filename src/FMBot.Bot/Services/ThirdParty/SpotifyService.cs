@@ -11,7 +11,6 @@ using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using SpotifyAPI.Web;
-using SpotifyAPI.Web.Auth;
 using Artist = FMBot.Persistence.Domain.Models.Artist;
 
 namespace FMBot.Bot.Services.ThirdParty
@@ -165,6 +164,7 @@ namespace FMBot.Bot.Services.ThirdParty
         {
             await using var db = this._contextFactory.CreateDbContext();
             var dbTrack = await db.Tracks
+                .Include(i => i.Artist)
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.Name.ToLower() == trackInfo.TrackName.ToLower() && f.ArtistName.ToLower() == trackInfo.ArtistName.ToLower());
 
@@ -254,7 +254,7 @@ namespace FMBot.Bot.Services.ThirdParty
             //Create the auth object
             var spotify = GetSpotifyWebApi();
 
-            var searchRequest = new SearchRequest(SearchRequest.Types.Track, $"{trackName} {artistName}");
+            var searchRequest = new SearchRequest(SearchRequest.Types.Track, $"track:{trackName} artist:{artistName}");
 
             var results = await spotify.Search.Item(searchRequest);
 
@@ -273,12 +273,43 @@ namespace FMBot.Bot.Services.ThirdParty
             return null;
         }
 
+        private static async Task<FullAlbum> GetAlbumFromSpotify(string albumName, string artistName)
+        {
+            //Create the auth object
+            var spotify = GetSpotifyWebApi();
+
+            var searchRequest = new SearchRequest(SearchRequest.Types.Album, $"{albumName} {artistName}");
+
+            var results = await spotify.Search.Item(searchRequest);
+
+            if (results.Albums.Items?.Any() == true)
+            {
+                var spotifyAlbum = results.Albums.Items
+                    .FirstOrDefault(w => w.Name.ToLower() == albumName.ToLower() && w.Artists.Select(s => s.Name.ToLower()).Contains(artistName.ToLower()));
+
+                if (spotifyAlbum != null)
+                {
+                    return await GetAlbumById(spotifyAlbum.Id);
+                }
+            }
+
+            return null;
+        }
+
         public static async Task<FullTrack> GetTrackById(string spotifyId)
         {
             //Create the auth object
             var spotify = GetSpotifyWebApi();
 
             return await spotify.Tracks.Get(spotifyId);
+        }
+
+        public static async Task<FullAlbum> GetAlbumById(string spotifyId)
+        {
+            //Create the auth object
+            var spotify = GetSpotifyWebApi();
+
+            return await spotify.Albums.Get(spotifyId);
         }
 
         private static async Task<TrackAudioFeatures> GetAudioFeaturesFromSpotify(string spotifyId)
@@ -289,6 +320,133 @@ namespace FMBot.Bot.Services.ThirdParty
             var result = await spotify.Tracks.GetAudioFeatures(spotifyId);
 
             return result;
+        }
+
+        public async Task<Album> GetOrStoreSpotifyAlbumAsync(AlbumInfo albumInfo)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var dbAlbum = await db.Albums
+                .Include(i => i.Artist)
+                .Include(i => i.Tracks)
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.Name.ToLower() == albumInfo.AlbumName.ToLower() && f.ArtistName.ToLower() == albumInfo.ArtistName.ToLower());
+
+            if (dbAlbum == null)
+            {
+                var albumToAdd = new Album
+                {
+                    Name = albumInfo.AlbumName,
+                    ArtistName = albumInfo.ArtistName,
+                    LastFmUrl = albumInfo.AlbumUrl
+                };
+
+                var artist = await db.Artists
+                    .AsQueryable()
+                    .FirstOrDefaultAsync(f => f.Name.ToLower() == albumInfo.ArtistName.ToLower());
+
+                if (artist != null)
+                {
+                    albumToAdd.Artist = artist;
+                }
+
+                var spotifyAlbum = await GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
+
+                if (spotifyAlbum != null)
+                {
+                    albumToAdd.SpotifyId = spotifyAlbum.Id;
+                    albumToAdd.Label = spotifyAlbum.Label;
+                    albumToAdd.Popularity = spotifyAlbum.Popularity;
+                    albumToAdd.SpotifyImageUrl = spotifyAlbum.Images.OrderByDescending(o => o.Height).First().Url;
+
+                    var dbTracks = await GetOrStoreDbTracks(spotifyAlbum.Tracks.Items, albumInfo, albumToAdd, db);
+                    if (dbTracks.Any())
+                    {
+                        albumToAdd.Tracks = dbTracks;
+                    }
+                }
+
+                albumToAdd.SpotifyImageDate = DateTime.UtcNow;
+
+                await db.Albums.AddAsync(albumToAdd);
+                await db.SaveChangesAsync();
+
+                return albumToAdd;
+            }
+            if (dbAlbum.Artist == null)
+            {
+                var artist = await db.Artists
+                    .AsQueryable()
+                    .FirstOrDefaultAsync(f => f.Name.ToLower() == albumInfo.ArtistName.ToLower());
+
+                if (artist != null)
+                {
+                    dbAlbum.Artist = artist;
+                    db.Entry(dbAlbum).State = EntityState.Modified;
+                    await db.SaveChangesAsync();
+                }
+            }
+            if (string.IsNullOrEmpty(dbAlbum.SpotifyId) && dbAlbum.SpotifyImageDate < DateTime.UtcNow.AddMonths(-2))
+            {
+                var spotifyAlbum = await GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
+
+                if (spotifyAlbum != null)
+                {
+                    dbAlbum.SpotifyId = spotifyAlbum.Id;
+                    dbAlbum.Label = spotifyAlbum.Label;
+                    dbAlbum.Popularity = spotifyAlbum.Popularity;
+                    dbAlbum.SpotifyImageUrl = spotifyAlbum.Images.OrderByDescending(o => o.Height).First().Url;
+
+                    var dbTracks = await GetOrStoreDbTracks(spotifyAlbum.Tracks.Items, albumInfo, dbAlbum, db);
+                    if (dbTracks.Any())
+                    {
+                        dbAlbum.Tracks = dbTracks;
+                    }
+                }
+
+                dbAlbum.SpotifyImageDate = DateTime.UtcNow;
+
+                db.Entry(dbAlbum).State = EntityState.Modified;
+
+                await db.SaveChangesAsync();
+            }
+
+            return dbAlbum;
+        }
+
+        private async Task<List<Track>> GetOrStoreDbTracks(List<SimpleTrack> simpleTracks, AlbumInfo albumInfo,
+            Album album, FMBotDbContext fmBotDbContext)
+        {
+            var dbTracks = new List<Track>();
+            foreach (var track in simpleTracks.OrderBy(o => o.TrackNumber))
+            {
+                var dbTrack = await fmBotDbContext.Tracks
+                    .AsQueryable()
+                    .FirstOrDefaultAsync(f => f.Name.ToLower() == track.Name.ToLower() &&
+                                                                       f.ArtistName.ToLower() == albumInfo.ArtistName.ToLower());
+
+                if (dbTrack != null)
+                {
+                    dbTracks.Add(dbTrack);
+                }
+                else
+                {
+                    var trackToAdd = new Track
+                    {
+                        Name = track.Name,
+                        AlbumName = albumInfo.AlbumName,
+                        DurationMs = track.DurationMs,
+                        SpotifyId = track.Id,
+                        ArtistName = albumInfo.ArtistName,
+                        SpotifyLastUpdated = DateTime.UtcNow,
+                        Album = album
+                    };
+
+                    await fmBotDbContext.Tracks.AddAsync(trackToAdd);
+                    dbTracks.Add(trackToAdd);
+                }
+            }
+
+            return dbTracks;
         }
 
         private static SpotifyClient GetSpotifyWebApi()

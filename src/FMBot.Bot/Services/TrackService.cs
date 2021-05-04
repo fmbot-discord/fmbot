@@ -6,11 +6,17 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Dapper;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services.ThirdParty;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Services;
+using FMBot.Persistence.Domain.Models;
 using Microsoft.AspNetCore.WebUtilities;
+using Npgsql;
 using Serilog;
+using SpotifyAPI.Web;
 
 namespace FMBot.Bot.Services
 {
@@ -140,5 +146,26 @@ namespace FMBot.Bot.Services
             public string status { get; set; }
             public CleanedUpResponseTrack data { get; set; }
         }
+
+        public async Task<List<UserTrack>> GetAlbumTracksPlaycounts(List<AlbumTrack> albumTracks, int userId, string artistName)
+        {
+            const string sql = "SELECT user_track_id, user_id, name, artist_name, playcount"+
+               " FROM public.user_tracks where user_id = @userId AND UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT));";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var userTracks = (await connection.QueryAsync<UserTrack>(sql, new
+            {
+                userId,
+                artistName
+            })).ToList();
+
+            return userTracks
+                .Where(w => albumTracks.Select(s => s.TrackName.ToLower()).Contains(w.Name.ToLower()))
+                .ToList();
+        }
+
     }
 }

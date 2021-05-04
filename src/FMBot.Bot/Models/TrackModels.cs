@@ -47,6 +47,15 @@ namespace FMBot.Bot.Models
         public PrivacyLevel PrivacyLevel { get; set; }
     }
 
+    public class AlbumTrackDto
+    {
+        public string TrackName { get; set; }
+
+        public string ArtistName { get; set; }
+
+        public int Playcount { get; set; }
+    }
+
 
     public class TrackSearchResult
     {

@@ -391,23 +391,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var artistInfo = artistCall.Content.Artist;
 
-            var timeSettings = SettingService.GetTimePeriod(artistValues, ChartTimePeriod.AllTime);
-
-            var timeDescription = timeSettings.Description;
-            List<UserAlbum> topAlbums;
-            switch (timeSettings.ChartTimePeriod)
-            {
-                //case ChartTimePeriod.Weekly:
-                //    topAlbums = await this._playService.GetTopAlbumsForArtist(user.UserId, 7, artistInfo.Name);
-                //    break;
-                //case ChartTimePeriod.Monthly:
-                //    topAlbums = await this._playService.GetTopAlbumsForArtist(user.UserId, 31, artistInfo.Name);
-                //    break;
-                default:
-                    timeDescription = "alltime";
-                    topAlbums = await this._artistsService.GetTopAlbumsForArtist(user.UserId, artistInfo.Name);
-                    break;
-            }
+            var topAlbums = await this._artistsService.GetTopAlbumsForArtist(user.UserId, artistInfo.Name);
 
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
             if (topAlbums.Count == 0)
