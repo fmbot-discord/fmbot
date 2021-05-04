@@ -960,16 +960,21 @@ namespace FMBot.Bot.Commands.LastFM
                 if (albumTracksPlaycounts.Count == 0)
                 {
                     this._embed.WithDescription(
-                        $"{userTitle} has no scrobbles for this artist or their scrobbles have no album associated with them.");
+                        $"{userTitle} has no scrobbles for this album, their scrobbles have no album associated with them or neither Spotify and Last.fm know what tracks are in this album.");
                 }
                 else
                 {
                     var description = new StringBuilder();
-                    for (var i = 0; i < albumTracksPlaycounts.Count; i++)
+                    for (var i = 0; i < albumTracks.Count; i++)
                     {
-                        var albumTrack = albumTracksPlaycounts[i];
+                        var albumTrack = albumTracks[i];
+                        var albumTrackWithPlaycount = albumTracksPlaycounts.FirstOrDefault(f => f.Name.ToLower() == albumTrack.TrackName.ToLower());
 
-                        description.AppendLine($"{i + 1}. **{albumTrack.Name}** ({albumTrack.Playcount} plays)");
+                        if (albumTrackWithPlaycount != null)
+                        {
+                            description.AppendLine($"{i + 1}. **{albumTrackWithPlaycount.Name}** ({albumTrackWithPlaycount.Playcount} plays)");
+                        }
+
                     }
 
                     this._embed.WithDescription(description.ToString());
@@ -980,7 +985,7 @@ namespace FMBot.Bot.Commands.LastFM
                     this._embed.WithFooter(footer);
                 }
 
-                this._embed.WithTitle($"Your track playcounts for '{albumName}'");
+                this._embed.WithTitle($"Track playcounts for {albumName}");
 
                 var url = $"{Constants.LastFMUserUrl}{user.UserNameLastFM}/library/music/" +
                           $"{UrlEncoder.Default.Encode(album.Content.ArtistName)}/" +
