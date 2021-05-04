@@ -83,7 +83,6 @@ namespace FMBot.Bot.Services
             Log.Information("Logging into Discord");
             await this._client.LoginAsync(TokenType.Bot, discordToken);
 
-
             Log.Information("Setting Discord user status");
             await this._client.SetStatusAsync(UserStatus.DoNotDisturb);
 

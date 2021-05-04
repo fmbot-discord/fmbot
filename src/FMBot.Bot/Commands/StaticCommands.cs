@@ -236,21 +236,29 @@ namespace FMBot.Bot.Commands
 
             var supporters = await this._supporterService.GetAllVisibleSupporters();
 
-            var description = new StringBuilder();
+            var supporterLists = supporters.ChunkBy(12);
 
-            foreach (var supporter in supporters)
+            foreach (var supporterList in supporterLists)
             {
-                var type = supporter.SupporterType switch
-                {
-                    SupporterType.Guild => " (server)",
-                    SupporterType.User => "",
-                    SupporterType.Company => " (business)",
-                    _ => ""
-                };
+                var supporterString = new StringBuilder();
 
-                description.AppendLine($" - **{supporter.Name}** {type}");
+                foreach (var supporter in supporterList)
+                {
+                    var type = supporter.SupporterType switch
+                    {
+                        SupporterType.Guild => " (server)",
+                        SupporterType.User => "",
+                        SupporterType.Company => " (business)",
+                        _ => ""
+                    };
+
+                    supporterString.AppendLine($" - **{supporter.Name}** {type}");
+                }
+
+                this._embed.AddField("Supporters", supporterString.ToString(), true);
             }
 
+            var description = new StringBuilder();
             description.AppendLine();
             description.AppendLine("Thank you to all our supporters that help keep .fmbot running. If you would like to be on this list too, please check out our [OpenCollective](https://opencollective.com/fmbot). \n" +
                                    "For all information on donating to .fmbot you can check out `.fmdonate`.");
