@@ -365,7 +365,7 @@ namespace FMBot.Bot.Commands.LastFM
                     lastFmUserName = otherUserUsername;
                 }
 
-                var albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(album.Name, album.ArtistName,
+                var albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(album.ArtistName, album.Name,
                     lastFmUserName);
                 return albumInfo;
             }
