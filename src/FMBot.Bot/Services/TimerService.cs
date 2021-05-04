@@ -282,12 +282,6 @@ namespace FMBot.Bot.Services
                         return;
                     }
 
-                    if (DateTime.UtcNow.Hour <= 11 || DateTime.UtcNow.Hour >= 14)
-                    {
-                        Log.Information("Skipping index timer - peak hours detected");
-                        return;
-                    }
-
                     if (PublicProperties.IssuesAtLastFm)
                     {
                         Log.Information("Skipping index timer - issues at Last.fm");
