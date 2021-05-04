@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Api;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.Persistence.Domain.Models;
@@ -20,13 +21,13 @@ using Tag = FMBot.Domain.Models.Tag;
 
 namespace FMBot.LastFM.Services
 {
-    public class LastFmService
+    public class LastFmRepository
     {
         private readonly LastfmClient _lastFmClient;
         private readonly IMemoryCache _cache;
         private readonly ILastfmApi _lastFmApi;
 
-        public LastFmService(IConfigurationRoot configuration, ILastfmApi lastFmApi, IMemoryCache cache)
+        public LastFmRepository(IConfigurationRoot configuration, ILastfmApi lastFmApi, IMemoryCache cache)
         {
             this._lastFmClient =
                 new LastfmClient(configuration.GetSection("LastFm:Key").Value, configuration.GetSection("LastFm:Secret").Value);

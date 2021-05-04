@@ -27,7 +27,7 @@ namespace FMBot.Bot.Services
         private readonly Timer _internalStatsTimer;
         private readonly Timer _userUpdateTimer;
         private readonly Timer _userIndexTimer;
-        private readonly LastFmService _lastFMService;
+        private readonly LastFmRepository _lastFmRepository;
         private readonly UserService _userService;
         private readonly CensorService _censorService;
         private readonly IUpdateService _updateService;
@@ -42,7 +42,7 @@ namespace FMBot.Bot.Services
         private int _featuredUserId = 0;
 
         public TimerService(DiscordShardedClient client,
-            LastFmService lastFmService,
+            LastFmRepository lastFmRepository,
             IUpdateService updateService,
             UserService userService,
             IIndexService indexService,
@@ -51,7 +51,7 @@ namespace FMBot.Bot.Services
             WebhookService webhookService)
         {
             this._client = client;
-            this._lastFMService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._userService = userService;
             this._indexService = indexService;
             this._censorService = censorService;
@@ -98,7 +98,7 @@ namespace FMBot.Bot.Services
                         {
                             // Recent listens
                             case FeaturedMode.RecentPlays:
-                                var tracks = await this._lastFMService.GetRecentScrobblesAsync(user.UserNameLastFM, 50);
+                                var tracks = await this._lastFmRepository.GetRecentScrobblesAsync(user.UserNameLastFM, 50);
 
                                 if (!tracks.Success || !tracks.Content.Any())
                                 {
@@ -122,7 +122,7 @@ namespace FMBot.Bot.Services
                                     goto case FeaturedMode.TopAlbumsMonthly;
                                 }
 
-                                var albumImages = await this._lastFMService.GetAlbumImagesAsync(trackToFeature.ArtistName, trackToFeature.AlbumName);
+                                var albumImages = await this._lastFmRepository.GetAlbumImagesAsync(trackToFeature.ArtistName, trackToFeature.AlbumName);
 
                                 this._featuredTrackString = $"[{trackToFeature.AlbumName}]({trackToFeature.Url}) \n" +
                                                    $"by [{trackToFeature.ArtistName}]({trackToFeature.ArtistUrl}) \n \n" +
@@ -157,13 +157,13 @@ namespace FMBot.Bot.Services
                                         break;
                                 }
 
-                                var albums = await this._lastFMService.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 10);
+                                var albums = await this._lastFmRepository.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 10);
 
                                 if (!albums.Any())
                                 {
                                     Log.Information($"Featured: User {user.UserNameLastFM} had no albums, switching to different user.");
                                     user = await this._userService.GetRandomUserAsync();
-                                    albums = await this._lastFMService.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 15);
+                                    albums = await this._lastFmRepository.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 15);
                                 }
 
                                 var albumList = albums
@@ -176,7 +176,7 @@ namespace FMBot.Bot.Services
                                 {
                                     var currentAlbum = albumList[i];
 
-                                    var albumImage = await this._lastFMService.GetAlbumImagesAsync(currentAlbum.ArtistName, currentAlbum.Name);
+                                    var albumImage = await this._lastFmRepository.GetAlbumImagesAsync(currentAlbum.ArtistName, currentAlbum.Name);
 
                                     this._featuredTrackString = $"[{currentAlbum.Name}]({currentAlbum.Url}) \n" +
                                                         $"by {currentAlbum.ArtistName} \n \n" +
@@ -394,7 +394,7 @@ namespace FMBot.Bot.Services
 
                 if (botUser?.SessionKeyLastFm != null)
                 {
-                    await this._lastFMService.ScrobbleAsync(botUser, track.ArtistName, track.Name, track.AlbumName);
+                    await this._lastFmRepository.ScrobbleAsync(botUser, track.ArtistName, track.Name, track.AlbumName);
                 }
 
                 var botType = BotTypeExtension.GetBotType(client.CurrentUser.Id);

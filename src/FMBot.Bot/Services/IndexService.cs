@@ -24,22 +24,22 @@ namespace FMBot.Bot.Services
     public class IndexService : IIndexService
     {
         private readonly IUserIndexQueue _userIndexQueue;
-        private readonly GlobalIndexService _globalIndexService;
+        private readonly IndexRepository _indexRepository;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
         private readonly IMemoryCache _cache;
 
-        public IndexService(IUserIndexQueue userIndexQueue, GlobalIndexService indexService, IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
+        public IndexService(IUserIndexQueue userIndexQueue, IndexRepository indexRepository, IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
         {
             this._userIndexQueue = userIndexQueue;
             this._userIndexQueue.UsersToIndex.SubscribeAsync(OnNextAsync);
-            this._globalIndexService = indexService;
+            this._indexRepository = indexRepository;
             this._contextFactory = contextFactory;
             this._cache = cache;
         }
 
         private async Task OnNextAsync(IndexUserQueueItem user)
         {
-            await this._globalIndexService.IndexUser(user);
+            await this._indexRepository.IndexUser(user);
         }
 
         public void AddUsersToIndexQueue(IReadOnlyList<User> users)
@@ -53,7 +53,7 @@ namespace FMBot.Bot.Services
 
             if (!this._cache.TryGetValue($"index-started-{user.UserId}", out bool _))
             {
-                await this._globalIndexService.IndexUser(new IndexUserQueueItem(user.UserId));
+                await this._indexRepository.IndexUser(new IndexUserQueueItem(user.UserId));
             }
             else
             {

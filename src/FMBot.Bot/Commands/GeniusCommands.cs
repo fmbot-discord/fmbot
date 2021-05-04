@@ -21,7 +21,7 @@ namespace FMBot.Bot.Commands
     {
         private readonly GeniusService _geniusService;
         private readonly IPrefixService _prefixService;
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
         private readonly UserService _userService;
 
         private readonly EmbedBuilder _embed;
@@ -30,12 +30,12 @@ namespace FMBot.Bot.Commands
         public GeniusCommands(
                 GeniusService geniusService,
                 IPrefixService prefixService,
-                LastFmService lastFmService,
+                LastFmRepository lastFmRepository,
                 UserService userService
             )
         {
             this._geniusService = geniusService;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._prefixService = prefixService;
             this._userService = userService;
 
@@ -73,7 +73,7 @@ namespace FMBot.Bot.Commands
                         sessionKey = userSettings.SessionKeyLastFm;
                     }
 
-                    var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                    var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
                     if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                     {

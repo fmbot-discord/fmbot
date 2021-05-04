@@ -24,7 +24,7 @@ namespace FMBot.Bot.Commands
         private readonly FriendsService _friendsService;
         private readonly GuildService _guildService;
         private readonly IPrefixService _prefixService;
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
         private readonly UserService _userService;
 
         private readonly EmbedAuthorBuilder _embedAuthor;
@@ -35,13 +35,13 @@ namespace FMBot.Bot.Commands
                 FriendsService friendsService,
                 GuildService guildService,
                 IPrefixService prefixService,
-                LastFmService lastFmService,
+                LastFmRepository lastFmRepository,
                 UserService userService
             )
         {
             this._friendsService = friendsService;
             this._guildService = guildService;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._prefixService = prefixService;
             this._userService = userService;
 
@@ -107,7 +107,7 @@ namespace FMBot.Bot.Commands
                         }
                     }
                     
-                    var tracks = await this._lastFmService.GetRecentTracksAsync(friendUsername, useCache: true, sessionKey: sessionKey);
+                    var tracks = await this._lastFmRepository.GetRecentTracksAsync(friendUsername, useCache: true, sessionKey: sessionKey);
 
                     string track;
                     if (!tracks.Success || tracks.Content == null)
@@ -121,7 +121,7 @@ namespace FMBot.Bot.Commands
                     else
                     {
                         var lastTrack = tracks.Content.RecentTracks[0];
-                        track = LastFmService.TrackToOneLinedString(lastTrack);
+                        track = LastFmRepository.TrackToOneLinedString(lastTrack);
                         if (lastTrack.NowPlaying)
                         {
                             track += " 🎶";
@@ -206,7 +206,7 @@ namespace FMBot.Bot.Commands
                     if (!existingFriends.Where(w => w.LastFMUserName != null).Select(s => s.LastFMUserName.ToLower()).Contains(friendUsername.ToLower()) &&
                         !existingFriends.Where(w => w.FriendUser != null).Select(s => s.FriendUser.UserNameLastFM.ToLower()).Contains(friendUsername.ToLower()))
                     {
-                        if (await this._lastFmService.LastFmUserExistsAsync(friendUsername))
+                        if (await this._lastFmRepository.LastFmUserExistsAsync(friendUsername))
                         {
                             await this._friendsService.AddLastFmFriendAsync(this.Context.User.Id, friendUsername, guildUser?.UserId);
                             addedFriendsList.Add(friendUsername);

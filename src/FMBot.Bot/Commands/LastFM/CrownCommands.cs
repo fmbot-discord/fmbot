@@ -29,7 +29,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly AdminService _adminService;
         private readonly CrownService _crownService;
         private readonly GuildService _guildService;
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
         private readonly IPrefixService _prefixService;
         private readonly SettingService _settingService;
         private readonly UserService _userService;
@@ -45,7 +45,7 @@ namespace FMBot.Bot.Commands.LastFM
             IPrefixService prefixService,
             UserService userService,
             AdminService adminService,
-            LastFmService lastFmService,
+            LastFmRepository lastFmRepository,
             SettingService settingService,
             InteractivityService interactivity)
         {
@@ -54,7 +54,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._prefixService = prefixService;
             this._userService = userService;
             this._adminService = adminService;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._settingService = settingService;
             this.Interactivity = interactivity;
 
@@ -216,7 +216,7 @@ namespace FMBot.Bot.Commands.LastFM
                     sessionKey = userSettings.SessionKeyLastFm;
                 }
 
-                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true, sessionKey: sessionKey);
+                var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true, sessionKey: sessionKey);
 
                 if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                 {

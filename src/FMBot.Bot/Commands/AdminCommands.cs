@@ -25,7 +25,7 @@ namespace FMBot.Bot.Commands
         private readonly CensorService _censorService;
         private readonly GuildService _guildService;
         private readonly TimerService _timer;
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
 
         private readonly EmbedBuilder _embed;
 
@@ -34,13 +34,13 @@ namespace FMBot.Bot.Commands
                 CensorService censorService,
                 GuildService guildService,
                 TimerService timer,
-                LastFmService lastFmService)
+                LastFmRepository lastFmRepository)
         {
             this._adminService = adminService;
             this._censorService = censorService;
             this._guildService = guildService;
             this._timer = timer;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
 
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFmColorRed);
@@ -274,7 +274,7 @@ namespace FMBot.Bot.Commands
                 var dateAgo = DateTime.UtcNow.AddDays(-365);
                 var timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
 
-                var count = await this._lastFmService.GetScrobbleCountFromDateAsync(user, timeFrom);
+                var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(user, timeFrom);
 
                 var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
                 var totalDays = (DateTime.UtcNow - age).TotalDays;

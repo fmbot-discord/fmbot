@@ -22,13 +22,13 @@ namespace FMBot.Bot.Services
     {
         private readonly IMemoryCache _cache;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
 
-        public UserService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmService lastFmService)
+        public UserService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository)
         {
             this._cache = cache;
             this._contextFactory = contextFactory;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
         }
 
         public async Task<bool> UserRegisteredAsync(IUser discordUser)
@@ -480,7 +480,7 @@ namespace FMBot.Bot.Services
 
                 if (user != null)
                 {
-                    if (!await this._lastFmService.LastFmUserExistsAsync(user.UserNameLastFM))
+                    if (!await this._lastFmRepository.LastFmUserExistsAsync(user.UserNameLastFM))
                     {
                         await DeleteUser(user.UserId);
                         Log.Information("DeleteInactiveUsers: User {userNameLastFm} | {userId} | {discordUserId} deleted", user.UserNameLastFM, user.UserId, user.DiscordUserId);

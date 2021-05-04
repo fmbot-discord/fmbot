@@ -27,7 +27,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly GuildService _guildService;
         private readonly IChartService _chartService;
         private readonly IPrefixService _prefixService;
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
         private readonly SettingService _settingService;
         private readonly SupporterService _supporterService;
         private readonly UserService _userService;
@@ -43,7 +43,7 @@ namespace FMBot.Bot.Commands.LastFM
                 GuildService guildService,
                 IChartService chartService,
                 IPrefixService prefixService,
-                LastFmService lastFmService,
+                LastFmRepository lastFmRepository,
                 SettingService settingService,
                 SupporterService supporterService,
                 UserService userService
@@ -51,7 +51,7 @@ namespace FMBot.Bot.Commands.LastFM
         {
             this._chartService = chartService;
             this._guildService = guildService;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._prefixService = prefixService;
             this._settingService = settingService;
             this._supporterService = supporterService;
@@ -154,7 +154,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var imagesToRequest = chartSettings.ImagesNeeded + extraAlbums;
 
-                var albums = await this._lastFmService.GetTopAlbumsAsync(userSettings.UserNameLastFm, chartSettings.TimeSpan, imagesToRequest);
+                var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, chartSettings.TimeSpan, imagesToRequest);
 
                 if (albums.Count() < chartSettings.ImagesNeeded)
                 {
@@ -195,7 +195,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var embedDescription = "";
 
                 this._embed.WithAuthor(this._embedAuthor);
-                var userInfo = await this._lastFmService.GetUserInfoAsync(userSettings.UserNameLastFm);
+                var userInfo = await this._lastFmRepository.GetUserInfoAsync(userSettings.UserNameLastFm);
 
                 var playCount = userInfo.Content.Playcount;
                 this._embedFooter.Text = $"{userSettings.UserNameLastFm} has {playCount} scrobbles.";

@@ -18,10 +18,10 @@ using Serilog;
 
 namespace FMBot.LastFM.Services
 {
-    public class GlobalUpdateService
+    public class UpdateRepository
 
     {
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
 
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
@@ -29,11 +29,11 @@ namespace FMBot.LastFM.Services
 
         private readonly IMemoryCache _cache;
 
-        public GlobalUpdateService(IConfigurationRoot configuration, IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmService lastFmService)
+        public UpdateRepository(IConfigurationRoot configuration, IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository)
         {
             this._cache = cache;
             this._contextFactory = contextFactory;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._connectionString = configuration.GetSection("Database:ConnectionString").Value;
         }
 
@@ -73,7 +73,7 @@ namespace FMBot.LastFM.Services
                 totalPlaycountCorrect = true;
             }
 
-            var recentTracks = await this._lastFmService.GetRecentTracksAsync(
+            var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(
                 user.UserNameLastFM,
                 count,
                 true,
@@ -455,7 +455,7 @@ namespace FMBot.LastFM.Services
             {
                 if (!user.TotalPlaycount.HasValue)
                 {
-                    var recentTracks = await this._lastFmService.GetRecentTracksAsync(
+                    var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(
                         user.UserNameLastFM,
                         count: 1,
                         useCache: false,

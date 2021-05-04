@@ -16,13 +16,13 @@ namespace FMBot.Bot.Services
 {
     public class TrackService
     {
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
 
         private readonly HttpClient _client;
 
-        public TrackService(IHttpClientFactory httpClientFactory, LastFmService lastFmService)
+        public TrackService(IHttpClientFactory httpClientFactory, LastFmRepository lastFmRepository)
         {
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._client = httpClientFactory.CreateClient();
         }
 
@@ -62,7 +62,7 @@ namespace FMBot.Bot.Services
 
                 if (!description.Contains("-"))
                 {
-                    var lastFmResult = await this._lastFmService.SearchTrackAsync(description);
+                    var lastFmResult = await this._lastFmRepository.SearchTrackAsync(description);
                     if (lastFmResult.Success && lastFmResult.Content.Any())
                     {
                         var result = lastFmResult.Content.First();
@@ -107,7 +107,7 @@ namespace FMBot.Bot.Services
                         }
                     }
 
-                    var trackLfm = await this._lastFmService.GetTrackInfoAsync(trackName, artistName);
+                    var trackLfm = await this._lastFmRepository.GetTrackInfoAsync(trackName, artistName);
 
                     if (trackLfm.Success)
                     {

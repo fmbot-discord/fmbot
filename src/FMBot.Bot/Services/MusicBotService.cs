@@ -26,17 +26,17 @@ namespace FMBot.Bot.Services
     public class MusicBotService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
         private readonly TrackService _trackService;
         private readonly IMemoryCache _cache;
         private readonly IPrefixService _prefixService;
 
         private InteractivityService Interactivity { get; }
 
-        public MusicBotService(IDbContextFactory<FMBotDbContext> contextFactory, LastFmService lastFmService, TrackService trackService, IMemoryCache cache, InteractivityService interactivity, IPrefixService prefixService)
+        public MusicBotService(IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository, TrackService trackService, IMemoryCache cache, InteractivityService interactivity, IPrefixService prefixService)
         {
             this._contextFactory = contextFactory;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._trackService = trackService;
             this._cache = cache;
             this.Interactivity = interactivity;
@@ -111,7 +111,7 @@ namespace FMBot.Bot.Services
 
         private async Task RegisterTrackForUser(User user, TrackSearchResult result)
         {
-            await this._lastFmService.SetNowPlayingAsync(user, result.ArtistName, result.TrackName, result.AlbumName);
+            await this._lastFmRepository.SetNowPlayingAsync(user, result.ArtistName, result.TrackName, result.AlbumName);
             Statistics.LastfmNowPlayingUpdates.Inc();
 
             this._cache.Set($"now-playing-{user.UserId}", true, TimeSpan.FromSeconds(59));
@@ -119,7 +119,7 @@ namespace FMBot.Bot.Services
 
             if (!this._cache.TryGetValue($"now-playing-{user.UserId}", out bool _))
             {
-                await this._lastFmService.ScrobbleAsync(user, result.ArtistName, result.TrackName, result.AlbumName);
+                await this._lastFmRepository.ScrobbleAsync(user, result.ArtistName, result.TrackName, result.AlbumName);
                 Statistics.LastfmScrobbles.Inc();
             }
         }

@@ -19,6 +19,7 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Api;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
@@ -40,7 +41,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         private readonly IPrefixService _prefixService;
         private readonly IUpdateService _updateService;
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
         private readonly PlayService _playService;
         private readonly SettingService _settingService;
         private readonly SpotifyService _spotifyService;
@@ -63,7 +64,7 @@ namespace FMBot.Bot.Commands.LastFM
                 ILastfmApi lastFmApi,
                 IPrefixService prefixService,
                 IUpdateService updateService,
-                LastFmService lastFmService,
+                LastFmRepository lastFmRepository,
                 PlayService playService,
                 SettingService settingService,
                 SpotifyService spotifyService,
@@ -78,7 +79,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._guildService = guildService;
             this._indexService = indexService;
             this._lastFmApi = lastFmApi;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._playService = playService;
             this._prefixService = prefixService;
             this._settingService = settingService;
@@ -208,7 +209,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (artistInfo.Tags.Tag.Any())
             {
-                var tags = LastFmService.TagsToLinkedString(artistInfo.Tags);
+                var tags = LastFmRepository.TagsToLinkedString(artistInfo.Tags);
 
                 this._embed.AddField("Tags", tags);
             }
@@ -564,7 +565,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var description = "";
                 if (!timeSettings.UsePlays)
                 {
-                    var artists = await this._lastFmService.GetTopArtistsAsync(userSettings.UserNameLastFm,
+                    var artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm,
                         timeSettings.LastStatsTimeSpan, amount);
 
                     if (artists == null || !artists.Any() || !artists.Content.Any())
@@ -777,7 +778,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     string alternativeLastFmUserName;
 
-                    if (await this._lastFmService.LastFmUserExistsAsync(user))
+                    if (await this._lastFmRepository.LastFmUserExistsAsync(user))
                     {
                         alternativeLastFmUserName = user;
                     }
@@ -822,8 +823,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 tasteSettings.OtherUserLastFmUsername = lastfmToCompare;
 
-                var ownArtistsTask = this._lastFmService.GetTopArtistsAsync(ownLastFmUsername, timeType.LastStatsTimeSpan, 1000);
-                var otherArtistsTask = this._lastFmService.GetTopArtistsAsync(lastfmToCompare, timeType.LastStatsTimeSpan, 1000);
+                var ownArtistsTask = this._lastFmRepository.GetTopArtistsAsync(ownLastFmUsername, timeType.LastStatsTimeSpan, 1000);
+                var otherArtistsTask = this._lastFmRepository.GetTopArtistsAsync(lastfmToCompare, timeType.LastStatsTimeSpan, 1000);
 
                 var ownArtists = await ownArtistsTask;
                 var otherArtists = await otherArtistsTask;
@@ -1485,7 +1486,7 @@ namespace FMBot.Bot.Commands.LastFM
                     if (userSettings.LastIndexed == null)
                     {
                         _ = this._indexService.IndexUser(userSettings);
-                        recentTracks = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true, sessionKey: sessionKey);
+                        recentTracks = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true, sessionKey: sessionKey);
                     }
                     else
                     {
@@ -1494,7 +1495,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else
                 {
-                    recentTracks = await this._lastFmService.GetRecentTracksAsync(alternativeLastFmUserName, useCache: true);
+                    recentTracks = await this._lastFmRepository.GetRecentTracksAsync(alternativeLastFmUserName, useCache: true);
                 }
 
                 userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);

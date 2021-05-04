@@ -16,7 +16,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 
-namespace FMBot.LastFM.Services
+namespace FMBot.LastFM.Api
 {
     public class LastfmApi : ILastfmApi
     {

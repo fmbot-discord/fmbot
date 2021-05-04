@@ -21,14 +21,14 @@ namespace FMBot.Bot.Services.WhoKnows
     public class CrownService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-        private readonly LastFmService _lastFmService;
-        private readonly GlobalUpdateService _globalUpdateService;
+        private readonly LastFmRepository _lastFmRepository;
+        private readonly UpdateRepository _updateRepository;
 
-        public CrownService(IDbContextFactory<FMBotDbContext> contextFactory, LastFmService lastFmService, GlobalUpdateService globalUpdateService)
+        public CrownService(IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository, UpdateRepository updateRepository)
         {
             this._contextFactory = contextFactory;
-            this._lastFmService = lastFmService;
-            this._globalUpdateService = globalUpdateService;
+            this._lastFmRepository = lastFmRepository;
+            this._updateRepository = updateRepository;
         }
 
         public async Task<CrownModel> GetAndUpdateCrownForArtist(IList<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
@@ -286,16 +286,16 @@ namespace FMBot.Bot.Services.WhoKnows
 
         private async Task<long?> GetCurrentPlaycountForUser(string artistName, string lastFmUserName, int userId)
         {
-            var artist = await this._lastFmService.GetArtistInfoAsync(artistName, lastFmUserName);
+            var artist = await this._lastFmRepository.GetArtistInfoAsync(artistName, lastFmUserName);
 
-            await this._globalUpdateService.UpdateUser(new UpdateUserQueueItem(userId, 0));
+            await this._updateRepository.UpdateUser(new UpdateUserQueueItem(userId, 0));
 
             if (!artist.Success || !artist.Content.Artist.Stats.Userplaycount.HasValue)
             {
                 return null;
             }
 
-            await this._globalUpdateService.CorrectUserArtistPlaycount(userId, artistName,
+            await this._updateRepository.CorrectUserArtistPlaycount(userId, artistName,
                 artist.Content.Artist.Stats.Userplaycount.Value);
 
             return artist.Content.Artist.Stats.Userplaycount;

@@ -21,7 +21,7 @@ namespace FMBot.Bot.Commands
     {
         private readonly EmbedBuilder _embed;
 
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
         private readonly SpotifyService _spotifyService;
 
         private readonly UserService _userService;
@@ -30,14 +30,14 @@ namespace FMBot.Bot.Commands
 
         public SpotifyCommands(
             IPrefixService prefixService,
-            LastFmService lastFmService,
+            LastFmRepository lastFmRepository,
             UserService userService,
             SpotifyService spotifyService)
         {
             this._prefixService = prefixService;
             this._userService = userService;
             this._spotifyService = spotifyService;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFmColorRed);
         }
@@ -68,7 +68,7 @@ namespace FMBot.Bot.Commands
                         sessionKey = userSettings.SessionKeyLastFm;
                     }
 
-                    var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                    var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
                     if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                     {
@@ -138,7 +138,7 @@ namespace FMBot.Bot.Commands
                         sessionKey = userSettings.SessionKeyLastFm;
                     }
 
-                    var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                    var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
                     if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                     {
@@ -207,7 +207,7 @@ namespace FMBot.Bot.Commands
                         sessionKey = userSettings.SessionKeyLastFm;
                     }
 
-                    var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                    var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
                     if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                     {

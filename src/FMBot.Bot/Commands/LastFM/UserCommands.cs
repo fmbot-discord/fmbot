@@ -31,7 +31,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly GuildService _guildService;
         private readonly IIndexService _indexService;
         private readonly IPrefixService _prefixService;
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
         private readonly SettingService _settingService;
         private readonly TimerService _timer;
         private readonly UserService _userService;
@@ -48,7 +48,7 @@ namespace FMBot.Bot.Commands.LastFM
                 GuildService guildService,
                 IIndexService indexService,
                 IPrefixService prefixService,
-                LastFmService lastFmService,
+                LastFmRepository lastFmRepository,
                 SettingService settingService,
                 TimerService timer,
                 UserService userService,
@@ -57,7 +57,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._friendsService = friendsService;
             this._guildService = guildService;
             this._indexService = indexService;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._prefixService = prefixService;
             this._settingService = settingService;
             this._timer = timer;
@@ -103,7 +103,7 @@ namespace FMBot.Bot.Commands.LastFM
                     $"To see stats for other .fmbot users, use {prfx}stats '@user'");
                 this._embed.WithFooter(this._embedFooter);
 
-                var userInfo = await this._lastFmService.GetFullUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
+                var userInfo = await this._lastFmRepository.GetFullUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
 
                 var userImages = userInfo.Image;
                 var userAvatar = userImages.FirstOrDefault(f => f.Size == "extralarge");
@@ -322,7 +322,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             lastFmUserName = lastFmUserName.Replace("'", "");
-            if (!await this._lastFmService.LastFmUserExistsAsync(lastFmUserName))
+            if (!await this._lastFmRepository.LastFmUserExistsAsync(lastFmUserName))
             {
                 var reply = $"Last.fm user `{lastFmUserName}` could not be found. Please check if the name you entered is correct.";
                 await ReplyAsync(reply.FilterOutMentions());
@@ -528,7 +528,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var token = await this._lastFmService.GetAuthToken();
+            var token = await this._lastFmRepository.GetAuthToken();
 
             // TODO: When our Discord library supports follow up messages for interactions, add slash command support.
             var replyString =
@@ -621,7 +621,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 await Task.Delay(loginDelay);
 
-                var authSession = await this._lastFmService.GetAuthSession(token);
+                var authSession = await this._lastFmRepository.GetAuthSession(token);
 
                 if (authSession.Success)
                 {

@@ -18,6 +18,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Api;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Services;
@@ -38,7 +39,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly ILastfmApi _lastFmApi;
         private readonly IPrefixService _prefixService;
         private readonly IUpdateService _updateService;
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
         private readonly PlayService _playService;
         private readonly SettingService _settingService;
         private readonly UserService _userService;
@@ -58,7 +59,7 @@ namespace FMBot.Bot.Commands.LastFM
                 ILastfmApi lastFmApi,
                 IPrefixService prefixService,
                 IUpdateService updateService,
-                LastFmService lastFmService,
+                LastFmRepository lastFmRepository,
                 PlayService playService,
                 SettingService settingService,
                 UserService userService,
@@ -70,7 +71,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._censorService = censorService;
             this._guildService = guildService;
             this._indexService = indexService;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._lastFmApi = lastFmApi;
             this._playService = playService;
             this._prefixService = prefixService;
@@ -169,7 +170,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (albumInfo.Tags.Tag.Any())
             {
-                var tags = LastFmService.TagsToLinkedString(albumInfo.Tags);
+                var tags = LastFmRepository.TagsToLinkedString(albumInfo.Tags);
 
                 this._embed.AddField("Tags", tags);
             }
@@ -275,7 +276,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var albumInfo = await this._lastFmService.GetAlbumImagesAsync(searchResult.Artist, searchResult.Name);
+            var albumInfo = await this._lastFmRepository.GetAlbumImagesAsync(searchResult.Artist, searchResult.Name);
 
             if (albumInfo == null || albumInfo.Largest == null)
             {
@@ -287,7 +288,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var image = await LastFmService.GetAlbumImageAsBitmapAsync(albumInfo.Largest);
+            var image = await LastFmRepository.GetAlbumImageAsBitmapAsync(albumInfo.Largest);
             if (image == null)
             {
                 this._embed.WithDescription("Sorry, something went wrong while getting album cover for this album: \n" +
@@ -337,7 +338,7 @@ namespace FMBot.Bot.Commands.LastFM
                     return new AlbumSearchModel(true, searchValue.Split(" | ")[0], null, searchValue.Split(" | ")[1], null);
                 }
 
-                var result = await this._lastFmService.SearchAlbumAsync(searchValue);
+                var result = await this._lastFmRepository.SearchAlbumAsync(searchValue);
                 if (result.Success && result.Content.Any())
                 {
                     var album = result.Content[0];
@@ -367,7 +368,7 @@ namespace FMBot.Bot.Commands.LastFM
                 sessionKey = userSettings.SessionKeyLastFm;
             }
 
-            var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true, sessionKey: sessionKey);
+            var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true, sessionKey: sessionKey);
 
             if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
             {
@@ -444,7 +445,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var description = "";
                 if (!timeSettings.UsePlays)
                 {
-                    var albums = await this._lastFmService.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings.LastStatsTimeSpan, amount);
+                    var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings.LastStatsTimeSpan, amount);
                     if (albums == null || !albums.Any() || !albums.Content.Any())
                     {
                         this._embed.NoScrobblesFoundErrorResponse(albums?.Status, prfx, userSettings.UserNameLastFm);

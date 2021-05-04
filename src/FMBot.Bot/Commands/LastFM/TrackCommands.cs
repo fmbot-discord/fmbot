@@ -36,7 +36,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly IIndexService _indexService;
         private readonly IPrefixService _prefixService;
         private readonly IUpdateService _updateService;
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
         private readonly PlayService _playService;
         private readonly SettingService _settingService;
         private readonly SpotifyService _spotifyService;
@@ -59,7 +59,7 @@ namespace FMBot.Bot.Commands.LastFM
                 IIndexService indexService,
                 IPrefixService prefixService,
                 IUpdateService updateService,
-                LastFmService lastFmService,
+                LastFmRepository lastFmRepository,
                 PlayService playService,
                 SettingService settingService,
                 SpotifyService spotifyService,
@@ -71,7 +71,7 @@ namespace FMBot.Bot.Commands.LastFM
         {
             this._guildService = guildService;
             this._indexService = indexService;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._playService = playService;
             this._prefixService = prefixService;
             this._settingService = settingService;
@@ -173,7 +173,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (track.Content.Tags != null && track.Content.Tags.Any())
             {
-                var tags = LastFmService.TagsToLinkedString(track.Content.Tags);
+                var tags = LastFmRepository.TagsToLinkedString(track.Content.Tags);
 
                 this._embed.AddField("Tags", tags);
             }
@@ -269,16 +269,16 @@ namespace FMBot.Bot.Commands.LastFM
             if (track.Content.Loved)
             {
                 this._embed.WithTitle($"❤️ Track already loved");
-                this._embed.WithDescription(LastFmService.ResponseTrackToLinkedString(track.Content));
+                this._embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(track.Content));
             }
             else
             {
-                var trackLoved = await this._lastFmService.LoveTrackAsync(userSettings, track.Content.ArtistName, track.Content.TrackName);
+                var trackLoved = await this._lastFmRepository.LoveTrackAsync(userSettings, track.Content.ArtistName, track.Content.TrackName);
 
                 if (trackLoved)
                 {
                     this._embed.WithTitle($"❤️ Loved track for {userTitle}");
-                    this._embed.WithDescription(LastFmService.ResponseTrackToLinkedString(track.Content));
+                    this._embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(track.Content));
                 }
                 else
                 {
@@ -324,16 +324,16 @@ namespace FMBot.Bot.Commands.LastFM
             if (!track.Content.Loved)
             {
                 this._embed.WithTitle($"💔 Track wasn't loved");
-                this._embed.WithDescription(LastFmService.ResponseTrackToLinkedString(track.Content));
+                this._embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(track.Content));
             }
             else
             {
-                var trackLoved = await this._lastFmService.UnLoveTrackAsync(userSettings, track.Content.ArtistName, track.Content.TrackName);
+                var trackLoved = await this._lastFmRepository.UnLoveTrackAsync(userSettings, track.Content.ArtistName, track.Content.TrackName);
 
                 if (trackLoved)
                 {
                     this._embed.WithTitle($"💔 Unloved track for {userTitle}");
-                    this._embed.WithDescription(LastFmService.ResponseTrackToLinkedString(track.Content));
+                    this._embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(track.Content));
                 }
                 else
                 {
@@ -388,7 +388,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 amount = paginationEnabled ? 100 : amount;
 
-                var recentTracks = await this._lastFmService.GetLovedTracksAsync(userSettings.UserNameLastFm, amount, sessionKey: sessionKey);
+                var recentTracks = await this._lastFmRepository.GetLovedTracksAsync(userSettings.UserNameLastFm, amount, sessionKey: sessionKey);
 
                 if (!recentTracks.Content.RecentTracks.Any())
                 {
@@ -441,7 +441,7 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                     }
 
-                    var trackString = LastFmService.TrackToOneLinedLinkedString(track);
+                    var trackString = LastFmRepository.TrackToOneLinedLinkedString(track);
 
                     description += $"`{recentTracks.Content.TotalAmount - i}` - {trackString}\n";
 
@@ -547,13 +547,13 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
-            var trackScrobbled = await this._lastFmService.ScrobbleAsync(userSettings, track.Content.ArtistName, track.Content.TrackName, track.Content.AlbumName);
+            var trackScrobbled = await this._lastFmRepository.ScrobbleAsync(userSettings, track.Content.ArtistName, track.Content.TrackName, track.Content.AlbumName);
 
             if (trackScrobbled.Success && trackScrobbled.Content.Scrobbles.Attr.Accepted > 0)
             {
                 Statistics.LastfmScrobbles.Inc();
                 this._embed.WithTitle($"Scrobbled track for {userTitle}");
-                this._embed.WithDescription(LastFmService.ResponseTrackToLinkedString(track.Content));
+                this._embed.WithDescription(LastFmRepository.ResponseTrackToLinkedString(track.Content));
             }
             else if (trackScrobbled.Success && trackScrobbled.Content.Scrobbles.Attr.Ignored > 0)
             {
@@ -565,7 +565,7 @@ namespace FMBot.Bot.Commands.LastFM
                     description.AppendLine($"Reason: {trackScrobbled.Content.Scrobbles.Scrobble.IgnoredMessage?.Text}");
                 }
 
-                description.AppendLine(LastFmService.ResponseTrackToLinkedString(track.Content));
+                description.AppendLine(LastFmRepository.ResponseTrackToLinkedString(track.Content));
                 this._embed.WithDescription(description.ToString());
             }
             else
@@ -662,7 +662,7 @@ namespace FMBot.Bot.Commands.LastFM
                 Response<TopTracksLfmResponse> topTracks;
                 if (!timeSettings.UsePlays)
                 {
-                    topTracks = await this._lastFmService.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings.ApiParameter, amount);
+                    topTracks = await this._lastFmRepository.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings.ApiParameter, amount);
 
                     if (!topTracks.Success)
                     {
@@ -1206,14 +1206,14 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (trackValues.Contains(" | "))
                 {
-                    var trackInfo = await this._lastFmService.GetTrackInfoAsync(searchValue.Split(" | ")[1], searchValue.Split(" | ")[0],
+                    var trackInfo = await this._lastFmRepository.GetTrackInfoAsync(searchValue.Split(" | ")[1], searchValue.Split(" | ")[0],
                         lastFmUserName);
                     return trackInfo;
                 }
             }
             else
             {
-                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(lastFmUserName, 1, useCache: true, sessionKey: sessionKey);
+                var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, useCache: true, sessionKey: sessionKey);
 
                 if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, lastFmUserName, this.Context))
                 {
@@ -1226,7 +1226,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var trackResult = recentScrobbles.Content.RecentTracks[0];
-                var trackInfo = await this._lastFmService.GetTrackInfoAsync(trackResult.TrackName, trackResult.ArtistName,
+                var trackInfo = await this._lastFmRepository.GetTrackInfoAsync(trackResult.TrackName, trackResult.ArtistName,
                     lastFmUserName);
 
                 if (trackInfo == null)
@@ -1243,7 +1243,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return trackInfo;
             }
 
-            var result = await this._lastFmService.SearchTrackAsync(searchValue);
+            var result = await this._lastFmRepository.SearchTrackAsync(searchValue);
             if (result.Success && result.Content.Any())
             {
                 var track = result.Content[0];
@@ -1253,7 +1253,7 @@ namespace FMBot.Bot.Commands.LastFM
                     lastFmUserName = otherUserUsername;
                 }
 
-                var trackInfo = await this._lastFmService.GetTrackInfoAsync(track.Name, track.ArtistName,
+                var trackInfo = await this._lastFmRepository.GetTrackInfoAsync(track.Name, track.ArtistName,
                     lastFmUserName);
                 return trackInfo;
             }
