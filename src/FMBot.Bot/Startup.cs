@@ -13,7 +13,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.LastFM.Api;
-using FMBot.LastFM.Services;
+using FMBot.LastFM.Repositories;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Youtube.Services;
 using Interactivity;

@@ -19,7 +19,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Tag = FMBot.Domain.Models.Tag;
 
-namespace FMBot.LastFM.Services
+namespace FMBot.LastFM.Repositories
 {
     public class LastFmRepository
     {
@@ -454,6 +454,8 @@ namespace FMBot.LastFM.Services
             {
                 var linkToFilter = $"<a href=\"{albumCall.Content.Album.Url.Replace("https", "http")}\">Read more on Last.fm</a>";
                 var filteredSummary = albumCall.Content.Album.Wiki?.Summary.Replace(linkToFilter, "");
+
+                var allRanks = albumCall.Content.Album.Tracks?.Track?.Select(s => s.Attr.Rank);
 
                 return new Response<AlbumInfo>
                 {

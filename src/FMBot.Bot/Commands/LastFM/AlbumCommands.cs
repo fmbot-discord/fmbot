@@ -22,7 +22,7 @@ using FMBot.Domain.Models;
 using FMBot.LastFM.Api;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
-using FMBot.LastFM.Services;
+using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Interactivity;
 using Interactivity.Pagination;
@@ -908,7 +908,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays track playcounts for a specific album.")]
         [Alias("abt", "abtracks", "albumt")]
         [UsernameSetRequired]
-        public async Task ArtistTracksAsync([Remainder] string albumValues = null)
+        public async Task AlbumTracksAsync([Remainder] string albumValues = null)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -917,14 +917,16 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var album = await this.SearchAlbum(albumValues, user.UserNameLastFM, user.SessionKeyLastFm);
+                var userSettings = await this._settingService.GetUser(albumValues, user, this.Context);
+
+                var album = await this.SearchAlbum(userSettings.NewSearchValue, user.UserNameLastFM, user.SessionKeyLastFm, userSettings.UserNameLastFm);
                 if (album == null)
                 {
                     return;
                 }
 
                 var albumName = $"{album.Content.AlbumName} by {album.Content.ArtistName}";
-                var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+
                 var spotifySource = false;
 
                 List<AlbumTrack> albumTracks;
@@ -955,39 +957,66 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                 }
 
-                var albumTracksPlaycounts = await this._trackService.GetAlbumTracksPlaycounts(albumTracks, user.UserId, album.Content.ArtistName);
+                var albumTracksPlaycounts = await this._trackService.GetAlbumTracksPlaycounts(albumTracks, userSettings.UserId, album.Content.ArtistName);
 
                 if (albumTracksPlaycounts.Count == 0)
                 {
                     this._embed.WithDescription(
-                        $"{userTitle} has no scrobbles for this album, their scrobbles have no album associated with them or neither Spotify and Last.fm know what tracks are in this album.");
+                        $"{userSettings.DiscordUserName} has no scrobbles for this album, their scrobbles have no album associated with them or neither Spotify and Last.fm know what tracks are in this album.");
                 }
                 else
                 {
                     var description = new StringBuilder();
-                    for (var i = 0; i < albumTracks.Count; i++)
-                    {
-                        var albumTrack = albumTracks.OrderBy(o => o.Rank).ToList()[i];
-                        var albumTrackWithPlaycount = albumTracksPlaycounts.FirstOrDefault(f => f.Name.ToLower() == albumTrack.TrackName.ToLower());
+                    var amountOfDiscs = albumTracks.Count(c => c.Rank == 1) == 0 ? 1 : albumTracks.Count(c => c.Rank == 1);
+                    bool maxTracksReached = false;
 
-                        if (albumTrackWithPlaycount != null)
+                    var i = 0;
+                    for (var disc = 1; disc < amountOfDiscs + 1; disc++)
+                    {
+                        if (i >= 30)
                         {
-                            description.AppendLine($"{i + 1}. **{albumTrackWithPlaycount.Name}** ({albumTrackWithPlaycount.Playcount} plays)");
+                            maxTracksReached = true;
+                            continue;
                         }
 
+                        if (amountOfDiscs > 1)
+                        {
+                            description.AppendLine($"`Disc {disc}`");
+                        }
+
+                        for (; i < albumTracks.Count; i++)
+                        {
+
+                            var albumTrack = albumTracks[i];
+                            var albumTrackWithPlaycount =
+                                albumTracksPlaycounts.FirstOrDefault(f =>
+                                    f.Name.ToLower() == albumTrack.TrackName.ToLower());
+
+                            if (albumTrackWithPlaycount != null)
+                            {
+                                description.AppendLine(
+                                    $"{i + 1}. **{albumTrackWithPlaycount.Name}** ({albumTrackWithPlaycount.Playcount} plays)");
+                            }
+                        }
                     }
 
-                    this._embed.WithDescription(description.ToString());
+                    this._embed.WithDescription(StringExtensions.TruncateLongString(description.ToString(), 2044));
 
                     var footer = spotifySource ? "Album source: Spotify | " : "Album source: Last.fm | ";
-                    footer += $"{userTitle} has {album.Content.UserPlaycount} total scrobbles on this album";
+                    
+                    footer += $"{userSettings.DiscordUserName} has {album.Content.UserPlaycount} total scrobbles on this album";
+
+                    if (maxTracksReached)
+                    {
+                        footer += "\nMax 30 tracks displayed, click on title to view all your tracks on this album.";
+                    }
 
                     this._embed.WithFooter(footer);
                 }
 
                 this._embed.WithTitle($"Track playcounts for {albumName}");
 
-                var url = $"{Constants.LastFMUserUrl}{user.UserNameLastFM}/library/music/" +
+                var url = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/music/" +
                           $"{UrlEncoder.Default.Encode(album.Content.ArtistName)}/" +
                           $"{UrlEncoder.Default.Encode(album.Content.AlbumName)}/";
                 if (Uri.IsWellFormedUriString(url, UriKind.Absolute))

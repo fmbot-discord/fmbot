@@ -6,7 +6,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Types;
-using FMBot.LastFM.Services;
+using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;

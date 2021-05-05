@@ -16,7 +16,7 @@ using Npgsql;
 using PostgreSQLCopyHelper;
 using Serilog;
 
-namespace FMBot.LastFM.Services
+namespace FMBot.LastFM.Repositories
 {
     public class UpdateRepository
 

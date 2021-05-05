@@ -12,7 +12,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Services;
+using FMBot.LastFM.Repositories;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Objects;
 using Serilog;

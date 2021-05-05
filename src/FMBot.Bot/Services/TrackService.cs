@@ -11,7 +11,7 @@ using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Services;
+using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.AspNetCore.WebUtilities;
 using Npgsql;

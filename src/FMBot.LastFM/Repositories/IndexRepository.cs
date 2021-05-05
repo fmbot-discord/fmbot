@@ -17,7 +17,7 @@ using Npgsql;
 using PostgreSQLCopyHelper;
 using Serilog;
 
-namespace FMBot.LastFM.Services
+namespace FMBot.LastFM.Repositories
 {
     public class IndexRepository
     {
@@ -130,7 +130,7 @@ namespace FMBot.LastFM.Services
             var recentPlays = await this._lastFMClient.User.GetRecentScrobbles(
                 user.UserNameLastFM,
                 count: 1000,
-                from: DateTime.UtcNow.AddDays(-14));
+                @from: DateTime.UtcNow.AddDays(-14));
 
             if (!recentPlays.Success || recentPlays.Content.Count == 0)
             {

@@ -8,7 +8,7 @@ using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Services;
+using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;

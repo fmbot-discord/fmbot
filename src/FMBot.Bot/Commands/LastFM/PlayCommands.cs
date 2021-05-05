@@ -19,7 +19,7 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Types;
-using FMBot.LastFM.Services;
+using FMBot.LastFM.Repositories;
 using Interactivity;
 
 namespace FMBot.Bot.Commands.LastFM

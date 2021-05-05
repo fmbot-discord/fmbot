@@ -10,7 +10,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Services;
+using FMBot.LastFM.Repositories;
 
 namespace FMBot.Bot.Commands
 {

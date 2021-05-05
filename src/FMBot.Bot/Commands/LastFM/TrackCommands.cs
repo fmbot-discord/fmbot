@@ -20,7 +20,7 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
-using FMBot.LastFM.Services;
+using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Interactivity;
 using Interactivity.Pagination;

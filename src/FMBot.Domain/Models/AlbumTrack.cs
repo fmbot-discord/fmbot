@@ -12,5 +12,6 @@ namespace FMBot.Domain.Models
         public long? Duration { get; set; }
 
         public long? Rank { get; set; }
+        public int Disc { get; set; }
     }
 }

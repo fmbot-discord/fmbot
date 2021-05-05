@@ -268,6 +268,7 @@ namespace FMBot.Bot.Services
                     settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
                     settingsModel.SessionKeyLastFm = otherUser.SessionKeyLastFm;
                     settingsModel.UserType = otherUser.UserType;
+                    settingsModel.UserId = otherUser.UserId;
 
                     return settingsModel;
                 }
@@ -295,6 +296,7 @@ namespace FMBot.Bot.Services
                     settingsModel.DiscordUserId = otherUser.DiscordUserId;
                     settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
                     settingsModel.UserType = otherUser.UserType;
+                    settingsModel.UserId = otherUser.UserId;
                 }
 
                 if (option.StartsWith("lfm:") && option.Length > 4)
@@ -315,6 +317,7 @@ namespace FMBot.Bot.Services
                         settingsModel.UserNameLastFm = foundLfmUser.UserNameLastFM;
                         settingsModel.SessionKeyLastFm = foundLfmUser.SessionKeyLastFm;
                         settingsModel.UserType = foundLfmUser.UserType;
+                        settingsModel.UserId = foundLfmUser.UserId;
 
                         return settingsModel;
                     }
