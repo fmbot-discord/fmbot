@@ -971,12 +971,13 @@ namespace FMBot.Bot.Commands.LastFM
                     bool maxTracksReached = false;
 
                     var i = 0;
+                    var tracksDisplayed = 0;
                     for (var disc = 1; disc < amountOfDiscs + 1; disc++)
                     {
-                        if (i >= 30)
+                        if (tracksDisplayed >= 30)
                         {
                             maxTracksReached = true;
-                            continue;
+                            break;
                         }
 
                         if (amountOfDiscs > 1)
@@ -996,6 +997,7 @@ namespace FMBot.Bot.Commands.LastFM
                             {
                                 description.AppendLine(
                                     $"{i + 1}. **{albumTrackWithPlaycount.Name}** ({albumTrackWithPlaycount.Playcount} plays)");
+                                tracksDisplayed++;
                             }
                         }
                     }
