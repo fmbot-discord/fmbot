@@ -68,6 +68,17 @@ namespace FMBot.Bot.Services.ThirdParty
                             artistToAdd.SpotifyImageDate = DateTime.UtcNow;
                             imageUrlToReturn = artistToAdd.SpotifyImageUrl;
                         }
+
+                        if (spotifyArtist.Genres.Any())
+                        {
+                            var genresToAdd = spotifyArtist.Genres.Select(s => new ArtistGenre
+                            {
+                                Artist = artistToAdd,
+                                Name = s
+                            });
+
+                            await db.ArtistGenres.AddRangeAsync(genresToAdd);
+                        }
                     }
 
                     if (!string.Equals(artistNameBeforeCorrect, lastFmArtistInfoLfm.Artist.Name, StringComparison.CurrentCultureIgnoreCase))
@@ -94,7 +105,7 @@ namespace FMBot.Bot.Services.ThirdParty
                         AddAliasToExistingArtist(artistNameBeforeCorrect, dbArtist, db);
                     }
 
-                    if (dbArtist.SpotifyImageUrl == null || dbArtist.SpotifyImageDate < DateTime.UtcNow.AddMonths(-2))
+                    if (dbArtist.SpotifyImageUrl == null || dbArtist.SpotifyImageDate < DateTime.UtcNow.AddDays(-15))
                     {
                         var spotifyArtist = await GetArtistFromSpotify(lastFmArtistInfoLfm.Artist.Name);
 
@@ -102,6 +113,17 @@ namespace FMBot.Bot.Services.ThirdParty
                         {
                             dbArtist.SpotifyImageUrl = spotifyArtist.Images.OrderByDescending(o => o.Height).First().Url;
                             imageUrlToReturn = dbArtist.SpotifyImageUrl;
+                        }
+
+                        if (spotifyArtist != null && spotifyArtist.Genres.Any())
+                        {
+                            var genresToAdd = spotifyArtist.Genres.Select(s => new ArtistGenre
+                            {
+                                Artist = dbArtist,
+                                Name = s
+                            });
+
+                            await db.ArtistGenres.AddRangeAsync(genresToAdd);
                         }
 
                         dbArtist.SpotifyImageDate = DateTime.UtcNow;
