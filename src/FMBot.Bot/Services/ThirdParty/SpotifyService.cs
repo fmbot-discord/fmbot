@@ -41,6 +41,7 @@ namespace FMBot.Bot.Services.ThirdParty
             await using var db = this._contextFactory.CreateDbContext();
             var dbArtist = await db.Artists
                 .Include(i => i.ArtistAliases)
+                .Include(i => i.ArtistGenres)
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.Name.ToLower() == lastFmArtistInfoLfm.Artist.Name.ToLower());
 
@@ -61,6 +62,7 @@ namespace FMBot.Bot.Services.ThirdParty
                     if (spotifyArtist != null)
                     {
                         artistToAdd.SpotifyId = spotifyArtist.Id;
+                        artistToAdd.Popularity = spotifyArtist.Popularity;
 
                         if (spotifyArtist.Images.Any())
                         {
@@ -113,10 +115,16 @@ namespace FMBot.Bot.Services.ThirdParty
                         {
                             dbArtist.SpotifyImageUrl = spotifyArtist.Images.OrderByDescending(o => o.Height).First().Url;
                             imageUrlToReturn = dbArtist.SpotifyImageUrl;
+                            dbArtist.Popularity = spotifyArtist.Popularity;
                         }
 
                         if (spotifyArtist != null && spotifyArtist.Genres.Any())
                         {
+                            if (dbArtist.ArtistGenres != null && dbArtist.ArtistGenres.Any())
+                            {
+                                db.ArtistGenres.RemoveRange(dbArtist.ArtistGenres);
+                            }
+
                             var genresToAdd = spotifyArtist.Genres.Select(s => new ArtistGenre
                             {
                                 Artist = dbArtist,
