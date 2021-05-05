@@ -248,7 +248,7 @@ namespace FMBot.Bot.Services.ThirdParty
 
                 if (artist != null)
                 {
-                    dbTrack.Artist = artist;
+                    dbTrack.ArtistId = artist.Id;
                     db.Entry(dbTrack).State = EntityState.Modified;
                 }
             }
@@ -410,7 +410,7 @@ namespace FMBot.Bot.Services.ThirdParty
 
                 if (artist != null)
                 {
-                    dbAlbum.Artist = artist;
+                    dbAlbum.ArtistId = artist.Id;
                     db.Entry(dbAlbum).State = EntityState.Modified;
                     await db.SaveChangesAsync();
                 }
