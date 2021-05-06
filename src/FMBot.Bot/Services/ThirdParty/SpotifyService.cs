@@ -367,7 +367,8 @@ namespace FMBot.Bot.Services.ThirdParty
                 {
                     Name = albumInfo.AlbumName,
                     ArtistName = albumInfo.ArtistName,
-                    LastFmUrl = albumInfo.AlbumUrl
+                    LastFmUrl = albumInfo.AlbumUrl,
+                    Mbid = albumInfo.Mbid
                 };
 
                 var artist = await db.Artists

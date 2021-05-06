@@ -36,15 +36,6 @@ namespace FMBot.LastFM.Repositories
         }
 
         // Recent scrobbles
-        public async Task<PageResponse<LastTrack>> GetRecentScrobblesAsync(string lastFmUserName, int count = 2)
-        {
-            var recentScrobbles = await this._lastFmClient.User.GetRecentScrobbles(lastFmUserName, null, count: count);
-            Statistics.LastfmApiCalls.Inc();
-
-            return recentScrobbles;
-        }
-
-        // Recent scrobbles
         public async Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false, string sessionKey = null, long? fromUnixTimestamp = null)
         {
             var cacheKey = $"{lastFmUserName}-lastfm-recent-tracks";
@@ -155,7 +146,7 @@ namespace FMBot.LastFM.Repositories
             };
         }
 
-        private RecentTrack LastfmTrackToRecentTrack(RecentTrackLfm recentTrackLfm)
+        private static RecentTrack LastfmTrackToRecentTrack(RecentTrackLfm recentTrackLfm)
         {
             return new()
             {
@@ -272,22 +263,6 @@ namespace FMBot.LastFM.Repositories
         public static string TrackToOneLinedLinkedString(RecentTrack trackLfm)
         {
             return $"**[{trackLfm.TrackName}]({trackLfm.TrackUrl})** by **{trackLfm.ArtistName}**";
-        }
-
-        public static string TagsToLinkedString(TagsLfm tagsLfm)
-        {
-            var tagString = new StringBuilder();
-            for (var i = 0; i < tagsLfm.Tag.Length; i++)
-            {
-                if (i != 0)
-                {
-                    tagString.Append(" - ");
-                }
-                var tag = tagsLfm.Tag[i];
-                tagString.Append($"[{tag.Name}]({tag.Url})");
-            }
-
-            return tagString.ToString();
         }
 
         public static string TagsToLinkedString(List<Tag> tags)

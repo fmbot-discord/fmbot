@@ -98,18 +98,18 @@ namespace FMBot.Bot.Services
                         {
                             // Recent listens
                             case FeaturedMode.RecentPlays:
-                                var tracks = await this._lastFmRepository.GetRecentScrobblesAsync(user.UserNameLastFM, 50);
+                                var tracks = await this._lastFmRepository.GetRecentTracksAsync(user.UserNameLastFM, 50, sessionKey: user.SessionKeyLastFm);
 
-                                if (!tracks.Success || !tracks.Content.Any())
+                                if (!tracks.Success || tracks.Content == null)
                                 {
                                     Log.Information($"Featured: User {user.UserNameLastFM} had no recent tracks, switching to alternative avatar mode");
                                     goto case FeaturedMode.TopAlbumsWeekly;
                                 }
 
-                                LastTrack trackToFeature = null;
-                                for (var j = 0; j < tracks.Content.Count; j++)
+                                RecentTrack trackToFeature = null;
+                                for (var j = 0; j < tracks.Content.RecentTracks.Count; j++)
                                 {
-                                    var track = tracks.Content[j];
+                                    var track = tracks.Content.RecentTracks[j];
                                     if (!string.IsNullOrEmpty(track.AlbumName) && await this._censorService.AlbumIsSafe(track.AlbumName, track.ArtistName))
                                     {
                                         trackToFeature = track;
@@ -124,7 +124,7 @@ namespace FMBot.Bot.Services
 
                                 var albumImages = await this._lastFmRepository.GetAlbumImagesAsync(trackToFeature.ArtistName, trackToFeature.AlbumName);
 
-                                this._featuredTrackString = $"[{trackToFeature.AlbumName}]({trackToFeature.Url}) \n" +
+                                this._featuredTrackString = $"[{trackToFeature.AlbumName}]({trackToFeature.TrackUrl}) \n" +
                                                    $"by [{trackToFeature.ArtistName}]({trackToFeature.ArtistUrl}) \n \n" +
                                                    $"{randomAvatarModeDesc} from {user.UserNameLastFM}";
                                 this._featuredUserId = user.UserId;
@@ -380,7 +380,7 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async void LogFeaturedTrack(DiscordShardedClient client, LastTrack track, int userId, FeaturedMode featuredMode, string description)
+        public async void LogFeaturedTrack(DiscordShardedClient client, RecentTrack track, int userId, FeaturedMode featuredMode, string description)
         {
             try
             {
@@ -388,12 +388,12 @@ namespace FMBot.Bot.Services
 
                 if (botUser?.SessionKeyLastFm != null)
                 {
-                    await this._lastFmRepository.ScrobbleAsync(botUser, track.ArtistName, track.Name, track.AlbumName);
+                    await this._lastFmRepository.ScrobbleAsync(botUser, track.ArtistName, track.TrackName, track.AlbumName);
                 }
 
                 var botType = BotTypeExtension.GetBotType(client.CurrentUser.Id);
 
-                await this._userService.LogFeatured(userId, featuredMode, botType, description, track.ArtistName, track.AlbumName, track.Name);
+                await this._userService.LogFeatured(userId, featuredMode, botType, description, track.ArtistName, track.AlbumName, track.TrackName);
             }
             catch (Exception exception)
             {
