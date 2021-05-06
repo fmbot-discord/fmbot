@@ -827,6 +827,8 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            await this._spotifyService.GetOrStoreTrackAsync(track);
+
             var trackName = $"{track.TrackName} by {track.ArtistName}";
 
             try
