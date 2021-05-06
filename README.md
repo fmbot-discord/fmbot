@@ -10,7 +10,6 @@
   <a href="http://server.fmbot.xyz/"><img src="https://img.shields.io/badge/chat-on%20discord-7289da.svg" alt="Join our server"></a>
   <a href="https://top.gg/bot/356268235697553409"><img src="https://top.gg/api/widget/status/356268235697553409.svg?noavatar=true" alt="Discord bot status"></a>
   <a href="https://top.gg/bot/356268235697553409"><img src="https://top.gg/api/widget/servers/356268235697553409.svg?noavatar=true" alt="Discord bot server amount"></a>
-  <a href="https://www.jetbrains.com/?from=fmbot"><img src="https://img.shields.io/badge/Powered%20by%20JetBrains-gray.svg?logo=resharper" alt="Powered by Resharper"></a>
 </p>
 <hr />
 
@@ -26,3 +25,6 @@ Get them from https://github.com/fmbot-discord/fmbot/releases (Stable) or https:
 <h3>Selfhosting</h3>
 
 Please see https://fmbot.xyz/setup/.
+
+<h3>Thanks</h3>
+Thanks to <a href="https://www.jetbrains.com/?from=fmbot">JetBrains</a> for providing a free license of ReSharper.
