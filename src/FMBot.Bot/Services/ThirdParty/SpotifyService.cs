@@ -36,27 +36,27 @@ namespace FMBot.Bot.Services.ThirdParty
             return await spotify.Search.Item(searchRequest);
         }
 
-        public async Task<string> GetOrStoreArtistImageAsync(ArtistInfoLfmResponse lastFmArtistInfoLfm, string artistNameBeforeCorrect)
+        public async Task<string> GetOrStoreArtistImageAsync(ArtistInfo artistInfo, string artistNameBeforeCorrect = null)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var dbArtist = await db.Artists
                 .Include(i => i.ArtistAliases)
                 .Include(i => i.ArtistGenres)
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.Name.ToLower() == lastFmArtistInfoLfm.Artist.Name.ToLower());
+                .FirstOrDefaultAsync(f => f.Name.ToLower() == artistInfo.ArtistName.ToLower());
 
             var imageUrlToReturn = "";
             try
             {
                 if (dbArtist == null)
                 {
-                    var spotifyArtist = await GetArtistFromSpotify(lastFmArtistInfoLfm.Artist.Name);
+                    var spotifyArtist = await GetArtistFromSpotify(artistInfo.ArtistName);
 
                     var artistToAdd = new Artist
                     {
-                        Name = lastFmArtistInfoLfm.Artist.Name,
-                        LastFmUrl = lastFmArtistInfoLfm.Artist.Url,
-                        Mbid = !string.IsNullOrEmpty(lastFmArtistInfoLfm.Artist.Mbid) ? Guid.Parse(lastFmArtistInfoLfm.Artist.Mbid) : null
+                        Name = artistInfo.ArtistName,
+                        LastFmUrl = artistInfo.ArtistUrl,
+                        Mbid = artistInfo.Mbid
                     };
 
                     if (spotifyArtist != null)
@@ -83,11 +83,11 @@ namespace FMBot.Bot.Services.ThirdParty
                         }
                     }
 
-                    if (!string.Equals(artistNameBeforeCorrect, lastFmArtistInfoLfm.Artist.Name, StringComparison.CurrentCultureIgnoreCase))
+                    if (artistNameBeforeCorrect != null && !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.CurrentCultureIgnoreCase))
                     {
                         var aliasList = new List<ArtistAlias>
                         {
-                            new ArtistAlias
+                            new()
                             {
                                 Alias = artistNameBeforeCorrect,
                                 CorrectsInScrobbles = true
@@ -102,14 +102,14 @@ namespace FMBot.Bot.Services.ThirdParty
                 }
                 else
                 {
-                    if (!string.Equals(artistNameBeforeCorrect, lastFmArtistInfoLfm.Artist.Name, StringComparison.CurrentCultureIgnoreCase))
+                    if (artistNameBeforeCorrect != null && !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.CurrentCultureIgnoreCase))
                     {
                         AddAliasToExistingArtist(artistNameBeforeCorrect, dbArtist, db);
                     }
 
                     if (dbArtist.SpotifyImageUrl == null || dbArtist.SpotifyImageDate < DateTime.UtcNow.AddDays(-15))
                     {
-                        var spotifyArtist = await GetArtistFromSpotify(lastFmArtistInfoLfm.Artist.Name);
+                        var spotifyArtist = await GetArtistFromSpotify(artistInfo.ArtistName);
 
                         if (spotifyArtist != null && spotifyArtist.Images.Any())
                         {

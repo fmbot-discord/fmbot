@@ -306,22 +306,6 @@ namespace FMBot.LastFM.Repositories
             return tagString.ToString();
         }
 
-        public static string TopTagsToString(TrackInfoTopTagsLfm tags)
-        {
-            var tagString = new StringBuilder();
-            for (var i = 0; i < tags.Tag.Length; i++)
-            {
-                if (i != 0)
-                {
-                    tagString.Append(" - ");
-                }
-                var tag = tags.Tag[i];
-                tagString.Append($"{tag.Name}");
-            }
-
-            return tagString.ToString();
-        }
-
         // User
         public async Task<LastResponse<LastUser>> GetUserInfoAsync(string lastFmUserName)
         {
@@ -426,7 +410,7 @@ namespace FMBot.LastFM.Repositories
 
         }
 
-        public async Task<Response<ArtistInfoLfmResponse>> GetArtistInfoAsync(string artistName, string username = null)
+        public async Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username = null)
         {
             var queryParams = new Dictionary<string, string>
             {
@@ -437,7 +421,42 @@ namespace FMBot.LastFM.Repositories
 
             var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo);
 
-            return artistCall;
+            if (artistCall.Success)
+            {
+                var linkToFilter = $"<a href=\"{artistCall.Content.Artist.Url}\">Read more on Last.fm</a>";
+                var filteredSummary = artistCall.Content.Artist.Bio?.Summary.Replace(linkToFilter, "");
+
+                return new Response<ArtistInfo>
+                {
+                    Success = true,
+                    Content = new ArtistInfo
+                    {
+                        ArtistName = artistCall.Content.Artist.Name,
+                        ArtistUrl = Uri.IsWellFormedUriString(artistCall.Content.Artist.Url, UriKind.Absolute)
+                            ? artistCall.Content.Artist.Url
+                            : null,
+                        Mbid = !string.IsNullOrWhiteSpace(artistCall.Content.Artist.Mbid)
+                            ? Guid.Parse(artistCall.Content.Artist.Mbid)
+                            : null,
+                        Description = filteredSummary,
+                        TotalPlaycount = artistCall.Content.Artist.Stats.Playcount,
+                        TotalListeners = artistCall.Content.Artist.Stats.Listeners,
+                        UserPlaycount = artistCall.Content.Artist.Stats.Userplaycount,
+                        Tags = artistCall.Content.Artist.Tags?.Tag?.Select(s => new Tag
+                        {
+                            Name = s.Name,
+                            Url = s.Url
+                        }).ToList()
+                    }
+                };
+            }
+
+            return new Response<ArtistInfo>
+            {
+                Success = false,
+                Error = artistCall.Error,
+                Message = artistCall.Message
+            };
         }
 
         public async Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, string username = null)
@@ -454,8 +473,6 @@ namespace FMBot.LastFM.Repositories
             {
                 var linkToFilter = $"<a href=\"{albumCall.Content.Album.Url.Replace("https", "http")}\">Read more on Last.fm</a>";
                 var filteredSummary = albumCall.Content.Album.Wiki?.Summary.Replace(linkToFilter, "");
-
-                var allRanks = albumCall.Content.Album.Tracks?.Track?.Select(s => s.Attr.Rank);
 
                 return new Response<AlbumInfo>
                 {

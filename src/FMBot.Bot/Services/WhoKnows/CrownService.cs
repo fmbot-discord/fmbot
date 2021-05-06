@@ -290,15 +290,15 @@ namespace FMBot.Bot.Services.WhoKnows
 
             await this._updateRepository.UpdateUser(new UpdateUserQueueItem(userId, 0));
 
-            if (!artist.Success || !artist.Content.Artist.Stats.Userplaycount.HasValue)
+            if (!artist.Success || !artist.Content.UserPlaycount.HasValue)
             {
                 return null;
             }
 
             await this._updateRepository.CorrectUserArtistPlaycount(userId, artistName,
-                artist.Content.Artist.Stats.Userplaycount.Value);
+                artist.Content.UserPlaycount.Value);
 
-            return artist.Content.Artist.Stats.Userplaycount;
+            return artist.Content.UserPlaycount;
         }
 
         public async Task<IList<UserCrown>> GetCrownsForArtist(Persistence.Domain.Models.Guild guild, string artistName)

@@ -5,7 +5,6 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Discord;
-using Discord.API.Rest;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
@@ -19,14 +18,11 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Api;
-using FMBot.LastFM.Domain.Models;
-using FMBot.LastFM.Domain.Types;
+using FMBot.LastFM.Domain.Enums;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Interactivity;
 using Interactivity.Pagination;
-using Interactivity.Selection;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -37,7 +33,6 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly CrownService _crownService;
         private readonly GuildService _guildService;
         private readonly IIndexService _indexService;
-        private readonly ILastfmApi _lastFmApi;
 
         private readonly IPrefixService _prefixService;
         private readonly IUpdateService _updateService;
@@ -61,7 +56,6 @@ namespace FMBot.Bot.Commands.LastFM
                 CrownService crownService,
                 GuildService guildService,
                 IIndexService indexService,
-                ILastfmApi lastFmApi,
                 IPrefixService prefixService,
                 IUpdateService updateService,
                 LastFmRepository lastFmRepository,
@@ -78,7 +72,6 @@ namespace FMBot.Bot.Commands.LastFM
             this._crownService = crownService;
             this._guildService = guildService;
             this._indexService = indexService;
-            this._lastFmApi = lastFmApi;
             this._lastFmRepository = lastFmRepository;
             this._playService = playService;
             this._prefixService = prefixService;
@@ -106,34 +99,16 @@ namespace FMBot.Bot.Commands.LastFM
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            var artist = await GetArtistOrHelp(artistValues, userSettings, "artist", prfx, null);
-            if (artist == null)
-            {
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return;
-            }
-
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var queryParams = new Dictionary<string, string>
+            var artist = await GetArtist(artistValues, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
+            if (artist == null)
             {
-                {"artist", artist },
-                {"username", userSettings.UserNameLastFM },
-                {"autocorrect", "1"}
-            };
-
-            var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo);
-            if (!artistCall.Success)
-            {
-                this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context, "artist");
-                await ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandWithLastFmError(artistCall.Error);
                 return;
             }
 
-            var spotifyImageSearchTask = this._spotifyService.GetOrStoreArtistImageAsync(artistCall.Content, artist);
+            var spotifyImageSearchTask = this._spotifyService.GetOrStoreArtistImageAsync(artist, artistValues);
 
-            var artistInfo = artistCall.Content.Artist;
             var spotifyImage = await spotifyImageSearchTask;
 
             if (spotifyImage != null)
@@ -146,8 +121,8 @@ namespace FMBot.Bot.Commands.LastFM
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
             this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            this._embedAuthor.WithName($"Artist info about {artistInfo.Name} for {userTitle}");
-            this._embedAuthor.WithUrl(artistInfo.Url);
+            this._embedAuthor.WithName($"Artist info about {artist.ArtistName} for {userTitle}");
+            this._embedAuthor.WithUrl(artist.ArtistUrl);
             this._embed.WithAuthor(this._embedAuthor);
 
             if (!this._guildService.CheckIfDM(this.Context))
@@ -157,13 +132,13 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (guild?.LastIndexed != null)
                 {
-                    var usersWithArtist = await WhoKnowsArtistService.GetIndexedUsersForArtist(this.Context, guild.GuildId, artistInfo.Name);
+                    var usersWithArtist = await WhoKnowsArtistService.GetIndexedUsersForArtist(this.Context, guild.GuildId, artist.ArtistName);
                     var filteredUsersWithArtist = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, guild);
 
                     var serverListeners = filteredUsersWithArtist.Count;
                     var serverPlaycount = filteredUsersWithArtist.Sum(a => a.Playcount);
                     var avgServerPlaycount = filteredUsersWithArtist.Average(a => a.Playcount);
-                    var serverPlaycountLastWeek = await WhoKnowsArtistService.GetWeekArtistPlaycountForGuildAsync(guild.GuildId, artistInfo.Name);
+                    var serverPlaycountLastWeek = await WhoKnowsArtistService.GetWeekArtistPlaycountForGuildAsync(guild.GuildId, artist.ArtistName);
 
                     serverStats += $"`{serverListeners}` {StringExtensions.GetListenersString(serverListeners)}";
                     serverStats += $"\n`{serverPlaycount}` total {StringExtensions.GetPlaysString(serverPlaycount)}";
@@ -185,31 +160,26 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var globalStats = "";
-            globalStats += $"`{artistInfo.Stats.Listeners}` {StringExtensions.GetListenersString(artistInfo.Stats.Listeners)}";
-            globalStats += $"\n`{artistInfo.Stats.Playcount}` global {StringExtensions.GetPlaysString(artistInfo.Stats.Playcount)}";
-            if (artistInfo.Stats.Userplaycount.HasValue)
+            globalStats += $"`{artist.TotalListeners}` {StringExtensions.GetListenersString(artist.TotalListeners)}";
+            globalStats += $"\n`{artist.TotalPlaycount}` global {StringExtensions.GetPlaysString(artist.TotalPlaycount)}";
+            if (artist.UserPlaycount.HasValue)
             {
-                globalStats += $"\n`{artistInfo.Stats.Userplaycount}` {StringExtensions.GetPlaysString(artistInfo.Stats.Userplaycount)} by you";
-                globalStats += $"\n`{await this._playService.GetWeekArtistPlaycountAsync(userSettings.UserId, artistInfo.Name)}` by you last week";
-                await this._updateService.CorrectUserArtistPlaycount(userSettings.UserId, artistInfo.Name,
-                    artistInfo.Stats.Userplaycount.Value);
+                globalStats += $"\n`{artist.UserPlaycount}` {StringExtensions.GetPlaysString(artist.UserPlaycount)} by you";
+                globalStats += $"\n`{await this._playService.GetWeekArtistPlaycountAsync(userSettings.UserId, artist.ArtistName)}` by you last week";
+                await this._updateService.CorrectUserArtistPlaycount(userSettings.UserId, artist.ArtistName,
+                    artist.UserPlaycount.Value);
             }
 
             this._embed.AddField("Last.fm stats", globalStats, true);
 
-            if (!string.IsNullOrWhiteSpace(artistInfo.Bio.Content))
+            if (artist.Description != null)
             {
-                var linktext = $"<a href=\"{artistInfo.Url}\">Read more on Last.fm</a>";
-                var filteredSummary = artistInfo.Bio.Summary.Replace(linktext, "");
-                if (!string.IsNullOrWhiteSpace(filteredSummary))
-                {
-                    this._embed.AddField("Summary", filteredSummary);
-                }
+                this._embed.AddField("Summary", artist.Description);
             }
 
-            if (artistInfo.Tags.Tag.Any())
+            if (artist.Tags != null && artist.Tags.Any())
             {
-                var tags = LastFmRepository.TagsToLinkedString(artistInfo.Tags);
+                var tags = LastFmRepository.TagsToLinkedString(artist.Tags);
 
                 this._embed.AddField("Tags", tags);
             }
@@ -232,25 +202,9 @@ namespace FMBot.Bot.Commands.LastFM
 
             var timeSettings = SettingService.GetTimePeriod(artistValues, ChartTimePeriod.AllTime);
 
-            var artist = await GetArtistOrHelp(timeSettings.NewSearchValue, user, "artisttracks", prfx, null);
+            var artist = await GetArtist(artistValues, user.UserNameLastFM, user.SessionKeyLastFm);
             if (artist == null)
             {
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return;
-            }
-
-            var queryParams = new Dictionary<string, string>
-            {
-                {"artist", artist },
-                {"username", user.UserNameLastFM },
-                {"autocorrect", "1"}
-            };
-            var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo);
-            if (!artistCall.Success)
-            {
-                this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context, "artist");
-                await ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandWithLastFmError(artistCall.Error);
                 return;
             }
 
@@ -262,21 +216,19 @@ namespace FMBot.Bot.Commands.LastFM
                 paginationEnabled = true;
             }
 
-            var artistInfo = artistCall.Content.Artist;
-
             var timeDescription = timeSettings.Description.ToLower();
             List<UserTrack> topTracks;
             switch (timeSettings.ChartTimePeriod)
             {
                 case ChartTimePeriod.Weekly:
-                    topTracks = await this._playService.GetTopTracksForArtist(user.UserId, 7, artistInfo.Name);
+                    topTracks = await this._playService.GetTopTracksForArtist(user.UserId, 7, artist.ArtistName);
                     break;
                 case ChartTimePeriod.Monthly:
-                    topTracks = await this._playService.GetTopTracksForArtist(user.UserId, 31, artistInfo.Name);
+                    topTracks = await this._playService.GetTopTracksForArtist(user.UserId, 31, artist.ArtistName);
                     break;
                 default:
                     timeDescription = "alltime";
-                    topTracks = await this._artistsService.GetTopTracksForArtist(user.UserId, artistInfo.Name);
+                    topTracks = await this._artistsService.GetTopTracksForArtist(user.UserId, artist.ArtistName);
                     break;
             }
 
@@ -285,20 +237,20 @@ namespace FMBot.Bot.Commands.LastFM
             if (topTracks.Count == 0)
             {
                 this._embed.WithDescription(
-                    $"{userTitle} has no registered tracks for {artistInfo.Name} in .fmbot.");
+                    $"{userTitle} has no registered tracks for {artist.ArtistName} in .fmbot.");
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 return;
             }
             else
             {
-                var embedTitle = $"Your top {timeDescription} tracks for '{artistInfo.Name}'";
+                var embedTitle = $"Your top {timeDescription} tracks for '{artist.ArtistName}'";
                 this._embed.WithTitle(embedTitle);
 
-                var footer = $"{userTitle} has {artistInfo.Stats.Userplaycount} total scrobbles on this artist";
+                var footer = $"{userTitle} has {artist.UserPlaycount} total scrobbles on this artist";
                 this._embed.WithFooter(footer);
 
 
-                var url = $"{Constants.LastFMUserUrl}{user.UserNameLastFM}/library/music/{UrlEncoder.Default.Encode(artistInfo.Name)}";
+                var url = $"{Constants.LastFMUserUrl}{user.UserNameLastFM}/library/music/{UrlEncoder.Default.Encode(artist.ArtistName)}";
                 if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
                 {
                     this._embed.WithUrl(url);
@@ -365,33 +317,15 @@ namespace FMBot.Bot.Commands.LastFM
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            var artist = await GetArtistOrHelp(artistValues, user, "artistalbums", prfx, null);
-            if (artist == null)
-            {
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return;
-            }
-
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var queryParams = new Dictionary<string, string>
+            var artist = await GetArtist(artistValues, user.UserNameLastFM, user.SessionKeyLastFm);
+            if (artist == null)
             {
-                {"artist", artist },
-                {"username", user.UserNameLastFM },
-                {"autocorrect", "1"}
-            };
-            var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo);
-            if (!artistCall.Success)
-            {
-                this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context, "artist");
-                await ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandWithLastFmError(artistCall.Error);
                 return;
             }
 
-            var artistInfo = artistCall.Content.Artist;
-
-            var topAlbums = await this._artistsService.GetTopAlbumsForArtist(user.UserId, artistInfo.Name);
+            var topAlbums = await this._artistsService.GetTopAlbumsForArtist(user.UserId, artist.ArtistName);
 
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
             if (topAlbums.Count == 0)
@@ -411,12 +345,12 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithDescription(description.ToString());
 
-                this._embed.WithFooter($"{userTitle} has {artistInfo.Stats.Userplaycount} total scrobbles on this artist");
+                this._embed.WithFooter($"{userTitle} has {artist.UserPlaycount} total scrobbles on this artist");
             }
 
-            this._embed.WithTitle($"Your top albums for '{artistInfo.Name}'");
+            this._embed.WithTitle($"Your top albums for '{artist.ArtistName}'");
 
-            var url = $"{Constants.LastFMUserUrl}{user.UserNameLastFM}/library/music/{UrlEncoder.Default.Encode(artistInfo.Name)}";
+            var url = $"{Constants.LastFMUserUrl}{user.UserNameLastFM}/library/music/{UrlEncoder.Default.Encode(artist.ArtistName)}";
             if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
             {
                 this._embed.WithUrl(url);
@@ -439,37 +373,21 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userSettings = await this._settingService.GetUser(artistValues, user, this.Context);
 
-            var artist = await GetArtistOrHelp(userSettings.NewSearchValue, user, "artistplays", prfx, null);
+            var artist = await GetArtist(userSettings.NewSearchValue, user.UserNameLastFM, user.SessionKeyLastFm, userSettings.UserNameLastFm);
             if (artist == null)
             {
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
-
-            var queryParams = new Dictionary<string, string>
-            {
-                {"artist", artist },
-                {"username", userSettings.UserNameLastFm },
-                {"autocorrect", "1"}
-            };
-            var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo);
-            if (!artistCall.Success)
-            {
-                this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context, "artist");
-                await ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandWithLastFmError(artistCall.Error);
-                return;
-            }
-
-            var artistInfo = artistCall.Content.Artist;
 
             var reply =
-                $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has `{artistInfo.Stats.Userplaycount}` {StringExtensions.GetPlaysString(artistInfo.Stats.Userplaycount)} for **{artistInfo.Name.FilterOutMentions()}**";
+                $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has " +
+                $"`{artist.UserPlaycount}` {StringExtensions.GetPlaysString(artist.UserPlaycount)} for " +
+                $"**{artist.ArtistName}**";
 
             if (!userSettings.DifferentUser && user.LastUpdated != null)
             {
                 var playsLastWeek =
-                    await this._playService.GetWeekArtistPlaycountAsync(userSettings.UserId, artistInfo.Name);
+                    await this._playService.GetWeekArtistPlaycountAsync(userSettings.UserId, artist.ArtistName);
                 if (playsLastWeek != 0)
                 {
                     reply += $" (`{playsLastWeek}` last week)";
@@ -677,50 +595,6 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        [Command("lazypaginator")]
-        public async Task LazyPaginatorAsync()
-        {
-            try
-            {
-                var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
-                if (!perms.ManageMessages)
-                {
-                    await ReplyAsync(
-                        "I'm missing the 'mng messages' permission in this server, so I can't post a chart.");
-                    this.Context.LogCommandUsed(CommandResponse.NoPermission);
-                    return;
-                }
-
-                var pages = new PageBuilder[] {
-                    new PageBuilder().WithTitle("I"),
-                    new PageBuilder().WithTitle("am"),
-                    new PageBuilder().WithTitle("cool"),
-                    new PageBuilder().WithTitle(":sunglasses:"),
-                    new PageBuilder().WithText("I am cool :crown:")
-                };
-
-                var paginator = new StaticPaginatorBuilder()
-                    .WithPages(pages)
-                    .WithFooter(PaginatorFooter.PageNumber)
-                    .WithEmotes(new Dictionary<IEmote, PaginatorAction>
-                    {
-                        { new Emoji("⏮️"), PaginatorAction.SkipToStart},
-                        { new Emoji("⬅️"), PaginatorAction.Backward},
-                        { new Emoji("➡️"), PaginatorAction.Forward},
-                        { new Emoji("⏭️"), PaginatorAction.SkipToEnd}
-                    })
-                    .Build();
-
-                await this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromMinutes(2));
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
-
-        }
-
         [Command("taste", RunMode = RunMode.Async)]
         [Summary("Compare taste to other user.")]
         [UsernameSetRequired]
@@ -886,72 +760,54 @@ namespace FMBot.Bot.Commands.LastFM
 
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-                var artistQuery = await GetArtistOrHelp(artistValues, userSettings, "whoknows", prfx, null);
-                if (artistQuery == null)
-                {
-                    this.Context.LogCommandUsed(CommandResponse.NotFound);
-                    return;
-                }
+                var user = await this._userService.GetUserSettingsAsync(this.Context.User);
 
                 string artistName;
                 string artistUrl;
                 string spotifyImageUrl;
                 long? userPlaycount;
 
-                var cachedArtist = await this._artistsService.GetArtistFromDatabase(artistQuery);
+                var cachedArtist = await this._artistsService.GetArtistFromDatabase(artistValues);
 
-                if (userSettings.LastUpdated > DateTime.UtcNow.AddHours(-1) && cachedArtist != null)
+                if (user.LastUpdated > DateTime.UtcNow.AddHours(-1) && cachedArtist != null)
                 {
                     artistName = cachedArtist.Name;
                     artistUrl = cachedArtist.LastFmUrl;
                     spotifyImageUrl = cachedArtist.SpotifyImageUrl;
 
-                    userPlaycount = await WhoKnowsArtistService.GetArtistPlayCountForUser(artistName, userSettings.UserId);
+                    userPlaycount = await WhoKnowsArtistService.GetArtistPlayCountForUser(artistName, user.UserId);
                 }
                 else
                 {
-                    var queryParams = new Dictionary<string, string>
+                    var artist = await GetArtist(artistValues, user.UserNameLastFM, user.SessionKeyLastFm);
+                    if (artist == null)
                     {
-                        {"artist", artistQuery },
-                        {"username", userSettings.UserNameLastFM },
-                        {"autocorrect", "1"}
-                    };
-
-                    var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo);
-
-                    if (!artistCall.Success)
-                    {
-                        this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context, "artist");
-                        await ReplyAsync("", false, this._embed.Build());
-                        this.Context.LogCommandWithLastFmError(artistCall.Error);
                         return;
                     }
 
-                    artistName = artistCall.Content.Artist.Name;
-                    artistUrl = artistCall.Content.Artist.Url;
+                    artistName = artist.ArtistName;
+                    artistUrl = artist.ArtistUrl;
 
-                    var spotifyArtistResults = await this._spotifyService.GetOrStoreArtistImageAsync(artistCall.Content, artistQuery);
+                    var spotifyArtistResults = await this._spotifyService.GetOrStoreArtistImageAsync(artist, artist.ArtistName);
                     spotifyImageUrl = spotifyArtistResults;
-                    userPlaycount = artistCall.Content.Artist.Stats.Userplaycount;
+                    userPlaycount = artist.UserPlaycount;
                     if (userPlaycount.HasValue)
                     {
-                        await this._updateService.CorrectUserArtistPlaycount(userSettings.UserId, artistCall.Content.Artist.Name,
+                        await this._updateService.CorrectUserArtistPlaycount(user.UserId, artist.ArtistName,
                             userPlaycount.Value);
                     }
                 }
 
                 var guild = await guildTask;
 
-                var currentUser = await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), userSettings);
+                var currentUser = await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(user.DiscordUserId), user);
 
-                if (!guild.GuildUsers.Select(s => s.UserId).Contains(userSettings.UserId))
+                if (!guild.GuildUsers.Select(s => s.UserId).Contains(user.UserId))
                 {
                     guild.GuildUsers.Add(currentUser);
                 }
 
-                await this._indexService.UpdateUserName(currentUser, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId));
+                await this._indexService.UpdateUserName(currentUser, await this.Context.Guild.GetUserAsync(user.DiscordUserId));
 
                 var usersWithArtist = await WhoKnowsArtistService.GetIndexedUsersForArtist(this.Context, guild.GuildId, artistName);
 
@@ -969,7 +825,7 @@ namespace FMBot.Bot.Commands.LastFM
                         await this._crownService.GetAndUpdateCrownForArtist(filteredUsersWithArtist, guild, artistName);
                 }
 
-                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, userSettings.UserId, PrivacyLevel.Server, crownModel);
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, user.UserId, PrivacyLevel.Server, crownModel);
                 if (filteredUsersWithArtist.Count == 0)
                 {
                     serverUsers = "Nobody in this server (not even you) has listened to this artist.";
@@ -997,7 +853,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
                 }
 
-                var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingArtist(userSettings.UserId,
+                var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingArtist(user.UserId,
                     this.Context.Guild.Id, artistName);
 
                 if (guildAlsoPlaying != null)
@@ -1079,7 +935,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+                var user = await this._userService.GetUserSettingsAsync(this.Context.User);
 
                 var currentSettings = new WhoKnowsSettings
                 {
@@ -1087,56 +943,39 @@ namespace FMBot.Bot.Commands.LastFM
                     NewSearchValue = artistValues
                 };
                 var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues);
-                var artistQuery = await GetArtistOrHelp(settings.NewSearchValue, userSettings, "whoknows", prfx, null);
-                if (artistQuery == null)
-                {
-                    this.Context.LogCommandUsed(CommandResponse.NotFound);
-                    return;
-                }
 
                 string artistName;
                 string artistUrl;
                 string spotifyImageUrl;
                 long? userPlaycount;
 
-                var cachedArtist = await this._artistsService.GetArtistFromDatabase(artistQuery);
+                var cachedArtist = await this._artistsService.GetArtistFromDatabase(artistValues);
 
-                if (userSettings.LastUpdated > DateTime.UtcNow.AddHours(-1) && cachedArtist != null)
+                if (user.LastUpdated > DateTime.UtcNow.AddHours(-1) && cachedArtist != null)
                 {
                     artistName = cachedArtist.Name;
                     artistUrl = cachedArtist.LastFmUrl;
                     spotifyImageUrl = cachedArtist.SpotifyImageUrl;
 
-                    userPlaycount = await WhoKnowsArtistService.GetArtistPlayCountForUser(artistName, userSettings.UserId);
+                    userPlaycount = await WhoKnowsArtistService.GetArtistPlayCountForUser(artistName, user.UserId);
                 }
                 else
                 {
-                    var queryParams = new Dictionary<string, string>
+                    var artist = await GetArtist(artistValues, user.UserNameLastFM, user.SessionKeyLastFm);
+                    if (artist == null)
                     {
-                        {"artist", artistQuery },
-                        {"username", userSettings.UserNameLastFM },
-                        {"autocorrect", "1"}
-                    };
-
-                    var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo);
-
-                    if (!artistCall.Success)
-                    {
-                        this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context, "artist");
-                        await ReplyAsync("", false, this._embed.Build());
-                        this.Context.LogCommandWithLastFmError(artistCall.Error);
                         return;
                     }
 
-                    artistName = artistCall.Content.Artist.Name;
-                    artistUrl = artistCall.Content.Artist.Url;
+                    artistName = artist.ArtistName;
+                    artistUrl = artist.ArtistUrl;
 
-                    var spotifyArtistResults = await this._spotifyService.GetOrStoreArtistImageAsync(artistCall.Content, artistQuery);
+                    var spotifyArtistResults = await this._spotifyService.GetOrStoreArtistImageAsync(artist, artist.ArtistName);
                     spotifyImageUrl = spotifyArtistResults;
-                    userPlaycount = artistCall.Content.Artist.Stats.Userplaycount;
+                    userPlaycount = artist.UserPlaycount;
                     if (userPlaycount.HasValue)
                     {
-                        await this._updateService.CorrectUserArtistPlaycount(userSettings.UserId, artistCall.Content.Artist.Name,
+                        await this._updateService.CorrectUserArtistPlaycount(user.UserId, artist.ArtistName,
                             userPlaycount.Value);
                     }
                 }
@@ -1145,11 +984,11 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (userPlaycount != 0 && this.Context.Guild != null)
                 {
-                    var discordGuildUser = await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId);
+                    var discordGuildUser = await this.Context.Guild.GetUserAsync(user.DiscordUserId);
                     var guildUser = new GuildUser
                     {
-                        UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : userSettings.UserNameLastFM,
-                        User = userSettings
+                        UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : user.UserNameLastFM,
+                        User = user
                     };
                     usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, guildUser, artistName, userPlaycount);
                 }
@@ -1161,7 +1000,7 @@ namespace FMBot.Bot.Commands.LastFM
                 filteredUsersWithArtist =
                     WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithArtist, guild.GuildUsers.ToList());
 
-                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, userSettings.UserId, PrivacyLevel.Global, hidePrivateUsers: settings.HidePrivateUsers);
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, user.UserId, PrivacyLevel.Global, hidePrivateUsers: settings.HidePrivateUsers);
                 if (filteredUsersWithArtist.Count == 0)
                 {
                     serverUsers = "Nobody that uses .fmbot has listened to this artist.";
@@ -1183,7 +1022,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $"{(int)avgPlaycount} avg {StringExtensions.GetPlaysString((int)avgPlaycount)}";
                 }
 
-                var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingArtist(userSettings.UserId,
+                var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingArtist(user.UserId,
                     this.Context.Guild.Id, artistName);
 
                 if (guildAlsoPlaying != null)
@@ -1192,7 +1031,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += guildAlsoPlaying;
                 }
 
-                if (userSettings.PrivacyLevel != PrivacyLevel.Global)
+                if (user.PrivacyLevel != PrivacyLevel.Global)
                 {
                     footer += $"\nYou are currently not globally visible - use '{prfx}privacy global' to enable.";
                 }
@@ -1377,7 +1216,6 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-
         [Command("affinity", RunMode = RunMode.Async)]
         [Summary("Shows what other users in the same server listen to the same music as you")]
         [Alias("n", "aff", "neighbors")]
@@ -1437,62 +1275,55 @@ namespace FMBot.Bot.Commands.LastFM
 
         }
 
-        private async Task<string> GetArtistOrHelp(string artistValues, User userSettings, string command, string prfx, string alternativeLastFmUserName)
+        private async Task<ArtistInfo> GetArtist(string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null)
         {
-            string artist;
-            if (!string.IsNullOrWhiteSpace(artistValues))
+            if (!string.IsNullOrWhiteSpace(artistValues) && artistValues.Length != 0)
             {
-                if (artistValues.ToLower() == "help")
+                var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistValues, lastFmUserName);
+                if (!artistCall.Success && artistCall.Error == ResponseStatus.MissingParameters)
                 {
-                    var helpText =
-                        $"Usage: `{prfx}{command} 'name'`\n" +
-                        "If you don't enter any artists name, it will get the info from the artist you're currently listening to.";
-
-                    await this.Context.Channel.SendMessageAsync(helpText);
-                      
+                    this._embed.WithDescription($"Artist `{artistValues}` could not be found, please check your search values and try again.");
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return null;
+                }
+                if (!artistCall.Success || artistCall.Content == null)
+                {
+                    this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context, "artist");
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.LastFmError);
                     return null;
                 }
 
-                artist = artistValues;
+                return artistCall.Content;
             }
             else
             {
-                Response<RecentTrackList> recentTracks;
+                var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
 
-                if (string.IsNullOrWhiteSpace(alternativeLastFmUserName))
-                {
-                    string sessionKey = null;
-                    if (!string.IsNullOrEmpty(userSettings.SessionKeyLastFm))
-                    {
-                        sessionKey = userSettings.SessionKeyLastFm;
-                    }
-
-                    if (userSettings.LastIndexed == null)
-                    {
-                        _ = this._indexService.IndexUser(userSettings);
-                        recentTracks = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true, sessionKey: sessionKey);
-                    }
-                    else
-                    {
-                        recentTracks = await this._updateService.UpdateUserAndGetRecentTracks(userSettings);
-                    }
-                }
-                else
-                {
-                    recentTracks = await this._lastFmRepository.GetRecentTracksAsync(alternativeLastFmUserName, useCache: true);
-                }
-
-                userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-                if (await ErrorService.RecentScrobbleCallFailedReply(recentTracks, userSettings.UserNameLastFM, this.Context))
+                if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, lastFmUserName, this.Context))
                 {
                     return null;
                 }
 
-                artist = recentTracks.Content.RecentTracks[0].ArtistName;
-            }
+                if (otherUserUsername != null)
+                {
+                    lastFmUserName = otherUserUsername;
+                }
 
-            return artist;
+                var lastPlayedTrack = recentScrobbles.Content.RecentTracks[0];
+                var artistCall = await this._lastFmRepository.GetArtistInfoAsync(lastPlayedTrack.ArtistName, lastFmUserName);
+
+                if (artistCall.Content == null || !artistCall.Success)
+                {
+                    this._embed.WithDescription($"Last.fm did not return a result for **{lastPlayedTrack.ArtistName}**.");
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return null;
+                }
+
+                return artistCall.Content;
+            }
         }
     }
 }

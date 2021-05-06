@@ -19,8 +19,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Api;
-using FMBot.LastFM.Domain.Models;
+using FMBot.LastFM.Domain.Enums;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
@@ -123,44 +122,44 @@ namespace FMBot.Bot.Commands.LastFM
 
             this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
             this._embedAuthor.WithName(
-                StringExtensions.TruncateLongString($"Info about {album.Content.ArtistName} - {album.Content.AlbumName} for {userTitle}", 255));
+                StringExtensions.TruncateLongString($"Info about {album.ArtistName} - {album.AlbumName} for {userTitle}", 255));
 
-            if (album.Content.AlbumUrl != null)
+            if (album.AlbumUrl != null)
             {
-                this._embed.WithUrl(album.Content.AlbumUrl);
+                this._embed.WithUrl(album.AlbumUrl);
             }
 
             this._embed.WithAuthor(this._embedAuthor);
 
-            this._embed.AddField("Listeners", album.Content.TotalListeners, true);
-            this._embed.AddField("Global playcount", album.Content.TotalPlaycount, true);
+            this._embed.AddField("Listeners", album.TotalListeners, true);
+            this._embed.AddField("Global playcount", album.TotalPlaycount, true);
 
-            if (album.Content.UserPlaycount.HasValue)
+            if (album.UserPlaycount.HasValue)
             {
-                this._embed.AddField("Your playcount", album.Content.UserPlaycount, true);
+                this._embed.AddField("Your playcount", album.UserPlaycount, true);
             }
 
-            if (album.Content.AlbumCoverUrl != null)
+            if (album.AlbumCoverUrl != null)
             {
                 var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
-                    album.Content.AlbumName, album.Content.ArtistName, album.Content.AlbumCoverUrl);
+                    album.AlbumName, album.ArtistName, album.AlbumCoverUrl);
                 if (safeForChannel)
                 {
-                    this._embed.WithThumbnailUrl(album.Content.AlbumCoverUrl);
+                    this._embed.WithThumbnailUrl(album.AlbumCoverUrl);
                 }
             }
 
-            if (album.Content.Description != null)
+            if (album.Description != null)
             {
-                this._embed.AddField("Summary", album.Content.Description);
+                this._embed.AddField("Summary", album.Description);
             }
 
-            if (album.Content.AlbumTracks != null && album.Content.AlbumTracks.Any())
+            if (album.AlbumTracks != null && album.AlbumTracks.Any())
             {
                 var tracks = new StringBuilder();
-                for (int i = 0; i < album.Content.AlbumTracks.Count; i++)
+                for (int i = 0; i < album.AlbumTracks.Count; i++)
                 {
-                    var track = album.Content.AlbumTracks.OrderBy(o => o.Rank).ToList()[i];
+                    var track = album.AlbumTracks.OrderBy(o => o.Rank).ToList()[i];
                     tracks.Append($"{i + 1}. [{track.TrackName}]({track.TrackUrl})");
 
                     if (track.Duration.HasValue)
@@ -177,9 +176,9 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.AddField("Tracks", tracks.ToString());
             }
 
-            if (album.Content.Tags != null && album.Content.Tags.Any())
+            if (album.Tags != null && album.Tags.Any())
             {
-                var tags = LastFmRepository.TagsToLinkedString(album.Content.Tags);
+                var tags = LastFmRepository.TagsToLinkedString(album.Tags);
 
                 this._embed.AddField("Tags", tags);
             }
@@ -209,20 +208,20 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userSettings = await this._settingService.GetUser(albumValues, user, this.Context);
 
-            var album = await this.SearchAlbum(albumValues, userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
+            var album = await this.SearchAlbum(userSettings.NewSearchValue, user.UserNameLastFM, userSettings.SessionKeyLastFm, userSettings.UserNameLastFm);
             if (album == null)
             {
                 return;
             }
 
             var reply =
-                $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has `{album.Content.UserPlaycount}` {StringExtensions.GetPlaysString(album.Content.UserPlaycount)} " +
-                $"for **{album.Content.AlbumName.FilterOutMentions()}** by **{album.Content.ArtistName.FilterOutMentions()}**";
+                $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has `{album.UserPlaycount}` {StringExtensions.GetPlaysString(album.UserPlaycount)} " +
+                $"for **{album.AlbumName.FilterOutMentions()}** by **{album.ArtistName.FilterOutMentions()}**";
 
             if (!userSettings.DifferentUser && user.LastUpdated != null)
             {
                 var playsLastWeek =
-                    await this._playService.GetWeekAlbumPlaycountAsync(userSettings.UserId, album.Content.AlbumName, album.Content.ArtistName);
+                    await this._playService.GetWeekAlbumPlaycountAsync(userSettings.UserId, album.AlbumName, album.ArtistName);
                 if (playsLastWeek != 0)
                 {
                     reply += $" (`{playsLastWeek}` last week)";
@@ -260,29 +259,29 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            if (album.Content.AlbumCoverUrl == null)
+            if (album.AlbumCoverUrl == null)
             {
                 this._embed.WithDescription("Sorry, no album cover found for this album: \n" +
-                                            $"{album.Content.ArtistName} - {album.Content.AlbumName}\n" +
-                                            $"[View on last.fm]({album.Content.AlbumUrl})");
+                                            $"{album.ArtistName} - {album.AlbumName}\n" +
+                                            $"[View on last.fm]({album.AlbumUrl})");
                 await this.ReplyAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
 
-            var image = await LastFmRepository.GetAlbumImageAsBitmapAsync(album.Content.AlbumCoverUrl);
+            var image = await LastFmRepository.GetAlbumImageAsBitmapAsync(album.AlbumCoverUrl);
             if (image == null)
             {
                 this._embed.WithDescription("Sorry, something went wrong while getting album cover for this album: \n" +
-                                            $"{album.Content.ArtistName} - {album.Content.AlbumName}\n" +
-                                            $"[View on last.fm]({album.Content.AlbumUrl})");
+                                            $"{album.ArtistName} - {album.AlbumName}\n" +
+                                            $"[View on last.fm]({album.AlbumUrl})");
                 await this.ReplyAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Error);
                 return;
             }
 
             var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
-                album.Content.AlbumName, album.Content.ArtistName, album.Content.AlbumUrl, this._embed);
+                album.AlbumName, album.ArtistName, album.AlbumUrl, this._embed);
             if (!safeForChannel)
             {
                 await this.ReplyAsync("", false, this._embed.Build());
@@ -290,7 +289,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            this._embed.WithDescription($"**{album.Content.ArtistName} - [{album.Content.AlbumName}]({album.Content.AlbumUrl})**");
+            this._embed.WithDescription($"**{album.ArtistName} - [{album.AlbumName}]({album.AlbumUrl})**");
             this._embedFooter.WithText(
                 $"Album cover requested by {await this._userService.GetUserTitleAsync(this.Context)}");
             this._embed.WithFooter(this._embedFooter);
@@ -301,91 +300,12 @@ namespace FMBot.Bot.Commands.LastFM
 
             await this.Context.Channel.SendFileAsync(
                 imageMemoryStream,
-                $"cover-{StringExtensions.ReplaceInvalidChars($"{album.Content.ArtistName}_{album.Content.AlbumName}")}.png",
+                $"cover-{StringExtensions.ReplaceInvalidChars($"{album.ArtistName}_{album.AlbumName}")}.png",
                 null,
                 false,
                 this._embed.Build());
 
             this.Context.LogCommandUsed();
-        }
-
-        private async Task<Response<AlbumInfo>> SearchAlbum(string albumValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null)
-        {
-            string searchValue;
-            if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.Length != 0)
-            {
-                searchValue = albumValues;
-
-                if (searchValue.Contains(" | "))
-                {
-                    var albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(searchValue.Split(" | ")[0], searchValue.Split(" | ")[1],
-                        lastFmUserName);
-                    return albumInfo;
-                }
-            }
-            else
-            {
-                var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, useCache: true, sessionKey: sessionKey);
-
-                if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, lastFmUserName, this.Context))
-                {
-                    return null;
-                }
-
-                if (otherUserUsername != null)
-                {
-                    lastFmUserName = otherUserUsername;
-                }
-
-                var lastPlayedTrack = recentScrobbles.Content.RecentTracks[0];
-                var albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(lastPlayedTrack.ArtistName, lastPlayedTrack.AlbumName,
-                    lastFmUserName);
-
-                if (albumInfo == null)
-                {
-                    this._embed.WithDescription($"Last.fm did not return a result for **{lastPlayedTrack.AlbumName}** by **{lastPlayedTrack.ArtistName}**.\n" +
-                                                $"This usually happens on recently released albums or on albums by smaller artists. Please try again later.");
-
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-                    this.Context.LogCommandUsed(CommandResponse.NotFound);
-                    return null;
-                }
-
-                return albumInfo;
-            }
-
-            var result = await this._lastFmRepository.SearchAlbumAsync(searchValue);
-            if (result.Success && result.Content.Any())
-            {
-                var album = result.Content[0];
-
-                if (otherUserUsername != null)
-                {
-                    lastFmUserName = otherUserUsername;
-                }
-
-                var albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(album.ArtistName, album.Name,
-                    lastFmUserName);
-                return albumInfo;
-            }
-
-            if (result.Success)
-            {
-                this._embed.WithDescription($"Album could not be found, please check your search values and try again.");
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return null;
-            }
-
-            this._embed.WithDescription($"Last.fm returned an error: {result.Status}");
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-            this.Context.LogCommandUsed(CommandResponse.Error);
-            return null;
         }
 
         [Command("topalbums", RunMode = RunMode.Async)]
@@ -648,7 +568,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var albumName = $"{album.Content.AlbumName} by {album.Content.ArtistName}";
+            var albumName = $"{album.AlbumName} by {album.ArtistName}";
 
             try
             {
@@ -663,11 +583,11 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this._indexService.UpdateUserName(currentUser, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId));
 
-                var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(this.Context, guild.GuildId, album.Content.ArtistName, album.Content.AlbumName);
+                var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(this.Context, guild.GuildId, album.ArtistName, album.AlbumName);
 
-                if (album.Content.UserPlaycount.HasValue)
+                if (album.UserPlaycount.HasValue)
                 {
-                    usersWithAlbum = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, currentUser, albumName, album.Content.UserPlaycount);
+                    usersWithAlbum = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, currentUser, albumName, album.UserPlaycount);
                 }
 
                 var filteredUsersWithAlbum = WhoKnowsService.FilterGuildUsersAsync(usersWithAlbum, guild);
@@ -707,7 +627,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingAlbum(userSettings.UserId,
-                    this.Context.Guild.Id, album.Content.ArtistName, album.Content.AlbumName);
+                    this.Context.Guild.Id, album.ArtistName, album.AlbumName);
 
                 if (guildAlsoPlaying != null)
                 {
@@ -718,8 +638,8 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithTitle(StringExtensions.TruncateLongString($"{albumName} in {this.Context.Guild.Name}", 255));
 
                 var url = userSettings.RymEnabled == true
-                    ? StringExtensions.GetRymUrl(album.Content.AlbumName, album.Content.ArtistName)
-                    : album.Content.AlbumUrl;
+                    ? StringExtensions.GetRymUrl(album.AlbumName, album.ArtistName)
+                    : album.AlbumUrl;
 
                 if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
                 {
@@ -729,13 +649,13 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embedFooter.WithText(footer);
                 this._embed.WithFooter(this._embedFooter);
 
-                if (album.Content.AlbumCoverUrl != null)
+                if (album.AlbumCoverUrl != null)
                 {
                     var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
-                        album.Content.AlbumName, album.Content.ArtistName, album.Content.AlbumCoverUrl);
+                        album.AlbumName, album.ArtistName, album.AlbumCoverUrl);
                     if (safeForChannel)
                     {
-                        this._embed.WithThumbnailUrl(album.Content.AlbumCoverUrl);
+                        this._embed.WithThumbnailUrl(album.AlbumCoverUrl);
                     }
                 }
 
@@ -796,13 +716,13 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var albumName = $"{album.Content.AlbumName} by {album.Content.ArtistName}";
+            var albumName = $"{album.AlbumName} by {album.ArtistName}";
 
             try
             {
-                var usersWithArtist = await this._whoKnowsAlbumService.GetGlobalUsersForAlbum(this.Context, album.Content.ArtistName, album.Content.AlbumName);
+                var usersWithArtist = await this._whoKnowsAlbumService.GetGlobalUsersForAlbum(this.Context, album.ArtistName, album.AlbumName);
 
-                if (album.Content.UserPlaycount.HasValue && this.Context.Guild != null)
+                if (album.UserPlaycount.HasValue && this.Context.Guild != null)
                 {
                     var discordGuildUser = await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId);
                     var guildUser = new GuildUser
@@ -810,7 +730,7 @@ namespace FMBot.Bot.Commands.LastFM
                         UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : userSettings.UserNameLastFM,
                         User = userSettings
                     };
-                    usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, guildUser, albumName, album.Content.UserPlaycount);
+                    usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, guildUser, albumName, album.UserPlaycount);
                 }
 
                 var guild = await guildTask;
@@ -843,7 +763,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingAlbum(userSettings.UserId,
-                    this.Context.Guild.Id, album.Content.ArtistName, album.Content.AlbumName);
+                    this.Context.Guild.Id, album.ArtistName, album.AlbumName);
 
                 if (guildAlsoPlaying != null)
                 {
@@ -863,8 +783,8 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithTitle($"{albumName} globally");
 
                 var url = userSettings.RymEnabled == true
-                    ? StringExtensions.GetRymUrl(album.Content.AlbumName, album.Content.ArtistName)
-                    : album.Content.AlbumUrl;
+                    ? StringExtensions.GetRymUrl(album.AlbumName, album.ArtistName)
+                    : album.AlbumUrl;
 
                 if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
                 {
@@ -874,13 +794,13 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embedFooter.WithText(footer);
                 this._embed.WithFooter(this._embedFooter);
 
-                if (album.Content.AlbumCoverUrl != null)
+                if (album.AlbumCoverUrl != null)
                 {
                     var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
-                        album.Content.AlbumName, album.Content.ArtistName, album.Content.AlbumCoverUrl);
+                        album.AlbumName, album.ArtistName, album.AlbumCoverUrl);
                     if (safeForChannel)
                     {
-                        this._embed.WithThumbnailUrl(album.Content.AlbumCoverUrl);
+                        this._embed.WithThumbnailUrl(album.AlbumCoverUrl);
                     }
                 }
 
@@ -925,24 +845,24 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                var albumName = $"{album.Content.AlbumName} by {album.Content.ArtistName}";
+                var albumName = $"{album.AlbumName} by {album.ArtistName}";
 
                 var spotifySource = false;
 
                 List<AlbumTrack> albumTracks;
-                if (album.Content.AlbumTracks != null && album.Content.AlbumTracks.Any())
+                if (album.AlbumTracks != null && album.AlbumTracks.Any())
                 {
-                    albumTracks = album.Content.AlbumTracks;
+                    albumTracks = album.AlbumTracks;
                 }
                 else
                 {
-                    var dbAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album.Content);
+                    var dbAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
                     if (dbAlbum?.Tracks != null && dbAlbum.Tracks.Any())
                     {
                         albumTracks = dbAlbum.Tracks.Select(s => new AlbumTrack
                         {
                             TrackName = s.Name,
-                            ArtistName = album.Content.ArtistName,
+                            ArtistName = album.ArtistName,
                         }).ToList();
                         spotifySource = true;
                     }
@@ -957,7 +877,7 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                 }
 
-                var albumTracksPlaycounts = await this._trackService.GetAlbumTracksPlaycounts(albumTracks, userSettings.UserId, album.Content.ArtistName);
+                var albumTracksPlaycounts = await this._trackService.GetAlbumTracksPlaycounts(albumTracks, userSettings.UserId, album.ArtistName);
 
                 if (albumTracksPlaycounts.Count == 0)
                 {
@@ -987,6 +907,11 @@ namespace FMBot.Bot.Commands.LastFM
 
                         for (; i < albumTracks.Count; i++)
                         {
+                            if (tracksDisplayed >= 30)
+                            {
+                                maxTracksReached = true;
+                                break;
+                            }
 
                             var albumTrack = albumTracks[i];
                             var albumTrackWithPlaycount =
@@ -1006,7 +931,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                     var footer = spotifySource ? "Album source: Spotify | " : "Album source: Last.fm | ";
                     
-                    footer += $"{userSettings.DiscordUserName} has {album.Content.UserPlaycount} total scrobbles on this album";
+                    footer += $"{userSettings.DiscordUserName} has {album.UserPlaycount} total scrobbles on this album";
 
                     if (maxTracksReached)
                     {
@@ -1019,8 +944,8 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithTitle($"Track playcounts for {albumName}");
 
                 var url = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/music/" +
-                          $"{UrlEncoder.Default.Encode(album.Content.ArtistName)}/" +
-                          $"{UrlEncoder.Default.Encode(album.Content.AlbumName)}/";
+                          $"{UrlEncoder.Default.Encode(album.ArtistName)}/" +
+                          $"{UrlEncoder.Default.Encode(album.AlbumName)}/";
                 if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
                 {
                     this._embed.WithUrl(url);
@@ -1182,6 +1107,94 @@ namespace FMBot.Bot.Commands.LastFM
                 await ReplyAsync(
                     "Something went wrong while using serveralbums. Please report this issue.");
             }
+        }
+
+        private async Task<AlbumInfo> SearchAlbum(string albumValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null)
+        {
+            string searchValue;
+            if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.Length != 0)
+            {
+                searchValue = albumValues;
+
+                if (searchValue.Contains(" | "))
+                {
+                    var albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(searchValue.Split(" | ")[0], searchValue.Split(" | ")[1],
+                        lastFmUserName);
+                    if (!albumInfo.Success && albumInfo.Error == ResponseStatus.MissingParameters)
+                    {
+                        this._embed.WithDescription($"Album `{searchValue.Split(" | ")[1]}` by `{searchValue.Split(" | ")[0]}`could not be found, please check your search values and try again.");
+                        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                        this.Context.LogCommandUsed(CommandResponse.NotFound);
+                        return null;
+                    }
+                    if (!albumInfo.Success || albumInfo.Content == null)
+                    {
+                        this._embed.ErrorResponse(albumInfo.Error, albumInfo.Message, this.Context, "album");
+                        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                        this.Context.LogCommandUsed(CommandResponse.LastFmError);
+                        return null;
+                    }
+                    return albumInfo.Content;
+                }
+            }
+            else
+            {
+                var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, useCache: true, sessionKey: sessionKey);
+
+                if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, lastFmUserName, this.Context))
+                {
+                    return null;
+                }
+
+                if (otherUserUsername != null)
+                {
+                    lastFmUserName = otherUserUsername;
+                }
+
+                var lastPlayedTrack = recentScrobbles.Content.RecentTracks[0];
+                var albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(lastPlayedTrack.ArtistName, lastPlayedTrack.AlbumName,
+                    lastFmUserName);
+
+                if (albumInfo.Content == null || !albumInfo.Success)
+                {
+                    this._embed.WithDescription($"Last.fm did not return a result for **{lastPlayedTrack.AlbumName}** by **{lastPlayedTrack.ArtistName}**.\n" +
+                                                $"This usually happens on recently released albums or on albums by smaller artists. Please try again later.");
+
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return null;
+                }
+
+                return albumInfo.Content;
+            }
+
+            var result = await this._lastFmRepository.SearchAlbumAsync(searchValue);
+            if (result.Success && result.Content.Any())
+            {
+                var album = result.Content[0];
+
+                if (otherUserUsername != null)
+                {
+                    lastFmUserName = otherUserUsername;
+                }
+
+                var albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(album.ArtistName, album.Name,
+                    lastFmUserName);
+                return albumInfo.Content;
+            }
+
+            if (result.Success)
+            {
+                this._embed.WithDescription($"Album could not be found, please check your search values and try again.");
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return null;
+            }
+
+            this._embed.WithDescription($"Last.fm returned an error: {result.Status}");
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed(CommandResponse.LastFmError);
+            return null;
         }
     }
 }
