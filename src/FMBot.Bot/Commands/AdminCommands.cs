@@ -26,6 +26,8 @@ namespace FMBot.Bot.Commands
         private readonly GuildService _guildService;
         private readonly TimerService _timer;
         private readonly LastFmRepository _lastFmRepository;
+        private readonly SupporterService _supporterService;
+        private readonly UserService _userService;
 
         private readonly EmbedBuilder _embed;
 
@@ -34,13 +36,15 @@ namespace FMBot.Bot.Commands
                 CensorService censorService,
                 GuildService guildService,
                 TimerService timer,
-                LastFmRepository lastFmRepository)
+                LastFmRepository lastFmRepository, SupporterService supporterService, UserService userService)
         {
             this._adminService = adminService;
             this._censorService = censorService;
             this._guildService = guildService;
             this._timer = timer;
             this._lastFmRepository = lastFmRepository;
+            this._supporterService = supporterService;
+            this._userService = userService;
 
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFmColorRed);
@@ -301,20 +305,50 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("addsupporter")]
-        public async Task AddSupporterAsync(string user = null, string internalNotes = null, string name = null)
+        public async Task AddSupporterAsync(string user = null, string name = null, string internalNotes = null)
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
-                if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(internalNotes) || user == "help")
+                var formatError = "Make sure to follow the correct format when adding a supporter\n" +
+                                  "Examples: \n" +
+                                  "`.fmaddsupporter \"125740103539621888\" \"Drasil\" \"lifetime supporter\"`\n" +
+                                  "`.fmaddsupporter \"278633844763262976\" \"Aetheling\" \"monthly supporter (perm at 28-11-2021)\"`";
+
+                if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(internalNotes) || string.IsNullOrEmpty(name) || user == "help")
                 {
-                    await ReplyAsync("Make sure to follow the correct format when adding a supporter\n" +
-                                     "Examples: \n" +
-                                     "`.fmaddsupporter \"125740103539621888\" \"lifetime supporter\" \"Drasil\"`\n"+
-                                     "`.fmaddsupporter \"278633844763262976\" \"monthly supporter\" \"Aetheling\"`\n"+
-                                     "No name mention: `.fmaddsupporter \"278633844763262976\" \"monthly supporter\"`");
+                    await ReplyAsync(formatError);
                     this.Context.LogCommandUsed(CommandResponse.Help);
                     return;
                 }
+
+                if (!ulong.TryParse(user, out var userId))
+                {
+                    await ReplyAsync(formatError);
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                var userSettings = await this._userService.GetUserAsync(userId);
+
+                if (userSettings == null)
+                {
+                    await ReplyAsync("`User not found`\n\n" + formatError);
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+                if (userSettings.UserType != UserType.User)
+                {
+                    await ReplyAsync("`Can only change usertype of normal users`\n\n" + formatError);
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                await this._supporterService.AddSupporter(userSettings.DiscordUserId, name, internalNotes);
+
+                this._embed.WithDescription("Supporter added.\n" +
+                                            $"User id: {user} | <@{user}>\n" +
+                                            $"Name: **{name}**\n" +
+                                            $"Internal notes: `{internalNotes}`");
 
                 this._embed.WithFooter("Command not intended for use in public channels");
 
@@ -323,7 +357,7 @@ namespace FMBot.Bot.Commands
             }
             else
             {
-                await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can check botted users");
+                await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can add supporters");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }

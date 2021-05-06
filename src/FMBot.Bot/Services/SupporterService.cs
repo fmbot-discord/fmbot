@@ -63,7 +63,7 @@ namespace FMBot.Bot.Services
             return null;
         }
 
-        public async Task<Supporter> AddSupporter(ulong id, string notes, string name, bool visibleInOverview)
+        public async Task<Supporter> AddSupporter(ulong id, string name, string notes)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users
@@ -78,8 +78,8 @@ namespace FMBot.Bot.Services
                 Name = name,
                 Created = DateTime.UtcNow,
                 Notes = notes,
-                SupporterMessagesEnabled = visibleInOverview,
-                VisibleInOverview = visibleInOverview,
+                SupporterMessagesEnabled = true,
+                VisibleInOverview = true,
                 SupporterType = SupporterType.User
             };
 
