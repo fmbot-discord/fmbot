@@ -164,7 +164,6 @@ namespace FMBot.Bot.Services
                 embed.NoScrobblesFoundErrorResponse(lastFmUserName);
                 context.LogCommandUsed(CommandResponse.NoScrobbles);
                 await context.Channel.SendMessageAsync("", false, embed.Build());
-
                 return true;
             }
 

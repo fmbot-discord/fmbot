@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
-using Discord.API.Rest;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
@@ -31,8 +30,8 @@ namespace FMBot.Bot.Commands
         private readonly EmbedBuilder _embed;
         private readonly EmbedFooterBuilder _embedFooter;
 
-        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
-        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new();
+        private static readonly List<SocketUser> StackCooldownTarget = new();
 
         public IndexCommands(
                 GuildService guildService,
@@ -63,91 +62,79 @@ namespace FMBot.Bot.Commands
 
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
+            this._embed.WithDescription("<a:loading:821676038102056991> Server index started, this can take a while on larger servers...");
+            var indexMessage = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
             try
             {
                 var guildUsers = await this.Context.Guild.GetUsersAsync();
                 Log.Information("Downloaded {guildUserCount} users for guild {guildId} / {guildName} from Discord",
                     guildUsers.Count, this.Context.Guild.Id, this.Context.Guild.Name);
 
-                var users = await this._indexService.GetUsersToIndex(guildUsers);
-                var indexedUserCount = await this._indexService.GetIndexedUsersCount(guildUsers);
+                var usersToFullyUpdate = await this._indexService.GetUsersToFullyUpdate(guildUsers);
+                int registeredUserCount;
 
-                var guildRecentlyIndexed =
-                    lastIndex != null && lastIndex > DateTime.UtcNow.Add(-TimeSpan.FromMinutes(5));
-
-                if (guildRecentlyIndexed)
+                if (usersToFullyUpdate != null && usersToFullyUpdate.Count == 0 && lastIndex != null)
                 {
-                    await ReplyAsync("An index was recently started on this server. Please wait before running this command again.");
-                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
-                    return;
-                }
-                if (users != null && users.Count == 0 && lastIndex != null)
-                {
-                    await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
+                    registeredUserCount = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
                     await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
 
-                    var reply =
-                        "Server index has been updated.";
+                    var reply = $"✅ Server index has been updated.\n\n" +
+                                $"This server has a total of {registeredUserCount} registered .fmbot members.";
 
-                    await ReplyAsync(reply);
-                    this.Context.LogCommandUsed(CommandResponse.Cooldown);
+                    await indexMessage.ModifyAsync(m =>
+                    {
+                        m.Embed = new EmbedBuilder()
+                            .WithDescription(reply)
+                            .WithColor(DiscordConstants.SuccessColorGreen)
+                            .Build();
+                    });
+
+                    this.Context.LogCommandUsed();
                     return;
                 }
-                if (users == null || users.Count == 0 && lastIndex == null)
+                if (usersToFullyUpdate == null || usersToFullyUpdate.Count == 0 && lastIndex == null)
                 {
-                    await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
+                    registeredUserCount = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
                     await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow.AddDays(-1));
-                    await ReplyAsync("Server has been indexed successfully. You can now use all commands that require indexing.");
+                    var reply =
+                        "✅ Server has been indexed successfully.\n\n" +
+                        $"This server has a total of {registeredUserCount} registered .fmbot members.";
+
+                    await indexMessage.ModifyAsync(m =>
+                    {
+                        m.Embed = new EmbedBuilder()
+                            .WithDescription(reply)
+                            .WithColor(DiscordConstants.SuccessColorGreen)
+                            .Build();
+                    });
+
                     this.Context.LogCommandUsed();
                     return;
                 }
 
-                string usersString = "";
-                if (users.Count == 1)
-                {
-                    usersString += "user";
-                }
-                else
-                {
-                    usersString += "users";
-                }
-
-                this._embed.WithTitle($"Added {users.Count} {usersString} to bot indexing queue");
-
-                var expectedTime = TimeSpan.FromSeconds(8 * users.Count);
-                var indexStartedReply =
-                    $"Indexing stores which .fmbot members are on your server and stores their initial top artist, albums and tracks. " +
-                    $"Updating these records happens automatically, but you can also use `.fmupdate` to update your own account.\n" +
-                    $"Confused about how indexing has been changed? [Please read this.](https://fmbot.xyz/commands/whoknows/)\n\n" +
-                    $"`{users.Count}` new users or users that have never been indexed added to index queue.";
-
-                indexStartedReply += $"\n`{indexedUserCount}` users already indexed on this server.\n \n";
-
-                if (expectedTime.TotalMinutes >= 1)
-                {
-                    indexStartedReply += $"**This will take approximately {(int)expectedTime.TotalMinutes} minutes. \n" +
-                                         $"⚠️ Commands might display incomplete results until this process is done.**\n";
-                }
-
-                indexStartedReply += "*Note: You will currently not be alerted when the index is finished.*";
-
-                this._embed.WithDescription(indexStartedReply);
-
                 await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild);
 
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                registeredUserCount = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
+
+                await indexMessage.ModifyAsync(m =>
+                {
+                    m.Embed = new EmbedBuilder()
+                        .WithDescription($"✅ Server index has been updated.\n\n" +
+                                         $"This server has a total of {registeredUserCount} registered .fmbot members.")
+                        .WithColor(DiscordConstants.SuccessColorGreen)
+                        .Build();
+                });
 
                 this.Context.LogCommandUsed();
 
-                await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
-
-                this._indexService.AddUsersToIndexQueue(users);
+                this._indexService.AddUsersToIndexQueue(usersToFullyUpdate);
             }
             catch (Exception e)
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync(
-                    "Something went wrong while indexing users. Please let us know as this feature is in beta.");
+                    "Something went wrong while indexing users. Please report this issue.");
                 await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
             }
         }
@@ -163,7 +150,7 @@ namespace FMBot.Bot.Commands
             if (force == "help")
             {
                 this._embed.WithTitle($"{prfx}update");
-                this._embed.WithDescription($"Updates your top artists/albums/genres based on your latest scrobbles.\n" +
+                this._embed.WithDescription($"Updates your playcount cache on your latest scrobbles.\n" +
                                             $"Add `full` to fully update your account in case you edited your scrobble history.\n" +
                                             $"Note that updating also happens automatically.");
 
@@ -223,8 +210,8 @@ namespace FMBot.Bot.Commands
                 }
 
                 var indexDescription =
-                    $"<a:loading:749715170682470461> Fully indexing user {userSettings.UserNameLastFM}..." +
-                    $"\n\nThis can take a while. Please don't fully update too often, if you have any issues with the normal update feel free to let us know.";
+                    $"<a:loading:821676038102056991> Fully rebuilding playcount cache for user {userSettings.UserNameLastFM}..." +
+                    $"\n\nThis can take a while. Note that you can only do a full update once a day.";
 
                 if (userSettings.UserType != UserType.User)
                 {
@@ -238,10 +225,19 @@ namespace FMBot.Bot.Commands
 
                 await this._indexService.IndexUser(userSettings);
 
+                var updatedDescription = $"✅ {userSettings.UserNameLastFM} has been fully updated.";
+
+                var rnd = new Random();
+                if (rnd.Next(0, 4) == 1 && userSettings.UserType == UserType.User)
+                {
+                    updatedDescription += "\n\n" +
+                                          $"*Did you know that .fmbot stores the top 25k artists/albums/tracks instead of the top 4k/5k/6k for supporters? See {prfx}donate on how to become an .fmbot supporter.*";
+                }
+
                 await message.ModifyAsync(m =>
                 {
                     m.Embed = new EmbedBuilder()
-                        .WithDescription($"✅ {userSettings.UserNameLastFM} has been fully updated.")
+                        .WithDescription(updatedDescription)
                         .WithColor(DiscordConstants.SuccessColorGreen)
                         .Build();
                 });
@@ -251,11 +247,13 @@ namespace FMBot.Bot.Commands
                 if (userSettings.LastUpdated > DateTime.UtcNow.AddMinutes(-3))
                 {
                     var recentlyUpdatedText =
-                        $"You have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). " +
-                        $"Note that this also happens automatically, for example with commands that use cached playcounts.";
+                        $"Your cached playcounts have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). \n\n" +
+                        $"Any commands that require updating will also update your playcount automatically.\n\n" +
+                        $"Note that updating will not fix Spotify connection issues to Last.fm, especially since .fmbot is not affiliated with Last.fm. " +
+                        $"[*More info here..*](https://fmbot.xyz/faq/#commands-are-showing-the-wrong-songs-its-not-showing-what-i-listen-to-on-spotify)";
 
-                    await ReplyAsync(recentlyUpdatedText);
-
+                    this._embed.WithDescription(recentlyUpdatedText);
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
                     return;
                 }
@@ -269,7 +267,7 @@ namespace FMBot.Bot.Commands
                 }
 
                 this._embed.WithDescription(
-                    $"<a:loading:749715170682470461> Updating user {userSettings.UserNameLastFM}...");
+                    $"<a:loading:821676038102056991> Updating user {userSettings.UserNameLastFM}...");
                 var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
                 var scrobblesUsed = await this._updateService.UpdateUser(userSettings);
@@ -280,7 +278,9 @@ namespace FMBot.Bot.Commands
                     {
                         var newEmbed =
                             new EmbedBuilder()
-                                .WithDescription("No new scrobbles found since last update")
+                                .WithDescription("No new scrobbles found since last update\n\n" +
+                                                 $"Note that updating will not fix Spotify connection issues to Last.fm, especially since .fmbot is not affiliated with Last.fm.  " +
+                                                 $"[*More info here..*](https://fmbot.xyz/faq/#commands-are-showing-the-wrong-songs-its-not-showing-what-i-listen-to-on-spotify)")
                                 .WithColor(DiscordConstants.SuccessColorGreen);
 
                         if (userSettings.LastUpdated.HasValue)
@@ -295,15 +295,16 @@ namespace FMBot.Bot.Commands
                     else
                     {
                         var updatedDescription =
-                            $"✅ {userSettings.UserNameLastFM} has been updated based on {scrobblesUsed} new {StringExtensions.GetScrobblesString(scrobblesUsed)}.";
+                            $"✅ Cached playcounts have been updated for {userSettings.UserNameLastFM} based on {scrobblesUsed} new {StringExtensions.GetScrobblesString(scrobblesUsed)}.";
 
                         var rnd = new Random();
                         if (rnd.Next(0, 4) == 1)
                         {
                             updatedDescription +=
                                 $"\n\n" +
-                                $"Please note that updates are only used for whoknows and that users are also automatically updated every 48 hours.\n" +
-                                $"Other commands directly get their data from last.fm and are always up to date.";
+                                $"Any commands that require updating will also update your playcount automatically.\n\n" +
+                                $"Note that updating will not fix Spotify connection issues to Last.fm, especially since .fmbot is not affiliated with Last.fm. " +
+                                $"[*More info here..*](https://fmbot.xyz/faq/#commands-are-showing-the-wrong-songs-its-not-showing-what-i-listen-to-on-spotify)";
                         }
 
                         m.Embed = new EmbedBuilder()

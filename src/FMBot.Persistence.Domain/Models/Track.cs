@@ -10,6 +10,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public int? ArtistId { get; set; }
 
+        public int? AlbumId { get; set; }
+
         public string ArtistName { get; set; }
 
         public string AlbumName { get; set; }
@@ -27,5 +29,7 @@ namespace FMBot.Persistence.Domain.Models
         public DateTime? SpotifyLastUpdated { get; set; }
 
         public Artist Artist { get; set; }
+
+        public Album Album { get; set; }
     }
 }

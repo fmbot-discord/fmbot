@@ -117,7 +117,26 @@ namespace FMBot.Bot.Extensions
 
             var albumRymUrl = @"https://duckduckgo.com/?q=%5Csite%3Arateyourmusic.com";
             albumRymUrl += HttpUtility.UrlEncode($" \"{albumQueryName}\" \"{artistName}\"");
+
             return albumRymUrl;
+        }
+
+        public static string GetAmountEnd(long amount)
+        {
+            if (amount.ToString().EndsWith("1"))
+            {
+                return "st";
+            }
+            if (amount.ToString().EndsWith("2"))
+            {
+                return "nd";
+            }
+            if (amount.ToString().EndsWith("3"))
+            {
+                return "rd";
+            }
+
+            return "th";
         }
 
         public static string GetTimeAgo(DateTime timeAgo)

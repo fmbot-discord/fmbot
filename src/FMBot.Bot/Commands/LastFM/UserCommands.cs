@@ -17,7 +17,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Services;
+using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Serilog;
 
@@ -31,7 +31,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly GuildService _guildService;
         private readonly IIndexService _indexService;
         private readonly IPrefixService _prefixService;
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
         private readonly SettingService _settingService;
         private readonly TimerService _timer;
         private readonly UserService _userService;
@@ -48,7 +48,7 @@ namespace FMBot.Bot.Commands.LastFM
                 GuildService guildService,
                 IIndexService indexService,
                 IPrefixService prefixService,
-                LastFmService lastFmService,
+                LastFmRepository lastFmRepository,
                 SettingService settingService,
                 TimerService timer,
                 UserService userService,
@@ -57,7 +57,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._friendsService = friendsService;
             this._guildService = guildService;
             this._indexService = indexService;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._prefixService = prefixService;
             this._settingService = settingService;
             this._timer = timer;
@@ -103,7 +103,7 @@ namespace FMBot.Bot.Commands.LastFM
                     $"To see stats for other .fmbot users, use {prfx}stats '@user'");
                 this._embed.WithFooter(this._embedFooter);
 
-                var userInfo = await this._lastFmService.GetFullUserInfoAsync(userSettings.UserNameLastFm);
+                var userInfo = await this._lastFmRepository.GetFullUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
 
                 var userImages = userInfo.Image;
                 var userAvatar = userImages.FirstOrDefault(f => f.Size == "extralarge");
@@ -231,15 +231,58 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync(
-                    "Unable to show the featured avatar on FMBot due to an internal error. \n" +
-                    "The bot might not have changed its avatar since its last startup. Please wait until a new featured user is chosen.");
+                    "Error while attempting to toggle rateyourmusic integration");
             }
         }
 
-        [Command("set", RunMode = RunMode.Async)]
+        [Command("botscrobbling", RunMode = RunMode.Async)]
+        [Summary("Enables or disables the bot scrobbling.")]
+        [Alias("botscrobble", "bottrack", "bottracking")]
+        public async Task BotTrackingAsync([Remainder]string option = null)
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            try
+            {
+                var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+                var newBotScrobblingDisabledSetting = await this._userService.ToggleBotScrobblingAsync(user, option);
+
+                this._embed.WithDescription("Bot scrobbling allows you to automatically scrobble music from Discord music bots to your Last.fm account. " +
+                                            "For this to work properly you need to make sure .fmbot can see the voice channel and use a supported music bot.\n\n" +
+                                            "Only tracks that already exist on Last.fm will be scrobbled.\n\n" +
+                                            "Currently supported bots:\n" +
+                                            "- Groovy\n");
+
+                if ((newBotScrobblingDisabledSetting == null || newBotScrobblingDisabledSetting == false) && !string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
+                {
+                    this._embed.AddField("Status", "✅ Enabled and ready.");
+                    this._embed.WithFooter($"Use '{prfx}botscrobbling off' to disable.");
+                }
+                else if ((newBotScrobblingDisabledSetting == null || newBotScrobblingDisabledSetting == false) && string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
+                {
+                    this._embed.AddField("Status", $"⚠️ Bot scrobbling is enabled, but you need to login through `{prfx}login` first.");
+                }
+                else
+                {
+                    this._embed.AddField("Status", $"❌ Disabled. Do '{prfx}botscrobbling on' to enable.");
+                }
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync(
+                    "Error while attempting to change bot scrobbling setting");
+            }
+        }
+
+        //[Command("set", RunMode = RunMode.Async)]
         [Summary(
             "Sets your Last.fm name and FM mode. Please note that users in shared servers will be able to see and request your Last.fm username.")]
-        [Alias("setname", "setmode", "fm set")]
+        //[Alias("setname", "setmode", "fm set")]
         public async Task SetAsync([Summary("Your Last.fm name")] string lastFmUserName = null,
             params string[] otherSettings)
         {
@@ -279,7 +322,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             lastFmUserName = lastFmUserName.Replace("'", "");
-            if (!await this._lastFmService.LastFmUserExistsAsync(lastFmUserName))
+            if (!await this._lastFmRepository.LastFmUserExistsAsync(lastFmUserName))
             {
                 var reply = $"Last.fm user `{lastFmUserName}` could not be found. Please check if the name you entered is correct.";
                 await ReplyAsync(reply.FilterOutMentions());
@@ -457,8 +500,11 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("login", RunMode = RunMode.Async)]
         [Summary("Logs you in using a link")]
+        [Alias("set", "setusername", "fm set")]
         public async Task LoginAsync([Remainder] string unusedValues = null)
         {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
             var msg = this.Context.Message as SocketUserMessage;
             if (StackCooldownTarget.Contains(this.Context.Message.Author))
             {
@@ -482,7 +528,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var token = await this._lastFmService.GetAuthToken();
+            var token = await this._lastFmRepository.GetAuthToken();
 
             // TODO: When our Discord library supports follow up messages for interactions, add slash command support.
             var replyString =
@@ -491,14 +537,22 @@ namespace FMBot.Bot.Commands.LastFM
             this._embed.WithTitle("Logging into .fmbot...");
             this._embed.WithDescription(replyString);
 
-            this._embedFooter.WithText("Link will expire after 2 minutes, please wait a moment after allowing access...");
+            this._embedFooter.WithText("Link will expire after 3 minutes, please wait a moment after allowing access...");
             this._embed.WithFooter(this._embedFooter);
 
             var authorizeMessage = await this.Context.User.SendMessageAsync("", false, this._embed.Build());
 
+
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                await ReplyAsync("Check your DMs for a link to connect your Last.fm account to .fmbot!");
+                var reply = "Check your DMs for a link to connect your Last.fm account to .fmbot!";
+
+                if (this.Context.Message.Content.Contains("set"))
+                {
+                    reply += $"\nPlease use `{prfx}mode` to change how your .fm command looks.";
+                }
+
+                await ReplyAsync(reply);
             }
 
             var success = await GetAndStoreAuthSession(this.Context.User, token.Content.Token);
@@ -567,7 +621,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 await Task.Delay(loginDelay);
 
-                var authSession = await this._lastFmService.GetAuthSession(token);
+                var authSession = await this._lastFmRepository.GetAuthSession(token);
 
                 if (authSession.Success)
                 {

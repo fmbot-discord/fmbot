@@ -9,6 +9,11 @@ namespace FMBot.LastFM.Domain.Models
         public RecentTracksLfmList RecentTracks { get; set; }
     }
 
+    public class LovedTracksListLfmResponseModel
+    {
+        public RecentTracksLfmList LovedTracks { get; set; }
+    }
+
     public class RecentTracksLfmList
     {
         [JsonPropertyName("@attr")]
@@ -35,17 +40,13 @@ namespace FMBot.LastFM.Domain.Models
         [JsonPropertyName("@attr")]
         public TrackAttributesLfm AttributesLfm { get; set; }
 
-        public string Mbid { get; set; }
-
-        public long Loved { get; set; }
+        public string Loved { get; set; }
 
         public SmallArtist Artist { get; set; }
 
         public ImageLfm[] Image { get; set; }
 
         public Date Date { get; set; }
-
-        public long Streamable { get; set; }
 
         public Uri Url { get; set; }
 
@@ -81,7 +82,7 @@ namespace FMBot.LastFM.Domain.Models
         public string Url { get; set; }
         public Guid? Mbid { get; set; }
 
-        [JsonPropertyName("#text")]
+        [JsonPropertyName("name")]
         public string Text { get; set; }
     }
 }

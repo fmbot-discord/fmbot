@@ -19,7 +19,7 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Types;
-using FMBot.LastFM.Services;
+using FMBot.LastFM.Repositories;
 using Interactivity;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -32,7 +32,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly IIndexService _indexService;
         private readonly IPrefixService _prefixService;
         private readonly IUpdateService _updateService;
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
         private readonly PlayService _playService;
         private readonly SettingService _settingService;
         private readonly UserService _userService;
@@ -55,7 +55,7 @@ namespace FMBot.Bot.Commands.LastFM
                 IIndexService indexService,
                 IPrefixService prefixService,
                 IUpdateService updateService,
-                LastFmService lastFmService,
+                LastFmRepository lastFmRepository,
                 PlayService playService,
                 SettingService settingService,
                 UserService userService,
@@ -68,7 +68,7 @@ namespace FMBot.Bot.Commands.LastFM
         {
             this._guildService = guildService;
             this._indexService = indexService;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._playService = playService;
             this._prefixService = prefixService;
             this._settingService = settingService;
@@ -204,7 +204,7 @@ namespace FMBot.Bot.Commands.LastFM
                     if (userSettings.LastIndexed == null)
                     {
                         _ = this._indexService.IndexUser(userSettings);
-                        recentTracks = await this._lastFmService.GetRecentTracksAsync(lastFmUserName, useCache: true, sessionKey: sessionKey);
+                        recentTracks = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, useCache: true, sessionKey: sessionKey);
                     }
                     else
                     {
@@ -213,7 +213,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else
                 {
-                    recentTracks = await this._lastFmService.GetRecentTracksAsync(lastFmUserName, useCache: true);
+                    recentTracks = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, useCache: true);
                 }
 
                 long totalPlaycount = 0;
@@ -274,6 +274,12 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                 }
 
+                if (currentTrack.Loved)
+                {
+                    footerText +=
+                        $"❤️ Loved track | ";
+                }
+
                 if (embedType == FmEmbedType.TextMini || embedType == FmEmbedType.TextFull || embedType == FmEmbedType.EmbedTiny)
                 {
                     if (self)
@@ -292,6 +298,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footerText +=
                         $"{lastFmUserName} has ";
                 }
+
 
                 if (self)
                 {
@@ -336,18 +343,18 @@ namespace FMBot.Bot.Commands.LastFM
                     case FmEmbedType.TextFull:
                         if (embedType == FmEmbedType.TextMini)
                         {
-                            fmText += LastFmService.TrackToString(currentTrack).FilterOutMentions();
+                            fmText += StringService.TrackToString(currentTrack).FilterOutMentions();
                         }
                         else if (previousTrack != null)
                         {
                             fmText += $"**Current track**:\n";
 
-                            fmText += LastFmService.TrackToString(currentTrack).FilterOutMentions();
+                            fmText += StringService.TrackToString(currentTrack).FilterOutMentions();
 
                             fmText += $"\n" +
                                       $"**Previous track**:\n";
 
-                            fmText += LastFmService.TrackToString(previousTrack).FilterOutMentions();
+                            fmText += StringService.TrackToString(previousTrack).FilterOutMentions();
                         }
 
                         fmText +=
@@ -358,13 +365,13 @@ namespace FMBot.Bot.Commands.LastFM
                     default:
                         if (embedType == FmEmbedType.EmbedMini || embedType == FmEmbedType.EmbedTiny)
                         {
-                            fmText += LastFmService.TrackToLinkedString(currentTrack, userSettings.RymEnabled);
+                            fmText += StringService.TrackToLinkedString(currentTrack, userSettings.RymEnabled);
                             this._embed.WithDescription(fmText);
                         }
                         else if (previousTrack != null)
                         {
-                            this._embed.AddField("Current:", LastFmService.TrackToLinkedString(currentTrack, userSettings.RymEnabled));
-                            this._embed.AddField("Previous:", LastFmService.TrackToLinkedString(previousTrack, userSettings.RymEnabled));
+                            this._embed.AddField("Current:", StringService.TrackToLinkedString(currentTrack, userSettings.RymEnabled));
+                            this._embed.AddField("Previous:", StringService.TrackToLinkedString(previousTrack, userSettings.RymEnabled));
                         }
 
                         string headerText;
@@ -501,7 +508,7 @@ namespace FMBot.Bot.Commands.LastFM
                     sessionKey = user.SessionKeyLastFm;
                 }
 
-                var recentTracks = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFm, amount, useCache: true, sessionKey: sessionKey);
+                var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFm, amount, useCache: true, sessionKey: sessionKey);
 
                 if (await ErrorService.RecentScrobbleCallFailedReply(recentTracks, userSettings.UserNameLastFm, this.Context))
                 {
@@ -534,7 +541,7 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                     }
 
-                    var trackString = resultAmount > 6 ? LastFmService.TrackToString(track) : LastFmService.TrackToLinkedString(track, user.RymEnabled);
+                    var trackString = resultAmount > 6 ? StringService.TrackToString(track) : StringService.TrackToLinkedString(track, user.RymEnabled);
 
                     if (track.NowPlaying)
                     {
@@ -689,14 +696,14 @@ namespace FMBot.Bot.Commands.LastFM
                 helpDescription.AppendLine("Displays the date you reach a scrobble goal based on average scrobbles per day.");
                 helpDescription.AppendLine();
                 helpDescription.AppendLine($"Time periods: {Constants.CompactTimePeriodList}");
-                helpDescription.AppendLine("Optional goal amount: For example `10000`");
+                helpDescription.AppendLine("Optional goal amount: For example `10000` or `10k`");
                 helpDescription.AppendLine("User to check pace for: Mention or user id");
 
                 this._embed.WithDescription(helpDescription.ToString());
 
                 this._embed.AddField("Examples",
                     $"`{prfx}pc` \n" +
-                    $"`{prfx}pc 100000 q` \n" +
+                    $"`{prfx}pc 100k q` \n" +
                     $"`{prfx}pc 40000 h @user` \n" +
                     $"`{prfx}pace` \n" +
                     $"`{prfx}pace yearly @user 250000`");
@@ -706,8 +713,10 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
-            var userInfo = await this._lastFmService.GetFullUserInfoAsync(userSettings.UserNameLastFm);
+            var userInfo = await this._lastFmRepository.GetFullUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
 
             var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
 
@@ -726,7 +735,7 @@ namespace FMBot.Bot.Commands.LastFM
                 timeFrom = userInfo.Registered.Unixtime;
             }
 
-            var count = await this._lastFmService.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom);
+            var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom);
 
             if (count == null || count == 0)
             {
@@ -775,6 +784,89 @@ namespace FMBot.Bot.Commands.LastFM
             this.Context.LogCommandUsed();
         }
 
+
+        [Command("milestone", RunMode = RunMode.Async)]
+        [Summary("Displays the date a goal amount of scrobbles is reached")]
+        [UsernameSetRequired]
+        [Alias("m", "ms")]
+        public async Task MilestoneAsync([Remainder] string extraOptions = null)
+        {
+            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            if (!string.IsNullOrWhiteSpace(extraOptions) && extraOptions.ToLower() == "help")
+            {
+                this._embed.WithTitle($"{prfx}milestone");
+
+                var helpDescription = new StringBuilder();
+                helpDescription.AppendLine("Displays a milestone scrobble.");
+                helpDescription.AppendLine();
+                helpDescription.AppendLine("Optional milestone amount: For example `10000` or `10k`");
+                helpDescription.AppendLine("User to check pace for: Mention or user id");
+
+                this._embed.WithDescription(helpDescription.ToString());
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}ms` \n" +
+                    $"`{prfx}ms 10k` \n" +
+                    $"`{prfx}milestone 500 @user` \n" +
+                    $"`{prfx}milestone` \n" +
+                    $"`{prfx}milestone @user 250k`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
+            var userInfo = await this._lastFmRepository.GetFullUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
+
+            var mileStoneAmount = SettingService.GetMilestoneAmount(extraOptions, userInfo.Playcount);
+
+            var mileStonePlay = await this._lastFmRepository.GetMilestoneScrobbleAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm, userInfo.Playcount, mileStoneAmount);
+
+            if (!mileStonePlay.Success || mileStonePlay.Content == null)
+            {
+                this._embed.ErrorResponse(mileStonePlay.Error, mileStonePlay.Message, this.Context, "artist");
+                await ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandWithLastFmError(mileStonePlay.Error);
+                return;
+            }
+
+            var reply = new StringBuilder();
+
+            reply.AppendLine(StringService.TrackToLinkedString(mileStonePlay.Content));
+
+            var userTitle = $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}";
+
+            this._embed.WithTitle($"{mileStoneAmount}{StringExtensions.GetAmountEnd(mileStoneAmount)} scrobble from {userTitle}");
+            this._embed.WithDescription(reply.ToString());
+
+            if (mileStonePlay.Content.AlbumCoverUrl != null)
+            {
+                var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
+                    mileStonePlay.Content.AlbumName, mileStonePlay.Content.ArtistName, mileStonePlay.Content.AlbumCoverUrl);
+                if (safeForChannel)
+                {
+                    this._embed.WithThumbnailUrl(mileStonePlay.Content.AlbumCoverUrl);
+                }
+            }
+
+            if (mileStonePlay.Content.TimePlayed.HasValue)
+            {
+                var dateString = mileStonePlay.Content.TimePlayed.Value.ToString("yyyy-M-dd");
+                this._embed.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library?from={dateString}&to={dateString}");
+
+                this._embed.WithFooter("Date played ");
+                this._embed.WithTimestamp(mileStonePlay.Content.TimePlayed.Value);
+            }
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
+        }
+
         [Command("plays", RunMode = RunMode.Async)]
         [Summary("Displays track info and stats.")]
         [Alias("p", "scrobbles")]
@@ -787,13 +879,13 @@ namespace FMBot.Bot.Commands.LastFM
             if (!string.IsNullOrWhiteSpace(extraOptions) && extraOptions.ToLower() == "help")
             {
                 this._embed.WithTitle($"{prfx}plays");
-                this._embed.WithDescription($"Shows your total plays from the track you're currently listening to or searching for.");
+                this._embed.WithDescription($"Shows your total scrobblecount.");
 
                 this._embed.AddField("Examples",
                     $"`{prfx}tp` \n" +
-                    $"`{prfx}trackplays` \n" +
-                    $"`{prfx}trackplays Mac DeMarco Here Comes The Cowboy` \n" +
-                    $"`{prfx}trackplays Cocteau Twins | Heaven or Las Vegas`");
+                    $"`{prfx}plays` \n" +
+                    $"`{prfx}plays @Frikandel` \n" +
+                    $"`{prfx}plays monthly`");
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
@@ -804,15 +896,30 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context, true);
 
-            var count = await this._lastFmService.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm);
+            var timeType = SettingService.GetTimePeriod(extraOptions, ChartTimePeriod.AllTime);
+
+            long? timeFrom = null;
+            if (timeType.ChartTimePeriod != ChartTimePeriod.AllTime && timeType.PlayDays != null)
+            {
+                var dateAgo = DateTime.UtcNow.AddDays(-timeType.PlayDays.Value);
+                timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
+            }
+
+            var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom);
 
             var userTitle = $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}";
 
             var reply =
                 $"**{userTitle}** has `{count}` total scrobbles";
 
-
-            await this.Context.Channel.SendMessageAsync(reply);
+            if (timeType.ChartTimePeriod == ChartTimePeriod.AllTime)
+            {
+                await this.Context.Channel.SendMessageAsync($"**{userTitle}** has `{count}` total scrobbles");
+            }
+            else
+            {
+                await this.Context.Channel.SendMessageAsync($"**{userTitle}** has `{count}` scrobbles in the {timeType.AltDescription}");
+            }
             this.Context.LogCommandUsed();
         }
 
@@ -868,14 +975,14 @@ namespace FMBot.Bot.Commands.LastFM
 
         private async Task<string> FindUser(string user)
         {
-            if (await this._lastFmService.LastFmUserExistsAsync(user))
+            if (await this._lastFmRepository.LastFmUserExistsAsync(user))
             {
                 return user;
             }
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                var guildUser = await this._settingService.GetUserFromString(user);
+                var guildUser = await this._settingService.StringWithDiscordIdForUser(user);
 
                 if (guildUser != null)
                 {

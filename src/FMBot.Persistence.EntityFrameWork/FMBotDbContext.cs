@@ -301,6 +301,10 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.Tracks)
                     .HasForeignKey(d => d.ArtistId);
+
+                entity.HasOne(d => d.Album)
+                    .WithMany(p => p.Tracks)
+                    .HasForeignKey(d => d.AlbumId);
             });
 
             modelBuilder.Entity<CensoredMusic>(entity =>

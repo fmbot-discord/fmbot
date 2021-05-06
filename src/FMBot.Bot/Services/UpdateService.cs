@@ -6,7 +6,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Types;
-using FMBot.LastFM.Services;
+using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -18,22 +18,22 @@ namespace FMBot.Bot.Services
     public class UpdateService : IUpdateService
     {
         private readonly IUserUpdateQueue _userUpdateQueue;
-        private readonly GlobalUpdateService _globalUpdateService;
+        private readonly UpdateRepository _updateRepository;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
         private readonly IMemoryCache _cache;
 
-        public UpdateService(IUserUpdateQueue userUpdateQueue, GlobalUpdateService updateService, IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
+        public UpdateService(IUserUpdateQueue userUpdateQueue, UpdateRepository updateRepository, IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
         {
             this._userUpdateQueue = userUpdateQueue;
             this._userUpdateQueue.UsersToUpdate.SubscribeAsync(OnNextAsync);
-            this._globalUpdateService = updateService;
+            this._updateRepository = updateRepository;
             this._contextFactory = contextFactory;
             this._cache = cache;
         }
 
         private async Task OnNextAsync(UpdateUserQueueItem user)
         {
-            await this._globalUpdateService.UpdateUser(user);
+            await this._updateRepository.UpdateUser(user);
         }
 
         public void AddUsersToUpdateQueue(IReadOnlyList<User> users)
@@ -45,7 +45,7 @@ namespace FMBot.Bot.Services
 
         public async Task<int> UpdateUser(User user)
         {
-            var updatedUser = await this._globalUpdateService.UpdateUser(new UpdateUserQueueItem(user.UserId));
+            var updatedUser = await this._updateRepository.UpdateUser(new UpdateUserQueueItem(user.UserId));
             return (int)updatedUser.Content.NewRecentTracksAmount;
         }
 
@@ -61,7 +61,7 @@ namespace FMBot.Bot.Services
                 };
             }
 
-            return await this._globalUpdateService.UpdateUser(new UpdateUserQueueItem(user.UserId));
+            return await this._updateRepository.UpdateUser(new UpdateUserQueueItem(user.UserId));
         }
 
         public async Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeAuthorizedLastUpdated, DateTime timeUnauthorizedFilter)
@@ -79,7 +79,7 @@ namespace FMBot.Bot.Services
 
         public async Task CorrectUserArtistPlaycount(int userId, string artistName, long correctPlaycount)
         {
-            await this._globalUpdateService.CorrectUserArtistPlaycount(userId, artistName, correctPlaycount);
+            await this._updateRepository.CorrectUserArtistPlaycount(userId, artistName, correctPlaycount);
         }
     }
 }

@@ -17,9 +17,9 @@ using Npgsql;
 using PostgreSQLCopyHelper;
 using Serilog;
 
-namespace FMBot.LastFM.Services
+namespace FMBot.LastFM.Repositories
 {
-    public class GlobalIndexService
+    public class IndexRepository
     {
         private readonly LastfmClient _lastFMClient;
 
@@ -32,15 +32,15 @@ namespace FMBot.LastFM.Services
 
         private readonly string _connectionString;
 
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
 
-        public GlobalIndexService(
+        public IndexRepository(
             IConfigurationRoot configuration,
-            LastFmService lastFmService,
+            LastFmRepository lastFmRepository,
             IDbContextFactory<FMBotDbContext> contextFactory,
             IMemoryCache cache)
         {
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._contextFactory = contextFactory;
             this._cache = cache;
             this._key = configuration.GetSection("LastFm:Key").Value;
@@ -130,7 +130,7 @@ namespace FMBot.LastFM.Services
             var recentPlays = await this._lastFMClient.User.GetRecentScrobbles(
                 user.UserNameLastFM,
                 count: 1000,
-                from: DateTime.UtcNow.AddDays(-14));
+                @from: DateTime.UtcNow.AddDays(-14));
 
             if (!recentPlays.Success || recentPlays.Content.Count == 0)
             {
@@ -191,7 +191,7 @@ namespace FMBot.LastFM.Services
 
             var indexLimit = UserHasHigherIndexLimit(user) ? 25 : 6;
 
-            var trackResult = await this._lastFmService.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, indexLimit);
+            var trackResult = await this._lastFmRepository.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, indexLimit);
 
             if (!trackResult.Success || trackResult.Content.TopTracks.Track.Count == 0)
             {
@@ -306,7 +306,7 @@ namespace FMBot.LastFM.Services
         
         private async Task SetUserPlaycount(User user, NpgsqlConnection connection)
         {
-            var recentTracks = await this._lastFmService.GetRecentTracksAsync(
+            var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(
                 user.UserNameLastFM,
                 count: 1,
                 useCache: false,

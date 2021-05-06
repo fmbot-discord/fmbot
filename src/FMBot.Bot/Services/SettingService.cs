@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord.Commands;
 using FMBot.Bot.Models;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -29,18 +30,18 @@ namespace FMBot.Bot.Services
             options ??= "";
             settingsModel.NewSearchValue = options;
 
-            var oneDay = new[] { "1-day", "1day", "day1", "1d", "today" };
-            var twoDays = new[] { "2-day", "2day", "day2", "2d" };
-            var threeDays = new[] { "3-day", "3day", "day3", "3d" };
-            var fourDays = new[] { "4-day", "4day", "day4", "4d" };
-            var fiveDays = new[] { "5-day", "5day", "day5", "5d" };
-            var sixDays = new[] { "6-day", "6day", "day6", "6d" };
+            var oneDay = new[] { "1-day", "1day", "1d", "today" };
+            var twoDays = new[] { "2-day", "2day", "2d" };
+            var threeDays = new[] { "3-day", "3day", "3d" };
+            var fourDays = new[] { "4-day", "4day", "4d" };
+            var fiveDays = new[] { "5-day", "5day", "5d" };
+            var sixDays = new[] { "6-day", "6day", "6d" };
             var weekly = new[] { "weekly", "week", "w", "7d" };
             var monthly = new[] { "monthly", "month", "m", "1m", "30d" };
             var quarterly = new[] { "quarterly", "quarter", "q", "3m", "90d" };
             var halfYearly = new[] { "half-yearly", "halfyearly", "half", "h", "6m", "180d" };
             var yearly = new[] { "yearly", "year", "y", "12m", "365d", "1y" };
-            var allTime = new[] { "overall", "alltime", "all-time", "a", "o", "at" };
+            var allTime = new[] { "overall", "alltime", "all-time", "all", "a", "o", "at" };
 
             if (Contains(options, weekly))
             {
@@ -48,6 +49,7 @@ namespace FMBot.Bot.Services
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Weekly;
                 settingsModel.Description = "Weekly";
+                settingsModel.AltDescription = "last week";
                 settingsModel.UrlParameter = "date_preset=LAST_7_DAYS";
                 settingsModel.ApiParameter = "7day";
                 settingsModel.PlayDays = 7;
@@ -58,16 +60,7 @@ namespace FMBot.Bot.Services
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Monthly;
                 settingsModel.Description = "Monthly";
-                settingsModel.UrlParameter = "date_preset=LAST_30_DAYS";
-                settingsModel.ApiParameter = "1month";
-                settingsModel.PlayDays = 30;
-            }
-            else if (Contains(options, monthly))
-            {
-                settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, monthly);
-                settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;
-                settingsModel.ChartTimePeriod = ChartTimePeriod.Monthly;
-                settingsModel.Description = "Monthly";
+                settingsModel.AltDescription = "last month";
                 settingsModel.UrlParameter = "date_preset=LAST_30_DAYS";
                 settingsModel.ApiParameter = "1month";
                 settingsModel.PlayDays = 30;
@@ -78,6 +71,7 @@ namespace FMBot.Bot.Services
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Quarter;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Quarterly;
                 settingsModel.Description = "Quarterly";
+                settingsModel.AltDescription = "last quarter";
                 settingsModel.UrlParameter = "date_preset=LAST_90_DAYS";
                 settingsModel.ApiParameter = "3month";
                 settingsModel.PlayDays = 90;
@@ -88,6 +82,7 @@ namespace FMBot.Bot.Services
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Half;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Half;
                 settingsModel.Description = "Half-yearly";
+                settingsModel.AltDescription = "last half year";
                 settingsModel.UrlParameter = "date_preset=LAST_180_DAYS";
                 settingsModel.ApiParameter = "6month";
                 settingsModel.PlayDays = 180;
@@ -98,6 +93,7 @@ namespace FMBot.Bot.Services
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Year;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.Yearly;
                 settingsModel.Description = "Yearly";
+                settingsModel.AltDescription = "last year";
                 settingsModel.UrlParameter = "date_preset=LAST_365_DAYS";
                 settingsModel.ApiParameter = "12month";
                 settingsModel.PlayDays = 365;
@@ -108,6 +104,7 @@ namespace FMBot.Bot.Services
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;
                 settingsModel.ChartTimePeriod = ChartTimePeriod.AllTime;
                 settingsModel.Description = "Overall";
+                settingsModel.AltDescription = "all-time";
                 settingsModel.UrlParameter = "date_preset=ALL";
                 settingsModel.ApiParameter = "overall";
             }
@@ -116,6 +113,7 @@ namespace FMBot.Bot.Services
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, sixDays);
                 var dateString = DateTime.Today.AddDays(-6).ToString("yyyy-M-dd");
                 settingsModel.Description = "6-day";
+                settingsModel.AltDescription = "last 6 days";
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 6;
@@ -125,6 +123,7 @@ namespace FMBot.Bot.Services
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, fiveDays);
                 var dateString = DateTime.Today.AddDays(-5).ToString("yyyy-M-dd");
                 settingsModel.Description = "5-day";
+                settingsModel.AltDescription = "last 5 days";
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 5;
@@ -134,6 +133,7 @@ namespace FMBot.Bot.Services
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, fourDays);
                 var dateString = DateTime.Today.AddDays(-4).ToString("yyyy-M-dd");
                 settingsModel.Description = "4-day";
+                settingsModel.AltDescription = "last 4 days";
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 4;
@@ -143,6 +143,7 @@ namespace FMBot.Bot.Services
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, threeDays);
                 var dateString = DateTime.Today.AddDays(-3).ToString("yyyy-M-dd");
                 settingsModel.Description = "3-day";
+                settingsModel.AltDescription = "last 3 days";
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 3;
@@ -152,6 +153,7 @@ namespace FMBot.Bot.Services
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, twoDays);
                 var dateString = DateTime.Today.AddDays(-2).ToString("yyyy-M-dd");
                 settingsModel.Description = "2-day";
+                settingsModel.AltDescription = "last 2 days";
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 2;
@@ -161,6 +163,7 @@ namespace FMBot.Bot.Services
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, oneDay);
                 var dateString = DateTime.Today.AddDays(-1).ToString("yyyy-M-dd");
                 settingsModel.Description = "1-day";
+                settingsModel.AltDescription = "last 24 hours";
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 1;
@@ -177,6 +180,7 @@ namespace FMBot.Bot.Services
                     settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;
                     settingsModel.ChartTimePeriod = ChartTimePeriod.AllTime;
                     settingsModel.Description = "Overall";
+                    settingsModel.AltDescription = "all-time";
                     settingsModel.UrlParameter = "date_preset=ALL";
                     settingsModel.ApiParameter = "overall";
                 }
@@ -185,6 +189,7 @@ namespace FMBot.Bot.Services
                     settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;
                     settingsModel.ChartTimePeriod = ChartTimePeriod.Weekly;
                     settingsModel.Description = "Weekly";
+                    settingsModel.AltDescription = "last week";
                     settingsModel.UrlParameter = "date_preset=LAST_7_DAYS";
                     settingsModel.ApiParameter = "7day";
                     settingsModel.PlayDays = 7;
@@ -203,7 +208,7 @@ namespace FMBot.Bot.Services
                 return whoKnowsSettings;
             }
 
-            var hidePrivateUsers = new[] {"hp", "hideprivate", "hideprivateusers"};
+            var hidePrivateUsers = new[] { "hp", "hideprivate", "hideprivateusers" };
             if (Contains(extraOptions, hidePrivateUsers))
             {
                 whoKnowsSettings.NewSearchValue = ContainsAndRemove(whoKnowsSettings.NewSearchValue, hidePrivateUsers);
@@ -263,16 +268,19 @@ namespace FMBot.Bot.Services
                     settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
                     settingsModel.SessionKeyLastFm = otherUser.SessionKeyLastFm;
                     settingsModel.UserType = otherUser.UserType;
+                    settingsModel.UserId = otherUser.UserId;
+
+                    return settingsModel;
                 }
             }
 
             foreach (var option in options)
             {
-                var otherUser = await GetUserFromString(option);
+                var otherUser = await StringWithDiscordIdForUser(option);
 
                 if (otherUser != null)
                 {
-                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] {"<", "@","!", ">", otherUser.DiscordUserId.ToString(), otherUser.UserNameLastFM.ToLower()}, true);
+                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { "<", "@", "!", ">", otherUser.DiscordUserId.ToString(), otherUser.UserNameLastFM.ToLower() }, true);
 
                     if (context.Guild != null)
                     {
@@ -288,6 +296,38 @@ namespace FMBot.Bot.Services
                     settingsModel.DiscordUserId = otherUser.DiscordUserId;
                     settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
                     settingsModel.UserType = otherUser.UserType;
+                    settingsModel.UserId = otherUser.UserId;
+                }
+
+                if (option.StartsWith("lfm:") && option.Length > 4)
+                {
+                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { "lfm:" }, true);
+
+                    var lfmUserName = option.Replace("lfm:", "");
+
+                    var foundLfmUser = await GetDifferentUser(lfmUserName);
+
+                    if (foundLfmUser != null)
+                    {
+                        settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName }, true);
+
+                        settingsModel.DiscordUserName = foundLfmUser.UserNameLastFM;
+                        settingsModel.DifferentUser = true;
+                        settingsModel.DiscordUserId = foundLfmUser.DiscordUserId;
+                        settingsModel.UserNameLastFm = foundLfmUser.UserNameLastFM;
+                        settingsModel.SessionKeyLastFm = foundLfmUser.SessionKeyLastFm;
+                        settingsModel.UserType = foundLfmUser.UserType;
+                        settingsModel.UserId = foundLfmUser.UserId;
+
+                        return settingsModel;
+                    }
+
+                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName }, true);
+                    settingsModel.UserNameLastFm = lfmUserName;
+                    settingsModel.DiscordUserName = lfmUserName;
+                    settingsModel.DifferentUser = true;
+
+                    return settingsModel;
                 }
             }
 
@@ -296,7 +336,7 @@ namespace FMBot.Bot.Services
 
         public async Task<User> GetDifferentUser(string searchValue)
         {
-            var otherUser = await GetUserFromString(searchValue);
+            var otherUser = await StringWithDiscordIdForUser(searchValue);
 
             if (otherUser == null)
             {
@@ -310,7 +350,7 @@ namespace FMBot.Bot.Services
             return otherUser;
         }
 
-        public async Task<User> GetUserFromString(string value)
+        public async Task<User> StringWithDiscordIdForUser(string value)
         {
             if (!value.Contains("<@") && value.Length != 18)
             {
@@ -373,13 +413,23 @@ namespace FMBot.Bot.Services
 
                 foreach (var option in options)
                 {
-                    if (int.TryParse(option, out var result))
+                    if (option.ToLower().EndsWith("k"))
                     {
-                        if (result > currentPlaycount)
+                        if (int.TryParse(option.ToLower().Replace("k", ""), out var kResult))
                         {
-                            goalAmount = result;
-                            ownGoalSet = true;
+                            kResult *= 1000;
+                            if (kResult > currentPlaycount)
+                            {
+                                goalAmount = kResult;
+                                ownGoalSet = true;
+                                break;
+                            }
                         }
+                    }
+                    else if (int.TryParse(option, out var result) && result > currentPlaycount)
+                    {
+                        goalAmount = result;
+                        ownGoalSet = true;
                     }
                 }
             }
@@ -387,31 +437,60 @@ namespace FMBot.Bot.Services
 
             if (!ownGoalSet)
             {
-                int[] breakPoints =
-                {
-                    100,
-                    1000,
-                    5000,
-                    10000,
-                    25000,
-                    50000,
-                    100000,
-                    150000,
-                    200000,
-                    250000,
-                    300000,
-                    350000,
-                    400000,
-                    450000,
-                    500000,
-                    1000000,
-                    2000000,
-                    5000000
-                };
-
-                foreach (var breakPoint in breakPoints)
+                foreach (var breakPoint in Constants.PlayCountBreakPoints)
                 {
                     if (currentPlaycount < breakPoint)
+                    {
+                        goalAmount = breakPoint;
+                        break;
+                    }
+                }
+            }
+
+            return goalAmount;
+        }
+
+
+        public static long GetMilestoneAmount(
+            string extraOptions,
+            long currentPlaycount)
+        {
+            var goalAmount = 100;
+            var ownGoalSet = false;
+
+            if (extraOptions != null)
+            {
+                var options = extraOptions.Split(' ');
+
+                foreach (var option in options)
+                {
+                    if (option.ToLower().EndsWith("k"))
+                    {
+                        if (int.TryParse(option.ToLower().Replace("k", ""), out var kResult))
+                        {
+                            kResult *= 1000;
+                            if (kResult < currentPlaycount)
+                            {
+                                goalAmount = kResult;
+                                ownGoalSet = true;
+                                break;
+                            }
+                        }
+                    }
+                    else if (int.TryParse(option, out var result) && result < currentPlaycount)
+                    {
+                        goalAmount = result;
+                        ownGoalSet = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!ownGoalSet)
+            {
+                foreach (var breakPoint in Constants.PlayCountBreakPoints.OrderByDescending(o => o))
+                {
+                    if (currentPlaycount > breakPoint)
                     {
                         goalAmount = breakPoint;
                         break;
@@ -486,7 +565,7 @@ namespace FMBot.Bot.Services
 
             if (somethingFound || alwaysReturnValue)
             {
-                return extraOptions.TrimEnd();
+                return extraOptions.TrimEnd().TrimStart();
             }
 
             return null;

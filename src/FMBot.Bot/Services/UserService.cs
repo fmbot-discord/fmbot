@@ -8,7 +8,7 @@ using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Services;
+using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -22,13 +22,13 @@ namespace FMBot.Bot.Services
     {
         private readonly IMemoryCache _cache;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
 
-        public UserService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmService lastFmService)
+        public UserService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository)
         {
             this._cache = cache;
             this._contextFactory = contextFactory;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
         }
 
         public async Task<bool> UserRegisteredAsync(IUser discordUser)
@@ -423,6 +423,26 @@ namespace FMBot.Bot.Services
             return user.RymEnabled;
         }
 
+        public async Task<bool?> ToggleBotScrobblingAsync(User user, string option)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+
+            if (option != null && (option.ToLower() == "on" || option.ToLower() == "true" || option.ToLower() == "yes"))
+            {
+                user.MusicBotTrackingDisabled = false;
+            }
+            else if (option != null && (option.ToLower() == "off" || option.ToLower() == "false" || option.ToLower() == "no"))
+            {
+                user.MusicBotTrackingDisabled = true;
+            }
+
+            db.Update(user);
+
+            await db.SaveChangesAsync();
+
+            return user.MusicBotTrackingDisabled;
+        }
+
         public async Task<int> GetTotalUserCountAsync()
         {
             await using var db = this._contextFactory.CreateDbContext();
@@ -460,7 +480,7 @@ namespace FMBot.Bot.Services
 
                 if (user != null)
                 {
-                    if (!await this._lastFmService.LastFmUserExistsAsync(user.UserNameLastFM))
+                    if (!await this._lastFmRepository.LastFmUserExistsAsync(user.UserNameLastFM))
                     {
                         await DeleteUser(user.UserId);
                         Log.Information("DeleteInactiveUsers: User {userNameLastFm} | {userId} | {discordUserId} deleted", user.UserNameLastFM, user.UserId, user.DiscordUserId);

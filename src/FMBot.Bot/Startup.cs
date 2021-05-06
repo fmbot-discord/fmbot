@@ -12,7 +12,8 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
-using FMBot.LastFM.Services;
+using FMBot.LastFM.Api;
+using FMBot.LastFM.Repositories;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Youtube.Services;
 using Interactivity;
@@ -115,6 +116,8 @@ namespace FMBot.Bot
                 .AddSingleton<StartupService>()
                 .AddSingleton<SupporterService>()
                 .AddSingleton<TimerService>()
+                .AddSingleton<MusicBotService>()
+                .AddSingleton<TrackService>()
                 .AddSingleton<UserEventHandler>()
                 .AddSingleton<UserService>()
                 .AddSingleton<WebhookService>()
@@ -130,11 +133,11 @@ namespace FMBot.Bot
             // These services can only be added after the config is loaded
             services
                 .AddSingleton(new InteractivityService(discordClient, TimeSpan.FromMinutes(3)))
-                .AddSingleton<GlobalIndexService>()
-                .AddSingleton<GlobalUpdateService>()
+                .AddSingleton<IndexRepository>()
+                .AddSingleton<UpdateRepository>()
                 .AddSingleton<IUpdateService, UpdateService>()
                 .AddTransient<ILastfmApi, LastfmApi>()
-                .AddTransient<LastFmService>()
+                .AddTransient<LastFmRepository>()
                 .AddTransient<InvidiousApi>();
 
             services.AddDbContextFactory<FMBotDbContext>(b =>

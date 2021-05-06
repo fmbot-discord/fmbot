@@ -2,13 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
 using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Services;
+using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -22,22 +24,22 @@ namespace FMBot.Bot.Services
     public class IndexService : IIndexService
     {
         private readonly IUserIndexQueue _userIndexQueue;
-        private readonly GlobalIndexService _globalIndexService;
+        private readonly IndexRepository _indexRepository;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
         private readonly IMemoryCache _cache;
 
-        public IndexService(IUserIndexQueue userIndexQueue, GlobalIndexService indexService, IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
+        public IndexService(IUserIndexQueue userIndexQueue, IndexRepository indexRepository, IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
         {
             this._userIndexQueue = userIndexQueue;
             this._userIndexQueue.UsersToIndex.SubscribeAsync(OnNextAsync);
-            this._globalIndexService = indexService;
+            this._indexRepository = indexRepository;
             this._contextFactory = contextFactory;
             this._cache = cache;
         }
 
         private async Task OnNextAsync(IndexUserQueueItem user)
         {
-            await this._globalIndexService.IndexUser(user);
+            await this._indexRepository.IndexUser(user);
         }
 
         public void AddUsersToIndexQueue(IReadOnlyList<User> users)
@@ -51,7 +53,7 @@ namespace FMBot.Bot.Services
 
             if (!this._cache.TryGetValue($"index-started-{user.UserId}", out bool _))
             {
-                await this._globalIndexService.IndexUser(new IndexUserQueueItem(user.UserId));
+                await this._indexRepository.IndexUser(new IndexUserQueueItem(user.UserId));
             }
             else
             {
@@ -59,7 +61,7 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async Task StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers)
+        public async Task<int> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers)
         {
             var userIds = discordGuildUsers.Select(s => s.Id).ToList();
 
@@ -121,6 +123,8 @@ namespace FMBot.Bot.Services
             await copyHelper.SaveAllAsync(connection, users).ConfigureAwait(false);
 
             Log.Information("Stored guild users for guild with id {guildId}", existingGuild.GuildId);
+
+            return users.Count;
         }
 
         public async Task<GuildUser> GetOrAddUserToGuild(Persistence.Domain.Models.Guild guild, IGuildUser discordGuildUser, User user)
@@ -147,10 +151,19 @@ namespace FMBot.Bot.Services
                         UserName = discordGuildUser.Nickname ?? discordGuildUser.Username
                     };
 
-                    await db.GuildUsers.AddAsync(guildUserToAdd);
-                    await db.SaveChangesAsync();
+                    const string sql = "INSERT INTO guild_users (guild_id, user_id, user_name, bot) VALUES (@guildId, @userId, @userName, false) " +
+                                       "ON CONFLICT DO NOTHING";
 
-                    db.Entry(guildUserToAdd).State = EntityState.Detached;
+                    DefaultTypeMap.MatchNamesWithUnderscores = true;
+                    await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+                    await connection.OpenAsync();
+
+                    await connection.ExecuteAsync(sql, new
+                    {
+                        guildUserToAdd.GuildId,
+                        guildUserToAdd.UserId,
+                        guildUserToAdd.UserName
+                    });
 
                     Log.Information("Added user {userId} to guild {guildName}", user.UserId, guild.Name);
 
@@ -241,7 +254,7 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> discordGuildUsers)
+        public async Task<IReadOnlyList<User>> GetUsersToFullyUpdate(IReadOnlyCollection<IGuildUser> discordGuildUsers)
         {
             var userIds = discordGuildUsers.Select(s => s.Id).ToList();
 

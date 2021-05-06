@@ -10,7 +10,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Services;
+using FMBot.LastFM.Repositories;
 
 namespace FMBot.Bot.Commands
 {
@@ -19,7 +19,7 @@ namespace FMBot.Bot.Commands
     {
         private readonly EmbedBuilder _embed;
 
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
         private readonly UserService _userService;
         private readonly YoutubeService _youtubeService;
 
@@ -27,14 +27,14 @@ namespace FMBot.Bot.Commands
 
         public YoutubeCommands(
             IPrefixService prefixService,
-            LastFmService lastFmService,
+            LastFmRepository lastFmRepository,
             UserService userService,
             YoutubeService youtubeService)
         {
             this._prefixService = prefixService;
             this._userService = userService;
             this._youtubeService = youtubeService;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFmColorRed);
         }
@@ -65,7 +65,7 @@ namespace FMBot.Bot.Commands
                         sessionKey = userSettings.SessionKeyLastFm;
                     }
 
-                    var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
+                    var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
                     if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                     {

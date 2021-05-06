@@ -21,9 +21,9 @@ namespace FMBot.Bot.Interfaces
 
         Task RemoveUserFromGuild(SocketGuildUser user);
 
-        Task StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers);
+        Task<int> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers);
 
-        Task<IReadOnlyList<User>> GetUsersToIndex(IReadOnlyCollection<IGuildUser> discordGuildUsers);
+        Task<IReadOnlyList<User>> GetUsersToFullyUpdate(IReadOnlyCollection<IGuildUser> discordGuildUsers);
 
         Task<int> GetIndexedUsersCount(IReadOnlyCollection<IGuildUser> discordGuildUsers);
 

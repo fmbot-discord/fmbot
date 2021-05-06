@@ -15,7 +15,7 @@ namespace FMBot.LastFM.Domain.Models
         public long Streamable { get; set; }
         public long Ontour { get; set; }
         public Stats Stats { get; set; }
-        public Tags Tags { get; set; }
+        public TagsLfm Tags { get; set; }
         public Bio Bio { get; set; }
     }
 

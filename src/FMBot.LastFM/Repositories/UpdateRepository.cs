@@ -16,12 +16,12 @@ using Npgsql;
 using PostgreSQLCopyHelper;
 using Serilog;
 
-namespace FMBot.LastFM.Services
+namespace FMBot.LastFM.Repositories
 {
-    public class GlobalUpdateService
+    public class UpdateRepository
 
     {
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
 
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
@@ -29,11 +29,11 @@ namespace FMBot.LastFM.Services
 
         private readonly IMemoryCache _cache;
 
-        public GlobalUpdateService(IConfigurationRoot configuration, IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmService lastFmService)
+        public UpdateRepository(IConfigurationRoot configuration, IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository)
         {
             this._cache = cache;
             this._contextFactory = contextFactory;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._connectionString = configuration.GetSection("Database:ConnectionString").Value;
         }
 
@@ -58,7 +58,7 @@ namespace FMBot.LastFM.Services
             var dateAgo = lastStoredPlay?.TimePlayed.AddMinutes(-10) ?? DateTime.UtcNow.AddDays(-14);
             var timeFrom = (long?)((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
 
-            var count = 1000;
+            var count = 900;
             var totalPlaycountCorrect = false;
             if (dateAgo > DateTime.UtcNow.AddHours(-1)) 
             {
@@ -73,7 +73,7 @@ namespace FMBot.LastFM.Services
                 totalPlaycountCorrect = true;
             }
 
-            var recentTracks = await this._lastFmService.GetRecentTracksAsync(
+            var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(
                 user.UserNameLastFM,
                 count,
                 true,
@@ -260,7 +260,7 @@ namespace FMBot.LastFM.Services
                 .Where(w => w.UserId == user.UserId)
                 .ToListAsync();
 
-            foreach (var artist in newScrobbles.GroupBy(g => g.ArtistName))
+            foreach (var artist in newScrobbles.GroupBy(g => g.ArtistName.ToLower()))
             {
                 var alias = cachedArtistAliases
                             .FirstOrDefault(f => f.Alias.ToLower() == artist.Key.ToLower());
@@ -320,7 +320,11 @@ namespace FMBot.LastFM.Services
 
             foreach (var album in newScrobbles
                 .Where(w => w.AlbumName != null)
-                .GroupBy(x => new { x.ArtistName, x.AlbumName }))
+                .GroupBy(x => new
+                {
+                    ArtistName = x.ArtistName.ToLower(),
+                    AlbumName = x.AlbumName.ToLower()
+                }))
             {
                 var alias = cachedArtistAliases
                     .FirstOrDefault(f => f.Alias.ToLower() == album.Key.ArtistName.ToLower());
@@ -379,7 +383,10 @@ namespace FMBot.LastFM.Services
                 .Where(w => w.UserId == user.UserId)
                 .ToListAsync();
 
-            foreach (var track in newScrobbles.GroupBy(x => new { x.ArtistName, x.TrackName }))
+            foreach (var track in newScrobbles.GroupBy(x => new {
+                ArtistName = x.ArtistName.ToLower(),
+                TrackName = x.TrackName.ToLower()
+            }))
             {
                 var alias = cachedArtistAliases
                     .FirstOrDefault(f => f.Alias.ToLower() == track.Key.ArtistName.ToLower());
@@ -448,7 +455,7 @@ namespace FMBot.LastFM.Services
             {
                 if (!user.TotalPlaycount.HasValue)
                 {
-                    var recentTracks = await this._lastFmService.GetRecentTracksAsync(
+                    var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(
                         user.UserNameLastFM,
                         count: 1,
                         useCache: false,

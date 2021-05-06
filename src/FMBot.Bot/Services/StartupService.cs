@@ -83,7 +83,6 @@ namespace FMBot.Bot.Services
             Log.Information("Logging into Discord");
             await this._client.LoginAsync(TokenType.Bot, discordToken);
 
-
             Log.Information("Setting Discord user status");
             await this._client.SetStatusAsync(UserStatus.DoNotDisturb);
 
@@ -99,13 +98,13 @@ namespace FMBot.Bot.Services
                     Assembly.GetEntryAssembly(),
                     this._provider); // Load commands and modules into the command service
 
-            var shardTimeOut = 5000;
+            var shardTimeOut = 4500;
             foreach (var shard in this._client.Shards)
             {
                 Log.Information("ShardStartConnection: shard {shardId}", shard.ShardId);
                 await shard.StartAsync();
                 await Task.Delay(shardTimeOut);
-                shardTimeOut += 250;
+                shardTimeOut += 100;
             }
 
             Log.Information("Preparing cache folder");

@@ -178,6 +178,11 @@ namespace FMBot.Bot.Services
 
         public async Task<Artist> GetArtistFromDatabase(string artistName)
         {
+            if (string.IsNullOrWhiteSpace(artistName))
+            {
+                return null;
+            }
+
             var cachedArtistAliases = await GetCachedArtistAliases();
             var alias = cachedArtistAliases
                 .FirstOrDefault(f => f.Alias.ToLower() == artistName.ToLower());

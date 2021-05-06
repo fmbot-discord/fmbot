@@ -16,7 +16,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 
-namespace FMBot.LastFM.Services
+namespace FMBot.LastFM.Api
 {
     public class LastfmApi : ILastfmApi
     {
@@ -126,6 +126,10 @@ namespace FMBot.LastFM.Services
                     if (response.Error == ResponseStatus.Failure)
                     {
                         Statistics.LastfmFailureErrors.Inc();
+                    }
+                    if (response.Error == ResponseStatus.BadAuth)
+                    {
+                        Statistics.LastfmBadAuthErrors.Inc();
                     }
                 }
             }

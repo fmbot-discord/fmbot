@@ -29,6 +29,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public bool? RymEnabled { get; set; }
 
+        public bool? MusicBotTrackingDisabled { get; set; }
+
         public FmEmbedType FmEmbedType { get; set; }
 
         public FmCountType? FmCountType { get; set; }

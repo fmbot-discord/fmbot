@@ -11,6 +11,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands
@@ -24,6 +25,9 @@ namespace FMBot.Bot.Commands
         private readonly CensorService _censorService;
         private readonly GuildService _guildService;
         private readonly TimerService _timer;
+        private readonly LastFmRepository _lastFmRepository;
+        private readonly SupporterService _supporterService;
+        private readonly UserService _userService;
 
         private readonly EmbedBuilder _embed;
 
@@ -31,13 +35,16 @@ namespace FMBot.Bot.Commands
                 AdminService adminService,
                 CensorService censorService,
                 GuildService guildService,
-                TimerService timer
-            )
+                TimerService timer,
+                LastFmRepository lastFmRepository, SupporterService supporterService, UserService userService)
         {
             this._adminService = adminService;
             this._censorService = censorService;
             this._guildService = guildService;
             this._timer = timer;
+            this._lastFmRepository = lastFmRepository;
+            this._supporterService = supporterService;
+            this._userService = userService;
 
             this._embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFmColorRed);
@@ -247,6 +254,113 @@ namespace FMBot.Bot.Commands
             }
         }
 
+        [Command("checkbotted")]
+        [Summary("Checks some stats for a user and if they're banned from global whoknows")]
+        public async Task CheckBottedUserAsync(string user)
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                if (string.IsNullOrEmpty(user))
+                {
+                    await ReplyAsync("Enter a correct artist to be censored\n" +
+                                     "Example: `.fmaddcensoredartist \"Last Days of Humanity\"");
+                    return;
+                }
+
+                var bottedUser = await this._adminService.GetBottedUserAsync(user);
+
+                this._embed.WithTitle($"Botted check for {user}");
+                this._embed.WithDescription($"[Profile]({Constants.LastFMUserUrl}{user}) - " +
+                                            $"[Library]({Constants.LastFMUserUrl}{user}/library) - " +
+                                            $"[Last.week]({Constants.LastFMUserUrl}{user}/listening-report) - " +
+                                            $"[Last.year]({Constants.LastFMUserUrl}{user}/listening-report/year)");
+
+                var dateAgo = DateTime.UtcNow.AddDays(-365);
+                var timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
+
+                var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(user, timeFrom);
+
+                var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
+                var totalDays = (DateTime.UtcNow - age).TotalDays;
+
+                var avgPerDay = count / totalDays;
+                this._embed.AddField("Avg scrobbles / day in last year", Math.Round(avgPerDay.GetValueOrDefault(0), 1));
+
+                this._embed.AddField("Banned from GlobalWhoKnows", bottedUser == null ? "No" : "Yes");
+                if (bottedUser != null)
+                {
+                    this._embed.AddField("Reason / additional notes", bottedUser.Notes ?? "*No reason/notes*");
+                }
+
+                this._embed.WithFooter("Command not intended for use in public channels");
+
+                await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+                this.Context.LogCommandUsed();
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can check botted users");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+
+        [Command("addsupporter")]
+        public async Task AddSupporterAsync(string user = null, string name = null, string internalNotes = null)
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                var formatError = "Make sure to follow the correct format when adding a supporter\n" +
+                                  "Examples: \n" +
+                                  "`.fmaddsupporter \"125740103539621888\" \"Drasil\" \"lifetime supporter\"`\n" +
+                                  "`.fmaddsupporter \"278633844763262976\" \"Aetheling\" \"monthly supporter (perm at 28-11-2021)\"`";
+
+                if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(internalNotes) || string.IsNullOrEmpty(name) || user == "help")
+                {
+                    await ReplyAsync(formatError);
+                    this.Context.LogCommandUsed(CommandResponse.Help);
+                    return;
+                }
+
+                if (!ulong.TryParse(user, out var userId))
+                {
+                    await ReplyAsync(formatError);
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                var userSettings = await this._userService.GetUserAsync(userId);
+
+                if (userSettings == null)
+                {
+                    await ReplyAsync("`User not found`\n\n" + formatError);
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+                if (userSettings.UserType != UserType.User)
+                {
+                    await ReplyAsync("`Can only change usertype of normal users`\n\n" + formatError);
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                await this._supporterService.AddSupporter(userSettings.DiscordUserId, name, internalNotes);
+
+                this._embed.WithDescription("Supporter added.\n" +
+                                            $"User id: {user} | <@{user}>\n" +
+                                            $"Name: **{name}**\n" +
+                                            $"Internal notes: `{internalNotes}`");
+
+                this._embed.WithFooter("Command not intended for use in public channels");
+
+                await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+                this.Context.LogCommandUsed();
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can add supporters");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
 
         [Command("fmfeaturedoverride"), Summary("Changes the avatar to be an album.")]
         public async Task fmalbumoverrideAsync(string url, bool stopTimer, string desc = "Custom featured event")

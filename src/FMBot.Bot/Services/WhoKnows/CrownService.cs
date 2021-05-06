@@ -9,7 +9,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Services;
+using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -21,14 +21,14 @@ namespace FMBot.Bot.Services.WhoKnows
     public class CrownService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-        private readonly LastFmService _lastFmService;
-        private readonly GlobalUpdateService _globalUpdateService;
+        private readonly LastFmRepository _lastFmRepository;
+        private readonly UpdateRepository _updateRepository;
 
-        public CrownService(IDbContextFactory<FMBotDbContext> contextFactory, LastFmService lastFmService, GlobalUpdateService globalUpdateService)
+        public CrownService(IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository, UpdateRepository updateRepository)
         {
             this._contextFactory = contextFactory;
-            this._lastFmService = lastFmService;
-            this._globalUpdateService = globalUpdateService;
+            this._lastFmRepository = lastFmRepository;
+            this._updateRepository = updateRepository;
         }
 
         public async Task<CrownModel> GetAndUpdateCrownForArtist(IList<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
@@ -52,7 +52,8 @@ namespace FMBot.Bot.Services.WhoKnows
             }
 
             var topUser = users
-                .Where(w => eligibleUsers.Select(s => s.UserId).Contains(w.UserId))
+                .Where(w => eligibleUsers.Select(s => s.UserId).Contains(w.UserId) &&
+                            (guild.CrownsMinimumPlaycountThreshold.HasValue ? w.Playcount >= guild.CrownsMinimumPlaycountThreshold : w.Playcount >= Constants.DefaultPlaysForCrown))
                 .OrderByDescending(o => o.Playcount)
                 .FirstOrDefault();
 
@@ -101,6 +102,14 @@ namespace FMBot.Bot.Services.WhoKnows
                 var currentPlaycountForCrownHolder =
                     await GetCurrentPlaycountForUser(artistName, currentCrownHolder.User.UserNameLastFM, currentCrownHolder.UserId);
 
+                if (PublicProperties.IssuesAtLastFm)
+                {
+                    return new CrownModel
+                    {
+                        Crown = currentCrownHolder,
+                        CrownResult = "*Crown stealing is currently disabled due to issues with the Last.fm API*"
+                    };
+                }
                 if (currentPlaycountForCrownHolder == null)
                 {
                     return new CrownModel
@@ -277,19 +286,19 @@ namespace FMBot.Bot.Services.WhoKnows
 
         private async Task<long?> GetCurrentPlaycountForUser(string artistName, string lastFmUserName, int userId)
         {
-            var artist = await this._lastFmService.GetArtistInfoAsync(artistName, lastFmUserName);
+            var artist = await this._lastFmRepository.GetArtistInfoAsync(artistName, lastFmUserName);
 
-            await this._globalUpdateService.UpdateUser(new UpdateUserQueueItem(userId, 0));
+            await this._updateRepository.UpdateUser(new UpdateUserQueueItem(userId, 0));
 
-            if (!artist.Success || !artist.Content.Artist.Stats.Userplaycount.HasValue)
+            if (!artist.Success || !artist.Content.UserPlaycount.HasValue)
             {
                 return null;
             }
 
-            await this._globalUpdateService.CorrectUserArtistPlaycount(userId, artistName,
-                artist.Content.Artist.Stats.Userplaycount.Value);
+            await this._updateRepository.CorrectUserArtistPlaycount(userId, artistName,
+                artist.Content.UserPlaycount.Value);
 
-            return artist.Content.Artist.Stats.Userplaycount;
+            return artist.Content.UserPlaycount;
         }
 
         public async Task<IList<UserCrown>> GetCrownsForArtist(Persistence.Domain.Models.Guild guild, string artistName)

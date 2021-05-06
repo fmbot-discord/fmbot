@@ -17,7 +17,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Services;
+using FMBot.LastFM.Repositories;
 using Interactivity;
 using Interactivity.Pagination;
 
@@ -29,7 +29,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly AdminService _adminService;
         private readonly CrownService _crownService;
         private readonly GuildService _guildService;
-        private readonly LastFmService _lastFmService;
+        private readonly LastFmRepository _lastFmRepository;
         private readonly IPrefixService _prefixService;
         private readonly SettingService _settingService;
         private readonly UserService _userService;
@@ -45,7 +45,7 @@ namespace FMBot.Bot.Commands.LastFM
             IPrefixService prefixService,
             UserService userService,
             AdminService adminService,
-            LastFmService lastFmService,
+            LastFmRepository lastFmRepository,
             SettingService settingService,
             InteractivityService interactivity)
         {
@@ -54,7 +54,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._prefixService = prefixService;
             this._userService = userService;
             this._adminService = adminService;
-            this._lastFmService = lastFmService;
+            this._lastFmRepository = lastFmRepository;
             this._settingService = settingService;
             this.Interactivity = interactivity;
 
@@ -95,7 +95,7 @@ namespace FMBot.Bot.Commands.LastFM
             var differentUser = false;
             if (!string.IsNullOrWhiteSpace(extraOptions))
             {
-                var userSettings = await this._settingService.GetUserFromString(extraOptions);
+                var userSettings = await this._settingService.StringWithDiscordIdForUser(extraOptions);
 
                 if (userSettings != null)
                 {
@@ -134,20 +134,20 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var embedDescription = new StringBuilder();
                 for (var index = 0; index < maxAmount; index++)
-                {
-                    if (paginationEnabled && (index > 0 && index % 10 == 0 || index == maxAmount - 1))
-                    {
-                        pages.Add(new PageBuilder().WithDescription(embedDescription.ToString()).WithTitle(title).WithFooter(footer));
-                        embedDescription = new StringBuilder();
-                    }
-
-                    var userCrown = userCrowns[index];
+                { var userCrown = userCrowns[index];
 
                     var claimTimeDescription = DateTime.UtcNow.AddDays(-3) < userCrown.Created
                         ? StringExtensions.GetTimeAgo(userCrown.Created)
                         : userCrown.Created.Date.ToString("dddd MMM d", CultureInfo.InvariantCulture);
 
                     embedDescription.AppendLine($"{index + 1}. **{userCrown.ArtistName}** - **{userCrown.CurrentPlaycount}** plays (claimed {claimTimeDescription})");
+
+                    var pageAmount = index + 1;
+                    if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == maxAmount))
+                    {
+                        pages.Add(new PageBuilder().WithDescription(embedDescription.ToString()).WithTitle(title).WithFooter(footer));
+                        embedDescription = new StringBuilder();
+                    }
                 }
 
                 if (paginationEnabled)
@@ -216,7 +216,7 @@ namespace FMBot.Bot.Commands.LastFM
                     sessionKey = userSettings.SessionKeyLastFm;
                 }
 
-                var recentScrobbles = await this._lastFmService.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true, sessionKey: sessionKey);
+                var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, useCache: true, sessionKey: sessionKey);
 
                 if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                 {
@@ -349,12 +349,6 @@ namespace FMBot.Bot.Commands.LastFM
 
             for (var index = 0; index < maxAmount; index++)
             {
-                if (paginationEnabled && (index > 0 && index % 10 == 0 || index == maxAmount - 1))
-                {
-                    pages.Add(new PageBuilder().WithDescription(embedDescription.ToString()).WithTitle(title).WithFooter(footer));
-                    embedDescription = new StringBuilder();
-                }
-
                 var crownUser = topCrownUsers[index];
 
                 var guildUser = guild
@@ -369,6 +363,13 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 embedDescription.AppendLine($"{index + 1}. **{name ?? crownUser.First().User.UserNameLastFM}** - **{crownUser.Count()}** {StringExtensions.GetCrownsString(crownUser.Count())}");
+
+                var pageAmount = index + 1;
+                if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == maxAmount))
+                {
+                    pages.Add(new PageBuilder().WithDescription(embedDescription.ToString()).WithTitle(title).WithFooter(footer));
+                    embedDescription = new StringBuilder();
+                }
             }
 
             if (paginationEnabled)
@@ -512,7 +513,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            this._embed.WithDescription($"<a:loading:749715170682470461> Seeding crowns for your server...");
+            this._embed.WithDescription($"<a:loading:821676038102056991> Seeding crowns for your server...");
             var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
             var guildCrowns = await this._crownService.GetAllCrownsForGuild(guild.GuildId);

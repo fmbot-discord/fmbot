@@ -74,5 +74,22 @@ namespace FMBot.Bot.Services
                 StorePrefix(server.Prefix, server.DiscordGuildId);
             }
         }
+
+        public async Task ReloadPrefix(ulong discordGuildId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var server = await db.Guilds
+                .Where(w => w.DiscordGuildId == discordGuildId)
+                .FirstOrDefaultAsync();
+
+            if (server == null)
+            {
+                RemovePrefix(discordGuildId);
+            }
+            else
+            {
+                StorePrefix(server.Prefix, server.DiscordGuildId);
+            }
+        }
     }
 }
