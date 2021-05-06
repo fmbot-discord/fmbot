@@ -213,7 +213,7 @@ namespace FMBot.Bot.Services.ThirdParty
 
                 if (artist != null)
                 {
-                    trackToAdd.Artist = artist;
+                    trackToAdd.ArtistId = artist.Id;
                 }
 
                 var spotifyTrack = await GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
@@ -377,7 +377,7 @@ namespace FMBot.Bot.Services.ThirdParty
 
                 if (artist != null)
                 {
-                    albumToAdd.Artist = artist;
+                    albumToAdd.ArtistId = artist.Id;
                 }
 
                 var spotifyAlbum = await GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
