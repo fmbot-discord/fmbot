@@ -565,7 +565,7 @@ namespace FMBot.Bot.Services
 
             if (somethingFound || alwaysReturnValue)
             {
-                return extraOptions.TrimEnd();
+                return extraOptions.TrimEnd().TrimStart();
             }
 
             return null;

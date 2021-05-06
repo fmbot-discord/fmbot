@@ -1172,9 +1172,14 @@ namespace FMBot.Bot.Commands.LastFM
             if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.Length != 0)
             {
                 searchValue = albumValues;
-
+                
                 if (searchValue.Contains(" | "))
                 {
+                    if (otherUserUsername != null)
+                    {
+                        lastFmUserName = otherUserUsername;
+                    }
+
                     var albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(searchValue.Split(" | ")[0], searchValue.Split(" | ")[1],
                         lastFmUserName);
                     if (!albumInfo.Success && albumInfo.Error == ResponseStatus.MissingParameters)

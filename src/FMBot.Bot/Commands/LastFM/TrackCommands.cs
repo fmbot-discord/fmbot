@@ -1191,6 +1191,11 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (trackValues.Contains(" | "))
                 {
+                    if (otherUserUsername != null)
+                    {
+                        lastFmUserName = otherUserUsername;
+                    }
+
                     var trackInfo = await this._lastFmRepository.GetTrackInfoAsync(searchValue.Split(" | ")[1], searchValue.Split(" | ")[0],
                         lastFmUserName);
                     if (!trackInfo.Success && trackInfo.Error == ResponseStatus.MissingParameters)

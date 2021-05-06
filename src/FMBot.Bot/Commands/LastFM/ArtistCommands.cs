@@ -1279,6 +1279,11 @@ namespace FMBot.Bot.Commands.LastFM
         {
             if (!string.IsNullOrWhiteSpace(artistValues) && artistValues.Length != 0)
             {
+                if (otherUserUsername != null)
+                {
+                    lastFmUserName = otherUserUsername;
+                }
+
                 var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistValues, lastFmUserName);
                 if (!artistCall.Success && artistCall.Error == ResponseStatus.MissingParameters)
                 {
