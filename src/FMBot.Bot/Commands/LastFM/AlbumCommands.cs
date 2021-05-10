@@ -764,10 +764,10 @@ namespace FMBot.Bot.Commands.LastFM
                 HidePrivateUsers = false,
                 NewSearchValue = albumValues
             };
+
             var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues);
 
-
-            var album = await this.SearchAlbum(albumValues, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
+            var album = await this.SearchAlbum(settings.NewSearchValue, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
             if (album == null)
             {
                 return;

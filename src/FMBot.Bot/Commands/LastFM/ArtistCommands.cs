@@ -949,7 +949,7 @@ namespace FMBot.Bot.Commands.LastFM
                 string spotifyImageUrl;
                 long? userPlaycount;
 
-                var cachedArtist = await this._artistsService.GetArtistFromDatabase(artistValues);
+                var cachedArtist = await this._artistsService.GetArtistFromDatabase(settings.NewSearchValue);
 
                 if (user.LastUpdated > DateTime.UtcNow.AddHours(-1) && cachedArtist != null)
                 {
@@ -961,7 +961,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else
                 {
-                    var artist = await GetArtist(artistValues, user.UserNameLastFM, user.SessionKeyLastFm);
+                    var artist = await GetArtist(settings.NewSearchValue, user.UserNameLastFM, user.SessionKeyLastFm);
                     if (artist == null)
                     {
                         return;
