@@ -361,7 +361,9 @@ namespace FMBot.LastFM.Repositories
                         Mbid = !string.IsNullOrWhiteSpace(trackCall.Content.Track.Mbid)
                             ? Guid.Parse(trackCall.Content.Track.Mbid)
                             : null,
-                        Description = filteredSummary,
+                        Description = !string.IsNullOrWhiteSpace(filteredSummary)
+                            ? filteredSummary
+                            : null,
                         TotalPlaycount = trackCall.Content.Track.Playcount,
                         TotalListeners = trackCall.Content.Track.Listeners,
                         Duration = trackCall.Content.Track.Duration,
@@ -413,7 +415,9 @@ namespace FMBot.LastFM.Repositories
                         Mbid = !string.IsNullOrWhiteSpace(artistCall.Content.Artist.Mbid)
                             ? Guid.Parse(artistCall.Content.Artist.Mbid)
                             : null,
-                        Description = filteredSummary,
+                        Description = !string.IsNullOrWhiteSpace(filteredSummary)
+                            ? filteredSummary
+                            : null,
                         TotalPlaycount = artistCall.Content.Artist.Stats.Playcount,
                         TotalListeners = artistCall.Content.Artist.Stats.Listeners,
                         UserPlaycount = artistCall.Content.Artist.Stats.Userplaycount,
@@ -462,7 +466,9 @@ namespace FMBot.LastFM.Repositories
                         Mbid = !string.IsNullOrWhiteSpace(albumCall.Content.Album.Mbid)
                             ? Guid.Parse(albumCall.Content.Album.Mbid)
                             : null,
-                        Description = filteredSummary,
+                        Description = !string.IsNullOrWhiteSpace(filteredSummary)
+                            ? filteredSummary
+                            : null,
                         TotalPlaycount = albumCall.Content.Album.Playcount,
                         TotalListeners = albumCall.Content.Album.Listeners,
                         TotalDuration = albumCall.Content.Album.Tracks?.Track?.Sum(s => s.Duration),

@@ -135,20 +135,23 @@ namespace FMBot.Bot.Commands.LastFM
                     var usersWithArtist = await WhoKnowsArtistService.GetIndexedUsersForArtist(this.Context, guild.GuildId, artist.ArtistName);
                     var filteredUsersWithArtist = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, guild);
 
-                    var serverListeners = filteredUsersWithArtist.Count;
-                    var serverPlaycount = filteredUsersWithArtist.Sum(a => a.Playcount);
-                    var avgServerPlaycount = filteredUsersWithArtist.Average(a => a.Playcount);
-                    var serverPlaycountLastWeek = await WhoKnowsArtistService.GetWeekArtistPlaycountForGuildAsync(guild.GuildId, artist.ArtistName);
-
-                    serverStats += $"`{serverListeners}` {StringExtensions.GetListenersString(serverListeners)}";
-                    serverStats += $"\n`{serverPlaycount}` total {StringExtensions.GetPlaysString(serverPlaycount)}";
-                    serverStats += $"\n`{(int)avgServerPlaycount}` avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
-                    serverStats += $"\n`{serverPlaycountLastWeek}` {StringExtensions.GetPlaysString(serverPlaycountLastWeek)} last week";
-
-                    if (usersWithArtist.Count > filteredUsersWithArtist.Count)
+                    if (filteredUsersWithArtist.Count != 0)
                     {
-                        var filteredAmount = usersWithArtist.Count - filteredUsersWithArtist.Count;
-                        serverStats += $"\n`{filteredAmount}` users filtered";
+                        var serverListeners = filteredUsersWithArtist.Count;
+                        var serverPlaycount = filteredUsersWithArtist.Sum(a => a.Playcount);
+                        var avgServerPlaycount = filteredUsersWithArtist.Average(a => a.Playcount);
+                        var serverPlaycountLastWeek = await WhoKnowsArtistService.GetWeekArtistPlaycountForGuildAsync(guild.GuildId, artist.ArtistName);
+
+                        serverStats += $"`{serverListeners}` {StringExtensions.GetListenersString(serverListeners)}";
+                        serverStats += $"\n`{serverPlaycount}` total {StringExtensions.GetPlaysString(serverPlaycount)}";
+                        serverStats += $"\n`{(int)avgServerPlaycount}` avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
+                        serverStats += $"\n`{serverPlaycountLastWeek}` {StringExtensions.GetPlaysString(serverPlaycountLastWeek)} last week";
+
+                        if (usersWithArtist.Count > filteredUsersWithArtist.Count)
+                        {
+                            var filteredAmount = usersWithArtist.Count - filteredUsersWithArtist.Count;
+                            serverStats += $"\n`{filteredAmount}` users filtered";
+                        }
                     }
                 }
                 else
@@ -156,7 +159,10 @@ namespace FMBot.Bot.Commands.LastFM
                     serverStats += "Run `.fmindex` to get server stats";
                 }
 
-                this._embed.AddField("Server stats", serverStats, true);
+                if (!string.IsNullOrWhiteSpace(serverStats))
+                {
+                    this._embed.AddField("Server stats", serverStats, true);
+                }
             }
 
             var globalStats = "";

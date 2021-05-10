@@ -147,6 +147,14 @@ namespace FMBot.LastFM.Repositories
 
             try
             {
+                var cacheKey = $"{user.UserId}-update-in-progress";
+                if (this._cache.TryGetValue(cacheKey, out bool _))
+                {
+                    return recentTracks;
+                }
+
+                this._cache.Set(cacheKey, true, TimeSpan.FromSeconds(1));
+
                 recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, newScrobbles.Count, connection, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null);
 
                 await UpdatePlaysForUser(user, newScrobbles, connection);
