@@ -17,9 +17,11 @@ namespace FMBot.Domain
 
         public static readonly string DocsUrl = "https://fmbot.xyz";
 
-        public static readonly string CompactTimePeriodList = "weekly/monthly/quarterly/half/yearly/alltime";
+        public const string CompactTimePeriodList = "weekly/monthly/quarterly/half/yearly/alltime";
 
         public static readonly string ExpandedTimePeriodList = "'weekly', 'monthly', 'quarterly', 'half', 'yearly', or 'alltime'";
+
+        public const string UserMentionExample = "`@usermention` / `lfm:fm-bot` / `356268235697553409`";
 
         /// <summary>Amount of users to index. Should always end with 000</summary>
         public const int ArtistsToIndex = 4000;

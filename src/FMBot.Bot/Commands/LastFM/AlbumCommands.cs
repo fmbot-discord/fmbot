@@ -92,28 +92,23 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("album", RunMode = RunMode.Async)]
-        [Summary("Displays current album.")]
+        [Summary("Displays information for the album you're currently listening to or searching for.")]
+        [Examples(
+            "ab",
+            "album",
+            "album Ventura Anderson .Paak",
+            "ab Boy Harsher | Yr Body Is Nothing")]
         [Alias("ab")]
         [UsernameSetRequired]
         public async Task AlbumAsync([Remainder] string albumValues = null)
         {
             try
             {
-                var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-                var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-
-                if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.ToLower() == "help")
-                {
-                    await ReplyAsync(
-                        $"Usage: `{prfx}album 'artist and album name'`\n" +
-                        "If you don't enter any album name, it will get the info from the album you're currently listening to.");
-                    this.Context.LogCommandUsed(CommandResponse.Help);
-                    return;
-                }
+                var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                var album = await this.SearchAlbum(albumValues, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
+                var album = await this.SearchAlbum(albumValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
                 if (album == null)
                 {
                     return;
@@ -140,7 +135,7 @@ namespace FMBot.Bot.Commands.LastFM
                 if (album.UserPlaycount.HasValue)
                 {
                     globalStats += $"\n`{album.UserPlaycount}` {StringExtensions.GetPlaysString(album.UserPlaycount)} by you";
-                    globalStats += $"\n`{await this._playService.GetWeekAlbumPlaycountAsync(userSettings.UserId, album.AlbumName, album.ArtistName)}` by you last week";
+                    globalStats += $"\n`{await this._playService.GetWeekAlbumPlaycountAsync(contextUser.UserId, album.AlbumName, album.ArtistName)}` by you last week";
                 }
 
                 this._embed.AddField("Last.fm stats", globalStats, true);
@@ -246,26 +241,24 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("albumplays", RunMode = RunMode.Async)]
-        [Summary("Displays album plays.")]
+        [Summary("Displays playcount for the album you're currently listening to or searching for.\n\n" +
+                 "You can also mention another user to see their playcount.")]
+        [Examples(
+            "abp",
+            "albumplays",
+            "albumplays @user",
+            "albumplays lfm:fm-bot",
+            "albumplays The Slow Rush",
+            "abp The Beatles | Yesterday",
+            "abp The Beatles | Yesterday @user")]
         [Alias("abp", "albumplay", "abplays", "albump", "album plays")]
         [UsernameSetRequired]
         public async Task AlbumPlaysAsync([Remainder] string albumValues = null)
         {
-            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var userSettings = await this._settingService.GetUser(albumValues, contextUser, this.Context);
 
-            if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.ToLower() == "help")
-            {
-                await ReplyAsync(
-                    $"Usage: `{prfx}albumplays 'artist and album name'`\n" +
-                    "If you don't enter any album name, it will get the plays from the album you're currently listening to.");
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
-
-            var userSettings = await this._settingService.GetUser(albumValues, user, this.Context);
-
-            var album = await this.SearchAlbum(userSettings.NewSearchValue, user.UserNameLastFM, userSettings.SessionKeyLastFm, userSettings.UserNameLastFm);
+            var album = await this.SearchAlbum(userSettings.NewSearchValue, contextUser.UserNameLastFM, userSettings.SessionKeyLastFm, userSettings.UserNameLastFm);
             if (album == null)
             {
                 return;
@@ -275,7 +268,7 @@ namespace FMBot.Bot.Commands.LastFM
                 $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has `{album.UserPlaycount}` {StringExtensions.GetPlaysString(album.UserPlaycount)} " +
                 $"for **{album.AlbumName.FilterOutMentions()}** by **{album.ArtistName.FilterOutMentions()}**";
 
-            if (!userSettings.DifferentUser && user.LastUpdated != null)
+            if (!userSettings.DifferentUser && contextUser.LastUpdated != null)
             {
                 var playsLastWeek =
                     await this._playService.GetWeekAlbumPlaycountAsync(userSettings.UserId, album.AlbumName, album.ArtistName);
@@ -289,28 +282,21 @@ namespace FMBot.Bot.Commands.LastFM
             this.Context.LogCommandUsed();
         }
 
-
         [Command("cover", RunMode = RunMode.Async)]
-        [Summary("Displays current album cover.")]
-        [Alias("abc", "co", "albumcover", "album cover")]
+        [Summary("Displays cover for the album you're currently listening to or searching for.")]
+        [Examples(
+            "co",
+            "cover",
+            "cover la priest inji")]
+        [Alias("abc", "abco", "co", "albumcover", "album cover")]
         [UsernameSetRequired]
         public async Task AlbumCoverAsync([Remainder] string albumValues = null)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-
-            if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.ToLower() == "help")
-            {
-                await ReplyAsync(
-                    $"Usage: `{prfx}cover 'artist and album name'`\n" +
-                    "If you don't enter any album name, it will get the cover from the album you're currently listening to.");
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var album = await this.SearchAlbum(albumValues, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
+            var album = await this.SearchAlbum(albumValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
             if (album == null)
             {
                 return;
@@ -366,38 +352,22 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("topalbums", RunMode = RunMode.Async)]
-        [Summary("Displays top albums.")]
+        [Summary("Shows a list of you or someone else their top albums over a certain time period.")]
+        [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
+        [Examples("tab", "topalbums", "tab a 3", "topalbums weekly @user")]
         [Alias("abl", "abs", "tab", "albumlist", "top albums", "albums", "albumslist")]
         [UsernameSetRequired]
+        [SupportsPagination]
         public async Task TopAlbumsAsync([Remainder] string extraOptions = null)
         {
-            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-
-            if (!string.IsNullOrWhiteSpace(extraOptions) && extraOptions.ToLower() == "help")
-            {
-                this._embed.WithTitle($"{prfx}topalbums options");
-                this._embed.WithDescription($"- `{Constants.CompactTimePeriodList}`\n" +
-                                            $"- `number of albums (max 16)`\n" +
-                                            $"- `user mention/id`");
-
-                this._embed.AddField("Example",
-                    $"`{prfx}topalbums alltime 9 @slipper`");
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var timePeriodString = extraOptions;
-
-            var amountString = extraOptions;
-
-            var timeSettings = SettingService.GetTimePeriod(timePeriodString);
-            var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
-            var amount = SettingService.GetAmount(amountString);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions);
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var amount = SettingService.GetAmount(extraOptions);
 
             var paginationEnabled = false;
             var pages = new List<PageBuilder>();
@@ -464,7 +434,7 @@ namespace FMBot.Bot.Commands.LastFM
                             var url = album.Url;
                             var escapedAlbumName = Regex.Replace(album.Name, @"([|\\*])", @"\$1");
 
-                            if (user.RymEnabled == true)
+                            if (contextUser.RymEnabled == true)
                             {
                                 url = new Uri(StringExtensions.GetRymUrl(album.Name, album.ArtistName));
                             }
@@ -492,7 +462,7 @@ namespace FMBot.Bot.Commands.LastFM
                         {
                             await this._indexService.IndexUser(otherUser);
                         }
-                        else if (user.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
+                        else if (contextUser.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
                         {
                             await this._updateService.UpdateUser(otherUser);
                         }
@@ -501,16 +471,16 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                     else
                     {
-                        if (user.LastIndexed == null)
+                        if (contextUser.LastIndexed == null)
                         {
-                            await this._indexService.IndexUser(user);
+                            await this._indexService.IndexUser(contextUser);
                         }
-                        else if (user.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
+                        else if (contextUser.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
                         {
-                            await this._updateService.UpdateUser(user);
+                            await this._updateService.UpdateUser(contextUser);
                         }
 
-                        userId = user.UserId;
+                        userId = contextUser.UserId;
                     }
 
                     var albums = await this._playService.GetTopAlbums(userId,
@@ -572,8 +542,9 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("whoknowsalbum", RunMode = RunMode.Async)]
-        [Summary("Shows what other users listen to the same album in your server")]
+        [Summary("Shows what other users listen to an album in your server")]
         [Alias("wa", "wka", "wkab", "wab", "wkab", "wk album", "whoknows album")]
+        [Examples("wa", "whoknowsalbum", "whoknowsalbum the beatles abbey road", "whoknowsalbum Metallica & Lou Reed | Lulu")]
         [UsernameSetRequired]
         [GuildOnly]
         public async Task WhoKnowsAlbumAsync([Remainder] string albumValues = null)
@@ -728,7 +699,8 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("globalwhoknowsalbum", RunMode = RunMode.Async)]
-        [Summary("Shows what other users listen to the same album on .fmbot")]
+        [Summary("Shows what other users listen to the an album on .fmbot")]
+        [Examples("gwa", "globalwhoknowsalbum", "globalwhoknowsalbum the beatles abbey road", "globalwhoknowsalbum Metallica & Lou Reed | Lulu")]
         [Alias("gwa", "gwka", "gwab", "gwkab", "globalwhoknows album")]
         [UsernameSetRequired]
         [GuildOnly]
@@ -830,7 +802,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (userSettings.PrivacyLevel != PrivacyLevel.Global)
                 {
-                    footer += $"\nYou are currently not globally visible - use '{prfx}privacy global' to enable.";
+                    footer += $"\nYou are currently not globally visible - use " +
+                        $"'{prfx}privacy global' to enable.";
                 }
                 if (settings.HidePrivateUsers)
                 {
@@ -883,20 +856,20 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("albumtracks", RunMode = RunMode.Async)]
         [Summary("Displays track playcounts for a specific album.")]
+        [Examples("abt", "albumtracks", "albumtracks de jeugd van tegenwoordig machine", "albumtracks U2 | The Joshua Tree")]
         [Alias("abt", "abtracks", "albumt")]
         [UsernameSetRequired]
         public async Task AlbumTracksAsync([Remainder] string albumValues = null)
         {
-            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
             try
             {
-                var userSettings = await this._settingService.GetUser(albumValues, user, this.Context);
+                var userSettings = await this._settingService.GetUser(albumValues, contextUser, this.Context);
 
-                var album = await this.SearchAlbum(userSettings.NewSearchValue, user.UserNameLastFM, user.SessionKeyLastFm, userSettings.UserNameLastFm);
+                var album = await this.SearchAlbum(userSettings.NewSearchValue, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm, userSettings.UserNameLastFm);
                 if (album == null)
                 {
                     return;
@@ -1022,6 +995,8 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("serveralbums", RunMode = RunMode.Async)]
         [Summary("Shows top albums for your server")]
+        [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`")]
+        [Examples("sab", "sab a p", "serveralbums", "serveralbums alltime", "serveralbums listeners weekly")]
         [Alias("sab", "stab", "servertopalbums", "serveralbum", "server albums")]
         public async Task GuildAlbumsAsync(params string[] extraOptions)
         {

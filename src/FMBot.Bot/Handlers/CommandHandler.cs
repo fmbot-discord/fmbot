@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -95,7 +96,7 @@ namespace FMBot.Bot.Handlers
             else if (string.IsNullOrWhiteSpace(customPrefix) && msg.HasStringPrefix(".", ref argPos))
             {
                 var searchResult = this._commands.Search(context, argPos);
-                if (searchResult.IsSuccess && searchResult.Commands != null && searchResult.Commands.Any() &&searchResult.Commands.FirstOrDefault().Command.Name == "fm")
+                if (searchResult.IsSuccess && searchResult.Commands != null && searchResult.Commands.Any() && searchResult.Commands.FirstOrDefault().Command.Name == "fm")
                 {
                     await ExecuteCommand(msg, context, argPos);
                 }
@@ -180,7 +181,6 @@ namespace FMBot.Bot.Handlers
                     context.LogCommandUsed(CommandResponse.UserBlocked);
                     return;
                 }
-
             }
             if (searchResult.Commands[0].Command.Attributes.OfType<UserSessionRequired>().Any())
             {
@@ -214,6 +214,76 @@ namespace FMBot.Bot.Handlers
                     context.LogCommandUsed(CommandResponse.NotSupportedInDm);
                     return;
                 }
+            }
+
+            if (msg.Content.ToLower().EndsWith("help"))
+            {
+                var embed = new EmbedBuilder()
+                    .WithColor(DiscordConstants.InformationColorBlue);
+                var prfx = this._prefixService.GetPrefix(context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+                var commandName = searchResult.Commands[0].Command.Name;
+                var userName = (context.Message.Author as SocketGuildUser)?.Nickname ?? context.User.Username;
+                embed.WithTitle($"Information about '{prfx}{commandName}' for {userName}");
+
+                var summary = searchResult.Commands[0].Command.Summary;
+                if (!string.IsNullOrWhiteSpace(summary))
+                {
+                    embed.WithDescription(summary);
+                }
+
+                var options = searchResult.Commands[0].Command.Attributes.OfType<OptionsAttribute>()
+                    .FirstOrDefault();
+                if (options?.Options != null && options.Options.Any())
+                {
+                    var optionsString = new StringBuilder();
+                    foreach (var option in options.Options)
+                    {
+                        optionsString.AppendLine($" - {option}");
+                    }
+
+                    embed.AddField("Options", optionsString.ToString());
+                }
+
+                var examples = searchResult.Commands[0].Command.Attributes.OfType<ExamplesAttribute>()
+                    .FirstOrDefault();
+                if (examples?.Examples != null && examples.Examples.Any())
+                {
+                    var examplesString = new StringBuilder();
+                    foreach (var example in examples.Examples)
+                    {
+                        examplesString.AppendLine($"`{prfx}{example}`");
+                    }
+
+                    embed.AddField("Examples", examplesString.ToString());
+                }
+
+                var aliases = searchResult.Commands[0].Command.Aliases.Where(a => a != commandName).ToList();
+                if (aliases.Any())
+                {
+                    var aliasesString = new StringBuilder();
+                    for (var index = 0; index < aliases.Count; index++)
+                    {
+                        if (index != 0)
+                        {
+                            aliasesString.Append(", ");
+                        }
+                        var alias = aliases[index];
+                        aliasesString.Append($"`{prfx}{alias}`");
+                    }
+
+                    embed.AddField("Aliases", aliasesString.ToString());
+                }
+
+                if (searchResult.Commands[0].Command.Attributes.OfType<SupportsPagination>().Any())
+                {
+                    embed.AddField("Pagination",
+                        "This command supports pagination. To enable you need to make sure that .fmbot has the `Manage Messages` permission.");
+                }
+
+                await context.Channel.SendMessageAsync("", false, embed.Build());
+                context.LogCommandUsed(CommandResponse.Help);
+                return;
             }
 
             var result = await this._commands.ExecuteAsync(context, argPos, this._provider);
