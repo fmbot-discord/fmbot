@@ -216,13 +216,13 @@ namespace FMBot.Bot.Handlers
                 }
             }
 
-            if (msg.Content.ToLower().EndsWith("help"))
+            var commandName = searchResult.Commands[0].Command.Name;
+            if (msg.Content.ToLower().EndsWith(" help") && commandName != "help")
             {
                 var embed = new EmbedBuilder()
                     .WithColor(DiscordConstants.InformationColorBlue);
                 var prfx = this._prefixService.GetPrefix(context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-                var commandName = searchResult.Commands[0].Command.Name;
                 var userName = (context.Message.Author as SocketGuildUser)?.Nickname ?? context.User.Username;
                 embed.WithTitle($"Information about '{prfx}{commandName}' for {userName}");
 

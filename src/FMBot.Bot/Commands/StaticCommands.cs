@@ -54,7 +54,7 @@ namespace FMBot.Bot.Commands
 
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
+                .WithColor(DiscordConstants.InformationColorBlue);
         }
 
         [Command("invite", RunMode = RunMode.Async)]
@@ -196,9 +196,24 @@ namespace FMBot.Bot.Commands
             this._embed.AddField($"Main command `{prefix}{mainCommand}`",
                 "Displays last scrobbles, and looks different depending on the mode you've set.");
 
-            this._embed.AddField($"Connecting your Last.fm account: `{prefix}login`",
-                $"Not receiving a DM from .fmbot when logging in? Please check if you have DMs enabled in this servers privacy settings.\n" +
-                $"For changing how your .fm command looks use `{prefix}mode`.");
+
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            if (contextUser == null)
+            {
+                this._embed.AddField($"Connecting your Last.fm account: `{prefix}login`",
+                    $"Not receiving a DM from .fmbot when logging in? Please check if you have DMs enabled in this servers privacy settings.");
+            }
+            else
+            {
+                this._embed.AddField("Customizing your .fm",
+                    $"For changing how your .fm command looks, use `{prefix}mode`.");
+
+                this._embed.WithFooter($"Logged in to .fmbot with the Last.fm account '{contextUser.UserNameLastFM}'");
+            }
+
+            this._embed.AddField("Command information",
+                $"To view information about specific commands add `help` after the command.\n" +
+                $"Some examples are: `{prefix}chart help` and `{prefix}whoknows help`.");
 
             if (customPrefix)
             {
@@ -210,6 +225,7 @@ namespace FMBot.Bot.Commands
             this._embed.AddField("For more commands and info, please read the documentation here:",
                 "https://fmbot.xyz/commands/");
 
+
             if (IsBotSelfHosted(this.Context.Client.CurrentUser.Id))
             {
                 this._embed.AddField("Note:",
@@ -217,15 +233,15 @@ namespace FMBot.Bot.Commands
                     "Keep in mind that the instance might not be fully up to date or other users might not be registered.");
             }
 
-            {
             if (PublicProperties.IssuesAtLastFm)
-                this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues");
+            {
+                this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues.\n" +
+                                              ".fmbot is not affiliated with Last.fm.");
             }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
         }
-
 
         [Command("supporters", RunMode = RunMode.Async)]
         [Summary("Displays all .fmbot supporters.")]

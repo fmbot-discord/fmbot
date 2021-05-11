@@ -88,29 +88,21 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("fm", RunMode = RunMode.Async)]
-        [Summary("Displays what a user is listening to.")]
+        [Summary("Displays what you or someone else is listening to.")]
         [Alias("np", "qm", "wm", "em", "rm", "tm", "ym", "om", "pm", "gm", "sm", "am", "hm", "jm", "km",
             "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm", "nowplaying")]
         [UsernameSetRequired]
         public async Task NowPlayingAsync(params string[] parameters)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (parameters.Length > 0 && parameters.First() == "set")
-            {
-                await ReplyAsync(
-                    "Please remove the space between `.fm` and `set` to set your last.fm username.");
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                return;
-            }
-            if (userSettings?.UserNameLastFM == null)
+            if (contextUser?.UserNameLastFM == null)
             {
                 var userNickname = (this.Context.User as SocketGuildUser)?.Nickname;
                 this._embed.UsernameNotSetErrorResponse(prfx, userNickname ?? this.Context.User.Username);
 
                 await ReplyAsync("", false, this._embed.Build());
-
                 this.Context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return;
             }
@@ -122,19 +114,20 @@ namespace FMBot.Bot.Commands.LastFM
                     fmString = "";
                 }
 
-                var replyString = $"`{prfx}{fmString}` shows you your last scrobble(s). \n " +
-                                  $"This command can also be used on others, for example `{prfx}{fmString} lastfmusername` or `{prfx}{fmString} @discorduser`\n \n" +
+                var commandName = prfx + fmString;
 
-                                  $"You can change your .fm mode and displayed count with the `{prfx}mode` command.\n";
+                this._embed.WithTitle($"Information about the '{commandName}' command");
+                this._embed.WithColor(DiscordConstants.InformationColorBlue);
+                this._embed.WithDescription("Displays what you or someone else is listening to.");
 
-                var differentMode = userSettings.FmEmbedType == FmEmbedType.EmbedMini ? "embedfull" : "embedmini";
-                replyString += $"`{prfx}mode {differentMode}` \n \n" +
-                               $"For more info, use `{prfx}mode help`.";
+                this._embed.AddField("Examples",
+                    "`.fm`\n" +
+                    "`.nowplaying`\n" +
+                    "`.fm lastfmusername`\n" +
+                    "`.fm @user`");
 
+                this._embed.AddField("Options", $"To customize how this command looks, check out `{prfx}mode`.");
 
-                this._embed.WithUrl($"{Constants.DocsUrl}/commands/tracks/");
-                this._embed.WithTitle($"Using the {prfx}{fmString} command");
-                this._embed.WithDescription(replyString);
                 this._embed.WithFooter("For more information on the bot in general, use .fmhelp");
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
@@ -176,7 +169,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
 
-                var lastFmUserName = userSettings.UserNameLastFM;
+                var lastFmUserName = contextUser.UserNameLastFM;
                 var self = true;
 
                 if (parameters.Length > 0 && !string.IsNullOrEmpty(parameters.First()) && parameters.Count() == 1)
@@ -192,23 +185,23 @@ namespace FMBot.Bot.Commands.LastFM
                 _ = this.Context.Channel.TriggerTypingAsync();
 
                 string sessionKey = null;
-                if (self && !string.IsNullOrEmpty(userSettings.SessionKeyLastFm))
+                if (self && !string.IsNullOrEmpty(contextUser.SessionKeyLastFm))
                 {
-                    sessionKey = userSettings.SessionKeyLastFm;
+                    sessionKey = contextUser.SessionKeyLastFm;
                 }
 
                 Response<RecentTrackList> recentTracks;
 
                 if (self)
                 {
-                    if (userSettings.LastIndexed == null)
+                    if (contextUser.LastIndexed == null)
                     {
-                        _ = this._indexService.IndexUser(userSettings);
+                        _ = this._indexService.IndexUser(contextUser);
                         recentTracks = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, useCache: true, sessionKey: sessionKey);
                     }
                     else
                     {
-                        recentTracks = await this._updateService.UpdateUserAndGetRecentTracks(userSettings);
+                        recentTracks = await this._updateService.UpdateUserAndGetRecentTracks(contextUser);
                     }
                 }
                 else
@@ -254,7 +247,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (self)
                 {
-                    this._whoKnowsPlayService.AddRecentPlayToCache(userSettings.UserId, currentTrack);
+                    this._whoKnowsPlayService.AddRecentPlayToCache(contextUser.UserId, currentTrack);
                 }
 
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
@@ -263,7 +256,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var fmText = "";
                 var footerText = "";
 
-                var embedType = userSettings.FmEmbedType;
+                var embedType = contextUser.FmEmbedType;
 
                 if (this.Context.Guild != null)
                 {
@@ -302,10 +295,10 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (self)
                 {
-                    switch (userSettings.FmCountType)
+                    switch (contextUser.FmCountType)
                     {
                         case FmCountType.Track:
-                            var trackPlaycount = await WhoKnowsTrackService.GetTrackPlayCountForUser(currentTrack.ArtistName, currentTrack.TrackName, userSettings.UserId);
+                            var trackPlaycount = await WhoKnowsTrackService.GetTrackPlayCountForUser(currentTrack.ArtistName, currentTrack.TrackName, contextUser.UserId);
                             if (trackPlaycount.HasValue)
                             {
                                 footerText += $"{trackPlaycount} scrobbles on this track | ";
@@ -314,7 +307,7 @@ namespace FMBot.Bot.Commands.LastFM
                         case FmCountType.Album:
                             if (!string.IsNullOrEmpty(currentTrack.AlbumName))
                             {
-                                var albumPlaycount = await this._whoKnowsAlbumService.GetAlbumPlayCountForUser(currentTrack.ArtistName, currentTrack.AlbumName, userSettings.UserId);
+                                var albumPlaycount = await this._whoKnowsAlbumService.GetAlbumPlayCountForUser(currentTrack.ArtistName, currentTrack.AlbumName, contextUser.UserId);
                                 if (albumPlaycount.HasValue)
                                 {
                                     footerText += $"{albumPlaycount} scrobbles on this album | ";
@@ -322,7 +315,7 @@ namespace FMBot.Bot.Commands.LastFM
                             }
                             break;
                         case FmCountType.Artist:
-                            var artistPlaycount = await WhoKnowsArtistService.GetArtistPlayCountForUser(currentTrack.ArtistName, userSettings.UserId);
+                            var artistPlaycount = await WhoKnowsArtistService.GetArtistPlayCountForUser(currentTrack.ArtistName, contextUser.UserId);
                             if (artistPlaycount.HasValue)
                             {
                                 footerText += $"{artistPlaycount} scrobbles on this artist | ";
@@ -365,13 +358,13 @@ namespace FMBot.Bot.Commands.LastFM
                     default:
                         if (embedType == FmEmbedType.EmbedMini || embedType == FmEmbedType.EmbedTiny)
                         {
-                            fmText += StringService.TrackToLinkedString(currentTrack, userSettings.RymEnabled);
+                            fmText += StringService.TrackToLinkedString(currentTrack, contextUser.RymEnabled);
                             this._embed.WithDescription(fmText);
                         }
                         else if (previousTrack != null)
                         {
-                            this._embed.AddField("Current:", StringService.TrackToLinkedString(currentTrack, userSettings.RymEnabled));
-                            this._embed.AddField("Previous:", StringService.TrackToLinkedString(previousTrack, userSettings.RymEnabled));
+                            this._embed.AddField("Current:", StringService.TrackToLinkedString(currentTrack, contextUser.RymEnabled));
+                            this._embed.AddField("Previous:", StringService.TrackToLinkedString(previousTrack, contextUser.RymEnabled));
                         }
 
                         string headerText;
@@ -399,7 +392,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                         if (this.Context.Guild != null && self)
                         {
-                            var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingTrack(userSettings.UserId,
+                            var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingTrack(contextUser.UserId,
                                 this.Context.Guild.Id, currentTrack.ArtistName, currentTrack.TrackName);
 
                             if (guildAlsoPlaying != null)
@@ -460,7 +453,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (!this._guildService.CheckIfDM(this.Context))
                 {
-                    await this._indexService.UpdateUserNameWithoutGuildUser(await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), userSettings);
+                    await this._indexService.UpdateUserNameWithoutGuildUser(await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId), contextUser);
                 }
             }
             catch (Exception e)
@@ -480,32 +473,26 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("recent", RunMode = RunMode.Async)]
-        [Summary("Displays a user's recent tracks.")]
+        [Summary("Displays what you or someone else is listening to in a list.")]
+        [Options("Amount of recent tracks to show (max 10)", Constants.UserMentionExample)]
+        [Examples("recent", "r", "recent 8", "recent 5 @user", "recent lfm:fm-bot")]
         [Alias("recenttracks", "recents", "r")]
         [UsernameSetRequired]
         public async Task RecentAsync([Remainder] string extraOptions = null)
         {
-            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-
-            if (!string.IsNullOrWhiteSpace(extraOptions) && extraOptions.ToLower() == "help")
-            {
-                await ReplyAsync($"{prfx}recent 'number of items (max 8)' 'lastfm username/@discord user'");
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
             var amount = SettingService.GetAmount(extraOptions, 5, 10);
 
             try
             {
                 string sessionKey = null;
-                if (!userSettings.DifferentUser && !string.IsNullOrEmpty(user.SessionKeyLastFm))
+                if (!userSettings.DifferentUser && !string.IsNullOrEmpty(contextUser.SessionKeyLastFm))
                 {
-                    sessionKey = user.SessionKeyLastFm;
+                    sessionKey = contextUser.SessionKeyLastFm;
                 }
 
                 var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFm, amount, useCache: true, sessionKey: sessionKey);
@@ -541,7 +528,7 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                     }
 
-                    var trackString = resultAmount > 6 ? StringService.TrackToString(track) : StringService.TrackToLinkedString(track, user.RymEnabled);
+                    var trackString = resultAmount > 6 ? StringService.TrackToString(track) : StringService.TrackToLinkedString(track, contextUser.RymEnabled);
 
                     if (track.NowPlaying)
                     {
@@ -591,7 +578,9 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("overview", RunMode = RunMode.Async)]
-        [Summary("Displays a week overview.")]
+        [Summary("Displays a daily overview.")]
+        [Options("Amount of days to show (max 8)")]
+        [Examples("o", "overview", "overview 7")]
         [Alias("o", "ov")]
         [UsernameSetRequired]
         public async Task OverviewAsync(string amount = "4")
@@ -680,38 +669,14 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("pace", RunMode = RunMode.Async)]
-        [Summary("Displays the date a goal amount of scrobbles is reached")]
+        [Summary("Displays the date you reach a scrobble goal based on average scrobbles per day.")]
+        [Options(Constants.CompactTimePeriodList, "Optional goal amount: For example `10000` or `10k`", Constants.UserMentionExample)]
+        [Examples("pc", "pc 100k q", "pc 40000 h @user", "pace", "pace yearly @user 250000")]
         [UsernameSetRequired]
         [Alias("pc")]
         public async Task PaceAsync([Remainder] string extraOptions = null)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-
-            if (!string.IsNullOrWhiteSpace(extraOptions) && extraOptions.ToLower() == "help")
-            {
-                this._embed.WithTitle($"{prfx}pace");
-
-                var helpDescription = new StringBuilder();
-                helpDescription.AppendLine("Displays the date you reach a scrobble goal based on average scrobbles per day.");
-                helpDescription.AppendLine();
-                helpDescription.AppendLine($"Time periods: {Constants.CompactTimePeriodList}");
-                helpDescription.AppendLine("Optional goal amount: For example `10000` or `10k`");
-                helpDescription.AppendLine("User to check pace for: Mention or user id");
-
-                this._embed.WithDescription(helpDescription.ToString());
-
-                this._embed.AddField("Examples",
-                    $"`{prfx}pc` \n" +
-                    $"`{prfx}pc 100k q` \n" +
-                    $"`{prfx}pc 40000 h @user` \n" +
-                    $"`{prfx}pace` \n" +
-                    $"`{prfx}pace yearly @user 250000`");
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -720,9 +685,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
 
-            var timePeriodString = extraOptions;
-
-            var timeType = SettingService.GetTimePeriod(timePeriodString, ChartTimePeriod.AllTime);
+            var timeType = SettingService.GetTimePeriod(extraOptions, ChartTimePeriod.AllTime);
 
             long timeFrom;
             if (timeType.ChartTimePeriod != ChartTimePeriod.AllTime && timeType.PlayDays != null)
@@ -784,39 +747,15 @@ namespace FMBot.Bot.Commands.LastFM
             this.Context.LogCommandUsed();
         }
 
-
         [Command("milestone", RunMode = RunMode.Async)]
-        [Summary("Displays the date a goal amount of scrobbles is reached")]
+        [Summary("Displays a milestone scrobble.")]
+        [Options("Optional milestone amount: For example `10000` or `10k`", Constants.UserMentionExample)]
+        [Examples("ms", "ms 10k", "milestone 500 @user", "milestone", "milestone @user 250k")]
         [UsernameSetRequired]
         [Alias("m", "ms")]
         public async Task MilestoneAsync([Remainder] string extraOptions = null)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-
-            if (!string.IsNullOrWhiteSpace(extraOptions) && extraOptions.ToLower() == "help")
-            {
-                this._embed.WithTitle($"{prfx}milestone");
-
-                var helpDescription = new StringBuilder();
-                helpDescription.AppendLine("Displays a milestone scrobble.");
-                helpDescription.AppendLine();
-                helpDescription.AppendLine("Optional milestone amount: For example `10000` or `10k`");
-                helpDescription.AppendLine("User to check pace for: Mention or user id");
-
-                this._embed.WithDescription(helpDescription.ToString());
-
-                this._embed.AddField("Examples",
-                    $"`{prfx}ms` \n" +
-                    $"`{prfx}ms 10k` \n" +
-                    $"`{prfx}milestone 500 @user` \n" +
-                    $"`{prfx}milestone` \n" +
-                    $"`{prfx}milestone @user 250k`");
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -868,29 +807,14 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("plays", RunMode = RunMode.Async)]
-        [Summary("Displays track info and stats.")]
+        [Summary("Shows your total scrobblecount for a specific time period.")]
+        [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
+        [Examples("p", "plays", "plays @frikandel", "plays monthly")]
         [Alias("p", "scrobbles")]
         [UsernameSetRequired]
         public async Task PlaysAsync([Remainder] string extraOptions = null)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-
-            if (!string.IsNullOrWhiteSpace(extraOptions) && extraOptions.ToLower() == "help")
-            {
-                this._embed.WithTitle($"{prfx}plays");
-                this._embed.WithDescription($"Shows your total scrobblecount.");
-
-                this._embed.AddField("Examples",
-                    $"`{prfx}tp` \n" +
-                    $"`{prfx}plays` \n" +
-                    $"`{prfx}plays @Frikandel` \n" +
-                    $"`{prfx}plays monthly`");
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
 
             _ = this.Context.Channel.TriggerTypingAsync();
 

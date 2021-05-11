@@ -352,9 +352,9 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("topalbums", RunMode = RunMode.Async)]
-        [Summary("Shows a list of you or someone else their top albums over a certain time period.")]
+        [Summary("Shows a list of your or someone else their top albums over a certain time period.")]
         [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
-        [Examples("tab", "topalbums", "tab a 3", "topalbums weekly @user")]
+        [Examples("tab", "topalbums", "tab a lfm:fm-bot", "topalbums weekly @user")]
         [Alias("abl", "abs", "tab", "albumlist", "top albums", "albums", "albumslist")]
         [UsernameSetRequired]
         [SupportsPagination]
@@ -1009,32 +1009,6 @@ namespace FMBot.Bot.Commands.LastFM
 
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-
-            if (extraOptions.Any() && extraOptions.First() == "help")
-            {
-                this._embed.WithTitle($"{prfx}serveralbums");
-
-                var helpDescription = new StringBuilder();
-                helpDescription.AppendLine("Shows the top albums for your server.");
-                helpDescription.AppendLine();
-                helpDescription.AppendLine("Available time periods: `weekly`, `monthly` and `alltime`");
-                helpDescription.AppendLine("Available order options: `plays` and `listeners`");
-
-                this._embed.WithDescription(helpDescription.ToString());
-
-                this._embed.AddField("Examples",
-                    $"`{prfx}sab` \n" +
-                    $"`{prfx}sab a p` \n" +
-                    $"`{prfx}serveralbums` \n" +
-                    $"`{prfx}serveralbums alltime` \n" +
-                    $"`{prfx}serveralbums listeners weekly`");
-
-                this._embed.WithFooter("Users that are filtered from whoknows also get filtered from these charts.");
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
 
             if (guild.LastIndexed == null)
             {

@@ -91,17 +91,21 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("artist", RunMode = RunMode.Async)]
-        [Summary("Displays artist info and stats.")]
+        [Summary("Displays information about the artist you're currently listening to or searching for.")]
+        [Examples(
+            "a",
+            "artist",
+            "a Gorillaz",
+            "artist Gamma Intel")]
         [Alias("a")]
         [UsernameSetRequired]
         public async Task ArtistAsync([Remainder] string artistValues = null)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var artist = await GetArtist(artistValues, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
+            var artist = await GetArtist(artistValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
             if (artist == null)
             {
                 return;
@@ -171,8 +175,8 @@ namespace FMBot.Bot.Commands.LastFM
             if (artist.UserPlaycount.HasValue)
             {
                 globalStats += $"\n`{artist.UserPlaycount}` {StringExtensions.GetPlaysString(artist.UserPlaycount)} by you";
-                globalStats += $"\n`{await this._playService.GetWeekArtistPlaycountAsync(userSettings.UserId, artist.ArtistName)}` by you last week";
-                await this._updateService.CorrectUserArtistPlaycount(userSettings.UserId, artist.ArtistName,
+                globalStats += $"\n`{await this._playService.GetWeekArtistPlaycountAsync(contextUser.UserId, artist.ArtistName)}` by you last week";
+                await this._updateService.CorrectUserArtistPlaycount(contextUser.UserId, artist.ArtistName,
                     artist.UserPlaycount.Value);
             }
 
@@ -196,19 +200,22 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("artisttracks", RunMode = RunMode.Async)]
-        [Summary("Displays top tracks for an artist.")]
+        [Summary("Displays your top tracks for an artist.")]
+        [Examples(
+            "at",
+            "artisttracks",
+            "artisttracks DMX")]
         [Alias("at", "att", "artisttrack", "artist track", "artist tracks", "artistrack", "artisttoptracks", "artisttoptrack", "favs")]
         [UsernameSetRequired]
         public async Task ArtistTracksAsync([Remainder] string artistValues = null)
         {
-            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var timeSettings = SettingService.GetTimePeriod(artistValues, ChartTimePeriod.AllTime);
 
-            var artist = await GetArtist(artistValues, user.UserNameLastFM, user.SessionKeyLastFm);
+            var artist = await GetArtist(artistValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
             if (artist == null)
             {
                 return;
@@ -227,14 +234,14 @@ namespace FMBot.Bot.Commands.LastFM
             switch (timeSettings.ChartTimePeriod)
             {
                 case ChartTimePeriod.Weekly:
-                    topTracks = await this._playService.GetTopTracksForArtist(user.UserId, 7, artist.ArtistName);
+                    topTracks = await this._playService.GetTopTracksForArtist(contextUser.UserId, 7, artist.ArtistName);
                     break;
                 case ChartTimePeriod.Monthly:
-                    topTracks = await this._playService.GetTopTracksForArtist(user.UserId, 31, artist.ArtistName);
+                    topTracks = await this._playService.GetTopTracksForArtist(contextUser.UserId, 31, artist.ArtistName);
                     break;
                 default:
                     timeDescription = "alltime";
-                    topTracks = await this._artistsService.GetTopTracksForArtist(user.UserId, artist.ArtistName);
+                    topTracks = await this._artistsService.GetTopTracksForArtist(contextUser.UserId, artist.ArtistName);
                     break;
             }
 
@@ -256,7 +263,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithFooter(footer);
 
 
-                var url = $"{Constants.LastFMUserUrl}{user.UserNameLastFM}/library/music/{UrlEncoder.Default.Encode(artist.ArtistName)}";
+                var url = $"{Constants.LastFMUserUrl}{contextUser.UserNameLastFM}/library/music/{UrlEncoder.Default.Encode(artist.ArtistName)}";
                 if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
                 {
                     this._embed.WithUrl(url);
@@ -315,13 +322,16 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("artistalbums", RunMode = RunMode.Async)]
-        [Summary("Displays top albums for an artist.")]
+        [Summary("Displays your top albums for an artist.")]
+        [Examples(
+            "aa",
+            "artistalbums",
+            "artistalbums The Prodigy")]
         [Alias("aa", "aab", "atab", "artistalbum", "artist album", "artist albums", "artistopalbum", "artisttopalbums", "artisttab")]
         [UsernameSetRequired]
         public async Task ArtistAlbumsAsync([Remainder] string artistValues = null)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -367,19 +377,25 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("artistplays", RunMode = RunMode.Async)]
-        [Summary("Displays artist playcount.")]
+        [Summary("Displays playcount for the artist you're currently listening to or searching for.\n\n" +
+                 "You can also mention another user to see their playcount.")]
+        [Examples(
+            "ap",
+            "artistplays",
+            "albumplays @user",
+            "ap lfm:fm-bot",
+            "artistplays Mall Grab @user")]
         [Alias("ap", "artist plays")]
         [UsernameSetRequired]
         public async Task ArtistPlaysAsync([Remainder] string artistValues = null)
         {
-            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var userSettings = await this._settingService.GetUser(artistValues, user, this.Context);
+            var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
 
-            var artist = await GetArtist(userSettings.NewSearchValue, user.UserNameLastFM, user.SessionKeyLastFm, userSettings.UserNameLastFm);
+            var artist = await GetArtist(userSettings.NewSearchValue, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm, userSettings.UserNameLastFm);
             if (artist == null)
             {
                 return;
@@ -390,7 +406,7 @@ namespace FMBot.Bot.Commands.LastFM
                 $"`{artist.UserPlaycount}` {StringExtensions.GetPlaysString(artist.UserPlaycount)} for " +
                 $"**{artist.ArtistName}**";
 
-            if (!userSettings.DifferentUser && user.LastUpdated != null)
+            if (!userSettings.DifferentUser && contextUser.LastUpdated != null)
             {
                 var playsLastWeek =
                     await this._playService.GetWeekArtistPlaycountAsync(userSettings.UserId, artist.ArtistName);
@@ -405,41 +421,22 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("topartists", RunMode = RunMode.Async)]
-        [Summary("Displays top artists.")]
+        [Summary("Shows a list of your or someone else their top artists over a certain time period.")]
+        [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
+        [Examples("ta", "topartists", "ta a lfm:fm-bot", "topartists weekly @user")]
         [Alias("al", "as", "ta", "artistlist", "artists", "top artists", "artistslist")]
         [UsernameSetRequired]
+        [SupportsPagination]
         public async Task TopArtistsAsync([Remainder] string extraOptions = null)
         {
-            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-
-            if (!string.IsNullOrWhiteSpace(extraOptions) && extraOptions.ToLower() == "help")
-            {
-                this._embed.WithTitle($"{prfx}topartists options");
-                this._embed.WithDescription($"- `{Constants.CompactTimePeriodList}`\n" +
-                                            $"- `number of artists (max 16)`\n" +
-                                            $"- `user mention/id`");
-
-                this._embed.AddField("Example",
-                    $"`{prfx}topartists @drasil alltime 11`");
-
-                this._embed.AddField("Pagination",
-                    "This command supports pagination. To enable this you need to make sure the bot has the `Manage Messages` permission (server-wide).");
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var timePeriodString = extraOptions;
-
-            var amountString = extraOptions;
-
-            var timeSettings = SettingService.GetTimePeriod(timePeriodString);
-            var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
-            var amount = SettingService.GetAmount(amountString);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions);
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var amount = SettingService.GetAmount(extraOptions);
 
             var paginationEnabled = false;
             var pages = new List<PageBuilder>();
@@ -527,7 +524,7 @@ namespace FMBot.Bot.Commands.LastFM
                         {
                             await this._indexService.IndexUser(otherUser);
                         }
-                        else if (user.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
+                        else if (contextUser.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
                         {
                             await this._updateService.UpdateUser(otherUser);
                         }
@@ -536,16 +533,16 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                     else
                     {
-                        if (user.LastIndexed == null)
+                        if (contextUser.LastIndexed == null)
                         {
-                            await this._indexService.IndexUser(user);
+                            await this._indexService.IndexUser(contextUser);
                         }
-                        else if (user.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
+                        else if (contextUser.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
                         {
-                            await this._updateService.UpdateUser(user);
+                            await this._updateService.UpdateUser(contextUser);
                         }
 
-                        userId = user.UserId;
+                        userId = contextUser.UserId;
                     }
 
                     var artists = await this._playService.GetTopArtists(userId,
@@ -602,7 +599,9 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("taste", RunMode = RunMode.Async)]
-        [Summary("Compare taste to other user.")]
+        [Summary("Compares your top artists to another users top artists.")]
+        [Options(Constants.CompactTimePeriodList, Constants.UserMentionOrLfmUserNameExample, "Mode: `table` or `embed`")]
+        [Examples("t frikandel_", "t @user", "taste bitldev", "taste @user monthly embed")]
         [UsernameSetRequired]
         [Alias("t")]
         public async Task TasteAsync(string user = null, [Remainder] string extraOptions = null)
@@ -734,7 +733,8 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("whoknows", RunMode = RunMode.Async)]
-        [Summary("Shows what other users listen to the same artist in your server")]
+        [Summary("Shows what other users listen to an artist in your server")]
+        [Examples("w", "wk COMA", "whoknows", "whoknows DJ Seinfeld")]
         [Alias("w", "wk", "whoknows artist")]
         [UsernameSetRequired]
         [GuildOnly]
@@ -910,7 +910,8 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("globalwhoknows", RunMode = RunMode.Async)]
-        [Summary("Shows what other users listen to the same artist on .fmbot")]
+        [Summary("Shows what other users listen to an artist in .fmbot")]
+        [Examples("gw", "gwk COMA", "globalwhoknows", "globalwhoknows DJ Seinfeld")]
         [Alias("gw", "gwk", "globalwhoknows artist")]
         [UsernameSetRequired]
         [GuildOnly]
@@ -1084,38 +1085,14 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("serverartists", RunMode = RunMode.Async)]
         [Summary("Shows top artists for your server")]
-        [Alias("sa", "sta", "servertopartists", "server artists")]
+        [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`")]
+        [Examples("sa", "sa a p", "serverartists", "serverartists alltime", "serverartists listeners weekly")]
+        [Alias("sa", "sta", "servertopartists", "server artists", "serverartist")]
         [GuildOnly]
         public async Task GuildArtistsAsync(params string[] extraOptions)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-
-            if (extraOptions.Any() && extraOptions.First() == "help")
-            {
-                this._embed.WithTitle($"{prfx}serverartists");
-
-                var helpDescription = new StringBuilder();
-                helpDescription.AppendLine("Shows the top artists for your server.");
-                helpDescription.AppendLine();
-                helpDescription.AppendLine("Available time periods: `weekly`, `monthly` and `alltime`");
-                helpDescription.AppendLine("Available order options: `plays` and `listeners`");
-
-                this._embed.WithDescription(helpDescription.ToString());
-
-                this._embed.AddField("Examples",
-                    $"`{prfx}sa` \n" +
-                    $"`{prfx}sa a p` \n" +
-                    $"`{prfx}serverartists` \n" +
-                    $"`{prfx}serverartists alltime` \n" +
-                    $"`{prfx}serverartists listeners weekly`");
-
-                this._embed.WithFooter("Users that are filtered from whoknows also get filtered from these charts.");
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
 
             if (guild.LastIndexed == null)
             {
@@ -1223,7 +1200,8 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("affinity", RunMode = RunMode.Async)]
-        [Summary("Shows what other users in the same server listen to the same music as you")]
+        [Summary("Shows what other users in the same server listen to the same music as you.\n\n" +
+                 "This command is still a work in progress.")]
         [Alias("n", "aff", "neighbors")]
         [UsernameSetRequired]
         public async Task AffinityAsync()

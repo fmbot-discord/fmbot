@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
-using Discord.API.Rest;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
@@ -64,32 +63,19 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("chart", RunMode = RunMode.Async)]
-        [Summary("Generates a chart based on a user's parameters.")]
+        [Summary("Generates a an album chart.")]
+        [Options(
+            Constants.CompactTimePeriodList,
+            "Disable titles: `notitles` / `nt`",
+            "Skip albums with no image: `skipemptyimages` / `s`",
+            "Size: `2x2`, `3x3` up to `10x10`",
+            Constants.UserMentionExample)]
+        [Examples("c", "c q 8x8 nt s", "chart 8x8 quarterly notitles skip", "c 10x10 alltime notitles skip", "c @user 7x7 yearly")]
         [Alias("c")]
         [UsernameSetRequired]
         public async Task ChartAsync(params string[] otherSettings)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            if (otherSettings != null && otherSettings.Any() && otherSettings.First() == "help")
-            {
-                this._embed.WithTitle($"{prfx}chart extra options");
-                this._embed.WithDescription($"- Time periods: `{Constants.CompactTimePeriodList}`\n" +
-                                            $"- Disable titles: `notitles` / `nt`\n" +
-                                            $"- Skip albums with no image: `skipemptyimages` / `s`\n" +
-                                            $"- Size: `2x2`, `3x3` up to `10x10`\n" +
-                                            $"- Other users: `user mention/id`");
-
-                this._embed.AddField("Examples",
-                    $"`{prfx}c`\n" +
-                    $"`{prfx}c q 8x8 nt s`\n" +
-                    $"`{prfx}hart 8x8 quarterly notitles skip`\n" +
-                    $"`{prfx}c 10x10 alltime notitles skip`\n" +
-                    $"`{prfx}c @user 7x7 yearly`");
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
 
             var msg = this.Context.Message as SocketUserMessage;
             if (StackCooldownTarget.Contains(this.Context.Message.Author))
@@ -237,7 +223,7 @@ namespace FMBot.Bot.Commands.LastFM
                 if (!string.IsNullOrEmpty(supporter))
                 {
                     embedDescription +=
-                        $"*This chart was brought to you by .fmbot supporter {supporter}. Also want to support .fmbot? Check out {prfx}donate.*\n";
+                        $"*This chart was brought to you by .fmbot supporter {supporter}. Also want to support .fmbot? Check out `{prfx}donate`.*\n";
                 }
 
                 this._embed.WithFooter(this._embedFooter);

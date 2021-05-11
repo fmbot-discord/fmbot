@@ -23,6 +23,8 @@ namespace FMBot.Domain
 
         public const string UserMentionExample = "`@usermention` / `lfm:fm-bot` / `356268235697553409`";
 
+        public const string UserMentionOrLfmUserNameExample = "`fm-bot` / `@usermention` / `356268235697553409`";
+
         /// <summary>Amount of users to index. Should always end with 000</summary>
         public const int ArtistsToIndex = 4000;
 
