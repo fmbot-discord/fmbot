@@ -175,7 +175,7 @@ namespace FMBot.Bot.Commands
         [Command("help", RunMode = RunMode.Async)]
         [Summary("Quick help summary to get started.")]
         [Alias("bot")]
-        public async Task HelpAsync()
+        public async Task HelpAsync([Remainder] string extraValues = null)
         {
             var customPrefix = true;
             var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -183,6 +183,24 @@ namespace FMBot.Bot.Commands
             {
                 prefix = ConfigData.Data.Bot.Prefix;
                 customPrefix = false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(extraValues))
+            {
+                if (extraValues.Length > prefix.Length && extraValues.Contains(prefix))
+                {
+                    extraValues = extraValues.Replace(prefix, "");
+                }
+
+                var searchResult = this._service.Search(extraValues);
+                if (searchResult.IsSuccess && searchResult.Commands != null && searchResult.Commands.Any())
+                {
+                    var userName = (this.Context.Message.Author as SocketGuildUser)?.Nickname ?? this.Context.User.Username;
+                    this._embed.HelpResponse(searchResult.Commands[0].Command, prefix, userName);
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.Help);
+                    return;
+                }
             }
 
             this._embed.WithTitle(".fmbot Quick Start Guide");
@@ -195,7 +213,6 @@ namespace FMBot.Bot.Commands
 
             this._embed.AddField($"Main command `{prefix}{mainCommand}`",
                 "Displays last scrobbles, and looks different depending on the mode you've set.");
-
 
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             if (contextUser == null)

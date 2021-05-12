@@ -219,68 +219,11 @@ namespace FMBot.Bot.Handlers
             var commandName = searchResult.Commands[0].Command.Name;
             if (msg.Content.ToLower().EndsWith(" help") && commandName != "help")
             {
-                var embed = new EmbedBuilder()
-                    .WithColor(DiscordConstants.InformationColorBlue);
+                var embed = new EmbedBuilder();
                 var prfx = this._prefixService.GetPrefix(context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-
                 var userName = (context.Message.Author as SocketGuildUser)?.Nickname ?? context.User.Username;
-                embed.WithTitle($"Information about '{prfx}{commandName}' for {userName}");
 
-                var summary = searchResult.Commands[0].Command.Summary;
-                if (!string.IsNullOrWhiteSpace(summary))
-                {
-                    embed.WithDescription(summary);
-                }
-
-                var options = searchResult.Commands[0].Command.Attributes.OfType<OptionsAttribute>()
-                    .FirstOrDefault();
-                if (options?.Options != null && options.Options.Any())
-                {
-                    var optionsString = new StringBuilder();
-                    foreach (var option in options.Options)
-                    {
-                        optionsString.AppendLine($" - {option}");
-                    }
-
-                    embed.AddField("Options", optionsString.ToString());
-                }
-
-                var examples = searchResult.Commands[0].Command.Attributes.OfType<ExamplesAttribute>()
-                    .FirstOrDefault();
-                if (examples?.Examples != null && examples.Examples.Any())
-                {
-                    var examplesString = new StringBuilder();
-                    foreach (var example in examples.Examples)
-                    {
-                        examplesString.AppendLine($"`{prfx}{example}`");
-                    }
-
-                    embed.AddField("Examples", examplesString.ToString());
-                }
-
-                var aliases = searchResult.Commands[0].Command.Aliases.Where(a => a != commandName).ToList();
-                if (aliases.Any())
-                {
-                    var aliasesString = new StringBuilder();
-                    for (var index = 0; index < aliases.Count; index++)
-                    {
-                        if (index != 0)
-                        {
-                            aliasesString.Append(", ");
-                        }
-                        var alias = aliases[index];
-                        aliasesString.Append($"`{prfx}{alias}`");
-                    }
-
-                    embed.AddField("Aliases", aliasesString.ToString());
-                }
-
-                if (searchResult.Commands[0].Command.Attributes.OfType<SupportsPagination>().Any())
-                {
-                    embed.AddField("Pagination",
-                        "This command supports pagination. To enable you need to make sure that .fmbot has the `Manage Messages` permission.");
-                }
-
+                embed.HelpResponse(searchResult.Commands[0].Command, prfx, userName);
                 await context.Channel.SendMessageAsync("", false, embed.Build());
                 context.LogCommandUsed(CommandResponse.Help);
                 return;
