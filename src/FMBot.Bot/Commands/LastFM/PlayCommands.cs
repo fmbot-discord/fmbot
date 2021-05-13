@@ -216,7 +216,7 @@ namespace FMBot.Bot.Commands.LastFM
                 RecentTrack currentTrack;
                 RecentTrack previousTrack = null;
 
-                if (ErrorService.RecentScrobbleCallFailed(recentTracks, lastFmUserName))
+                if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
                 {
                     var listeningActivity =
                         this.Context.User.Activities.FirstOrDefault(a => a.Type == ActivityType.Listening);
@@ -229,7 +229,7 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                     else
                     {
-                        await ErrorService.RecentScrobbleCallFailedReply(recentTracks, lastFmUserName, this.Context);
+                        await GenericEmbedService.RecentScrobbleCallFailedReply(recentTracks, lastFmUserName, this.Context);
                         return;
                     }
                 }
@@ -497,7 +497,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFm, amount, useCache: true, sessionKey: sessionKey);
 
-                if (await ErrorService.RecentScrobbleCallFailedReply(recentTracks, userSettings.UserNameLastFm, this.Context))
+                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentTracks, userSettings.UserNameLastFm, this.Context))
                 {
                     return;
                 }
@@ -870,7 +870,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var recentTracks = await this._updateService.UpdateUserAndGetRecentTracks(userWithStreak);
 
-                if (await ErrorService.RecentScrobbleCallFailedReply(recentTracks, userSettings.UserNameLastFm,
+                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentTracks, userSettings.UserNameLastFm,
                     this.Context))
                 {
                     return;

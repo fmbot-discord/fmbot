@@ -40,7 +40,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("youtube")]
-        [Summary("Shares a link to a YouTube video based on what a user is listening to")]
+        [Summary("Shares a link to a YouTube video based on what a user is listening to or searching for")]
         [Alias("yt", "y", "youtubesearch", "ytsearch", "yts")]
         [UsernameSetRequired]
         public async Task YoutubeAsync([Remainder] string searchValue = null)
@@ -67,7 +67,7 @@ namespace FMBot.Bot.Commands
 
                     var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
-                    if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
+                    if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                     {
                         return;
                     }
@@ -116,7 +116,7 @@ namespace FMBot.Bot.Commands
                 {
                     this.Context.LogCommandException(e);
                     await ReplyAsync("No results have been found for this query.\n" +
-                                     "It could also be that we've currently exceeded the YouTube ratelimits. This is an issue that will be fixed soon.");
+                                     "It could also be that we've currently exceeded the YouTube ratelimits.");
                 }
             }
             catch (Exception e)

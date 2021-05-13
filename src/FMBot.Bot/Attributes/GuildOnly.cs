@@ -2,7 +2,7 @@ using System;
 
 namespace FMBot.Bot.Attributes
 {
-    [AttributeUsage(AttributeTargets.Class)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
     public class ExcludeFromHelp : Attribute
     {
         

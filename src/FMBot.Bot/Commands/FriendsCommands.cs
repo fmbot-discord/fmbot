@@ -52,7 +52,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("friends", RunMode = RunMode.Async)]
-        [Summary("Displays a user's friends and what they are listening to.")]
+        [Summary("Displays your friends and what they're listening to.")]
         [Alias("recentfriends", "friendsrecent", "f")]
         [UsernameSetRequired]
         public async Task FriendsAsync()
@@ -154,7 +154,9 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("addfriends", RunMode = RunMode.Async)]
-        [Summary("Adds your friends' Last.fm names.")]
+        [Summary("Adds users to your friend list")]
+        [Options(Constants.UserMentionExample)]
+        [Examples("addfriends fm-bot @user", "addfriends 356268235697553409")]
         [Alias("friendsset", "setfriends", "friendsadd", "addfriend", "setfriend", "friends add", "friend add", "add friends")]
         [UsernameSetRequired]
         public async Task AddFriends([Summary("Friend names")] params string[] enteredFriends)
@@ -266,7 +268,9 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("removefriends", RunMode = RunMode.Async)]
-        [Summary("Remove your friends' Last.fm names.")]
+        [Summary("Removes users from your friend list")]
+        [Options(Constants.UserMentionExample)]
+        [Examples("removefriends fm-bot @user", "removefriend 356268235697553409")]
         [Alias("friendsremove", "deletefriend", "deletefriends", "removefriend", "remove friend", "remove friends", "friends remove", "friend remove")]
         [UsernameSetRequired]
         public async Task RemoveFriends([Summary("Friend names")] params string[] enteredFriends)

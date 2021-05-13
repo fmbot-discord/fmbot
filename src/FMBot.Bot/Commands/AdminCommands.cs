@@ -158,25 +158,6 @@ namespace FMBot.Bot.Commands
             this.Context.LogCommandUsed();
         }
 
-        [Command("botrestart")]
-        [Summary("Reboots the bot.")]
-        [Alias("restart")]
-        public async Task BotRestartAsync()
-        {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
-            {
-                await ReplyAsync("Restarting bot...");
-                this.Context.LogCommandUsed();
-                await (this.Context.Client as DiscordSocketClient).SetStatusAsync(UserStatus.Invisible);
-                Environment.Exit(1);
-            }
-            else
-            {
-                await ReplyAsync("Error: Insufficient rights. Only FMBot admins can restart the bot.");
-                this.Context.LogCommandUsed(CommandResponse.NoPermission);
-            }
-        }
-
         [Command("issues")]
         [Summary("Toggles issue mode")]
         public async Task IssuesAsync()

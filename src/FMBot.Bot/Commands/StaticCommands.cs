@@ -93,9 +93,32 @@ namespace FMBot.Bot.Commands
             this.Context.LogCommandUsed();
         }
 
+        [Command("source", RunMode = RunMode.Async)]
+        [Summary("Info for inviting the bot to a server")]
+        [Alias("github", "gitlab", "opensource", "sourcecode", "code")]
+        public async Task SourceAsync()
+        {
+            var embedDescription = new StringBuilder();
+
+            embedDescription.AppendLine(".fmbot is open-source, non-profit and maintained by volunteers.");
+            embedDescription.AppendLine("The bot is written in C#, uses .NET 5 and Discord.Net.");
+
+            this._embed.WithDescription(embedDescription.ToString());
+
+            this._embed.AddField("Links",
+                "[Main repository](https://github.com/fmbot-discord/fmbot/)\n" +
+                "[Docs repository](https://github.com/fmbot-discord/docs)\n" +
+                "[File an issue](https://github.com/fmbot-discord/fmbot/issues/new/choose)\n" +
+                "[Setup instructions](https://fmbot.xyz/setup/)\n" +
+                "[OpenCollective](https://opencollective.com/fmbot)");
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
+        }
+
         [Command("donate", RunMode = RunMode.Async)]
         [Summary("Please donate if you like this bot!")]
-        [Alias("support")]
+        [Alias("support", "patreon", "opencollective", "donations")]
         public async Task DonateAsync()
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
@@ -172,6 +195,31 @@ namespace FMBot.Bot.Commands
             this.Context.LogCommandUsed();
         }
 
+        [Command("shards", RunMode = RunMode.Async)]
+        [Summary("Displays bot sharding info.")]
+        [GuildOnly]
+        [ExcludeFromHelp]
+        public async Task ShardsAsync()
+        {
+            this._embed.WithTitle("Bot instance shards");
+
+            var shardDescription = new StringBuilder();
+
+            var client = this.Context.Client as DiscordShardedClient;
+            foreach (var shard in client.Shards)
+            {
+                shardDescription.AppendLine($"Shard `{shard.ShardId}` - `{shard.Latency}ms`");
+            }
+
+            this._embed.WithDescription(shardDescription.ToString());
+
+            this._embed.WithFooter(
+                $"Guild {this.Context.Guild.Name} | {this.Context.Guild.Id} is on shard {client.GetShardIdFor(this.Context.Guild)}");
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
+        }
+
         [Command("help", RunMode = RunMode.Async)]
         [Summary("Quick help summary to get started.")]
         [Alias("bot")]
@@ -242,6 +290,7 @@ namespace FMBot.Bot.Commands
             this._embed.AddField("For more commands and info, please read the documentation here:",
                 "https://fmbot.xyz/commands/");
 
+            this._embed.WithFooter($"To view a complete list of all commands, use '{prefix}fullhelp'.");
 
             if (IsBotSelfHosted(this.Context.Client.CurrentUser.Id))
             {
@@ -304,7 +353,8 @@ namespace FMBot.Bot.Commands
 
 
         [Command("countdown", RunMode = RunMode.Async)]
-        [Summary("Counts down")]
+        [Summary("Counts down. Doesn't work that well above 3 seconds.")]
+        [ExcludeFromHelp]
         public async Task CountdownAsync(int countdown = 3)
         {
             if (this._guildService.CheckIfDM(this.Context))
@@ -363,18 +413,74 @@ namespace FMBot.Bot.Commands
             this.Context.LogCommandUsed();
         }
 
-
         [Command("fullhelp", RunMode = RunMode.Async)]
-        [Summary("Displays this list.")]
+        [Summary("Displays all available commands.")]
         public async Task FullHelpAsync()
         {
-            var prefix = ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            var embed = new EmbedBuilder();
+            this._embed.WithDescription("**See a list of all available commands below.**\n" +
+                                        $"Use `{prfx}serverhelp` to view all your configurable server settings.");
 
             foreach (var module in this._service.Modules
-                .OrderByDescending(o => o.Commands.Count).Where(w =>
-                !w.Attributes.OfType<ExcludeFromHelp>().Any()))
+                .OrderByDescending(o => o.Commands.Count(w => !w.Attributes.OfType<ExcludeFromHelp>().Any() &&
+                                                              !w.Attributes.OfType<ServerStaffOnly>().Any()))
+                .Where(w =>
+                !w.Attributes.OfType<ExcludeFromHelp>().Any() &&
+                !w.Attributes.OfType<ServerStaffOnly>().Any()))
+            {
+                var moduleCommands = "";
+                foreach (var cmd in module.Commands.Where(w =>
+                    !w.Attributes.OfType<ExcludeFromHelp>().Any()))
+                {
+                    var result = await cmd.CheckPreconditionsAsync(this.Context);
+                    if (result.IsSuccess)
+                    {
+                        if (!string.IsNullOrEmpty(moduleCommands))
+                        {
+                            moduleCommands += ", ";
+                        }
+
+                        var name = $"`{prfx}{cmd.Name}`";
+                        name = name.Replace("fmfm", "fm");
+
+                        moduleCommands += name;
+                    }
+                }
+
+                var moduleSummary = string.IsNullOrEmpty(module.Summary) ? "" : $" - {module.Summary}";
+
+                if (!string.IsNullOrEmpty(module.Name) && !string.IsNullOrEmpty(moduleCommands))
+                {
+                    this._embed.AddField(
+                        module.Name + moduleSummary,
+                        moduleCommands,
+                        true);
+                }
+
+            }
+
+            this._embed.WithFooter($"Add 'help' after a command to get more info. For example: '{prfx}chart help'");
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+            this.Context.LogCommandUsed();
+        }
+
+        [Command("settinghelp", RunMode = RunMode.Async)]
+        [Summary("Displays a list of all server settings.")]
+        [Alias("serverhelp", "serversettings", "settings", "help server")]
+        public async Task ServerHelpAsync()
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            this._embed.WithDescription("**See all server settings below.**\n" +
+            "These commands require either the `Admin` or the `Ban Members` permission.");
+
+            foreach (var module in this._service.Modules
+                .OrderByDescending(o => o.Commands.Count)
+                .Where(w =>
+                !w.Attributes.OfType<ExcludeFromHelp>().Any() &&
+                w.Attributes.OfType<ServerStaffOnly>().Any()))
             {
                 var moduleCommands = "";
                 foreach (var cmd in module.Commands)
@@ -387,7 +493,7 @@ namespace FMBot.Bot.Commands
                             moduleCommands += ", ";
                         }
 
-                        moduleCommands += $"`{prefix}{cmd.Name}`";
+                        moduleCommands += $"`{prfx}{cmd.Name}`";
                     }
                 }
 
@@ -395,7 +501,7 @@ namespace FMBot.Bot.Commands
 
                 if (!string.IsNullOrEmpty(module.Name) && !string.IsNullOrEmpty(moduleCommands))
                 {
-                    embed.AddField(
+                    this._embed.AddField(
                         module.Name + moduleSummary,
                         moduleCommands,
                         true);
@@ -403,8 +509,55 @@ namespace FMBot.Bot.Commands
 
             }
 
-            embed.WithFooter("Add 'help' after a command to get more info. For example: .fmchart help");
-            await this.Context.Channel.SendMessageAsync("", false, embed.Build());
+            this._embed.WithFooter($"Add 'help' after a command to get more info. For example: '{prfx}prefix help'");
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+            this.Context.LogCommandUsed();
+        }
+
+        [Command("staffhelp", RunMode = RunMode.Async)]
+        [Summary("Displays this list.")]
+        [ExcludeFromHelp]
+        public async Task StaffHelpAsync()
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+
+            this._embed.WithDescription("**See all .fmbot staff commands below.**\n" +
+            "These commands require .fmbot admin or owner.");
+
+            foreach (var module in this._service.Modules
+                .OrderByDescending(o => o.Commands.Count)
+                .Where(w =>
+                w.Attributes.OfType<ExcludeFromHelp>().Any()))
+            {
+                var moduleCommands = "";
+                foreach (var cmd in module.Commands)
+                {
+                    var result = await cmd.CheckPreconditionsAsync(this.Context);
+                    if (result.IsSuccess)
+                    {
+                        if (!string.IsNullOrEmpty(moduleCommands))
+                        {
+                            moduleCommands += ", ";
+                        }
+
+                        moduleCommands += $"`{prfx}{cmd.Name}`";
+                    }
+                }
+
+                var moduleSummary = string.IsNullOrEmpty(module.Summary) ? "" : $" - {module.Summary}";
+
+                if (!string.IsNullOrEmpty(module.Name) && !string.IsNullOrEmpty(moduleCommands))
+                {
+                    this._embed.AddField(
+                        module.Name + moduleSummary,
+                        moduleCommands,
+                        true);
+                }
+
+            }
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
             this.Context.LogCommandUsed();
         }

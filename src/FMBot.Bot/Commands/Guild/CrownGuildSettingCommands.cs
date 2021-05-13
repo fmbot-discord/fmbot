@@ -13,12 +13,11 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands.Guild
 {
     [Name("Crown settings")]
-    [Summary("Server staff only")]
+    [ServerStaffOnly]
     public class CrownGuildSettingCommands : ModuleBase
     {
         private readonly AdminService _adminService;
@@ -49,7 +48,8 @@ namespace FMBot.Bot.Commands.Guild
         }
 
         [Command("crownthreshold", RunMode = RunMode.Async)]
-        [Summary("Sets amount of days to filter out users for inactivity")]
+        [Summary("Sets amount of plays before someone can earn a crown in your server")]
+        [Options("Amount of plays")]
         [Alias("setcrownthreshold", "setcwthreshold", "cwthreshold", "crowntreshold")]
         [GuildOnly]
         public async Task SetCrownPlaycountThresholdAsync([Remainder] string playcount = null)
@@ -110,7 +110,9 @@ namespace FMBot.Bot.Commands.Guild
         }
 
         [Command("crownactivitythreshold", RunMode = RunMode.Async)]
-        [Summary("Sets amount of days to filter out users for inactivity")]
+        [Summary("Sets amount of days to filter out users from earning crowns for inactivity. " +
+                 "Inactivity is counted by the last date that someone has used .fmbot")]
+        [Options("Amount of days to filter someone")]
         [Alias("setcrownactivitythreshold",  "setcwactivitythreshold", "cwactivitythreshold", "crownactivitytreshold")]
         [GuildOnly]
         public async Task SetCrownActivityThresholdAsync([Remainder] string days = null)
@@ -172,7 +174,8 @@ namespace FMBot.Bot.Commands.Guild
         }
 
         [Command("crownblock", RunMode = RunMode.Async)]
-        [Summary("Block a user from appearing gaining crowns")]
+        [Summary("Block a user from gaining any crowns in your server")]
+        [Options(Constants.UserMentionExample)]
         [Alias("crownblockuser", "crownban", "cwblock", "cwban", "crownbanuser", "crownbanmember")]
         [GuildOnly]
         public async Task GuildBlockUserFromCrownsAsync([Remainder] string user = null)
@@ -246,7 +249,7 @@ namespace FMBot.Bot.Commands.Guild
         }
 
         [Command("crownblockedusers", RunMode = RunMode.Async)]
-        [Summary("Block a user from appearing in server-wide commands")]
+        [Summary("View all users that are blocked from earning crowns in your server")]
         [Alias("crownblocked", "crownbanned", "crownbannedusers", "crownbannedmembers")]
         [GuildOnly]
         public async Task BlockedUsersAsync()
@@ -297,7 +300,7 @@ namespace FMBot.Bot.Commands.Guild
         }
 
         [Command("togglecrowns", RunMode = RunMode.Async)]
-        [Summary("Toggles crowns for your server.")]
+        [Summary("Completely enables/disables crowns for your server.")]
         [Alias("togglecrown")]
         [GuildOnly]
         public async Task ToggleCrownsAsync([Remainder] string confirmation = null)
@@ -343,6 +346,289 @@ namespace FMBot.Bot.Commands.Guild
                 await ReplyAsync($"Crowns have been enabled for this server.");
             }
 
+            this.Context.LogCommandUsed();
+        }
+
+
+        [Command("killcrown", RunMode = RunMode.Async)]
+        [Summary("Server staff command: Removes all crowns from a specific artist for your server.")]
+        [Alias("kcw", "kcrown", "killcw", "kill crown", "crown kill")]
+        [GuildOnly]
+        public async Task KillCrownAsync([Remainder] string killCrownValues = null)
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+
+            if (!string.IsNullOrWhiteSpace(killCrownValues) && killCrownValues.ToLower() == "help")
+            {
+                this._embed.WithTitle($"{prfx}killcrown");
+                this._embed.WithDescription("Allows you to remove a crown and all crown history for a certain artist.");
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}killcrown deadmau5` \n" +
+                    $"`{prfx}killcrown the beatles`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            if (guild == null)
+            {
+                await ReplyAsync("This server hasn't been stored yet.\n" +
+                                 $"Please run `{prfx}index` to store this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+            if (guild.CrownsDisabled == true)
+            {
+                await ReplyAsync("Crown functionality has been disabled in this server.");
+                this.Context.LogCommandUsed(CommandResponse.Disabled);
+                return;
+            }
+
+            var serverUser = (IGuildUser)this.Context.Message.Author;
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
+                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync(
+                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(killCrownValues))
+            {
+                await ReplyAsync("Please enter the artist you want to remove all crowns for.");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
+
+            var artistCrowns = await this._crownService.GetCrownsForArtist(guild, killCrownValues);
+
+            if (!artistCrowns.Any())
+            {
+                this._embed.WithDescription($"No crowns found for the artist `{killCrownValues}`");
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                return;
+            }
+
+            await this._crownService.RemoveCrowns(artistCrowns);
+
+            this._embed.WithDescription($"All crowns for `{killCrownValues}` have been removed.");
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
+        }
+
+        [Command("crownseeder", RunMode = RunMode.Async)]
+        [Summary("Server staff command: Automatically generates or updates all crowns for your server")]
+        [Alias("crownseed", "seedcrowns")]
+        [GuildOnly]
+        public async Task SeedCrownsAsync([Remainder] string helpValues = null)
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+
+            if (!string.IsNullOrWhiteSpace(helpValues) && helpValues.ToLower() == "help")
+            {
+                this._embed.WithTitle($"{prfx}crownseeder");
+                this._embed.WithDescription("Automatically adds crowns for your server. If you've done this before, it will update all automatically seeded crowns.\n\n" +
+                                            "Crown seeding only updates automatically seeded crowns, not manually claimed crowns.");
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}crownseeder`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            if (guild == null)
+            {
+                await ReplyAsync("This server hasn't been stored yet.\n" +
+                                 $"Please run `{prfx}index` to store this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+            if (guild.CrownsDisabled == true)
+            {
+                await ReplyAsync("Crown functionality has been disabled in this server.");
+                this.Context.LogCommandUsed(CommandResponse.Disabled);
+                return;
+            }
+
+            var serverUser = (IGuildUser)this.Context.Message.Author;
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
+                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync(
+                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                return;
+            }
+
+            this._embed.WithDescription($"<a:loading:821676038102056991> Seeding crowns for your server...");
+            var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+            var guildCrowns = await this._crownService.GetAllCrownsForGuild(guild.GuildId);
+
+            var amountOfCrownsSeeded = await this._crownService.SeedCrownsForGuild(guild, guildCrowns).ConfigureAwait(false);
+
+            await message.ModifyAsync(m =>
+            {
+                m.Embed = new EmbedBuilder()
+                    .WithDescription($"Seeded {amountOfCrownsSeeded} crowns for your server.\n\n" +
+                                     $"Tip: You can remove all crowns with `{prfx}killallcrowns` or remove all automatically seeded crowns with `{prfx}killallseededcrowns`.")
+                    .WithColor(DiscordConstants.SuccessColorGreen)
+                    .Build();
+            });
+
+            this.Context.LogCommandUsed();
+        }
+
+        [Command("killallcrowns", RunMode = RunMode.Async)]
+        [Summary("Server Staff Command: Removes all crowns from your server")]
+        [Alias("removeallcrowns")]
+        [GuildOnly]
+        public async Task KillAllCrownsAsync([Remainder] string confirmation = null)
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+
+            if (!string.IsNullOrWhiteSpace(confirmation) && confirmation.ToLower() == "help")
+            {
+                this._embed.WithTitle($"{prfx}killallcrowns");
+                this._embed.WithDescription("Removes all crowns from your server.");
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}killallcrowns`\n" +
+                    $"`{prfx}killallcrowns confirm`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            if (guild == null)
+            {
+                await ReplyAsync("This server hasn't been stored yet.\n" +
+                                 $"Please run `{prfx}index` to store this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+            if (guild.CrownsDisabled == true)
+            {
+                await ReplyAsync("Crown functionality has been disabled in this server.");
+                this.Context.LogCommandUsed(CommandResponse.Disabled);
+                return;
+            }
+
+            var serverUser = (IGuildUser)this.Context.Message.Author;
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
+                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync(
+                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                return;
+            }
+
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            var guildCrowns = await this._crownService.GetAllCrownsForGuild(guild.GuildId);
+            if (guildCrowns == null || !guildCrowns.Any())
+            {
+                await ReplyAsync("This server does not have any crowns.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(confirmation) || confirmation.ToLower() != "confirm")
+            {
+                this._embed.WithDescription($"Are you sure you want to remove all {guildCrowns.Count} crowns from your server?\n\n" +
+                                            $"Type `{prfx}killallcrowns confirm` to confirm.");
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
+
+            await this._crownService.RemoveAllCrownsFromGuild(guild);
+
+            this._embed.WithDescription("Removed all crowns for your server.");
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
+        }
+
+        [Command("killallseededcrowns", RunMode = RunMode.Async)]
+        [Summary("Removes all crowns seeded by the `crownseeder` command. All other manually claimed crowns will remain in place.")]
+        [Alias("removeallseededcrowns")]
+        [GuildOnly]
+        public async Task KillAllSeededCrownsAsync([Remainder] string confirmation = null)
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+
+            if (!string.IsNullOrWhiteSpace(confirmation) && confirmation.ToLower() == "help")
+            {
+                this._embed.WithTitle($"{prfx}killallseededcrowns");
+                this._embed.WithDescription("Removes all automatically seeded crowns from your server.");
+
+                this._embed.AddField("Examples",
+                    $"`{prfx}killallseededcrowns`\n" +
+                    $"`{prfx}killallseededcrowns confirm`");
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
+            if (guild == null)
+            {
+                await ReplyAsync("This server hasn't been stored yet.\n" +
+                                 $"Please run `{prfx}index` to store this server.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+            if (guild.CrownsDisabled == true)
+            {
+                await ReplyAsync("Crown functionality has been disabled in this server.");
+                this.Context.LogCommandUsed(CommandResponse.Disabled);
+                return;
+            }
+
+            var serverUser = (IGuildUser)this.Context.Message.Author;
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
+                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync(
+                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                return;
+            }
+
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            var guildCrowns = await this._crownService.GetAllCrownsForGuild(guild.GuildId);
+            if (guildCrowns == null || !guildCrowns.Any())
+            {
+                await ReplyAsync("This server does not have any crowns.");
+                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(confirmation) || confirmation.ToLower() != "confirm")
+            {
+                this._embed.WithDescription($"Are you sure you want to remove all {guildCrowns.Count(c => c.SeededCrown)} automatically seeded crowns from your server?\n\n" +
+                                            $"Type `{prfx}killallseededcrowns confirm` to confirm.");
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
+
+            await this._crownService.RemoveAllSeededCrownsFromGuild(guild);
+
+            this._embed.WithDescription("Removed all seeded crowns for your server.");
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
         }
     }

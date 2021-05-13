@@ -7,10 +7,11 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands.Guild
 {
+    [Name("Webhooks")]
+    [ServerStaffOnly]
     public class WebhookCommands : ModuleBase
     {
         private readonly AdminService _adminService;
@@ -28,7 +29,8 @@ namespace FMBot.Bot.Commands.Guild
         }
 
         [Command("addwebhook", RunMode = RunMode.Async)]
-        [Summary("Adds featured webhook to a channel")]
+        [Summary("Adds featured webhook to a channel. This will automatically post all .fmbot features to this channel.\n\n" +
+                 "To remove, simply delete the webhook from your server and .fmbot will automatically delete it next time it tries to post a feature.")]
         [Alias("addfeaturedwebhook")]
         [GuildOnly]
         public async Task AddFeaturedWebhookAsync()
@@ -75,7 +77,7 @@ namespace FMBot.Bot.Commands.Guild
         }
 
         [Command("testwebhook", RunMode = RunMode.Async)]
-        [Summary("Adds featured webhook to a channel")]
+        [Summary("Test the .fmbot webhook in your channel")]
         [Alias("testfeatured", "testfeaturedwebhook")]
         [GuildOnly]
         public async Task TestFeaturedWebhookAsync()

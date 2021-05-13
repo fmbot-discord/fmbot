@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
@@ -44,6 +43,25 @@ namespace FMBot.Bot.Commands
                     this.Context.LogCommandException(e);
                     await ReplyAsync("Unable to say something due to an internal error.");
                 }
+            }
+        }
+
+        [Command("botrestart")]
+        [Summary("Reboots the bot.")]
+        [Alias("restart")]
+        public async Task BotRestartAsync()
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+            {
+                await ReplyAsync("Restarting bot...");
+                this.Context.LogCommandUsed();
+                await (this.Context.Client as DiscordSocketClient).SetStatusAsync(UserStatus.Invisible);
+                Environment.Exit(1);
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only FMBot admins can restart the bot.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }
 

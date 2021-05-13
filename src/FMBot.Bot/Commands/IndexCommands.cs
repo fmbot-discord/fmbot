@@ -53,7 +53,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("index", RunMode = RunMode.Async)]
-        [Summary("Indexes top artists, albums and tracks for every user in your server.")]
+        [Summary("Refreshed the cached member list that .fmbot has for your server.")]
         [Alias("i")]
         [GuildOnly]
         public async Task IndexGuildAsync()
@@ -140,10 +140,12 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("update", RunMode = RunMode.Async)]
-        [Summary("Update user.")]
-        [UsernameSetRequired]
+        [Summary("Updates a users cached playcounts based on their recent plays. \n\n" +
+                 "This command also has an option to completely refresh a users cache (`full`)")]
+        [Examples("update", "update full")]
         [Alias("u")]
         [GuildOnly]
+        [UsernameSetRequired]
         public async Task UpdateUserAsync(string force = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;

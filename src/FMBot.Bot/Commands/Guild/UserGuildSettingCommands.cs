@@ -10,13 +10,13 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands.Guild
 {
     [Name("Server member settings")]
-    [Summary("Server Staff Only")]
+    [ServerStaffOnly]
     public class UserGuildSettingCommands : ModuleBase
     {
         private readonly AdminService _adminService;
@@ -45,7 +45,8 @@ namespace FMBot.Bot.Commands.Guild
         }
 
         [Command("activitythreshold", RunMode = RunMode.Async)]
-        [Summary("Sets amount of days to filter out users for inactivity")]
+        [Summary("Sets amount of days to filter out users for inactivity. Inactivity is counted by the last date that someone has used .fmbot")]
+        [Options("Amount of days to filter someone")]
         [Alias("setactivitythreshold", "setthreshold")]
         [GuildOnly]
         public async Task SetWhoKnowsThresholdAsync([Remainder] string days = null)
@@ -107,7 +108,8 @@ namespace FMBot.Bot.Commands.Guild
         }
 
         [Command("block", RunMode = RunMode.Async)]
-        [Summary("Block a user from appearing in server-wide commands")]
+        [Summary("Block a user from appearing in server-wide commands and charts")]
+        [Options(Constants.UserMentionExample)]
         [Alias("blockuser", "ban", "banuser", "banmember", "blockmember")]
         [GuildOnly]
         public async Task GuildBlockUserAsync([Remainder] string user = null)
@@ -183,6 +185,7 @@ namespace FMBot.Bot.Commands.Guild
 
         [Command("unblock", RunMode = RunMode.Async)]
         [Summary("Remove block from a user from appearing in server-wide commands")]
+        [Options(Constants.UserMentionExample)]
         [Alias("unblockuser", "unban", "unbanuser","unbanmember", "removeblock", "removeban", "crownunblock")]
         [GuildOnly]
         public async Task GuildUnBlockUserAsync([Remainder] string user = null)
@@ -253,7 +256,7 @@ namespace FMBot.Bot.Commands.Guild
         }
 
         [Command("blockedusers", RunMode = RunMode.Async)]
-        [Summary("Block a user from appearing in server-wide commands")]
+        [Summary("View all users that are blocked from appearing in server-wide commands")]
         [Alias("blocked", "banned", "bannedusers", "blockedmembers", "bannedmembers")]
         [GuildOnly]
         public async Task BlockedUsersAsync()

@@ -373,7 +373,7 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                if (await ErrorService.RecentScrobbleCallFailedReply(recentTracks, userSettings.UserNameLastFm, this.Context))
+                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentTracks, userSettings.UserNameLastFm, this.Context))
                 {
                     return;
                 }
@@ -1139,7 +1139,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, useCache: true, sessionKey: sessionKey);
 
-                if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, lastFmUserName, this.Context))
+                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, lastFmUserName, this.Context))
                 {
                     return null;
                 }

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
-using Discord.API.Rest;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
@@ -157,7 +156,8 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("featured", RunMode = RunMode.Async)]
-        [Summary("Displays the featured avatar.")]
+        [Summary("Displays the currently picked feature and the user.\n\n" +
+                 "This command will also show something special if the user is in your server")]
         [Alias("featuredavatar", "featureduser", "featuredalbum", "avatar")]
         public async Task FeaturedAsync()
         {
@@ -197,7 +197,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("rateyourmusic", RunMode = RunMode.Async)]
-        [Summary("Enables or disables the rateyourmusic links.")]
+        [Summary("Enables or disables the rateyourmusic links. This changes all album links in .fmbot to RYM links instead of Last.fm links.")]
         [Alias("rym")]
         public async Task RateYourMusicAsync()
         {
@@ -236,7 +236,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("botscrobbling", RunMode = RunMode.Async)]
-        [Summary("Enables or disables the bot scrobbling.")]
+        [Summary("Enables or disables the bot scrobbling. For more info, use the command.")]
         [Alias("botscrobble", "bottrack", "bottracking")]
         public async Task BotTrackingAsync([Remainder]string option = null)
         {
@@ -250,7 +250,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithDescription("Bot scrobbling allows you to automatically scrobble music from Discord music bots to your Last.fm account. " +
                                             "For this to work properly you need to make sure .fmbot can see the voice channel and use a supported music bot.\n\n" +
-                                            "Only tracks that already exist on Last.fm will be scrobbled.\n\n" +
+                                            "Only tracks that already exist on Last.fm will be scrobbled. This feature works best with Spotify music.\n\n" +
                                             "Currently supported bots:\n" +
                                             "- Groovy\n");
 
@@ -388,7 +388,12 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("mode", RunMode = RunMode.Async)]
-        [Summary("Change your settings for how your .fm looks")]
+        [Summary("Change how your .fm looks.\n\n" +
+                 "Servers can override this setting using `{{prfx}}servermode`.\n" +
+                 "Playcounts are only visible in non-text modes.")]
+        [Options("Modes: `embedtiny/embedmini/embedfull/textmini/textfull`",
+                "Playcounts: `artist/album/track`")]
+        [Examples("mode embedmini", "mode embedfull track", "mode textfull", "embedtiny album")]
         [Alias("m", "md", "fmmode")]
         [UsernameSetRequired]
         public async Task ModeAsync(params string[] otherSettings)
@@ -396,6 +401,7 @@ namespace FMBot.Bot.Commands.LastFM
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
             if (otherSettings == null || otherSettings.Length < 1 || otherSettings.First() == "help")
             {
                 var replyString = $"Use {prfx}mode to change how your .fm command looks.";
@@ -419,6 +425,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithFooter(
                     $"Current mode and playcount: {userSettings.FmEmbedType} - {countType}");
                 this._embed.WithDescription(replyString);
+                this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
@@ -429,10 +436,10 @@ namespace FMBot.Bot.Commands.LastFM
 
             await this._userService.SetLastFm(this.Context.User, newUserSettings);
 
-            var setReply = $"Your `.fm` mode has been set to '{newUserSettings.FmEmbedType}'";
+            var setReply = $"Your `.fm` mode has been set to **{newUserSettings.FmEmbedType}**";
             if (newUserSettings.FmCountType != null)
             {
-                setReply += $" with the '{newUserSettings.FmCountType.ToString().ToLower()}' playcount.";
+                setReply += $" with the **{newUserSettings.FmCountType.ToString().ToLower()} playcount**.";
             }
             else
             {
@@ -440,22 +447,27 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             setReply +=
-                "\n\nNote that servers can force an .fm mode. The server setting will always overrule your own .fm mode.";
+                "\n\nNote that servers can force a specific mode. The server setting will always overrule your own.";
 
-            await ReplyAsync(setReply.FilterOutMentions());
-
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
+            this._embed.WithDescription(setReply);
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
         }
 
         [Command("privacy", RunMode = RunMode.Async)]
-        [Summary("Change your privacy mode for .fmbot")]
+        [Summary("Changes your visibility to other .fmbot users.\n\n" +
+                 "The default privacy setting is 'Server'.")]
+        [Options("**Global**: You are visible in the global WhoKnows with your Last.fm username",
+            "**Server**: You are not visible in global WhoKnows, but users in the same server will still see your name.")]
+        [Examples("privacy global", "privacy server")]
         [UsernameSetRequired]
         public async Task PrivacyAsync(params string[] otherSettings)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            if (otherSettings == null || otherSettings.Length < 1 || otherSettings.First() == "help")
+            if (otherSettings == null || otherSettings.Length < 1 || otherSettings.First() == "info")
             {
                 var replyString = $"Use {prfx}privacy to change your visibility to other .fmbot users.";
 
@@ -475,6 +487,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithFooter(
                     $"Current privacy mode: {userSettings.PrivacyLevel}");
 
+                this._embed.WithColor(DiscordConstants.InformationColorBlue);
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
                 return;
@@ -482,7 +495,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var newPrivacyLevel = await this._userService.SetPrivacy(userSettings, otherSettings);
 
-            var setReply = $"Your privacy mode has been set to '{newPrivacyLevel}'.";
+            var setReply = $"Your privacy mode has been set to **{newPrivacyLevel}**.\n\n";
 
             if (newPrivacyLevel == PrivacyLevel.Global)
             {
@@ -493,13 +506,15 @@ namespace FMBot.Bot.Commands.LastFM
                 setReply += " You will not be visible in the global WhoKnows with your Last.fm username, but users you share a server with will still see it.";
             }
 
-            await ReplyAsync(setReply.FilterOutMentions());
-
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
+            this._embed.WithDescription(setReply);
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
         }
 
         [Command("login", RunMode = RunMode.Async)]
-        [Summary("Logs you in using a link")]
+        [Summary("Logs you in using a link.\n\n" +
+                 "Not receiving a DM? Please check if you have direct messages from server members enabled.")]
         [Alias("set", "setusername", "fm set")]
         public async Task LoginAsync([Remainder] string unusedValues = null)
         {
@@ -718,9 +733,9 @@ namespace FMBot.Bot.Commands.LastFM
             this.Context.LogCommandUsed();
         }
 
-        [Command("suggest", RunMode = RunMode.Async)]
+        //[Command("suggest", RunMode = RunMode.Async)]
         [Summary("Suggest features you want to see in the bot, or report inappropriate images.")]
-        [Alias("report", "suggestion", "suggestions")]
+        //[Alias("report", "suggestion", "suggestions")]
         public async Task Suggest(string suggestion = null)
         {
             try

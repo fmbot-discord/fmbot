@@ -15,12 +15,11 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Commands.Guild
 {
     [Name("Server settings")]
-    [Summary("Server staff only")]
+    [ServerStaffOnly]
     public class GuildCommands : ModuleBase
     {
         private readonly AdminService _adminService;
@@ -59,7 +58,9 @@ namespace FMBot.Bot.Commands.Guild
         }
 
         [Command("servermode", RunMode = RunMode.Async)]
-        [Summary("Sets the .fm mode for the server.")]
+        [Summary("Sets the forced .fm mode for the server.\n\n" +
+                 "To view current settings, use `{{prfx}}servermode info`")]
+        [Options("Modes: embedtiny/embedmini/embedfull/textmini/textfull")]
         [Alias("guildmode")]
         [GuildOnly]
         public async Task SetServerModeAsync(params string[] otherSettings)
@@ -77,7 +78,7 @@ namespace FMBot.Bot.Commands.Guild
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-            if (otherSettings != null && otherSettings.Any() && otherSettings.First() == "help")
+            if (otherSettings != null && otherSettings.Any() && otherSettings.First() == "info")
             {
                 var replyString = $"Use {prfx}mode to force an .fm mode for everyone in the server.";
 
@@ -94,6 +95,7 @@ namespace FMBot.Bot.Commands.Guild
                 var guildMode = !guild.FmEmbedType.HasValue ? "No forced mode" : guild.FmEmbedType.ToString();
                 this._embed.WithFooter($"Current .fm server mode: {guildMode}");
                 this._embed.WithDescription(replyString);
+                this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Help);
@@ -119,7 +121,9 @@ namespace FMBot.Bot.Commands.Guild
         }
 
         [Command("serverreactions", RunMode = RunMode.Async)]
-        [Summary("Sets reactions for some server commands.")]
+        [Summary("Sets the automatic emote reactions for the `fm` command.\n\n" +
+                 "Use this command without any emotes to disable.")]
+        [Examples("serverreactions :PagChomp: :PensiveBlob:", "serverreactions 😀 😯 🥵", "serverreactions 😀 😯 :PensiveBlob:", "serverreactions")]
         [Alias("serversetreactions")]
         [GuildOnly]
         public async Task SetGuildReactionsAsync(params string[] emotes)
@@ -168,7 +172,7 @@ namespace FMBot.Bot.Commands.Guild
         }
 
         [Command("togglesupportermessages", RunMode = RunMode.Async)]
-        [Summary("Sets reactions for some server commands.")]
+        [Summary("Enables/ disables the supporter messages on the `chart` command")]
         [Alias("togglesupporter", "togglesupporters", "togglesupport")]
         [GuildOnly]
         public async Task ToggleSupportMessagesAsync()
@@ -245,11 +249,11 @@ namespace FMBot.Bot.Commands.Guild
 
         }
 
-        /// <summary>
-        /// Changes the prefix for the server.
-        /// </summary>
-        /// <param name="prefix">The desired prefix.</param>
         [Command("prefix", RunMode = RunMode.Async)]
+        [Summary("Changes the `.fm` prefix for your server. Note that this will replace the complete `.fm` and not just the `.`.\n\n" +
+                 "For example, with the prefix `!` commands will be used as `!chart` and `!whoknows`\n\n" +
+                 "To restore the default prefix, use this command without as option")]
+        [Examples("prefix", "prefix !")]
         [GuildOnly]
         public async Task SetPrefixAsync(string prefix = null)
         {
@@ -311,10 +315,9 @@ namespace FMBot.Bot.Commands.Guild
         }
 
 
-        /// <summary>
-        /// Toggles commands for a server
-        /// </summary>
         [Command("toggleservercommand", RunMode = RunMode.Async)]
+        [Summary("Enables or disables a command server-wide. Make sure to enter the command you want to disable without the `{{prfx}}` prefix.")]
+        [Examples("toggleservercommand chart", "toggleservercommand whoknows")]
         [Alias("toggleservercommands", "toggleserver", "servertoggle")]
         [GuildOnly]
         public async Task ToggleGuildCommand(string command = null)
@@ -392,6 +395,8 @@ namespace FMBot.Bot.Commands.Guild
         }
 
         [Command("togglecommand", RunMode = RunMode.Async)]
+        [Summary("Enables or disables a command in this channel. Make sure to enter the command you want to disable without the `{{prfx}}` prefix.")]
+        [Examples("togglecommand chart", "togglecommand whoknows")]
         [Alias("togglecommands", "channeltoggle", "togglechannel", "togglechannelcommand", "togglechannelcommands")]
         [GuildOnly]
         public async Task ToggleChannelCommand(string command = null)
@@ -495,6 +500,9 @@ namespace FMBot.Bot.Commands.Guild
         }
 
         [Command("cooldown", RunMode = RunMode.Async)]
+        [Summary("Sets a cooldown for the `fm` command in a channel.\n\n" +
+                 "To pick a channel, simply use this command in the channel you want the cooldown in.")]
+        [Options("Cooldown in seconds (Min 2 seconds - Max 600 seconds)")]
         [GuildOnly]
         public async Task FmSetFmCooldownCommand(string command = null)
         {

@@ -1,12 +1,9 @@
-using System.ComponentModel.Design;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using Discord.WebSocket;
 using FMBot.Bot.Attributes;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Resources;
 using FMBot.Domain;
@@ -18,7 +15,7 @@ using Serilog;
 
 namespace FMBot.Bot.Services
 {
-    public static class ErrorService
+    public static class GenericEmbedService
     {
         public static void UsernameNotSetErrorResponse(this EmbedBuilder embed, string prfx, string name)
         {
@@ -140,7 +137,7 @@ namespace FMBot.Bot.Services
             Log.Information("Last.fm returned error: {message} | {responseStatus} | {discordUserName} / {discordUserId} | {messageContent}", message, responseStatus, context.User.Username, context.User.Id, context.Message.Content);
         }
 
-        public static bool RecentScrobbleCallFailed(Response<RecentTrackList> recentScrobbles, string lastFmUserName)
+        public static bool RecentScrobbleCallFailed(Response<RecentTrackList> recentScrobbles)
         {
             if (!recentScrobbles.Success || recentScrobbles.Content == null || !recentScrobbles.Content.RecentTracks.Any())
             {
@@ -181,7 +178,7 @@ namespace FMBot.Bot.Services
 
             if (!string.IsNullOrWhiteSpace(commandInfo.Summary))
             {
-                embed.WithDescription(commandInfo.Summary);
+                embed.WithDescription(commandInfo.Summary.Replace("{{prfx}}", prfx));
             }
 
             var options = commandInfo.Attributes.OfType<OptionsAttribute>()

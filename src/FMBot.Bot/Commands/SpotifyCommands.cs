@@ -43,7 +43,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("spotify")]
-        [Summary("Shares a link to a Spotify track based on what a user is listening to")]
+        [Summary("Shares a link to a Spotify track based on what a user is listening to or searching for")]
         [Alias("sp", "s", "spotifyfind", "spotifysearch")]
         [UsernameSetRequired]
         public async Task SpotifyAsync([Remainder] string searchValue = null)
@@ -70,7 +70,7 @@ namespace FMBot.Bot.Commands
 
                     var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
-                    if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
+                    if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                     {
                         return;
                     }
@@ -113,7 +113,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("spotifyalbum")]
-        [Summary("Shares a link to a Spotify track based on what a user is listening to")]
+        [Summary("Shares a link to a Spotify album based on what a user is listening to or searching for")]
         [Alias("spab")]
         [UsernameSetRequired]
         public async Task SpotifyAlbumAsync([Remainder] string searchValue = null)
@@ -140,7 +140,7 @@ namespace FMBot.Bot.Commands
 
                     var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
-                    if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
+                    if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                     {
                         return;
                     }
@@ -209,7 +209,7 @@ namespace FMBot.Bot.Commands
 
                     var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFM, 1, useCache: true, sessionKey: sessionKey);
 
-                    if (await ErrorService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
+                    if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, userSettings.UserNameLastFM, this.Context))
                     {
                         return;
                     }
