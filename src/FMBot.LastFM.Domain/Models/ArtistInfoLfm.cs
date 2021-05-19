@@ -1,5 +1,3 @@
-using System;
-
 namespace FMBot.LastFM.Domain.Models
 {
     public class ArtistInfoLfmResponse

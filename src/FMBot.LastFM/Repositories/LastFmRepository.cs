@@ -373,7 +373,7 @@ namespace FMBot.LastFM.Repositories
                         {
                             Name = s.Name,
                             Url = s.Url
-                        }).ToList(),
+                        }).ToList()
                     }
                 };
             }
