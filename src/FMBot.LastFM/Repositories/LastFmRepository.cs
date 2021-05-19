@@ -369,7 +369,7 @@ namespace FMBot.LastFM.Repositories
                         Duration = trackCall.Content.Track.Duration,
                         UserPlaycount = trackCall.Content.Track.Userplaycount,
                         Loved = trackCall.Content.Track.Userloved == "1",
-                        Tags = trackCall.Content.Track.Toptags.Tag.Select(s => new Tag
+                        Tags = trackCall.Content.Track.Toptags?.Tag?.Select(s => new Tag
                         {
                             Name = s.Name,
                             Url = s.Url

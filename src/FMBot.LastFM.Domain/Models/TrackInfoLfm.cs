@@ -1,5 +1,3 @@
-using System;
-
 namespace FMBot.LastFM.Domain.Models
 {
     public class TrackInfoLfmResponse
@@ -19,12 +17,7 @@ namespace FMBot.LastFM.Domain.Models
         public ChildAlbumLfm Album { get; set; }
         public long Userplaycount { get; set; }
         public string Userloved { get; set; }
-        public TrackInfoTopTagsLfm Toptags { get; set; }
+        public TagsLfm Toptags { get; set; }
         public WikiLfm Wiki { get; set; }
-    }
-
-    public class TrackInfoTopTagsLfm
-    {
-        public TagLfm[] Tag { get; set; }
     }
 }
