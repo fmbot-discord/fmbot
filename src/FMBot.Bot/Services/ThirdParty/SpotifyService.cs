@@ -375,7 +375,7 @@ namespace FMBot.Bot.Services.ThirdParty
                     .AsQueryable()
                     .FirstOrDefaultAsync(f => f.Name.ToLower() == albumInfo.ArtistName.ToLower());
 
-                if (artist != null)
+                if (artist != null && artist.Id != 0)
                 {
                     albumToAdd.ArtistId = artist.Id;
                 }
@@ -409,7 +409,7 @@ namespace FMBot.Bot.Services.ThirdParty
                     .AsQueryable()
                     .FirstOrDefaultAsync(f => f.Name.ToLower() == albumInfo.ArtistName.ToLower());
 
-                if (artist != null)
+                if (artist != null && artist.Id != 0)
                 {
                     dbAlbum.ArtistId = artist.Id;
                     db.Entry(dbAlbum).State = EntityState.Modified;
@@ -453,7 +453,7 @@ namespace FMBot.Bot.Services.ThirdParty
                 var dbTrack = await fmBotDbContext.Tracks
                     .AsQueryable()
                     .FirstOrDefaultAsync(f => f.Name.ToLower() == track.Name.ToLower() &&
-                                                                       f.ArtistName.ToLower() == albumInfo.ArtistName.ToLower());
+                                            f.ArtistName.ToLower() == albumInfo.ArtistName.ToLower());
 
                 if (dbTrack != null)
                 {
