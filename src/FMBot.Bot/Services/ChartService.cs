@@ -38,6 +38,7 @@ namespace FMBot.Bot.Services
                     chartImageWidth = 174;
                 }
 
+                var httpClient = new System.Net.Http.HttpClient();
                 await chart.Albums.ParallelForEachAsync(async album =>
                 {
                     var encodedId = StringExtensions.ReplaceInvalidChars(album.AlbumUrl.Replace("/music/", ""));
@@ -61,30 +62,33 @@ namespace FMBot.Bot.Services
                         {
                             var url = album.AlbumCoverUrl;
 
-                            SKBitmap bitmap;
                             try
                             {
-                                var httpClient = new System.Net.Http.HttpClient();
                                 var bytes = await httpClient.GetByteArrayAsync(url);
 
                                 Statistics.LastfmImageCalls.Inc();
 
                                 var stream = new MemoryStream(bytes);
 
-                                bitmap = SKBitmap.Decode(stream);
+                                chartImage = SKBitmap.Decode(stream);
                             }
                             catch (Exception e)
                             {
                                 Log.Error("Error while loading image for generated chart", e);
-                                bitmap = SKBitmap.Decode(Path.Combine(FMBotUtil.GlobalVars.ImageFolder + "loading-error.png"));
+                                chartImage = SKBitmap.Decode(Path.Combine(FMBotUtil.GlobalVars.ImageFolder + "loading-error.png"));
                                 validImage = false;
                             }
 
-                            chartImage = bitmap;
+                            if (chartImage == null)
+                            {
+                                Log.Error("Error while loading image for generated chart (chartimg null)");
+                                chartImage = SKBitmap.Decode(Path.Combine(FMBotUtil.GlobalVars.ImageFolder + "loading-error.png"));
+                                validImage = false;
+                            }
 
                             if (validImage)
                             {
-                                using var image = SKImage.FromBitmap(bitmap);
+                                using var image = SKImage.FromBitmap(chartImage);
                                 using var data = image.Encode(SKEncodedImageFormat.Png, 100);
                                 await using var stream = File.OpenWrite(localPath);
                                 data.SaveTo(stream);
