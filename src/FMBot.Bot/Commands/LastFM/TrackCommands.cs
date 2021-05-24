@@ -25,6 +25,7 @@ using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Interactivity;
 using Interactivity.Pagination;
+using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -1017,7 +1018,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var serverTrackSettings = new GuildRankingSettings
             {
-                ChartTimePeriod = ChartTimePeriod.Weekly,
+                ChartTimePeriod = TimePeriod.Weekly,
                 OrderType = OrderType.Listeners,
                 AmountOfDays = 7
             };
@@ -1027,22 +1028,22 @@ namespace FMBot.Bot.Commands.LastFM
             var description = "";
             var footer = "";
 
-            if (guild.GuildUsers != null && guild.GuildUsers.Count > 500 && serverTrackSettings.ChartTimePeriod == ChartTimePeriod.Monthly)
+            if (guild.GuildUsers != null && guild.GuildUsers.Count > 500 && serverTrackSettings.ChartTimePeriod == TimePeriod.Monthly)
             {
                 serverTrackSettings.AmountOfDays = 7;
-                serverTrackSettings.ChartTimePeriod = ChartTimePeriod.Weekly;
+                serverTrackSettings.ChartTimePeriod = TimePeriod.Weekly;
                 footer += "Sorry, monthly time period is not supported on large servers.\n";
             }
 
             try
             {
                 IReadOnlyList<ListTrack> topGuildTracks;
-                if (serverTrackSettings.ChartTimePeriod == ChartTimePeriod.AllTime)
+                if (serverTrackSettings.ChartTimePeriod == TimePeriod.AllTime)
                 {
                     topGuildTracks = await WhoKnowsTrackService.GetTopAllTimeTracksForGuild(guild.GuildId, serverTrackSettings.OrderType);
                     this._embed.WithTitle($"Top alltime tracks in {this.Context.Guild.Name}");
                 }
-                else if (serverTrackSettings.ChartTimePeriod == ChartTimePeriod.Weekly)
+                else if (serverTrackSettings.ChartTimePeriod == TimePeriod.Weekly)
                 {
                     topGuildTracks = await WhoKnowsPlayService.GetTopTracksForGuild(guild.GuildId, serverTrackSettings.OrderType, serverTrackSettings.AmountOfDays);
                     this._embed.WithTitle($"Top weekly tracks in {this.Context.Guild.Name}");

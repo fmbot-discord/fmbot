@@ -28,7 +28,7 @@ namespace FMBot.Bot.Services
 
         // Top artists for 2 users
         public TasteModels GetEmbedTaste(PageResponse<LastArtist> leftUserArtists,
-            PageResponse<LastArtist> rightUserArtists, int amount, ChartTimePeriod timePeriod)
+            PageResponse<LastArtist> rightUserArtists, int amount, TimePeriod timePeriod)
         {
             var matchedArtists = ArtistsToShow(leftUserArtists, rightUserArtists);
 
@@ -88,7 +88,7 @@ namespace FMBot.Bot.Services
 
         // Top artists for 2 users
         public string GetTableTaste(PageResponse<LastArtist> leftUserArtists,
-            PageResponse<LastArtist> rightUserArtists, int amount, ChartTimePeriod timePeriod, string mainUser, string userToCompare)
+            PageResponse<LastArtist> rightUserArtists, int amount, TimePeriod timePeriod, string mainUser, string userToCompare)
         {
             var artistsToShow = ArtistsToShow(leftUserArtists, rightUserArtists);
 
@@ -131,7 +131,7 @@ namespace FMBot.Bot.Services
             return description;
         }
 
-        private static string Description(IEnumerable<LastArtist> mainUserArtists, ChartTimePeriod chartTimePeriod, IList<LastArtist> matchedArtists)
+        private static string Description(IEnumerable<LastArtist> mainUserArtists, TimePeriod chartTimePeriod, IList<LastArtist> matchedArtists)
         {
             var percentage = ((decimal)matchedArtists.Count / (decimal)mainUserArtists.Count()) * 100;
             var description =

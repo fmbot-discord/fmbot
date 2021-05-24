@@ -279,6 +279,9 @@ namespace FMBot.Persistence.EntityFrameWork
             {
                 entity.HasKey(e => e.Id);
 
+                entity.Property(e => e.Name)
+                    .HasColumnType("citext");
+
                 entity.Property(e => e.Aliases)
                     .HasConversion(
                         v => string.Join(',', v),
@@ -289,6 +292,12 @@ namespace FMBot.Persistence.EntityFrameWork
             {
                 entity.HasKey(a => a.Id);
 
+                entity.Property(e => e.Name)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.ArtistName)
+                    .HasColumnType("citext");
+
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.Albums)
                     .HasForeignKey(d => d.ArtistId);
@@ -297,6 +306,15 @@ namespace FMBot.Persistence.EntityFrameWork
             modelBuilder.Entity<Track>(entity =>
             {
                 entity.HasKey(a => a.Id);
+
+                entity.Property(e => e.Name)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.AlbumName)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.ArtistName)
+                    .HasColumnType("citext");
 
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.Tracks)

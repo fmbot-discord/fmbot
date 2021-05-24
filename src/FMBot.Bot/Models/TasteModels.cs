@@ -8,7 +8,7 @@ namespace FMBot.Bot.Models
 
         public TasteType TasteType { get; set; }
 
-        public ChartTimePeriod ChartTimePeriod { get; set; }
+        public TimePeriod ChartTimePeriod { get; set; }
     }
 
     public class TasteModels

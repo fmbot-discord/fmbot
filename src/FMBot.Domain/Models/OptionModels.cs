@@ -9,7 +9,7 @@ namespace FMBot.Domain.Models
         public string Description { get; set; }
         public string AltDescription { get; set; }
         public LastStatsTimeSpan LastStatsTimeSpan { get; set; }
-        public ChartTimePeriod ChartTimePeriod { get; set; }
+        public TimePeriod TimePeriod { get; set; }
         public bool UsePlays { get; set; }
         public int? PlayDays { get; set; }
         public string NewSearchValue { get; set; }

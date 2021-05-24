@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Discord;
+using FMBot.Domain.Models;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Objects;
 using SkiaSharp;
@@ -20,7 +21,7 @@ namespace FMBot.Bot.Models
             this.UsePlays = false;
         }
 
-        public List<LastAlbum> Albums { get; set; }
+        public List<TopAlbum> Albums { get; set; }
 
         public int Height { get; set; }
 
@@ -30,7 +31,7 @@ namespace FMBot.Bot.Models
 
         public List<ChartImage> ChartImages { get; set; }
 
-        public LastStatsTimeSpan TimeSpan { get; set; }
+        public TimePeriod TimePeriod { get; set; }
 
         public IUser DiscordUser { get; set; }
 

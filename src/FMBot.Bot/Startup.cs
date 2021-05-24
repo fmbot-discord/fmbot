@@ -12,6 +12,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain.Models;
 using FMBot.LastFM.Api;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.EntityFrameWork;
@@ -92,6 +93,7 @@ namespace FMBot.Bot
                     LogLevel = LogSeverity.Verbose,
                     DefaultRunMode = RunMode.Async,
                 }))
+                .AddSingleton<AlbumService>()
                 .AddSingleton<AdminService>()
                 .AddSingleton<ArtistsService>()
                 .AddSingleton<CensorService>()

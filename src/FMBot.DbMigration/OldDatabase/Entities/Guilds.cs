@@ -17,7 +17,7 @@ namespace FMBot.DbMigration.OldDatabase.Entities
         public bool? Blacklisted { get; set; }
         public bool? TitlesEnabled { get; set; }
         public FmEmbedType FmEmbedType { get; set; }
-        public ChartTimePeriod ChartTimePeriod { get; set; }
+        public TimePeriod ChartTimePeriod { get; set; }
 
         public string[] EmoteReactions { get; set; }
 

@@ -1,6 +1,6 @@
 namespace FMBot.Domain.Models
 {
-    public enum ChartTimePeriod
+    public enum TimePeriod
     {
         Weekly = 1,
 

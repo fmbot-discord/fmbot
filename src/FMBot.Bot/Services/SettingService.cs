@@ -22,7 +22,7 @@ namespace FMBot.Bot.Services
         }
 
         public static TimeSettingsModel GetTimePeriod(string options,
-            ChartTimePeriod defaultTimePeriod = ChartTimePeriod.Weekly)
+            TimePeriod defaultTimePeriod = TimePeriod.Weekly)
         {
             var settingsModel = new TimeSettingsModel();
             var customTimePeriod = true;
@@ -47,7 +47,7 @@ namespace FMBot.Bot.Services
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, weekly);
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;
-                settingsModel.ChartTimePeriod = ChartTimePeriod.Weekly;
+                settingsModel.TimePeriod = TimePeriod.Weekly;
                 settingsModel.Description = "Weekly";
                 settingsModel.AltDescription = "last week";
                 settingsModel.UrlParameter = "date_preset=LAST_7_DAYS";
@@ -58,7 +58,7 @@ namespace FMBot.Bot.Services
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, monthly);
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;
-                settingsModel.ChartTimePeriod = ChartTimePeriod.Monthly;
+                settingsModel.TimePeriod = TimePeriod.Monthly;
                 settingsModel.Description = "Monthly";
                 settingsModel.AltDescription = "last month";
                 settingsModel.UrlParameter = "date_preset=LAST_30_DAYS";
@@ -69,7 +69,7 @@ namespace FMBot.Bot.Services
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, quarterly);
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Quarter;
-                settingsModel.ChartTimePeriod = ChartTimePeriod.Quarterly;
+                settingsModel.TimePeriod = TimePeriod.Quarterly;
                 settingsModel.Description = "Quarterly";
                 settingsModel.AltDescription = "last quarter";
                 settingsModel.UrlParameter = "date_preset=LAST_90_DAYS";
@@ -80,7 +80,7 @@ namespace FMBot.Bot.Services
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, halfYearly);
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Half;
-                settingsModel.ChartTimePeriod = ChartTimePeriod.Half;
+                settingsModel.TimePeriod = TimePeriod.Half;
                 settingsModel.Description = "Half-yearly";
                 settingsModel.AltDescription = "last half year";
                 settingsModel.UrlParameter = "date_preset=LAST_180_DAYS";
@@ -91,7 +91,7 @@ namespace FMBot.Bot.Services
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, yearly);
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Year;
-                settingsModel.ChartTimePeriod = ChartTimePeriod.Yearly;
+                settingsModel.TimePeriod = TimePeriod.Yearly;
                 settingsModel.Description = "Yearly";
                 settingsModel.AltDescription = "last year";
                 settingsModel.UrlParameter = "date_preset=LAST_365_DAYS";
@@ -102,7 +102,7 @@ namespace FMBot.Bot.Services
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, allTime);
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;
-                settingsModel.ChartTimePeriod = ChartTimePeriod.AllTime;
+                settingsModel.TimePeriod = TimePeriod.AllTime;
                 settingsModel.Description = "Overall";
                 settingsModel.AltDescription = "all-time";
                 settingsModel.UrlParameter = "date_preset=ALL";
@@ -175,10 +175,10 @@ namespace FMBot.Bot.Services
 
             if (!customTimePeriod)
             {
-                if (defaultTimePeriod == ChartTimePeriod.AllTime)
+                if (defaultTimePeriod == TimePeriod.AllTime)
                 {
                     settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;
-                    settingsModel.ChartTimePeriod = ChartTimePeriod.AllTime;
+                    settingsModel.TimePeriod = TimePeriod.AllTime;
                     settingsModel.Description = "Overall";
                     settingsModel.AltDescription = "all-time";
                     settingsModel.UrlParameter = "date_preset=ALL";
@@ -187,7 +187,7 @@ namespace FMBot.Bot.Services
                 else
                 {
                     settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;
-                    settingsModel.ChartTimePeriod = ChartTimePeriod.Weekly;
+                    settingsModel.TimePeriod = TimePeriod.Weekly;
                     settingsModel.Description = "Weekly";
                     settingsModel.AltDescription = "last week";
                     settingsModel.UrlParameter = "date_preset=LAST_7_DAYS";
@@ -507,17 +507,17 @@ namespace FMBot.Bot.Services
 
             if (extraOptions.Contains("w") || extraOptions.Contains("week") || extraOptions.Contains("weekly") || extraOptions.Contains("7d"))
             {
-                setGuildRankingSettings.ChartTimePeriod = ChartTimePeriod.Weekly;
+                setGuildRankingSettings.ChartTimePeriod = TimePeriod.Weekly;
                 setGuildRankingSettings.AmountOfDays = 7;
             }
             else if (extraOptions.Contains("m") || extraOptions.Contains("month") || extraOptions.Contains("monthly") || extraOptions.Contains("30d"))
             {
-                setGuildRankingSettings.ChartTimePeriod = ChartTimePeriod.Monthly;
+                setGuildRankingSettings.ChartTimePeriod = TimePeriod.Monthly;
                 setGuildRankingSettings.AmountOfDays = 30;
             }
             if (extraOptions.Contains("a") || extraOptions.Contains("at") || extraOptions.Contains("alltime"))
             {
-                setGuildRankingSettings.ChartTimePeriod = ChartTimePeriod.AllTime;
+                setGuildRankingSettings.ChartTimePeriod = TimePeriod.AllTime;
             }
             if (extraOptions.Contains("p") || extraOptions.Contains("pc") || extraOptions.Contains("playcount") || extraOptions.Contains("plays"))
             {

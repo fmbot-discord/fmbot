@@ -22,7 +22,7 @@ namespace FMBot.DbMigration.OldDatabase.Entities
         public bool? TitlesEnabled { get; set; }
         public string UserNameLastFM { get; set; }
         public FmEmbedType FmEmbedType { get; set; }
-        public ChartTimePeriod ChartTimePeriod { get; set; }
+        public TimePeriod ChartTimePeriod { get; set; }
         public DateTime? LastGeneratedChartDateTimeUtc { get; set; }
 
         public ICollection<Friend> FriendsFriendUser { get; set; }

@@ -6,7 +6,7 @@ namespace FMBot.Bot.Models
     {
         public OrderType OrderType { get; set; }
 
-        public ChartTimePeriod ChartTimePeriod { get; set; }
+        public TimePeriod ChartTimePeriod { get; set; }
 
         public int AmountOfDays { get; set; }
     }

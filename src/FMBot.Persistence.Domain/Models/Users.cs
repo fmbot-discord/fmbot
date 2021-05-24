@@ -35,7 +35,7 @@ namespace FMBot.Persistence.Domain.Models
 
         public FmCountType? FmCountType { get; set; }
 
-        public ChartTimePeriod ChartTimePeriod { get; set; }
+        public TimePeriod ChartTimePeriod { get; set; }
 
         public PrivacyLevel PrivacyLevel { get; set; }
 

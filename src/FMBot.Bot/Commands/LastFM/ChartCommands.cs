@@ -23,6 +23,7 @@ namespace FMBot.Bot.Commands.LastFM
     [Name("Charts")]
     public class ChartCommands : ModuleBase
     {
+        private readonly AlbumService _albumService;
         private readonly GuildService _guildService;
         private readonly IChartService _chartService;
         private readonly IPrefixService _prefixService;
@@ -45,8 +46,8 @@ namespace FMBot.Bot.Commands.LastFM
                 LastFmRepository lastFmRepository,
                 SettingService settingService,
                 SupporterService supporterService,
-                UserService userService
-            )
+                UserService userService,
+                AlbumService albumService)
         {
             this._chartService = chartService;
             this._guildService = guildService;
@@ -55,6 +56,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._settingService = settingService;
             this._supporterService = supporterService;
             this._userService = userService;
+            this._albumService = albumService;
 
             this._embedAuthor = new EmbedAuthorBuilder();
             this._embed = new EmbedBuilder()
@@ -140,13 +142,13 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var imagesToRequest = chartSettings.ImagesNeeded + extraAlbums;
 
-                var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, chartSettings.TimeSpan, imagesToRequest);
+                var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, chartSettings.TimePeriod, imagesToRequest);
 
-                if (albums.Count() < chartSettings.ImagesNeeded)
+                if (albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
                 {
                     var reply =
-                        $"User hasn't listened to enough albums ({albums.Count()} of required {chartSettings.ImagesNeeded}) for a chart this size. " +
-                        $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList})'.";
+                        $"User hasn't listened to enough albums ({albums.Content.TopAlbums.Count} of required {chartSettings.ImagesNeeded}) for a chart this size. \n" +
+                        $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList}).";
 
                     if (chartSettings.SkipArtistsWithoutImage)
                     {
@@ -159,7 +161,11 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                chartSettings.Albums = albums.Content.ToList();
+                var topAlbums = albums.Content.TopAlbums;
+
+                topAlbums = await this._albumService.FillMissingAlbumCovers(topAlbums);
+
+                chartSettings.Albums = topAlbums;
 
                 var embedAuthorDescription = "";
                 if (!userSettings.DifferentUser)
@@ -254,7 +260,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this.Context.Channel.SendFileAsync(
                     stream,
-                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSpan}-{userSettings.UserNameLastFm}.png",
+                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimePeriod}-{userSettings.UserNameLastFm}.png",
                     embed: this._embed.Build());
 
                 this.Context.LogCommandUsed();

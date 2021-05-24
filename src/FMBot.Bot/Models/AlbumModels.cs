@@ -56,6 +56,13 @@ namespace FMBot.Bot.Models
         public string UserName { get; set; }
     }
 
+    public class AlbumSpotifyCoverDto
+    {
+        public string LastFmUrl { get; set; }
+
+        public string SpotifyImageUrl { get; set; }
+    }
+
     public class WhoKnowsGlobalAlbumDto
     {
         public int UserId { get; set; }

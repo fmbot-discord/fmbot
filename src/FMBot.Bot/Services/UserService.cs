@@ -266,7 +266,7 @@ namespace FMBot.Bot.Services
                     UserType = UserType.User,
                     UserNameLastFM = newUserSettings.UserNameLastFM,
                     TitlesEnabled = true,
-                    ChartTimePeriod = ChartTimePeriod.Monthly,
+                    ChartTimePeriod = TimePeriod.Monthly,
                     FmEmbedType = newUserSettings.FmEmbedType,
                     FmCountType = newUserSettings.FmCountType,
                     SessionKeyLastFm = newUserSettings.SessionKeyLastFm,

@@ -213,7 +213,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var timeSettings = SettingService.GetTimePeriod(artistValues, ChartTimePeriod.AllTime);
+            var timeSettings = SettingService.GetTimePeriod(artistValues, TimePeriod.AllTime);
 
             var artist = await GetArtist(artistValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
             if (artist == null)
@@ -231,12 +231,12 @@ namespace FMBot.Bot.Commands.LastFM
 
             var timeDescription = timeSettings.Description.ToLower();
             List<UserTrack> topTracks;
-            switch (timeSettings.ChartTimePeriod)
+            switch (timeSettings.TimePeriod)
             {
-                case ChartTimePeriod.Weekly:
+                case TimePeriod.Weekly:
                     topTracks = await this._playService.GetTopTracksForArtist(contextUser.UserId, 7, artist.ArtistName);
                     break;
-                case ChartTimePeriod.Monthly:
+                case TimePeriod.Monthly:
                     topTracks = await this._playService.GetTopTracksForArtist(contextUser.UserId, 31, artist.ArtistName);
                     break;
                 default:
@@ -471,7 +471,7 @@ namespace FMBot.Bot.Commands.LastFM
                 if (!timeSettings.UsePlays)
                 {
                     var artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm,
-                        timeSettings.LastStatsTimeSpan, amount);
+                        timeSettings.TimePeriod, amount);
 
                     if (artists == null || !artists.Any() || !artists.Content.Any())
                     {
@@ -623,11 +623,11 @@ namespace FMBot.Bot.Commands.LastFM
 
             var timeType = SettingService.GetTimePeriod(
                 timePeriodString,
-                ChartTimePeriod.AllTime);
+                TimePeriod.AllTime);
 
             var tasteSettings = new TasteSettings
             {
-                ChartTimePeriod = timeType.ChartTimePeriod
+                ChartTimePeriod = timeType.TimePeriod
             };
 
             tasteSettings = this._artistsService.SetTasteSettings(tasteSettings, extraOptions);
@@ -686,8 +686,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 tasteSettings.OtherUserLastFmUsername = lastfmToCompare;
 
-                var ownArtistsTask = this._lastFmRepository.GetTopArtistsAsync(ownLastFmUsername, timeType.LastStatsTimeSpan, 1000);
-                var otherArtistsTask = this._lastFmRepository.GetTopArtistsAsync(lastfmToCompare, timeType.LastStatsTimeSpan, 1000);
+                var ownArtistsTask = this._lastFmRepository.GetTopArtistsAsync(ownLastFmUsername, timeType.TimePeriod, 1000);
+                var otherArtistsTask = this._lastFmRepository.GetTopArtistsAsync(lastfmToCompare, timeType.TimePeriod, 1000);
 
                 var ownArtists = await ownArtistsTask;
                 var otherArtists = await otherArtistsTask;
@@ -708,7 +708,7 @@ namespace FMBot.Bot.Commands.LastFM
                 int amount = 14;
                 if (tasteSettings.TasteType == TasteType.FullEmbed)
                 {
-                    var taste = this._artistsService.GetEmbedTaste(ownArtists, otherArtists, amount, timeType.ChartTimePeriod);
+                    var taste = this._artistsService.GetEmbedTaste(ownArtists, otherArtists, amount, timeType.TimePeriod);
 
                     this._embed.WithDescription(taste.Description);
                     this._embed.AddField("Artist", taste.LeftDescription, true);
@@ -716,7 +716,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else
                 {
-                    var taste = this._artistsService.GetTableTaste(ownArtists, otherArtists, amount, timeType.ChartTimePeriod, ownLastFmUsername, lastfmToCompare);
+                    var taste = this._artistsService.GetTableTaste(ownArtists, otherArtists, amount, timeType.TimePeriod, ownLastFmUsername, lastfmToCompare);
 
                     this._embed.WithDescription(taste);
                 }
@@ -1114,7 +1114,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var serverArtistSettings = new GuildRankingSettings
             {
-                ChartTimePeriod = ChartTimePeriod.Weekly,
+                ChartTimePeriod = TimePeriod.Weekly,
                 OrderType = OrderType.Listeners,
                 AmountOfDays = 7
             };
@@ -1124,22 +1124,22 @@ namespace FMBot.Bot.Commands.LastFM
             var description = "";
             var footer = "";
 
-            if (guild.GuildUsers != null && guild.GuildUsers.Count > 500 && serverArtistSettings.ChartTimePeriod == ChartTimePeriod.Monthly)
+            if (guild.GuildUsers != null && guild.GuildUsers.Count > 500 && serverArtistSettings.ChartTimePeriod == TimePeriod.Monthly)
             {
                 serverArtistSettings.AmountOfDays = 7;
-                serverArtistSettings.ChartTimePeriod = ChartTimePeriod.Weekly;
+                serverArtistSettings.ChartTimePeriod = TimePeriod.Weekly;
                 footer += "Sorry, monthly time period is not supported on large servers.\n";
             }
 
             try
             {
                 IReadOnlyList<ListArtist> topGuildArtists;
-                if (serverArtistSettings.ChartTimePeriod == ChartTimePeriod.AllTime)
+                if (serverArtistSettings.ChartTimePeriod == TimePeriod.AllTime)
                 {
                     topGuildArtists = await WhoKnowsArtistService.GetTopAllTimeArtistsForGuild(guild.GuildId, serverArtistSettings.OrderType);
                     this._embed.WithTitle($"Top alltime artists in {this.Context.Guild.Name}");
                 }
-                else if (serverArtistSettings.ChartTimePeriod == ChartTimePeriod.Weekly)
+                else if (serverArtistSettings.ChartTimePeriod == TimePeriod.Weekly)
                 {
                     topGuildArtists = await WhoKnowsPlayService.GetTopArtistsForGuild(guild.GuildId, serverArtistSettings.OrderType, serverArtistSettings.AmountOfDays);
                     this._embed.WithTitle($"Top weekly artists in {this.Context.Guild.Name}");

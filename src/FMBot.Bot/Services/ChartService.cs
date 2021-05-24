@@ -9,7 +9,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
 using FMBot.Domain;
-using IF.Lastfm.Core.Objects;
+using FMBot.Domain.Models;
 using Serilog;
 using SkiaSharp;
 
@@ -27,9 +27,20 @@ namespace FMBot.Bot.Services
         {
             try
             {
+                var largerImages = true;
+                var chartImageHeight = 300;
+                var chartImageWidth = 300;
+
+                if (chart.ImagesNeeded > 49)
+                {
+                    largerImages = false;
+                    chartImageHeight = 174;
+                    chartImageWidth = 174;
+                }
+
                 await chart.Albums.ParallelForEachAsync(async album =>
                 {
-                    var encodedId = StringExtensions.ReplaceInvalidChars(album.Url.LocalPath.Replace("/music/", ""));
+                    var encodedId = StringExtensions.ReplaceInvalidChars(album.AlbumUrl.Replace("/music/", ""));
                     var localAlbumId = StringExtensions.TruncateLongString(encodedId, 60);
 
                     SKBitmap chartImage;
@@ -46,9 +57,9 @@ namespace FMBot.Bot.Services
                     }
                     else
                     {
-                        if (album.Images.Any() && album.Images.Large != null)
+                        if (album.AlbumCoverUrl != null)
                         {
-                            var url = album.Images.Large.AbsoluteUri;
+                            var url = album.AlbumCoverUrl;
 
                             SKBitmap bitmap;
                             try
@@ -86,9 +97,9 @@ namespace FMBot.Bot.Services
                         }
                     }
 
-                    if (!await this._censorService.AlbumIsSafe(album.Name, album.ArtistName))
+                    if (!await this._censorService.AlbumIsSafe(album.AlbumName, album.ArtistName))
                     {
-                        if (!nsfwAllowed || !await this._censorService.AlbumIsAllowedInNsfw(album.Name, album.ArtistName))
+                        if (!nsfwAllowed || !await this._censorService.AlbumIsAllowedInNsfw(album.AlbumName, album.ArtistName))
                         {
                             chartImage = SKBitmap.Decode(FMBotUtil.GlobalVars.ImageFolder + "censored.png");
                             validImage = false;
@@ -103,10 +114,26 @@ namespace FMBot.Bot.Services
                         }
                     }
 
+                    if (chartImage.Height != chartImageHeight || chartImage.Width != chartImageWidth)
+                    {
+                        using var surface = SKSurface.Create(new SKImageInfo(chartImageWidth, chartImageHeight));
+                        using var paint = new SKPaint {IsAntialias = true, FilterQuality = SKFilterQuality.High};
+
+
+                        surface.Canvas.DrawBitmap(chartImage, new SKRectI(0, 0, chartImageWidth, chartImageHeight),
+                            paint);
+                        surface.Canvas.Flush();
+
+                        using var resizedImage = surface.Snapshot();
+                        chartImage = SKBitmap.FromImage(resizedImage);
+                    }
+
+
+
                     switch (chart.TitleSetting)
                     {
                         case TitleSetting.Titles:
-                            AddTitleToChartImage(chartImage, album);
+                            AddTitleToChartImage(chartImage, album, largerImages);
                             break;
                         case TitleSetting.ClassicTitles:
                             AddClassicTitleToChartImage(chartImage, album);
@@ -186,26 +213,28 @@ namespace FMBot.Bot.Services
             }
         }
 
-        private static void AddTitleToChartImage(SKBitmap chartImage, LastAlbum album)
+        private static void AddTitleToChartImage(SKBitmap chartImage, TopAlbum album, bool largerImages)
         {
             var textColor = chartImage.GetTextColor();
             var rectangleColor = textColor == SKColors.Black ? SKColors.White : SKColors.Black;
 
             var typeface = SKTypeface.FromFile(FMBotUtil.GlobalVars.FontFolder + "arial-unicode-ms.ttf");
 
+            var textSize = largerImages ? 17 : 11;
+
             using var textPaint = new SKPaint
             {
-                TextSize = 11,
+                TextSize = textSize,
                 IsAntialias = true,
                 TextAlign = SKTextAlign.Center,
                 Color = textColor,
                 Typeface = typeface
             };
 
-            if (textPaint.MeasureText(album.Name) > chartImage.Width ||
+            if (textPaint.MeasureText(album.AlbumName) > chartImage.Width ||
                 textPaint.MeasureText(album.ArtistName) > chartImage.Width)
             {
-                textPaint.TextSize = 9;
+                textPaint.TextSize = textSize - (largerImages ? 5 : 2);
             }
 
             using var rectanglePaint = new SKPaint
@@ -221,25 +250,25 @@ namespace FMBot.Bot.Services
             using var bitmapCanvas = new SKCanvas(chartImage);
 
             textPaint.MeasureText(album.ArtistName, ref artistBounds);
-            textPaint.MeasureText(album.Name, ref albumBounds);
+            textPaint.MeasureText(album.AlbumName, ref albumBounds);
 
-            var rectangleLeft = (chartImage.Width - Math.Max(albumBounds.Width, artistBounds.Width)) / 2 - 3;
-            var rectangleRight = (chartImage.Width + Math.Max(albumBounds.Width, artistBounds.Width)) / 2 + 3;
-            var rectangleTop = chartImage.Height - 28;
+            var rectangleLeft = (chartImage.Width - Math.Max(albumBounds.Width, artistBounds.Width)) / 2 - (largerImages ? 6 : 3);
+            var rectangleRight = (chartImage.Width + Math.Max(albumBounds.Width, artistBounds.Width)) / 2 + (largerImages ? 6 : 3);
+            var rectangleTop = chartImage.Height - (largerImages ? 44 : 28);
             var rectangleBottom = chartImage.Height - 1;
 
             var backgroundRectangle = new SKRect(rectangleLeft, rectangleTop, rectangleRight, rectangleBottom);
 
             bitmapCanvas.DrawRoundRect(backgroundRectangle, 4, 4, rectanglePaint);
 
-            bitmapCanvas.DrawText(album.ArtistName, (float)chartImage.Width / 2, -artistBounds.Top + chartImage.Height - 24,
+            bitmapCanvas.DrawText(album.ArtistName, (float)chartImage.Width / 2, -artistBounds.Top + chartImage.Height - (largerImages ? 39 : 24),
                 textPaint);
 
-            bitmapCanvas.DrawText(album.Name, (float)chartImage.Width / 2, -albumBounds.Top + chartImage.Height - 12,
+            bitmapCanvas.DrawText(album.AlbumName, (float)chartImage.Width / 2, -albumBounds.Top + chartImage.Height - (largerImages ? 20 : 12),
                 textPaint);
         }
 
-        private static void AddClassicTitleToChartImage(SKBitmap chartImage, LastAlbum album)
+        private static void AddClassicTitleToChartImage(SKBitmap chartImage, TopAlbum album)
         {
             var textColor = chartImage.GetTextColor();
 
@@ -257,10 +286,10 @@ namespace FMBot.Bot.Services
             using var bitmapCanvas = new SKCanvas(chartImage);
 
             textPaint.MeasureText(album.ArtistName, ref artistBounds);
-            textPaint.MeasureText(album.Name, ref albumBounds);
+            textPaint.MeasureText(album.AlbumName, ref albumBounds);
 
             bitmapCanvas.DrawText(album.ArtistName, 4, 12, textPaint);
-            bitmapCanvas.DrawText(album.Name, 4, 22, textPaint);
+            bitmapCanvas.DrawText(album.AlbumName, 4, 22, textPaint);
         }
 
         public ChartSettings SetSettings(ChartSettings currentChartSettings, string[] extraOptions,
@@ -376,7 +405,7 @@ namespace FMBot.Bot.Services
                 timeSettings = SettingService.GetTimePeriod("weekly");
             }
 
-            chartSettings.TimeSpan = timeSettings.LastStatsTimeSpan;
+            chartSettings.TimePeriod = timeSettings.TimePeriod;
             chartSettings.TimespanString = $"{timeSettings.Description} Chart";
             chartSettings.TimespanUrlString = timeSettings.UrlParameter;
 

@@ -16,7 +16,6 @@ using FMBot.Persistence.Domain.Models;
 using Microsoft.AspNetCore.WebUtilities;
 using Npgsql;
 using Serilog;
-using SpotifyAPI.Web;
 
 namespace FMBot.Bot.Services
 {

@@ -146,28 +146,27 @@ namespace FMBot.Bot.Services
                             case FeaturedMode.TopAlbumsWeekly:
                             case FeaturedMode.TopAlbumsMonthly:
                             case FeaturedMode.TopAlbumsAllTime:
-                                var timespan = LastStatsTimeSpan.Week;
+                                var timespan = TimePeriod.Weekly;
                                 switch (featuredMode)
                                 {
                                     case FeaturedMode.TopAlbumsMonthly:
-                                        timespan = LastStatsTimeSpan.Month;
+                                        timespan = TimePeriod.Monthly;
                                         break;
                                     case FeaturedMode.TopAlbumsAllTime:
-                                        timespan = LastStatsTimeSpan.Overall;
+                                        timespan = TimePeriod.AllTime;
                                         break;
                                 }
 
                                 var albums = await this._lastFmRepository.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 10);
 
-                                if (!albums.Any())
+                                if (!albums.Success || !albums.Content.TopAlbums.Any())
                                 {
                                     Log.Information($"Featured: User {user.UserNameLastFM} had no albums, switching to different user.");
                                     user = await this._userService.GetRandomUserAsync();
                                     albums = await this._lastFmRepository.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 15);
                                 }
 
-                                var albumList = albums
-                                    .ToList();
+                                var albumList = albums.Content.TopAlbums.ToList();
 
                                 var albumFound = false;
                                 var i = 0;
@@ -176,16 +175,16 @@ namespace FMBot.Bot.Services
                                 {
                                     var currentAlbum = albumList[i];
 
-                                    var albumImage = await this._lastFmRepository.GetAlbumImagesAsync(currentAlbum.ArtistName, currentAlbum.Name);
+                                    var albumImage = await this._lastFmRepository.GetAlbumImagesAsync(currentAlbum.ArtistName, currentAlbum.AlbumName);
 
-                                    this._featuredTrackString = $"[{currentAlbum.Name}]({currentAlbum.Url}) \n" +
+                                    this._featuredTrackString = $"[{currentAlbum.AlbumName}]({currentAlbum.AlbumUrl}) \n" +
                                                         $"by {currentAlbum.ArtistName} \n \n" +
                                                         $"{randomAvatarModeDesc} from {user.UserNameLastFM}";
                                     this._featuredUserId = user.UserId;
 
                                     if (albumImage?.Large != null &&
-                                        await this._censorService.AlbumIsSafe(currentAlbum.Name, currentAlbum.ArtistName) &&
-                                        await this._censorService.AlbumNotFeaturedRecently(currentAlbum.Name, currentAlbum.ArtistName)
+                                        await this._censorService.AlbumIsSafe(currentAlbum.AlbumName, currentAlbum.ArtistName) &&
+                                        await this._censorService.AlbumNotFeaturedRecently(currentAlbum.AlbumName, currentAlbum.ArtistName)
                                         )
                                     {
                                         Log.Information($"Featured: Album {i} success, changing avatar to: \n" +
@@ -401,13 +400,13 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async void LogFeaturedAlbum(DiscordShardedClient client, LastAlbum album, int userId, FeaturedMode featuredMode, string description)
+        public async void LogFeaturedAlbum(DiscordShardedClient client, TopAlbum album, int userId, FeaturedMode featuredMode, string description)
         {
             try
             {
                 var botType = BotTypeExtension.GetBotType(client.CurrentUser.Id);
 
-                await this._userService.LogFeatured(userId, featuredMode, botType, description, album.ArtistName, album.Name);
+                await this._userService.LogFeatured(userId, featuredMode, botType, description, album.ArtistName, album.AlbumName);
             }
             catch (Exception exception)
             {

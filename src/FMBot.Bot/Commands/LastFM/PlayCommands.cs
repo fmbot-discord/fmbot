@@ -21,6 +21,7 @@ using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using Interactivity;
+using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -685,10 +686,10 @@ namespace FMBot.Bot.Commands.LastFM
 
             var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
 
-            var timeType = SettingService.GetTimePeriod(extraOptions, ChartTimePeriod.AllTime);
+            var timeType = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
 
             long timeFrom;
-            if (timeType.ChartTimePeriod != ChartTimePeriod.AllTime && timeType.PlayDays != null)
+            if (timeType.TimePeriod != TimePeriod.AllTime && timeType.PlayDays != null)
             {
                 var dateAgo = DateTime.UtcNow.AddDays(-timeType.PlayDays.Value);
                 timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
@@ -731,7 +732,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             reply.AppendLine($" will reach **{goalAmount}** scrobbles on **{goalDate}**.");
 
-            if (timeType.ChartTimePeriod == ChartTimePeriod.AllTime)
+            if (timeType.TimePeriod == TimePeriod.AllTime)
             {
                 reply.AppendLine(
                     $"This is based on {determiner} alltime avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day. ({count} in {Math.Round(totalDays, 0)} days)");
@@ -820,10 +821,10 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context, true);
 
-            var timeType = SettingService.GetTimePeriod(extraOptions, ChartTimePeriod.AllTime);
+            var timeType = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
 
             long? timeFrom = null;
-            if (timeType.ChartTimePeriod != ChartTimePeriod.AllTime && timeType.PlayDays != null)
+            if (timeType.TimePeriod != TimePeriod.AllTime && timeType.PlayDays != null)
             {
                 var dateAgo = DateTime.UtcNow.AddDays(-timeType.PlayDays.Value);
                 timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
@@ -836,7 +837,7 @@ namespace FMBot.Bot.Commands.LastFM
             var reply =
                 $"**{userTitle}** has `{count}` total scrobbles";
 
-            if (timeType.ChartTimePeriod == ChartTimePeriod.AllTime)
+            if (timeType.TimePeriod == TimePeriod.AllTime)
             {
                 await this.Context.Channel.SendMessageAsync($"**{userTitle}** has `{count}` total scrobbles");
             }
