@@ -27,7 +27,7 @@ namespace FMBot.Persistence.Domain.Models
 
         public DateTime? ReleaseDate { get; set; }
 
-        public int ArtistId { get; set; }
+        public int? ArtistId { get; set; }
 
         public Artist Artist { get; set; }
 
