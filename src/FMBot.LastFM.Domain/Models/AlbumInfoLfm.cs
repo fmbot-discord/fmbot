@@ -14,8 +14,8 @@ namespace FMBot.LastFM.Domain.Models
         public string Mbid { get; set; }
         public string Url { get; set; }
         public ImageLfm[] Image { get; set; }
-        public long Listeners { get; set; }
-        public long Playcount { get; set; }
+        public long? Listeners { get; set; }
+        public long? Playcount { get; set; }
         public long? Userplaycount { get; set; }
         public Tracks Tracks { get; set; }
         public TagsLfm Tags { get; set; }

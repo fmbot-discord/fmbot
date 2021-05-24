@@ -364,8 +364,8 @@ namespace FMBot.LastFM.Repositories
                         Description = !string.IsNullOrWhiteSpace(filteredSummary)
                             ? filteredSummary
                             : null,
-                        TotalPlaycount = trackCall.Content.Track.Playcount,
-                        TotalListeners = trackCall.Content.Track.Listeners,
+                        TotalPlaycount = trackCall.Content.Track.Playcount ?? 0,
+                        TotalListeners = trackCall.Content.Track.Listeners ?? 0,
                         Duration = trackCall.Content.Track.Duration,
                         UserPlaycount = trackCall.Content.Track.Userplaycount,
                         Loved = trackCall.Content.Track.Userloved == "1",
@@ -418,9 +418,9 @@ namespace FMBot.LastFM.Repositories
                         Description = !string.IsNullOrWhiteSpace(filteredSummary)
                             ? filteredSummary
                             : null,
-                        TotalPlaycount = artistCall.Content.Artist.Stats.Playcount,
-                        TotalListeners = artistCall.Content.Artist.Stats.Listeners,
-                        UserPlaycount = artistCall.Content.Artist.Stats.Userplaycount,
+                        TotalPlaycount = artistCall.Content.Artist.Stats?.Playcount ?? 0,
+                        TotalListeners = artistCall.Content.Artist.Stats?.Listeners ?? 0,
+                        UserPlaycount = artistCall.Content.Artist.Stats?.Userplaycount,
                         Tags = artistCall.Content.Artist.Tags?.Tag?.Select(s => new Tag
                         {
                             Name = s.Name,
@@ -469,8 +469,8 @@ namespace FMBot.LastFM.Repositories
                         Description = !string.IsNullOrWhiteSpace(filteredSummary)
                             ? filteredSummary
                             : null,
-                        TotalPlaycount = albumCall.Content.Album.Playcount,
-                        TotalListeners = albumCall.Content.Album.Listeners,
+                        TotalPlaycount = albumCall.Content.Album.Playcount ?? 0,
+                        TotalListeners = albumCall.Content.Album.Listeners ?? 0,
                         TotalDuration = albumCall.Content.Album.Tracks?.Track?.Sum(s => s.Duration),
                         UserPlaycount = albumCall.Content.Album.Userplaycount,
                         AlbumTracks = albumCall.Content.Album.Tracks?.Track?.Select(s => new AlbumTrack

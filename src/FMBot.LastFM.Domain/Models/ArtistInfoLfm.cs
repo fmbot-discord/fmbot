@@ -26,8 +26,8 @@ namespace FMBot.LastFM.Domain.Models
 
     public class Stats
     {
-        public long Listeners { get; set; }
-        public long Playcount { get; set; }
+        public long? Listeners { get; set; }
+        public long? Playcount { get; set; }
         public long? Userplaycount { get; set; }
     }
 }
