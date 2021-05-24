@@ -29,7 +29,6 @@
     <PackageReference Include="Genius.NET" Version="4.0.1" />
     <PackageReference Include="Google.Apis" Version="1.51.0" />
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.51.0.2294" />
-    <PackageReference Include="Inflatable.Lastfm" Version="1.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="5.0.6" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="5.0.0" />
@@ -53,7 +52,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FMBot.Domain\FMBot.Domain.csproj" />
-    <ProjectReference Include="..\FMBot.LastFM.Domain\FMBot.LastFM.Domain.csproj" />
     <ProjectReference Include="..\FMBot.Youtube.Domain\FMBot.Youtube.Domain.csproj" />
     <ProjectReference Include="..\FMBot.Persistence.Domain\FMBot.Persistence.Domain.csproj" />
     <ProjectReference Include="..\FMBot.Persistence.EntityFrameWork\FMBot.Persistence.EntityFrameWork.csproj" />

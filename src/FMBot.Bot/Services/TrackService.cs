@@ -69,14 +69,13 @@ namespace FMBot.Bot.Services
                 if (!description.Contains("-"))
                 {
                     var lastFmResult = await this._lastFmRepository.SearchTrackAsync(description);
-                    if (lastFmResult.Success && lastFmResult.Content.Any())
+                    if (lastFmResult.Success && lastFmResult.Content != null)
                     {
-                        var result = lastFmResult.Content.First();
                         return new TrackSearchResult
                         {
-                            AlbumName = result.AlbumName,
-                            ArtistName = result.ArtistName,
-                            TrackName = result.Name
+                            AlbumName = lastFmResult.Content.AlbumName,
+                            ArtistName = lastFmResult.Content.ArtistName,
+                            TrackName = lastFmResult.Content.TrackName
                         };
                     }
                 }

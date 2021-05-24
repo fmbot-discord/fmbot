@@ -1168,21 +1168,19 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var result = await this._lastFmRepository.SearchTrackAsync(searchValue);
-            if (result.Success && result.Content.Any())
+            if (result.Success && result.Content != null)
             {
-                var track = result.Content[0];
-
                 if (otherUserUsername != null)
                 {
                     lastFmUserName = otherUserUsername;
                 }
 
-                var trackInfo = await this._lastFmRepository.GetTrackInfoAsync(track.Name, track.ArtistName,
+                var trackInfo = await this._lastFmRepository.GetTrackInfoAsync(result.Content.TrackName, result.Content.ArtistName,
                     lastFmUserName);
 
                 if (trackInfo.Content == null || !trackInfo.Success)
                 {
-                    this._embed.WithDescription($"Last.fm did not return a result for **{track.Name}** by **{track.ArtistName}**.\n" +
+                    this._embed.WithDescription($"Last.fm did not return a result for **{result.Content.TrackName}** by **{result.Content.ArtistName}**.\n" +
                                                 $"This usually happens on recently released tracks. Please try again later.");
 
                     await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
@@ -1201,7 +1199,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return null;
             }
 
-            this._embed.WithDescription($"Last.fm returned an error: {result.Status}");
+            this._embed.WithDescription($"Last.fm returned an error: {result.Error}");
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed(CommandResponse.LastFmError);
             return null;

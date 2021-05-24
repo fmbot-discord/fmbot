@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Api;
+using FMBot.LastFM.Domain.Enums;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.Persistence.Domain.Models;
@@ -282,16 +283,7 @@ namespace FMBot.LastFM.Repositories
         }
 
         // User
-        public async Task<LastResponse<LastUser>> GetUserInfoAsync(string lastFmUserName)
-        {
-            var user = await this._lastFmClient.User.GetInfoAsync(lastFmUserName);
-            Statistics.LastfmApiCalls.Inc();
-
-            return user;
-        }
-
-        // User
-        public async Task<UserLfm> GetFullUserInfoAsync(string lastFmUserName, string sessionKey)
+        public async Task<UserLfm> GetLfmUserInfoAsync(string lastFmUserName, string sessionKey)
         {
             var queryParams = new Dictionary<string, string>
             {
@@ -311,12 +303,41 @@ namespace FMBot.LastFM.Repositories
             return !userCall.Success ? null : userCall.Content.User;
         }
 
-        public async Task<PageResponse<LastTrack>> SearchTrackAsync(string searchQuery)
+        public async Task<Response<TrackInfo>> SearchTrackAsync(string searchQuery)
         {
             var trackSearch = await this._lastFmClient.Track.SearchAsync(searchQuery, itemsPerPage: 1);
             Statistics.LastfmApiCalls.Inc();
 
-            return trackSearch;
+            if (!trackSearch.Success)
+            {
+                return new Response<TrackInfo>
+                {
+                    Success = false,
+                    Error = (ResponseStatus)Enum.Parse(typeof(ResponseStatus), trackSearch.Status.ToString()),
+                    Message = "Last.fm returned an error"
+                };
+            }
+
+            if (trackSearch.Content == null || trackSearch.TotalItems == 0)
+            {
+                return new Response<TrackInfo>
+                {
+                    Success = true,
+                    Content = null,
+                };
+            }
+
+            return new Response<TrackInfo>
+            {
+                Success = true,
+                Content = new TrackInfo
+                {
+                    ArtistName = trackSearch.Content.First().ArtistName,
+                    AlbumArtist = trackSearch.Content.First().ArtistName,
+                    AlbumName = trackSearch.Content.First().AlbumName,
+                    TrackName = trackSearch.Content.First().Name
+                }
+            };
         }
 
         // Track info
@@ -603,7 +624,7 @@ namespace FMBot.LastFM.Repositories
         // Check if Last.fm user exists
         public async Task<bool> LastFmUserExistsAsync(string lastFmUserName)
         {
-            var lastFmUser = await this.GetFullUserInfoAsync(lastFmUserName, null);
+            var lastFmUser = await this.GetLfmUserInfoAsync(lastFmUserName, null);
 
             return lastFmUser != null;
         }

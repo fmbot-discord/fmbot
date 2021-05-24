@@ -1,5 +1,3 @@
-using System;
-
 namespace FMBot.Domain.Models
 {
     public class AlbumTrack

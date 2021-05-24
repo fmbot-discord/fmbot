@@ -181,10 +181,12 @@ namespace FMBot.Bot.Commands.LastFM
                 var embedDescription = "";
 
                 this._embed.WithAuthor(this._embedAuthor);
-                var userInfo = await this._lastFmRepository.GetUserInfoAsync(userSettings.UserNameLastFm);
 
-                var playCount = userInfo.Content.Playcount;
-                this._embedFooter.Text = $"{userSettings.UserNameLastFm} has {playCount} scrobbles.";
+                if (!userSettings.DifferentUser)
+                {
+                    this._embedFooter.Text = $"{userSettings.UserNameLastFm} has {user.TotalPlaycount} scrobbles.";
+                    this._embed.WithFooter(this._embedFooter);
+                }
 
                 if (chartSettings.CustomOptionsEnabled)
                 {
@@ -226,7 +228,6 @@ namespace FMBot.Bot.Commands.LastFM
                         $"*This chart was brought to you by .fmbot supporter {supporter}. Also want to support .fmbot? Check out `{prfx}donate`.*\n";
                 }
 
-                this._embed.WithFooter(this._embedFooter);
 
                 var nsfwAllowed = this.Context.Guild == null || ((SocketTextChannel) this.Context.Channel).IsNsfw;
                 var chart = await this._chartService.GenerateChartAsync(chartSettings, nsfwAllowed);

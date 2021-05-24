@@ -681,7 +681,7 @@ namespace FMBot.Bot.Commands.LastFM
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
-            var userInfo = await this._lastFmRepository.GetFullUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
+            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
 
             var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
 
@@ -760,7 +760,7 @@ namespace FMBot.Bot.Commands.LastFM
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
-            var userInfo = await this._lastFmRepository.GetFullUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
+            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
 
             var mileStoneAmount = SettingService.GetMilestoneAmount(extraOptions, userInfo.Playcount);
 
