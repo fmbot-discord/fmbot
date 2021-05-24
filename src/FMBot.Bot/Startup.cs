@@ -132,7 +132,8 @@ namespace FMBot.Bot
 
             // These services can only be added after the config is loaded
             services
-                .AddSingleton(new InteractivityService(discordClient, TimeSpan.FromMinutes(3)))
+                .AddSingleton<InteractivityService>()
+                .AddSingleton(new InteractivityConfig { DefaultTimeout = TimeSpan.FromMinutes(3) }) 
                 .AddSingleton<IndexRepository>()
                 .AddSingleton<UpdateRepository>()
                 .AddSingleton<IUpdateService, UpdateService>()
