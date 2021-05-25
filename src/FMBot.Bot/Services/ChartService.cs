@@ -31,11 +31,11 @@ namespace FMBot.Bot.Services
                 var chartImageHeight = 300;
                 var chartImageWidth = 300;
 
-                if (chart.ImagesNeeded > 49)
+                if (chart.Width > 6)
                 {
                     largerImages = false;
-                    chartImageHeight = 174;
-                    chartImageWidth = 174;
+                    chartImageHeight = 180;
+                    chartImageWidth = 180;
                 }
 
                 var httpClient = new System.Net.Http.HttpClient();
@@ -123,7 +123,6 @@ namespace FMBot.Bot.Services
                         using var surface = SKSurface.Create(new SKImageInfo(chartImageWidth, chartImageHeight));
                         using var paint = new SKPaint {IsAntialias = true, FilterQuality = SKFilterQuality.High};
 
-
                         surface.Canvas.DrawBitmap(chartImage, new SKRectI(0, 0, chartImageWidth, chartImageHeight),
                             paint);
                         surface.Canvas.Flush();
@@ -131,8 +130,6 @@ namespace FMBot.Bot.Services
                         using var resizedImage = surface.Snapshot();
                         chartImage = SKBitmap.FromImage(resizedImage);
                     }
-
-
 
                     switch (chart.TitleSetting)
                     {
@@ -224,7 +221,7 @@ namespace FMBot.Bot.Services
 
             var typeface = SKTypeface.FromFile(FMBotUtil.GlobalVars.FontFolder + "arial-unicode-ms.ttf");
 
-            var textSize = largerImages ? 17 : 11;
+            var textSize = largerImages ? 17 : 12;
 
             using var textPaint = new SKPaint
             {
@@ -258,17 +255,17 @@ namespace FMBot.Bot.Services
 
             var rectangleLeft = (chartImage.Width - Math.Max(albumBounds.Width, artistBounds.Width)) / 2 - (largerImages ? 6 : 3);
             var rectangleRight = (chartImage.Width + Math.Max(albumBounds.Width, artistBounds.Width)) / 2 + (largerImages ? 6 : 3);
-            var rectangleTop = chartImage.Height - (largerImages ? 44 : 28);
+            var rectangleTop = chartImage.Height - (largerImages ? 44 : 30);
             var rectangleBottom = chartImage.Height - 1;
 
             var backgroundRectangle = new SKRect(rectangleLeft, rectangleTop, rectangleRight, rectangleBottom);
 
             bitmapCanvas.DrawRoundRect(backgroundRectangle, 4, 4, rectanglePaint);
 
-            bitmapCanvas.DrawText(album.ArtistName, (float)chartImage.Width / 2, -artistBounds.Top + chartImage.Height - (largerImages ? 39 : 24),
+            bitmapCanvas.DrawText(album.ArtistName, (float)chartImage.Width / 2, -artistBounds.Top + chartImage.Height - (largerImages ? 39 : 26),
                 textPaint);
 
-            bitmapCanvas.DrawText(album.AlbumName, (float)chartImage.Width / 2, -albumBounds.Top + chartImage.Height - (largerImages ? 20 : 12),
+            bitmapCanvas.DrawText(album.AlbumName, (float)chartImage.Width / 2, -albumBounds.Top + chartImage.Height - (largerImages ? 20 : 13),
                 textPaint);
         }
 
