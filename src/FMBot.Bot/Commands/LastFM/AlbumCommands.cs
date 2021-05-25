@@ -247,8 +247,8 @@ namespace FMBot.Bot.Commands.LastFM
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
-                throw;
+                this.Context.LogCommandException(e);
+                await ReplyAsync("Unable to show album info due to an internal error.");
             }
         }
 
@@ -308,68 +308,75 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var album = await this.SearchAlbum(albumValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
-            if (album == null)
+            try
             {
-                return;
+                var album = await this.SearchAlbum(albumValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
+                if (album == null)
+                {
+                    return;
+                }
+
+                var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
+
+                var albumCoverUrl = album.AlbumCoverUrl;
+                if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
+                {
+                    albumCoverUrl = databaseAlbum.SpotifyImageUrl;
+                }
+
+                if (albumCoverUrl == null)
+                {
+                    this._embed.WithDescription("Sorry, no album cover found for this album: \n" +
+                                                $"{album.ArtistName} - {album.AlbumName}\n" +
+                                                $"[View on last.fm]({album.AlbumUrl})");
+                    await this.ReplyAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+
+                var image = await LastFmRepository.GetAlbumImageAsBitmapAsync(albumCoverUrl);
+                if (image == null)
+                {
+                    this._embed.WithDescription("Sorry, something went wrong while getting album cover for this album: \n" +
+                                                $"{album.ArtistName} - {album.AlbumName}\n" +
+                                                $"[View on last.fm]({album.AlbumUrl})");
+                    await this.ReplyAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.Error);
+                    return;
+                }
+
+                var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
+                    album.AlbumName, album.ArtistName, album.AlbumUrl, this._embed);
+                if (!safeForChannel)
+                {
+                    await this.ReplyAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.Censored);
+                    return;
+                }
+
+                this._embed.WithDescription($"**{album.ArtistName} - [{album.AlbumName}]({album.AlbumUrl})**");
+                this._embedFooter.WithText(
+                    $"Album cover requested by {await this._userService.GetUserTitleAsync(this.Context)}");
+                this._embed.WithFooter(this._embedFooter);
+
+                var imageMemoryStream = new MemoryStream();
+                image.Save(imageMemoryStream, ImageFormat.Png);
+                imageMemoryStream.Position = 0;
+
+                await this.Context.Channel.SendFileAsync(
+                    imageMemoryStream,
+                    $"cover-{StringExtensions.ReplaceInvalidChars($"{album.ArtistName}_{album.AlbumName}")}.png",
+                    null,
+                    false,
+                    this._embed.Build());
+
+                this.Context.LogCommandUsed();
             }
-
-            var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
-
-
-            var albumCoverUrl = album.AlbumCoverUrl;
-            if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
+            catch (Exception e)
             {
-                albumCoverUrl = databaseAlbum.SpotifyImageUrl;
+                this.Context.LogCommandException(e);
+                await ReplyAsync("Unable to show album cover due to an internal error.");
             }
-
-            if (albumCoverUrl == null)
-            {
-                this._embed.WithDescription("Sorry, no album cover found for this album: \n" +
-                                            $"{album.ArtistName} - {album.AlbumName}\n" +
-                                            $"[View on last.fm]({album.AlbumUrl})");
-                await this.ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return;
-            }
-
-            var image = await LastFmRepository.GetAlbumImageAsBitmapAsync(albumCoverUrl);
-            if (image == null)
-            {
-                this._embed.WithDescription("Sorry, something went wrong while getting album cover for this album: \n" +
-                                            $"{album.ArtistName} - {album.AlbumName}\n" +
-                                            $"[View on last.fm]({album.AlbumUrl})");
-                await this.ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Error);
-                return;
-            }
-
-            var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
-                album.AlbumName, album.ArtistName, album.AlbumUrl, this._embed);
-            if (!safeForChannel)
-            {
-                await this.ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Censored);
-                return;
-            }
-
-            this._embed.WithDescription($"**{album.ArtistName} - [{album.AlbumName}]({album.AlbumUrl})**");
-            this._embedFooter.WithText(
-                $"Album cover requested by {await this._userService.GetUserTitleAsync(this.Context)}");
-            this._embed.WithFooter(this._embedFooter);
-
-            var imageMemoryStream = new MemoryStream();
-            image.Save(imageMemoryStream, ImageFormat.Png);
-            imageMemoryStream.Position = 0;
-
-            await this.Context.Channel.SendFileAsync(
-                imageMemoryStream,
-                $"cover-{StringExtensions.ReplaceInvalidChars($"{album.ArtistName}_{album.AlbumName}")}.png",
-                null,
-                false,
-                this._embed.Build());
-
-            this.Context.LogCommandUsed();
         }
 
         [Command("topalbums", RunMode = RunMode.Async)]
@@ -573,56 +580,41 @@ namespace FMBot.Bot.Commands.LastFM
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
-            if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.ToLower() == "help")
-            {
-                this._embed.WithTitle($"{prfx}whoknowsalbum");
-                this._embed.WithDescription($"Shows what members in your server listened to the album you're currently listening to or searching for.");
-
-                this._embed.AddField("Examples",
-                    $"`{prfx}wa` \n" +
-                    $"`{prfx}whoknowsalbum` \n" +
-                    $"`{prfx}whoknowsalbum The Beatles Abbey Road` \n" +
-                    $"`{prfx}whoknowsalbum Metallica & Lou Reed | Lulu`");
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
-
-            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
-
-            if (lastIndex == null)
-            {
-                await ReplyAsync("This server hasn't been indexed yet.\n" +
-                                 $"Please run `{prfx}index` to index this server.\n" +
-                                 $"Note that this can take some time on large servers.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
-            if (lastIndex < DateTime.UtcNow.AddDays(-100))
-            {
-                await ReplyAsync("Server index data is out of date, it was last updated over 100 days ago.\n" +
-                                 $"Please run `{prfx}index` to re-index this server.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
-
-            var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-
-            _ = this.Context.Channel.TriggerTypingAsync();
-
-            var album = await this.SearchAlbum(albumValues, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
-            if (album == null)
-            {
-                return;
-            }
-
-            var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
-
-            var albumName = $"{album.AlbumName} by {album.ArtistName}";
-
             try
             {
+                var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
+
+                if (lastIndex == null)
+                {
+                    await ReplyAsync("This server hasn't been indexed yet.\n" +
+                                     $"Please run `{prfx}index` to index this server.\n" +
+                                     $"Note that this can take some time on large servers.");
+                    this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                    return;
+                }
+                if (lastIndex < DateTime.UtcNow.AddDays(-100))
+                {
+                    await ReplyAsync("Server index data is out of date, it was last updated over 100 days ago.\n" +
+                                     $"Please run `{prfx}index` to re-index this server.");
+                    this.Context.LogCommandUsed(CommandResponse.IndexRequired);
+                    return;
+                }
+
+                var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                var album = await this.SearchAlbum(albumValues, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
+                if (album == null)
+                {
+                    return;
+                }
+
+                var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
+
+                var albumName = $"{album.AlbumName} by {album.ArtistName}";
+
+
                 var guild = await guildTask;
 
                 var currentUser = await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), userSettings);
@@ -722,7 +714,7 @@ namespace FMBot.Bot.Commands.LastFM
             catch (Exception e)
             {
                 this.Context.LogCommandException(e);
-                await ReplyAsync("Something went wrong while using whoknows album. Please let us know as this feature is in beta.");
+                await ReplyAsync("Something went wrong while using whoknows album. Please report this issue.");
             }
         }
 
@@ -754,31 +746,32 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-            _ = this.Context.Channel.TriggerTypingAsync();
-
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-            var currentSettings = new WhoKnowsSettings
-            {
-                HidePrivateUsers = false,
-                NewSearchValue = albumValues
-            };
-
-            var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues);
-
-            var album = await this.SearchAlbum(settings.NewSearchValue, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
-            if (album == null)
-            {
-                return;
-            }
-
-            var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
-
-            var albumName = $"{album.AlbumName} by {album.ArtistName}";
-
             try
             {
+                var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+                var currentSettings = new WhoKnowsSettings
+                {
+                    HidePrivateUsers = false,
+                    NewSearchValue = albumValues
+                };
+
+                var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues);
+
+                var album = await this.SearchAlbum(settings.NewSearchValue, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
+                if (album == null)
+                {
+                    return;
+                }
+
+                var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
+
+                var albumName = $"{album.AlbumName} by {album.ArtistName}";
+
+
                 var usersWithArtist = await this._whoKnowsAlbumService.GetGlobalUsersForAlbum(this.Context, album.ArtistName, album.AlbumName);
 
                 if (album.UserPlaycount.HasValue && this.Context.Guild != null)
@@ -1023,8 +1016,7 @@ namespace FMBot.Bot.Commands.LastFM
             catch (Exception e)
             {
                 this.Context.LogCommandException(e);
-                await ReplyAsync(
-                    "Something went wrong while using albumtracks. Please report this issue.");
+                await ReplyAsync("Something went wrong while using albumtracks. Please report this issue.");
             }
         }
 
@@ -1070,20 +1062,20 @@ namespace FMBot.Bot.Commands.LastFM
                 AmountOfDays = 7
             };
 
-            serverAlbumSettings = SettingService.SetGuildRankingSettings(serverAlbumSettings, extraOptions);
-
-            var description = "";
-            var footer = "";
-
-            if (guild.GuildUsers != null && guild.GuildUsers.Count > 500 && serverAlbumSettings.ChartTimePeriod == TimePeriod.Monthly)
-            {
-                serverAlbumSettings.AmountOfDays = 7;
-                serverAlbumSettings.ChartTimePeriod = TimePeriod.Weekly;
-                footer += "Sorry, monthly time period is not supported on large servers.\n";
-            }
-
             try
             {
+                serverAlbumSettings = SettingService.SetGuildRankingSettings(serverAlbumSettings, extraOptions);
+
+                var description = "";
+                var footer = "";
+
+                if (guild.GuildUsers != null && guild.GuildUsers.Count > 500 && serverAlbumSettings.ChartTimePeriod == TimePeriod.Monthly)
+                {
+                    serverAlbumSettings.AmountOfDays = 7;
+                    serverAlbumSettings.ChartTimePeriod = TimePeriod.Weekly;
+                    footer += "Sorry, monthly time period is not supported on large servers.\n";
+                }
+
                 IReadOnlyList<ListAlbum> topGuildAlbums;
                 if (serverAlbumSettings.ChartTimePeriod == TimePeriod.AllTime)
                 {
