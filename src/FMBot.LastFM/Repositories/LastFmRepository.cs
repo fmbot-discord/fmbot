@@ -603,7 +603,7 @@ namespace FMBot.LastFM.Repositories
                             ? s.Images?.ExtraLarge.ToString()
                             : null,
                         AlbumUrl = s.Url.ToString(),
-                        UserPlaycount = s.UserPlayCount,
+                        UserPlaycount = s.PlayCount,
                         Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
                             ? Guid.Parse(s.Mbid)
                             : null
