@@ -35,7 +35,7 @@ namespace FMBot.Bot.Services
         {
             await using var db = this._contextFactory.CreateDbContext();
             var isRegistered = await db.Users
-                .AsQueryable()
+                .AsNoTracking()
                 .AnyAsync(f => f.DiscordUserId == discordUser.Id);
 
             return isRegistered;
@@ -52,7 +52,7 @@ namespace FMBot.Bot.Services
             }
 
             blockedUsers = await db.Users
-                .AsQueryable()
+                .AsNoTracking()
                 .Where(w => w.Blocked == true)
                 .ToListAsync();
 
@@ -65,6 +65,7 @@ namespace FMBot.Bot.Services
         {
             await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users
+                .AsNoTracking()
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
@@ -105,7 +106,6 @@ namespace FMBot.Bot.Services
         {
             await using var db = this._contextFactory.CreateDbContext();
             return await db.Users
-                .AsQueryable()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
         }
@@ -136,7 +136,7 @@ namespace FMBot.Bot.Services
         {
             await using var db = this._contextFactory.CreateDbContext();
             return await db.Users
-                .AsQueryable()
+                .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
         }
 
@@ -210,23 +210,6 @@ namespace FMBot.Bot.Services
             await db.SaveChangesAsync();
 
             return user;
-        }
-
-
-        // Server Blacklisting
-        public async Task<bool> GetBlacklistedAsync(IUser discordUser)
-        {
-            await using var db = this._contextFactory.CreateDbContext();
-            var user = await db.Users
-                .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
-
-            if (user == null)
-            {
-                return false;
-            }
-
-            return user.Blocked ?? false;
         }
 
         // UserTitle

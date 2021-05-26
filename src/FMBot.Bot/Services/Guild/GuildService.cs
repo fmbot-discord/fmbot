@@ -44,7 +44,6 @@ namespace FMBot.Bot.Services.Guild
         {
             await using var db = this._contextFactory.CreateDbContext();
             return await db.Guilds
-                .AsQueryable()
                 .AsNoTracking()
                 .Include(i => i.GuildBlockedUsers)
                     .ThenInclude(t => t.User)
@@ -122,34 +121,6 @@ namespace FMBot.Bot.Services.Guild
             return null;
         }
 
-
-        // Get last.fm username from guild with searchvalue
-        public async Task<string> MentionToLastFmUsernameAsync(string searchValue)
-        {
-            if (searchValue.Length > 3)
-            {
-                if (this._mentionRegex.IsMatch(searchValue))
-                {
-                    var id = searchValue.Trim('@', '!', '<', '>');
-
-                    if (ulong.TryParse(id, out ulong discordUserId))
-                    {
-                        await using var db = this._contextFactory.CreateDbContext();
-                        var userSettings = await db.Users
-                            .AsQueryable()
-                            .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
-
-                        return userSettings?.UserNameLastFM;
-                    }
-                }
-
-                return searchValue;
-            }
-
-            return null;
-        }
-
-
         // Get user from guild with searchvalue
         public async Task<User> MentionToUserAsync(string searchValue)
         {
@@ -183,7 +154,7 @@ namespace FMBot.Bot.Services.Guild
 
             await using var db = this._contextFactory.CreateDbContext();
             var usersObject = db.Users
-                .AsQueryable()
+                .AsNoTracking()
                 .Where(w => userIds.Contains(w.DiscordUserId))
                 .Select(s =>
                     new UserExportModel(
@@ -737,7 +708,7 @@ namespace FMBot.Bot.Services.Guild
         {
             await using var db = this._contextFactory.CreateDbContext();
             var existingGuild = await db.Guilds
-                .AsQueryable()
+                .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
 
             return existingGuild?.LastIndexed;
@@ -846,19 +817,11 @@ namespace FMBot.Bot.Services.Guild
             }
         }
 
-        public async Task<bool> GuildExistsAsync(SocketGuild guild)
-        {
-            await using var db = this._contextFactory.CreateDbContext();
-            return await db.Guilds
-                .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id) != null;
-        }
-
         public async Task<int> GetTotalGuildCountAsync()
         {
             await using var db = this._contextFactory.CreateDbContext();
             return await db.Guilds
-                .AsQueryable()
+                .AsNoTracking()
                 .CountAsync();
         }
 

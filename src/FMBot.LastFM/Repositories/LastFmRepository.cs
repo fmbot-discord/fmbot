@@ -562,8 +562,8 @@ namespace FMBot.LastFM.Repositories
             TimePeriod timePeriod, int count = 2, int amountOfPages = 1)
         {
             var lastStatsTimeSpan = TimePeriodToLastStatsTimeSpan(timePeriod);
-
             var topAlbums = await this._lastFmClient.User.GetTopAlbums(lastFmUserName, lastStatsTimeSpan, 1, count);
+
             Statistics.LastfmApiCalls.Inc();
 
             if (!topAlbums.Success)
