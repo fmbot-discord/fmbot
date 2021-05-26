@@ -197,7 +197,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
         private static string NameWithLink(WhoKnowsObjectWithUser user)
         {
-            var discordName = Format.Sanitize(user.DiscordName);
+            var discordName = user.DiscordName != null ? Format.Sanitize(user.DiscordName) : null;
 
             if (string.IsNullOrWhiteSpace(discordName))
             {
