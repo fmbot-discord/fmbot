@@ -106,6 +106,7 @@ namespace FMBot.Bot.Services
             await using var db = this._contextFactory.CreateDbContext();
             return await db.Users
                 .AsQueryable()
+                .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
         }
 
@@ -173,15 +174,6 @@ namespace FMBot.Bot.Services
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
             return user?.UserType ?? UserType.User;
-        }
-
-        // Featured
-        public async Task<User> GetFeaturedUserAsync()
-        {
-            await using var db = this._contextFactory.CreateDbContext();
-            return await db.Users
-                .AsQueryable()
-                .FirstOrDefaultAsync(f => f.Featured == true);
         }
 
         // Random user

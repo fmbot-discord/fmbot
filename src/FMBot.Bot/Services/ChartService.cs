@@ -68,21 +68,20 @@ namespace FMBot.Bot.Services
 
                                 Statistics.LastfmImageCalls.Inc();
 
-                                var stream = new MemoryStream(bytes);
-
+                                await using var stream = new MemoryStream(bytes);
                                 chartImage = SKBitmap.Decode(stream);
                             }
                             catch (Exception e)
                             {
                                 Log.Error("Error while loading image for generated chart", e);
-                                chartImage = SKBitmap.Decode(Path.Combine(FMBotUtil.GlobalVars.ImageFolder + "loading-error.png"));
+                                chartImage = SKBitmap.Decode(Path.Combine(FMBotUtil.GlobalVars.ImageFolder, "loading-error.png"));
                                 validImage = false;
                             }
 
                             if (chartImage == null)
                             {
                                 Log.Error("Error while loading image for generated chart (chartimg null)");
-                                chartImage = SKBitmap.Decode(Path.Combine(FMBotUtil.GlobalVars.ImageFolder + "loading-error.png"));
+                                chartImage = SKBitmap.Decode(Path.Combine(FMBotUtil.GlobalVars.ImageFolder, "loading-error.png"));
                                 validImage = false;
                             }
 
@@ -96,7 +95,7 @@ namespace FMBot.Bot.Services
                         }
                         else
                         {
-                            chartImage = SKBitmap.Decode(FMBotUtil.GlobalVars.ImageFolder + "unknown.png");
+                            chartImage = SKBitmap.Decode(Path.Combine(FMBotUtil.GlobalVars.ImageFolder, "unknown.png"));
                             validImage = false;
                         }
                     }
@@ -105,7 +104,7 @@ namespace FMBot.Bot.Services
                     {
                         if (!nsfwAllowed || !await this._censorService.AlbumIsAllowedInNsfw(album.AlbumName, album.ArtistName))
                         {
-                            chartImage = SKBitmap.Decode(FMBotUtil.GlobalVars.ImageFolder + "censored.png");
+                            chartImage = SKBitmap.Decode(Path.Combine(FMBotUtil.GlobalVars.ImageFolder, "censored.png"));
                             validImage = false;
                             if (chart.CensoredAlbums.HasValue)
                             {
@@ -204,7 +203,6 @@ namespace FMBot.Bot.Services
 
                 return finalImage;
             }
-
             finally
             {
                 foreach (var image in chart.ChartImages.Select(s => s.Image))

@@ -12,7 +12,6 @@ using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Npgsql;
-using Serilog;
 
 namespace FMBot.Bot.Services.WhoKnows
 {
@@ -27,7 +26,7 @@ namespace FMBot.Bot.Services.WhoKnows
             this._contextFactory = contextFactory;
         }
 
-        public static async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(ICommandContext context, int guildId, string artistName)
+        public static async Task<ICollection<WhoKnowsObjectWithUser>> GetIndexedUsersForArtist(ICommandContext context, int guildId, string artistName)
         {
             const string sql = "SELECT ua.user_id, " +
                                "ua.name, " +

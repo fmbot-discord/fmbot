@@ -232,7 +232,7 @@ namespace FMBot.Bot.Handlers
             if (result.IsSuccess)
             {
                 Statistics.CommandsExecuted.Inc();
-                await this._userService.UpdateUserLastUsedAsync(context.User.Id);
+                _ = this._userService.UpdateUserLastUsedAsync(context.User.Id);
             }
             else
             {

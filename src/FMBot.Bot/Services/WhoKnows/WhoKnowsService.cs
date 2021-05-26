@@ -23,7 +23,7 @@ namespace FMBot.Bot.Services.WhoKnows
         }
 
 
-        public static IList<WhoKnowsObjectWithUser> AddOrReplaceUserToIndexList(IList<WhoKnowsObjectWithUser> users, GuildUser guildUser, string name, long? playcount)
+        public static IList<WhoKnowsObjectWithUser> AddOrReplaceUserToIndexList(ICollection<WhoKnowsObjectWithUser> users, GuildUser guildUser, string name, long? playcount)
         {
             var existingUsers = users
                 .Where(f => f.LastFMUsername.ToLower() == guildUser.User.UserNameLastFM.ToLower());
@@ -48,7 +48,7 @@ namespace FMBot.Bot.Services.WhoKnows
             return users.OrderByDescending(o => o.Playcount).ToList();
         }
 
-        public static IList<WhoKnowsObjectWithUser> FilterGuildUsersAsync(IList<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild)
+        public static IList<WhoKnowsObjectWithUser> FilterGuildUsersAsync(ICollection<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild)
         {
             if (guild.ActivityThresholdDays.HasValue)
             {
@@ -75,7 +75,7 @@ namespace FMBot.Bot.Services.WhoKnows
             return users.ToList();
         }
 
-        public async Task<IList<WhoKnowsObjectWithUser>> FilterGlobalUsersAsync(IList<WhoKnowsObjectWithUser> users)
+        public async Task<IList<WhoKnowsObjectWithUser>> FilterGlobalUsersAsync(ICollection<WhoKnowsObjectWithUser> users)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var bottedUsers = await db.BottedUsers

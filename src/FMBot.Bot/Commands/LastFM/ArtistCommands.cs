@@ -223,7 +223,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var paginationEnabled = false;
             var pages = new List<PageBuilder>();
-            var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
+            var perms = await GuildService.CheckSufficientPermissionsAsync(this.Context);
             if (perms.ManageMessages)
             {
                 paginationEnabled = true;
@@ -440,7 +440,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var paginationEnabled = false;
             var pages = new List<PageBuilder>();
-            var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
+            var perms = await GuildService.CheckSufficientPermissionsAsync(this.Context);
             if (perms.ManageMessages)
             {
                 paginationEnabled = true;
@@ -1217,7 +1217,7 @@ namespace FMBot.Bot.Commands.LastFM
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
 
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-            var filteredGuildUsers = this._guildService.FilterGuildUsersAsync(guild);
+            var filteredGuildUsers = GuildService.FilterGuildUsersAsync(guild);
 
             if (guild.LastIndexed == null)
             {

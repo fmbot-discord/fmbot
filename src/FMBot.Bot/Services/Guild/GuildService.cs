@@ -45,6 +45,7 @@ namespace FMBot.Bot.Services.Guild
             await using var db = this._contextFactory.CreateDbContext();
             return await db.Guilds
                 .AsQueryable()
+                .AsNoTracking()
                 .Include(i => i.GuildBlockedUsers)
                     .ThenInclude(t => t.User)
                 .Include(i => i.GuildUsers.Where(w => w.Bot != true))
@@ -54,7 +55,7 @@ namespace FMBot.Bot.Services.Guild
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guildId);
         }
 
-        public List<GuildUser> FilterGuildUsersAsync(Persistence.Domain.Models.Guild guild)
+        public static IEnumerable<GuildUser> FilterGuildUsersAsync(Persistence.Domain.Models.Guild guild)
         {
             var guildUsers = guild.GuildUsers.ToList();
             if (guild.ActivityThresholdDays.HasValue)
@@ -76,13 +77,7 @@ namespace FMBot.Bot.Services.Guild
             return guildUsers.ToList();
         }
 
-        // Get user from guild with ID
-        public async Task<IGuildUser> FindUserFromGuildAsync(ICommandContext context, ulong id)
-        {
-            return await context.Guild.GetUserAsync(id);
-        }
-
-        public async Task<GuildPermissions> CheckSufficientPermissionsAsync(ICommandContext context)
+        public static async Task<GuildPermissions> CheckSufficientPermissionsAsync(ICommandContext context)
         {
             var user = await context.Guild.GetUserAsync(context.Client.CurrentUser.Id);
             return user.GuildPermissions;

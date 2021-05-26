@@ -116,7 +116,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                var perms = await this._guildService.CheckSufficientPermissionsAsync(this.Context);
+                var perms = await GuildService.CheckSufficientPermissionsAsync(this.Context);
                 if (!perms.AttachFiles)
                 {
                     await ReplyAsync(
