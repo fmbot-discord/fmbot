@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using FMBot.Bot.Extensions;
@@ -103,7 +104,7 @@ namespace FMBot.Bot.Services.WhoKnows
         public static string WhoKnowsListToString(IList<WhoKnowsObjectWithUser> whoKnowsObjects, int requestedUserId,
             PrivacyLevel minPrivacyLevel, CrownModel crownModel = null, bool hidePrivateUsers = false)
         {
-            var reply = "";
+            var reply = new StringBuilder();
 
             var whoKnowsCount = whoKnowsObjects.Count;
             if (whoKnowsCount > 14)
@@ -120,7 +121,6 @@ namespace FMBot.Bot.Services.WhoKnows
             var indexNumber = 1;
             var timesNameAdded = 0;
             var requestedUserAdded = false;
-
 
             // Note: You might not be able to see them, but this code contains specific spacers
             // https://www.compart.com/en/unicode/category/Zs
@@ -160,9 +160,9 @@ namespace FMBot.Bot.Services.WhoKnows
 
                 var afterPositionSpacer = index + 1 == 10 ? "" : " ";
 
-                reply += $"{positionCounter}{afterPositionSpacer}{nameWithLink}";
+                reply.Append($"{positionCounter}{afterPositionSpacer}{nameWithLink}");
 
-                reply += $" - **{user.Playcount}** {playString}\n";
+                reply.Append($" - **{user.Playcount}** {playString}\n");
 
                 indexNumber += 1;
                 timesNameAdded += 1;
@@ -181,18 +181,18 @@ namespace FMBot.Bot.Services.WhoKnows
                     var nameWithLink = NameWithLink(requestedUser);
                     var playString = StringExtensions.GetPlaysString(requestedUser.Playcount);
 
-                    reply += $"**{spacer}{whoKnowsObjects.IndexOf(requestedUser) + 1}.**  {nameWithLink} ";
+                    reply.Append($"**{spacer}{whoKnowsObjects.IndexOf(requestedUser) + 1}.**  {nameWithLink} ");
 
-                    reply += $" - **{requestedUser.Playcount}** {playString}\n";
+                    reply.Append($" - **{requestedUser.Playcount}** {playString}\n");
                 }
             }
 
             if (crownModel?.CrownResult != null)
             {
-                reply += $"\n{crownModel.CrownResult}";
+                reply.Append($"\n{crownModel.CrownResult}");
             }
 
-            return reply;
+            return reply.ToString();
         }
 
         private static string NameWithLink(WhoKnowsObjectWithUser user)

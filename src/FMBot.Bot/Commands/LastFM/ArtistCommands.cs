@@ -813,7 +813,7 @@ namespace FMBot.Bot.Commands.LastFM
                     guild.GuildUsers.Add(currentUser);
                 }
 
-                await this._indexService.UpdateUserName(currentUser, await this.Context.Guild.GetUserAsync(user.DiscordUserId));
+                await this._indexService.UpdateUserName(await this.Context.Guild.GetUserAsync(user.DiscordUserId), currentUser.UserId, currentUser.GuildId);
 
                 var usersWithArtist = await WhoKnowsArtistService.GetIndexedUsersForArtist(this.Context, guild.GuildId, artistName);
 

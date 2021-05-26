@@ -37,6 +37,8 @@ namespace FMBot.Bot.Services.ThirdParty
 
         public async Task<string> GetOrStoreArtistImageAsync(ArtistInfo artistInfo, string artistNameBeforeCorrect = null)
         {
+            Log.Information("Executing GetOrStoreArtistImageAsync");
+
             await using var db = this._contextFactory.CreateDbContext();
             var dbArtist = await db.Artists
                 .Include(i => i.ArtistAliases)
@@ -191,6 +193,7 @@ namespace FMBot.Bot.Services.ThirdParty
 
         public async Task<Track> GetOrStoreTrackAsync(TrackInfo trackInfo)
         {
+            Log.Information("Executing GetOrStoreTrackAsync");
             await using var db = this._contextFactory.CreateDbContext();
             var dbTrack = await db.Tracks
                 .Include(i => i.Artist)
@@ -353,6 +356,8 @@ namespace FMBot.Bot.Services.ThirdParty
 
         public async Task<Album> GetOrStoreSpotifyAlbumAsync(AlbumInfo albumInfo)
         {
+            Log.Information("Executing GetOrStoreSpotifyAlbumAsync");
+
             await using var db = this._contextFactory.CreateDbContext();
             var dbAlbum = await db.Albums
                 .Include(i => i.Artist)

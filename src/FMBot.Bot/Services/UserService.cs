@@ -66,7 +66,6 @@ namespace FMBot.Bot.Services
             await using var db = this._contextFactory.CreateDbContext();
             var user = await db.Users
                 .AsNoTracking()
-                .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
             if (user == null)

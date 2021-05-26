@@ -186,41 +186,26 @@ namespace FMBot.Bot.Services
             return guild.GuildUsers.First(f => f.UserId == user.UserId);
         }
 
-
-        public async Task UpdateUserName(GuildUser guildUser, IGuildUser discordGuildUser)
-        {
-            var discordName = discordGuildUser.Nickname ?? discordGuildUser.Username;
-
-            if (guildUser.UserName != discordName)
-            {
-                await using var db = this._contextFactory.CreateDbContext();
-
-                guildUser.UserName = discordName;
-
-                db.GuildUsers.Update(guildUser);
-
-                await db.SaveChangesAsync();
-            }
-        }
-
-        public async Task UpdateUserNameWithoutGuildUser(IGuildUser discordGuildUser, User user)
+        public async Task UpdateUserName(IGuildUser discordGuildUser, int userId, int? guildId)
         {
             var discordName = discordGuildUser.Nickname ?? discordGuildUser.Username;
 
             await using var db = this._contextFactory.CreateDbContext();
-            var guildUser = await db.GuildUsers
-                .Include(i => i.Guild)
-                .FirstOrDefaultAsync(f => f.UserId == user.UserId &&
-                                          f.Guild.DiscordGuildId == discordGuildUser.GuildId);
 
-            if (guildUser != null && guildUser.UserName != discordName)
+            const string sql = "UPDATE guild_users " +
+                               "SET user_name =  @userName " +
+                               "WHERE guild_id = @guildId AND user_id = @userId ";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            await connection.ExecuteAsync(sql, new
             {
-                guildUser.UserName = discordName;
-
-                db.GuildUsers.Update(guildUser);
-
-                await db.SaveChangesAsync();
-            }
+                userName = discordName,
+                guildId = guildId,
+                userId = userId
+            });
         }
 
         public async Task RemoveUserFromGuild(SocketGuildUser user)

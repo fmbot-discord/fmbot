@@ -258,6 +258,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var footerText = "";
 
                 var embedType = contextUser.FmEmbedType;
+                int? internalGuildId = null;
 
                 if (this.Context.Guild != null)
                 {
@@ -265,6 +266,11 @@ namespace FMBot.Bot.Commands.LastFM
                     if (guild?.FmEmbedType != null)
                     {
                         embedType = guild.FmEmbedType.Value;
+                    }
+
+                    if (guild != null)
+                    {
+                        internalGuildId = guild.GuildId;
                     }
                 }
 
@@ -452,9 +458,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this.Context.LogCommandUsed();
 
-                if (!this._guildService.CheckIfDM(this.Context))
+                if (!this._guildService.CheckIfDM(this.Context) && internalGuildId != null)
                 {
-                    await this._indexService.UpdateUserNameWithoutGuildUser(await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId), contextUser);
+                    await this._indexService.UpdateUserName(await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId), contextUser.UserId, internalGuildId);
                 }
             }
             catch (Exception e)
