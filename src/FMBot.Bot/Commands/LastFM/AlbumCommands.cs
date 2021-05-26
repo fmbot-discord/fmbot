@@ -316,13 +316,13 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
+                //var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
 
                 var albumCoverUrl = album.AlbumCoverUrl;
-                if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
-                {
-                    albumCoverUrl = databaseAlbum.SpotifyImageUrl;
-                }
+                //if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
+                //{
+                //    albumCoverUrl = databaseAlbum.SpotifyImageUrl;
+                //}
 
                 if (albumCoverUrl == null)
                 {
@@ -610,7 +610,7 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
+                //var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
 
                 var albumName = $"{album.AlbumName} by {album.ArtistName}";
 
@@ -693,10 +693,10 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithFooter(this._embedFooter);
 
                 var albumCoverUrl = album.AlbumCoverUrl;
-                if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
-                {
-                    albumCoverUrl = databaseAlbum.SpotifyImageUrl;
-                }
+                //if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
+                //{
+                //    albumCoverUrl = databaseAlbum.SpotifyImageUrl;
+                //}
                 if (albumCoverUrl != null)
                 {
                     var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
@@ -767,10 +767,9 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
+                //var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
 
                 var albumName = $"{album.AlbumName} by {album.ArtistName}";
-
 
                 var usersWithArtist = await this._whoKnowsAlbumService.GetGlobalUsersForAlbum(this.Context, album.ArtistName, album.AlbumName);
 
@@ -848,10 +847,10 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithFooter(this._embedFooter);
 
                 var albumCoverUrl = album.AlbumCoverUrl;
-                if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
-                {
-                    albumCoverUrl = databaseAlbum.SpotifyImageUrl;
-                }
+                //if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
+                //{
+                //    albumCoverUrl = databaseAlbum.SpotifyImageUrl;
+                //}
                 if (albumCoverUrl != null)
                 {
                     var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
