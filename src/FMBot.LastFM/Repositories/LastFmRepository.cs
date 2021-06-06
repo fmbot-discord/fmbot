@@ -29,7 +29,7 @@ namespace FMBot.LastFM.Repositories
         private readonly IMemoryCache _cache;
         private readonly ILastfmApi _lastFmApi;
 
-        public LastFmRepository(IConfigurationRoot configuration, ILastfmApi lastFmApi, IMemoryCache cache)
+        public LastFmRepository(IConfiguration configuration, ILastfmApi lastFmApi, IMemoryCache cache)
         {
             this._lastFmClient =
                 new LastfmClient(configuration.GetSection("LastFm:Key").Value, configuration.GetSection("LastFm:Secret").Value);

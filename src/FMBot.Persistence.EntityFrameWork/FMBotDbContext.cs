@@ -1,6 +1,7 @@
 using System;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace FMBot.Persistence.EntityFrameWork
 {
@@ -34,15 +35,19 @@ namespace FMBot.Persistence.EntityFrameWork
 
         public virtual DbSet<ArtistGenre> ArtistGenres { get; set; }
         public virtual DbSet<ArtistAlias> ArtistAliases { get; set; }
-        
 
+        private readonly IConfiguration _configuration;
+
+        public FMBotDbContext(IConfiguration configuration)
+        {
+            this._configuration = configuration;
+        }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
-                // When creating migrations, make sure to enter the connection string below.
-                optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Username=postgres;Password=password;Database=fmbot;Command Timeout=240;Timeout=240;Persist Security Info=True");
+                optionsBuilder.UseNpgsql(this._configuration["Database:ConnectionString"]);
 
                 optionsBuilder.UseSnakeCaseNamingConvention();
             }

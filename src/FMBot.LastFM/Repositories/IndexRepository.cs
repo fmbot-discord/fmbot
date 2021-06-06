@@ -35,7 +35,7 @@ namespace FMBot.LastFM.Repositories
         private readonly LastFmRepository _lastFmRepository;
 
         public IndexRepository(
-            IConfigurationRoot configuration,
+            IConfiguration configuration,
             LastFmRepository lastFmRepository,
             IDbContextFactory<FMBotDbContext> contextFactory,
             IMemoryCache cache)

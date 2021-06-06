@@ -1,0 +1,8 @@
+version: '3.4'
+
+ services:
+   bot:
+     image: ${DOCKER_REGISTRY-}bot
+     build:
+       context: .
+       dockerfile: src/FMBot.Bot/Dockerfile

@@ -23,23 +23,25 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Exceptions;
+using DatabaseConfig = FMBot.Bot.Models.DatabaseConfig;
 
 namespace FMBot.Bot
 {
     public class Startup
     {
-        private IConfigurationRoot Configuration { get; }
 
         public Startup(string[] args)
         {
             var config = ConfigData.Data;
 
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory() + "/configs")
-                .AddJsonFile("config.json", true);
+            var configBuilder = new ConfigurationBuilder()
+                .SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "configs"))
+                .AddJsonFile("config.json", true)
+                .AddEnvironmentVariables();
 
-            this.Configuration = builder.Build(); // Build the configuration
+            Configuration = configBuilder.Build();
         }
+        public IConfiguration Configuration { get; }
 
         public static async Task RunAsync(string[] args)
         {

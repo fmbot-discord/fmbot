@@ -118,9 +118,9 @@ namespace FMBot.Bot.Services
             connection.Open();
 
             await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.guild_users WHERE guild_id = {existingGuild.GuildId};", connection);
-            await deleteCurrentArtists.ExecuteNonQueryAsync().ConfigureAwait(false);
+            await deleteCurrentArtists.ExecuteNonQueryAsync();
 
-            await copyHelper.SaveAllAsync(connection, users).ConfigureAwait(false);
+            await copyHelper.SaveAllAsync(connection, users);
 
             Log.Information("Stored guild users for guild with id {guildId}", existingGuild.GuildId);
 

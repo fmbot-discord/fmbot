@@ -30,7 +30,7 @@ namespace FMBot.Bot.Configurations
                 {
                     Database = new DatabaseConfig
                     {
-                        ConnectionString = "Host=localhost;Port=5432;Username=postgres;Password=password;Database=fmbot;Command Timeout=15;Timeout=30;Persist Security Info=True"
+                        ConnectionString = "Host=localhost;Port=5432;Username=postgres;Password=password;Database=fmbot;Command Timeout=60;Timeout=60;Persist Security Info=True"
                     },
                     Bot = new BotConfig
                     {
@@ -49,6 +49,7 @@ namespace FMBot.Bot.Configurations
                     Genius = new GeniusConfig(),
                     Spotify = new SpotifyConfig(),
                     Google = new GoogleConfig(),
+                    Environment = "local"
                 };
 
                 var json = JsonConvert.SerializeObject(Data, Formatting.Indented);

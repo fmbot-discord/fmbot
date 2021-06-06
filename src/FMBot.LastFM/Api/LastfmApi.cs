@@ -27,7 +27,7 @@ namespace FMBot.LastFM.Api
         private readonly string _key;
         private readonly string _secret;
 
-        public LastfmApi(IConfigurationRoot configuration, IHttpClientFactory httpClientFactory)
+        public LastfmApi(IConfiguration configuration, IHttpClientFactory httpClientFactory)
         {
             this._key = configuration.GetSection("LastFm:Key").Value;
             this._secret = configuration.GetSection("LastFm:Secret").Value;

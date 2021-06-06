@@ -31,7 +31,7 @@ namespace FMBot.LastFM.Repositories
 
         private readonly IMemoryCache _cache;
 
-        public UpdateRepository(IConfigurationRoot configuration, IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository)
+        public UpdateRepository(IConfiguration configuration, IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository)
         {
             this._cache = cache;
             this._contextFactory = contextFactory;
