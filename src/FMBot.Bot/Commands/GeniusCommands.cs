@@ -13,35 +13,29 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
+using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Commands
 {
     [Name("Genius")]
-    public class GeniusCommands : ModuleBase
+    public class GeniusCommands : BaseCommandModule
     {
         private readonly GeniusService _geniusService;
         private readonly IPrefixService _prefixService;
         private readonly LastFmRepository _lastFmRepository;
         private readonly UserService _userService;
 
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedFooterBuilder _embedFooter;
-
         public GeniusCommands(
                 GeniusService geniusService,
                 IPrefixService prefixService,
                 LastFmRepository lastFmRepository,
-                UserService userService
-            )
+                UserService userService,
+                IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._geniusService = geniusService;
             this._lastFmRepository = lastFmRepository;
             this._prefixService = prefixService;
             this._userService = userService;
-
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
-            this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("genius")]
@@ -51,7 +45,7 @@ namespace FMBot.Bot.Commands
         public async Task GeniusAsync([Remainder] string searchValue = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
 
             try
             {

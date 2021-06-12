@@ -16,12 +16,13 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
+using Microsoft.Extensions.Options;
 using SkiaSharp;
 
 namespace FMBot.Bot.Commands.LastFM
 {
     [Name("Charts")]
-    public class ChartCommands : ModuleBase
+    public class ChartCommands : BaseCommandModule
     {
         private readonly AlbumService _albumService;
         private readonly GuildService _guildService;
@@ -31,10 +32,6 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly SettingService _settingService;
         private readonly SupporterService _supporterService;
         private readonly UserService _userService;
-
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedFooterBuilder _embedFooter;
 
         private static readonly List<DateTimeOffset> StackCooldownTimer = new();
         private static readonly List<SocketUser> StackCooldownTarget = new();
@@ -47,7 +44,8 @@ namespace FMBot.Bot.Commands.LastFM
                 SettingService settingService,
                 SupporterService supporterService,
                 UserService userService,
-                AlbumService albumService)
+                AlbumService albumService,
+                IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._chartService = chartService;
             this._guildService = guildService;
@@ -57,11 +55,6 @@ namespace FMBot.Bot.Commands.LastFM
             this._supporterService = supporterService;
             this._userService = userService;
             this._albumService = albumService;
-
-            this._embedAuthor = new EmbedAuthorBuilder();
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
-            this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("chart", RunMode = RunMode.Async)]

@@ -23,11 +23,12 @@ using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Interactivity;
 using Interactivity.Pagination;
+using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Commands.LastFM
 {
     [Name("Artists")]
-    public class ArtistCommands : ModuleBase
+    public class ArtistCommands : BaseCommandModule
     {
         private readonly ArtistsService _artistsService;
         private readonly CrownService _crownService;
@@ -44,10 +45,6 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly WhoKnowsService _whoKnowsService;
         private readonly WhoKnowsArtistService _whoKnowArtistService;
         private readonly WhoKnowsPlayService _whoKnowsPlayService;
-
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedFooterBuilder _embedFooter;
 
         private InteractivityService Interactivity { get; }
 
@@ -66,7 +63,8 @@ namespace FMBot.Bot.Commands.LastFM
                 WhoKnowsArtistService whoKnowsArtistService,
                 WhoKnowsPlayService whoKnowsPlayService,
                 InteractivityService interactivity,
-                WhoKnowsService whoKnowsService)
+                WhoKnowsService whoKnowsService,
+                IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._artistsService = artistsService;
             this._crownService = crownService;
@@ -83,11 +81,6 @@ namespace FMBot.Bot.Commands.LastFM
             this._whoKnowsPlayService = whoKnowsPlayService;
             this.Interactivity = interactivity;
             this._whoKnowsService = whoKnowsService;
-
-            this._embedAuthor = new EmbedAuthorBuilder();
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
-            this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("artist", RunMode = RunMode.Async)]

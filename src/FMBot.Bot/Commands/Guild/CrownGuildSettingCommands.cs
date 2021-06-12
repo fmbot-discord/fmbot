@@ -13,12 +13,13 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Commands.Guild
 {
     [Name("Crown settings")]
     [ServerStaffOnly]
-    public class CrownGuildSettingCommands : ModuleBase
+    public class CrownGuildSettingCommands : BaseCommandModule
     {
         private readonly AdminService _adminService;
         private readonly CrownService _crownService;
@@ -27,24 +28,18 @@ namespace FMBot.Bot.Commands.Guild
 
         private readonly IPrefixService _prefixService;
 
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedFooterBuilder _embedFooter;
-
         public CrownGuildSettingCommands(IPrefixService prefixService,
             GuildService guildService,
             AdminService adminService,
-            SettingService settingService, CrownService crownService)
+            SettingService settingService,
+            CrownService crownService,
+            IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._prefixService = prefixService;
             this._guildService = guildService;
             this._settingService = settingService;
             this._crownService = crownService;
             this._adminService = adminService;
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
-            this._embedAuthor = new EmbedAuthorBuilder();
-            this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("crownthreshold", RunMode = RunMode.Async)]

@@ -17,11 +17,12 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Commands
 {
     [Name("Static commands")]
-    public class StaticCommands : ModuleBase
+    public class StaticCommands : BaseCommandModule
     {
         private readonly CommandService _service;
         private readonly FriendsService _friendService;
@@ -30,11 +31,8 @@ namespace FMBot.Bot.Commands
         private readonly SupporterService _supporterService;
         private readonly UserService _userService;
 
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedBuilder _embed;
-
-        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
-        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new();
+        private static readonly List<SocketUser> StackCooldownTarget = new();
 
         public StaticCommands(
                 CommandService service,
@@ -42,8 +40,8 @@ namespace FMBot.Bot.Commands
                 GuildService guildService,
                 IPrefixService prefixService,
                 SupporterService supporterService,
-                UserService userService
-            )
+                UserService userService,
+                IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._friendService = friendsService;
             this._guildService = guildService;
@@ -51,10 +49,6 @@ namespace FMBot.Bot.Commands
             this._service = service;
             this._supporterService = supporterService;
             this._userService = userService;
-
-            this._embedAuthor = new EmbedAuthorBuilder();
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.InformationColorBlue);
         }
 
         [Command("invite", RunMode = RunMode.Async)]

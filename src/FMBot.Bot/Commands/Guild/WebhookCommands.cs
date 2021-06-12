@@ -7,12 +7,13 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Commands.Guild
 {
     [Name("Webhooks")]
     [ServerStaffOnly]
-    public class WebhookCommands : ModuleBase
+    public class WebhookCommands : BaseCommandModule
     {
         private readonly AdminService _adminService;
         private readonly GuildService _guildService;
@@ -21,7 +22,8 @@ namespace FMBot.Bot.Commands.Guild
         public WebhookCommands(
             AdminService adminService,
             WebhookService webhookService,
-            GuildService guildService)
+            GuildService guildService,
+            IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._adminService = adminService;
             this._webhookService = webhookService;

@@ -11,7 +11,7 @@ namespace FMBot.Bot.Configurations
         private const string ConfigFolder = "configs";
         private const string ConfigFile = "config.json";
 
-        public static ConfigModel Data { get; }
+        public static BotSettings Data { get; }
 
         /// <summary>
         /// Loads all the <see cref="ConfigData"/> needed to start the bot.
@@ -26,7 +26,7 @@ namespace FMBot.Bot.Configurations
             if (!File.Exists(ConfigFolder + "/" + ConfigFile))
             {
                 // Default config template
-                Data = new ConfigModel
+                Data = new BotSettings
                 {
                     Database = new DatabaseConfig
                     {
@@ -66,7 +66,7 @@ namespace FMBot.Bot.Configurations
             else
             {
                 var json = File.ReadAllText(ConfigFolder + "/" + ConfigFile);
-                Data = JsonConvert.DeserializeObject<ConfigModel>(json);
+                Data = JsonConvert.DeserializeObject<BotSettings>(json);
             }
         }
     }

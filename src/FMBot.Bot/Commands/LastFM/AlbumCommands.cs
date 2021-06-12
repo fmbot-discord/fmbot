@@ -24,13 +24,14 @@ using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Interactivity;
 using Interactivity.Pagination;
+using Microsoft.Extensions.Options;
 using Constants = FMBot.Domain.Constants;
 using ImageFormat = System.Drawing.Imaging.ImageFormat;
 
 namespace FMBot.Bot.Commands.LastFM
 {
     [Name("Albums")]
-    public class AlbumCommands : ModuleBase
+    public class AlbumCommands : BaseCommandModule
     {
         private readonly CensorService _censorService;
         private readonly GuildService _guildService;
@@ -47,9 +48,6 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly WhoKnowsPlayService _whoKnowsPlayService;
         private readonly WhoKnowsService _whoKnowsService;
 
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedFooterBuilder _embedFooter;
         private InteractivityService Interactivity { get; }
 
         public AlbumCommands(
@@ -67,7 +65,8 @@ namespace FMBot.Bot.Commands.LastFM
                 WhoKnowsService whoKnowsService,
                 InteractivityService interactivity,
                 TrackService trackService,
-                SpotifyService spotifyService)
+                SpotifyService spotifyService,
+                IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._censorService = censorService;
             this._guildService = guildService;
@@ -84,11 +83,6 @@ namespace FMBot.Bot.Commands.LastFM
             this.Interactivity = interactivity;
             this._trackService = trackService;
             this._spotifyService = spotifyService;
-
-            this._embedAuthor = new EmbedAuthorBuilder();
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
-            this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("album", RunMode = RunMode.Async)]

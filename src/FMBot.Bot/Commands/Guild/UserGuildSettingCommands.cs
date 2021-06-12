@@ -12,12 +12,13 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Commands.Guild
 {
     [Name("Server member settings")]
     [ServerStaffOnly]
-    public class UserGuildSettingCommands : ModuleBase
+    public class UserGuildSettingCommands : BaseCommandModule
     {
         private readonly AdminService _adminService;
         private readonly GuildService _guildService;
@@ -25,23 +26,16 @@ namespace FMBot.Bot.Commands.Guild
 
         private readonly IPrefixService _prefixService;
 
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedFooterBuilder _embedFooter;
-
         public UserGuildSettingCommands(IPrefixService prefixService,
             GuildService guildService,
             AdminService adminService,
-            SettingService settingService)
+            SettingService settingService,
+            IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._prefixService = prefixService;
             this._guildService = guildService;
             this._settingService = settingService;
             this._adminService = adminService;
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
-            this._embedAuthor = new EmbedAuthorBuilder();
-            this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("activitythreshold", RunMode = RunMode.Async)]

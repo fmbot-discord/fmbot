@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.Options;
 using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
@@ -16,12 +17,15 @@ namespace FMBot.Bot.Commands
     [Name("Owner commands")]
     [Summary(".fmbot Owners Only")]
     [ExcludeFromHelp]
-    public class OwnerCommands : ModuleBase
+    public class OwnerCommands : BaseCommandModule
     {
         private readonly AdminService _adminService;
         private readonly UserService _userService;
 
-        public OwnerCommands(AdminService adminService, UserService userService)
+        public OwnerCommands(
+            AdminService adminService,
+            UserService userService,
+            IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._adminService = adminService;
             this._userService = userService;

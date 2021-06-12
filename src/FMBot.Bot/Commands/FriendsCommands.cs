@@ -15,11 +15,12 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Commands
 {
     [Name("Friends")]
-    public class FriendsCommands : ModuleBase
+    public class FriendsCommands : BaseCommandModule
     {
         private readonly FriendsService _friendsService;
         private readonly GuildService _guildService;
@@ -27,28 +28,19 @@ namespace FMBot.Bot.Commands
         private readonly LastFmRepository _lastFmRepository;
         private readonly UserService _userService;
 
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedFooterBuilder _embedFooter;
-
         public FriendsCommands(
                 FriendsService friendsService,
                 GuildService guildService,
                 IPrefixService prefixService,
                 LastFmRepository lastFmRepository,
-                UserService userService
-            )
+                UserService userService,
+                IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._friendsService = friendsService;
             this._guildService = guildService;
             this._lastFmRepository = lastFmRepository;
             this._prefixService = prefixService;
             this._userService = userService;
-
-            this._embedAuthor = new EmbedAuthorBuilder();
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
-            this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("friends", RunMode = RunMode.Async)]

@@ -23,7 +23,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Exceptions;
-using DiscordConfig = FMBot.Domain.Models.DiscordConfig;
 
 namespace FMBot.Bot
 {
@@ -135,7 +134,6 @@ namespace FMBot.Bot
                 .AddSingleton(this.Configuration) // Add the configuration to the collection
                 .AddHttpClient();
 
-
             // These services can only be added after the config is loaded
             services
                 .AddSingleton<InteractivityService>()
@@ -146,6 +144,8 @@ namespace FMBot.Bot
                 .AddTransient<ILastfmApi, LastfmApi>()
                 .AddTransient<LastFmRepository>()
                 .AddTransient<InvidiousApi>();
+
+            services.Configure<BotSettings>(this.Configuration);
 
             services.AddDbContextFactory<FMBotDbContext>(b =>
                 b.UseNpgsql(ConfigData.Data.Database.ConnectionString));

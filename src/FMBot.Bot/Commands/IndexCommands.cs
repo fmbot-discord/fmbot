@@ -14,21 +14,19 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace FMBot.Bot.Commands
 {
     [Name("Indexing")]
-    public class IndexCommands : ModuleBase
+    public class IndexCommands : BaseCommandModule
     {
         private readonly GuildService _guildService;
         private readonly IIndexService _indexService;
         private readonly IPrefixService _prefixService;
         private readonly IUpdateService _updateService;
         private readonly UserService _userService;
-
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedFooterBuilder _embedFooter;
 
         private static readonly List<DateTimeOffset> StackCooldownTimer = new();
         private static readonly List<SocketUser> StackCooldownTarget = new();
@@ -38,18 +36,14 @@ namespace FMBot.Bot.Commands
                 IIndexService indexService,
                 IPrefixService prefixService,
                 IUpdateService updateService,
-                UserService userService
-            )
+                UserService userService,
+                IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._guildService = guildService;
             this._indexService = indexService;
             this._prefixService = prefixService;
             this._updateService = updateService;
             this._userService = userService;
-
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
-            this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("index", RunMode = RunMode.Async)]

@@ -18,12 +18,13 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace FMBot.Bot.Commands.LastFM
 {
     [Name("User settings")]
-    public class UserCommands : ModuleBase
+    public class UserCommands : BaseCommandModule
     {
         private readonly CrownService _crownService;
         private readonly FriendsService _friendsService;
@@ -34,10 +35,6 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly SettingService _settingService;
         private readonly TimerService _timer;
         private readonly UserService _userService;
-
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedFooterBuilder _embedFooter;
 
         private static readonly List<DateTimeOffset> StackCooldownTimer = new();
         private static readonly List<SocketUser> StackCooldownTarget = new();
@@ -51,7 +48,8 @@ namespace FMBot.Bot.Commands.LastFM
                 SettingService settingService,
                 TimerService timer,
                 UserService userService,
-                CrownService crownService)
+                CrownService crownService,
+                IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._friendsService = friendsService;
             this._guildService = guildService;
@@ -62,11 +60,6 @@ namespace FMBot.Bot.Commands.LastFM
             this._timer = timer;
             this._userService = userService;
             this._crownService = crownService;
-
-            this._embedAuthor = new EmbedAuthorBuilder();
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
-            this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("stats", RunMode = RunMode.Async)]

@@ -134,19 +134,19 @@ namespace FMBot.Bot.Services.WhoKnows
                 var user = usersToShow[index];
 
                 string nameWithLink;
-                if (minPrivacyLevel == PrivacyLevel.Global && user.PrivacyLevel != PrivacyLevel.Global)
-                {
-                    nameWithLink = PrivateName();
-                    if (hidePrivateUsers)
-                    {
-                        indexNumber += 1;
-                        continue;
-                    }
-                }
-                else
-                {
+                //if (minPrivacyLevel == PrivacyLevel.Global && user.PrivacyLevel != PrivacyLevel.Global)
+                //{
+                //    nameWithLink = PrivateName();
+                //    if (hidePrivateUsers)
+                //    {
+                //        indexNumber += 1;
+                //        continue;
+                //    }
+                //}
+                //else
+                //{
                     nameWithLink = NameWithLink(user);
-                }
+                //}
 
                 var playString = StringExtensions.GetPlaysString(user.Playcount);
 

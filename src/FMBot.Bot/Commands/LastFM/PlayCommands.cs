@@ -21,12 +21,13 @@ using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using Interactivity;
+using Microsoft.Extensions.Options;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
 namespace FMBot.Bot.Commands.LastFM
 {
     [Name("Plays")]
-    public class PlayCommands : ModuleBase
+    public class PlayCommands : BaseCommandModule
     {
         private readonly CensorService _censorService;
         private readonly GuildService _guildService;
@@ -42,10 +43,6 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
         private readonly WhoKnowsTrackService _whoKnowsTrackService;
         private InteractivityService Interactivity { get; }
-
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedFooterBuilder _embedFooter;
 
         private static readonly List<DateTimeOffset> StackCooldownTimer = new();
         private static readonly List<SocketUser> StackCooldownTarget = new();
@@ -65,7 +62,8 @@ namespace FMBot.Bot.Commands.LastFM
                 WhoKnowsArtistService whoKnowsArtistService,
                 WhoKnowsAlbumService whoKnowsAlbumService,
                 WhoKnowsTrackService whoKnowsTrackService,
-                InteractivityService interactivity)
+                InteractivityService interactivity,
+                IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._guildService = guildService;
             this._indexService = indexService;
@@ -81,11 +79,6 @@ namespace FMBot.Bot.Commands.LastFM
             this._whoKnowsAlbumService = whoKnowsAlbumService;
             this._whoKnowsTrackService = whoKnowsTrackService;
             this.Interactivity = interactivity;
-
-            this._embedAuthor = new EmbedAuthorBuilder();
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
-            this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("fm", RunMode = RunMode.Async)]

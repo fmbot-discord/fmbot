@@ -1,6 +1,6 @@
 namespace FMBot.Domain.Models
 {
-    public class ConfigModel
+    public class BotSettings
     {
         public string Environment { get; set; }
 
