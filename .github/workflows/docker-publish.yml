@@ -27,6 +27,4 @@ jobs:
         with:
           push: true # Will only build if this is not here
           dockerfile: src/Dockerfile
-          tags: |
-            ghcr.io/${{ github.repository }}:${{ github.ref }}
-            ghcr.io/${{ github.repository }}:latest
+          tags: main
