@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Threading;
-using FMBot.Bot.Models;
+using FMBot.Domain.Models;
 using Newtonsoft.Json;
 
 namespace FMBot.Bot.Configurations

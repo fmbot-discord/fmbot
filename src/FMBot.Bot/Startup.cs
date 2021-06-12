@@ -23,7 +23,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Exceptions;
-using DatabaseConfig = FMBot.Bot.Models.DatabaseConfig;
+using DiscordConfig = FMBot.Domain.Models.DiscordConfig;
 
 namespace FMBot.Bot
 {
@@ -36,11 +36,12 @@ namespace FMBot.Bot
 
             var configBuilder = new ConfigurationBuilder()
                 .SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "configs"))
-                .AddJsonFile("config.json", true)
+                .AddJsonFile("config.json", true, true)
                 .AddEnvironmentVariables();
 
-            Configuration = configBuilder.Build();
+            this.Configuration = configBuilder.Build();
         }
+
         public IConfiguration Configuration { get; }
 
         public static async Task RunAsync(string[] args)
@@ -133,6 +134,7 @@ namespace FMBot.Bot
                 .AddSingleton<YoutubeService>() // Add random to the collection
                 .AddSingleton(this.Configuration) // Add the configuration to the collection
                 .AddHttpClient();
+
 
             // These services can only be added after the config is loaded
             services

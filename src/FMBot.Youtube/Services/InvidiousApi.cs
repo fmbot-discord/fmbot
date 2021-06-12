@@ -21,7 +21,7 @@ namespace FMBot.Youtube.Services
         // https://ytprivate.com/api/v1/search?q=linus
         private readonly string _url;
 
-        public InvidiousApi(IConfigurationRoot configuration, IHttpClientFactory httpClientFactory)
+        public InvidiousApi(IConfiguration configuration, IHttpClientFactory httpClientFactory)
         {
             this._url = configuration.GetSection("Google:InvidiousUrl").Value;
             this._client = httpClientFactory.CreateClient();
