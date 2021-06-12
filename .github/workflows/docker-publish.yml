@@ -9,9 +9,6 @@ jobs:
   build:
     name: Docker Build, Tag, Push
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     steps:
       - name: Login to GitHub Container Registry
