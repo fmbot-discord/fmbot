@@ -27,6 +27,5 @@ jobs:
           context: .
           file: src/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
-          tags: main
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
