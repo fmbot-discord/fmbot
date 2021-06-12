@@ -31,6 +31,6 @@ jobs:
           context: .
           file: src/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
-          tags: fmbot-discord/fmbot:latest
+          tags: ghcr.io/fmbot-discord/fmbot:latest
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
