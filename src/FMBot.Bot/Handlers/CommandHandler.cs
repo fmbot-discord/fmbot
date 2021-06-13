@@ -74,39 +74,28 @@ namespace FMBot.Bot.Handlers
                 return; // Ignore other bots
             }
 
-
             var argPos = 0; // Check if the message has a valid command prefix
-            var customPrefix = this._prefixService.GetPrefix(context.Guild?.Id);
-
-            // No custom prefix or mention
-            if (msg.HasStringPrefix(ConfigData.Data.Bot.Prefix, ref argPos, StringComparison.CurrentCultureIgnoreCase) && customPrefix == null || msg.HasMentionPrefix(this._discord.CurrentUser, ref argPos))
-            {
-                await ExecuteCommand(msg, context, argPos);
-            }
+            var prfx = this._prefixService.GetPrefix(context.Guild?.Id);
 
             // Custom prefix
-            else if (!string.IsNullOrWhiteSpace(customPrefix) && msg.HasStringPrefix(customPrefix, ref argPos, StringComparison.CurrentCultureIgnoreCase))
+            if (msg.HasStringPrefix(prfx, ref argPos, StringComparison.CurrentCultureIgnoreCase))
             {
-                await ExecuteCommand(msg, context, argPos, customPrefix);
+                await ExecuteCommand(msg, context, argPos, prfx);
             }
 
-            // No custom prefix and command equals .fm
-            else if (string.IsNullOrWhiteSpace(customPrefix) && msg.HasStringPrefix(".", ref argPos))
+            // Mention
+            if (this._discord != null && msg.HasMentionPrefix(this._discord.CurrentUser, ref argPos))
             {
-                var searchResult = this._commands.Search(context, argPos);
-                if (searchResult.IsSuccess && searchResult.Commands != null && searchResult.Commands.Any() && searchResult.Commands.FirstOrDefault().Command.Name == "fm")
-                {
-                    await ExecuteCommand(msg, context, argPos);
-                }
+                await ExecuteCommand(msg, context, argPos, prfx);
             }
         }
 
-        private async Task ExecuteCommand(SocketUserMessage msg, ShardedCommandContext context, int argPos, string customPrefix = null)
+        private async Task ExecuteCommand(SocketUserMessage msg, ShardedCommandContext context, int argPos, string prfx)
         {
             var searchResult = this._commands.Search(context, argPos);
 
-            // If custom prefix is enabled, no commands found and message does not start with custom prefix, return
-            if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && customPrefix != null && !msg.Content.StartsWith(customPrefix))
+            // If no commands found and message does not start with prefix
+            if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && !msg.Content.StartsWith(prfx))
             {
                 return;
             }
@@ -116,7 +105,7 @@ namespace FMBot.Bot.Handlers
                 var disabledGuildCommands = this._guildDisabledCommandService.GetDisabledCommands(context.Guild?.Id);
                 if (searchResult.Commands != null &&
                     disabledGuildCommands != null &&
-                    disabledGuildCommands.Any(searchResult.Commands.First().Command.Name.Contains))
+                    disabledGuildCommands.Any(searchResult.Commands[0].Command.Name.Contains))
                 {
                     await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this server.");
                     return;
@@ -126,7 +115,8 @@ namespace FMBot.Bot.Handlers
                 if (searchResult.Commands != null &&
                     disabledChannelCommands != null &&
                     disabledChannelCommands.Any() &&
-                    disabledChannelCommands.Any(searchResult.Commands.First().Command.Name.Contains))
+                    disabledChannelCommands.Any(searchResult.Commands[0].Command.Name.Contains) &&
+                    context.Channel != null)
                 {
                     await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this channel.");
                     return;
@@ -135,12 +125,19 @@ namespace FMBot.Bot.Handlers
 
             var userBlocked = await this._userService.UserBlockedAsync(context.User.Id);
 
-            // If command equals .fm
+            // If command possibly equals .fm
             if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && msg.Content.StartsWith(ConfigData.Data.Bot.Prefix))
             {
+                var fmSearchResult = this._commands.Search(context, 1);
+
+                if (fmSearchResult.Commands == null || fmSearchResult.Commands.Count == 0)
+                {
+                    return;
+                }
+
                 if (userBlocked)
                 {
-                    await UserBlockedResponse(context, customPrefix);
+                    await UserBlockedResponse(context, prfx);
                     return;
                 }
 
@@ -163,10 +160,9 @@ namespace FMBot.Bot.Handlers
                 return;
             }
 
-
             if (userBlocked)
             {
-                await UserBlockedResponse(context, customPrefix);
+                await UserBlockedResponse(context, prfx);
                 return;
             }
 
@@ -178,7 +174,7 @@ namespace FMBot.Bot.Handlers
                     var embed = new EmbedBuilder()
                         .WithColor(DiscordConstants.LastFmColorRed);
                     var userNickname = (context.User as SocketGuildUser)?.Nickname;
-                    embed.UsernameNotSetErrorResponse(customPrefix ?? ConfigData.Data.Bot.Prefix, userNickname ?? context.User.Username);
+                    embed.UsernameNotSetErrorResponse(prfx ?? ConfigData.Data.Bot.Prefix, userNickname ?? context.User.Username);
                     await context.Channel.SendMessageAsync("", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
                     return;
@@ -191,7 +187,7 @@ namespace FMBot.Bot.Handlers
                 {
                     var embed = new EmbedBuilder()
                         .WithColor(DiscordConstants.LastFmColorRed);
-                    embed.SessionRequiredResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
+                    embed.SessionRequiredResponse(prfx ?? ConfigData.Data.Bot.Prefix);
                     await context.Channel.SendMessageAsync("", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
                     return;
@@ -211,7 +207,6 @@ namespace FMBot.Bot.Handlers
             if (msg.Content.ToLower().EndsWith(" help") && commandName != "help")
             {
                 var embed = new EmbedBuilder();
-                var prfx = this._prefixService.GetPrefix(context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
                 var userName = (context.Message.Author as SocketGuildUser)?.Nickname ?? context.User.Username;
 
                 embed.HelpResponse(searchResult.Commands[0].Command, prfx, userName);

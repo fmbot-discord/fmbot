@@ -23,7 +23,6 @@ namespace FMBot.Bot.Services.WhoKnows
             this._contextFactory = contextFactory;
         }
 
-
         public static IList<WhoKnowsObjectWithUser> AddOrReplaceUserToIndexList(ICollection<WhoKnowsObjectWithUser> users, GuildUser guildUser, string name, long? playcount)
         {
             var existingUsers = users
@@ -92,7 +91,7 @@ namespace FMBot.Bot.Services.WhoKnows
                     !bottedUsers
                         .Where(w => w.LastFmRegistered != null)
                         .Select(s => s.LastFmRegistered)
-                        .Contains(w.RegisteredLastFm))
+                        .Equals(w.RegisteredLastFm))
                 .ToList();
         }
 

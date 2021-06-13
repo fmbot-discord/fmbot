@@ -68,7 +68,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task StatsAsync([Remainder] string userOptions = null)
         {
             var user = await this._userService.GetFullUserAsync(this.Context.User.Id);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             try
             {
@@ -233,7 +233,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("botscrobble", "bottrack", "bottracking")]
         public async Task BotTrackingAsync([Remainder]string option = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             try
             {
@@ -279,7 +279,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task SetAsync([Summary("Your Last.fm name")] string lastFmUserName = null,
             params string[] otherSettings)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             if (lastFmUserName == null || lastFmUserName == "help")
@@ -337,7 +337,7 @@ namespace FMBot.Bot.Commands.LastFM
                 UserNameLastFM = lastFmUserName,
             };
 
-            userSettingsToAdd = this._userService.SetSettings(userSettingsToAdd, otherSettings);
+            userSettingsToAdd = UserService.SetSettings(userSettingsToAdd, otherSettings);
 
             await this._userService.SetLastFm(this.Context.User, userSettingsToAdd);
 
@@ -391,7 +391,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         public async Task ModeAsync(params string[] otherSettings)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -425,7 +425,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var newUserSettings = this._userService.SetSettings(userSettings, otherSettings);
+            var newUserSettings = UserService.SetSettings(userSettings, otherSettings);
 
             await this._userService.SetLastFm(this.Context.User, newUserSettings);
 
@@ -457,7 +457,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         public async Task PrivacyAsync(params string[] otherSettings)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             if (otherSettings == null || otherSettings.Length < 1 || otherSettings.First() == "info")
@@ -511,7 +511,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("set", "setusername", "fm set")]
         public async Task LoginAsync([Remainder] string unusedValues = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var msg = this.Context.Message as SocketUserMessage;
             if (StackCooldownTarget.Contains(this.Context.Message.Author))
@@ -665,7 +665,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task RemoveAsync([Remainder] string confirmation = null)
         {
             var userSettings = await this._userService.GetFullUserAsync(this.Context.User.Id);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             if (userSettings == null)
             {

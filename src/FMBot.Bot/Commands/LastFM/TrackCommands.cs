@@ -216,7 +216,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task LoveAsync([Remainder] string trackValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             if (!string.IsNullOrWhiteSpace(trackValues) && trackValues.ToLower() == "help")
             {
@@ -273,7 +273,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task UnLoveAsync([Remainder] string trackValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             if (!string.IsNullOrWhiteSpace(trackValues) && trackValues.ToLower() == "help")
             {
@@ -330,7 +330,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task LovedAsync([Remainder] string extraOptions = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -460,7 +460,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task ScrobbleAsync([Remainder] string trackValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             if (string.IsNullOrWhiteSpace(trackValues))
             {
@@ -736,7 +736,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task WhoKnowsTrackAsync([Remainder] string trackValues = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
@@ -856,7 +856,7 @@ namespace FMBot.Bot.Commands.LastFM
         [GuildOnly]
         public async Task GlobalWhoKnowsTrackAsync([Remainder] string trackValues = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
@@ -989,7 +989,7 @@ namespace FMBot.Bot.Commands.LastFM
         [GuildOnly]
         public async Task GuildTracksAsync(params string[] extraOptions)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild.LastIndexed == null)

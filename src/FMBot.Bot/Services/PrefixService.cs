@@ -2,8 +2,10 @@ using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Dasync.Collections;
 using FMBot.Bot.Interfaces;
+using FMBot.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace FMBot.Bot.Services
@@ -11,13 +13,14 @@ namespace FMBot.Bot.Services
     public class PrefixService : IPrefixService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly BotSettings _botSettings;
 
-        private static readonly ConcurrentDictionary<ulong, string> ServerPrefixes =
-            new ConcurrentDictionary<ulong, string>();
+        private static readonly ConcurrentDictionary<ulong, string> ServerPrefixes = new();
 
-        public PrefixService(IDbContextFactory<FMBotDbContext> contextFactory)
+        public PrefixService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings)
         {
             this._contextFactory = contextFactory;
+            this._botSettings = botSettings.Value;
         }
 
         public void StorePrefix(string prefix, ulong key)
@@ -44,10 +47,10 @@ namespace FMBot.Bot.Services
         {
             if (!key.HasValue)
             {
-                return null;
+                return this._botSettings.Bot.Prefix;
             }
 
-            return !ServerPrefixes.ContainsKey(key.Value) ? null : ServerPrefixes[key.Value];
+            return !ServerPrefixes.ContainsKey(key.Value) ? this._botSettings.Bot.Prefix : ServerPrefixes[key.Value];
         }
 
 

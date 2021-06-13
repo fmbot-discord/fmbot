@@ -135,30 +135,14 @@ namespace FMBot.Bot.Commands
 
         [Command("update", RunMode = RunMode.Async)]
         [Summary("Updates a users cached playcounts based on their recent plays. \n\n" +
-                 "This command also has an option to completely refresh a users cache (`full`)")]
+                 "This command also has an option to completely refresh a users cache (`full`). This is recommended if you have edited your scrobble history.")]
         [Examples("update", "update full")]
         [Alias("u")]
         [GuildOnly]
         [UsernameSetRequired]
         public async Task UpdateUserAsync(string force = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            if (force == "help")
-            {
-                this._embed.WithTitle($"{prfx}update");
-                this._embed.WithDescription($"Updates your playcount cache on your latest scrobbles.\n" +
-                                            $"Add `full` to fully update your account in case you edited your scrobble history.\n" +
-                                            $"Note that updating also happens automatically.");
-
-                this._embed.AddField("Examples",
-                    $"`{prfx}update\n" +
-                    $"`{prfx}update full`");
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
-
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full" || force.ToLower() == "-force" || force.ToLower() == "force"))

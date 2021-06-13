@@ -44,7 +44,7 @@ namespace FMBot.Bot.Services
         public async Task<bool> UserBlockedAsync(ulong discordUserId)
         {
             await using var db = this._contextFactory.CreateDbContext();
-            var cacheKey = "blocked-users";
+            const string cacheKey = "blocked-users";
 
             if (this._cache.TryGetValue(cacheKey, out IReadOnlyList<User> blockedUsers))
             {
@@ -301,7 +301,7 @@ namespace FMBot.Bot.Services
             return userToUpdate.PrivacyLevel;
         }
 
-        public User SetSettings(User userSettings, string[] extraOptions)
+        public static User SetSettings(User userSettings, string[] extraOptions)
         {
             extraOptions = extraOptions.Select(s => s.ToLower()).ToArray();
             if (extraOptions.Contains("embedfull") || extraOptions.Contains("ef"))

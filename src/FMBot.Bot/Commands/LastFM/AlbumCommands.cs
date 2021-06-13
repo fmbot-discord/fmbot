@@ -383,7 +383,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task TopAlbumsAsync([Remainder] string extraOptions = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -572,7 +572,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task WhoKnowsAlbumAsync([Remainder] string albumValues = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             try
             {
@@ -720,7 +720,7 @@ namespace FMBot.Bot.Commands.LastFM
         [GuildOnly]
         public async Task GlobalWhoKnowsAlbumAsync([Remainder] string albumValues = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
@@ -1027,7 +1027,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild.LastIndexed == null)

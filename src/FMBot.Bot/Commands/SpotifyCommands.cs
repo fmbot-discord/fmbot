@@ -47,7 +47,7 @@ namespace FMBot.Bot.Commands
         public async Task SpotifyAsync([Remainder] string searchValue = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             try
             {
@@ -117,7 +117,7 @@ namespace FMBot.Bot.Commands
         public async Task SpotifyAlbumAsync([Remainder] string searchValue = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             try
             {
@@ -186,7 +186,7 @@ namespace FMBot.Bot.Commands
         public async Task SpotifyArtistAsync([Remainder] string searchValue = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             try
             {

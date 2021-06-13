@@ -89,7 +89,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task NowPlayingAsync(params string[] parameters)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             if (contextUser?.UserNameLastFM == null)
             {
@@ -586,7 +586,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task OverviewAsync(string amount = "4")
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             if (amount == "help")
             {

@@ -115,7 +115,7 @@ namespace FMBot.Bot.Commands
         [Alias("support", "patreon", "opencollective", "donations")]
         public async Task DonateAsync()
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var embedDescription = new StringBuilder();
 
@@ -411,7 +411,7 @@ namespace FMBot.Bot.Commands
         [Summary("Displays all available commands.")]
         public async Task FullHelpAsync()
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             this._embed.WithDescription("**See a list of all available commands below.**\n" +
                                         $"Use `{prfx}serverhelp` to view all your configurable server settings.");
@@ -465,7 +465,7 @@ namespace FMBot.Bot.Commands
         [Alias("serverhelp", "serversettings", "settings", "help server")]
         public async Task ServerHelpAsync()
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             this._embed.WithDescription("**See all server settings below.**\n" +
             "These commands require either the `Admin` or the `Ban Members` permission.");
@@ -514,7 +514,7 @@ namespace FMBot.Bot.Commands
         [ExcludeFromHelp]
         public async Task StaffHelpAsync()
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             this._embed.WithDescription("**See all .fmbot staff commands below.**\n" +
             "These commands require .fmbot admin or owner.");

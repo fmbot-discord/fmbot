@@ -70,7 +70,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         public async Task ChartAsync(params string[] otherSettings)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var msg = this.Context.Message as SocketUserMessage;
             if (StackCooldownTarget.Contains(this.Context.Message.Author))

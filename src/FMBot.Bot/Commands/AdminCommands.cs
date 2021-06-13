@@ -343,7 +343,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("fmfeaturedoverride"), Summary("Changes the avatar to be an album.")]
-        public async Task fmalbumoverrideAsync(string url, bool stopTimer, string desc = "Custom featured event")
+        public async Task AlbumOverrideAsync(string url, bool stopTimer, string desc = "Custom featured event")
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
             {

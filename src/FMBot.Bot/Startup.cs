@@ -88,6 +88,8 @@ namespace FMBot.Bot
                 MessageCacheSize = 0
             });
 
+            services.Configure<BotSettings>(this.Configuration);
+
             services
                 .AddSingleton(discordClient)
                 .AddSingleton(new CommandService(new CommandServiceConfig
@@ -144,8 +146,6 @@ namespace FMBot.Bot
                 .AddTransient<ILastfmApi, LastfmApi>()
                 .AddTransient<LastFmRepository>()
                 .AddTransient<InvidiousApi>();
-
-            services.Configure<BotSettings>(this.Configuration);
 
             services.AddDbContextFactory<FMBotDbContext>(b =>
                 b.UseNpgsql(ConfigData.Data.Database.ConnectionString));

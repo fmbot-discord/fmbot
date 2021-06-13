@@ -423,7 +423,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task TopArtistsAsync([Remainder] string extraOptions = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -600,7 +600,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task TasteAsync(string user = null, [Remainder] string extraOptions = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             if (user == "help")
             {
@@ -733,7 +733,7 @@ namespace FMBot.Bot.Commands.LastFM
         [GuildOnly]
         public async Task WhoKnowsAsync([Remainder] string artistValues = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
@@ -910,7 +910,7 @@ namespace FMBot.Bot.Commands.LastFM
         [GuildOnly]
         public async Task GlobalWhoKnowsAsync([Remainder] string artistValues = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
@@ -1084,7 +1084,7 @@ namespace FMBot.Bot.Commands.LastFM
         [GuildOnly]
         public async Task GuildArtistsAsync(params string[] extraOptions)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild.LastIndexed == null)
@@ -1207,7 +1207,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
             var filteredGuildUsers = GuildService.FilterGuildUsersAsync(guild);

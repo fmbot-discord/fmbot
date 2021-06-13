@@ -108,7 +108,7 @@ namespace FMBot.Bot.Commands.Guild
         [GuildOnly]
         public async Task GuildBlockUserAsync([Remainder] string user = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
@@ -184,7 +184,7 @@ namespace FMBot.Bot.Commands.Guild
         [GuildOnly]
         public async Task GuildUnBlockUserAsync([Remainder] string user = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
@@ -255,7 +255,7 @@ namespace FMBot.Bot.Commands.Guild
         [GuildOnly]
         public async Task BlockedUsersAsync()
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
