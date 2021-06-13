@@ -8,13 +8,13 @@ using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
-using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using PostgreSQLCopyHelper;
 using Serilog;
@@ -27,14 +27,20 @@ namespace FMBot.Bot.Services
         private readonly IndexRepository _indexRepository;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
         private readonly IMemoryCache _cache;
+        private readonly BotSettings _botSettings;
 
-        public IndexService(IUserIndexQueue userIndexQueue, IndexRepository indexRepository, IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
+        public IndexService(IUserIndexQueue userIndexQueue,
+            IndexRepository indexRepository,
+            IDbContextFactory<FMBotDbContext> contextFactory,
+            IMemoryCache cache,
+            IOptions<BotSettings> botSettings)
         {
             this._userIndexQueue = userIndexQueue;
             this._userIndexQueue.UsersToIndex.SubscribeAsync(OnNextAsync);
             this._indexRepository = indexRepository;
             this._contextFactory = contextFactory;
             this._cache = cache;
+            this._botSettings = botSettings.Value;
         }
 
         private async Task OnNextAsync(IndexUserQueueItem user)
@@ -155,7 +161,7 @@ namespace FMBot.Bot.Services
                                        "ON CONFLICT DO NOTHING";
 
                     DefaultTypeMap.MatchNamesWithUnderscores = true;
-                    await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+                    await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
                     await connection.OpenAsync();
 
                     await connection.ExecuteAsync(sql, new
@@ -197,7 +203,7 @@ namespace FMBot.Bot.Services
                                "WHERE guild_id = @guildId AND user_id = @userId ";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
             await connection.ExecuteAsync(sql, new

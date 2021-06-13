@@ -725,49 +725,5 @@ namespace FMBot.Bot.Commands.LastFM
 
             this.Context.LogCommandUsed();
         }
-
-        //[Command("suggest", RunMode = RunMode.Async)]
-        [Summary("Suggest features you want to see in the bot, or report inappropriate images.")]
-        //[Alias("report", "suggestion", "suggestions")]
-        public async Task Suggest(string suggestion = null)
-        {
-            try
-            {
-                /*
-                if (string.IsNullOrWhiteSpace(suggestion))
-                {
-                    await ReplyAsync(cfgjson.Prefix + "fmsuggest 'text in quotes'");
-                    return;
-                }
-                else
-                {
-                */
-
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                this._embedAuthor.WithName(this.Context.User.ToString());
-                this._embed.WithAuthor(this._embedAuthor);
-
-                this._embed.WithTitle(this.Context.User.Username + "'s suggestion:");
-                this._embed.WithDescription(suggestion);
-                this._embed.WithTimestamp(DateTimeOffset.UtcNow);
-
-                var BroadcastServerID = ConfigData.Data.Bot.BaseServerId;
-                var BroadcastChannelID = ConfigData.Data.Bot.SuggestionChannelId;
-
-                var guild = await this.Context.Client.GetGuildAsync(BroadcastServerID);
-                var channel = await guild.GetChannelAsync(BroadcastChannelID);
-
-
-
-                await ReplyAsync("Your suggestion has been sent to the .fmbot server!");
-                this.Context.LogCommandUsed();
-
-                //}
-            }
-            catch (Exception e)
-            {
-                this.Context.LogCommandException(e);
-            }
-        }
     }
 }

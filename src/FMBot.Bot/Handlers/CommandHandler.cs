@@ -12,6 +12,7 @@ using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace FMBot.Bot.Handlers
@@ -26,6 +27,7 @@ namespace FMBot.Bot.Handlers
         private readonly IGuildDisabledCommandService _guildDisabledCommandService;
         private readonly IChannelDisabledCommandService _channelDisabledCommandService;
         private readonly IServiceProvider _provider;
+        private readonly BotSettings _botSettings;
 
         // DiscordSocketClient, CommandService, IConfigurationRoot, and IServiceProvider are injected automatically from the IServiceProvider
         public CommandHandler(
@@ -36,7 +38,8 @@ namespace FMBot.Bot.Handlers
             IGuildDisabledCommandService guildDisabledCommandService,
             IChannelDisabledCommandService channelDisabledCommandService,
             UserService userService,
-            MusicBotService musicBotService)
+            MusicBotService musicBotService,
+            IOptions<BotSettings> botSettings)
         {
             this._discord = discord;
             this._commands = commands;
@@ -46,6 +49,7 @@ namespace FMBot.Bot.Handlers
             this._channelDisabledCommandService = channelDisabledCommandService;
             this._userService = userService;
             this._musicBotService = musicBotService;
+            this._botSettings = botSettings.Value;
             this._discord.MessageReceived += OnMessageReceivedAsync;
         }
 
@@ -126,7 +130,7 @@ namespace FMBot.Bot.Handlers
             var userBlocked = await this._userService.UserBlockedAsync(context.User.Id);
 
             // If command possibly equals .fm
-            if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && msg.Content.StartsWith(ConfigData.Data.Bot.Prefix))
+            if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && msg.Content.StartsWith(this._botSettings.Bot.Prefix))
             {
                 var fmSearchResult = this._commands.Search(context, 1);
 
@@ -174,7 +178,7 @@ namespace FMBot.Bot.Handlers
                     var embed = new EmbedBuilder()
                         .WithColor(DiscordConstants.LastFmColorRed);
                     var userNickname = (context.User as SocketGuildUser)?.Nickname;
-                    embed.UsernameNotSetErrorResponse(prfx ?? ConfigData.Data.Bot.Prefix, userNickname ?? context.User.Username);
+                    embed.UsernameNotSetErrorResponse(prfx ?? this._botSettings.Bot.Prefix, userNickname ?? context.User.Username);
                     await context.Channel.SendMessageAsync("", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
                     return;
@@ -187,7 +191,7 @@ namespace FMBot.Bot.Handlers
                 {
                     var embed = new EmbedBuilder()
                         .WithColor(DiscordConstants.LastFmColorRed);
-                    embed.SessionRequiredResponse(prfx ?? ConfigData.Data.Bot.Prefix);
+                    embed.SessionRequiredResponse(prfx ?? this._botSettings.Bot.Prefix);
                     await context.Channel.SendMessageAsync("", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
                     return;
@@ -228,11 +232,11 @@ namespace FMBot.Bot.Handlers
             }
         }
 
-        private static async Task UserBlockedResponse(ShardedCommandContext shardedCommandContext, string s)
+        private async Task UserBlockedResponse(ShardedCommandContext shardedCommandContext, string s)
         {
             var embed = new EmbedBuilder()
                 .WithColor(DiscordConstants.LastFmColorRed);
-            embed.UserBlockedResponse(s ?? ConfigData.Data.Bot.Prefix);
+            embed.UserBlockedResponse(s ?? this._botSettings.Bot.Prefix);
             await shardedCommandContext.Channel.SendMessageAsync("", false, embed.Build());
             shardedCommandContext.LogCommandUsed(CommandResponse.UserBlocked);
             return;
