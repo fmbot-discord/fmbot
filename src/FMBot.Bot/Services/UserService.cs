@@ -176,7 +176,7 @@ namespace FMBot.Bot.Services
         }
 
         // Random user
-        public async Task<User> GetRandomUserAsync()
+        public async Task<User> GetUserToFeatureAsync()
         {
             await using var db = this._contextFactory.CreateDbContext();
             var featuredUsers = await db.Users
@@ -194,10 +194,15 @@ namespace FMBot.Bot.Services
                 }
             }
 
+            var lastFmUsersToFilter = await db.BottedUsers
+                .AsQueryable()
+                .Select(s => s.UserNameLastFM.ToLower()).ToListAsync();
+
             var filterDate = DateTime.UtcNow.AddDays(-3);
             var users = db.Users
                 .AsQueryable()
                 .Where(w => w.Blocked != true &&
+                            !lastFmUsersToFilter.Contains(w.UserNameLastFM.ToLower()) &&
                             w.LastUsed > filterDate).ToList();
 
             var rand = new Random();

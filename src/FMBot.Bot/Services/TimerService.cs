@@ -91,7 +91,7 @@ namespace FMBot.Bot.Services
 
                     try
                     {
-                        var user = await this._userService.GetRandomUserAsync();
+                        var user = await this._userService.GetUserToFeatureAsync();
                         Log.Information($"Featured: Picked user {user.UserId} / {user.UserNameLastFM}");
 
                         switch (featuredMode)
@@ -162,7 +162,7 @@ namespace FMBot.Bot.Services
                                 if (!albums.Success || !albums.Content.TopAlbums.Any())
                                 {
                                     Log.Information($"Featured: User {user.UserNameLastFM} had no albums, switching to different user.");
-                                    user = await this._userService.GetRandomUserAsync();
+                                    user = await this._userService.GetUserToFeatureAsync();
                                     albums = await this._lastFmRepository.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 15);
                                 }
 

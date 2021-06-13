@@ -993,9 +993,9 @@ namespace FMBot.Bot.Commands.LastFM
                     usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, guildUser, artistName, userPlaycount);
                 }
 
-                var guild = await guildTask;
-
                 var filteredUsersWithArtist = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithArtist);
+
+                var guild = await guildTask;
 
                 filteredUsersWithArtist =
                     WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithArtist, guild.GuildUsers.ToList());

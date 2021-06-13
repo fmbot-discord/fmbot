@@ -86,8 +86,13 @@ namespace FMBot.Bot.Services.WhoKnows
             return users
                 .Where(w =>
                     !bottedUsers
-                    .Select(s => s.UserNameLastFM.ToLower())
-                    .Contains(w.LastFMUsername.ToLower()))
+                        .Select(s => s.UserNameLastFM.ToLower())
+                        .Contains(w.LastFMUsername.ToLower())
+                    &&
+                    !bottedUsers
+                        .Where(w => w.LastFmRegistered != null)
+                        .Select(s => s.LastFmRegistered)
+                        .Contains(w.RegisteredLastFm))
                 .ToList();
         }
 
@@ -134,19 +139,19 @@ namespace FMBot.Bot.Services.WhoKnows
                 var user = usersToShow[index];
 
                 string nameWithLink;
-                //if (minPrivacyLevel == PrivacyLevel.Global && user.PrivacyLevel != PrivacyLevel.Global)
-                //{
-                //    nameWithLink = PrivateName();
-                //    if (hidePrivateUsers)
-                //    {
-                //        indexNumber += 1;
-                //        continue;
-                //    }
-                //}
-                //else
-                //{
+                if (minPrivacyLevel == PrivacyLevel.Global && user.PrivacyLevel != PrivacyLevel.Global)
+                {
+                    nameWithLink = PrivateName();
+                    if (hidePrivateUsers)
+                    {
+                        indexNumber += 1;
+                        continue;
+                    }
+                }
+                else
+                {
                     nameWithLink = NameWithLink(user);
-                //}
+                }
 
                 var playString = StringExtensions.GetPlaysString(user.Playcount);
 

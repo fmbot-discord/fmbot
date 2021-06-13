@@ -131,7 +131,7 @@ namespace FMBot.Bot
                 .AddSingleton<WhoKnowsPlayService>()
                 .AddSingleton<WhoKnowsTrackService>()
                 .AddSingleton<YoutubeService>() // Add random to the collection
-                .AddSingleton(this.Configuration) // Add the configuration to the collection
+                .AddSingleton<IConfiguration>(this.Configuration) // Add the configuration to the collection
                 .AddHttpClient();
 
             // These services can only be added after the config is loaded

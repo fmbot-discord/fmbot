@@ -87,6 +87,7 @@ namespace FMBot.Bot.Services.WhoKnows
                                "ua.playcount, " +
                                "u.user_name_last_fm, " +
                                "u.discord_user_id, " +
+                               "u.registered_last_fm, " +
                                "u.privacy_level " +
                                "FROM user_artists AS ua " +
                                "INNER JOIN users AS u ON ua.user_id = u.user_id " +
@@ -126,6 +127,7 @@ namespace FMBot.Bot.Services.WhoKnows
                     Playcount = userArtist.Playcount,
                     LastFMUsername = userArtist.UserNameLastFm,
                     UserId = userArtist.UserId,
+                    RegisteredLastFm = userArtist.RegisteredLastFm,
                     PrivacyLevel = userArtist.PrivacyLevel
                 });
             }

@@ -133,9 +133,17 @@ namespace FMBot.Bot.Handlers
                 }
             }
 
+            var userBlocked = await this._userService.UserBlockedAsync(context.User.Id);
+
             // If command equals .fm
             if ((searchResult.Commands == null || searchResult.Commands.Count == 0) && msg.Content.StartsWith(ConfigData.Data.Bot.Prefix))
             {
+                if (userBlocked)
+                {
+                    await UserBlockedResponse(context, customPrefix);
+                    return;
+                }
+
                 var commandPrefixResult = await this._commands.ExecuteAsync(context, 1, this._provider);
 
                 if (commandPrefixResult.IsSuccess)
@@ -155,6 +163,13 @@ namespace FMBot.Bot.Handlers
                 return;
             }
 
+
+            if (userBlocked)
+            {
+                await UserBlockedResponse(context, customPrefix);
+                return;
+            }
+
             if (searchResult.Commands[0].Command.Attributes.OfType<UsernameSetRequired>().Any())
             {
                 var userRegistered = await this._userService.UserRegisteredAsync(context.User);
@@ -168,17 +183,6 @@ namespace FMBot.Bot.Handlers
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
                     return;
                 }
-
-                var userBlocked = await this._userService.UserBlockedAsync(context.User.Id);
-                if (userBlocked)
-                {
-                    var embed = new EmbedBuilder()
-                        .WithColor(DiscordConstants.LastFmColorRed);
-                    embed.UserBlockedResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
-                    await context.Channel.SendMessageAsync("", false, embed.Build());
-                    context.LogCommandUsed(CommandResponse.UserBlocked);
-                    return;
-                }
             }
             if (searchResult.Commands[0].Command.Attributes.OfType<UserSessionRequired>().Any())
             {
@@ -190,17 +194,6 @@ namespace FMBot.Bot.Handlers
                     embed.SessionRequiredResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
                     await context.Channel.SendMessageAsync("", false, embed.Build());
                     context.LogCommandUsed(CommandResponse.UsernameNotSet);
-                    return;
-                }
-
-                var userBlocked = await this._userService.UserBlockedAsync(context.User.Id);
-                if (userBlocked)
-                {
-                    var embed = new EmbedBuilder()
-                        .WithColor(DiscordConstants.LastFmColorRed);
-                    embed.UserBlockedResponse(customPrefix ?? ConfigData.Data.Bot.Prefix);
-                    await context.Channel.SendMessageAsync("", false, embed.Build());
-                    context.LogCommandUsed(CommandResponse.UserBlocked);
                     return;
                 }
             }
@@ -238,6 +231,16 @@ namespace FMBot.Bot.Handlers
             {
                 Log.Error(result.ToString(), context.Message.Content);
             }
+        }
+
+        private static async Task UserBlockedResponse(ShardedCommandContext shardedCommandContext, string s)
+        {
+            var embed = new EmbedBuilder()
+                .WithColor(DiscordConstants.LastFmColorRed);
+            embed.UserBlockedResponse(s ?? ConfigData.Data.Bot.Prefix);
+            await shardedCommandContext.Channel.SendMessageAsync("", false, embed.Build());
+            shardedCommandContext.LogCommandUsed(CommandResponse.UserBlocked);
+            return;
         }
     }
 }

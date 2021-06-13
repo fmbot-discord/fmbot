@@ -25,6 +25,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public string SessionKeyLastFm { get; set; }
 
+        public DateTime? RegisteredLastFm { get; set; }
+
         public long? TotalPlaycount { get; set; }
 
         public bool? RymEnabled { get; set; }
