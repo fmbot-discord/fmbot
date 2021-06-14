@@ -818,9 +818,8 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context, true);
-
             var timeType = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
+            var userSettings = await this._settingService.GetUser(timeType.NewSearchValue, user, this.Context, true);
 
             long? timeFrom = null;
             if (timeType.TimePeriod != TimePeriod.AllTime && timeType.PlayDays != null)

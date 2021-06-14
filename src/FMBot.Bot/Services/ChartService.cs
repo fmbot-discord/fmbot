@@ -496,7 +496,7 @@ namespace FMBot.Bot.Services
             }
 
             chartSettings.TimePeriod = timeSettings.TimePeriod;
-            chartSettings.TimespanString = $"{timeSettings.Description} Chart";
+            chartSettings.TimespanString = $"{timeSettings.Description}";
             chartSettings.TimespanUrlString = timeSettings.UrlParameter;
 
             return chartSettings;

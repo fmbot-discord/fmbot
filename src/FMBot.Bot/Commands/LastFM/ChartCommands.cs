@@ -168,13 +168,13 @@ namespace FMBot.Bot.Commands.LastFM
                 var embedAuthorDescription = "";
                 if (!userSettings.DifferentUser)
                 {
-                    embedAuthorDescription = $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} for " +
+                    embedAuthorDescription = $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Chart for " +
                                              await this._userService.GetUserTitleAsync(this.Context);
                 }
                 else
                 {
                     embedAuthorDescription =
-                        $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} for {userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
+                        $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Chart for {userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
                 }
 
                 this._embedAuthor.WithName(embedAuthorDescription);
@@ -354,13 +354,13 @@ namespace FMBot.Bot.Commands.LastFM
                 var embedAuthorDescription = "";
                 if (!userSettings.DifferentUser)
                 {
-                    embedAuthorDescription = $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} for " +
+                    embedAuthorDescription = $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Artist Chart for " +
                                              await this._userService.GetUserTitleAsync(this.Context);
                 }
                 else
                 {
                     embedAuthorDescription =
-                        $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} for {userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
+                        $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Artist Chart for {userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
                 }
 
                 this._embedAuthor.WithName(embedAuthorDescription);
@@ -374,7 +374,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var footer = new StringBuilder();
 
-                footer.AppendLine("Image source: Spotify");
+                footer.AppendLine("Image source: Spotify | Use 'skip' to skip artists without images");
 
                 if (!userSettings.DifferentUser)
                 {
