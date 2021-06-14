@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using Discord;
 using FMBot.Domain.Models;
-using IF.Lastfm.Core.Api.Enums;
-using IF.Lastfm.Core.Objects;
 using SkiaSharp;
 using Color = System.Drawing.Color;
 
@@ -17,11 +15,13 @@ namespace FMBot.Bot.Models
             this.ChartImages = new List<ChartImage>();
 
             this.TitleSetting = TitleSetting.Titles;
-            this.SkipArtistsWithoutImage = false;
+            this.SkipWithoutImage = false;
             this.UsePlays = false;
         }
 
         public List<TopAlbum> Albums { get; set; }
+
+        public List<TopArtist> Artists { get; set; }
 
         public int Height { get; set; }
 
@@ -41,7 +41,7 @@ namespace FMBot.Bot.Models
 
         public TitleSetting TitleSetting { get; set; }
 
-        public bool SkipArtistsWithoutImage { get; set; }
+        public bool SkipWithoutImage { get; set; }
 
         public bool CustomOptionsEnabled { get; set; }
 

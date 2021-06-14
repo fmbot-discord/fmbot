@@ -59,6 +59,13 @@ namespace FMBot.Bot.Models
         public PrivacyLevel PrivacyLevel { get; set; }
     }
 
+    public class ArtistSpotifyCoverDto
+    {
+        public string LastFmUrl { get; set; }
+
+        public string SpotifyImageUrl { get; set; }
+    }
+
     public class TopGuildArtistsDto
     {
         public string Name { get; set; }

@@ -466,15 +466,15 @@ namespace FMBot.Bot.Commands.LastFM
                     var artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm,
                         timeSettings.TimePeriod, amount);
 
-                    if (artists == null || !artists.Any() || !artists.Content.Any())
+                    if (!artists.Success || artists.Content == null)
                     {
-                        this._embed.NoScrobblesFoundErrorResponse(artists?.Status, prfx, userSettings.UserNameLastFm);
-                        this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                        this._embed.ErrorResponse(artists.Error, artists.Message, this.Context);
+                        this.Context.LogCommandUsed(CommandResponse.LastFmError);
                         await ReplyAsync("", false, this._embed.Build());
                         return;
                     }
 
-                    var footer = $"{artists.TotalItems} different artists in this time period";
+                    var footer = $"{artists.Content.TotalAmount} different artists in this time period";
 
                     var rnd = new Random();
                     if (rnd.Next(0, 2) == 1)
@@ -482,19 +482,19 @@ namespace FMBot.Bot.Commands.LastFM
                         footer += $"\nWant pagination? Enable the 'Manage Messages' permission for .fmbot.";
                     }
 
-                    amount = artists.Content.Count;
+                    amount = artists.Content.TopArtists.Count;
 
                     for (var i = 0; i < amount; i++)
                     {
-                        var artist = artists.Content[i];
+                        var artist = artists.Content.TopArtists[i];
 
-                        if (artists.Count() > 10 && !paginationEnabled)
+                        if (artists.Content.TopArtists.Count > 10 && !paginationEnabled)
                         {
-                            description += $"{i + 1}. **{artist.Name}** ({artist.PlayCount} plays) \n";
+                            description += $"{i + 1}. **{artist.ArtistName}** ({artist.UserPlaycount} plays) \n";
                         }
                         else
                         {
-                            description += $"{i + 1}. **[{artist.Name}]({artist.Url})** ({artist.PlayCount} plays) \n";
+                            description += $"{i + 1}. **[{artist.ArtistName}]({artist.ArtistUrl})** ({artist.UserPlaycount} plays) \n";
                         }
 
                         var pageAmount = i + 1;
@@ -685,10 +685,19 @@ namespace FMBot.Bot.Commands.LastFM
                 var ownArtists = await ownArtistsTask;
                 var otherArtists = await otherArtistsTask;
 
-                if (ownArtists?.Any() != true || otherArtists?.Any() != true)
+
+                if (!ownArtists.Success || ownArtists.Content == null || !otherArtists.Success || otherArtists.Content == null)
+                {
+                    this._embed.ErrorResponse(ownArtists.Error, ownArtists.Message, this.Context);
+                    this.Context.LogCommandUsed(CommandResponse.LastFmError);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
+                }
+
+                if (ownArtists.Content.TopArtists == null || ownArtists.Content.TopArtists.Count == 0 || otherArtists.Content.TopArtists == null || otherArtists.Content.TopArtists.Count == 0)
                 {
                     await ReplyAsync(
-                        $"You or the other user don't have any artist plays in the selected time period.");
+                        $"Sorry, you or the other user don't have any artist plays in the selected time period.");
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     return;
                 }
@@ -701,7 +710,7 @@ namespace FMBot.Bot.Commands.LastFM
                 int amount = 14;
                 if (tasteSettings.TasteType == TasteType.FullEmbed)
                 {
-                    var taste = this._artistsService.GetEmbedTaste(ownArtists, otherArtists, amount, timeType.TimePeriod);
+                    var taste = this._artistsService.GetEmbedTaste(ownArtists.Content, otherArtists.Content, amount, timeType.TimePeriod);
 
                     this._embed.WithDescription(taste.Description);
                     this._embed.AddField("Artist", taste.LeftDescription, true);
@@ -709,7 +718,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else
                 {
-                    var taste = this._artistsService.GetTableTaste(ownArtists, otherArtists, amount, timeType.TimePeriod, ownLastFmUsername, lastfmToCompare);
+                    var taste = this._artistsService.GetTableTaste(ownArtists.Content, otherArtists.Content, amount, timeType.TimePeriod, ownLastFmUsername, lastfmToCompare);
 
                     this._embed.WithDescription(taste);
                 }

@@ -107,7 +107,7 @@ namespace FMBot.Bot
                 .AddSingleton<FriendsService>()
                 .AddSingleton<GeniusService>()
                 .AddSingleton<GuildService>()
-                .AddSingleton<IChartService, ChartService>()
+                .AddSingleton<ChartService>()
                 .AddSingleton<IGuildDisabledCommandService, GuildDisabledCommandService>()
                 .AddSingleton<IChannelDisabledCommandService, ChannelDisabledCommandService>()
                 .AddSingleton<IIndexService, IndexService>()

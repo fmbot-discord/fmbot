@@ -613,15 +613,54 @@ namespace FMBot.LastFM.Repositories
         }
 
         // Top artists
-        public async Task<PageResponse<LastArtist>> GetTopArtistsAsync(string lastFmUserName,
+        public async Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName,
             TimePeriod timePeriod, int count = 2, int amountOfPages = 1)
         {
             var lastStatsTimeSpan = TimePeriodToLastStatsTimeSpan(timePeriod);
 
             var topArtists = await this._lastFmClient.User.GetTopArtists(lastFmUserName, lastStatsTimeSpan, 1, count);
+
             Statistics.LastfmApiCalls.Inc();
 
-            return topArtists;
+            if (!topArtists.Success)
+            {
+                return new Response<TopArtistList>
+                {
+                    Success = false,
+                    Error = (ResponseStatus)Enum.Parse(typeof(ResponseStatus), topArtists.Status.ToString()),
+                    Message = "Last.fm returned an error"
+                };
+            }
+
+            if (topArtists.Content == null || topArtists.TotalItems == 0)
+            {
+                return new Response<TopArtistList>
+                {
+                    Success = true,
+                    Content = new TopArtistList
+                    {
+                        TotalAmount = 0
+                    }
+                };
+            }
+
+            return new Response<TopArtistList>
+            {
+                Success = true,
+                Content = new TopArtistList
+                {
+                    TotalAmount = topArtists.TotalItems,
+                    TopArtists = topArtists.Content.Select(s => new TopArtist
+                    {
+                        ArtistName = s.Name,
+                        ArtistUrl = s.Url.ToString(),
+                        UserPlaycount = s.PlayCount,
+                        Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
+                            ? Guid.Parse(s.Mbid)
+                            : null
+                    }).ToList()
+                }
+            };
         }
 
         // Top tracks

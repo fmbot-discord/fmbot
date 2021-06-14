@@ -383,7 +383,6 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task TopAlbumsAsync([Remainder] string extraOptions = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
+using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
@@ -11,6 +13,7 @@ using IF.Lastfm.Core.Api.Helpers;
 using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Npgsql;
 using Serilog;
 
 namespace FMBot.Bot.Services
@@ -26,17 +29,62 @@ namespace FMBot.Bot.Services
             this._cache = cache;
         }
 
-        // Top artists for 2 users
-        public TasteModels GetEmbedTaste(PageResponse<LastArtist> leftUserArtists,
-            PageResponse<LastArtist> rightUserArtists, int amount, TimePeriod timePeriod)
+        public async Task<List<TopArtist>> FillArtistImages(List<TopArtist> topArtists)
         {
-            var matchedArtists = ArtistsToShow(leftUserArtists, rightUserArtists);
+            if (topArtists.All(a => a.ArtistImageUrl != null))
+            {
+                return topArtists;
+            }
+
+            var albumCovers = await GetCachedArtistImages();
+
+            foreach (var topArtist in topArtists.Where(w => w.ArtistImageUrl == null))
+            {
+                var url = topArtist.ArtistUrl.ToLower();
+                var artistImage = albumCovers.FirstOrDefault(item => item.LastFmUrl.Contains(url));
+
+                if (artistImage != null)
+                {
+                    topArtist.ArtistImageUrl = artistImage.SpotifyImageUrl;
+                }
+            }
+
+            return topArtists;
+        }
+
+        private async Task<List<ArtistSpotifyCoverDto>> GetCachedArtistImages()
+        {
+            const string cacheKey = "artist-spotify-covers";
+            if (this._cache.TryGetValue(cacheKey, out List<ArtistSpotifyCoverDto> artistCovers))
+            {
+                return artistCovers;
+            }
+
+            const string sql = "SELECT LOWER(last_fm_url) as last_fm_url, LOWER(spotify_image_url) as spotify_image_url " +
+                               "FROM public.artists where last_fm_url is not null and spotify_image_url is not null;";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            artistCovers = (await connection.QueryAsync<ArtistSpotifyCoverDto>(sql)).ToList();
+
+            this._cache.Set(cacheKey, artistCovers, TimeSpan.FromMinutes(1));
+
+            return artistCovers;
+        }
+
+        // Top artists for 2 users
+        public TasteModels GetEmbedTaste(TopArtistList leftUserArtists,
+            TopArtistList rightUserArtists, int amount, TimePeriod timePeriod)
+        {
+            var matchedArtists = ArtistsToShow(leftUserArtists.TopArtists, rightUserArtists.TopArtists);
 
             var left = "";
             var right = "";
             foreach (var artist in matchedArtists.Take(amount))
             {
-                var name = artist.Name;
+                var name = artist.ArtistName;
                 if (!string.IsNullOrWhiteSpace(name) && name.Length > 24)
                 {
                     left += $"**{name.Substring(0, 24)}..**\n";
@@ -46,8 +94,8 @@ namespace FMBot.Bot.Services
                     left += $"**{name}**\n";
                 }
 
-                var ownPlaycount = artist.PlayCount.Value;
-                var otherPlaycount = rightUserArtists.Content.First(f => f.Name.Equals(name)).PlayCount.Value;
+                var ownPlaycount = artist.UserPlaycount.Value;
+                var otherPlaycount = rightUserArtists.TopArtists.First(f => f.ArtistName.Equals(name)).UserPlaycount.Value;
 
                 if (matchedArtists.Count > 30 && otherPlaycount < 5)
                 {
@@ -76,7 +124,7 @@ namespace FMBot.Bot.Services
                 right += $"\n";
             }
 
-            var description = Description(leftUserArtists, timePeriod, matchedArtists);
+            var description = Description(leftUserArtists.TopArtists, timePeriod, matchedArtists);
 
             return new TasteModels
             {
@@ -87,19 +135,19 @@ namespace FMBot.Bot.Services
         }
 
         // Top artists for 2 users
-        public string GetTableTaste(PageResponse<LastArtist> leftUserArtists,
-            PageResponse<LastArtist> rightUserArtists, int amount, TimePeriod timePeriod, string mainUser, string userToCompare)
+        public string GetTableTaste(TopArtistList leftUserArtists,
+            TopArtistList rightUserArtists, int amount, TimePeriod timePeriod, string mainUser, string userToCompare)
         {
-            var artistsToShow = ArtistsToShow(leftUserArtists, rightUserArtists);
+            var artistsToShow = ArtistsToShow(leftUserArtists.TopArtists, rightUserArtists.TopArtists);
 
             var artists = artistsToShow.Select(s =>
             {
-                var ownPlaycount = s.PlayCount.Value;
-                var otherPlaycount = rightUserArtists.Content.First(f => f.Name.Equals(s.Name)).PlayCount.Value;
+                var ownPlaycount = s.UserPlaycount.Value;
+                var otherPlaycount = rightUserArtists.TopArtists.First(f => f.ArtistName.Equals(s.ArtistName)).UserPlaycount.Value;
 
                 return new TasteTwoUserModel
                 {
-                    Artist = !string.IsNullOrWhiteSpace(s.Name) && s.Name.Length > AllowedCharacterCount(s.Name) ? $"{s.Name.Substring(0, AllowedCharacterCount(s.Name) - 2)}…" : s.Name,
+                    Artist = !string.IsNullOrWhiteSpace(s.ArtistName) && s.ArtistName.Length > AllowedCharacterCount(s.ArtistName) ? $"{s.ArtistName.Substring(0, AllowedCharacterCount(s.ArtistName) - 2)}…" : s.ArtistName,
                     OwnPlaycount = ownPlaycount,
                     OtherPlaycount = otherPlaycount
                 };
@@ -125,13 +173,13 @@ namespace FMBot.Bot.Services
                 );
 
 
-            var description = $"{Description(leftUserArtists, timePeriod, artistsToShow)}\n" +
+            var description = $"{Description(leftUserArtists.TopArtists, timePeriod, artistsToShow)}\n" +
                               $"```{customTable}```";
 
             return description;
         }
 
-        private static string Description(IEnumerable<LastArtist> mainUserArtists, TimePeriod chartTimePeriod, IList<LastArtist> matchedArtists)
+        private static string Description(IEnumerable<TopArtist> mainUserArtists, TimePeriod chartTimePeriod, ICollection<TopArtist> matchedArtists)
         {
             var percentage = ((decimal)matchedArtists.Count / (decimal)mainUserArtists.Count()) * 100;
             var description =
@@ -140,17 +188,17 @@ namespace FMBot.Bot.Services
             return description;
         }
 
-        private static string GetCompareChar(int ownPlaycount, int otherPlaycount)
+        private static string GetCompareChar(long ownPlaycount, long otherPlaycount)
         {
             return ownPlaycount == otherPlaycount ? " • " : ownPlaycount > otherPlaycount ? " > " : " < ";
         }
 
-        private IList<LastArtist> ArtistsToShow(IEnumerable<LastArtist> leftUserArtists, IPageResponse<LastArtist> rightUserArtists)
+        private static IList<TopArtist> ArtistsToShow(IEnumerable<TopArtist> leftUserArtists, IEnumerable<TopArtist> rightUserArtists)
         {
             var artistsToShow =
                 leftUserArtists
-                    .Where(w => rightUserArtists.Content.Select(s => s.Name).Contains(w.Name))
-                    .OrderByDescending(o => o.PlayCount)
+                    .Where(w => rightUserArtists.Select(s => s.ArtistName).Contains(w.ArtistName))
+                    .OrderByDescending(o => o.UserPlaycount)
                     .ToList();
             return artistsToShow;
         }
