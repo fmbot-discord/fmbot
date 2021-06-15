@@ -116,7 +116,7 @@ namespace FMBot.Bot.Services
                             }
                         }
 
-                        AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, album: album);
+                        AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, album);
                     });
                 }
                 else
