@@ -5,7 +5,9 @@ RUN apt-get update && apt-get install -y libgdiplus
 WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
+
 WORKDIR /src
+COPY ["src/FMBot.Bot/Resources", "Resources/"]
 COPY ["src/FMBot.Bot", "FMBot.Bot/"]
 COPY ["src/FMBot.Youtube.Domain", "FMBot.Youtube.Domain/"]
 COPY ["src/FMBot.Persistence.Domain", "FMBot.Persistence.Domain/"]

@@ -116,7 +116,7 @@ namespace FMBot.Bot.Services
                             }
                         }
 
-                        AddAlbumToChartImages(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, album: album);
+                        AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, album: album);
                     });
                 }
                 else
@@ -176,7 +176,7 @@ namespace FMBot.Bot.Services
                             }
                         }
 
-                        AddAlbumToChartImages(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, artist: artist);
+                        AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, artist: artist);
                     });
                 }
 
@@ -239,7 +239,7 @@ namespace FMBot.Bot.Services
             }
         }
 
-        private static void AddAlbumToChartImages(ChartSettings chart, SKBitmap chartImage, int chartImageHeight,
+        private static void AddImageToChart(ChartSettings chart, SKBitmap chartImage, int chartImageHeight,
             int chartImageWidth, bool largerImages, bool validImage, TopAlbum album = null, TopArtist artist = null)
         {
             if (chartImage.Height != chartImageHeight || chartImage.Width != chartImageWidth)
