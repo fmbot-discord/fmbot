@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Discord;
 using FMBot.Bot.Configurations;
@@ -8,6 +9,7 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Serilog;
 using SpotifyAPI.Web;
 using Artist = FMBot.Persistence.Domain.Models.Artist;
@@ -17,10 +19,12 @@ namespace FMBot.Bot.Services.ThirdParty
     public class SpotifyService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly BotSettings _botSettings;
 
-        public SpotifyService(IDbContextFactory<FMBotDbContext> contextFactory)
+        public SpotifyService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings)
         {
             this._contextFactory = contextFactory;
+            this._botSettings = botSettings.Value;
         }
 
         public async Task<SearchResponse> GetSearchResultAsync(string searchValue, SearchRequest.Types searchType = SearchRequest.Types.Track)
@@ -168,7 +172,7 @@ namespace FMBot.Bot.Services.ThirdParty
             }
         }
 
-        private static async Task<FullArtist> GetArtistFromSpotify(string artistName)
+        private async Task<FullArtist> GetArtistFromSpotify(string artistName)
         {
             var spotify = GetSpotifyWebApi();
 
@@ -281,7 +285,7 @@ namespace FMBot.Bot.Services.ThirdParty
             return dbTrack;
         }
 
-        private static async Task<FullTrack> GetTrackFromSpotify(string trackName, string artistName)
+        private async Task<FullTrack> GetTrackFromSpotify(string trackName, string artistName)
         {
             //Create the auth object
             var spotify = GetSpotifyWebApi();
@@ -305,7 +309,7 @@ namespace FMBot.Bot.Services.ThirdParty
             return null;
         }
 
-        private static async Task<FullAlbum> GetAlbumFromSpotify(string albumName, string artistName)
+        private async Task<FullAlbum> GetAlbumFromSpotify(string albumName, string artistName)
         {
             //Create the auth object
             var spotify = GetSpotifyWebApi();
@@ -328,7 +332,7 @@ namespace FMBot.Bot.Services.ThirdParty
             return null;
         }
 
-        public static async Task<FullTrack> GetTrackById(string spotifyId)
+        public async Task<FullTrack> GetTrackById(string spotifyId)
         {
             //Create the auth object
             var spotify = GetSpotifyWebApi();
@@ -336,7 +340,7 @@ namespace FMBot.Bot.Services.ThirdParty
             return await spotify.Tracks.Get(spotifyId);
         }
 
-        public static async Task<FullAlbum> GetAlbumById(string spotifyId)
+        public async Task<FullAlbum> GetAlbumById(string spotifyId)
         {
             //Create the auth object
             var spotify = GetSpotifyWebApi();
@@ -344,7 +348,7 @@ namespace FMBot.Bot.Services.ThirdParty
             return await spotify.Albums.Get(spotifyId);
         }
 
-        private static async Task<TrackAudioFeatures> GetAudioFeaturesFromSpotify(string spotifyId)
+        private async Task<TrackAudioFeatures> GetAudioFeaturesFromSpotify(string spotifyId)
         {
             //Create the auth object
             var spotify = GetSpotifyWebApi();
@@ -484,11 +488,11 @@ namespace FMBot.Bot.Services.ThirdParty
             return dbTracks;
         }
 
-        private static SpotifyClient GetSpotifyWebApi()
+        private SpotifyClient GetSpotifyWebApi()
         {
             var config = SpotifyClientConfig
                 .CreateDefault()
-                .WithAuthenticator(new ClientCredentialsAuthenticator(ConfigData.Data.Spotify.Key, ConfigData.Data.Spotify.Secret));
+                .WithAuthenticator(new ClientCredentialsAuthenticator(this._botSettings.Spotify.Key, this._botSettings.Spotify.Secret));
 
             return new SpotifyClient(config);
         }

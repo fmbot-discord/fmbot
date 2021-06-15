@@ -129,7 +129,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (guild?.LastIndexed != null)
                 {
-                    var usersWithArtist = await WhoKnowsArtistService.GetIndexedUsersForArtist(this.Context, guild.GuildId, artist.ArtistName);
+                    var usersWithArtist = await this._whoKnowArtistService.GetIndexedUsersForArtist(this.Context, guild.GuildId, artist.ArtistName);
                     var filteredUsersWithArtist = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, guild);
 
                     if (filteredUsersWithArtist.Count != 0)
@@ -137,7 +137,7 @@ namespace FMBot.Bot.Commands.LastFM
                         var serverListeners = filteredUsersWithArtist.Count;
                         var serverPlaycount = filteredUsersWithArtist.Sum(a => a.Playcount);
                         var avgServerPlaycount = filteredUsersWithArtist.Average(a => a.Playcount);
-                        var serverPlaycountLastWeek = await WhoKnowsArtistService.GetWeekArtistPlaycountForGuildAsync(guild.GuildId, artist.ArtistName);
+                        var serverPlaycountLastWeek = await this._whoKnowArtistService.GetWeekArtistPlaycountForGuildAsync(guild.GuildId, artist.ArtistName);
 
                         serverStats += $"`{serverListeners}` {StringExtensions.GetListenersString(serverListeners)}";
                         serverStats += $"\n`{serverPlaycount}` total {StringExtensions.GetPlaysString(serverPlaycount)}";
@@ -783,7 +783,7 @@ namespace FMBot.Bot.Commands.LastFM
                     artistUrl = cachedArtist.LastFmUrl;
                     spotifyImageUrl = cachedArtist.SpotifyImageUrl;
 
-                    userPlaycount = await WhoKnowsArtistService.GetArtistPlayCountForUser(artistName, user.UserId);
+                    userPlaycount = await this._whoKnowArtistService.GetArtistPlayCountForUser(artistName, user.UserId);
                 }
                 else
                 {
@@ -817,7 +817,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this._indexService.UpdateUserName(await this.Context.Guild.GetUserAsync(user.DiscordUserId), currentUser.UserId, currentUser.GuildId);
 
-                var usersWithArtist = await WhoKnowsArtistService.GetIndexedUsersForArtist(this.Context, guild.GuildId, artistName);
+                var usersWithArtist = await this._whoKnowArtistService.GetIndexedUsersForArtist(this.Context, guild.GuildId, artistName);
 
                 if (userPlaycount != 0)
                 {
@@ -966,7 +966,7 @@ namespace FMBot.Bot.Commands.LastFM
                     artistUrl = cachedArtist.LastFmUrl;
                     spotifyImageUrl = cachedArtist.SpotifyImageUrl;
 
-                    userPlaycount = await WhoKnowsArtistService.GetArtistPlayCountForUser(artistName, user.UserId);
+                    userPlaycount = await this._whoKnowArtistService.GetArtistPlayCountForUser(artistName, user.UserId);
                 }
                 else
                 {
@@ -989,7 +989,7 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                 }
 
-                var usersWithArtist = await WhoKnowsArtistService.GetGlobalUsersForArtists(this.Context, artistName);
+                var usersWithArtist = await this._whoKnowArtistService.GetGlobalUsersForArtists(this.Context, artistName);
 
                 if (userPlaycount != 0 && this.Context.Guild != null)
                 {
@@ -1138,17 +1138,17 @@ namespace FMBot.Bot.Commands.LastFM
                 IReadOnlyList<ListArtist> topGuildArtists;
                 if (serverArtistSettings.ChartTimePeriod == TimePeriod.AllTime)
                 {
-                    topGuildArtists = await WhoKnowsArtistService.GetTopAllTimeArtistsForGuild(guild.GuildId, serverArtistSettings.OrderType);
+                    topGuildArtists = await this._whoKnowArtistService.GetTopAllTimeArtistsForGuild(guild.GuildId, serverArtistSettings.OrderType);
                     this._embed.WithTitle($"Top alltime artists in {this.Context.Guild.Name}");
                 }
                 else if (serverArtistSettings.ChartTimePeriod == TimePeriod.Weekly)
                 {
-                    topGuildArtists = await WhoKnowsPlayService.GetTopArtistsForGuild(guild.GuildId, serverArtistSettings.OrderType, serverArtistSettings.AmountOfDays);
+                    topGuildArtists = await this._whoKnowsPlayService.GetTopArtistsForGuild(guild.GuildId, serverArtistSettings.OrderType, serverArtistSettings.AmountOfDays);
                     this._embed.WithTitle($"Top weekly artists in {this.Context.Guild.Name}");
                 }
                 else
                 {
-                    topGuildArtists = await WhoKnowsPlayService.GetTopArtistsForGuild(guild.GuildId, serverArtistSettings.OrderType, serverArtistSettings.AmountOfDays);
+                    topGuildArtists = await this._whoKnowsPlayService.GetTopArtistsForGuild(guild.GuildId, serverArtistSettings.OrderType, serverArtistSettings.AmountOfDays);
                     this._embed.WithTitle($"Top monthly artists in {this.Context.Guild.Name}");
                 }
 

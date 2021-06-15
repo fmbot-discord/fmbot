@@ -4,11 +4,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using Discord.Commands;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Npgsql;
 
 namespace FMBot.Bot.Services.WhoKnows
@@ -16,10 +17,12 @@ namespace FMBot.Bot.Services.WhoKnows
     public class WhoKnowsAlbumService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly BotSettings _botSettings;
 
-        public WhoKnowsAlbumService(IDbContextFactory<FMBotDbContext> contextFactory)
+        public WhoKnowsAlbumService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings)
         {
             this._contextFactory = contextFactory;
+            this._botSettings = botSettings.Value;
         }
 
         public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForAlbum(ICommandContext context, int guildId, string artistName, string albumName)
@@ -38,7 +41,7 @@ namespace FMBot.Bot.Services.WhoKnows
                                "ORDER BY ut.playcount DESC ";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
             var userAlbums = (await connection.QueryAsync<WhoKnowsAlbumDto>(sql, new
@@ -94,7 +97,7 @@ namespace FMBot.Bot.Services.WhoKnows
                                "ORDER BY ut.playcount DESC ";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
             var userAlbums = (await connection.QueryAsync<WhoKnowsGlobalAlbumDto>(sql, new
@@ -144,7 +147,7 @@ namespace FMBot.Bot.Services.WhoKnows
                                "UPPER(ua.artist_name) = UPPER(CAST(@artistName AS CITEXT))";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
             return await connection.QuerySingleOrDefaultAsync<int?>(sql, new
@@ -155,7 +158,7 @@ namespace FMBot.Bot.Services.WhoKnows
             });
         }
 
-        public static async Task<IReadOnlyList<ListAlbum>> GetTopAllTimeAlbumsForGuild(int guildId,
+        public async Task<IReadOnlyList<ListAlbum>> GetTopAllTimeAlbumsForGuild(int guildId,
             OrderType orderType)
         {
             var sql = "SELECT ub.name AS album_name, ub.artist_name, " +
@@ -175,7 +178,7 @@ namespace FMBot.Bot.Services.WhoKnows
             sql += "LIMIT 14";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
             return (await connection.QueryAsync<ListAlbum>(sql, new

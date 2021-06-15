@@ -45,10 +45,19 @@ namespace FMBot.Bot
 
         public static async Task RunAsync(string[] args)
         {
+            var startup = new Startup(args);
+
+            await startup.RunAsync();
+        }
+
+        private async Task RunAsync()
+        {
+            var botUserId = int.Parse(this.Configuration.GetSection("Discord:BotUserId")?.Value ?? "0");
+
             Log.Logger = new LoggerConfiguration()
                 .Enrich.WithExceptionDetails()
-                .Enrich.WithProperty("Environment", !string.IsNullOrEmpty(ConfigData.Data.Environment) ? ConfigData.Data.Environment : "unknown")
-                .Enrich.WithProperty("BotUserId", ConfigData.Data.Discord.BotUserId ?? 0)
+                .Enrich.WithProperty("Environment", !string.IsNullOrEmpty(this.Configuration.GetSection("Environment")?.Value) ? this.Configuration.GetSection("Environment").Value : "unknown")
+                .Enrich.WithProperty("BotUserId", botUserId)
                 .WriteTo.Console()
                 .WriteTo.Seq("http://localhost:5341")
                 // https://github.com/CXuesong/Serilog.Sinks.Discord/issues/3
@@ -61,12 +70,6 @@ namespace FMBot.Bot
 
             Log.Information(".fmbot starting up...");
 
-            var startup = new Startup(args);
-            await startup.RunAsync();
-        }
-
-        private async Task RunAsync()
-        {
             var services = new ServiceCollection(); // Create a new instance of a service collection
             this.ConfigureServices(services);
 
@@ -148,7 +151,7 @@ namespace FMBot.Bot
                 .AddTransient<InvidiousApi>();
 
             services.AddDbContextFactory<FMBotDbContext>(b =>
-                b.UseNpgsql(ConfigData.Data.Database.ConnectionString));
+                b.UseNpgsql(this.Configuration["Database:ConnectionString"]));
 
             services.AddMemoryCache();
         }

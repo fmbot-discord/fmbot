@@ -9,10 +9,9 @@ using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using IF.Lastfm.Core.Api.Helpers;
-using IF.Lastfm.Core.Objects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
 
@@ -22,11 +21,13 @@ namespace FMBot.Bot.Services
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
         private readonly IMemoryCache _cache;
+        private readonly BotSettings _botSettings;
 
-        public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
+        public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings)
         {
             this._contextFactory = contextFactory;
             this._cache = cache;
+            this._botSettings = botSettings.Value;
         }
 
         public async Task<List<TopArtist>> FillArtistImages(List<TopArtist> topArtists)
@@ -64,7 +65,7 @@ namespace FMBot.Bot.Services
                                "FROM public.artists where last_fm_url is not null and spotify_image_url is not null;";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
             artistCovers = (await connection.QueryAsync<ArtistSpotifyCoverDto>(sql)).ToList();

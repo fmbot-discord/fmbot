@@ -1071,7 +1071,7 @@ namespace FMBot.Bot.Commands.LastFM
                 IReadOnlyList<ListAlbum> topGuildAlbums;
                 if (serverAlbumSettings.ChartTimePeriod == TimePeriod.AllTime)
                 {
-                    topGuildAlbums = await WhoKnowsAlbumService.GetTopAllTimeAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType);
+                    topGuildAlbums = await this._whoKnowsAlbumService.GetTopAllTimeAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType);
                     this._embed.WithTitle($"Top alltime albums in {this.Context.Guild.Name}");
                 }
                 else if (serverAlbumSettings.ChartTimePeriod == TimePeriod.Weekly)

@@ -298,7 +298,7 @@ namespace FMBot.Bot.Commands.LastFM
                     switch (contextUser.FmCountType)
                     {
                         case FmCountType.Track:
-                            var trackPlaycount = await WhoKnowsTrackService.GetTrackPlayCountForUser(currentTrack.ArtistName, currentTrack.TrackName, contextUser.UserId);
+                            var trackPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(currentTrack.ArtistName, currentTrack.TrackName, contextUser.UserId);
                             if (trackPlaycount.HasValue)
                             {
                                 footerText += $"{trackPlaycount} scrobbles on this track | ";
@@ -315,7 +315,7 @@ namespace FMBot.Bot.Commands.LastFM
                             }
                             break;
                         case FmCountType.Artist:
-                            var artistPlaycount = await WhoKnowsArtistService.GetArtistPlayCountForUser(currentTrack.ArtistName, contextUser.UserId);
+                            var artistPlaycount = await this._whoKnowsArtistService.GetArtistPlayCountForUser(currentTrack.ArtistName, contextUser.UserId);
                             if (artistPlaycount.HasValue)
                             {
                                 footerText += $"{artistPlaycount} scrobbles on this artist | ";

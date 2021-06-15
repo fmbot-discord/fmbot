@@ -6,9 +6,11 @@ using Dapper;
 using Discord.Commands;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Npgsql;
 
 namespace FMBot.Bot.Services.WhoKnows
@@ -16,13 +18,15 @@ namespace FMBot.Bot.Services.WhoKnows
     public class WhoKnowsTrackService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly BotSettings _botSettings;
 
-        public WhoKnowsTrackService(IDbContextFactory<FMBotDbContext> contextFactory)
+        public WhoKnowsTrackService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings)
         {
             this._contextFactory = contextFactory;
+            this._botSettings = botSettings.Value;
         }
 
-        public static async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(ICommandContext context, int guildId, string artistName, string trackName)
+        public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForTrack(ICommandContext context, int guildId, string artistName, string trackName)
         {
             const string sql = "SELECT ut.user_id, " +
                                "ut.name, " +
@@ -38,7 +42,7 @@ namespace FMBot.Bot.Services.WhoKnows
                                "ORDER BY ut.playcount DESC";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
             var userTracks = (await connection.QueryAsync<WhoKnowsTrackDto>(sql, new
@@ -78,7 +82,7 @@ namespace FMBot.Bot.Services.WhoKnows
             return whoKnowsTrackList;
         }
 
-        public static async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForTrack(ICommandContext context, string artistName, string trackName)
+        public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForTrack(ICommandContext context, string artistName, string trackName)
         {
             const string sql = "SELECT ut.user_id, " +
                                "ut.name, " +
@@ -94,7 +98,7 @@ namespace FMBot.Bot.Services.WhoKnows
                                "ORDER BY ut.playcount DESC";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
             var userTracks = (await connection.QueryAsync<WhoKnowsGlobalTrackDto>(sql, new
@@ -135,7 +139,7 @@ namespace FMBot.Bot.Services.WhoKnows
             return whoKnowsTrackList;
         }
 
-        public static async Task<int?> GetTrackPlayCountForUser(string artistName, string trackName, int userId)
+        public async Task<int?> GetTrackPlayCountForUser(string artistName, string trackName, int userId)
         {
             const string sql = "SELECT ut.playcount " +
                                "FROM user_tracks AS ut " +
@@ -144,7 +148,7 @@ namespace FMBot.Bot.Services.WhoKnows
                                "UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT))";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
             return await connection.QuerySingleOrDefaultAsync<int?>(sql, new
@@ -155,7 +159,7 @@ namespace FMBot.Bot.Services.WhoKnows
             });
         }
 
-        public static async Task<IReadOnlyList<ListTrack>> GetTopAllTimeTracksForGuild(int guildId,
+        public async Task<IReadOnlyList<ListTrack>> GetTopAllTimeTracksForGuild(int guildId,
             OrderType orderType)
         {
             var sql = "SELECT ut.name AS track_name, ut.artist_name, " +
@@ -175,7 +179,7 @@ namespace FMBot.Bot.Services.WhoKnows
             sql += "LIMIT 14";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
             return (await connection.QueryAsync<ListTrack>(sql, new

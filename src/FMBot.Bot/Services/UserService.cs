@@ -13,6 +13,7 @@ using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
 
@@ -23,12 +24,14 @@ namespace FMBot.Bot.Services
         private readonly IMemoryCache _cache;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
         private readonly LastFmRepository _lastFmRepository;
+        private readonly BotSettings _botSettings;
 
-        public UserService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository)
+        public UserService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository, IOptions<BotSettings> botSettings)
         {
             this._cache = cache;
             this._contextFactory = contextFactory;
             this._lastFmRepository = lastFmRepository;
+            this._botSettings = botSettings.Value;
         }
 
         public async Task<bool> UserRegisteredAsync(IUser discordUser)
@@ -359,7 +362,7 @@ namespace FMBot.Bot.Services
                 this._cache.Remove($"user-settings-{user.DiscordUserId}");
                 this._cache.Remove($"user-isRegistered-{user.DiscordUserId}");
 
-                await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
                 connection.Open();
 
                 await using var deleteRelatedTables = new NpgsqlCommand(

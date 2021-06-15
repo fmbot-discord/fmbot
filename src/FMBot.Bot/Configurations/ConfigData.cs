@@ -13,9 +13,6 @@ namespace FMBot.Bot.Configurations
 
         public static BotSettings Data { get; }
 
-        /// <summary>
-        /// Loads all the <see cref="ConfigData"/> needed to start the bot.
-        /// </summary>
         static ConfigData()
         {
             if (!Directory.Exists(ConfigFolder))

@@ -223,7 +223,7 @@ namespace FMBot.Bot.Commands
             var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             if (prefix == null)
             {
-                prefix = ConfigData.Data.Bot.Prefix;
+                prefix = this._botSettings.Bot.Prefix;
                 customPrefix = false;
             }
 

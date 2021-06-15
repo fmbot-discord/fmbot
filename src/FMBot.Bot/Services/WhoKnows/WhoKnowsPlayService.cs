@@ -11,6 +11,7 @@ using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using Npgsql;
 
 namespace FMBot.Bot.Services.WhoKnows
@@ -19,14 +20,16 @@ namespace FMBot.Bot.Services.WhoKnows
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
         private readonly IMemoryCache _cache;
+        private readonly BotSettings _botSettings;
 
-        public WhoKnowsPlayService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
+        public WhoKnowsPlayService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings)
         {
             this._contextFactory = contextFactory;
             this._cache = cache;
+            this._botSettings = botSettings.Value;
         }
 
-        public static async Task<IReadOnlyList<ListArtist>> GetTopArtistsForGuild(int guildId, OrderType orderType, int amountOfDays)
+        public async Task<IReadOnlyList<ListArtist>> GetTopArtistsForGuild(int guildId, OrderType orderType, int amountOfDays)
         {
             var sql = "SELECT up.artist_name, " +
                       "COUNT(up.user_play_id) AS total_playcount, " +
@@ -45,7 +48,7 @@ namespace FMBot.Bot.Services.WhoKnows
             sql += "LIMIT 14";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
             return (await connection.QueryAsync<ListArtist>(sql, new
@@ -73,7 +76,7 @@ namespace FMBot.Bot.Services.WhoKnows
             sql += "LIMIT 14";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
             return (await connection.QueryAsync<ListAlbum>(sql, new
@@ -82,7 +85,7 @@ namespace FMBot.Bot.Services.WhoKnows
             })).ToList();
         }
 
-        public static async Task<IReadOnlyList<ListTrack>> GetTopTracksForGuild(int guildId, OrderType orderType, int amountOfDays)
+        public async Task<IReadOnlyList<ListTrack>> GetTopTracksForGuild(int guildId, OrderType orderType, int amountOfDays)
         {
             var sql = "SELECT up.artist_name, up.track_name, " +
                       "COUNT(up.user_play_id) AS total_playcount, " +
@@ -101,7 +104,7 @@ namespace FMBot.Bot.Services.WhoKnows
             sql += "LIMIT 14";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
             return (await connection.QueryAsync<ListTrack>(sql, new
