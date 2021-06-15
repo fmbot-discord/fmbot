@@ -331,22 +331,22 @@ namespace FMBot.Bot.Services
             {
                 var request = WebRequest.Create(imageUrl);
                 var response = await request.GetResponseAsync();
-                using (Stream output = File.Create(GlobalVars.ImageFolder + "newavatar.png"))
+                using (Stream output = File.Create(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png"))
                 using (var input = response.GetResponseStream())
                 {
                     input.CopyTo(output);
-                    if (File.Exists(GlobalVars.ImageFolder + "newavatar.png"))
+                    if (File.Exists(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png"))
                     {
-                        File.SetAttributes(GlobalVars.ImageFolder + "newavatar.png", FileAttributes.Normal);
+                        File.SetAttributes(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png", FileAttributes.Normal);
                     }
 
                     output.Close();
                     Log.Information("New avatar downloaded");
                 }
 
-                if (File.Exists(GlobalVars.ImageFolder + "newavatar.png"))
+                if (File.Exists(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png"))
                 {
-                    var fileStream = new FileStream(GlobalVars.ImageFolder + "newavatar.png", FileMode.Open);
+                    var fileStream = new FileStream(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png", FileMode.Open);
                     await client.CurrentUser.ModifyAsync(u => u.Avatar = new Image(fileStream));
                     fileStream.Close();
                     Log.Information("Avatar succesfully changed");
@@ -424,7 +424,7 @@ namespace FMBot.Bot.Services
             {
                 this._featuredTrackString = "FMBot Default Avatar";
                 Log.Information("Changed avatar to: " + this._featuredTrackString);
-                var fileStream = new FileStream(GlobalVars.ImageFolder + "avatar.png", FileMode.Open);
+                var fileStream = new FileStream(AppDomain.CurrentDomain.BaseDirectory + "avatar.png", FileMode.Open);
                 var image = new Image(fileStream);
                 await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
                 fileStream.Close();
@@ -432,35 +432,6 @@ namespace FMBot.Bot.Services
             catch (Exception e)
             {
                 Log.Error("UseDefaultAvatar", e);
-            }
-        }
-
-        public async void UseLocalAvatar(DiscordShardedClient client, string AlbumName, string ArtistName, string LastFMName)
-        {
-            try
-            {
-                this._featuredTrackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                Log.Information("Changed avatar to: " + this._featuredTrackString);
-                var fileStream = new FileStream(GlobalVars.ImageFolder + "censored.png", FileMode.Open);
-                var image = new Image(fileStream);
-                await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
-                fileStream.Close();
-
-                await Task.Delay(5000);
-
-                var guild = client.GetGuild(this._botSettings.Bot.BaseServerId);
-                var channel = guild.GetTextChannel(this._botSettings.Bot.FeaturedChannelId);
-
-                var builder = new EmbedBuilder();
-                var SelfUser = client.CurrentUser;
-                builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
-                builder.AddField("Featured:", this._featuredTrackString);
-
-                await channel.SendMessageAsync("", false, builder.Build());
-            }
-            catch (Exception e)
-            {
-                Log.Error("UseLocalAvatar", e);
             }
         }
 

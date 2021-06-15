@@ -39,6 +39,10 @@ namespace FMBot.Bot.Services
 
                 var httpClient = new System.Net.Http.HttpClient();
 
+                const string loadingErrorImgUrl = "https://fmbot.xyz/img/bot/loading-error.png";
+                const string unknownImgUrl = "https://fmbot.xyz/img/bot/unknown.png";
+                const string censoredImgUrl = "https://fmbot.xyz/img/bot/censored.png";
+
                 if (!artistChart)
                 {
                     await chart.Albums.ParallelForEachAsync(async album =>
@@ -51,6 +55,7 @@ namespace FMBot.Bot.Services
 
                         var fileName = localAlbumId + ".png";
                         var localPath = Path.Combine(FMBotUtil.GlobalVars.CacheFolder, fileName);
+
 
                         if (File.Exists(localPath))
                         {
@@ -73,14 +78,18 @@ namespace FMBot.Bot.Services
                                 catch (Exception e)
                                 {
                                     Log.Error("Error while loading image for generated chart", e);
-                                    chartImage = SKBitmap.Decode(Path.Combine(FMBotUtil.GlobalVars.ImageFolder, "loading-error.png"));
+                                    var bytes = await httpClient.GetByteArrayAsync(loadingErrorImgUrl);
+                                    await using var stream = new MemoryStream(bytes);
+                                    chartImage = SKBitmap.Decode(stream);
                                     validImage = false;
                                 }
 
                                 if (chartImage == null)
                                 {
                                     Log.Error("Error while loading image for generated chart (chartimg null)");
-                                    chartImage = SKBitmap.Decode(Path.Combine(FMBotUtil.GlobalVars.ImageFolder, "loading-error.png"));
+                                    var bytes = await httpClient.GetByteArrayAsync(loadingErrorImgUrl);
+                                    await using var stream = new MemoryStream(bytes);
+                                    chartImage = SKBitmap.Decode(stream);
                                     validImage = false;
                                 }
 
@@ -94,7 +103,9 @@ namespace FMBot.Bot.Services
                             }
                             else
                             {
-                                chartImage = SKBitmap.Decode(Path.Combine(FMBotUtil.GlobalVars.ImageFolder, "unknown.png"));
+                                var bytes = await httpClient.GetByteArrayAsync(unknownImgUrl);
+                                await using var stream = new MemoryStream(bytes);
+                                chartImage = SKBitmap.Decode(stream);
                                 validImage = false;
                             }
                         }
@@ -103,7 +114,9 @@ namespace FMBot.Bot.Services
                         {
                             if (!nsfwAllowed || !await this._censorService.AlbumIsAllowedInNsfw(album.AlbumName, album.ArtistName))
                             {
-                                chartImage = SKBitmap.Decode(Path.Combine(FMBotUtil.GlobalVars.ImageFolder, "censored.png"));
+                                var bytes = await httpClient.GetByteArrayAsync(censoredImgUrl);
+                                await using var stream = new MemoryStream(bytes);
+                                chartImage = SKBitmap.Decode(stream);
                                 validImage = false;
                                 if (chart.CensoredAlbums.HasValue)
                                 {
@@ -143,21 +156,24 @@ namespace FMBot.Bot.Services
                                 try
                                 {
                                     var bytes = await httpClient.GetByteArrayAsync(artist.ArtistImageUrl);
-
                                     await using var stream = new MemoryStream(bytes);
                                     chartImage = SKBitmap.Decode(stream);
                                 }
                                 catch (Exception e)
                                 {
                                     Log.Error("Error while loading image for generated artist chart", e);
-                                    chartImage = SKBitmap.Decode(Path.Combine(FMBotUtil.GlobalVars.ImageFolder, "loading-error.png"));
+                                    var bytes = await httpClient.GetByteArrayAsync(loadingErrorImgUrl);
+                                    await using var stream = new MemoryStream(bytes);
+                                    chartImage = SKBitmap.Decode(stream);
                                     validImage = false;
                                 }
 
                                 if (chartImage == null)
                                 {
                                     Log.Error("Error while loading image for generated artist chart (chartimg null)");
-                                    chartImage = SKBitmap.Decode(Path.Combine(FMBotUtil.GlobalVars.ImageFolder, "loading-error.png"));
+                                    var bytes = await httpClient.GetByteArrayAsync(loadingErrorImgUrl);
+                                    await using var stream = new MemoryStream(bytes);
+                                    chartImage = SKBitmap.Decode(stream);
                                     validImage = false;
                                 }
 
@@ -171,7 +187,9 @@ namespace FMBot.Bot.Services
                             }
                             else
                             {
-                                chartImage = SKBitmap.Decode(Path.Combine(FMBotUtil.GlobalVars.ImageFolder, "unknown.png"));
+                                var bytes = await httpClient.GetByteArrayAsync(unknownImgUrl);
+                                await using var stream = new MemoryStream(bytes);
+                                chartImage = SKBitmap.Decode(stream);
                                 validImage = false;
                             }
                         }

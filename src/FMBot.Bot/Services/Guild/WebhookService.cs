@@ -26,7 +26,7 @@ namespace FMBot.Bot.Services.Guild
 
         public async Task<Webhook> CreateWebhook(ICommandContext context, int guildId)
         {
-            await using var fs = File.OpenRead(FMBotUtil.GlobalVars.ImageFolder + "avatar.png");
+            await using var fs = File.OpenRead(AppDomain.CurrentDomain.BaseDirectory + "avatar.png");
 
             var socketWebChannel = context.Channel as SocketTextChannel;
 
