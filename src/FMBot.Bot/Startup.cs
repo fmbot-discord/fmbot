@@ -52,7 +52,7 @@ namespace FMBot.Bot
 
         private async Task RunAsync()
         {
-            var botUserId = int.Parse(this.Configuration.GetSection("Discord:BotUserId")?.Value ?? "0");
+            var botUserId = long.Parse(this.Configuration.GetSection("Discord:BotUserId")?.Value ?? "0");
 
             Log.Logger = new LoggerConfiguration()
                 .Enrich.WithExceptionDetails()
