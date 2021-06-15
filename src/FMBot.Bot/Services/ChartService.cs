@@ -20,6 +20,22 @@ namespace FMBot.Bot.Services
         public ChartService(CensorService censorService)
         {
             this._censorService = censorService;
+
+            try
+            {
+                var filePath = AppDomain.CurrentDomain.BaseDirectory + "arial-unicode-ms.ttf";
+
+                if (!File.Exists(filePath))
+                {
+                    Log.Information("Downloading chart font...");
+                    var wc = new System.Net.WebClient();
+                    wc.DownloadFile("https://fmbot.xyz/fonts/arial-unicode-ms.ttf", filePath);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "Something went wrong while downloading chart font");
+            }
         }
 
         public async Task<SKImage> GenerateChartAsync(ChartSettings chart, bool nsfwAllowed, bool artistChart)
@@ -320,7 +336,7 @@ namespace FMBot.Bot.Services
             var textColor = chartImage.GetTextColor();
             var rectangleColor = textColor == SKColors.Black ? SKColors.White : SKColors.Black;
 
-            var typeface = SKTypeface.FromFile(FMBotUtil.GlobalVars.FontFolder + "arial-unicode-ms.ttf");
+            var typeface = SKTypeface.FromFile(AppDomain.CurrentDomain.BaseDirectory + "arial-unicode-ms.ttf");
 
             var artistName = artist?.ArtistName ?? album?.ArtistName;
             var albumName = album?.AlbumName;
