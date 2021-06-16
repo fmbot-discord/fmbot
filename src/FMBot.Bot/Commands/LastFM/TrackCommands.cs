@@ -1148,7 +1148,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var trackInfo = await this._lastFmRepository.GetTrackInfoAsync(lastPlayedTrack.TrackName, lastPlayedTrack.ArtistName,
                     lastFmUserName);
 
-                if (trackInfo == null)
+                if (trackInfo?.Content == null)
                 {
                     this._embed.WithDescription($"Last.fm did not return a result for **{lastPlayedTrack.TrackName}** by **{lastPlayedTrack.ArtistName}**.\n\n" +
                                                 $"This usually happens on recently released tracks. Please try again later.");
