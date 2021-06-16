@@ -85,12 +85,24 @@ namespace FMBot.Bot.Handlers
             if (msg.HasStringPrefix(prfx, ref argPos, StringComparison.CurrentCultureIgnoreCase))
             {
                 await ExecuteCommand(msg, context, argPos, prfx);
+                return;
             }
 
             // Mention
             if (this._discord != null && msg.HasMentionPrefix(this._discord.CurrentUser, ref argPos))
             {
                 await ExecuteCommand(msg, context, argPos, prfx);
+                return;
+            }
+
+            // Mention
+            if (prfx == this._botSettings.Bot.Prefix && msg.HasStringPrefix(".", ref argPos))
+            {
+                var searchResult = this._commands.Search(context, argPos);
+                if (searchResult.IsSuccess && searchResult.Commands != null && searchResult.Commands.Any() && searchResult.Commands.FirstOrDefault().Command.Name == "fm")
+                {
+                    await ExecuteCommand(msg, context, argPos, prfx);
+                }
             }
         }
 
