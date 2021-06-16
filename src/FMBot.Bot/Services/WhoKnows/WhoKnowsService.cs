@@ -208,7 +208,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 discordName = user.LastFMUsername;
             }
 
-            var nameWithLink = $"[{discordName}]({Constants.LastFMUserUrl}{user.LastFMUsername})";
+            var nameWithLink = $"[\u2066{discordName}\u2069]({Constants.LastFMUserUrl}{user.LastFMUsername})";
             return nameWithLink;
         }
 
