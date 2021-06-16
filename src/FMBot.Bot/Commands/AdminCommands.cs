@@ -13,13 +13,14 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Commands
 {
     [Name("Admin settings")]
     [Summary(".fmbot Admins Only")]
     [ExcludeFromHelp]
-    public class AdminCommands : ModuleBase
+    public class AdminCommands : BaseCommandModule
     {
         private readonly AdminService _adminService;
         private readonly CensorService _censorService;
@@ -29,14 +30,15 @@ namespace FMBot.Bot.Commands
         private readonly SupporterService _supporterService;
         private readonly UserService _userService;
 
-        private readonly EmbedBuilder _embed;
-
         public AdminCommands(
                 AdminService adminService,
                 CensorService censorService,
                 GuildService guildService,
                 TimerService timer,
-                LastFmRepository lastFmRepository, SupporterService supporterService, UserService userService)
+                LastFmRepository lastFmRepository,
+                SupporterService supporterService,
+                UserService userService,
+                IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._adminService = adminService;
             this._censorService = censorService;
@@ -45,9 +47,6 @@ namespace FMBot.Bot.Commands
             this._lastFmRepository = lastFmRepository;
             this._supporterService = supporterService;
             this._userService = userService;
-
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
         }
 
         //[Command("debug")]
@@ -344,7 +343,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("fmfeaturedoverride"), Summary("Changes the avatar to be an album.")]
-        public async Task fmalbumoverrideAsync(string url, bool stopTimer, string desc = "Custom featured event")
+        public async Task AlbumOverrideAsync(string url, bool stopTimer, string desc = "Custom featured event")
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
             {

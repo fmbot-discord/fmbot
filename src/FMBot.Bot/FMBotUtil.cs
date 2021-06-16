@@ -10,7 +10,6 @@ namespace FMBot.Bot
             // TODO: Move this somewhere else
             private static readonly string BasePath = AppDomain.CurrentDomain.BaseDirectory;
             public static readonly string CacheFolder = BasePath + "cache/";
-            public static string ImageFolder = BasePath + "resources/images/";
             public static string FontFolder = BasePath + "resources/fonts/";
         }
     }

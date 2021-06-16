@@ -24,9 +24,9 @@ namespace FMBot.Bot.Models
     {
         public string Artist { get; set; }
 
-        public int OwnPlaycount { get; set; }
+        public long OwnPlaycount { get; set; }
 
-        public int OtherPlaycount { get; set; }
+        public long OtherPlaycount { get; set; }
     }
 
     public enum TasteType

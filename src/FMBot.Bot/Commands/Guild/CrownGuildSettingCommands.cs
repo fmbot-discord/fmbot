@@ -13,12 +13,13 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Commands.Guild
 {
     [Name("Crown settings")]
     [ServerStaffOnly]
-    public class CrownGuildSettingCommands : ModuleBase
+    public class CrownGuildSettingCommands : BaseCommandModule
     {
         private readonly AdminService _adminService;
         private readonly CrownService _crownService;
@@ -27,24 +28,18 @@ namespace FMBot.Bot.Commands.Guild
 
         private readonly IPrefixService _prefixService;
 
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedFooterBuilder _embedFooter;
-
         public CrownGuildSettingCommands(IPrefixService prefixService,
             GuildService guildService,
             AdminService adminService,
-            SettingService settingService, CrownService crownService)
+            SettingService settingService,
+            CrownService crownService,
+            IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._prefixService = prefixService;
             this._guildService = guildService;
             this._settingService = settingService;
             this._crownService = crownService;
             this._adminService = adminService;
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
-            this._embedAuthor = new EmbedAuthorBuilder();
-            this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("crownthreshold", RunMode = RunMode.Async)]
@@ -180,7 +175,7 @@ namespace FMBot.Bot.Commands.Guild
         [GuildOnly]
         public async Task GuildBlockUserFromCrownsAsync([Remainder] string user = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
@@ -254,7 +249,7 @@ namespace FMBot.Bot.Commands.Guild
         [GuildOnly]
         public async Task BlockedUsersAsync()
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
@@ -305,7 +300,7 @@ namespace FMBot.Bot.Commands.Guild
         [GuildOnly]
         public async Task ToggleCrownsAsync([Remainder] string confirmation = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild == null)
@@ -356,7 +351,7 @@ namespace FMBot.Bot.Commands.Guild
         [GuildOnly]
         public async Task KillCrownAsync([Remainder] string killCrownValues = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (!string.IsNullOrWhiteSpace(killCrownValues) && killCrownValues.ToLower() == "help")
@@ -426,7 +421,7 @@ namespace FMBot.Bot.Commands.Guild
         [GuildOnly]
         public async Task SeedCrownsAsync([Remainder] string helpValues = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (!string.IsNullOrWhiteSpace(helpValues) && helpValues.ToLower() == "help")
@@ -492,7 +487,7 @@ namespace FMBot.Bot.Commands.Guild
         [GuildOnly]
         public async Task KillAllCrownsAsync([Remainder] string confirmation = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (!string.IsNullOrWhiteSpace(confirmation) && confirmation.ToLower() == "help")
@@ -565,7 +560,7 @@ namespace FMBot.Bot.Commands.Guild
         [GuildOnly]
         public async Task KillAllSeededCrownsAsync([Remainder] string confirmation = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (!string.IsNullOrWhiteSpace(confirmation) && confirmation.ToLower() == "help")

@@ -13,6 +13,7 @@ using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using PostgreSQLCopyHelper;
 
@@ -23,12 +24,14 @@ namespace FMBot.Bot.Services.WhoKnows
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
         private readonly LastFmRepository _lastFmRepository;
         private readonly UpdateRepository _updateRepository;
+        private readonly BotSettings _botSettings;
 
-        public CrownService(IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository, UpdateRepository updateRepository)
+        public CrownService(IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository, UpdateRepository updateRepository, IOptions<BotSettings> botSettings)
         {
             this._contextFactory = contextFactory;
             this._lastFmRepository = lastFmRepository;
             this._updateRepository = updateRepository;
+            this._botSettings = botSettings.Value;
         }
 
         public async Task<CrownModel> GetAndUpdateCrownForArtist(IList<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild, string artistName)
@@ -224,7 +227,7 @@ namespace FMBot.Bot.Services.WhoKnows
                                    "ORDER BY ua.name, ua.playcount DESC;";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
             var minPlaycount = guild.CrownsMinimumPlaycountThreshold ?? Constants.DefaultPlaysForCrown;

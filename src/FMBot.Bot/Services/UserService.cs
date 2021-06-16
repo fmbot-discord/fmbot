@@ -13,6 +13,7 @@ using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
 
@@ -23,12 +24,14 @@ namespace FMBot.Bot.Services
         private readonly IMemoryCache _cache;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
         private readonly LastFmRepository _lastFmRepository;
+        private readonly BotSettings _botSettings;
 
-        public UserService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository)
+        public UserService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository, IOptions<BotSettings> botSettings)
         {
             this._cache = cache;
             this._contextFactory = contextFactory;
             this._lastFmRepository = lastFmRepository;
+            this._botSettings = botSettings.Value;
         }
 
         public async Task<bool> UserRegisteredAsync(IUser discordUser)
@@ -44,7 +47,7 @@ namespace FMBot.Bot.Services
         public async Task<bool> UserBlockedAsync(ulong discordUserId)
         {
             await using var db = this._contextFactory.CreateDbContext();
-            var cacheKey = "blocked-users";
+            const string cacheKey = "blocked-users";
 
             if (this._cache.TryGetValue(cacheKey, out IReadOnlyList<User> blockedUsers))
             {
@@ -176,7 +179,7 @@ namespace FMBot.Bot.Services
         }
 
         // Random user
-        public async Task<User> GetRandomUserAsync()
+        public async Task<User> GetUserToFeatureAsync()
         {
             await using var db = this._contextFactory.CreateDbContext();
             var featuredUsers = await db.Users
@@ -194,10 +197,15 @@ namespace FMBot.Bot.Services
                 }
             }
 
+            var lastFmUsersToFilter = await db.BottedUsers
+                .AsQueryable()
+                .Select(s => s.UserNameLastFM.ToLower()).ToListAsync();
+
             var filterDate = DateTime.UtcNow.AddDays(-3);
             var users = db.Users
                 .AsQueryable()
                 .Where(w => w.Blocked != true &&
+                            !lastFmUsersToFilter.Contains(w.UserNameLastFM.ToLower()) &&
                             w.LastUsed > filterDate).ToList();
 
             var rand = new Random();
@@ -296,7 +304,7 @@ namespace FMBot.Bot.Services
             return userToUpdate.PrivacyLevel;
         }
 
-        public User SetSettings(User userSettings, string[] extraOptions)
+        public static User SetSettings(User userSettings, string[] extraOptions)
         {
             extraOptions = extraOptions.Select(s => s.ToLower()).ToArray();
             if (extraOptions.Contains("embedfull") || extraOptions.Contains("ef"))
@@ -354,7 +362,7 @@ namespace FMBot.Bot.Services
                 this._cache.Remove($"user-settings-{user.DiscordUserId}");
                 this._cache.Remove($"user-isRegistered-{user.DiscordUserId}");
 
-                await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
                 connection.Open();
 
                 await using var deleteRelatedTables = new NpgsqlCommand(

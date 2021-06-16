@@ -17,11 +17,12 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Commands
 {
     [Name("Static commands")]
-    public class StaticCommands : ModuleBase
+    public class StaticCommands : BaseCommandModule
     {
         private readonly CommandService _service;
         private readonly FriendsService _friendService;
@@ -30,11 +31,8 @@ namespace FMBot.Bot.Commands
         private readonly SupporterService _supporterService;
         private readonly UserService _userService;
 
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedBuilder _embed;
-
-        private static readonly List<DateTimeOffset> StackCooldownTimer = new List<DateTimeOffset>();
-        private static readonly List<SocketUser> StackCooldownTarget = new List<SocketUser>();
+        private static readonly List<DateTimeOffset> StackCooldownTimer = new();
+        private static readonly List<SocketUser> StackCooldownTarget = new();
 
         public StaticCommands(
                 CommandService service,
@@ -42,8 +40,8 @@ namespace FMBot.Bot.Commands
                 GuildService guildService,
                 IPrefixService prefixService,
                 SupporterService supporterService,
-                UserService userService
-            )
+                UserService userService,
+                IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._friendService = friendsService;
             this._guildService = guildService;
@@ -51,10 +49,6 @@ namespace FMBot.Bot.Commands
             this._service = service;
             this._supporterService = supporterService;
             this._userService = userService;
-
-            this._embedAuthor = new EmbedAuthorBuilder();
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.InformationColorBlue);
         }
 
         [Command("invite", RunMode = RunMode.Async)]
@@ -121,7 +115,7 @@ namespace FMBot.Bot.Commands
         [Alias("support", "patreon", "opencollective", "donations")]
         public async Task DonateAsync()
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var embedDescription = new StringBuilder();
 
@@ -229,7 +223,7 @@ namespace FMBot.Bot.Commands
             var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             if (prefix == null)
             {
-                prefix = ConfigData.Data.Bot.Prefix;
+                prefix = this._botSettings.Bot.Prefix;
                 customPrefix = false;
             }
 
@@ -417,7 +411,7 @@ namespace FMBot.Bot.Commands
         [Summary("Displays all available commands.")]
         public async Task FullHelpAsync()
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             this._embed.WithDescription("**See a list of all available commands below.**\n" +
                                         $"Use `{prfx}serverhelp` to view all your configurable server settings.");
@@ -471,7 +465,7 @@ namespace FMBot.Bot.Commands
         [Alias("serverhelp", "serversettings", "settings", "help server")]
         public async Task ServerHelpAsync()
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             this._embed.WithDescription("**See all server settings below.**\n" +
             "These commands require either the `Admin` or the `Ban Members` permission.");
@@ -520,7 +514,7 @@ namespace FMBot.Bot.Commands
         [ExcludeFromHelp]
         public async Task StaffHelpAsync()
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             this._embed.WithDescription("**See all .fmbot staff commands below.**\n" +
             "These commands require .fmbot admin or owner.");

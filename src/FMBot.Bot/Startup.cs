@@ -23,7 +23,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Exceptions;
-using DiscordConfig = FMBot.Domain.Models.DiscordConfig;
 
 namespace FMBot.Bot
 {
@@ -46,12 +45,21 @@ namespace FMBot.Bot
 
         public static async Task RunAsync(string[] args)
         {
+            var startup = new Startup(args);
+
+            await startup.RunAsync();
+        }
+
+        private async Task RunAsync()
+        {
+            var botUserId = long.Parse(this.Configuration.GetSection("Discord:BotUserId")?.Value ?? "0");
+
             Log.Logger = new LoggerConfiguration()
                 .Enrich.WithExceptionDetails()
-                .Enrich.WithProperty("Environment", !string.IsNullOrEmpty(ConfigData.Data.Environment) ? ConfigData.Data.Environment : "unknown")
-                .Enrich.WithProperty("BotUserId", ConfigData.Data.Discord.BotUserId ?? 0)
+                .Enrich.WithProperty("Environment", !string.IsNullOrEmpty(this.Configuration.GetSection("Environment")?.Value) ? this.Configuration.GetSection("Environment").Value : "unknown")
+                .Enrich.WithProperty("BotUserId", botUserId)
                 .WriteTo.Console()
-                .WriteTo.Seq("http://localhost:5341")
+                .WriteTo.Seq(this.Configuration.GetSection("Logging:SeqServerUrl")?.Value, apiKey: this.Configuration.GetSection("Logging:SeqApiKey")?.Value)
                 // https://github.com/CXuesong/Serilog.Sinks.Discord/issues/3
                 //.WriteTo.Conditional(evt =>
                 //        !string.IsNullOrEmpty(ConfigData.Data.Bot.ExceptionChannelWebhookUrl),
@@ -62,12 +70,6 @@ namespace FMBot.Bot
 
             Log.Information(".fmbot starting up...");
 
-            var startup = new Startup(args);
-            await startup.RunAsync();
-        }
-
-        private async Task RunAsync()
-        {
             var services = new ServiceCollection(); // Create a new instance of a service collection
             this.ConfigureServices(services);
 
@@ -89,6 +91,8 @@ namespace FMBot.Bot
                 MessageCacheSize = 0
             });
 
+            services.Configure<BotSettings>(this.Configuration);
+
             services
                 .AddSingleton(discordClient)
                 .AddSingleton(new CommandService(new CommandServiceConfig
@@ -106,7 +110,7 @@ namespace FMBot.Bot
                 .AddSingleton<FriendsService>()
                 .AddSingleton<GeniusService>()
                 .AddSingleton<GuildService>()
-                .AddSingleton<IChartService, ChartService>()
+                .AddSingleton<ChartService>()
                 .AddSingleton<IGuildDisabledCommandService, GuildDisabledCommandService>()
                 .AddSingleton<IChannelDisabledCommandService, ChannelDisabledCommandService>()
                 .AddSingleton<IIndexService, IndexService>()
@@ -132,9 +136,8 @@ namespace FMBot.Bot
                 .AddSingleton<WhoKnowsPlayService>()
                 .AddSingleton<WhoKnowsTrackService>()
                 .AddSingleton<YoutubeService>() // Add random to the collection
-                .AddSingleton(this.Configuration) // Add the configuration to the collection
+                .AddSingleton<IConfiguration>(this.Configuration) // Add the configuration to the collection
                 .AddHttpClient();
-
 
             // These services can only be added after the config is loaded
             services
@@ -148,7 +151,7 @@ namespace FMBot.Bot
                 .AddTransient<InvidiousApi>();
 
             services.AddDbContextFactory<FMBotDbContext>(b =>
-                b.UseNpgsql(ConfigData.Data.Database.ConnectionString));
+                b.UseNpgsql(this.Configuration["Database:ConnectionString"]));
 
             services.AddMemoryCache();
         }

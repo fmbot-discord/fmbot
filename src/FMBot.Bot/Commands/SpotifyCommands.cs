@@ -12,15 +12,14 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
+using Microsoft.Extensions.Options;
 using SpotifyAPI.Web;
 
 namespace FMBot.Bot.Commands
 {
     [Name("Spotify")]
-    public class SpotifyCommands : ModuleBase
+    public class SpotifyCommands : BaseCommandModule
     {
-        private readonly EmbedBuilder _embed;
-
         private readonly LastFmRepository _lastFmRepository;
         private readonly SpotifyService _spotifyService;
 
@@ -32,14 +31,13 @@ namespace FMBot.Bot.Commands
             IPrefixService prefixService,
             LastFmRepository lastFmRepository,
             UserService userService,
-            SpotifyService spotifyService)
+            SpotifyService spotifyService,
+            IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._prefixService = prefixService;
             this._userService = userService;
             this._spotifyService = spotifyService;
             this._lastFmRepository = lastFmRepository;
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
         }
 
         [Command("spotify")]
@@ -49,7 +47,7 @@ namespace FMBot.Bot.Commands
         public async Task SpotifyAsync([Remainder] string searchValue = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             try
             {
@@ -119,7 +117,7 @@ namespace FMBot.Bot.Commands
         public async Task SpotifyAlbumAsync([Remainder] string searchValue = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             try
             {
@@ -188,7 +186,7 @@ namespace FMBot.Bot.Commands
         public async Task SpotifyArtistAsync([Remainder] string searchValue = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             try
             {

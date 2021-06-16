@@ -66,8 +66,14 @@ namespace FMBot.LastFM.Repositories
             await using var connection = new NpgsqlConnection(this._connectionString);
             connection.Open();
 
+            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user.UserNameLastFM, user.SessionKeyLastFm);
+            if (userInfo?.Registered?.Text != null)
+            {
+                await SetUserSignUpTime(user.UserId, userInfo.Registered.Text, connection);
+            }
+
             await SetUserPlaycount(user, connection);
-            
+
             var plays = await GetPlaysForUserFromLastFm(user);
             await InsertPlaysIntoDatabase(plays, user.UserId, connection);
 
@@ -82,7 +88,7 @@ namespace FMBot.LastFM.Repositories
 
             var latestScrobbleDate = await GetLatestScrobbleDate(user);
 
-            await SetUserIndexTime(user.UserId, now, latestScrobbleDate);
+            await SetUserIndexTime(user.UserId, now, latestScrobbleDate, connection);
 
             Statistics.IndexedUsers.Inc();
             this._cache.Remove(concurrencyCacheKey);
@@ -280,14 +286,21 @@ namespace FMBot.LastFM.Repositories
 
         }
 
-        private async Task SetUserIndexTime(int userId, DateTime now, DateTime lastScrobble)
+        private async Task SetUserIndexTime(int userId, DateTime now, DateTime lastScrobble, NpgsqlConnection connection)
         {
             Log.Information($"Setting user index time for user {userId}");
 
-            await using var connection = new NpgsqlConnection(this._connectionString);
-            connection.Open();
-
             await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET last_indexed='{now:u}', last_updated='{now:u}', last_scrobble_update = '{lastScrobble:u}' WHERE user_id = {userId};", connection);
+            await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+
+        private async Task SetUserSignUpTime(int userId, long signUpDateTimeLong, NpgsqlConnection connection)
+        {
+            var signUpDateTime = DateTime.UnixEpoch.AddSeconds(signUpDateTimeLong).ToUniversalTime();
+
+            Log.Information($"Setting user index signup time ({signUpDateTime}) for user {userId}");
+
+            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET registered_last_fm='{signUpDateTime:u}' WHERE user_id = {userId};", connection);
             await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
@@ -303,7 +316,7 @@ namespace FMBot.LastFM.Repositories
 
             return recentTracks.Content.First(f => f.TimePlayed.HasValue).TimePlayed.Value.DateTime;
         }
-        
+
         private async Task SetUserPlaycount(User user, NpgsqlConnection connection)
         {
             var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(

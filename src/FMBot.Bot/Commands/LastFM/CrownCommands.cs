@@ -20,11 +20,12 @@ using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using Interactivity;
 using Interactivity.Pagination;
+using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Commands.LastFM
 {
     [Name("Crowns")]
-    public class CrownCommands : ModuleBase
+    public class CrownCommands : BaseCommandModule
     {
         private readonly AdminService _adminService;
         private readonly CrownService _crownService;
@@ -33,10 +34,6 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly IPrefixService _prefixService;
         private readonly SettingService _settingService;
         private readonly UserService _userService;
-
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedFooterBuilder _embedFooter;
 
         private InteractivityService Interactivity { get; }
 
@@ -47,7 +44,8 @@ namespace FMBot.Bot.Commands.LastFM
             AdminService adminService,
             LastFmRepository lastFmRepository,
             SettingService settingService,
-            InteractivityService interactivity)
+            InteractivityService interactivity,
+            IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._crownService = crownService;
             this._guildService = guildService;
@@ -57,11 +55,6 @@ namespace FMBot.Bot.Commands.LastFM
             this._lastFmRepository = lastFmRepository;
             this._settingService = settingService;
             this.Interactivity = interactivity;
-
-            this._embedAuthor = new EmbedAuthorBuilder();
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
-            this._embedFooter = new EmbedFooterBuilder();
         }
 
 
@@ -74,7 +67,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task UserCrownsAsync([Remainder] string extraOptions = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild == null)
@@ -190,7 +183,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task CrownAsync([Remainder] string artistValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild == null)
@@ -303,7 +296,7 @@ namespace FMBot.Bot.Commands.LastFM
         [SupportsPagination]
         public async Task CrownLeaderboardAsync()
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild == null)

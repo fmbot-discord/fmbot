@@ -87,7 +87,7 @@ namespace FMBot.Bot.Services
             int listenerCount)
         {
             var embed = new EmbedBuilder().WithColor(DiscordConstants.LastFmColorRed);
-            var prfx = this._prefixService.GetPrefix(context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(context.Guild?.Id);
 
             embed.WithDescription(
                 $"Scrobbling **{trackResult.TrackName}** by **{trackResult.ArtistName}** for {listenerCount} {StringExtensions.GetListenersString(listenerCount)}");

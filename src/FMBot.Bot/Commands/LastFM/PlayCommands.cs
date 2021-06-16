@@ -21,12 +21,13 @@ using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using Interactivity;
+using Microsoft.Extensions.Options;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
 namespace FMBot.Bot.Commands.LastFM
 {
     [Name("Plays")]
-    public class PlayCommands : ModuleBase
+    public class PlayCommands : BaseCommandModule
     {
         private readonly CensorService _censorService;
         private readonly GuildService _guildService;
@@ -42,10 +43,6 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
         private readonly WhoKnowsTrackService _whoKnowsTrackService;
         private InteractivityService Interactivity { get; }
-
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedFooterBuilder _embedFooter;
 
         private static readonly List<DateTimeOffset> StackCooldownTimer = new();
         private static readonly List<SocketUser> StackCooldownTarget = new();
@@ -65,7 +62,8 @@ namespace FMBot.Bot.Commands.LastFM
                 WhoKnowsArtistService whoKnowsArtistService,
                 WhoKnowsAlbumService whoKnowsAlbumService,
                 WhoKnowsTrackService whoKnowsTrackService,
-                InteractivityService interactivity)
+                InteractivityService interactivity,
+                IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._guildService = guildService;
             this._indexService = indexService;
@@ -81,11 +79,6 @@ namespace FMBot.Bot.Commands.LastFM
             this._whoKnowsAlbumService = whoKnowsAlbumService;
             this._whoKnowsTrackService = whoKnowsTrackService;
             this.Interactivity = interactivity;
-
-            this._embedAuthor = new EmbedAuthorBuilder();
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
-            this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("fm", RunMode = RunMode.Async)]
@@ -96,7 +89,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task NowPlayingAsync(params string[] parameters)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             if (contextUser?.UserNameLastFM == null)
             {
@@ -305,7 +298,7 @@ namespace FMBot.Bot.Commands.LastFM
                     switch (contextUser.FmCountType)
                     {
                         case FmCountType.Track:
-                            var trackPlaycount = await WhoKnowsTrackService.GetTrackPlayCountForUser(currentTrack.ArtistName, currentTrack.TrackName, contextUser.UserId);
+                            var trackPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(currentTrack.ArtistName, currentTrack.TrackName, contextUser.UserId);
                             if (trackPlaycount.HasValue)
                             {
                                 footerText += $"{trackPlaycount} scrobbles on this track | ";
@@ -322,7 +315,7 @@ namespace FMBot.Bot.Commands.LastFM
                             }
                             break;
                         case FmCountType.Artist:
-                            var artistPlaycount = await WhoKnowsArtistService.GetArtistPlayCountForUser(currentTrack.ArtistName, contextUser.UserId);
+                            var artistPlaycount = await this._whoKnowsArtistService.GetArtistPlayCountForUser(currentTrack.ArtistName, contextUser.UserId);
                             if (artistPlaycount.HasValue)
                             {
                                 footerText += $"{artistPlaycount} scrobbles on this artist | ";
@@ -593,7 +586,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task OverviewAsync(string amount = "4")
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             if (amount == "help")
             {
@@ -825,9 +818,8 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context, true);
-
             var timeType = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
+            var userSettings = await this._settingService.GetUser(timeType.NewSearchValue, user, this.Context, true);
 
             long? timeFrom = null;
             if (timeType.TimePeriod != TimePeriod.AllTime && timeType.PlayDays != null)

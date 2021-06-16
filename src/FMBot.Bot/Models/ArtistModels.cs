@@ -1,3 +1,4 @@
+using System;
 using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Models
@@ -53,7 +54,16 @@ namespace FMBot.Bot.Models
 
         public ulong DiscordUserId { get; set; }
 
+        public DateTime? RegisteredLastFm { get; set; }
+
         public PrivacyLevel PrivacyLevel { get; set; }
+    }
+
+    public class ArtistSpotifyCoverDto
+    {
+        public string LastFmUrl { get; set; }
+
+        public string SpotifyImageUrl { get; set; }
     }
 
     public class TopGuildArtistsDto

@@ -25,12 +25,13 @@ using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Interactivity;
 using Interactivity.Pagination;
+using Microsoft.Extensions.Options;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
 namespace FMBot.Bot.Commands.LastFM
 {
     [Name("Tracks")]
-    public class TrackCommands : ModuleBase
+    public class TrackCommands : BaseCommandModule
     {
         private readonly GuildService _guildService;
         private readonly IIndexService _indexService;
@@ -45,9 +46,6 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly WhoKnowsPlayService _whoKnowsPlayService;
         private readonly WhoKnowsService _whoKnowsService;
 
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedFooterBuilder _embedFooter;
         private InteractivityService Interactivity { get; }
 
 
@@ -67,7 +65,8 @@ namespace FMBot.Bot.Commands.LastFM
                 WhoKnowsTrackService whoKnowsTrackService,
                 WhoKnowsPlayService whoKnowsPlayService,
                 InteractivityService interactivity,
-                WhoKnowsService whoKnowsService)
+                WhoKnowsService whoKnowsService,
+                IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._guildService = guildService;
             this._indexService = indexService;
@@ -82,11 +81,6 @@ namespace FMBot.Bot.Commands.LastFM
             this._whoKnowsPlayService = whoKnowsPlayService;
             this.Interactivity = interactivity;
             this._whoKnowsService = whoKnowsService;
-
-            this._embedAuthor = new EmbedAuthorBuilder();
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
-            this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("track", RunMode = RunMode.Async)]
@@ -222,7 +216,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task LoveAsync([Remainder] string trackValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             if (!string.IsNullOrWhiteSpace(trackValues) && trackValues.ToLower() == "help")
             {
@@ -279,7 +273,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task UnLoveAsync([Remainder] string trackValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             if (!string.IsNullOrWhiteSpace(trackValues) && trackValues.ToLower() == "help")
             {
@@ -336,7 +330,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task LovedAsync([Remainder] string extraOptions = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -466,7 +460,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task ScrobbleAsync([Remainder] string trackValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             if (string.IsNullOrWhiteSpace(trackValues))
             {
@@ -742,7 +736,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task WhoKnowsTrackAsync([Remainder] string trackValues = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
@@ -789,7 +783,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this._indexService.UpdateUserName(await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), currentUser.UserId, currentUser.GuildId);
 
-                var usersWithTrack = await WhoKnowsTrackService.GetIndexedUsersForTrack(this.Context, guild.GuildId, track.ArtistName, track.TrackName);
+                var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(this.Context, guild.GuildId, track.ArtistName, track.TrackName);
 
                 if (track.UserPlaycount.HasValue && track.UserPlaycount != 0)
                 {
@@ -862,7 +856,7 @@ namespace FMBot.Bot.Commands.LastFM
         [GuildOnly]
         public async Task GlobalWhoKnowsTrackAsync([Remainder] string trackValues = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
@@ -905,7 +899,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var usersWithArtist = await WhoKnowsTrackService.GetGlobalUsersForTrack(this.Context, track.ArtistName, track.TrackName);
+                var usersWithArtist = await this._whoKnowsTrackService.GetGlobalUsersForTrack(this.Context, track.ArtistName, track.TrackName);
 
                 if (track.UserPlaycount != 0 && this.Context.Guild != null)
                 {
@@ -995,7 +989,7 @@ namespace FMBot.Bot.Commands.LastFM
         [GuildOnly]
         public async Task GuildTracksAsync(params string[] extraOptions)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild.LastIndexed == null)
@@ -1040,17 +1034,17 @@ namespace FMBot.Bot.Commands.LastFM
                 IReadOnlyList<ListTrack> topGuildTracks;
                 if (serverTrackSettings.ChartTimePeriod == TimePeriod.AllTime)
                 {
-                    topGuildTracks = await WhoKnowsTrackService.GetTopAllTimeTracksForGuild(guild.GuildId, serverTrackSettings.OrderType);
+                    topGuildTracks = await this._whoKnowsTrackService.GetTopAllTimeTracksForGuild(guild.GuildId, serverTrackSettings.OrderType);
                     this._embed.WithTitle($"Top alltime tracks in {this.Context.Guild.Name}");
                 }
                 else if (serverTrackSettings.ChartTimePeriod == TimePeriod.Weekly)
                 {
-                    topGuildTracks = await WhoKnowsPlayService.GetTopTracksForGuild(guild.GuildId, serverTrackSettings.OrderType, serverTrackSettings.AmountOfDays);
+                    topGuildTracks = await this._whoKnowsPlayService.GetTopTracksForGuild(guild.GuildId, serverTrackSettings.OrderType, serverTrackSettings.AmountOfDays);
                     this._embed.WithTitle($"Top weekly tracks in {this.Context.Guild.Name}");
                 }
                 else
                 {
-                    topGuildTracks = await WhoKnowsPlayService.GetTopTracksForGuild(guild.GuildId, serverTrackSettings.OrderType, serverTrackSettings.AmountOfDays);
+                    topGuildTracks = await this._whoKnowsPlayService.GetTopTracksForGuild(guild.GuildId, serverTrackSettings.OrderType, serverTrackSettings.AmountOfDays);
                     this._embed.WithTitle($"Top monthly tracks in {this.Context.Guild.Name}");
                 }
 

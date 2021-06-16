@@ -14,21 +14,19 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace FMBot.Bot.Commands
 {
     [Name("Indexing")]
-    public class IndexCommands : ModuleBase
+    public class IndexCommands : BaseCommandModule
     {
         private readonly GuildService _guildService;
         private readonly IIndexService _indexService;
         private readonly IPrefixService _prefixService;
         private readonly IUpdateService _updateService;
         private readonly UserService _userService;
-
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedFooterBuilder _embedFooter;
 
         private static readonly List<DateTimeOffset> StackCooldownTimer = new();
         private static readonly List<SocketUser> StackCooldownTarget = new();
@@ -38,18 +36,14 @@ namespace FMBot.Bot.Commands
                 IIndexService indexService,
                 IPrefixService prefixService,
                 IUpdateService updateService,
-                UserService userService
-            )
+                UserService userService,
+                IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._guildService = guildService;
             this._indexService = indexService;
             this._prefixService = prefixService;
             this._updateService = updateService;
             this._userService = userService;
-
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
-            this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("index", RunMode = RunMode.Async)]
@@ -141,30 +135,14 @@ namespace FMBot.Bot.Commands
 
         [Command("update", RunMode = RunMode.Async)]
         [Summary("Updates a users cached playcounts based on their recent plays. \n\n" +
-                 "This command also has an option to completely refresh a users cache (`full`)")]
+                 "This command also has an option to completely refresh a users cache (`full`). This is recommended if you have edited your scrobble history.")]
         [Examples("update", "update full")]
         [Alias("u")]
         [GuildOnly]
         [UsernameSetRequired]
         public async Task UpdateUserAsync(string force = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
-            if (force == "help")
-            {
-                this._embed.WithTitle($"{prfx}update");
-                this._embed.WithDescription($"Updates your playcount cache on your latest scrobbles.\n" +
-                                            $"Add `full` to fully update your account in case you edited your scrobble history.\n" +
-                                            $"Note that updating also happens automatically.");
-
-                this._embed.AddField("Examples",
-                    $"`{prfx}update\n" +
-                    $"`{prfx}update full`");
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
-
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             if (force != null && (force.ToLower() == "f" || force.ToLower() == "-f" || force.ToLower() == "full" || force.ToLower() == "-force" || force.ToLower() == "force"))

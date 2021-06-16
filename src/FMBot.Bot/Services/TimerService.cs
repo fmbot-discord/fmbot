@@ -15,6 +15,7 @@ using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using IF.Lastfm.Core.Api.Enums;
 using IF.Lastfm.Core.Objects;
+using Microsoft.Extensions.Options;
 using Serilog;
 using static FMBot.Bot.FMBotUtil;
 using Image = Discord.Image;
@@ -35,6 +36,7 @@ namespace FMBot.Bot.Services
         private readonly GuildService _guildService;
         private readonly DiscordShardedClient _client;
         private readonly WebhookService _webhookService;
+        private readonly BotSettings _botSettings;
 
         private bool _timerEnabled;
 
@@ -48,7 +50,8 @@ namespace FMBot.Bot.Services
             IIndexService indexService,
             CensorService censorService,
             GuildService guildService,
-            WebhookService webhookService)
+            WebhookService webhookService,
+            IOptions<BotSettings> botSettings)
         {
             this._client = client;
             this._lastFmRepository = lastFmRepository;
@@ -58,6 +61,7 @@ namespace FMBot.Bot.Services
             this._guildService = guildService;
             this._webhookService = webhookService;
             this._updateService = updateService;
+            this._botSettings = botSettings.Value;
 
             this._timer = new Timer(async _ =>
                 {
@@ -91,7 +95,7 @@ namespace FMBot.Bot.Services
 
                     try
                     {
-                        var user = await this._userService.GetRandomUserAsync();
+                        var user = await this._userService.GetUserToFeatureAsync();
                         Log.Information($"Featured: Picked user {user.UserId} / {user.UserNameLastFM}");
 
                         switch (featuredMode)
@@ -162,7 +166,7 @@ namespace FMBot.Bot.Services
                                 if (!albums.Success || !albums.Content.TopAlbums.Any())
                                 {
                                     Log.Information($"Featured: User {user.UserNameLastFM} had no albums, switching to different user.");
-                                    user = await this._userService.GetRandomUserAsync();
+                                    user = await this._userService.GetUserToFeatureAsync();
                                     albums = await this._lastFmRepository.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 15);
                                 }
 
@@ -212,8 +216,8 @@ namespace FMBot.Bot.Services
                     }
                 },
                 null,
-                TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds + ConfigData.Data.Bot.FeaturedTimerStartupDelayInSeconds), // 4) Time that message should fire after the timer is created
-                TimeSpan.FromMinutes(ConfigData.Data.Bot.FeaturedTimerRepeatInMinutes)); // 5) Time after which message should repeat (use `Timeout.Infinite` for no repeat)
+                TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds + this._botSettings.Bot.FeaturedTimerStartupDelayInSeconds), // 4) Time that message should fire after the timer is created
+                TimeSpan.FromMinutes(this._botSettings.Bot.FeaturedTimerRepeatInMinutes)); // 5) Time after which message should repeat (use `Timeout.Infinite` for no repeat)
 
             this._internalStatsTimer = new Timer(async _ =>
                 {
@@ -232,12 +236,12 @@ namespace FMBot.Bot.Services
                         Console.WriteLine(e);
                     }
 
-                    if (string.IsNullOrEmpty(ConfigData.Data.Bot.Status))
+                    if (string.IsNullOrEmpty(this._botSettings.Bot.Status))
                     {
                         Log.Information("Updating status");
                         if (!PublicProperties.IssuesAtLastFm)
                         {
-                            await client.SetGameAsync($"{ConfigData.Data.Bot.Prefix} | {client.Guilds.Count} servers | fmbot.xyz");
+                            await client.SetGameAsync($"{this._botSettings.Bot.Prefix} | {client.Guilds.Count} servers | fmbot.xyz");
                         }
                         else
                         {
@@ -247,12 +251,12 @@ namespace FMBot.Bot.Services
                     }
                 },
                 null,
-                TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds + 5),
+                TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds + 5),
                 TimeSpan.FromMinutes(2));
 
             this._userUpdateTimer = new Timer(async _ =>
                 {
-                    if (ConfigData.Data.LastFm.UserUpdateFrequencyInHours == null || ConfigData.Data.LastFm.UserUpdateFrequencyInHours == 0)
+                    if (this._botSettings.LastFm.UserUpdateFrequencyInHours == null || this._botSettings.LastFm.UserUpdateFrequencyInHours == 0)
                     {
                         Log.Warning("No user update frequency set, cancelling user update timer");
                         this._userUpdateTimer.Change(Timeout.Infinite, Timeout.Infinite);
@@ -260,8 +264,8 @@ namespace FMBot.Bot.Services
                     }
 
                     Log.Information("Getting users to update");
-                    var authorizedTimeToUpdate = DateTime.UtcNow.AddHours(-ConfigData.Data.LastFm.UserUpdateFrequencyInHours.Value);
-                    var unauthorizedTimeToUpdate = DateTime.UtcNow.AddHours(-(ConfigData.Data.LastFm.UserUpdateFrequencyInHours.Value + 24));
+                    var authorizedTimeToUpdate = DateTime.UtcNow.AddHours(-this._botSettings.LastFm.UserUpdateFrequencyInHours.Value);
+                    var unauthorizedTimeToUpdate = DateTime.UtcNow.AddHours(-(this._botSettings.LastFm.UserUpdateFrequencyInHours.Value + 24));
 
                     var usersToUpdate = await this._updateService.GetOutdatedUsers(authorizedTimeToUpdate, unauthorizedTimeToUpdate);
                     Log.Information($"Found {usersToUpdate.Count} outdated users, adding them to update queue");
@@ -274,7 +278,7 @@ namespace FMBot.Bot.Services
 
             this._userIndexTimer = new Timer(async _ =>
                 {
-                    if (ConfigData.Data.LastFm.UserIndexFrequencyInDays == null || ConfigData.Data.LastFm.UserIndexFrequencyInDays == 0)
+                    if (this._botSettings.LastFm.UserIndexFrequencyInDays == null || this._botSettings.LastFm.UserIndexFrequencyInDays == 0)
                     {
                         Log.Warning("No user index frequency set, cancelling user index timer");
                         this._userIndexTimer.Change(Timeout.Infinite, Timeout.Infinite);
@@ -288,7 +292,7 @@ namespace FMBot.Bot.Services
                     }
 
                     Log.Information("Getting users to index");
-                    var timeToIndex = DateTime.UtcNow.AddDays(-ConfigData.Data.LastFm.UserIndexFrequencyInDays.Value);
+                    var timeToIndex = DateTime.UtcNow.AddDays(-this._botSettings.LastFm.UserIndexFrequencyInDays.Value);
 
                     var usersToUpdate = (await this._indexService.GetOutdatedUsers(timeToIndex))
                         .Take(400)
@@ -317,7 +321,7 @@ namespace FMBot.Bot.Services
         public void Restart()
         {
             this._timer.Change(TimeSpan.FromSeconds(0),
-                TimeSpan.FromMinutes(Convert.ToDouble(ConfigData.Data.Bot.FeaturedTimerRepeatInMinutes)));
+                TimeSpan.FromMinutes(Convert.ToDouble(this._botSettings.Bot.FeaturedTimerRepeatInMinutes)));
             this._timerEnabled = true;
         }
 
@@ -327,22 +331,22 @@ namespace FMBot.Bot.Services
             {
                 var request = WebRequest.Create(imageUrl);
                 var response = await request.GetResponseAsync();
-                using (Stream output = File.Create(GlobalVars.ImageFolder + "newavatar.png"))
+                using (Stream output = File.Create(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png"))
                 using (var input = response.GetResponseStream())
                 {
                     input.CopyTo(output);
-                    if (File.Exists(GlobalVars.ImageFolder + "newavatar.png"))
+                    if (File.Exists(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png"))
                     {
-                        File.SetAttributes(GlobalVars.ImageFolder + "newavatar.png", FileAttributes.Normal);
+                        File.SetAttributes(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png", FileAttributes.Normal);
                     }
 
                     output.Close();
                     Log.Information("New avatar downloaded");
                 }
 
-                if (File.Exists(GlobalVars.ImageFolder + "newavatar.png"))
+                if (File.Exists(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png"))
                 {
-                    var fileStream = new FileStream(GlobalVars.ImageFolder + "newavatar.png", FileMode.Open);
+                    var fileStream = new FileStream(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png", FileMode.Open);
                     await client.CurrentUser.ModifyAsync(u => u.Avatar = new Image(fileStream));
                     fileStream.Close();
                     Log.Information("Avatar succesfully changed");
@@ -358,12 +362,12 @@ namespace FMBot.Bot.Services
                 var botType = BotTypeExtension.GetBotType(client.CurrentUser.Id);
                 await this._webhookService.SendFeaturedWebhooks(botType, this._featuredTrackString, this._featuredUserId, imageUrl);
 
-                if (ConfigData.Data.Bot.BaseServerId != 0 && ConfigData.Data.Bot.FeaturedChannelId != 0)
+                if (this._botSettings.Bot.BaseServerId != 0 && this._botSettings.Bot.FeaturedChannelId != 0)
                 {
-                    var guild = client.GetGuild(ConfigData.Data.Bot.BaseServerId);
+                    var guild = client.GetGuild(this._botSettings.Bot.BaseServerId);
                     if (guild != null)
                     {
-                        var channel = guild.GetTextChannel(ConfigData.Data.Bot.FeaturedChannelId);
+                        var channel = guild.GetTextChannel(this._botSettings.Bot.FeaturedChannelId);
 
                         await channel.SendMessageAsync("", false, builder.Build());
                     }
@@ -420,7 +424,7 @@ namespace FMBot.Bot.Services
             {
                 this._featuredTrackString = "FMBot Default Avatar";
                 Log.Information("Changed avatar to: " + this._featuredTrackString);
-                var fileStream = new FileStream(GlobalVars.ImageFolder + "avatar.png", FileMode.Open);
+                var fileStream = new FileStream(AppDomain.CurrentDomain.BaseDirectory + "avatar.png", FileMode.Open);
                 var image = new Image(fileStream);
                 await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
                 fileStream.Close();
@@ -428,35 +432,6 @@ namespace FMBot.Bot.Services
             catch (Exception e)
             {
                 Log.Error("UseDefaultAvatar", e);
-            }
-        }
-
-        public async void UseLocalAvatar(DiscordShardedClient client, string AlbumName, string ArtistName, string LastFMName)
-        {
-            try
-            {
-                this._featuredTrackString = ArtistName + " - " + AlbumName + Environment.NewLine + LastFMName;
-                Log.Information("Changed avatar to: " + this._featuredTrackString);
-                var fileStream = new FileStream(GlobalVars.ImageFolder + "censored.png", FileMode.Open);
-                var image = new Image(fileStream);
-                await client.CurrentUser.ModifyAsync(u => u.Avatar = image);
-                fileStream.Close();
-
-                await Task.Delay(5000);
-
-                var guild = client.GetGuild(ConfigData.Data.Bot.BaseServerId);
-                var channel = guild.GetTextChannel(ConfigData.Data.Bot.FeaturedChannelId);
-
-                var builder = new EmbedBuilder();
-                var SelfUser = client.CurrentUser;
-                builder.WithThumbnailUrl(SelfUser.GetAvatarUrl());
-                builder.AddField("Featured:", this._featuredTrackString);
-
-                await channel.SendMessageAsync("", false, builder.Build());
-            }
-            catch (Exception e)
-            {
-                Log.Error("UseLocalAvatar", e);
             }
         }
 

@@ -14,6 +14,7 @@ using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
 
@@ -22,13 +23,16 @@ namespace FMBot.Bot.Services
     public class TrackService
     {
         private readonly LastFmRepository _lastFmRepository;
-
+        private readonly SpotifyService _spotifyService;
         private readonly HttpClient _client;
+        private readonly BotSettings _botSettings;
 
-        public TrackService(IHttpClientFactory httpClientFactory, LastFmRepository lastFmRepository)
+        public TrackService(IHttpClientFactory httpClientFactory, LastFmRepository lastFmRepository, IOptions<BotSettings> botSettings, SpotifyService spotifyService)
         {
             this._lastFmRepository = lastFmRepository;
+            this._spotifyService = spotifyService;
             this._client = httpClientFactory.CreateClient();
+            this._botSettings = botSettings.Value;
         }
 
         public async Task<TrackSearchResult> GetTrackFromLink(string description)
@@ -46,7 +50,7 @@ namespace FMBot.Bot.Services
                     if (matches.Count > 0 && matches[0].Groups.Count > 1)
                     {
                         var id = matches[0].Groups[2].ToString();
-                        var spotifyResult = await SpotifyService.GetTrackById(id);
+                        var spotifyResult = await this._spotifyService.GetTrackById(id);
 
                         if (spotifyResult != null)
                         {
@@ -151,7 +155,7 @@ namespace FMBot.Bot.Services
                " FROM public.user_tracks where user_id = @userId AND UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT));";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
             var userTracks = (await connection.QueryAsync<UserTrack>(sql, new

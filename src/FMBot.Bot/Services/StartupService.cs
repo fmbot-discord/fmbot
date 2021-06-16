@@ -10,9 +10,11 @@ using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
 using FMBot.Domain;
+using FMBot.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using IF.Lastfm.Core.Api;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Prometheus;
 using Serilog;
 
@@ -27,6 +29,7 @@ namespace FMBot.Bot.Services
         private readonly IPrefixService _prefixService;
         private readonly IServiceProvider _provider;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly BotSettings _botSettings;
 
 
         public StartupService(
@@ -36,7 +39,8 @@ namespace FMBot.Bot.Services
             IPrefixService prefixService,
             IGuildDisabledCommandService guildDisabledCommands,
             IChannelDisabledCommandService channelDisabledCommands,
-            IDbContextFactory<FMBotDbContext> contextFactory)
+            IDbContextFactory<FMBotDbContext> contextFactory,
+            IOptions<BotSettings> botSettings)
         {
             this._provider = provider;
             this._client = discord;
@@ -45,6 +49,7 @@ namespace FMBot.Bot.Services
             this._guildDisabledCommands = guildDisabledCommands;
             this._channelDisabledCommands = channelDisabledCommands;
             this._contextFactory = contextFactory;
+            this._botSettings = botSettings.Value;
         }
 
         public async Task StartAsync()
@@ -63,7 +68,7 @@ namespace FMBot.Bot.Services
 
             Log.Information("Starting bot");
 
-            var discordToken = ConfigData.Data.Discord.Token; // Get the discord token from the config file
+            var discordToken = this._botSettings.Discord.Token; // Get the discord token from the config file
             if (string.IsNullOrWhiteSpace(discordToken))
             {
                 throw new Exception("Please enter your bots token into the `/configs/config.json` file.");
@@ -86,10 +91,10 @@ namespace FMBot.Bot.Services
             Log.Information("Setting Discord user status");
             await this._client.SetStatusAsync(UserStatus.DoNotDisturb);
 
-            if (!string.IsNullOrEmpty(ConfigData.Data.Bot.Status))
+            if (!string.IsNullOrEmpty(this._botSettings.Bot.Status))
             {
-                Log.Information($"Setting custom status to '{ConfigData.Data.Bot.Status}'");
-                await this._client.SetGameAsync(ConfigData.Data.Bot.Status);
+                Log.Information($"Setting custom status to '{this._botSettings.Bot.Status}'");
+                await this._client.SetGameAsync(this._botSettings.Bot.Status);
             }
 
             Log.Information("Loading command modules");
@@ -117,7 +122,7 @@ namespace FMBot.Bot.Services
 
         private async Task TestLastFmApi()
         {
-            var fmClient = new LastfmClient(ConfigData.Data.LastFm.Key, ConfigData.Data.LastFm.Secret);
+            var fmClient = new LastfmClient(this._botSettings.LastFm.Key, this._botSettings.LastFm.Secret);
 
             Log.Information("Testing Last.fm API");
             var lastFMUser = await fmClient.User.GetInfoAsync("Lastfmsupport");
@@ -139,11 +144,11 @@ namespace FMBot.Bot.Services
 
         private Task StartMetricsServer()
         {
-            Thread.Sleep(TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds));
+            Thread.Sleep(TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds));
             if (this._client == null || this._client.CurrentUser == null)
             {
                 Log.Information("Delaying metric server startup");
-                Thread.Sleep(TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds));
+                Thread.Sleep(TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds));
             }
 
             Log.Information("Starting metrics server");
@@ -166,7 +171,7 @@ namespace FMBot.Bot.Services
 
         private Task StartBotSiteUpdater()
         {
-            Thread.Sleep(TimeSpan.FromSeconds(ConfigData.Data.Bot.BotWarmupTimeInSeconds));
+            Thread.Sleep(TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds));
 
             if (!this._client.CurrentUser.Id.Equals(Constants.BotProductionId))
             {
@@ -178,23 +183,23 @@ namespace FMBot.Bot.Services
 
             var listConfig = new ListConfig();
 
-            if (ConfigData.Data.BotLists != null)
+            if (this._botSettings.BotLists != null)
             {
-                if (!string.IsNullOrWhiteSpace(ConfigData.Data.BotLists.TopGgApiToken))
+                if (!string.IsNullOrWhiteSpace(this._botSettings.BotLists.TopGgApiToken))
                 {
-                    listConfig.TopGG = ConfigData.Data.BotLists.TopGgApiToken;
+                    listConfig.TopGG = this._botSettings.BotLists.TopGgApiToken;
                 }
-                if (!string.IsNullOrWhiteSpace(ConfigData.Data.BotLists.BotsForDiscordToken))
+                if (!string.IsNullOrWhiteSpace(this._botSettings.BotLists.BotsForDiscordToken))
                 {
-                    listConfig.BotsForDiscord = ConfigData.Data.BotLists.BotsForDiscordToken;
+                    listConfig.BotsForDiscord = this._botSettings.BotLists.BotsForDiscordToken;
                 }
-                if (!string.IsNullOrWhiteSpace(ConfigData.Data.BotLists.DiscordBoatsToken))
+                if (!string.IsNullOrWhiteSpace(this._botSettings.BotLists.DiscordBoatsToken))
                 {
-                    listConfig.DiscordBoats = ConfigData.Data.BotLists.DiscordBoatsToken;
+                    listConfig.DiscordBoats = this._botSettings.BotLists.DiscordBoatsToken;
                 }
-                if (!string.IsNullOrWhiteSpace(ConfigData.Data.BotLists.BotsOnDiscordToken))
+                if (!string.IsNullOrWhiteSpace(this._botSettings.BotLists.BotsOnDiscordToken))
                 {
-                    listConfig.BotsOnDiscord = ConfigData.Data.BotLists.BotsOnDiscordToken;
+                    listConfig.BotsOnDiscord = this._botSettings.BotLists.BotsOnDiscordToken;
                 }
             }
             else

@@ -7,6 +7,7 @@ using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using Npgsql;
 
 namespace FMBot.Bot.Services
@@ -14,10 +15,12 @@ namespace FMBot.Bot.Services
     public class AlbumService
     {
         private readonly IMemoryCache _cache;
+        private readonly BotSettings _botSettings;
 
-        public AlbumService(IMemoryCache cache)
+        public AlbumService(IMemoryCache cache, IOptions<BotSettings> botSettings)
         {
             this._cache = cache;
+            this._botSettings = botSettings.Value;
         }
 
         public async Task<List<TopAlbum>> FillMissingAlbumCovers(List<TopAlbum> topAlbums)
@@ -55,7 +58,7 @@ namespace FMBot.Bot.Services
                                "FROM public.albums where last_fm_url is not null and spotify_image_url is not null;";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(ConfigData.Data.Database.ConnectionString);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
             albumCovers = (await connection.QueryAsync<AlbumSpotifyCoverDto>(sql)).ToList();

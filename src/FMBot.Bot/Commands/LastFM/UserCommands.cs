@@ -18,12 +18,13 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace FMBot.Bot.Commands.LastFM
 {
     [Name("User settings")]
-    public class UserCommands : ModuleBase
+    public class UserCommands : BaseCommandModule
     {
         private readonly CrownService _crownService;
         private readonly FriendsService _friendsService;
@@ -34,10 +35,6 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly SettingService _settingService;
         private readonly TimerService _timer;
         private readonly UserService _userService;
-
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedFooterBuilder _embedFooter;
 
         private static readonly List<DateTimeOffset> StackCooldownTimer = new();
         private static readonly List<SocketUser> StackCooldownTarget = new();
@@ -51,7 +48,8 @@ namespace FMBot.Bot.Commands.LastFM
                 SettingService settingService,
                 TimerService timer,
                 UserService userService,
-                CrownService crownService)
+                CrownService crownService,
+                IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._friendsService = friendsService;
             this._guildService = guildService;
@@ -62,11 +60,6 @@ namespace FMBot.Bot.Commands.LastFM
             this._timer = timer;
             this._userService = userService;
             this._crownService = crownService;
-
-            this._embedAuthor = new EmbedAuthorBuilder();
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
-            this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("stats", RunMode = RunMode.Async)]
@@ -75,7 +68,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task StatsAsync([Remainder] string userOptions = null)
         {
             var user = await this._userService.GetFullUserAsync(this.Context.User.Id);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             try
             {
@@ -240,7 +233,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("botscrobble", "bottrack", "bottracking")]
         public async Task BotTrackingAsync([Remainder]string option = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             try
             {
@@ -286,7 +279,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task SetAsync([Summary("Your Last.fm name")] string lastFmUserName = null,
             params string[] otherSettings)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var existingUserSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             if (lastFmUserName == null || lastFmUserName == "help")
@@ -344,7 +337,7 @@ namespace FMBot.Bot.Commands.LastFM
                 UserNameLastFM = lastFmUserName,
             };
 
-            userSettingsToAdd = this._userService.SetSettings(userSettingsToAdd, otherSettings);
+            userSettingsToAdd = UserService.SetSettings(userSettingsToAdd, otherSettings);
 
             await this._userService.SetLastFm(this.Context.User, userSettingsToAdd);
 
@@ -398,7 +391,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         public async Task ModeAsync(params string[] otherSettings)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -432,7 +425,7 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var newUserSettings = this._userService.SetSettings(userSettings, otherSettings);
+            var newUserSettings = UserService.SetSettings(userSettings, otherSettings);
 
             await this._userService.SetLastFm(this.Context.User, newUserSettings);
 
@@ -464,7 +457,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         public async Task PrivacyAsync(params string[] otherSettings)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             if (otherSettings == null || otherSettings.Length < 1 || otherSettings.First() == "info")
@@ -518,7 +511,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("set", "setusername", "fm set")]
         public async Task LoginAsync([Remainder] string unusedValues = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var msg = this.Context.Message as SocketUserMessage;
             if (StackCooldownTarget.Contains(this.Context.Message.Author))
@@ -547,7 +540,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             // TODO: When our Discord library supports follow up messages for interactions, add slash command support.
             var replyString =
-                $"[Click here add your Last.fm account to .fmbot](http://www.last.fm/api/auth/?api_key={ConfigData.Data.LastFm.Key}&token={token.Content.Token})";
+                $"[Click here add your Last.fm account to .fmbot](http://www.last.fm/api/auth/?api_key={this._botSettings.LastFm.Key}&token={token.Content.Token})";
 
             this._embed.WithTitle("Logging into .fmbot...");
             this._embed.WithDescription(replyString);
@@ -672,7 +665,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task RemoveAsync([Remainder] string confirmation = null)
         {
             var userSettings = await this._userService.GetFullUserAsync(this.Context.User.Id);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             if (userSettings == null)
             {
@@ -731,50 +724,6 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             this.Context.LogCommandUsed();
-        }
-
-        //[Command("suggest", RunMode = RunMode.Async)]
-        [Summary("Suggest features you want to see in the bot, or report inappropriate images.")]
-        //[Alias("report", "suggestion", "suggestions")]
-        public async Task Suggest(string suggestion = null)
-        {
-            try
-            {
-                /*
-                if (string.IsNullOrWhiteSpace(suggestion))
-                {
-                    await ReplyAsync(cfgjson.Prefix + "fmsuggest 'text in quotes'");
-                    return;
-                }
-                else
-                {
-                */
-
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                this._embedAuthor.WithName(this.Context.User.ToString());
-                this._embed.WithAuthor(this._embedAuthor);
-
-                this._embed.WithTitle(this.Context.User.Username + "'s suggestion:");
-                this._embed.WithDescription(suggestion);
-                this._embed.WithTimestamp(DateTimeOffset.UtcNow);
-
-                var BroadcastServerID = ConfigData.Data.Bot.BaseServerId;
-                var BroadcastChannelID = ConfigData.Data.Bot.SuggestionChannelId;
-
-                var guild = await this.Context.Client.GetGuildAsync(BroadcastServerID);
-                var channel = await guild.GetChannelAsync(BroadcastChannelID);
-
-
-
-                await ReplyAsync("Your suggestion has been sent to the .fmbot server!");
-                this.Context.LogCommandUsed();
-
-                //}
-            }
-            catch (Exception e)
-            {
-                this.Context.LogCommandException(e);
-            }
         }
     }
 }

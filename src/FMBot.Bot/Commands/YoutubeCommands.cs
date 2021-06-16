@@ -11,14 +11,13 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
+using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Commands
 {
     [Name("Youtube")]
-    public class YoutubeCommands : ModuleBase
+    public class YoutubeCommands : BaseCommandModule
     {
-        private readonly EmbedBuilder _embed;
-
         private readonly LastFmRepository _lastFmRepository;
         private readonly UserService _userService;
         private readonly YoutubeService _youtubeService;
@@ -29,14 +28,13 @@ namespace FMBot.Bot.Commands
             IPrefixService prefixService,
             LastFmRepository lastFmRepository,
             UserService userService,
-            YoutubeService youtubeService)
+            YoutubeService youtubeService,
+            IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._prefixService = prefixService;
             this._userService = userService;
             this._youtubeService = youtubeService;
             this._lastFmRepository = lastFmRepository;
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
         }
 
         [Command("youtube")]
@@ -46,7 +44,7 @@ namespace FMBot.Bot.Commands
         public async Task YoutubeAsync([Remainder] string searchValue = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             try
             {

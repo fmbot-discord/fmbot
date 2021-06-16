@@ -15,12 +15,13 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Commands.Guild
 {
     [Name("Server settings")]
     [ServerStaffOnly]
-    public class GuildCommands : ModuleBase
+    public class GuildCommands : BaseCommandModule
     {
         private readonly AdminService _adminService;
         private readonly GuildService _guildService;
@@ -32,17 +33,14 @@ namespace FMBot.Bot.Commands.Guild
 
         private readonly CommandService _commands;
 
-        private readonly EmbedBuilder _embed;
-        private readonly EmbedAuthorBuilder _embedAuthor;
-        private readonly EmbedFooterBuilder _embedFooter;
-
         public GuildCommands(IPrefixService prefixService,
             GuildService guildService,
             CommandService commands,
             AdminService adminService,
             IGuildDisabledCommandService guildDisabledCommandService,
             IChannelDisabledCommandService channelDisabledCommandService,
-            SettingService settingService)
+            SettingService settingService,
+            IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._prefixService = prefixService;
             this._guildService = guildService;
@@ -51,10 +49,6 @@ namespace FMBot.Bot.Commands.Guild
             this._channelDisabledCommandService = channelDisabledCommandService;
             this._settingService = settingService;
             this._adminService = adminService;
-            this._embed = new EmbedBuilder()
-                .WithColor(DiscordConstants.LastFmColorRed);
-            this._embedAuthor = new EmbedAuthorBuilder();
-            this._embedFooter = new EmbedFooterBuilder();
         }
 
         [Command("servermode", RunMode = RunMode.Async)]
@@ -75,7 +69,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
             if (otherSettings != null && otherSettings.Any() && otherSettings.First() == "info")
@@ -323,7 +317,7 @@ namespace FMBot.Bot.Commands.Guild
         public async Task ToggleGuildCommand(string command = null)
         {
             var disabledCommandsForGuild = await this._guildService.GetDisabledCommandsForGuild(this.Context.Guild);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             this._embed.WithFooter(
                 $"Toggling server-wide for all channels\n" +
@@ -401,7 +395,7 @@ namespace FMBot.Bot.Commands.Guild
         [GuildOnly]
         public async Task ToggleChannelCommand(string command = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild == null)
@@ -506,7 +500,7 @@ namespace FMBot.Bot.Commands.Guild
         [GuildOnly]
         public async Task FmSetFmCooldownCommand(string command = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? ConfigData.Data.Bot.Prefix;
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
             if (guild == null)
