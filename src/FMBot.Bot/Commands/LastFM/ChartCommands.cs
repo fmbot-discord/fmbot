@@ -222,6 +222,7 @@ namespace FMBot.Bot.Commands.LastFM
                     stream,
                     $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimePeriod}-{userSettings.UserNameLastFm}.png",
                     embed: this._embed.Build());
+                await stream.DisposeAsync();
 
                 this.Context.LogCommandUsed();
             }
@@ -397,6 +398,7 @@ namespace FMBot.Bot.Commands.LastFM
                     stream,
                     $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimePeriod}-{userSettings.UserNameLastFm}.png",
                     embed: this._embed.Build());
+                await stream.DisposeAsync();
 
                 this.Context.LogCommandUsed();
             }

@@ -224,9 +224,10 @@ namespace FMBot.Bot.Services
 
         private static void PrepareCacheFolder()
         {
-            if (!Directory.Exists(FMBotUtil.GlobalVars.CacheFolder))
+            var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache");
+            if (!Directory.Exists(path))
             {
-                Directory.CreateDirectory(FMBotUtil.GlobalVars.CacheFolder);
+                Directory.CreateDirectory(path);
             }
         }
     }

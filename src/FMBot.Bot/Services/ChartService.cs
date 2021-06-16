@@ -17,24 +17,37 @@ namespace FMBot.Bot.Services
     public class ChartService
     {
         private readonly CensorService _censorService;
+
+        private readonly string _fontPath;
+        private readonly string _loadingErrorImagePath;
+        private readonly string _unknownImagePath;
+        private readonly string _censoredImagePath;
+
         public ChartService(CensorService censorService)
         {
             this._censorService = censorService;
 
             try
             {
-                var filePath = AppDomain.CurrentDomain.BaseDirectory + "arial-unicode-ms.ttf";
+                this._fontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "arial-unicode-ms.ttf");
+                this._loadingErrorImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "loading-error.png");
+                this._unknownImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "censored.png");
+                this._censoredImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "unknown.png");
 
-                if (!File.Exists(filePath))
+                if (!File.Exists(this._fontPath))
                 {
-                    Log.Information("Downloading chart font...");
+                    Log.Information("Downloading chart files...");
                     var wc = new System.Net.WebClient();
-                    wc.DownloadFile("https://fmbot.xyz/fonts/arial-unicode-ms.ttf", filePath);
+                    wc.DownloadFile("https://fmbot.xyz/fonts/arial-unicode-ms.ttf", this._fontPath);
+                    wc.DownloadFile("https://fmbot.xyz/img/bot/loading-error.png", this._loadingErrorImagePath);
+                    wc.DownloadFile("https://fmbot.xyz/img/bot/unknown.png", this._unknownImagePath);
+                    wc.DownloadFile("https://fmbot.xyz/img/bot/censored.png", this._censoredImagePath);
+                    wc.Dispose();
                 }
             }
             catch (Exception e)
             {
-                Log.Error(e, "Something went wrong while downloading chart font");
+                Log.Error(e, "Something went wrong while downloading chart files");
             }
         }
 
@@ -55,10 +68,6 @@ namespace FMBot.Bot.Services
 
                 var httpClient = new System.Net.Http.HttpClient();
 
-                const string loadingErrorImgUrl = "https://fmbot.xyz/img/bot/loading-error.png";
-                const string unknownImgUrl = "https://fmbot.xyz/img/bot/unknown.png";
-                const string censoredImgUrl = "https://fmbot.xyz/img/bot/censored.png";
-
                 if (!artistChart)
                 {
                     await chart.Albums.ParallelForEachAsync(async album =>
@@ -70,8 +79,7 @@ namespace FMBot.Bot.Services
                         var validImage = true;
 
                         var fileName = localAlbumId + ".png";
-                        var localPath = Path.Combine(FMBotUtil.GlobalVars.CacheFolder, fileName);
-
+                        var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
 
                         if (File.Exists(localPath))
                         {
@@ -94,18 +102,14 @@ namespace FMBot.Bot.Services
                                 catch (Exception e)
                                 {
                                     Log.Error("Error while loading image for generated chart", e);
-                                    var bytes = await httpClient.GetByteArrayAsync(loadingErrorImgUrl);
-                                    await using var stream = new MemoryStream(bytes);
-                                    chartImage = SKBitmap.Decode(stream);
+                                    chartImage = SKBitmap.Decode(this._loadingErrorImagePath);
                                     validImage = false;
                                 }
 
                                 if (chartImage == null)
                                 {
                                     Log.Error("Error while loading image for generated chart (chartimg null)");
-                                    var bytes = await httpClient.GetByteArrayAsync(loadingErrorImgUrl);
-                                    await using var stream = new MemoryStream(bytes);
-                                    chartImage = SKBitmap.Decode(stream);
+                                    chartImage = SKBitmap.Decode(this._loadingErrorImagePath);
                                     validImage = false;
                                 }
 
@@ -119,9 +123,7 @@ namespace FMBot.Bot.Services
                             }
                             else
                             {
-                                var bytes = await httpClient.GetByteArrayAsync(unknownImgUrl);
-                                await using var stream = new MemoryStream(bytes);
-                                chartImage = SKBitmap.Decode(stream);
+                                chartImage = SKBitmap.Decode(this._unknownImagePath);
                                 validImage = false;
                             }
                         }
@@ -130,9 +132,7 @@ namespace FMBot.Bot.Services
                         {
                             if (!nsfwAllowed || !await this._censorService.AlbumIsAllowedInNsfw(album.AlbumName, album.ArtistName))
                             {
-                                var bytes = await httpClient.GetByteArrayAsync(censoredImgUrl);
-                                await using var stream = new MemoryStream(bytes);
-                                chartImage = SKBitmap.Decode(stream);
+                                chartImage = SKBitmap.Decode(this._censoredImagePath);
                                 validImage = false;
                                 if (chart.CensoredAlbums.HasValue)
                                 {
@@ -159,7 +159,7 @@ namespace FMBot.Bot.Services
                         var validImage = true;
 
                         var fileName = localAlbumId + ".png";
-                        var localPath = Path.Combine(FMBotUtil.GlobalVars.CacheFolder, fileName);
+                        var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
 
                         if (File.Exists(localPath))
                         {
@@ -178,18 +178,14 @@ namespace FMBot.Bot.Services
                                 catch (Exception e)
                                 {
                                     Log.Error("Error while loading image for generated artist chart", e);
-                                    var bytes = await httpClient.GetByteArrayAsync(loadingErrorImgUrl);
-                                    await using var stream = new MemoryStream(bytes);
-                                    chartImage = SKBitmap.Decode(stream);
+                                    chartImage = SKBitmap.Decode(this._loadingErrorImagePath);
                                     validImage = false;
                                 }
 
                                 if (chartImage == null)
                                 {
                                     Log.Error("Error while loading image for generated artist chart (chartimg null)");
-                                    var bytes = await httpClient.GetByteArrayAsync(loadingErrorImgUrl);
-                                    await using var stream = new MemoryStream(bytes);
-                                    chartImage = SKBitmap.Decode(stream);
+                                    chartImage = SKBitmap.Decode(this._loadingErrorImagePath);
                                     validImage = false;
                                 }
 
@@ -203,9 +199,7 @@ namespace FMBot.Bot.Services
                             }
                             else
                             {
-                                var bytes = await httpClient.GetByteArrayAsync(unknownImgUrl);
-                                await using var stream = new MemoryStream(bytes);
-                                chartImage = SKBitmap.Decode(stream);
+                                chartImage = SKBitmap.Decode(this._unknownImagePath);
                                 validImage = false;
                             }
                         }
@@ -213,6 +207,8 @@ namespace FMBot.Bot.Services
                         AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, artist: artist);
                     });
                 }
+
+                httpClient.Dispose();
 
                 SKImage finalImage = null;
 
@@ -247,6 +243,7 @@ namespace FMBot.Bot.Services
 
                         canvas.DrawBitmap(image, SKRect.Create(offset, offsetTop, image.Width, image.Height));
 
+
                         if (i == (chart.Width - 1) || i - (chart.Width) * heightRow == chart.Width - 1)
                         {
                             offsetTop += image.Height;
@@ -260,6 +257,7 @@ namespace FMBot.Bot.Services
                     }
 
                     finalImage = tempSurface.Snapshot();
+                    tempSurface.Dispose();
                 }
 
                 return finalImage;
@@ -273,7 +271,7 @@ namespace FMBot.Bot.Services
             }
         }
 
-        private static void AddImageToChart(ChartSettings chart, SKBitmap chartImage, int chartImageHeight,
+        private void AddImageToChart(ChartSettings chart, SKBitmap chartImage, int chartImageHeight,
             int chartImageWidth, bool largerImages, bool validImage, TopAlbum album = null, TopArtist artist = null)
         {
             if (chartImage.Height != chartImageHeight || chartImage.Width != chartImageWidth)
@@ -331,12 +329,12 @@ namespace FMBot.Bot.Services
             chart.ChartImages.Add(new ChartImage(chartImage, index, validImage, primaryColor));
         }
 
-        private static void AddTitleToChartImage(SKBitmap chartImage, bool largerImages, TopAlbum album = null, TopArtist artist = null)
+        private void AddTitleToChartImage(SKBitmap chartImage, bool largerImages, TopAlbum album = null, TopArtist artist = null)
         {
             var textColor = chartImage.GetTextColor();
             var rectangleColor = textColor == SKColors.Black ? SKColors.White : SKColors.Black;
 
-            var typeface = SKTypeface.FromFile(AppDomain.CurrentDomain.BaseDirectory + "arial-unicode-ms.ttf");
+            var typeface = SKTypeface.FromFile(this._fontPath);
 
             var artistName = artist?.ArtistName ?? album?.ArtistName;
             var albumName = album?.AlbumName;
