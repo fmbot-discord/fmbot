@@ -30,9 +30,9 @@ namespace FMBot.Bot.Services
             try
             {
                 this._fontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "arial-unicode-ms.ttf");
-                this._loadingErrorImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "loading-error.png");
-                this._unknownImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "censored.png");
-                this._censoredImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "unknown.png");
+                this._loadingErrorImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "loading-error.png");
+                this._unknownImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "censored.png");
+                this._censoredImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "unknown.png");
 
                 if (!File.Exists(this._fontPath))
                 {
