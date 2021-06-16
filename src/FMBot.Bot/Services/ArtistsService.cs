@@ -42,7 +42,7 @@ namespace FMBot.Bot.Services
             foreach (var topArtist in topArtists.Where(w => w.ArtistImageUrl == null))
             {
                 var url = topArtist.ArtistUrl.ToLower();
-                var artistImage = albumCovers.FirstOrDefault(item => item.LastFmUrl.Contains(url));
+                var artistImage = albumCovers.FirstOrDefault(item => item.LastFmUrl.Equals(url));
 
                 if (artistImage != null)
                 {

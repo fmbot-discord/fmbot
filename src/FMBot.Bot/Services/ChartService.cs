@@ -51,7 +51,7 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async Task<SKImage> GenerateChartAsync(ChartSettings chart, bool nsfwAllowed, bool artistChart)
+        public async Task<SKImage> GenerateChartAsync(ChartSettings chart, bool nsfwAllowed)
         {
             try
             {
@@ -68,7 +68,7 @@ namespace FMBot.Bot.Services
 
                 var httpClient = new System.Net.Http.HttpClient();
 
-                if (!artistChart)
+                if (!chart.ArtistChart)
                 {
                     await chart.Albums.ParallelForEachAsync(async album =>
                     {
@@ -536,17 +536,20 @@ namespace FMBot.Bot.Services
 
         public static string AddSettingsToDescription(ChartSettings chartSettings, string embedDescription, string randomSupporter, string prfx)
         {
+            var single = chartSettings.ArtistChart ? "Artist" : "Album";
+            var multiple = chartSettings.ArtistChart ? "Artists" : "Albums";
+
             if (chartSettings.CustomOptionsEnabled)
             {
                 embedDescription += "Chart options:\n";
             }
             if (chartSettings.SkipWithoutImage)
             {
-                embedDescription += "- Albums without images skipped\n";
+                embedDescription += $"- {multiple} without images skipped\n";
             }
             if (chartSettings.TitleSetting == TitleSetting.TitlesDisabled)
             {
-                embedDescription += "- Album titles disabled\n";
+                embedDescription += $"- {single} titles disabled\n";
             }
             if (chartSettings.TitleSetting == TitleSetting.ClassicTitles)
             {
@@ -558,7 +561,7 @@ namespace FMBot.Bot.Services
             }
 
             var rnd = new Random();
-            if (chartSettings.ImagesNeeded == 1 && rnd.Next(0, 3) == 1)
+            if (chartSettings.ImagesNeeded == 1 && rnd.Next(0, 3) == 1 && !chartSettings.ArtistChart)
             {
                 embedDescription += "*Linus Tech Tip: If you want the cover of the album you're currently listening to, use `.fmcover` or `.fmco`.*\n";
             }

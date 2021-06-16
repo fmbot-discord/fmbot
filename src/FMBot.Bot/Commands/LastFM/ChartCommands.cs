@@ -128,7 +128,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                var chartSettings = new ChartSettings(this.Context.User);
+                var chartSettings = new ChartSettings(this.Context.User) {ArtistChart = false};
 
                 chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, this.Context);
 
@@ -196,7 +196,7 @@ namespace FMBot.Bot.Commands.LastFM
                 embedDescription += ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, prfx);
 
                 var nsfwAllowed = this.Context.Guild == null || ((SocketTextChannel)this.Context.Channel).IsNsfw;
-                var chart = await this._chartService.GenerateChartAsync(chartSettings, nsfwAllowed, false);
+                var chart = await this._chartService.GenerateChartAsync(chartSettings, nsfwAllowed);
 
                 if (chartSettings.CensoredAlbums.HasValue && chartSettings.CensoredAlbums > 0)
                 {
@@ -300,7 +300,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                var chartSettings = new ChartSettings(this.Context.User);
+                var chartSettings = new ChartSettings(this.Context.User) {ArtistChart = true};
 
                 chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, this.Context);
 
@@ -387,7 +387,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var supporter = await this._supporterService.GetRandomSupporter(this.Context.Guild);
                 embedDescription += ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, prfx);
 
-                var chart = await this._chartService.GenerateChartAsync(chartSettings, true, true);
+                var chart = await this._chartService.GenerateChartAsync(chartSettings, true);
 
                 this._embed.WithDescription(embedDescription);
 

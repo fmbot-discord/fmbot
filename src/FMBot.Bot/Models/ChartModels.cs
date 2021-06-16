@@ -23,6 +23,8 @@ namespace FMBot.Bot.Models
 
         public List<TopArtist> Artists { get; set; }
 
+        public bool ArtistChart { get; set; }
+
         public int Height { get; set; }
 
         public int Width { get; set; }
