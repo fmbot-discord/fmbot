@@ -6,18 +6,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
-using IF.Lastfm.Core.Api.Enums;
-using IF.Lastfm.Core.Objects;
 using Microsoft.Extensions.Options;
 using Serilog;
-using static FMBot.Bot.FMBotUtil;
 using Image = Discord.Image;
 
 namespace FMBot.Bot.Services

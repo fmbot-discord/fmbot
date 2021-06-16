@@ -10,7 +10,6 @@ using FMBot.Bot.Attributes;
 using FMBot.Bot.Services;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
-using static FMBot.Bot.FMBotUtil;
 
 namespace FMBot.Bot.Commands
 {
@@ -59,7 +58,6 @@ namespace FMBot.Bot.Commands
             {
                 await ReplyAsync("Restarting bot...");
                 this.Context.LogCommandUsed();
-                await (this.Context.Client as DiscordSocketClient).SetStatusAsync(UserStatus.Invisible);
                 Environment.Exit(1);
             }
             else
@@ -105,32 +103,6 @@ namespace FMBot.Bot.Commands
             {
                 await ReplyAsync("Error: Insufficient rights. Only FMBot owners can change your usertype.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
-            }
-        }
-
-
-        [Command("removereadonly"), Summary("Removes read only on all directories.")]
-        [Alias("readonlyfix")]
-        [UsernameSetRequired]
-        public async Task RemoveReadOnlyAsync()
-        {
-            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
-            {
-                try
-                {
-                    if (Directory.Exists(GlobalVars.CacheFolder))
-                    {
-                        DirectoryInfo users = new DirectoryInfo(GlobalVars.CacheFolder);
-                    }
-
-                    await ReplyAsync("Removed read only on all directories.");
-                    this.Context.LogCommandUsed();
-                }
-                catch (Exception e)
-                {
-                    this.Context.LogCommandException(e);
-                    await ReplyAsync("Unable to remove read only on all directories due to an internal error.");
-                }
             }
         }
 
