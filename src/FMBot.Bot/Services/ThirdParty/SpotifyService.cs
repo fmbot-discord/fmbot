@@ -184,6 +184,7 @@ namespace FMBot.Bot.Services.ThirdParty
             {
                 var spotifyArtist = results.Artists.Items
                     .OrderByDescending(o => o.Popularity)
+                    .ThenByDescending(o => o.Followers.Total)
                     .FirstOrDefault(w => w.Name.ToLower() == artistName.ToLower());
 
                 if (spotifyArtist != null)

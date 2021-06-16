@@ -8,6 +8,8 @@ namespace FMBot.Domain.Models
 
         public DatabaseConfig Database { get; set; }
 
+        public LoggingConfig Logging { get; set; }
+
         public BotConfig Bot { get; set; }
 
         public LastFmConfig LastFm { get; set; }
@@ -31,6 +33,13 @@ namespace FMBot.Domain.Models
     public class DatabaseConfig
     {
         public string ConnectionString { get; set; }
+    }
+
+    public class LoggingConfig
+    {
+        public string SeqServerUrl { get; set; }
+
+        public string SeqApiKey { get; set; }
     }
 
     public class BotConfig
