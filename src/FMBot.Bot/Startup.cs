@@ -58,7 +58,7 @@ namespace FMBot.Bot
                 .Enrich.WithExceptionDetails()
                 .Enrich.WithProperty("Environment", !string.IsNullOrEmpty(this.Configuration.GetSection("Environment")?.Value) ? this.Configuration.GetSection("Environment").Value : "unknown")
                 .Enrich.WithProperty("BotUserId", botUserId)
-                .WriteTo.Console()
+                .WriteTo.Async(w => w.Console())
                 .WriteTo.Seq(this.Configuration.GetSection("Logging:SeqServerUrl")?.Value, apiKey: this.Configuration.GetSection("Logging:SeqApiKey")?.Value)
                 // https://github.com/CXuesong/Serilog.Sinks.Discord/issues/3
                 //.WriteTo.Conditional(evt =>
