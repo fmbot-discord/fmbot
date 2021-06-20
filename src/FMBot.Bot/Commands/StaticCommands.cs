@@ -103,7 +103,7 @@ namespace FMBot.Bot.Commands
                 "[Main repository](https://github.com/fmbot-discord/fmbot/)\n" +
                 "[Docs repository](https://github.com/fmbot-discord/docs)\n" +
                 "[File an issue](https://github.com/fmbot-discord/fmbot/issues/new/choose)\n" +
-                "[Setup instructions](https://fmbot.xyz/setup/)\n" +
+                "[Development instructions](https://fmbot.xyz/setup.html)\n" +
                 "[OpenCollective](https://opencollective.com/fmbot)");
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
@@ -221,9 +221,8 @@ namespace FMBot.Bot.Commands
         {
             var customPrefix = true;
             var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            if (prefix == null)
+            if (prefix == this._botSettings.Bot.Prefix)
             {
-                prefix = this._botSettings.Bot.Prefix;
                 customPrefix = false;
             }
 

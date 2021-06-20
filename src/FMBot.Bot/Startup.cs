@@ -150,6 +150,8 @@ namespace FMBot.Bot
                 .AddTransient<LastFmRepository>()
                 .AddTransient<InvidiousApi>();
 
+            services.AddHealthChecks();
+
             services.AddDbContextFactory<FMBotDbContext>(b =>
                 b.UseNpgsql(this.Configuration["Database:ConnectionString"]));
 
