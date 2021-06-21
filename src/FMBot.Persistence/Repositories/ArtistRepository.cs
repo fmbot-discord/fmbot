@@ -17,12 +17,10 @@ namespace FMBot.Persistence.Repositories
             this._botSettings = botSettings.Value;
         }
 
-        public async Task<Artist> GetArtistForName(string artistName, NpgsqlConnection connection = null)
+        public async Task<Artist> GetArtistForName(string artistName, NpgsqlConnection connection)
         {
             const string getArtistQuery = "SELECT * FROM public.artists " +
                                         "WHERE UPPER(name) = UPPER(CAST(@artistName AS CITEXT))";
-
-            connection = StartConnection(connection);
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
             return await connection.QueryFirstOrDefaultAsync<Artist>(getArtistQuery, new
@@ -31,10 +29,8 @@ namespace FMBot.Persistence.Repositories
             });
         }
 
-        public async Task AddOrUpdateArtistAlias(int artistId, string artistNameBeforeCorrect, NpgsqlConnection connection = null)
+        public async Task AddOrUpdateArtistAlias(int artistId, string artistNameBeforeCorrect, NpgsqlConnection connection)
         {
-            connection = StartConnection(connection);
-
             const string deleteQuery = @"DELETE FROM public.artist_aliases WHERE artist_id = @artist_id AND alias = @alias";
             await connection.ExecuteAsync(deleteQuery, new
             {
@@ -53,10 +49,8 @@ namespace FMBot.Persistence.Repositories
             });
         }
 
-        public async Task AddOrUpdateArtistGenres(int artistId, IEnumerable<string> genreNames, NpgsqlConnection connection = null)
+        public async Task AddOrUpdateArtistGenres(int artistId, IEnumerable<string> genreNames, NpgsqlConnection connection)
         {
-            connection = StartConnection(connection);
-
             const string deleteQuery = @"DELETE FROM public.artist_genres WHERE artist_id = @artist_id";
             await connection.ExecuteAsync(deleteQuery, new { artistId });
 
@@ -71,17 +65,6 @@ namespace FMBot.Persistence.Repositories
                     name = genreName
                 });
             }
-        }
-
-        private NpgsqlConnection StartConnection(NpgsqlConnection connection = null)
-        {
-            if (connection == null)
-            {
-                connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-                connection.Open();
-            }
-
-            return connection;
         }
     }
 }

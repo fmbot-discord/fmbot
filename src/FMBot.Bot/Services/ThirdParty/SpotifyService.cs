@@ -485,7 +485,13 @@ namespace FMBot.Bot.Services.ThirdParty
 
         public async Task<ICollection<Track>> GetExistingAlbumTracks(int albumId)
         {
-            return await this._trackRepository.GetAlbumTracks(albumId);
+            var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            connection.Open();
+
+            var albumTracks =  await this._trackRepository.GetAlbumTracks(albumId, connection);
+            await connection.CloseAsync();
+
+            return albumTracks;
         }
 
         private SpotifyClient GetSpotifyWebApi()

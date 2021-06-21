@@ -241,7 +241,12 @@ namespace FMBot.Bot.Services
 
             var correctedArtistName = alias != null ? alias.Artist.Name : artistName;
 
-            var artist = await this._artistRepository.GetArtistForName(correctedArtistName);
+            var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            connection.Open();
+
+            var artist = await this._artistRepository.GetArtistForName(correctedArtistName, connection);
+
+            await connection.CloseAsync();
 
             return artist?.SpotifyId != null ? artist : null;
         }
