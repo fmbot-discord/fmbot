@@ -9,4 +9,9 @@
     <PackageReference Include="Npgsql" Version="5.0.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FMBot.Domain\FMBot.Domain.csproj" />
+    <ProjectReference Include="..\FMBot.Persistence.EntityFrameWork\FMBot.Persistence.EntityFrameWork.csproj" />
+  </ItemGroup>
+
 </Project>
