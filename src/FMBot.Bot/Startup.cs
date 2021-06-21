@@ -22,6 +22,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using Serilog.Events;
 using Serilog.Exceptions;
 
 namespace FMBot.Bot
@@ -58,7 +59,7 @@ namespace FMBot.Bot
                 .Enrich.WithExceptionDetails()
                 .Enrich.WithProperty("Environment", !string.IsNullOrEmpty(this.Configuration.GetSection("Environment")?.Value) ? this.Configuration.GetSection("Environment").Value : "unknown")
                 .Enrich.WithProperty("BotUserId", botUserId)
-                .WriteTo.Async(w => w.Console())
+                .WriteTo.Console()
                 .WriteTo.Seq(this.Configuration.GetSection("Logging:SeqServerUrl")?.Value, apiKey: this.Configuration.GetSection("Logging:SeqApiKey")?.Value)
                 // https://github.com/CXuesong/Serilog.Sinks.Discord/issues/3
                 //.WriteTo.Conditional(evt =>
