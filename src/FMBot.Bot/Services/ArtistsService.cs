@@ -9,6 +9,7 @@ using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
+using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -22,11 +23,13 @@ namespace FMBot.Bot.Services
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
         private readonly IMemoryCache _cache;
         private readonly BotSettings _botSettings;
+        private readonly ArtistRepository _artistRepository;
 
-        public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings)
+        public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings, ArtistRepository artistRepository)
         {
             this._contextFactory = contextFactory;
             this._cache = cache;
+            this._artistRepository = artistRepository;
             this._botSettings = botSettings.Value;
         }
 
@@ -238,10 +241,7 @@ namespace FMBot.Bot.Services
 
             var correctedArtistName = alias != null ? alias.Artist.Name : artistName;
 
-            await using var db = this._contextFactory.CreateDbContext();
-            var artist = await db.Artists
-                .AsNoTracking()
-                .FirstOrDefaultAsync(f => EF.Functions.ILike(f.Name, correctedArtistName));
+            var artist = await this._artistRepository.GetArtistForName(correctedArtistName);
 
             return artist?.SpotifyId != null ? artist : null;
         }
