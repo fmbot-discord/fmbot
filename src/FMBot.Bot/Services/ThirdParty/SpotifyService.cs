@@ -150,6 +150,8 @@ namespace FMBot.Bot.Services.ThirdParty
                     }
                 }
 
+                await connection.CloseAsync();
+
                 return !string.IsNullOrEmpty(imageUrlToReturn) ? imageUrlToReturn : null;
             }
             catch (Exception e)
@@ -190,7 +192,11 @@ namespace FMBot.Bot.Services.ThirdParty
             try
             {
                 await using var db = this._contextFactory.CreateDbContext();
-                var dbTrack = await this._trackRepository.GetTrackForName(trackInfo.ArtistName, trackInfo.TrackName);
+
+                var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+                connection.Open();
+
+                var dbTrack = await this._trackRepository.GetTrackForName(trackInfo.ArtistName, trackInfo.TrackName, connection);
 
                 if (dbTrack == null)
                 {
@@ -201,7 +207,7 @@ namespace FMBot.Bot.Services.ThirdParty
                         ArtistName = trackInfo.ArtistName
                     };
 
-                    var artist = await this._artistRepository.GetArtistForName(trackInfo.ArtistName);
+                    var artist = await this._artistRepository.GetArtistForName(trackInfo.ArtistName, connection);
 
                     if (artist != null)
                     {
@@ -234,7 +240,7 @@ namespace FMBot.Bot.Services.ThirdParty
 
                 if (!dbTrack.ArtistId.HasValue)
                 {
-                    var artist = await this._artistRepository.GetArtistForName(trackInfo.ArtistName);
+                    var artist = await this._artistRepository.GetArtistForName(trackInfo.ArtistName, connection);
 
                     if (artist != null)
                     {
@@ -265,6 +271,8 @@ namespace FMBot.Bot.Services.ThirdParty
                 }
 
                 await db.SaveChangesAsync();
+
+                await connection.CloseAsync();
 
                 return dbTrack;
             }
@@ -353,7 +361,11 @@ namespace FMBot.Bot.Services.ThirdParty
             Log.Information("Executing GetOrStoreSpotifyAlbumAsync");
 
             await using var db = this._contextFactory.CreateDbContext();
-            var dbAlbum = await this._albumRepository.GetAlbumForName(albumInfo.ArtistName, albumInfo.AlbumName);
+
+            var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            connection.Open();
+
+            var dbAlbum = await this._albumRepository.GetAlbumForName(albumInfo.ArtistName, albumInfo.AlbumName, connection);
 
             if (dbAlbum == null)
             {
@@ -365,7 +377,7 @@ namespace FMBot.Bot.Services.ThirdParty
                     Mbid = albumInfo.Mbid
                 };
 
-                var artist = await this._artistRepository.GetArtistForName(albumInfo.ArtistName);
+                var artist = await this._artistRepository.GetArtistForName(albumInfo.ArtistName, connection);
 
                 if (artist != null && artist.Id != 0)
                 {
@@ -389,14 +401,16 @@ namespace FMBot.Bot.Services.ThirdParty
 
                 if (spotifyAlbum != null)
                 {
-                    await GetOrStoreAlbumTracks(spotifyAlbum.Tracks.Items, albumInfo, albumToAdd.Id);
+                    await GetOrStoreAlbumTracks(spotifyAlbum.Tracks.Items, albumInfo, albumToAdd.Id, connection);
                 }
+
+                await connection.CloseAsync();
 
                 return albumToAdd;
             }
             if (dbAlbum.Artist == null)
             {
-                var artist = await this._artistRepository.GetArtistForName(albumInfo.ArtistName);
+                var artist = await this._artistRepository.GetArtistForName(albumInfo.ArtistName, connection);
 
                 if (artist != null && artist.Id != 0)
                 {
@@ -425,21 +439,23 @@ namespace FMBot.Bot.Services.ThirdParty
 
                 if (spotifyAlbum != null)
                 {
-                    await GetOrStoreAlbumTracks(spotifyAlbum.Tracks.Items, albumInfo, dbAlbum.Id);
+                    await GetOrStoreAlbumTracks(spotifyAlbum.Tracks.Items, albumInfo, dbAlbum.Id, connection);
                 }
             }
+
+            await connection.CloseAsync();
 
             return dbAlbum;
         }
 
         private async Task GetOrStoreAlbumTracks(IEnumerable<SimpleTrack> simpleTracks, AlbumInfo albumInfo,
-            int albumId)
+            int albumId, NpgsqlConnection connection)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var dbTracks = new List<Track>();
             foreach (var track in simpleTracks.OrderBy(o => o.TrackNumber))
             {
-                var dbTrack = await this._trackRepository.GetTrackForName(albumInfo.ArtistName, track.Name);
+                var dbTrack = await this._trackRepository.GetTrackForName(albumInfo.ArtistName, track.Name, connection);
 
                 if (dbTrack != null)
                 {
