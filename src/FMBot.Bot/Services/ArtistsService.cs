@@ -75,6 +75,8 @@ namespace FMBot.Bot.Services
 
             this._cache.Set(cacheKey, artistCovers, TimeSpan.FromMinutes(1));
 
+            await connection.CloseAsync();
+
             return artistCovers;
         }
 

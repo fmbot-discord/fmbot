@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Dapper;
 using Discord;
 using Discord.WebSocket;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Domain.Models;
@@ -130,6 +129,8 @@ namespace FMBot.Bot.Services
 
             Log.Information("Stored guild users for guild with id {guildId}", existingGuild.GuildId);
 
+            await connection.CloseAsync();
+
             return users.Count;
         }
 
@@ -212,6 +213,8 @@ namespace FMBot.Bot.Services
                 guildId = guildId,
                 userId = userId
             });
+
+            await connection.CloseAsync();
         }
 
         public async Task RemoveUserFromGuild(SocketGuildUser user)

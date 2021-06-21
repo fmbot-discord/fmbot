@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Dapper;
 using Dasync.Collections;
 using Discord.Commands;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -53,6 +52,8 @@ namespace FMBot.Bot.Services.WhoKnows
                 guildId,
                 artistName
             })).ToList();
+
+            await connection.CloseAsync();
 
             var whoKnowsArtistList = new List<WhoKnowsObjectWithUser>();
 
@@ -106,6 +107,8 @@ namespace FMBot.Bot.Services.WhoKnows
             {
                 artistName
             })).ToList();
+
+            await connection.CloseAsync();
 
             var whoKnowsArtistList = new List<WhoKnowsObjectWithUser>();
 
@@ -162,10 +165,13 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            return (await connection.QueryAsync<ListArtist>(sql, new
+            var topArtists = (await connection.QueryAsync<ListArtist>(sql, new
             {
                 guildId
             })).ToList();
+
+            await connection.CloseAsync();
+            return topArtists;
         }
 
         public async Task<int?> GetArtistPlayCountForUser(string artistName, int userId)
@@ -178,11 +184,14 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            return await connection.QuerySingleOrDefaultAsync<int?>(sql, new
+            var playcount = await connection.QuerySingleOrDefaultAsync<int?>(sql, new
             {
                 userId,
                 artistName
             });
+
+            await connection.CloseAsync();
+            return playcount;
         }
 
         public async Task<int> GetWeekArtistPlaycountForGuildAsync(int guildId, string artistName)
@@ -201,12 +210,15 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            return await connection.QuerySingleAsync<int>(sql, new
+            var playcount = await connection.QuerySingleAsync<int>(sql, new
             {
                 guildId,
                 artistName,
                 minDate
             });
+
+            await connection.CloseAsync();
+            return playcount;
         }
 
         // TODO: figure out how to do this

@@ -62,6 +62,7 @@ namespace FMBot.Bot.Services
             await connection.OpenAsync();
 
             albumCovers = (await connection.QueryAsync<AlbumSpotifyCoverDto>(sql)).ToList();
+            await connection.CloseAsync();
 
             this._cache.Set(cacheKey, albumCovers, TimeSpan.FromMinutes(1));
 
