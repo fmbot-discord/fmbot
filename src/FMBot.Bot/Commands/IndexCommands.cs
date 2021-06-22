@@ -62,6 +62,7 @@ namespace FMBot.Bot.Commands
             try
             {
                 var guildUsers = await this.Context.Guild.GetUsersAsync();
+
                 Log.Information("Downloaded {guildUserCount} users for guild {guildId} / {guildName} from Discord",
                     guildUsers.Count, this.Context.Guild.Id, this.Context.Guild.Name);
 

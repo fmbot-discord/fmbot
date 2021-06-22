@@ -1,18 +1,17 @@
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Text;
 using System.Threading.Tasks;
-using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
-using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
-using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Commands
@@ -180,6 +179,55 @@ namespace FMBot.Bot.Commands
             else
             {
                 await ReplyAsync("Error: Insufficient rights. Only FMBot admins can change issue mode.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+
+        [Command("purgecache")]
+        [Summary("Purges discord caches")]
+        public async Task PurgeCacheAsync()
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                var client = this.Context.Client as DiscordShardedClient;
+                if (client == null)
+                {
+                    await ReplyAsync("Client is null");
+                    return;
+                }
+
+                var currentProcess = Process.GetCurrentProcess();
+                var currentMemoryUsage = currentProcess.WorkingSet64;
+                var reply = new StringBuilder();
+
+                reply.AppendLine("Purged user, channel, DM channel cache and ran garbage collector.");
+                reply.AppendLine($"Memory before purge: `{currentMemoryUsage.ToFormattedByteString()}`");
+
+                foreach (var socketClient in client.Shards)
+                {
+                    socketClient.PurgeUserCache();
+                    socketClient.PurgeChannelCache();
+                    socketClient.PurgeDMChannelCache();
+                }
+
+                GC.Collect();
+
+                await Task.Delay(2000);
+
+                currentProcess = Process.GetCurrentProcess();
+                currentMemoryUsage = currentProcess.WorkingSet64;
+
+                reply.AppendLine($"Memory after purge: `{currentMemoryUsage.ToFormattedByteString()}`");
+
+                await ReplyAsync(reply.ToString());
+
+                this.Context.LogCommandUsed();
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only FMBot admins can change purge cache.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }
