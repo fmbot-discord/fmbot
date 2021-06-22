@@ -281,8 +281,6 @@ namespace FMBot.Bot.Services
                         foreach (var socketClient in clients)
                         {
                             socketClient.PurgeUserCache();
-                            socketClient.PurgeChannelCache();
-                            socketClient.PurgeDMChannelCache();
                         }
                         Log.Information("Purged discord caches");
                     }

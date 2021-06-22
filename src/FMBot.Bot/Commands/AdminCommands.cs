@@ -208,8 +208,6 @@ namespace FMBot.Bot.Commands
                 foreach (var socketClient in client.Shards)
                 {
                     socketClient.PurgeUserCache();
-                    socketClient.PurgeChannelCache();
-                    socketClient.PurgeDMChannelCache();
                 }
 
                 GC.Collect();
