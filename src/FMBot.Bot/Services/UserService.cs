@@ -363,7 +363,7 @@ namespace FMBot.Bot.Services
                 this._cache.Remove($"user-isRegistered-{user.DiscordUserId}");
 
                 await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-                connection.Open();
+                await connection.OpenAsync();
 
                 await using var deleteRelatedTables = new NpgsqlCommand(
                     $"DELETE FROM public.user_artists WHERE user_id = {user.UserId}; " +

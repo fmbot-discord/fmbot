@@ -75,8 +75,6 @@ namespace FMBot.Bot.Services
 
             this._cache.Set(cacheKey, artistCovers, TimeSpan.FromMinutes(1));
 
-            await connection.CloseAsync();
-
             return artistCovers;
         }
 
@@ -243,8 +241,8 @@ namespace FMBot.Bot.Services
 
             var correctedArtistName = alias != null ? alias.Artist.Name : artistName;
 
-            var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-            connection.Open();
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
 
             var artist = await this._artistRepository.GetArtistForName(correctedArtistName, connection);
 

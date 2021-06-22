@@ -120,7 +120,7 @@ namespace FMBot.Bot.Services
                 .MapBoolean("bot", x => x.Bot == true);
 
             await using var connection = new NpgsqlConnection(connString);
-            connection.Open();
+            await connection.OpenAsync();
 
             await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.guild_users WHERE guild_id = {existingGuild.GuildId};", connection);
             await deleteCurrentArtists.ExecuteNonQueryAsync();
@@ -213,8 +213,6 @@ namespace FMBot.Bot.Services
                 guildId = guildId,
                 userId = userId
             });
-
-            await connection.CloseAsync();
         }
 
         public async Task RemoveUserFromGuild(SocketGuildUser user)

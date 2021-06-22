@@ -49,8 +49,8 @@ namespace FMBot.Bot.Services.ThirdParty
         {
             Log.Information("Executing GetOrStoreArtistImageAsync");
 
-            var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-            connection.Open();
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
 
             try
             {
@@ -193,8 +193,8 @@ namespace FMBot.Bot.Services.ThirdParty
             {
                 await using var db = this._contextFactory.CreateDbContext();
 
-                var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-                connection.Open();
+                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+                await connection.OpenAsync();
 
                 var dbTrack = await this._trackRepository.GetTrackForName(trackInfo.ArtistName, trackInfo.TrackName, connection);
 
@@ -362,8 +362,8 @@ namespace FMBot.Bot.Services.ThirdParty
 
             await using var db = this._contextFactory.CreateDbContext();
 
-            var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-            connection.Open();
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
 
             var dbAlbum = await this._albumRepository.GetAlbumForName(albumInfo.ArtistName, albumInfo.AlbumName, connection);
 
@@ -485,8 +485,8 @@ namespace FMBot.Bot.Services.ThirdParty
 
         public async Task<ICollection<Track>> GetExistingAlbumTracks(int albumId)
         {
-            var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-            connection.Open();
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
 
             var albumTracks =  await this._trackRepository.GetAlbumTracks(albumId, connection);
             await connection.CloseAsync();

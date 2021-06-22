@@ -53,8 +53,6 @@ namespace FMBot.Bot.Services.WhoKnows
                 artistName
             })).ToList();
 
-            await connection.CloseAsync();
-
             var whoKnowsArtistList = new List<WhoKnowsObjectWithUser>();
 
             for (var i = 0; i < userArtists.Count; i++)
@@ -107,8 +105,6 @@ namespace FMBot.Bot.Services.WhoKnows
             {
                 artistName
             })).ToList();
-
-            await connection.CloseAsync();
 
             var whoKnowsArtistList = new List<WhoKnowsObjectWithUser>();
 
@@ -165,13 +161,10 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var topArtists = (await connection.QueryAsync<ListArtist>(sql, new
+            return (await connection.QueryAsync<ListArtist>(sql, new
             {
                 guildId
             })).ToList();
-
-            await connection.CloseAsync();
-            return topArtists;
         }
 
         public async Task<int?> GetArtistPlayCountForUser(string artistName, int userId)
@@ -184,14 +177,11 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var playcount = await connection.QuerySingleOrDefaultAsync<int?>(sql, new
+            return await connection.QuerySingleOrDefaultAsync<int?>(sql, new
             {
                 userId,
                 artistName
             });
-
-            await connection.CloseAsync();
-            return playcount;
         }
 
         public async Task<int> GetWeekArtistPlaycountForGuildAsync(int guildId, string artistName)
@@ -210,15 +200,12 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var playcount = await connection.QuerySingleAsync<int>(sql, new
+            return await connection.QuerySingleAsync<int>(sql, new
             {
                 guildId,
                 artistName,
                 minDate
             });
-
-            await connection.CloseAsync();
-            return playcount;
         }
 
         // TODO: figure out how to do this

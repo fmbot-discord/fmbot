@@ -51,13 +51,10 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var topArtists = (await connection.QueryAsync<ListArtist>(sql, new
+            return (await connection.QueryAsync<ListArtist>(sql, new
             {
                 guildId
             })).ToList();
-
-            await connection.CloseAsync();
-            return topArtists;
         }
 
         public async Task<IReadOnlyList<ListAlbum>> GetTopAlbumsForGuild(int guildId, OrderType orderType, int amountOfDays)
@@ -82,13 +79,10 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var topAlbums = (await connection.QueryAsync<ListAlbum>(sql, new
+            return (await connection.QueryAsync<ListAlbum>(sql, new
             {
                 guildId
             })).ToList();
-
-            await connection.CloseAsync();
-            return topAlbums;
         }
 
         public async Task<IReadOnlyList<ListTrack>> GetTopTracksForGuild(int guildId, OrderType orderType, int amountOfDays)
@@ -113,13 +107,10 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var topTracks = (await connection.QueryAsync<ListTrack>(sql, new
+            return (await connection.QueryAsync<ListTrack>(sql, new
             {
                 guildId
             })).ToList();
-
-            await connection.CloseAsync();
-            return topTracks;
         }
 
         public void AddRecentPlayToCache(int userId, RecentTrack track)

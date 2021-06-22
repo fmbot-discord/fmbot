@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
@@ -62,7 +61,6 @@ namespace FMBot.Bot.Services
             await connection.OpenAsync();
 
             albumCovers = (await connection.QueryAsync<AlbumSpotifyCoverDto>(sql)).ToList();
-            await connection.CloseAsync();
 
             this._cache.Set(cacheKey, albumCovers, TimeSpan.FromMinutes(1));
 
