@@ -55,6 +55,8 @@ namespace FMBot.Bot.Models
         public ulong DiscordUserId { get; set; }
 
         public string UserName { get; set; }
+
+        public bool? WhoKnowsWhitelisted { get; set; }
     }
 
     public class AlbumSpotifyCoverDto

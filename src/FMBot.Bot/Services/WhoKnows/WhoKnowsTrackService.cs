@@ -34,7 +34,8 @@ namespace FMBot.Bot.Services.WhoKnows
                                "ut.playcount," +
                                "u.user_name_last_fm, " +
                                "u.discord_user_id, " +
-                               "gu.user_name " +
+                               "gu.user_name, " +
+                               "gu.who_knows_whitelisted " +
                                "FROM user_tracks AS ut " +
                                "INNER JOIN users AS u ON ut.user_id = u.user_id " +
                                "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
@@ -76,6 +77,7 @@ namespace FMBot.Bot.Services.WhoKnows
                     Playcount = userTrack.Playcount,
                     LastFMUsername = userTrack.UserNameLastFm,
                     UserId = userTrack.UserId,
+                    WhoKnowsWhitelisted = userTrack.WhoKnowsWhitelisted,
                 });
             }
 
@@ -170,6 +172,7 @@ namespace FMBot.Bot.Services.WhoKnows
                       "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id  " +
                       "WHERE gu.guild_id = @guildId  AND gu.bot != true " +
                       "AND NOT ut.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
+                      "AND gu.who_knows_whitelisted != false " +
                       "GROUP BY ut.name, ut.artist_name ";
 
             sql += orderType == OrderType.Playcount ?

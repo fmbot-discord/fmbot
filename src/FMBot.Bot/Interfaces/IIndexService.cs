@@ -15,7 +15,9 @@ namespace FMBot.Bot.Interfaces
 
         Task<GuildUser> GetOrAddUserToGuild(Guild guild, IGuildUser discordGuildUser, User user);
 
-        Task UpdateUserName(IGuildUser discordGuildUser, int userId, int? guildId);
+        Task UpdateUser(IGuildUser discordGuildUser, int userId, int? guildId);
+
+        Task UpdateDiscordUser(IGuildUser discordGuildUser);
 
         Task RemoveUserFromGuild(SocketGuildUser user);
 

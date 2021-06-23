@@ -18,6 +18,8 @@ namespace FMBot.Bot.Models
         public DateTime? RegisteredLastFm { get; set; }
 
         public PrivacyLevel? PrivacyLevel { get; set; }
+
+        public bool? WhoKnowsWhitelisted { get; set; }
     }
 
     public class WhoKnowsSettings

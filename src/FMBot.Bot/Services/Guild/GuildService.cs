@@ -513,6 +513,38 @@ namespace FMBot.Bot.Services.Guild
             }
         }
 
+        public async Task SetGuildWhoKnowsWhitelistRoleAsync(IGuild guild, ulong? roleId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingGuild = await db.Guilds
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+
+            if (existingGuild == null)
+            {
+                var newGuild = new Persistence.Domain.Models.Guild
+                {
+                    DiscordGuildId = guild.Id,
+                    TitlesEnabled = true,
+                    Name = guild.Name,
+                    WhoKnowsWhitelistRoleId = roleId,
+                };
+
+                await db.Guilds.AddAsync(newGuild);
+
+                await db.SaveChangesAsync();
+            }
+            else
+            {
+                existingGuild.WhoKnowsWhitelistRoleId = roleId;
+                existingGuild.Name = guild.Name;
+
+                db.Entry(existingGuild).State = EntityState.Modified;
+
+                await db.SaveChangesAsync();
+            }
+        }
+
         public async Task<string[]> GetDisabledCommandsForGuild(IGuild guild)
         {
             await using var db = this._contextFactory.CreateDbContext();

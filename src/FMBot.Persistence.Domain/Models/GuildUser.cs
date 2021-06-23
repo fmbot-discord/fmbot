@@ -8,6 +8,7 @@ namespace FMBot.Persistence.Domain.Models
         public Guild Guild { get; set; }
         public string UserName { get; set; }
         public bool? Bot { get; set; }
+        public bool? WhoKnowsWhitelisted { get; set; }
 
     }
 }
