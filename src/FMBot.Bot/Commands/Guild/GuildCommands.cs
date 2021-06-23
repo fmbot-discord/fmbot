@@ -365,7 +365,7 @@ namespace FMBot.Bot.Commands.Guild
             await this._guildService.SetGuildWhoKnowsWhitelistRoleAsync(this.Context.Guild, role.Id);
 
             this._embed.WithTitle("Successfully set the guild's whitelist role for WhoKnows!");
-            this._embed.WithDescription("Keep in mind that you will probably need to index the server again with `.fmindex` to see these changes in effect.");
+            this._embed.WithDescription($"Set to <@&{discordRoleId}>\nKeep in mind that you will probably need to index the server again with `.fmindex` to see these changes in effect.");
 
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
             this.Context.LogCommandUsed();

@@ -152,7 +152,7 @@ namespace FMBot.Bot.Services.WhoKnows
                                 "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id  " +
                                 "WHERE gu.guild_id = @guildId  AND gu.bot != true " +
                                 "AND NOT ua.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
-                                "AND gu.who_knows_whitelisted != false" +
+                                "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
                                 "GROUP BY ua.name ";
 
             sql += orderType == OrderType.Playcount ?

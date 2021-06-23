@@ -35,7 +35,7 @@ namespace FMBot.Bot.Services.WhoKnows
                                "u.discord_user_id, " +
                                "gu.user_name, " +
                                "gu.who_knows_whitelisted " +
-                               "FROM user_albums AS ut " + 
+                               "FROM user_albums AS ut " +
                                "INNER JOIN users AS u ON ut.user_id = u.user_id " +
                                "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
                                "WHERE gu.guild_id = @guildId AND UPPER(ut.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
@@ -171,6 +171,7 @@ namespace FMBot.Bot.Services.WhoKnows
                       "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id  " +
                       "WHERE gu.guild_id = @guildId AND gu.bot != true " +
                       "AND NOT ub.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
+                      "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
                       "AND gu.who_knows_whitelisted != false" +
                       "GROUP BY ub.name, ub.artist_name ";
 
