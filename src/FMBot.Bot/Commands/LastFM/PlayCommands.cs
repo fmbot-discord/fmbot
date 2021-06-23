@@ -688,7 +688,7 @@ namespace FMBot.Bot.Commands.LastFM
                 timeFrom = userInfo.Registered.Unixtime;
             }
 
-            var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom);
+            var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom, userSettings.SessionKeyLastFm);
 
             if (count == null || count == 0)
             {
