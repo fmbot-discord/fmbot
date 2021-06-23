@@ -173,15 +173,16 @@ namespace FMBot.Bot.Commands
             var description = "";
             description += $"**Bot Uptime:** `{startTime.ToReadableString()}`\n";
             description += $"**Server Uptime:** `{upTimeInSeconds.ToReadableString()}`\n";
-            description += $"**Usercount:** `{(await this._userService.GetTotalUserCountAsync()).ToString()}`  (Discord: `{client.Guilds.Select(s => s.MemberCount).Sum()}`)\n";
+            description += $"**Usercount:** `{await this._userService.GetTotalUserCountAsync()}`  (Authorized: `{await this._userService.GetTotalAuthorizedUserCountAsync()}` | Discord: `{client.Guilds.Select(s => s.MemberCount).Sum()}`)\n";
             description += $"**Friendcount:** `{await this._friendService.GetTotalFriendCountAsync()}`\n";
-            description += $"**Servercount:** `{client.Guilds.Count}`  (Shards: `{client.Shards.Count}`)\n";
+            description += $"**Servercount:** `{client.Guilds.Count}`  (Shards: `{client.Shards.Count}` (`{client.GetShardIdFor(this.Context.Guild)}`))\n";
             description += $"**Commands used:** `{Statistics.CommandsExecuted.Value}`\n";
             description += $"**Last.fm API calls:** `{Statistics.LastfmApiCalls.Value}`  (Ex. authorized: `{Statistics.LastfmAuthorizedApiCalls.Value}`)\n";
+            description += $"**Botscrobbles:** `{Statistics.LastfmScrobbles.Value}`  (Now playing updates: `{Statistics.LastfmNowPlayingUpdates.Value}`)\n";
             description += $"**Memory usage:** `{currentMemoryUsage.ToFormattedByteString()}`  (Peak: `{peakMemoryUsage.ToFormattedByteString()}`)\n";
             description += $"**Average shard latency:** `{Math.Round(client.Shards.Select(s => s.Latency).Average(), 2) + "ms`"}\n";
-            description += $"**Bot version:** `{assemblyVersion}`\n";
-            description += $"**Self-hosted:** `{IsBotSelfHosted(this.Context.Client.CurrentUser.Id).ToString()}`\n";
+            //description += $"**Bot version:** `{assemblyVersion}`\n";
+            //description += $"**Self-hosted:** `{IsBotSelfHosted(this.Context.Client.CurrentUser.Id).ToString()}`\n";
 
             this._embed.WithDescription(description);
 
