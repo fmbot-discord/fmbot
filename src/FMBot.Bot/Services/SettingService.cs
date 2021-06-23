@@ -447,6 +447,11 @@ namespace FMBot.Bot.Services
                 }
             }
 
+            if (goalAmount > 10000000)
+            {
+                goalAmount = 10000000;
+            }
+
             return goalAmount;
         }
 
