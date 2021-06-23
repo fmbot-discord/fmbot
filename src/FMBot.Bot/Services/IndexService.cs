@@ -119,7 +119,7 @@ namespace FMBot.Bot.Services
 
                 if (existingGuild.WhoKnowsWhitelistRoleId.HasValue)
                 {
-                    var isWhitelisted = discordUser.RoleIds.Contains(existingGuild.WhoKnowsWhitelistRoleId.Value) == true;
+                    var isWhitelisted = discordUser.RoleIds.Contains(existingGuild.WhoKnowsWhitelistRoleId.Value);
                     user.WhoKnowsWhitelisted = isWhitelisted;
                     if (isWhitelisted)
                     {
@@ -231,11 +231,10 @@ namespace FMBot.Bot.Services
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var guild = (await connection.QueryAsync<Persistence.Domain.Models.Guild>("SELECT * FROM guilds WHERE guild_id = @guildId", new
+            var guild = await connection.QueryFirstOrDefaultAsync<Persistence.Domain.Models.Guild>("SELECT * FROM guilds WHERE guild_id = @guildId", new
             {
                 guildId
-            }))
-            .ToList().FirstOrDefault();
+            });
 
             var dto = new Models.IndexedUserUpdateDto
             {
@@ -267,17 +266,15 @@ namespace FMBot.Bot.Services
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var guild = (await connection.QueryAsync<Persistence.Domain.Models.Guild>("SELECT * FROM guilds WHERE discord_guild_id = @discordGuildId", new
+            var guild = await connection.QueryFirstOrDefaultAsync<Persistence.Domain.Models.Guild>("SELECT * FROM guilds WHERE discord_guild_id = @discordGuildId", new
             {
                 DiscordGuildId = discordGuildUser.GuildId,
-            }))
-            .ToList().FirstOrDefault();
+            });
 
-            var user = (await connection.QueryAsync<GuildUser>("SELECT * FROM users WHERE discord_user_id = @discordUserId", new
+            var user = await connection.QueryFirstOrDefaultAsync<GuildUser>("SELECT * FROM users WHERE discord_user_id = @discordUserId", new
             {
                 DiscordUserId = discordGuildUser.Id,
-            }))
-            .ToList().FirstOrDefault();
+            });
 
             var dto = new Models.IndexedUserUpdateDto
             {

@@ -331,7 +331,7 @@ namespace FMBot.Bot.Commands.Guild
             if (string.IsNullOrEmpty(roleQuery) || roleQuery.ToLower() == "remove" || roleQuery.ToLower() == "delete")
             {
                 await this._guildService.SetGuildWhoKnowsWhitelistRoleAsync(this.Context.Guild, null);
-                await ReplyAsync("Removed the guild's role whitelist for WhoKnows!");
+                await ReplyAsync("Removed the server's role whitelist for WhoKnows!");
                 this.Context.LogCommandUsed();
                 return;
             }
@@ -346,7 +346,7 @@ namespace FMBot.Bot.Commands.Guild
                 if (roleQueryResult == null)
                 {
                     await ReplyAsync("Could not find a role with that name! Maybe try again using the role ID");
-                    this.Context.LogCommandUsed();
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
 
@@ -358,14 +358,15 @@ namespace FMBot.Bot.Commands.Guild
             if (role == null)
             {
                 await ReplyAsync("Could not find a role with that ID!");
-                this.Context.LogCommandUsed();
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
 
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             await this._guildService.SetGuildWhoKnowsWhitelistRoleAsync(this.Context.Guild, role.Id);
 
-            this._embed.WithTitle("Successfully set the guild's whitelist role for WhoKnows!");
-            this._embed.WithDescription($"Set to <@&{discordRoleId}>\nKeep in mind that you will probably need to index the server again with `.fmindex` to see these changes in effect.");
+            this._embed.WithTitle("Successfully set the server's whitelist role for WhoKnows!");
+            this._embed.WithDescription($"Set to <@&{discordRoleId}>\nKeep in mind that you need to run {prfx}index again for the whitelist to work as intended.");
 
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
             this.Context.LogCommandUsed();

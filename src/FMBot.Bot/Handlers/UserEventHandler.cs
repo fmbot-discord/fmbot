@@ -26,8 +26,9 @@ namespace FMBot.Bot.Handlers
             _ = this._crownService.RemoveAllCrownsFromDiscordUser(guildUser);
         }
 
-        private async Task GuildUserUpdated(SocketGuildUser _, SocketGuildUser newGuildUser)
+        private async Task GuildUserUpdated(SocketGuildUser oldGuildUser, SocketGuildUser newGuildUser)
         {
+            _ = oldGuildUser;
             _ = this._indexService.UpdateDiscordUser(newGuildUser);
         }
     }
