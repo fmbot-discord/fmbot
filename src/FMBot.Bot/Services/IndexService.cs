@@ -233,7 +233,7 @@ namespace FMBot.Bot.Services
 
             var guild = (await connection.QueryAsync<Persistence.Domain.Models.Guild>("SELECT * FROM guilds WHERE guild_id = @guildId", new
             {
-                guildId = guildId
+                guildId
             }))
             .ToList().FirstOrDefault();
 
