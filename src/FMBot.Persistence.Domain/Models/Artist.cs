@@ -21,8 +21,6 @@ namespace FMBot.Persistence.Domain.Models
 
         public int? Popularity { get; set; }
 
-        public string[] Aliases { get; set; }
-
         public ICollection<Track> Tracks { get; set; }
 
         public ICollection<Album> Albums { get; set; }

@@ -165,7 +165,8 @@ namespace FMBot.Bot.Services
             })).ToList();
 
             return userTracks
-                .Where(w => albumTracks.Select(s => s.TrackName.ToLower()).Contains(w.Name.ToLower()))
+                .Where(w => albumTracks.Select(s => s.TrackName.Replace("(", "").Replace("-", "").Replace(")", "").TrimEnd().TrimStart().ToLower())
+                    .Contains(w.Name.Replace("(", "").Replace("-", "").Replace(")", "").TrimEnd().TrimStart().ToLower()))
                 .ToList();
         }
 

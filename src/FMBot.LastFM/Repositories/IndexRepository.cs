@@ -64,7 +64,7 @@ namespace FMBot.LastFM.Repositories
             var now = DateTime.UtcNow;
 
             await using var connection = new NpgsqlConnection(this._connectionString);
-            connection.Open();
+            await connection.OpenAsync();
 
             var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user.UserNameLastFM, user.SessionKeyLastFm);
             if (userInfo?.Registered?.Text != null)

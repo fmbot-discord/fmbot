@@ -109,6 +109,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
+                databaseAlbum.Tracks = await this._spotifyService.GetExistingAlbumTracks(databaseAlbum.Id);
 
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
@@ -907,6 +908,8 @@ namespace FMBot.Bot.Commands.LastFM
                 else
                 {
                     var dbAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
+                    dbAlbum.Tracks = await this._spotifyService.GetExistingAlbumTracks(dbAlbum.Id);
+
                     if (dbAlbum?.Tracks != null && dbAlbum.Tracks.Any())
                     {
                         albumTracks = dbAlbum.Tracks.Select(s => new AlbumTrack

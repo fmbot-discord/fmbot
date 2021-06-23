@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Dapper;
 using Discord;
 using Discord.WebSocket;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Domain.Models;
@@ -138,7 +137,7 @@ namespace FMBot.Bot.Services
                 .MapBoolean("who_knows_whitelisted", x => x.WhoKnowsWhitelisted);
 
             await using var connection = new NpgsqlConnection(connString);
-            connection.Open();
+            await connection.OpenAsync();
 
             await using var deleteCurrentArtists = new NpgsqlCommand($"DELETE FROM public.guild_users WHERE guild_id = {existingGuild.GuildId};", connection);
             await deleteCurrentArtists.ExecuteNonQueryAsync();
@@ -146,6 +145,8 @@ namespace FMBot.Bot.Services
             await copyHelper.SaveAllAsync(connection, users);
 
             Log.Information("Stored guild users for guild with id {guildId}", existingGuild.GuildId);
+
+            await connection.CloseAsync();
 
             return (users.Count, whoKnowsWhitelistedCount);
         }

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;

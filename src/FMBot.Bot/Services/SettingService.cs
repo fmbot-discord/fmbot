@@ -352,7 +352,7 @@ namespace FMBot.Bot.Services
 
         public async Task<User> StringWithDiscordIdForUser(string value)
         {
-            if (!value.Contains("<@") && value.Length != 18)
+            if (!value.Contains("<@") && value.Length is < 17 or > 19)
             {
                 return null;
             }

@@ -23,6 +23,7 @@ namespace FMBot.Bot.Services
         private readonly Timer _timer;
         private readonly Timer _internalStatsTimer;
         private readonly Timer _userUpdateTimer;
+        private readonly Timer _purgeCacheTimer;
         private readonly Timer _userIndexTimer;
         private readonly LastFmRepository _lastFmRepository;
         private readonly UserService _userService;
@@ -271,6 +272,27 @@ namespace FMBot.Bot.Services
                 null,
                 TimeSpan.FromMinutes(5),
                 TimeSpan.FromHours(8));
+
+            this._purgeCacheTimer = new Timer(async _ =>
+                {
+                    try
+                    {
+                        var clients = client.Shards;
+                        foreach (var socketClient in clients)
+                        {
+                            socketClient.PurgeUserCache();
+                        }
+                        Log.Information("Purged discord caches");
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error(e, "Error while purging cache!");
+                        throw;
+                    }
+                },
+                null,
+                TimeSpan.FromMinutes(5),
+                TimeSpan.FromHours(2));
 
             this._userIndexTimer = new Timer(async _ =>
                 {

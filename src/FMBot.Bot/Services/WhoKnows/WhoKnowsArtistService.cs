@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Dapper;
 using Dasync.Collections;
 using Discord.Commands;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;

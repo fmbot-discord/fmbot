@@ -285,36 +285,5 @@ namespace FMBot.Bot.Services.WhoKnows
 
             return null;
         }
-
-        private class ArtistUserPlay
-        {
-            public string ArtistName { get; set; }
-
-            public int UserId { get; set; }
-
-            public int Playcount { get; set; }
-        }
-
-        private class AlbumUserPlay
-        {
-            public string ArtistName { get; set; }
-
-            public string AlbumName { get; set; }
-
-            public int UserId { get; set; }
-
-            public int Playcount { get; set; }
-        }
-
-        private class TrackUserPlay
-        {
-            public string ArtistName { get; set; }
-
-            public string TrackName { get; set; }
-
-            public int UserId { get; set; }
-
-            public int Playcount { get; set; }
-        }
     }
 }

@@ -289,11 +289,6 @@ namespace FMBot.Persistence.EntityFrameWork
 
                 entity.Property(e => e.Name)
                     .HasColumnType("citext");
-
-                entity.Property(e => e.Aliases)
-                    .HasConversion(
-                        v => string.Join(',', v),
-                        v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
             });
 
             modelBuilder.Entity<Album>(entity =>

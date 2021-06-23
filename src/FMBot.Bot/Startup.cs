@@ -16,6 +16,7 @@ using FMBot.Domain.Models;
 using FMBot.LastFM.Api;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.EntityFrameWork;
+using FMBot.Persistence.Repositories;
 using FMBot.Youtube.Services;
 using Interactivity;
 using Microsoft.EntityFrameworkCore;
@@ -101,8 +102,10 @@ namespace FMBot.Bot
                     DefaultRunMode = RunMode.Async,
                 }))
                 .AddSingleton<AlbumService>()
+                .AddSingleton<AlbumRepository>()
                 .AddSingleton<AdminService>()
                 .AddSingleton<ArtistsService>()
+                .AddSingleton<ArtistRepository>()
                 .AddSingleton<CensorService>()
                 .AddSingleton<CrownService>()
                 .AddSingleton<ClientLogHandler>()
@@ -127,6 +130,7 @@ namespace FMBot.Bot
                 .AddSingleton<TimerService>()
                 .AddSingleton<MusicBotService>()
                 .AddSingleton<TrackService>()
+                .AddSingleton<TrackRepository>()
                 .AddSingleton<UserEventHandler>()
                 .AddSingleton<UserService>()
                 .AddSingleton<WebhookService>()
@@ -149,6 +153,8 @@ namespace FMBot.Bot
                 .AddTransient<ILastfmApi, LastfmApi>()
                 .AddTransient<LastFmRepository>()
                 .AddTransient<InvidiousApi>();
+
+            services.AddHealthChecks();
 
             services.AddDbContextFactory<FMBotDbContext>(b =>
                 b.UseNpgsql(this.Configuration["Database:ConnectionString"]));
