@@ -17,12 +17,19 @@ namespace FMBot.Bot.Handlers
             this._indexService = indexService;
             this._crownService = crownService;
             this._client.UserLeft += UserLeftGuild;
+            this._client.GuildMemberUpdated += GuildUserUpdated;
         }
 
         private async Task UserLeftGuild(SocketGuildUser guildUser)
         {
             _ = this._indexService.RemoveUserFromGuild(guildUser);
             _ = this._crownService.RemoveAllCrownsFromDiscordUser(guildUser);
+        }
+
+        private async Task GuildUserUpdated(SocketGuildUser oldGuildUser, SocketGuildUser newGuildUser)
+        {
+            _ = oldGuildUser;
+            _ = this._indexService.UpdateDiscordUser(newGuildUser);
         }
     }
 }

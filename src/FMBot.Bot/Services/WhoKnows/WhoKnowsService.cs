@@ -71,6 +71,11 @@ namespace FMBot.Bot.Services.WhoKnows
                     .Where(w => !usersToFilter.Select(s => s.UserId).Contains(w.UserId))
                     .ToList();
             }
+            if (guild.WhoKnowsWhitelistRoleId.HasValue) {
+                users = users
+                    .Where(w => w.WhoKnowsWhitelisted != false)
+                    .ToList();
+            }
 
             return users.ToList();
         }

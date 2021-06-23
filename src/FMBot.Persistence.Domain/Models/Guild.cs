@@ -47,7 +47,9 @@ namespace FMBot.Persistence.Domain.Models
         public ICollection<UserCrown> GuildCrowns { get; set; }
 
         public ICollection<Channel> Channels { get; set; }
-        
+
         public ICollection<Webhook> Webhooks { get; set; }
+
+        public ulong? WhoKnowsWhitelistRoleId { get; set; }
     }
 }

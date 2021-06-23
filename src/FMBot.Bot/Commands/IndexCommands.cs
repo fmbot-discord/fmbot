@@ -68,62 +68,53 @@ namespace FMBot.Bot.Commands
 
                 var usersToFullyUpdate = await this._indexService.GetUsersToFullyUpdate(guildUsers);
                 int registeredUserCount;
+                int? whoKnowsWhitelistedUserCount;
+                var reply = "";
+
+                (registeredUserCount, whoKnowsWhitelistedUserCount) = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
 
                 if (usersToFullyUpdate != null && usersToFullyUpdate.Count == 0 && lastIndex != null)
                 {
-                    registeredUserCount = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
                     await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
-
-                    var reply = $"✅ Server index has been updated.\n\n" +
-                                $"This server has a total of {registeredUserCount} registered .fmbot members.";
-
-                    await indexMessage.ModifyAsync(m =>
-                    {
-                        m.Embed = new EmbedBuilder()
-                            .WithDescription(reply)
-                            .WithColor(DiscordConstants.SuccessColorGreen)
-                            .Build();
-                    });
-
-                    this.Context.LogCommandUsed();
-                    return;
+                    reply += $"✅ Server index has been updated.";
                 }
-                if (usersToFullyUpdate == null || usersToFullyUpdate.Count == 0 && lastIndex == null)
+                else if (usersToFullyUpdate == null || usersToFullyUpdate.Count == 0 && lastIndex == null)
                 {
-                    registeredUserCount = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
                     await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow.AddDays(-1));
-                    var reply =
-                        "✅ Server has been indexed successfully.\n\n" +
-                        $"This server has a total of {registeredUserCount} registered .fmbot members.";
-
-                    await indexMessage.ModifyAsync(m =>
-                    {
-                        m.Embed = new EmbedBuilder()
-                            .WithDescription(reply)
-                            .WithColor(DiscordConstants.SuccessColorGreen)
-                            .Build();
-                    });
-
-                    this.Context.LogCommandUsed();
-                    return;
+                    reply += "✅ Server has been indexed successfully.";
+                }
+                else
+                {
+                    await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild);
+                    reply += $"✅ Server index has been updated.";
                 }
 
-                await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild);
+                (registeredUserCount, whoKnowsWhitelistedUserCount) = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
 
-                registeredUserCount = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
+                reply += $"\n\nThis server has a total of {registeredUserCount} registered .fmbot members";
+
+                if (whoKnowsWhitelistedUserCount.HasValue)
+                {
+                    reply += $" and {whoKnowsWhitelistedUserCount.Value} members whitelisted on WhoKnows";
+                }
+
+                reply += ".";
 
                 await indexMessage.ModifyAsync(m =>
                 {
                     m.Embed = new EmbedBuilder()
-                        .WithDescription($"✅ Server index has been updated.\n\n" +
-                                         $"This server has a total of {registeredUserCount} registered .fmbot members.")
+                        .WithDescription(reply)
                         .WithColor(DiscordConstants.SuccessColorGreen)
                         .Build();
                 });
 
                 this.Context.LogCommandUsed();
 
-                this._indexService.AddUsersToIndexQueue(usersToFullyUpdate);
+                // These are the implied conditions for the previous "else"
+                if (usersToFullyUpdate != null && usersToFullyUpdate.Count != 0)
+                {
+                    this._indexService.AddUsersToIndexQueue(usersToFullyUpdate);
+                }
             }
             catch (Exception e)
             {

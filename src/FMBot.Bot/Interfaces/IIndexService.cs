@@ -15,11 +15,13 @@ namespace FMBot.Bot.Interfaces
 
         Task<GuildUser> GetOrAddUserToGuild(Guild guild, IGuildUser discordGuildUser, User user);
 
-        Task UpdateUserName(IGuildUser discordGuildUser, int userId, int? guildId);
+        Task UpdateUser(IGuildUser discordGuildUser, int userId, int? guildId);
+
+        Task UpdateDiscordUser(IGuildUser discordGuildUser);
 
         Task RemoveUserFromGuild(SocketGuildUser user);
 
-        Task<int> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers);
+        Task<(int, int?)> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers);
 
         Task<IReadOnlyList<User>> GetUsersToFullyUpdate(IReadOnlyCollection<IGuildUser> discordGuildUsers);
 

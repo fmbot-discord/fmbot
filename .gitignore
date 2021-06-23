@@ -1,4 +1,4 @@
-# Visual Studio 
+# Visual Studio
 *.suo
 *.user
 *.sln.docstates
@@ -21,6 +21,7 @@ ipch
 /src/.vs/FMBot_Discord/v15/Server/sqlite3
 /src/FMBot_Discord/bin
 /src/.vs/FMBot_Discord/v16/Server/sqlite3
+config.json
 
 bin/
 obj/

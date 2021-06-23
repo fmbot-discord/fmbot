@@ -453,7 +453,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (!this._guildService.CheckIfDM(this.Context) && internalGuildId != null)
                 {
-                    await this._indexService.UpdateUserName(await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId), contextUser.UserId, internalGuildId);
+                    await this._indexService.UpdateUser(await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId), contextUser.UserId, internalGuildId);
                 }
             }
             catch (Exception e)
