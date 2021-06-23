@@ -1,7 +1,9 @@
+using System;
 using System.Threading.Tasks;
 using Discord.WebSocket;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.WhoKnows;
+using Serilog;
 
 namespace FMBot.Bot.Handlers
 {
@@ -20,16 +22,17 @@ namespace FMBot.Bot.Handlers
             this._client.GuildMemberUpdated += GuildUserUpdated;
         }
 
+        private async Task GuildUserUpdated(SocketGuildUser oldGuildUser, SocketGuildUser newGuildUser)
+        {
+            Log.Information($"GuildUserUpdated {oldGuildUser.Nickname} - {newGuildUser.Nickname}");
+            _ = this._indexService.UpdateDiscordUser(newGuildUser);
+        }
+
         private async Task UserLeftGuild(SocketGuildUser guildUser)
         {
             _ = this._indexService.RemoveUserFromGuild(guildUser);
             _ = this._crownService.RemoveAllCrownsFromDiscordUser(guildUser);
         }
 
-        private async Task GuildUserUpdated(SocketGuildUser oldGuildUser, SocketGuildUser newGuildUser)
-        {
-            _ = oldGuildUser;
-            _ = this._indexService.UpdateDiscordUser(newGuildUser);
-        }
     }
 }

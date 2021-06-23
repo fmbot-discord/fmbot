@@ -110,7 +110,7 @@ namespace FMBot.Bot.Services
                 whoKnowsWhitelistedCount = 0;
             }
 
-                foreach (var user in users)
+            foreach (var user in users)
             {
                 var discordUser = discordGuildUsers.First(f => f.Id == user.User.DiscordUserId);
                 var name = discordUser.Nickname ?? discordUser.Username;
@@ -180,7 +180,8 @@ namespace FMBot.Bot.Services
                         guildUserToAdd.WhoKnowsWhitelisted = discordGuildUser.RoleIds.Contains(guild.WhoKnowsWhitelistRoleId.Value);
                     }
 
-                    const string sql = "INSERT INTO guild_users (guild_id, user_id, user_name, bot, who_knows_whitelisted) VALUES (@guildId, @userId, @userName, false, @whoKnowsWhitelisted) " +
+                    const string sql = "INSERT INTO guild_users (guild_id, user_id, user_name, bot, who_knows_whitelisted) " +
+                                       "VALUES (@guildId, @userId, @userName, false, @whoKnowsWhitelisted) " +
                                        "ON CONFLICT DO NOTHING";
 
                     DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -216,79 +217,101 @@ namespace FMBot.Bot.Services
             return guild.GuildUsers.First(f => f.UserId == user.UserId);
         }
 
-        public async Task UpdateUser(IGuildUser discordGuildUser, int userId, int? guildId)
+        public async Task UpdateUser(IGuildUser discordGuildUser, int userId, Persistence.Domain.Models.Guild guild)
         {
-            var discordName = discordGuildUser.Nickname ?? discordGuildUser.Username;
-
-            await using var db = this._contextFactory.CreateDbContext();
-
-            const string sql = "UPDATE guild_users " +
-                               "SET user_name =  @userName, " +
-                               "who_knows_whitelisted =  @whoKnowsWhitelisted " +
-                               "WHERE guild_id = @guildId AND user_id = @userId ";
-
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-            await connection.OpenAsync();
-
-            var guild = await connection.QueryFirstOrDefaultAsync<Persistence.Domain.Models.Guild>("SELECT * FROM guilds WHERE guild_id = @guildId", new
+            try
             {
-                guildId
-            });
+                var discordName = discordGuildUser.Nickname ?? discordGuildUser.Username;
 
-            var dto = new Models.IndexedUserUpdateDto
-            {
-                UserName = discordName,
-                GuildId = guildId,
-                UserId = userId,
-            };
+                await using var db = this._contextFactory.CreateDbContext();
 
-            if (guild.WhoKnowsWhitelistRoleId.HasValue)
-            {
-                dto.WhoKnowsWhitelisted = discordGuildUser.RoleIds.Contains(guild.WhoKnowsWhitelistRoleId.Value);
+                const string sql = "UPDATE guild_users " +
+                                   "SET user_name =  @userName, " +
+                                   "who_knows_whitelisted =  @whoKnowsWhitelisted " +
+                                   "WHERE guild_id = @guildId AND user_id = @userId ";
+
+                DefaultTypeMap.MatchNamesWithUnderscores = true;
+                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+                await connection.OpenAsync();
+
+                var dto = new Models.IndexedUserUpdateDto
+                {
+                    UserName = discordName,
+                    GuildId = guild.GuildId,
+                    UserId = userId
+                };
+
+                if (guild.WhoKnowsWhitelistRoleId.HasValue)
+                {
+                    dto.WhoKnowsWhitelisted = discordGuildUser.RoleIds.Contains(guild.WhoKnowsWhitelistRoleId.Value);
+                }
+
+                await connection.ExecuteAsync(sql, dto);
             }
-
-            await connection.ExecuteAsync(sql, dto);
+            catch (Exception e)
+            {
+                Log.Error(e, "Exception in UpdateUser!");
+            }
         }
 
         public async Task UpdateDiscordUser(IGuildUser discordGuildUser)
         {
-            var discordName = discordGuildUser.Nickname ?? discordGuildUser.Username;
-
-            await using var db = this._contextFactory.CreateDbContext();
-
-            const string sql = "UPDATE guild_users " +
-                               "SET user_name =  @userName, " +
-                               "who_knows_whitelisted =  @whoKnowsWhitelisted " +
-                               "WHERE guild_id = @guildId AND user_id = @userId ";
-
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-            await connection.OpenAsync();
-
-            var guild = await connection.QueryFirstOrDefaultAsync<Persistence.Domain.Models.Guild>("SELECT * FROM guilds WHERE discord_guild_id = @discordGuildId", new
+            try
             {
-                DiscordGuildId = discordGuildUser.GuildId,
-            });
+                await using var db = this._contextFactory.CreateDbContext();
+                var user = await db.Users
+                    .AsQueryable()
+                    .FirstOrDefaultAsync(f => f.DiscordUserId == discordGuildUser.Id);
 
-            var user = await connection.QueryFirstOrDefaultAsync<GuildUser>("SELECT * FROM users WHERE discord_user_id = @discordUserId", new
-            {
-                DiscordUserId = discordGuildUser.Id,
-            });
+                if (user == null)
+                {
+                    return;
+                }
 
-            var dto = new Models.IndexedUserUpdateDto
-            {
-                UserName = discordName,
-                GuildId = guild.GuildId,
-                UserId = user.UserId,
-            };
+                var guild = await db.Guilds
+                    .Include(i => i.GuildUsers)
+                    .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildUser.GuildId);
 
-            if (guild.WhoKnowsWhitelistRoleId.HasValue)
-            {
-                dto.WhoKnowsWhitelisted = discordGuildUser.RoleIds.Contains(guild.WhoKnowsWhitelistRoleId.Value);
+                if (guild?.GuildUsers == null || !guild.GuildUsers.Any())
+                {
+                    return;
+                }
+
+                var discordName = discordGuildUser.Nickname ?? discordGuildUser.Username;
+
+                const string sql = "UPDATE guild_users " +
+                                   "SET user_name =  @userName, " +
+                                   "who_knows_whitelisted =  @whoKnowsWhitelisted " +
+                                   "WHERE guild_id = @guildId AND user_id = @userId ";
+
+                DefaultTypeMap.MatchNamesWithUnderscores = true;
+                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+                await connection.OpenAsync();
+
+                if (guild.GuildUsers.Select(s => s.UserId).Contains(user.UserId))
+                {
+                    await GetOrAddUserToGuild(guild, discordGuildUser, user);
+                    return;
+                }
+
+                var dto = new Models.IndexedUserUpdateDto
+                {
+                    UserName = discordName,
+                    GuildId = guild.GuildId,
+                    UserId = user.UserId
+                };
+
+                if (guild.WhoKnowsWhitelistRoleId.HasValue)
+                {
+                    dto.WhoKnowsWhitelisted = discordGuildUser.RoleIds.Contains(guild.WhoKnowsWhitelistRoleId.Value);
+                }
+
+                await connection.ExecuteAsync(sql, dto);
             }
-
-            await connection.ExecuteAsync(sql, dto);
+            catch (Exception e)
+            {
+                Log.Error(e, "Exception in UpdateDiscordUser!");
+            }
         }
 
         public async Task RemoveUserFromGuild(SocketGuildUser user)

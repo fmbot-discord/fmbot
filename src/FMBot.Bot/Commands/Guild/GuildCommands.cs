@@ -308,7 +308,6 @@ namespace FMBot.Bot.Commands.Guild
             this.Context.LogCommandUsed();
         }
 
-
         [Command("whoknowswhitelist", RunMode = RunMode.Async)]
         [Summary("Configures the WhoKnows charts to only show members with a specified role.\n\n" +
                  "After changing your whitelist setting, you will most likely need to index the server again for it to take effect.\n\n" +
@@ -336,28 +335,16 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            if (
-                !(roleQuery.Length is >= 17 and <= 19) ||
-                !ulong.TryParse(roleQuery, out var discordRoleId)
-                )
+            var role = this.Context.Guild.Roles.FirstOrDefault(f => f.Name.ToLower().Contains(roleQuery.ToLower()));
+
+            if (role == null && roleQuery.Length is >= 17 and <= 19 && ulong.TryParse(roleQuery, out var discordRoleId))
             {
-                var roleQueryResult = this.Context.Guild.Roles.First(r => r.Name.ToLower().Contains(roleQuery.ToLower()));
-
-                if (roleQueryResult == null)
-                {
-                    await ReplyAsync("Could not find a role with that name! Maybe try again using the role ID");
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                    return;
-                }
-
-                discordRoleId = roleQueryResult.Id;
+                role = this.Context.Guild.Roles.FirstOrDefault(f => f.Id == discordRoleId);
             }
-
-            var role = this.Context.Guild.Roles.First(r => r.Id == discordRoleId);
 
             if (role == null)
             {
-                await ReplyAsync("Could not find a role with that ID!");
+                await ReplyAsync("Could not find a role with that name or Id. Please try again.");
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
@@ -366,12 +353,12 @@ namespace FMBot.Bot.Commands.Guild
             await this._guildService.SetGuildWhoKnowsWhitelistRoleAsync(this.Context.Guild, role.Id);
 
             this._embed.WithTitle("Successfully set the server's whitelist role for WhoKnows!");
-            this._embed.WithDescription($"Set to <@&{discordRoleId}>\nKeep in mind that you need to run {prfx}index again for the whitelist to work as intended.");
+            this._embed.WithDescription($"Set to <@&{role.Id}>\n\n" +
+                                        $"Keep in mind that you need to run {prfx}index again for the whitelist to work as intended.");
 
-            await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+            await ReplyAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
         }
-
 
         [Command("toggleservercommand", RunMode = RunMode.Async)]
         [Summary("Enables or disables a command server-wide. Make sure to enter the command you want to disable without the `{{prfx}}` prefix.")]
@@ -479,7 +466,7 @@ namespace FMBot.Bot.Commands.Guild
             if (string.IsNullOrEmpty(command))
             {
                 var description = new StringBuilder();
-                if (disabledCommands != null &&  disabledCommands.Length > 0)
+                if (disabledCommands != null && disabledCommands.Length > 0)
                 {
                     description.AppendLine("Currently disabled commands in this channel:");
                     foreach (var disabledCommand in disabledCommands)

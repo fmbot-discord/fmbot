@@ -781,7 +781,7 @@ namespace FMBot.Bot.Commands.LastFM
                     guild.GuildUsers.Add(currentUser);
                 }
 
-                await this._indexService.UpdateUser(await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), currentUser.UserId, currentUser.GuildId);
+                await this._indexService.UpdateUser(await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), currentUser.UserId, guild);
 
                 var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(this.Context, guild.GuildId, track.ArtistName, track.TrackName);
 

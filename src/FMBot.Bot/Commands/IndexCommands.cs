@@ -73,29 +73,25 @@ namespace FMBot.Bot.Commands
 
                 (registeredUserCount, whoKnowsWhitelistedUserCount) = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
 
+                await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
                 if (usersToFullyUpdate != null && usersToFullyUpdate.Count == 0 && lastIndex != null)
                 {
-                    await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
                     reply += $"✅ Server index has been updated.";
                 }
                 else if (usersToFullyUpdate == null || usersToFullyUpdate.Count == 0 && lastIndex == null)
                 {
-                    await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow.AddDays(-1));
                     reply += "✅ Server has been indexed successfully.";
                 }
                 else
                 {
-                    await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild);
                     reply += $"✅ Server index has been updated.";
                 }
-
-                (registeredUserCount, whoKnowsWhitelistedUserCount) = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
 
                 reply += $"\n\nThis server has a total of {registeredUserCount} registered .fmbot members";
 
                 if (whoKnowsWhitelistedUserCount.HasValue)
                 {
-                    reply += $" and {whoKnowsWhitelistedUserCount.Value} members whitelisted on WhoKnows";
+                    reply += $" ({whoKnowsWhitelistedUserCount.Value} members whitelisted on WhoKnows)";
                 }
 
                 reply += ".";
@@ -110,7 +106,6 @@ namespace FMBot.Bot.Commands
 
                 this.Context.LogCommandUsed();
 
-                // These are the implied conditions for the previous "else"
                 if (usersToFullyUpdate != null && usersToFullyUpdate.Count != 0)
                 {
                     this._indexService.AddUsersToIndexQueue(usersToFullyUpdate);
