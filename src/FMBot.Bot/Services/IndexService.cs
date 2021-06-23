@@ -67,7 +67,7 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async Task<int> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers)
+        public async Task<(int, int?)> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers)
         {
             var userIds = discordGuildUsers.Select(s => s.Id).ToList();
 
@@ -105,12 +105,28 @@ namespace FMBot.Bot.Services
                 })
                 .ToListAsync();
 
-            foreach (var user in users)
+            int? whoKnowsWhitelistedCount = null;
+            if (existingGuild.WhoKnowsWhitelistRoleId.HasValue)
+            {
+                whoKnowsWhitelistedCount = 0;
+            }
+
+                foreach (var user in users)
             {
                 var discordUser = discordGuildUsers.First(f => f.Id == user.User.DiscordUserId);
                 var name = discordUser.Nickname ?? discordUser.Username;
                 user.UserName = name;
                 user.Bot = discordUser.IsBot;
+
+                if (existingGuild.WhoKnowsWhitelistRoleId.HasValue)
+                {
+                    var isWhitelisted = discordUser.RoleIds.Contains(existingGuild.WhoKnowsWhitelistRoleId.Value) == true;
+                    user.WhoKnowsWhitelisted = isWhitelisted;
+                    if (isWhitelisted)
+                    {
+                        whoKnowsWhitelistedCount++;
+                    }
+                }
             }
 
             var connString = db.Database.GetDbConnection().ConnectionString;
@@ -118,7 +134,8 @@ namespace FMBot.Bot.Services
                 .MapInteger("guild_id", x => x.GuildId)
                 .MapInteger("user_id", x => x.UserId)
                 .MapText("user_name", x => x.UserName)
-                .MapBoolean("bot", x => x.Bot == true);
+                .MapBoolean("bot", x => x.Bot == true)
+                .MapBoolean("who_knows_whitelisted", x => x.WhoKnowsWhitelisted);
 
             await using var connection = new NpgsqlConnection(connString);
             connection.Open();
@@ -130,7 +147,7 @@ namespace FMBot.Bot.Services
 
             Log.Information("Stored guild users for guild with id {guildId}", existingGuild.GuildId);
 
-            return users.Count;
+            return (users.Count, whoKnowsWhitelistedCount);
         }
 
         public async Task<GuildUser> GetOrAddUserToGuild(Persistence.Domain.Models.Guild guild, IGuildUser discordGuildUser, User user)
