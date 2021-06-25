@@ -299,5 +299,69 @@ namespace FMBot.Bot.Commands.Guild
             await ReplyAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
         }
+
+
+        [Command("whoknowswhitelist", RunMode = RunMode.Async)]
+        [Summary("Configures the WhoKnows charts to only show members with a specified role.\n\n" +
+                 "After changing your whitelist setting, you will most likely need to index the server again for it to take effect.\n\n" +
+                 "To remove the current whitelist setting, use this command without an option")]
+        [Examples("whoknowswhitelist", "whoknowswhitelist royals", "whoknowswhitelist 423946236102705154")]
+        [Alias("wkwhitelist", "wkwl")]
+        [GuildOnly]
+        public async Task SetWhoKnowsWhitelistRoleAsync([Remainder] string roleQuery = null)
+        {
+            var serverUser = (IGuildUser)this.Context.Message.Author;
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
+                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync(
+                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(roleQuery) || roleQuery.ToLower() == "remove" || roleQuery.ToLower() == "delete")
+            {
+                await this._guildService.SetGuildWhoKnowsWhitelistRoleAsync(this.Context.Guild, null);
+                await ReplyAsync("Removed the server's role whitelist for WhoKnows!");
+                this.Context.LogCommandUsed();
+                return;
+            }
+
+            if (
+                !(roleQuery.Length is >= 17 and <= 19) ||
+                !ulong.TryParse(roleQuery, out var discordRoleId)
+                )
+            {
+                var roleQueryResult = this.Context.Guild.Roles.First(r => r.Name.ToLower().Contains(roleQuery.ToLower()));
+
+                if (roleQueryResult == null)
+                {
+                    await ReplyAsync("Could not find a role with that name! Maybe try again using the role ID");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                discordRoleId = roleQueryResult.Id;
+            }
+
+            var role = this.Context.Guild.Roles.First(r => r.Id == discordRoleId);
+
+            if (role == null)
+            {
+                await ReplyAsync("Could not find a role with that ID!");
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            await this._guildService.SetGuildWhoKnowsWhitelistRoleAsync(this.Context.Guild, role.Id);
+
+            this._embed.WithTitle("Successfully set the server's whitelist role for WhoKnows!");
+            this._embed.WithDescription($"Set to <@&{discordRoleId}>\nKeep in mind that you need to run {prfx}index again for the whitelist to work as intended.");
+
+            await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+            this.Context.LogCommandUsed();
+        }
     }
 }
