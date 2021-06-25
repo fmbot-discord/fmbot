@@ -334,7 +334,7 @@ namespace FMBot.Bot.Commands.Guild
                 !ulong.TryParse(roleQuery, out var discordRoleId)
                 )
             {
-                var roleQueryResult = this.Context.Guild.Roles.First(r => r.Name.ToLower().Contains(roleQuery.ToLower()));
+                var roleQueryResult = this.Context.Guild.Roles.FirstOrDefault(r => r.Name.ToLower().Contains(roleQuery.ToLower()));
 
                 if (roleQueryResult == null)
                 {
@@ -346,7 +346,7 @@ namespace FMBot.Bot.Commands.Guild
                 discordRoleId = roleQueryResult.Id;
             }
 
-            var role = this.Context.Guild.Roles.First(r => r.Id == discordRoleId);
+            var role = this.Context.Guild.Roles.FirstOrDefault(r => r.Id == discordRoleId);
 
             if (role == null)
             {
@@ -360,7 +360,7 @@ namespace FMBot.Bot.Commands.Guild
             await this._guildService.StaleGuildLastIndexedAsync(this.Context.Guild);
 
             this._embed.WithTitle("Successfully set the server's whitelist role for WhoKnows!");
-            this._embed.WithDescription($"Set to <@&{discordRoleId}>");
+            this._embed.WithDescription($"Set to <@&{discordRoleId}>\nKeep in mind that you need to run `{prfx}index` again for the whitelist to work as intended.");
 
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
             this.Context.LogCommandUsed();
