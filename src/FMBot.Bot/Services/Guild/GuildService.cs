@@ -164,6 +164,21 @@ namespace FMBot.Bot.Services.Guild
             return usersObject.ToList();
         }
 
+        public async Task StaleGuildLastIndexedAsync(IGuild guild)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingGuild = await db.Guilds
+                .AsQueryable()
+                .FirstAsync(f => f.DiscordGuildId == guild.Id);
+
+            existingGuild.Name = guild.Name;
+            existingGuild.LastIndexed = null;
+
+            db.Entry(existingGuild).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+        }
+
         public async Task ChangeGuildSettingAsync(IGuild guild, Persistence.Domain.Models.Guild newGuildSettings)
         {
             await using var db = this._contextFactory.CreateDbContext();
