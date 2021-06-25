@@ -323,6 +323,7 @@ namespace FMBot.Bot.Commands.Guild
             if (string.IsNullOrEmpty(roleQuery) || roleQuery.ToLower() == "remove" || roleQuery.ToLower() == "delete")
             {
                 await this._guildService.SetGuildWhoKnowsWhitelistRoleAsync(this.Context.Guild, null);
+                await this._guildService.StaleGuildLastIndexedAsync(this.Context.Guild);
                 await ReplyAsync("Removed the server's role whitelist for WhoKnows!");
                 this.Context.LogCommandUsed();
                 return;
@@ -356,9 +357,10 @@ namespace FMBot.Bot.Commands.Guild
 
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             await this._guildService.SetGuildWhoKnowsWhitelistRoleAsync(this.Context.Guild, role.Id);
+            await this._guildService.StaleGuildLastIndexedAsync(this.Context.Guild);
 
             this._embed.WithTitle("Successfully set the server's whitelist role for WhoKnows!");
-            this._embed.WithDescription($"Set to <@&{discordRoleId}>\nKeep in mind that you need to run {prfx}index again for the whitelist to work as intended.");
+            this._embed.WithDescription($"Set to <@&{discordRoleId}>");
 
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
             this.Context.LogCommandUsed();
