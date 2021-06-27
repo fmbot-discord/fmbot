@@ -53,6 +53,10 @@ namespace FMBot.Bot.Services.WhoKnows
                             .Select(s => s.UserId).Contains(w.UserId))
                     .ToList();
             }
+            if (guild.WhoKnowsWhitelistRoleId.HasValue) {
+                eligibleUsers = eligibleUsers.Where(w => w.WhoKnowsWhitelisted != false)
+                    .ToList();
+            }
 
             var topUser = users
                 .Where(w => eligibleUsers.Select(s => s.UserId).Contains(w.UserId) &&
@@ -224,6 +228,7 @@ namespace FMBot.Bot.Services.WhoKnows
                                    "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
                                    "WHERE gu.guild_id = @guildId AND playcount > @minPlaycount " +
                                    "AND NOT ua.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_crowns = true AND guild_id = @guildId) " +
+                                   "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
                                    "ORDER BY ua.name, ua.playcount DESC;";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
