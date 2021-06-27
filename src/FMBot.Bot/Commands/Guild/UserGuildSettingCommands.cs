@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
@@ -43,17 +42,9 @@ namespace FMBot.Bot.Commands.Guild
         [Options("Amount of days to filter someone")]
         [Alias("setactivitythreshold", "setthreshold")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task SetWhoKnowsThresholdAsync([Remainder] string days = null)
         {
-            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
-
-            if (lastIndex == null)
-            {
-                await ReplyAsync("This server hasn't been indexed yet.\n" +
-                                 $"Please run `.fmindex` to index this server.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -106,6 +97,7 @@ namespace FMBot.Bot.Commands.Guild
         [Options(Constants.UserMentionExample)]
         [Alias("blockuser", "ban", "banuser", "banmember", "blockmember")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task GuildBlockUserAsync([Remainder] string user = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -121,13 +113,6 @@ namespace FMBot.Bot.Commands.Guild
             }
 
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-
-            if (guild?.LastIndexed == null)
-            {
-                await ReplyAsync($"Please run `{prfx}index` first.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
 
             if (user == null)
             {
@@ -180,8 +165,9 @@ namespace FMBot.Bot.Commands.Guild
         [Command("unblock", RunMode = RunMode.Async)]
         [Summary("Remove block from a user from appearing in server-wide commands")]
         [Options(Constants.UserMentionExample)]
-        [Alias("unblockuser", "unban", "unbanuser","unbanmember", "removeblock", "removeban", "crownunblock")]
+        [Alias("unblockuser", "unban", "unbanuser", "unbanmember", "removeblock", "removeban", "crownunblock")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task GuildUnBlockUserAsync([Remainder] string user = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -197,13 +183,6 @@ namespace FMBot.Bot.Commands.Guild
             }
 
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-
-            if (guild?.LastIndexed == null)
-            {
-                await ReplyAsync($"Please run `{prfx}index` first.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
 
             if (user == null)
             {
@@ -253,6 +232,7 @@ namespace FMBot.Bot.Commands.Guild
         [Summary("View all users that are blocked from appearing in server-wide commands")]
         [Alias("blocked", "banned", "bannedusers", "blockedmembers", "bannedmembers")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task BlockedUsersAsync()
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -268,13 +248,6 @@ namespace FMBot.Bot.Commands.Guild
             }
 
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-
-            if (guild?.LastIndexed == null)
-            {
-                await ReplyAsync($"Please run `{prfx}index` first.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
 
             if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromWhoKnows))
             {
@@ -308,8 +281,45 @@ namespace FMBot.Bot.Commands.Guild
         [Examples("whoknowswhitelist", "whoknowswhitelist royals", "whoknowswhitelist 423946236102705154")]
         [Alias("wkwhitelist", "wkwl")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task SetWhoKnowsWhitelistRoleAsync([Remainder] string roleQuery = null)
         {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            if (string.IsNullOrWhiteSpace(roleQuery))
+            {
+                var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+                this._embed.WithTitle($"WhoKnows whitelist settings for {this.Context.Guild.Name}");
+
+                if (guild.WhoKnowsWhitelistRoleId.HasValue)
+                {
+                    this._embed.AddField("Current setting",
+                        $"WhoKnows whitelist role is <@&{guild.WhoKnowsWhitelistRoleId.Value}>. Only users with this role will show up in WhoKnows and in server charts.");
+
+                    this._embed.AddField("Configuring this setting",
+                        $"- To remove the whitelist role, use: \n`{prfx}whoknowswhitelist remove`.\n" +
+                        $"- To change it to a different role, use: \n`{prfx}whoknowswhitelist rolename/roleid`");
+
+                    this._embed.AddField("Server statistics",
+                        $"- {guild.GuildUsers.Count} registered .fmbot members | {guild.GuildUsers.Count(c => c.WhoKnowsWhitelisted == true)} whitelisted users");
+                }
+                else
+                {
+                    this._embed.AddField("Current setting",
+                        $"WhoKnows whitelist role is not enabled. All users will show up in WhoKnows and server charts.");
+
+                    this._embed.AddField("Configuring this setting",
+                        $"- To enable this setting for your server, use: \n`{prfx}whoknowswhitelist rolename/roleid`");
+
+                    this._embed.AddField("Server statistics",
+                        $"- {guild.GuildUsers.Count} registered .fmbot members");
+                }
+
+                this._embed.WithColor(DiscordConstants.InformationColorBlue);
+                await ReplyAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.Help);
+                return;
+            }
+
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -320,49 +330,47 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            if (string.IsNullOrEmpty(roleQuery) || roleQuery.ToLower() == "remove" || roleQuery.ToLower() == "delete")
+            if (roleQuery.ToLower() == "remove" || roleQuery.ToLower() == "delete")
             {
                 await this._guildService.SetGuildWhoKnowsWhitelistRoleAsync(this.Context.Guild, null);
                 await this._guildService.StaleGuildLastIndexedAsync(this.Context.Guild);
-                await ReplyAsync("Removed the server's role whitelist for WhoKnows!");
+
+                this._embed.WithTitle("Removed whitelist role for WhoKnows!");
+                this._embed.WithDescription($"Please run `{prfx}index` to re-store all server users.");
+                this._embed.WithColor(DiscordConstants.SuccessColorGreen);
+
+                await ReplyAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed();
                 return;
             }
 
-            if (
-                !(roleQuery.Length is >= 17 and <= 19) ||
-                !ulong.TryParse(roleQuery, out var discordRoleId)
-                )
+            var role = this.Context.Guild.Roles.FirstOrDefault(f => f.Name.ToLower().Contains(roleQuery.ToLower()));
+
+            if (role == null && roleQuery.Length is >= 17 and <= 19 && ulong.TryParse(roleQuery, out var discordRoleId))
             {
-                var roleQueryResult = this.Context.Guild.Roles.FirstOrDefault(r => r.Name.ToLower().Contains(roleQuery.ToLower()));
-
-                if (roleQueryResult == null)
-                {
-                    await ReplyAsync("Could not find a role with that name! Maybe try again using the role ID");
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                    return;
-                }
-
-                discordRoleId = roleQueryResult.Id;
+                role = this.Context.Guild.Roles.FirstOrDefault(f => f.Id == discordRoleId);
             }
-
-            var role = this.Context.Guild.Roles.FirstOrDefault(r => r.Id == discordRoleId);
 
             if (role == null)
             {
-                await ReplyAsync("Could not find a role with that ID!");
+                await ReplyAsync("Could not find a role with that name or Id. Please try again.");
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
 
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             await this._guildService.SetGuildWhoKnowsWhitelistRoleAsync(this.Context.Guild, role.Id);
             await this._guildService.StaleGuildLastIndexedAsync(this.Context.Guild);
 
             this._embed.WithTitle("Successfully set the server's whitelist role for WhoKnows!");
-            this._embed.WithDescription($"Set to <@&{discordRoleId}>\nKeep in mind that you need to run `{prfx}index` again for the whitelist to work as intended.");
+            this._embed.WithDescription($"Set to <@&{role.Id}>. Only users with this role will now show up in WhoKnows and in server charts.");
 
-            await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+            this._embed.AddField("Some things to keep in mind:",
+                $"Some things to keep in mind:\n" +
+                $"- To check all users for the whitelist role you can run `{prfx}index`.\n" +
+                $"- If you give someone the whitelist role they will need to run a command before the bot detects the whitelist role.");
+
+            this._embed.WithColor(DiscordConstants.SuccessColorGreen);
+            await ReplyAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
         }
     }

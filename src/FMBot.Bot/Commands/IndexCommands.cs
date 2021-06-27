@@ -91,7 +91,8 @@ namespace FMBot.Bot.Commands
 
                 if (whoKnowsWhitelistedUserCount.HasValue)
                 {
-                    reply += $" ({whoKnowsWhitelistedUserCount.Value} members whitelisted on WhoKnows)";
+                    var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+                    reply += $" ({whoKnowsWhitelistedUserCount.Value} members whitelisted on WhoKnows, see `{prfx}whoknowswhitelist` to configure)";
                 }
 
                 reply += ".";

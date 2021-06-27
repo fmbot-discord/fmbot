@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
@@ -314,6 +313,7 @@ namespace FMBot.Bot.Commands.Guild
         [Examples("toggleservercommand chart", "toggleservercommand whoknows")]
         [Alias("toggleservercommands", "toggleserver", "servertoggle")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task ToggleGuildCommand(string command = null)
         {
             var disabledCommandsForGuild = await this._guildService.GetDisabledCommandsForGuild(this.Context.Guild);
@@ -393,18 +393,11 @@ namespace FMBot.Bot.Commands.Guild
         [Examples("togglecommand chart", "togglecommand whoknows")]
         [Alias("togglecommands", "channeltoggle", "togglechannel", "togglechannelcommand", "togglechannelcommands")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task ToggleChannelCommand(string command = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-
-            if (guild == null)
-            {
-                await ReplyAsync("This server hasn't been stored yet.\n" +
-                                 $"Please run `{prfx}index` to store this server.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
 
             var disabledCommands = await this._guildService.GetDisabledCommandsForChannel(this.Context.Channel);
 

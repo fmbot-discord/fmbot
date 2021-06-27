@@ -64,19 +64,13 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         [GuildOnly]
         [SupportsPagination]
+        [RequiresIndex]
         public async Task UserCrownsAsync([Remainder] string extraOptions = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
-            if (guild == null)
-            {
-                await ReplyAsync("This server hasn't been stored yet.\n" +
-                                 $"Please run `{prfx}index` to store this server.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
             if (guild.CrownsDisabled == true)
             {
                 await ReplyAsync("Crown functionality has been disabled in this server.");
@@ -180,19 +174,13 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("cw")]
         [UsernameSetRequired]
         [GuildOnly]
+        [RequiresIndex]
         public async Task CrownAsync([Remainder] string artistValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
-            if (guild == null)
-            {
-                await ReplyAsync("This server hasn't been stored yet.\n" +
-                                 $"Please run `{prfx}index` to store this server.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
             if (guild.CrownsDisabled == true)
             {
                 await ReplyAsync("Crown functionality has been disabled in this server.");
@@ -294,18 +282,12 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         [GuildOnly]
         [SupportsPagination]
+        [RequiresIndex]
         public async Task CrownLeaderboardAsync()
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
-            if (guild == null)
-            {
-                await ReplyAsync("This server hasn't been stored yet.\n" +
-                                 $"Please run `{prfx}index` to store this server.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
             if (guild.CrownsDisabled == true)
             {
                 await ReplyAsync("Crown functionality has been disabled in this server.");

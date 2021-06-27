@@ -10,6 +10,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -23,6 +24,7 @@ namespace FMBot.Bot.Handlers
         private readonly UserService _userService;
         private readonly DiscordShardedClient _discord;
         private readonly MusicBotService _musicBotService;
+        private readonly GuildService _guildService;
         private readonly IPrefixService _prefixService;
         private readonly IGuildDisabledCommandService _guildDisabledCommandService;
         private readonly IChannelDisabledCommandService _channelDisabledCommandService;
@@ -39,7 +41,8 @@ namespace FMBot.Bot.Handlers
             IChannelDisabledCommandService channelDisabledCommandService,
             UserService userService,
             MusicBotService musicBotService,
-            IOptions<BotSettings> botSettings)
+            IOptions<BotSettings> botSettings,
+            GuildService guildService)
         {
             this._discord = discord;
             this._commands = commands;
@@ -49,6 +52,7 @@ namespace FMBot.Bot.Handlers
             this._channelDisabledCommandService = channelDisabledCommandService;
             this._userService = userService;
             this._musicBotService = musicBotService;
+            this._guildService = guildService;
             this._botSettings = botSettings.Value;
             this._discord.MessageReceived += OnMessageReceivedAsync;
         }
@@ -215,6 +219,29 @@ namespace FMBot.Bot.Handlers
                 {
                     await context.User.SendMessageAsync("This command is not supported in DMs.");
                     context.LogCommandUsed(CommandResponse.NotSupportedInDm);
+                    return;
+                }
+            }
+            if (searchResult.Commands[0].Command.Attributes.OfType<RequiresIndex>().Any() && context.Guild != null)
+            {
+                var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.Guild);
+                if (lastIndex == null)
+                {
+                    var embed = new EmbedBuilder();
+                    embed.WithDescription("To use .fmbot commands with server-wide statistics you need to index the server first.\n\n" +
+                                          $"Please run `{prfx}index` to index this server.\n" +
+                                          $"Note that this can take some time on large servers.");
+                    await context.Channel.SendMessageAsync("", false, embed.Build());
+                    context.LogCommandUsed(CommandResponse.IndexRequired);
+                    return;
+                }
+                if (lastIndex < DateTime.UtcNow.AddDays(-100))
+                {
+                    var embed = new EmbedBuilder();
+                    embed.WithDescription("Server index data is out of date, it was last updated over 100 days ago.\n" +
+                                          $"Please run `{prfx}index` to re-index this server.");
+                    await context.Channel.SendMessageAsync("", false, embed.Build());
+                    context.LogCommandUsed(CommandResponse.IndexRequired);
                     return;
                 }
             }

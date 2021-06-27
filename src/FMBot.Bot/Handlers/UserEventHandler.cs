@@ -25,7 +25,7 @@ namespace FMBot.Bot.Handlers
         private async Task GuildUserUpdated(SocketGuildUser oldGuildUser, SocketGuildUser newGuildUser)
         {
             Log.Information($"GuildUserUpdated {oldGuildUser.Nickname} - {newGuildUser.Nickname}");
-            _ = this._indexService.UpdateDiscordUser(newGuildUser);
+            _ = this._indexService.UpdateGuildUserEvent(newGuildUser);
         }
 
         private async Task UserLeftGuild(SocketGuildUser guildUser)

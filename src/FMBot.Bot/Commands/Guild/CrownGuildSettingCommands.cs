@@ -47,17 +47,9 @@ namespace FMBot.Bot.Commands.Guild
         [Options("Amount of plays")]
         [Alias("setcrownthreshold", "setcwthreshold", "cwthreshold", "crowntreshold")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task SetCrownPlaycountThresholdAsync([Remainder] string playcount = null)
         {
-            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
-
-            if (lastIndex == null)
-            {
-                await ReplyAsync("This server hasn't been indexed yet.\n" +
-                                 $"Please run `.fmindex` to index this server.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -110,17 +102,9 @@ namespace FMBot.Bot.Commands.Guild
         [Options("Amount of days to filter someone")]
         [Alias("setcrownactivitythreshold",  "setcwactivitythreshold", "cwactivitythreshold", "crownactivitytreshold")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task SetCrownActivityThresholdAsync([Remainder] string days = null)
         {
-            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
-
-            if (lastIndex == null)
-            {
-                await ReplyAsync("This server hasn't been indexed yet.\n" +
-                                 $"Please run `.fmindex` to index this server.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -173,6 +157,7 @@ namespace FMBot.Bot.Commands.Guild
         [Options(Constants.UserMentionExample)]
         [Alias("crownblockuser", "crownban", "cwblock", "cwban", "crownbanuser", "crownbanmember")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task GuildBlockUserFromCrownsAsync([Remainder] string user = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -188,13 +173,6 @@ namespace FMBot.Bot.Commands.Guild
             }
 
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-
-            if (guild?.LastIndexed == null)
-            {
-                await ReplyAsync($"Please run `{prfx}index` first.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
 
             if (user == null)
             {
@@ -247,6 +225,7 @@ namespace FMBot.Bot.Commands.Guild
         [Summary("View all users that are blocked from earning crowns in your server")]
         [Alias("crownblocked", "crownbanned", "crownbannedusers", "crownbannedmembers")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task BlockedUsersAsync()
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -262,13 +241,6 @@ namespace FMBot.Bot.Commands.Guild
             }
 
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-
-            if (guild?.LastIndexed == null)
-            {
-                await ReplyAsync($"Please run `{prfx}index` first.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
 
             if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(w => w.BlockedFromCrowns))
             {
@@ -298,18 +270,11 @@ namespace FMBot.Bot.Commands.Guild
         [Summary("Completely enables/disables crowns for your server.")]
         [Alias("togglecrown")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task ToggleCrownsAsync([Remainder] string confirmation = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-
-            if (guild == null)
-            {
-                await ReplyAsync("This server hasn't been stored yet.\n" +
-                                 $"Please run `{prfx}index` to store this server.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
 
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
@@ -344,11 +309,11 @@ namespace FMBot.Bot.Commands.Guild
             this.Context.LogCommandUsed();
         }
 
-
         [Command("killcrown", RunMode = RunMode.Async)]
         [Summary("Server staff command: Removes all crowns from a specific artist for your server.")]
         [Alias("kcw", "kcrown", "killcw", "kill crown", "crown kill")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task KillCrownAsync([Remainder] string killCrownValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -368,13 +333,6 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            if (guild == null)
-            {
-                await ReplyAsync("This server hasn't been stored yet.\n" +
-                                 $"Please run `{prfx}index` to store this server.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
             if (guild.CrownsDisabled == true)
             {
                 await ReplyAsync("Crown functionality has been disabled in this server.");
@@ -419,6 +377,7 @@ namespace FMBot.Bot.Commands.Guild
         [Summary("Server staff command: Automatically generates or updates all crowns for your server")]
         [Alias("crownseed", "seedcrowns")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task SeedCrownsAsync([Remainder] string helpValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -438,13 +397,6 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            if (guild == null)
-            {
-                await ReplyAsync("This server hasn't been stored yet.\n" +
-                                 $"Please run `{prfx}index` to store this server.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
             if (guild.CrownsDisabled == true)
             {
                 await ReplyAsync("Crown functionality has been disabled in this server.");
@@ -485,6 +437,7 @@ namespace FMBot.Bot.Commands.Guild
         [Summary("Server Staff Command: Removes all crowns from your server")]
         [Alias("removeallcrowns")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task KillAllCrownsAsync([Remainder] string confirmation = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -504,13 +457,6 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            if (guild == null)
-            {
-                await ReplyAsync("This server hasn't been stored yet.\n" +
-                                 $"Please run `{prfx}index` to store this server.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
             if (guild.CrownsDisabled == true)
             {
                 await ReplyAsync("Crown functionality has been disabled in this server.");
@@ -558,6 +504,7 @@ namespace FMBot.Bot.Commands.Guild
         [Summary("Removes all crowns seeded by the `crownseeder` command. All other manually claimed crowns will remain in place.")]
         [Alias("removeallseededcrowns")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task KillAllSeededCrownsAsync([Remainder] string confirmation = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -577,13 +524,6 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            if (guild == null)
-            {
-                await ReplyAsync("This server hasn't been stored yet.\n" +
-                                 $"Please run `{prfx}index` to store this server.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
             if (guild.CrownsDisabled == true)
             {
                 await ReplyAsync("Crown functionality has been disabled in this server.");

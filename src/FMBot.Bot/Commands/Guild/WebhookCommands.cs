@@ -35,6 +35,7 @@ namespace FMBot.Bot.Commands.Guild
                  "To remove, simply delete the webhook from your server and .fmbot will automatically delete it next time it tries to post a feature.")]
         [Alias("addfeaturedwebhook")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task AddFeaturedWebhookAsync()
         {
             var serverUser = (IGuildUser)this.Context.Message.Author;
@@ -82,6 +83,7 @@ namespace FMBot.Bot.Commands.Guild
         [Summary("Test the .fmbot webhook in your channel")]
         [Alias("testfeatured", "testfeaturedwebhook")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task TestFeaturedWebhookAsync()
         {
             var serverUser = (IGuildUser)this.Context.Message.Author;

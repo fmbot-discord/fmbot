@@ -569,6 +569,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("wa", "whoknowsalbum", "whoknowsalbum the beatles abbey road", "whoknowsalbum Metallica & Lou Reed | Lulu")]
         [UsernameSetRequired]
         [GuildOnly]
+        [RequiresIndex]
         public async Task WhoKnowsAlbumAsync([Remainder] string albumValues = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -576,24 +577,6 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
-
-                if (lastIndex == null)
-                {
-                    await ReplyAsync("This server hasn't been indexed yet.\n" +
-                                     $"Please run `{prfx}index` to index this server.\n" +
-                                     $"Note that this can take some time on large servers.");
-                    this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                    return;
-                }
-                if (lastIndex < DateTime.UtcNow.AddDays(-100))
-                {
-                    await ReplyAsync("Server index data is out of date, it was last updated over 100 days ago.\n" +
-                                     $"Please run `{prfx}index` to re-index this server.");
-                    this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                    return;
-                }
-
                 var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
                 _ = this.Context.Channel.TriggerTypingAsync();
@@ -618,7 +601,7 @@ namespace FMBot.Bot.Commands.LastFM
                     guild.GuildUsers.Add(currentUser);
                 }
 
-                await this._indexService.UpdateUser(await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), currentUser.UserId, guild);
+                await this._indexService.UpdateGuildUser(await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), currentUser.UserId, guild);
 
                 var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(this.Context, guild.GuildId, album.ArtistName, album.AlbumName);
 
@@ -641,7 +624,8 @@ namespace FMBot.Bot.Commands.LastFM
                 var footer = $"WhoKnows album requested by {userTitle}";
 
                 var rnd = new Random();
-                if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-15))
+                var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
+                if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-30))
                 {
                     footer += $"\nMissing members? Update with {prfx}index";
                 }
@@ -657,10 +641,15 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
                 }
 
-                if (usersWithAlbum.Count > filteredUsersWithAlbum.Count)
+                if (usersWithAlbum.Count > filteredUsersWithAlbum.Count && !guild.WhoKnowsWhitelistRoleId.HasValue)
                 {
                     var filteredAmount = usersWithAlbum.Count - filteredUsersWithAlbum.Count;
                     footer += $"\n{filteredAmount} inactive/blocked users filtered";
+                }
+
+                if (guild.WhoKnowsWhitelistRoleId.HasValue)
+                {
+                    footer += $"\nUsers with WhoKnows whitelisted role only";
                 }
 
                 var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingAlbum(userSettings.UserId,
@@ -718,27 +707,10 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("gwa", "gwka", "gwab", "gwkab", "globalwhoknows album")]
         [UsernameSetRequired]
         [GuildOnly]
+        [RequiresIndex]
         public async Task GlobalWhoKnowsAlbumAsync([Remainder] string albumValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-
-            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
-
-            if (lastIndex == null)
-            {
-                await ReplyAsync("This server hasn't been indexed yet.\n" +
-                                 $"Please run `{prfx}index` to index this server.\n" +
-                                 $"Note that this can take some time on large servers.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
-            if (lastIndex < DateTime.UtcNow.AddDays(-100))
-            {
-                await ReplyAsync("Server index data is out of date, it was last updated over 100 days ago.\n" +
-                                 $"Please run `{prfx}index` to re-index this server.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
 
             try
             {
@@ -1020,33 +992,12 @@ namespace FMBot.Bot.Commands.LastFM
         [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`")]
         [Examples("sab", "sab a p", "serveralbums", "serveralbums alltime", "serveralbums listeners weekly")]
         [Alias("sab", "stab", "servertopalbums", "serveralbum", "server albums")]
+        [RequiresIndex]
+        [GuildOnly]
         public async Task GuildAlbumsAsync(params string[] extraOptions)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("This command is not supported in DMs.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-
-            if (guild.LastIndexed == null)
-            {
-                await ReplyAsync("This server hasn't been indexed yet.\n" +
-                                 $"Please run `{prfx}index` to index this server.\n" +
-                                 $"Note that this can take some time on large servers.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
-            if (guild.LastIndexed < DateTime.UtcNow.AddDays(-100))
-            {
-                await ReplyAsync("Server index data is out of date, it was last updated over 100 days ago.\n" +
-                                 $"Please run `{prfx}index` to re-index this server.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
 
             _ = this.Context.Channel.TriggerTypingAsync();
 

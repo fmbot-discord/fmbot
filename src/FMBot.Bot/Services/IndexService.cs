@@ -217,7 +217,7 @@ namespace FMBot.Bot.Services
             return guild.GuildUsers.First(f => f.UserId == user.UserId);
         }
 
-        public async Task UpdateUser(IGuildUser discordGuildUser, int userId, Persistence.Domain.Models.Guild guild)
+        public async Task UpdateGuildUser(IGuildUser discordGuildUser, int userId, Persistence.Domain.Models.Guild guild)
         {
             try
             {
@@ -254,7 +254,7 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async Task UpdateDiscordUser(IGuildUser discordGuildUser)
+        public async Task UpdateGuildUserEvent(IGuildUser discordGuildUser)
         {
             try
             {
