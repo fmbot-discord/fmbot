@@ -19,7 +19,7 @@ namespace FMBot.Bot.Handlers
             this._indexService = indexService;
             this._crownService = crownService;
             this._client.UserLeft += UserLeftGuild;
-            this._client.GuildMemberUpdated += GuildUserUpdated;
+            //this._client.GuildMemberUpdated += GuildUserUpdated;
         }
 
         private async Task GuildUserUpdated(SocketGuildUser oldGuildUser, SocketGuildUser newGuildUser)
