@@ -31,7 +31,7 @@ namespace FMBot.Persistence.Repositories
 
         public async Task AddOrUpdateArtistAlias(int artistId, string artistNameBeforeCorrect, NpgsqlConnection connection)
         {
-            const string deleteQuery = @"DELETE FROM public.artist_aliases WHERE artist_id = @artist_id AND alias = @alias";
+            const string deleteQuery = @"DELETE FROM public.artist_aliases WHERE artist_id = @artistId AND alias = @alias";
             await connection.ExecuteAsync(deleteQuery, new
             {
                 artistId,
@@ -51,7 +51,7 @@ namespace FMBot.Persistence.Repositories
 
         public async Task AddOrUpdateArtistGenres(int artistId, IEnumerable<string> genreNames, NpgsqlConnection connection)
         {
-            const string deleteQuery = @"DELETE FROM public.artist_genres WHERE artist_id = @artist_id";
+            const string deleteQuery = @"DELETE FROM public.artist_genres WHERE artist_id = @artistId";
             await connection.ExecuteAsync(deleteQuery, new { artistId });
 
             const string insertQuery = @"INSERT INTO public.artist_genres(artist_id, name) " +
