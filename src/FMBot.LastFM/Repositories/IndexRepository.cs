@@ -100,7 +100,7 @@ namespace FMBot.LastFM.Repositories
 
             var topArtists = new List<LastArtist>();
 
-            var indexLimit = UserHasHigherIndexLimit(user) ? 25 : 4;
+            var indexLimit = UserHasHigherIndexLimit(user) ? 50 : 4;
 
             for (var i = 1; i < indexLimit + 1; i++)
             {
@@ -161,7 +161,7 @@ namespace FMBot.LastFM.Repositories
 
             var topAlbums = new List<LastAlbum>();
 
-            var indexLimit = UserHasHigherIndexLimit(user) ? 25 : 5;
+            var indexLimit = UserHasHigherIndexLimit(user) ? 60 : 5;
 
             for (var i = 1; i < indexLimit + 1; i++)
             {
@@ -195,7 +195,7 @@ namespace FMBot.LastFM.Repositories
         {
             Log.Information($"Getting tracks for user {user.UserNameLastFM}");
 
-            var indexLimit = UserHasHigherIndexLimit(user) ? 25 : 6;
+            var indexLimit = UserHasHigherIndexLimit(user) ? 70 : 6;
 
             var trackResult = await this._lastFmRepository.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, indexLimit);
 
