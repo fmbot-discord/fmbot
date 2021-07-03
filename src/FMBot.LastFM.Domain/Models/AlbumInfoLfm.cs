@@ -17,7 +17,7 @@ namespace FMBot.LastFM.Domain.Models
         public long? Listeners { get; set; }
         public long? Playcount { get; set; }
         public long? Userplaycount { get; set; }
-        public Tracks Tracks { get; set; }
+        public TracksLfm Tracks { get; set; }
         public TagsLfm Tags { get; set; }
         public WikiLfm Wiki { get; set; }
     }
@@ -27,7 +27,7 @@ namespace FMBot.LastFM.Domain.Models
         public TagLfm[] Tag { get; set; }
     }
 
-    public class Tracks
+    public class TracksLfm
     {
         public ChildTrack[] Track { get; set; }
     }

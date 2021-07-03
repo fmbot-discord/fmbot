@@ -95,7 +95,7 @@ namespace FMBot.LastFM.Api
             var jsonSerializerOptions = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
-                Converters = { new TagsConverter() }
+                Converters = { new TagsConverter(), new TrackConverter() }
             };
 
             jsonSerializerOptions.Converters.Add(new LongToStringConverter());
