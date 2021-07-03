@@ -172,7 +172,6 @@ namespace FMBot.Bot.Services.WhoKnows
                       "WHERE gu.guild_id = @guildId AND gu.bot != true " +
                       "AND NOT ub.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
                       "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
-                      "AND gu.who_knows_whitelisted != false" +
                       "GROUP BY ub.name, ub.artist_name ";
 
             sql += orderType == OrderType.Playcount ?

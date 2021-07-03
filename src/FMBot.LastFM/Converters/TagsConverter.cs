@@ -20,8 +20,16 @@ namespace FMBot.LastFM.Converters
             reader.Read(); // Object
             reader.Read(); // Property name
 
-            // Read the tags array
-            var tags = JsonSerializer.Deserialize<TagLfm[]>(ref reader, options);
+            // Read the tags array (or single object)
+            TagLfm[] tags;
+            try
+            {
+                tags = JsonSerializer.Deserialize<TagLfm[]>(ref reader, options);
+            }
+            catch
+            {
+                tags = new[] { JsonSerializer.Deserialize<TagLfm>(ref reader, options) };
+            }
 
             reader.Read(); // Object
 
