@@ -56,7 +56,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("topgenres", RunMode = RunMode.Async)]
         [Summary("Shows a list of your or someone else their top genres over a certain time period.")]
         [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
-        [Examples("ta", "topartists", "ta a lfm:fm-bot", "topartists weekly @user")]
+        [Examples("tg", "topgenres", "tg a lfm:fm-bot", "topgenres weekly @user")]
         [Alias("gl", "tg", "genrelist", "genres", "top genres", "genreslist")]
         [UsernameSetRequired]
         [SupportsPagination]
