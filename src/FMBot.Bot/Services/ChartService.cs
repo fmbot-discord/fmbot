@@ -21,6 +21,7 @@ namespace FMBot.Bot.Services
         private readonly string _fontPath;
         private readonly string _loadingErrorImagePath;
         private readonly string _unknownImagePath;
+        private readonly string _unknownArtistImagePath;
         private readonly string _censoredImagePath;
 
         public ChartService(CensorService censorService)
@@ -31,8 +32,9 @@ namespace FMBot.Bot.Services
             {
                 this._fontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "arial-unicode-ms.ttf");
                 this._loadingErrorImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "loading-error.png");
-                this._unknownImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "censored.png");
-                this._censoredImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "unknown.png");
+                this._unknownImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "unknown.png");
+                this._unknownArtistImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "unknown-artist.png");
+                this._censoredImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "censored.png");
 
                 if (!File.Exists(this._fontPath))
                 {
@@ -41,6 +43,7 @@ namespace FMBot.Bot.Services
                     wc.DownloadFile("https://fmbot.xyz/fonts/arial-unicode-ms.ttf", this._fontPath);
                     wc.DownloadFile("https://fmbot.xyz/img/bot/loading-error.png", this._loadingErrorImagePath);
                     wc.DownloadFile("https://fmbot.xyz/img/bot/unknown.png", this._unknownImagePath);
+                    wc.DownloadFile("https://fmbot.xyz/img/bot/unknown-artist.png", this._unknownArtistImagePath);
                     wc.DownloadFile("https://fmbot.xyz/img/bot/censored.png", this._censoredImagePath);
                     wc.Dispose();
                 }
@@ -199,7 +202,7 @@ namespace FMBot.Bot.Services
                             }
                             else
                             {
-                                chartImage = SKBitmap.Decode(this._unknownImagePath);
+                                chartImage = SKBitmap.Decode(this._unknownArtistImagePath);
                                 validImage = false;
                             }
                         }
