@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
@@ -19,11 +20,13 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
+using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Interactivity;
 using Interactivity.Pagination;
 using Microsoft.Extensions.Options;
+using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -42,6 +45,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly SettingService _settingService;
         private readonly SpotifyService _spotifyService;
         private readonly UserService _userService;
+        private readonly GenreService _genreService;
         private readonly WhoKnowsService _whoKnowsService;
         private readonly WhoKnowsArtistService _whoKnowArtistService;
         private readonly WhoKnowsPlayService _whoKnowsPlayService;
@@ -64,7 +68,8 @@ namespace FMBot.Bot.Commands.LastFM
                 WhoKnowsPlayService whoKnowsPlayService,
                 InteractivityService interactivity,
                 WhoKnowsService whoKnowsService,
-                IOptions<BotSettings> botSettings) : base(botSettings)
+                IOptions<BotSettings> botSettings,
+                GenreService genreService) : base(botSettings)
         {
             this._artistsService = artistsService;
             this._crownService = crownService;
@@ -81,6 +86,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._whoKnowsPlayService = whoKnowsPlayService;
             this.Interactivity = interactivity;
             this._whoKnowsService = whoKnowsService;
+            this._genreService = genreService;
         }
 
         [Command("artist", RunMode = RunMode.Async)]
@@ -104,15 +110,15 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var spotifyImageSearchTask = this._spotifyService.GetOrStoreArtistImageAsync(artist, artistValues);
+            var spotifyArtistTask = this._spotifyService.GetOrStoreArtistAsync(artist, artistValues);
 
-            var spotifyImage = await spotifyImageSearchTask;
+            var spotifyArtist = await spotifyArtistTask;
 
-            if (spotifyImage != null)
+            var footer = new StringBuilder();
+            if (spotifyArtist.SpotifyImageUrl != null)
             {
-                this._embed.WithThumbnailUrl(spotifyImage);
-                this._embedFooter.WithText("Image source: Spotify");
-                this._embed.WithFooter(this._embedFooter);
+                this._embed.WithThumbnailUrl(spotifyArtist.SpotifyImageUrl);
+                footer.AppendLine("Image source: Spotify");
             }
 
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
@@ -180,13 +186,19 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.AddField("Summary", artist.Description);
             }
 
-            if (artist.Tags != null && artist.Tags.Any())
+            if (artist.Tags != null && artist.Tags.Any() && (spotifyArtist.ArtistGenres == null || !spotifyArtist.ArtistGenres.Any()))
             {
                 var tags = LastFmRepository.TagsToLinkedString(artist.Tags);
 
                 this._embed.AddField("Tags", tags);
             }
 
+            if (spotifyArtist.ArtistGenres != null && spotifyArtist.ArtistGenres.Any())
+            {
+                footer.AppendLine(GenreService.GenresToString(spotifyArtist.ArtistGenres.ToList()));
+            }
+
+            this._embed.WithFooter(footer.ToString());
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
             this.Context.LogCommandUsed();
@@ -461,9 +473,12 @@ namespace FMBot.Bot.Commands.LastFM
             try
             {
                 var description = "";
+                var footer = "";
+                Response<TopArtistList> artists;
+
                 if (!timeSettings.UsePlays)
                 {
-                    var artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm,
+                    artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm,
                         timeSettings.TimePeriod, amount);
 
                     if (!artists.Success || artists.Content == null)
@@ -474,38 +489,16 @@ namespace FMBot.Bot.Commands.LastFM
                         return;
                     }
 
-                    var footer = $"{artists.Content.TotalAmount} different artists in this time period";
+                    footer = $"{artists.Content.TotalAmount} different artists in this time period";
 
                     var rnd = new Random();
-                    if (rnd.Next(0, 2) == 1)
+                    if (rnd.Next(0, 2) == 1 && !paginationEnabled)
                     {
                         footer += $"\nWant pagination? Enable the 'Manage Messages' permission for .fmbot.";
                     }
 
                     amount = artists.Content.TopArtists.Count;
 
-                    for (var i = 0; i < amount; i++)
-                    {
-                        var artist = artists.Content.TopArtists[i];
-
-                        if (artists.Content.TopArtists.Count > 10 && !paginationEnabled)
-                        {
-                            description += $"{i + 1}. **{artist.ArtistName}** ({artist.UserPlaycount} plays) \n";
-                        }
-                        else
-                        {
-                            description += $"{i + 1}. **[{artist.ArtistName}]({artist.ArtistUrl})** ({artist.UserPlaycount} plays) \n";
-                        }
-
-                        var pageAmount = i + 1;
-                        if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == amount))
-                        {
-                            pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor).WithFooter(footer));
-                            description = "";
-                        }
-                    }
-
-                    this._embedFooter.WithText(footer);
                 }
                 else
                 {
@@ -538,27 +531,36 @@ namespace FMBot.Bot.Commands.LastFM
                         userId = contextUser.UserId;
                     }
 
-                    var artists = await this._playService.GetTopArtists(userId,
-                        timeSettings.PlayDays.GetValueOrDefault());
-
-                    var footer = $"{artists.Count} different artists in this time period";
-
-                    amount = artists.Count < amount ? artists.Count : amount;
-                    for (var i = 0; i < amount; i++)
+                    artists = new Response<TopArtistList>
                     {
-                        var artist = artists[i];
+                        Content = await this._playService.GetTopArtists(userId,
+                            timeSettings.PlayDays.GetValueOrDefault())
+                    };
 
-                        description += $"{i + 1}. **{artist.Name}** ({artist.Playcount} {StringExtensions.GetPlaysString(artist.Playcount)}) \n";
+                    footer = $"{artists.Content.TotalAmount} different artists in this time period";
+                }
 
-                        var pageAmount = i + 1;
-                        if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == amount))
-                        {
-                            pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor).WithFooter(footer));
-                            description = "";
-                        }
+                this._embedFooter.WithText(footer);
+
+                for (var i = 0; i < amount; i++)
+                {
+                    var artist = artists.Content.TopArtists[i];
+
+                    if (artists.Content.TopArtists.Count > 10 && !paginationEnabled)
+                    {
+                        description += $"{i + 1}. **{artist.ArtistName}** ({artist.UserPlaycount} plays) \n";
+                    }
+                    else
+                    {
+                        description += $"{i + 1}. **[{artist.ArtistName}]({artist.ArtistUrl})** ({artist.UserPlaycount} plays) \n";
                     }
 
-                    this._embedFooter.WithText(footer);
+                    var pageAmount = i + 1;
+                    if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == amount))
+                    {
+                        pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor).WithFooter(footer));
+                        description = "";
+                    }
                 }
 
                 if (paginationEnabled)
@@ -779,8 +781,8 @@ namespace FMBot.Bot.Commands.LastFM
                     artistName = artist.ArtistName;
                     artistUrl = artist.ArtistUrl;
 
-                    var spotifyArtistResults = await this._spotifyService.GetOrStoreArtistImageAsync(artist, artist.ArtistName);
-                    spotifyImageUrl = spotifyArtistResults;
+                    cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artist, artist.ArtistName);
+                    spotifyImageUrl = cachedArtist.SpotifyImageUrl;
                     userPlaycount = artist.UserPlaycount;
                     if (userPlaycount.HasValue)
                     {
@@ -824,12 +826,18 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithDescription(serverUsers);
 
+                var footer = "";
+                if (cachedArtist.ArtistGenres.Any())
+                {
+                    footer += $"\n{GenreService.GenresToString(cachedArtist.ArtistGenres.ToList())}";
+                }
+
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-                var footer = $"WhoKnows artist requested by {userTitle}";
+                footer += $"\nWhoKnows artist requested by {userTitle}";
 
                 var rnd = new Random();
                 var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
-                if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-30))
+                if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-50))
                 {
                     footer += $"\nMissing members? Update with {prfx}index";
                 }
@@ -950,8 +958,8 @@ namespace FMBot.Bot.Commands.LastFM
                     artistName = artist.ArtistName;
                     artistUrl = artist.ArtistUrl;
 
-                    var spotifyArtistResults = await this._spotifyService.GetOrStoreArtistImageAsync(artist, artist.ArtistName);
-                    spotifyImageUrl = spotifyArtistResults;
+                    cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artist, artist.ArtistName);
+                    spotifyImageUrl = cachedArtist.SpotifyImageUrl;
                     userPlaycount = artist.UserPlaycount;
                     if (userPlaycount.HasValue)
                     {
@@ -988,8 +996,14 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithDescription(serverUsers);
 
+                var footer = "";
+                if (cachedArtist.ArtistGenres.Any())
+                {
+                    footer += $"\n{GenreService.GenresToString(cachedArtist.ArtistGenres.ToList())}";
+                }
+
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-                var footer = $"Global WhoKnows artist requested by {userTitle}";
+                footer = $"\nGlobal WhoKnows artist requested by {userTitle}";
 
                 if (filteredUsersWithArtist.Any() && filteredUsersWithArtist.Count > 1)
                 {

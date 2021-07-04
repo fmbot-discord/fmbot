@@ -19,10 +19,12 @@ namespace FMBot.Bot.Services
     public class PlayService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly GenreService _genreService;
 
-        public PlayService(IDbContextFactory<FMBotDbContext> contextFactory)
+        public PlayService(IDbContextFactory<FMBotDbContext> contextFactory, GenreService genreService)
         {
             this._contextFactory = contextFactory;
+            this._genreService = genreService;
         }
 
         public async Task<DailyOverview> GetDailyOverview(User user, int amountOfDays)
@@ -50,7 +52,8 @@ namespace FMBot.Bot.Services
                         Playcount = s.Count(),
                         TopTrack = GetTopTrackForPlays(s.ToList()),
                         TopAlbum = GetTopAlbumForPlays(s.ToList()),
-                        TopArtist = GetTopArtistForPlays(s.ToList())
+                        TopArtist = GetTopArtistForPlays(s.ToList()),
+                        TopGenres = this._genreService.GetTopGenresForPlays(s.ToList()).Result
                     }).ToList(),
                 Playcount = plays.Count,
                 Uniques = GetUniqueCount(plays.ToList()),
@@ -321,25 +324,31 @@ namespace FMBot.Bot.Services
                 .ToListAsync();
         }
 
-        public async Task<IReadOnlyList<UserArtist>> GetTopArtists(int userId, int days)
+        public async Task<TopArtistList> GetTopArtists(int userId, int days)
         {
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-days);
 
             await using var db = this._contextFactory.CreateDbContext();
-            return await db.UserPlays
+            var topArtists =  await db.UserPlays
                 .AsQueryable()
                 .Where(t => t.TimePlayed.Date <= now.Date &&
                                  t.TimePlayed.Date > minDate.Date &&
                                  t.UserId == userId)
                 .GroupBy(x => x.ArtistName)
-                .Select(s => new UserArtist
+                .Select(s => new TopArtist
                 {
-                    Name = s.Key,
-                    Playcount = s.Count()
+                    ArtistName = s.Key,
+                    UserPlaycount = s.Count()
                 })
-                .OrderByDescending(o => o.Playcount)
+                .OrderByDescending(o => o.UserPlaycount)
                 .ToListAsync();
+
+            return new TopArtistList
+            {
+                TotalAmount = topArtists.Count,
+                TopArtists = topArtists
+            };
         }
 
 

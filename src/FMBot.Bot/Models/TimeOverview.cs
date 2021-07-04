@@ -25,5 +25,7 @@ namespace FMBot.Bot.Models
         public string TopTrack { get; set; }
 
         public string TopAlbum { get; set; }
+
+        public List<string> TopGenres { get; set; }
     }
 }

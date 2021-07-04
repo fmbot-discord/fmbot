@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord.Commands;
@@ -536,7 +537,31 @@ namespace FMBot.Bot.Services
             return setGuildRankingSettings;
         }
 
-        public static bool Contains(string extraOptions, string[] values)
+        public static List<string> GetGenres(string genreOptions)
+        {
+            if (!genreOptions.Contains(",") && !genreOptions.Contains("-") && !genreOptions.Contains("|"))
+            {
+                return new List<string> { genreOptions };
+            }
+
+            var list = new List<string>();
+            if (genreOptions.Contains(","))
+            {
+                list = genreOptions.Split(",").Select(s => s.TrimStart().TrimEnd()).ToList();
+            }
+            if (genreOptions.Contains("-"))
+            {
+                list = genreOptions.Split("-").Select(s => s.TrimStart().TrimEnd()).ToList();
+            }
+            if (genreOptions.Contains("|"))
+            {
+                list = genreOptions.Split("|").Select(s => s.TrimStart().TrimEnd()).ToList();
+            }
+
+            return list;
+        }
+
+        private static bool Contains(string extraOptions, string[] values)
         {
             var optionArray = extraOptions.Split(" ");
 
@@ -554,7 +579,7 @@ namespace FMBot.Bot.Services
             return false;
         }
 
-        public static string ContainsAndRemove(string extraOptions, string[] values, bool alwaysReturnValue = false)
+        private static string ContainsAndRemove(string extraOptions, string[] values, bool alwaysReturnValue = false)
         {
             extraOptions = extraOptions.ToLower();
             var somethingFound = false;

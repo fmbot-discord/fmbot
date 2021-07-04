@@ -45,7 +45,7 @@ namespace FMBot.Bot.Services.ThirdParty
             return await spotify.Search.Item(searchRequest);
         }
 
-        public async Task<string> GetOrStoreArtistImageAsync(ArtistInfo artistInfo, string artistNameBeforeCorrect = null)
+        public async Task<Artist> GetOrStoreArtistAsync(ArtistInfo artistInfo, string artistNameBeforeCorrect = null)
         {
             Log.Information("Executing GetOrStoreArtistImageAsync");
 
@@ -54,9 +54,7 @@ namespace FMBot.Bot.Services.ThirdParty
 
             try
             {
-                var dbArtist = await this._artistRepository.GetArtistForName(artistInfo.ArtistName, connection);
-
-                var imageUrlToReturn = "";
+                var dbArtist = await this._artistRepository.GetArtistForName(artistInfo.ArtistName, connection, true);
 
                 if (dbArtist == null)
                 {
@@ -79,7 +77,6 @@ namespace FMBot.Bot.Services.ThirdParty
                         {
                             artistToAdd.SpotifyImageUrl = spotifyArtist.Images.OrderByDescending(o => o.Height).First().Url;
                             artistToAdd.SpotifyImageDate = DateTime.UtcNow;
-                            imageUrlToReturn = artistToAdd.SpotifyImageUrl;
                         }
 
                         await db.Artists.AddAsync(artistToAdd);
@@ -106,53 +103,63 @@ namespace FMBot.Bot.Services.ThirdParty
                         }
                     }
 
+                    if (spotifyArtist != null && spotifyArtist.Genres.Any())
+                    {
+                        artistToAdd.ArtistGenres = spotifyArtist.Genres.Select(s => new ArtistGenre
+                        {
+                            Name = s
+                        }).ToList();
+                    }
+
                     if (artistNameBeforeCorrect != null && !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.CurrentCultureIgnoreCase))
                     {
                         await this._artistRepository
                             .AddOrUpdateArtistAlias(artistToAdd.Id, artistNameBeforeCorrect, connection);
                     }
+
+                    return artistToAdd;
                 }
-                else
+
+                if (artistNameBeforeCorrect != null && !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.CurrentCultureIgnoreCase))
                 {
-                    if (artistNameBeforeCorrect != null && !string.Equals(artistNameBeforeCorrect, artistInfo.ArtistName, StringComparison.CurrentCultureIgnoreCase))
+                    await this._artistRepository
+                        .AddOrUpdateArtistAlias(dbArtist.Id, artistNameBeforeCorrect, connection);
+                }
+
+                if (dbArtist.SpotifyImageUrl == null || dbArtist.SpotifyImageDate < DateTime.UtcNow.AddDays(-15))
+                {
+                    await using var db = this._contextFactory.CreateDbContext();
+
+                    var spotifyArtist = await GetArtistFromSpotify(artistInfo.ArtistName);
+
+                    if (spotifyArtist != null && spotifyArtist.Images.Any())
+                    {
+                        dbArtist.SpotifyImageUrl = spotifyArtist.Images.OrderByDescending(o => o.Height).First().Url;
+                        dbArtist.Popularity = spotifyArtist.Popularity;
+                    }
+
+                    if (spotifyArtist != null && spotifyArtist.Genres.Any())
                     {
                         await this._artistRepository
-                            .AddOrUpdateArtistAlias(dbArtist.Id, artistNameBeforeCorrect, connection);
+                            .AddOrUpdateArtistGenres(dbArtist.Id, spotifyArtist.Genres.Select(s => s), connection);
                     }
 
-                    if (dbArtist.SpotifyImageUrl == null || dbArtist.SpotifyImageDate < DateTime.UtcNow.AddDays(-15))
+                    dbArtist.SpotifyImageDate = DateTime.UtcNow;
+                    db.Entry(dbArtist).State = EntityState.Modified;
+                    await db.SaveChangesAsync();
+
+                    if (spotifyArtist != null && spotifyArtist.Genres.Any())
                     {
-
-                        await using var db = this._contextFactory.CreateDbContext();
-
-                        var spotifyArtist = await GetArtistFromSpotify(artistInfo.ArtistName);
-
-                        if (spotifyArtist != null && spotifyArtist.Images.Any())
+                        dbArtist.ArtistGenres = spotifyArtist.Genres.Select(s => new ArtistGenre
                         {
-                            dbArtist.SpotifyImageUrl = spotifyArtist.Images.OrderByDescending(o => o.Height).First().Url;
-                            imageUrlToReturn = dbArtist.SpotifyImageUrl;
-                            dbArtist.Popularity = spotifyArtist.Popularity;
-                        }
-
-                        if (spotifyArtist != null && spotifyArtist.Genres.Any())
-                        {
-                            await this._artistRepository
-                                .AddOrUpdateArtistGenres(dbArtist.Id, spotifyArtist.Genres.Select(s => s), connection);
-                        }
-
-                        dbArtist.SpotifyImageDate = DateTime.UtcNow;
-                        db.Entry(dbArtist).State = EntityState.Modified;
-                        await db.SaveChangesAsync();
-                    }
-                    else
-                    {
-                        imageUrlToReturn = dbArtist.SpotifyImageUrl;
+                            Name = s
+                        }).ToList();
                     }
                 }
 
                 await connection.CloseAsync();
+                return dbArtist;
 
-                return !string.IsNullOrEmpty(imageUrlToReturn) ? imageUrlToReturn : null;
             }
             catch (Exception e)
             {
