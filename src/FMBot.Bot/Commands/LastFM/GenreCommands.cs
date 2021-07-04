@@ -117,7 +117,7 @@ namespace FMBot.Bot.Commands.LastFM
                     {
                         Content = new TopArtistList
                         {
-                            TopArtists = await this._artistsService.GetUserAllTimeTopArtists(userSettings.UserId)
+                            TopArtists = await this._artistsService.GetUserAllTimeTopArtists(userSettings.UserId, true)
                         }
                     };
                 }
@@ -226,7 +226,7 @@ namespace FMBot.Bot.Commands.LastFM
                 genres = SettingService.GetGenres(genreOptions);
             }
 
-            var topArtists = await this._artistsService.GetUserAllTimeTopArtists(contextUser.UserId);
+            var topArtists = await this._artistsService.GetUserAllTimeTopArtists(contextUser.UserId, true);
             if (topArtists.Count < 100)
             {
                 this._embed.WithDescription("Sorry, you don't have enough top artists yet to use this command.\n\n" +

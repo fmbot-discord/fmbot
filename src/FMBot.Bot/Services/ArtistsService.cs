@@ -138,16 +138,27 @@ namespace FMBot.Bot.Services
             };
         }
 
-        public async Task<List<TopArtist>> GetUserAllTimeTopArtists(int userId)
+        public async Task<List<TopArtist>> GetUserAllTimeTopArtists(int userId, bool useCache = false)
         {
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
-            return (await this._artistRepository.GetUserArtists(userId, connection))
+
+            var cacheKey = $"user-{userId}-topartists-alltime";
+            if (this._cache.TryGetValue(cacheKey, out List<TopArtist> topArtists) && useCache)
+            {
+                return topArtists;
+            }
+
+            var freshTopArtists = (await this._artistRepository.GetUserArtists(userId, connection))
                 .Select(s => new TopArtist
                 {
                     ArtistName = s.Name,
                     UserPlaycount = s.Playcount
                 }).ToList();
+
+            this._cache.Set(cacheKey, freshTopArtists, TimeSpan.FromMinutes(10));
+
+            return topArtists;
         }
 
         // Top artists for 2 users
