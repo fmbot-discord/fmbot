@@ -138,6 +138,18 @@ namespace FMBot.Bot.Services
             };
         }
 
+        public async Task<List<TopArtist>> GetUserAllTimeTopArtists(int userId)
+        {
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+            return (await this._artistRepository.GetUserArtists(userId, connection))
+                .Select(s => new TopArtist
+                {
+                    ArtistName = s.Name,
+                    UserPlaycount = s.Playcount
+                }).ToList();
+        }
+
         // Top artists for 2 users
         public string GetTableTaste(TopArtistList leftUserArtists,
             TopArtistList rightUserArtists, int amount, TimePeriod timePeriod, string mainUser, string userToCompare)
@@ -244,7 +256,7 @@ namespace FMBot.Bot.Services
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var artist = await this._artistRepository.GetArtistForName(correctedArtistName, connection);
+            var artist = await this._artistRepository.GetArtistForName(correctedArtistName, connection, true);
 
             await connection.CloseAsync();
 

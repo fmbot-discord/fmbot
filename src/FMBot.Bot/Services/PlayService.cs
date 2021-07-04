@@ -321,25 +321,31 @@ namespace FMBot.Bot.Services
                 .ToListAsync();
         }
 
-        public async Task<IReadOnlyList<UserArtist>> GetTopArtists(int userId, int days)
+        public async Task<TopArtistList> GetTopArtists(int userId, int days)
         {
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-days);
 
             await using var db = this._contextFactory.CreateDbContext();
-            return await db.UserPlays
+            var topArtists =  await db.UserPlays
                 .AsQueryable()
                 .Where(t => t.TimePlayed.Date <= now.Date &&
                                  t.TimePlayed.Date > minDate.Date &&
                                  t.UserId == userId)
                 .GroupBy(x => x.ArtistName)
-                .Select(s => new UserArtist
+                .Select(s => new TopArtist
                 {
-                    Name = s.Key,
-                    Playcount = s.Count()
+                    ArtistName = s.Key,
+                    UserPlaycount = s.Count()
                 })
-                .OrderByDescending(o => o.Playcount)
+                .OrderByDescending(o => o.UserPlaycount)
                 .ToListAsync();
+
+            return new TopArtistList
+            {
+                TotalAmount = topArtists.Count,
+                TopArtists = topArtists
+            };
         }
 
 
