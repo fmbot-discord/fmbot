@@ -180,7 +180,7 @@ namespace FMBot.Bot.Commands.LastFM
             catch (Exception e)
             {
                 this.Context.LogCommandException(e);
-                await ReplyAsync("Unable to show Last.fm info due to an internal error.");
+                await ReplyAsync("Unable to show genre info due to an internal error. Please contact .fmbot staff.");
             }
         }
 
@@ -197,132 +197,139 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            List<string> genres;
-            if (string.IsNullOrWhiteSpace(genreOptions))
+            try
             {
-                var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(contextUser.UserNameLastFM, 1, true, contextUser.SessionKeyLastFm);
-
-                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, contextUser.UserNameLastFM, this.Context))
+                List<string> genres;
+                if (string.IsNullOrWhiteSpace(genreOptions))
                 {
+                    var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(contextUser.UserNameLastFM, 1, true, contextUser.SessionKeyLastFm);
+
+                    if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, contextUser.UserNameLastFM, this.Context))
+                    {
+                        return;
+                    }
+
+                    genres = await this._genreService.GetGenresForArtist(recentScrobbles.Content.RecentTracks.First().ArtistName, contextUser.UserId);
+
+                    if (!genres.Any())
+                    {
+                        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+                        this._embed.WithDescription(
+                            "Sorry, we don't have any registered genres for the artist you're currently listening to.\n\n" +
+                            $"Please try again later or manually enter a genre (example: `{prfx}genre hip hop`)");
+                        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                        this.Context.LogCommandUsed(CommandResponse.NotFound);
+                        return;
+                    }
+
+                }
+                else
+                {
+                    genres = SettingService.GetGenres(genreOptions);
+                }
+
+                var topArtists = await this._artistsService.GetUserAllTimeTopArtists(contextUser.UserId, true);
+                if (topArtists.Count < 100)
+                {
+                    this._embed.WithDescription("Sorry, you don't have enough top artists yet to use this command.\n\n" +
+                                                "Please try again later.");
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     return;
                 }
 
-                genres = await this._genreService.GetGenresForArtist(recentScrobbles.Content.RecentTracks.First().ArtistName, contextUser.UserId);
+                var genresWithArtists = await this._genreService.GetArtistsForGenres(genres, topArtists);
 
-                if (!genres.Any())
+                if (!genresWithArtists.Any())
                 {
-                    var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-                    this._embed.WithDescription(
-                        "Sorry, we don't have any registered genres for the artist you're currently listening to.\n\n" +
-                        $"Please try again later or manually enter a genre (example: `{prfx}genre hip hop`)");
+                    this._embed.WithDescription("Sorry, we couldn't find any top artists for your selected genres.");
                     await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
                     return;
                 }
 
-            }
-            else
-            {
-                genres = SettingService.GetGenres(genreOptions);
-            }
+                var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
-            var topArtists = await this._artistsService.GetUserAllTimeTopArtists(contextUser.UserId, true);
-            if (topArtists.Count < 100)
-            {
-                this._embed.WithDescription("Sorry, you don't have enough top artists yet to use this command.\n\n" +
-                                            "Please try again later.");
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                return;
-            }
-
-            var genresWithArtists = await this._genreService.GetArtistsForGenres(genres, topArtists);
-
-            if (!genresWithArtists.Any())
-            {
-                this._embed.WithDescription("Sorry, we couldn't find any top artists for your selected genres.");
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return;
-            }
-
-            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-
-            if (genresWithArtists.Count > 1)
-            {
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                this._embedAuthor.WithName($"Genre top artist overview for {userTitle}");
-                this._embed.WithAuthor(this._embedAuthor);
-
-                foreach (var genre in genresWithArtists)
+                if (genresWithArtists.Count > 1)
                 {
-                    var genreDescription = "";
+                    this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+                    this._embedAuthor.WithName($"Genre top artist overview for {userTitle}");
+                    this._embed.WithAuthor(this._embedAuthor);
 
-                    for (var i = 0; i < genre.Artists.Count && i < 10; i++)
+                    foreach (var genre in genresWithArtists)
                     {
-                        var genreArtist = genre.Artists[i];
+                        var genreDescription = "";
 
-                        genreDescription += $"{i + 1}. **{genreArtist.ArtistName.Humanize(LetterCasing.Title)}** ({genreArtist.UserPlaycount} plays)\n";
+                        for (var i = 0; i < genre.Artists.Count && i < 10; i++)
+                        {
+                            var genreArtist = genre.Artists[i];
+
+                            genreDescription += $"{i + 1}. **{genreArtist.ArtistName.Humanize(LetterCasing.Title)}** ({genreArtist.UserPlaycount} plays)\n";
+                        }
+
+                        this._embed.AddField($"{genre.GenreName.Humanize(LetterCasing.Title)}", genreDescription, true);
                     }
-
-                    this._embed.AddField($"{genre.GenreName.Humanize(LetterCasing.Title)}", genreDescription, true);
-                }
-            }
-            else
-            {
-                var paginationEnabled = false;
-                var pages = new List<PageBuilder>();
-                var perms = await GuildService.CheckSufficientPermissionsAsync(this.Context);
-                if (perms.ManageMessages)
-                {
-                    paginationEnabled = true;
-                }
-
-                var genre = genresWithArtists.First();
-
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                this._embedAuthor.WithName($"Top '{genre.GenreName.Humanize(LetterCasing.Title)}' artists for {userTitle}");
-
-                var description = "";
-                for (var i = 0; i < genre.Artists.Count; i++)
-                {
-                    var genreArtist = genre.Artists[i];
-
-                    description += $"{i + 1}. **{genreArtist.ArtistName.Humanize(LetterCasing.Title)}** ({genreArtist.UserPlaycount} plays)\n";
-
-                    var pageAmount = i + 1;
-                    if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == genre.Artists.Count))
-                    {
-                        pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor));
-                        description = "";
-                    }
-                }
-
-                if (paginationEnabled)
-                {
-                    var paginator = new StaticPaginatorBuilder()
-                        .WithPages(pages)
-                        .WithFooter(PaginatorFooter.PageNumber)
-                        .WithTimoutedEmbed(null)
-                        .WithCancelledEmbed(null)
-                        .WithEmotes(DiscordConstants.PaginationEmotes)
-                        .Build();
-
-                    _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds), runOnGateway: false);
                 }
                 else
                 {
-                    this._embed.WithAuthor(this._embedAuthor);
-                    this._embed.WithDescription(description);
-                    this._embed.WithFooter(this._embedFooter);
+                    var paginationEnabled = false;
+                    var pages = new List<PageBuilder>();
+                    var perms = await GuildService.CheckSufficientPermissionsAsync(this.Context);
+                    if (perms.ManageMessages)
+                    {
+                        paginationEnabled = true;
+                    }
 
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    var genre = genresWithArtists.First();
+
+                    this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+                    this._embedAuthor.WithName($"Top '{genre.GenreName.Humanize(LetterCasing.Title)}' artists for {userTitle}");
+
+                    var description = "";
+                    for (var i = 0; i < genre.Artists.Count; i++)
+                    {
+                        var genreArtist = genre.Artists[i];
+
+                        description += $"{i + 1}. **{genreArtist.ArtistName.Humanize(LetterCasing.Title)}** ({genreArtist.UserPlaycount} plays)\n";
+
+                        var pageAmount = i + 1;
+                        if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == genre.Artists.Count))
+                        {
+                            pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor));
+                            description = "";
+                        }
+                    }
+
+                    if (paginationEnabled)
+                    {
+                        var paginator = new StaticPaginatorBuilder()
+                            .WithPages(pages)
+                            .WithFooter(PaginatorFooter.PageNumber)
+                            .WithTimoutedEmbed(null)
+                            .WithCancelledEmbed(null)
+                            .WithEmotes(DiscordConstants.PaginationEmotes)
+                            .Build();
+
+                        _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds), runOnGateway: false);
+                    }
+                    else
+                    {
+                        this._embed.WithAuthor(this._embedAuthor);
+                        this._embed.WithDescription(description);
+                        this._embed.WithFooter(this._embedFooter);
+
+                        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    }
                 }
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed();
             }
-
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            this.Context.LogCommandUsed();
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync("Unable to show genre info due to an internal error. Please contact .fmbot staff.");
+            }
         }
     }
 }
