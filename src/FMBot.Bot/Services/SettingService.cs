@@ -539,7 +539,7 @@ namespace FMBot.Bot.Services
 
         public static List<string> GetGenres(string genreOptions)
         {
-            if (!genreOptions.Contains(",") && !genreOptions.Contains("-") && !genreOptions.Contains("|"))
+            if (!genreOptions.Contains(",") && !genreOptions.Contains(" - ") && !genreOptions.Contains("|"))
             {
                 return new List<string> { genreOptions };
             }
@@ -549,9 +549,9 @@ namespace FMBot.Bot.Services
             {
                 list = genreOptions.Split(",").Select(s => s.TrimStart().TrimEnd()).ToList();
             }
-            if (genreOptions.Contains("-"))
+            if (genreOptions.Contains(" - "))
             {
-                list = genreOptions.Split("-").Select(s => s.TrimStart().TrimEnd()).ToList();
+                list = genreOptions.Split(" - ").Select(s => s.TrimStart().TrimEnd()).ToList();
             }
             if (genreOptions.Contains("|"))
             {
