@@ -72,6 +72,7 @@ namespace FMBot.Bot.Services
             return allGenres
                 .GroupBy(g => g)
                 .OrderByDescending(o => o.Count())
+                .Where(w => w.Key != null)
                 .Select(s => new TopGenre
                 {
                     UserPlaycount = s.Count(),
