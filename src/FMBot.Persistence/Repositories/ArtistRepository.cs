@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using FMBot.Domain.Models;
@@ -17,16 +18,35 @@ namespace FMBot.Persistence.Repositories
             this._botSettings = botSettings.Value;
         }
 
-        public async Task<Artist> GetArtistForName(string artistName, NpgsqlConnection connection)
+        public async Task<Artist> GetArtistForName(string artistName, NpgsqlConnection connection, bool includeGenres = false)
         {
             const string getArtistQuery = "SELECT * FROM public.artists " +
                                         "WHERE UPPER(name) = UPPER(CAST(@artistName AS CITEXT))";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            return await connection.QueryFirstOrDefaultAsync<Artist>(getArtistQuery, new
+            var artist = await connection.QueryFirstOrDefaultAsync<Artist>(getArtistQuery, new
             {
                 artistName
             });
+
+            if (includeGenres && artist != null)
+            {
+                artist.ArtistGenres = await GetArtistGenres(artist.Id, connection);
+            }
+
+            return artist;
+        }
+
+        private async Task<ICollection<ArtistGenre>> GetArtistGenres(int artistId, NpgsqlConnection connection)
+        {
+            const string getArtistGenreQuery = "SELECT * FROM public.artist_genres " +
+                                          "WHERE artist_id = @artistId";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            return (await connection.QueryAsync<ArtistGenre>(getArtistGenreQuery, new
+            {
+                artistId
+            })).ToList();
         }
 
         public async Task AddOrUpdateArtistAlias(int artistId, string artistNameBeforeCorrect, NpgsqlConnection connection)
@@ -65,6 +85,27 @@ namespace FMBot.Persistence.Repositories
                     name = genreName
                 });
             }
+        }
+
+        public async Task<IReadOnlyCollection<UserArtist>> GetUserArtists(int userId, NpgsqlConnection connection)
+        {
+            const string sql = "SELECT * FROM public.user_artists where user_id = @userId";
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            return (await connection.QueryAsync<UserArtist>(sql, new
+            {
+                userId
+            })).ToList();
+        }
+
+        public static async Task<UserArtist> GetUserArtist(int userId, string artistName, NpgsqlConnection connection)
+        {
+            const string sql = "SELECT * FROM public.user_artists where user_id = @userId AND UPPER(name) = UPPER(CAST(@artistName AS CITEXT))";
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            return await connection.QueryFirstOrDefaultAsync<UserArtist>(sql, new
+            {
+                userId,
+                artistName
+            });
         }
     }
 }

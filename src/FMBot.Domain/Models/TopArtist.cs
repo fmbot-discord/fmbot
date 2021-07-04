@@ -24,5 +24,7 @@ namespace FMBot.Domain.Models
         public long? UserPlaycount { get; set; }
 
         public Guid? Mbid { get; set; }
+
+        public List<string> Genres { get; set; }
     }
 }

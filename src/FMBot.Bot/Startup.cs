@@ -112,6 +112,7 @@ namespace FMBot.Bot
                 .AddSingleton<CommandHandler>()
                 .AddSingleton<FriendsService>()
                 .AddSingleton<GeniusService>()
+                .AddSingleton<GenreService>()
                 .AddSingleton<GuildService>()
                 .AddSingleton<ChartService>()
                 .AddSingleton<IGuildDisabledCommandService, GuildDisabledCommandService>()

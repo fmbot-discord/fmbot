@@ -445,7 +445,7 @@ namespace FMBot.LastFM.Repositories
                             ? Guid.Parse(artistCall.Content.Artist.Mbid)
                             : null,
                         Description = !string.IsNullOrWhiteSpace(filteredSummary)
-                            ? filteredSummary
+                            ? filteredSummary.Replace(". .", ".")
                             : null,
                         TotalPlaycount = artistCall.Content.Artist.Stats?.Playcount ?? 0,
                         TotalListeners = artistCall.Content.Artist.Stats?.Listeners ?? 0,
@@ -622,11 +622,11 @@ namespace FMBot.LastFM.Repositories
 
         // Top artists
         public async Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName,
-            TimePeriod timePeriod, int count = 2, int amountOfPages = 1)
+            TimePeriod timePeriod, long count = 2, long amountOfPages = 1)
         {
             var lastStatsTimeSpan = TimePeriodToLastStatsTimeSpan(timePeriod);
 
-            var topArtists = await this._lastFmClient.User.GetTopArtists(lastFmUserName, lastStatsTimeSpan, 1, count);
+            var topArtists = await this._lastFmClient.User.GetTopArtists(lastFmUserName, lastStatsTimeSpan, 1, (int)count);
 
             Statistics.LastfmApiCalls.Inc();
 
