@@ -322,7 +322,6 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                 }
 
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)
