@@ -187,8 +187,8 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("genre", RunMode = RunMode.Async)]
         [Summary("Shows your top artists for a specific genre")]
         [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
-        [Examples("genre", "genres hip hop, electronic", "gi", "genre Indie Soul")]
-        [Alias("genreinfo", "genres", "gi")]
+        [Examples("genre", "genres hip hop, electronic", "g", "genre Indie Soul")]
+        [Alias("genreinfo", "genres", "gi", "g")]
         [UsernameSetRequired]
         [SupportsPagination]
         public async Task GenreInfoAsync([Remainder] string genreOptions = null)
