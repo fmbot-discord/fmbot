@@ -19,10 +19,12 @@ namespace FMBot.Bot.Services
     public class PlayService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly GenreService _genreService;
 
-        public PlayService(IDbContextFactory<FMBotDbContext> contextFactory)
+        public PlayService(IDbContextFactory<FMBotDbContext> contextFactory, GenreService genreService)
         {
             this._contextFactory = contextFactory;
+            this._genreService = genreService;
         }
 
         public async Task<DailyOverview> GetDailyOverview(User user, int amountOfDays)
@@ -50,7 +52,8 @@ namespace FMBot.Bot.Services
                         Playcount = s.Count(),
                         TopTrack = GetTopTrackForPlays(s.ToList()),
                         TopAlbum = GetTopAlbumForPlays(s.ToList()),
-                        TopArtist = GetTopArtistForPlays(s.ToList())
+                        TopArtist = GetTopArtistForPlays(s.ToList()),
+                        TopGenres = this._genreService.GetTopGenresForPlays(s.ToList()).Result
                     }).ToList(),
                 Playcount = plays.Count,
                 Uniques = GetUniqueCount(plays.ToList()),

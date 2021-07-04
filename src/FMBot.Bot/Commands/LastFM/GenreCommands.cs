@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
@@ -62,13 +63,11 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task TopArtistsAsync([Remainder] string extraOptions = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var timeSettings = SettingService.GetTimePeriod(extraOptions);
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-            long amount = SettingService.GetAmount(extraOptions);
 
             var paginationEnabled = false;
             var pages = new List<PageBuilder>();
@@ -89,10 +88,8 @@ namespace FMBot.Bot.Commands.LastFM
                     $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
             }
 
-            var artistsString = amount == 1 ? "artist" : "artists";
-
             this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            this._embedAuthor.WithName($"Top {timeSettings.Description.ToLower()} {artistsString} for {userTitle}");
+            this._embedAuthor.WithName($"Top {timeSettings.Description.ToLower()} artist genres for {userTitle}");
             this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/artists?{timeSettings.UrlParameter}");
 
             try
@@ -131,6 +128,15 @@ namespace FMBot.Bot.Commands.LastFM
                         Content = await this._playService.GetTopArtists(userSettings.UserId,
                             timeSettings.PlayDays.GetValueOrDefault())
                     };
+                }
+
+                if (artists.Content.TopArtists.Count < 10)
+                {
+                    this._embed.WithDescription("Sorry, you don't have enough top artists yet to use this command.\n\n" +
+                                                "Please try again later.");
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                    return;
                 }
 
                 var genres = await this._genreService.GetTopGenresForTopArtists(artists.Content.TopArtists);
@@ -176,6 +182,147 @@ namespace FMBot.Bot.Commands.LastFM
                 this.Context.LogCommandException(e);
                 await ReplyAsync("Unable to show Last.fm info due to an internal error.");
             }
+        }
+
+        [Command("genre", RunMode = RunMode.Async)]
+        [Summary("Shows your top artists for a specific genre")]
+        [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
+        [Examples("genre", "genres hip hop, electronic", "gi", "genre Indie Soul")]
+        [Alias("genreinfo", "genres", "gi")]
+        [UsernameSetRequired]
+        [SupportsPagination]
+        public async Task GenreInfoAsync([Remainder] string genreOptions = null)
+        {
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            List<string> genres;
+            if (string.IsNullOrWhiteSpace(genreOptions))
+            {
+                var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(contextUser.UserNameLastFM, 1, true, contextUser.SessionKeyLastFm);
+
+                if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, contextUser.UserNameLastFM, this.Context))
+                {
+                    return;
+                }
+
+                genres = await this._genreService.GetGenresForArtist(recentScrobbles.Content.RecentTracks.First().ArtistName, contextUser.UserId);
+
+                if (!genres.Any())
+                {
+                    var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+                    this._embed.WithDescription(
+                        "Sorry, we don't have any registered genres for the artist you're currently listening to.\n\n" +
+                        $"Please try again later or manually enter a genre (example: `{prfx}genre hip hop`)");
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+
+            }
+            else
+            {
+                genres = SettingService.GetGenres(genreOptions);
+            }
+
+            var topArtists = await this._artistsService.GetUserAllTimeTopArtists(contextUser.UserId);
+            if (topArtists.Count < 100)
+            {
+                this._embed.WithDescription("Sorry, you don't have enough top artists yet to use this command.\n\n" +
+                                            "Please try again later.");
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                return;
+            }
+
+            var genresWithArtists = await this._genreService.GetArtistsForGenres(genres, topArtists);
+
+            if (!genresWithArtists.Any())
+            {
+                this._embed.WithDescription("Sorry, we couldn't find any top artists for your selected genres.");
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+
+            if (genresWithArtists.Count > 1)
+            {
+                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+                this._embedAuthor.WithName($"Genre top artist overview for {userTitle}");
+                this._embed.WithAuthor(this._embedAuthor);
+
+                foreach (var genre in genresWithArtists)
+                {
+                    var genreDescription = "";
+
+                    for (var i = 0; i < genre.Artists.Count && i < 10; i++)
+                    {
+                        var genreArtist = genre.Artists[i];
+
+                        genreDescription += $"{i + 1}. **{genreArtist.ArtistName.Humanize(LetterCasing.Title)}** ({genreArtist.UserPlaycount} plays)\n";
+                    }
+
+                    this._embed.AddField($"{genre.GenreName.Humanize(LetterCasing.Title)}", genreDescription, true);
+                }
+            }
+            else
+            {
+                var paginationEnabled = false;
+                var pages = new List<PageBuilder>();
+                var perms = await GuildService.CheckSufficientPermissionsAsync(this.Context);
+                if (perms.ManageMessages)
+                {
+                    paginationEnabled = true;
+                }
+
+                var genre = genresWithArtists.First();
+
+                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+                this._embedAuthor.WithName($"Top '{genre.GenreName.Humanize(LetterCasing.Title)}' artists for {userTitle}");
+
+                var description = "";
+                for (var i = 0; i < genre.Artists.Count; i++)
+                {
+                    var genreArtist = genre.Artists[i];
+
+                    description += $"{i + 1}. **{genreArtist.ArtistName.Humanize(LetterCasing.Title)}** ({genreArtist.UserPlaycount} plays)\n";
+
+                    var pageAmount = i + 1;
+                    if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == genre.Artists.Count))
+                    {
+                        pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor));
+                        description = "";
+                    }
+                }
+
+                if (paginationEnabled)
+                {
+                    var paginator = new StaticPaginatorBuilder()
+                        .WithPages(pages)
+                        .WithFooter(PaginatorFooter.PageNumber)
+                        .WithTimoutedEmbed(null)
+                        .WithCancelledEmbed(null)
+                        .WithEmotes(DiscordConstants.PaginationEmotes)
+                        .Build();
+
+                    _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds), runOnGateway: false);
+                }
+                else
+                {
+                    this._embed.WithAuthor(this._embedAuthor);
+                    this._embed.WithDescription(description);
+                    this._embed.WithFooter(this._embedFooter);
+
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                }
+            }
+
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
         }
     }
 }

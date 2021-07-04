@@ -126,7 +126,7 @@ namespace FMBot.Bot.Services.ThirdParty
                         .AddOrUpdateArtistAlias(dbArtist.Id, artistNameBeforeCorrect, connection);
                 }
 
-                if (dbArtist.SpotifyImageUrl == null || dbArtist.SpotifyImageDate < DateTime.UtcNow.AddSeconds(-15))
+                if (dbArtist.SpotifyImageUrl == null || dbArtist.SpotifyImageDate < DateTime.UtcNow.AddDays(-15))
                 {
                     await using var db = this._contextFactory.CreateDbContext();
 
