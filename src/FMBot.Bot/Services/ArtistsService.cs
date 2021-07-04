@@ -158,7 +158,7 @@ namespace FMBot.Bot.Services
 
             this._cache.Set(cacheKey, freshTopArtists, TimeSpan.FromMinutes(10));
 
-            return topArtists;
+            return freshTopArtists;
         }
 
         // Top artists for 2 users
