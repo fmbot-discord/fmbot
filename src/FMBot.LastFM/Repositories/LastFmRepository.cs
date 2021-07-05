@@ -367,7 +367,7 @@ namespace FMBot.LastFM.Repositories
             var trackCall = await this._lastFmApi.CallApiAsync<TrackInfoLfmResponse>(queryParams, Call.TrackInfo);
             if (trackCall.Success)
             {
-                var linkToFilter = $"<a href=\"{trackCall.Content.Track.Url.Replace("https", "http")}\">Read more on Last.fm</a>";
+                var linkToFilter = $"<a href=\"{trackCall.Content.Track.Url}\">Read more on Last.fm</a>";
                 var filteredSummary = trackCall.Content.Track.Wiki?.Summary.Replace(linkToFilter, "");
 
                 return new Response<TrackInfo>
@@ -391,7 +391,7 @@ namespace FMBot.LastFM.Repositories
                             ? Guid.Parse(trackCall.Content.Track.Mbid)
                             : null,
                         Description = !string.IsNullOrWhiteSpace(filteredSummary)
-                            ? filteredSummary
+                            ? filteredSummary.Replace(". .", ".")
                             : null,
                         TotalPlaycount = trackCall.Content.Track.Playcount ?? 0,
                         TotalListeners = trackCall.Content.Track.Listeners ?? 0,
