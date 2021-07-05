@@ -80,7 +80,7 @@ namespace FMBot.Bot.Services
                 }).ToList();
         }
 
-        public async Task<List<string>> GetGenresForArtist(string artistName, int userId)
+        public async Task<List<string>> GetGenresForArtist(string artistName)
         {
             var genres = await GetCachedArtistGenres();
 
@@ -129,6 +129,11 @@ namespace FMBot.Bot.Services
                 });
 
             var result = await GetTopGenresForTopArtists(artists);
+
+            if (!result.Any())
+            {
+                return new List<string>();
+            }
 
             return result
                 .OrderByDescending(o => o.UserPlaycount)

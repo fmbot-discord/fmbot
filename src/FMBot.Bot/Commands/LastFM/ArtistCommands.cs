@@ -827,7 +827,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(serverUsers);
 
                 var footer = "";
-                if (cachedArtist.ArtistGenres.Any())
+                if (cachedArtist?.ArtistGenres != null && cachedArtist.ArtistGenres.Any())
                 {
                     footer += $"\n{GenreService.GenresToString(cachedArtist.ArtistGenres.ToList())}";
                 }

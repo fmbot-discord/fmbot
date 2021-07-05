@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Formats.Asn1;
+using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
@@ -9,6 +12,7 @@ using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Types;
@@ -30,6 +34,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly PlayService _playService;
         private readonly GenreService _genreService;
         private readonly ArtistsService _artistsService;
+        private readonly SpotifyService _spotifyService;
         private InteractivityService Interactivity { get; }
 
         public GenreCommands(
@@ -41,7 +46,8 @@ namespace FMBot.Bot.Commands.LastFM
             PlayService playService,
             InteractivityService interactivity,
             GenreService genreService,
-            ArtistsService artistsService) : base(botSettings)
+            ArtistsService artistsService,
+            SpotifyService spotifyService) : base(botSettings)
         {
             this._prefixService = prefixService;
             this._userService = userService;
@@ -51,6 +57,7 @@ namespace FMBot.Bot.Commands.LastFM
             this.Interactivity = interactivity;
             this._genreService = genreService;
             this._artistsService = artistsService;
+            this._spotifyService = spotifyService;
         }
 
         [Command("topgenres", RunMode = RunMode.Async)]
@@ -209,23 +216,39 @@ namespace FMBot.Bot.Commands.LastFM
                         return;
                     }
 
-                    genres = await this._genreService.GetGenresForArtist(recentScrobbles.Content.RecentTracks.First().ArtistName, contextUser.UserId);
+                    var artistName = recentScrobbles.Content.RecentTracks.First().ArtistName;
+
+                    genres = await this._genreService.GetGenresForArtist(artistName);
 
                     if (!genres.Any())
                     {
-                        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-                        this._embed.WithDescription(
-                            "Sorry, we don't have any registered genres for the artist you're currently listening to.\n\n" +
-                            $"Please try again later or manually enter a genre (example: `{prfx}genre hip hop`)");
-                        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                        this.Context.LogCommandUsed(CommandResponse.NotFound);
-                        return;
-                    }
+                        var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistName, contextUser.UserNameLastFM);
+                        if (artistCall.Success)
+                        {
+                            var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistCall.Content);
 
+                            if (cachedArtist.ArtistGenres != null && cachedArtist.ArtistGenres.Any())
+                            {
+                                genres.AddRange(cachedArtist.ArtistGenres.Select(s => s.Name));
+                            }
+                        }
+                    }
                 }
                 else
                 {
                     genres = SettingService.GetGenres(genreOptions);
+                }
+
+
+                if (!genres.Any())
+                {
+                    var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+                    this._embed.WithDescription(
+                        "Sorry, we don't have any registered genres for the artist you're currently listening to.\n\n" +
+                        $"Please try again later or manually enter a genre (example: `{prfx}genre hip hop`)");
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
                 }
 
                 var topArtists = await this._artistsService.GetUserAllTimeTopArtists(contextUser.UserId, true);
@@ -267,8 +290,13 @@ namespace FMBot.Bot.Commands.LastFM
                             genreDescription += $"{i + 1}. **{genreArtist.ArtistName.Humanize(LetterCasing.Title)}** ({genreArtist.UserPlaycount} plays)\n";
                         }
 
-                        this._embed.AddField($"{genre.GenreName.Humanize(LetterCasing.Title)}", genreDescription, true);
+                        this._embed.AddField($"{genre.GenreName.Transform(To.TitleCase)}", genreDescription, true);
                     }
+
+                    this._embed.WithAuthor(this._embedAuthor);
+                    this._embed.WithFooter(this._embedFooter);
+
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 }
                 else
                 {
@@ -283,7 +311,7 @@ namespace FMBot.Bot.Commands.LastFM
                     var genre = genresWithArtists.First();
 
                     this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                    this._embedAuthor.WithName($"Top '{genre.GenreName.Humanize(LetterCasing.Title)}' artists for {userTitle}");
+                    this._embedAuthor.WithName($"Top '{genre.GenreName.Transform(To.TitleCase)}' artists for {userTitle}");
 
                     var description = "";
                     for (var i = 0; i < genre.Artists.Count; i++)

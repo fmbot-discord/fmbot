@@ -416,7 +416,7 @@ namespace FMBot.LastFM.Repositories
 
         }
 
-        public async Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username = null)
+        public async Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username)
         {
             var queryParams = new Dictionary<string, string>
             {

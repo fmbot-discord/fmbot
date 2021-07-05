@@ -618,15 +618,18 @@ namespace FMBot.Bot.Commands.LastFM
                 foreach (var day in week.Days)
                 {
                     var genreString = new StringBuilder();
-                    for (var i = 0; i < day.TopGenres.Count; i++)
+                    if (day.TopGenres != null && day.TopGenres.Any())
                     {
-                        if (i != 0)
+                        for (var i = 0; i < day.TopGenres.Count; i++)
                         {
-                            genreString.Append(" - ");
-                        }
+                            if (i != 0)
+                            {
+                                genreString.Append(" - ");
+                            }
 
-                        var genre = day.TopGenres[i];
-                        genreString.Append($"{genre}");
+                            var genre = day.TopGenres[i];
+                            genreString.Append($"{genre}");
+                        }
                     }
 
                     this._embed.AddField(
