@@ -488,6 +488,13 @@ namespace FMBot.Bot.Commands.LastFM
                         await ReplyAsync("", false, this._embed.Build());
                         return;
                     }
+                    if (artists.Content.TopArtists == null)
+                    {
+                        this._embed.WithDescription("Sorry, you or the user you're searching for don't have any top artists in the selected time period.");
+                        this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                        await ReplyAsync("", false, this._embed.Build());
+                        return;
+                    }
 
                     footer = $"{artists.Content.TotalAmount} different artists in this time period";
 
