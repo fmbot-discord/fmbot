@@ -288,8 +288,8 @@ namespace FMBot.Bot.Commands
             {
                 if (string.IsNullOrEmpty(user))
                 {
-                    await ReplyAsync("Enter a correct artist to be censored\n" +
-                                     "Example: `.fmaddcensoredartist \"Last Days of Humanity\"");
+                    await ReplyAsync("Enter an username to check\n" +
+                                     "Example: `.fmcheckbotted \"Kefkef123\"");
                     return;
                 }
 
@@ -326,6 +326,37 @@ namespace FMBot.Bot.Commands
             else
             {
                 await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can check botted users");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+
+        [Command("removebotteduser")]
+        public async Task RemoveBottedUserAsync(string user)
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                if (string.IsNullOrEmpty(user))
+                {
+                    await ReplyAsync("Enter an username to check\n" +
+                                     "Example: `.fmcheckbotted \"Kefkef123\"");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                if(!await this._adminService.RemoveBottedUserAsync(user))
+                {
+                    await ReplyAsync("The specified user has not been banned from GlobalWhoKnows");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                }
+                else
+                {
+                    await ReplyAsync($"User {user} has been unbanned from GlobalWhoKnows");
+                    this.Context.LogCommandUsed(CommandResponse.Ok);
+                }
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can remove botted users");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }
