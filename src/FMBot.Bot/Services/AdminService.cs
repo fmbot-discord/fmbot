@@ -142,7 +142,34 @@ namespace FMBot.Bot.Services
                 return false;
             }
 
-            db.Entry(bottedUser).State = EntityState.Deleted;
+            bottedUser.BanActive = false;
+
+            db.Entry(bottedUser).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            return true;
+        }
+
+        public async Task<bool> AddBottedUserAsync(string lastFmUserName, string reason)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+
+            var bottedUser = await db.BottedUsers.FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == lastFmUserName.ToLower());
+
+            if(bottedUser != null)
+            {
+                return false;
+            }
+
+            var newBottedUser = new BottedUser
+            {
+                UserNameLastFM = lastFmUserName,
+                BanActive = true,
+                Notes = reason
+            };
+
+            await db.BottedUsers.AddAsync(newBottedUser);
 
             await db.SaveChangesAsync();
 

@@ -282,7 +282,7 @@ namespace FMBot.Bot.Commands
 
         [Command("checkbotted")]
         [Summary("Checks some stats for a user and if they're banned from global whoknows")]
-        public async Task CheckBottedUserAsync(string user)
+        public async Task CheckBottedUserAsync(string user = null)
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
@@ -316,6 +316,7 @@ namespace FMBot.Bot.Commands
                 if (bottedUser != null)
                 {
                     this._embed.AddField("Reason / additional notes", bottedUser.Notes ?? "*No reason/notes*");
+                    this._embed.AddField("Ban active?", bottedUser.BanActive.ToString());
                 }
 
                 this._embed.WithFooter("Command not intended for use in public channels");
@@ -330,15 +331,46 @@ namespace FMBot.Bot.Commands
             }
         }
 
+        [Command("addbotteduser")]
+        public async Task AddBottedUserAsync(string user = null, string reason = null)
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(reason))
+                {
+                    await ReplyAsync("Enter an username and reason to remove someone from gwk banlist\n" +
+                                     "Example: `.fmaddbotteduser \"Kefkef123\" \"8 days listening time in Last.week\"`");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                if(!await this._adminService.AddBottedUserAsync(user, reason))
+                {
+                    await ReplyAsync("Something went wrong while adding this user to the gwk banlist, are you sure they haven't been banned before?");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                }
+                else
+                {
+                    await ReplyAsync($"User {user} has been banned from GlobalWhoKnows with reason '{reason.FilterOutMentions()}'");
+                    this.Context.LogCommandUsed();
+                }
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can remove botted users");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+
         [Command("removebotteduser")]
-        public async Task RemoveBottedUserAsync(string user)
+        public async Task RemoveBottedUserAsync(string user = null)
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 if (string.IsNullOrEmpty(user))
                 {
-                    await ReplyAsync("Enter an username to check\n" +
-                                     "Example: `.fmcheckbotted \"Kefkef123\"");
+                    await ReplyAsync("Enter an username to remove from the gwk banlist. This will flag their ban as `false`.\n" +
+                                     "Example: `.fmremovebotteduser \"Kefkef123\"`");
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
@@ -351,7 +383,7 @@ namespace FMBot.Bot.Commands
                 else
                 {
                     await ReplyAsync($"User {user} has been unbanned from GlobalWhoKnows");
-                    this.Context.LogCommandUsed(CommandResponse.Ok);
+                    this.Context.LogCommandUsed();
                 }
             }
             else

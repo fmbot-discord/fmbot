@@ -85,6 +85,7 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var db = this._contextFactory.CreateDbContext();
             var bottedUsers = await db.BottedUsers
                 .AsQueryable()
+                .Where(w => w.BanActive)
                 .ToListAsync();
 
             return users
