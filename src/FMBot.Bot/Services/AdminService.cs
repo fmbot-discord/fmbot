@@ -131,6 +131,24 @@ namespace FMBot.Bot.Services
                 .FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == lastFmUserName.ToLower());
         }
 
+        public async Task<bool> RemoveBottedUserAsync(string lastFmUserName)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+
+            var bottedUser = await db.BottedUsers.FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == lastFmUserName.ToLower());
+
+            if(bottedUser == null)
+            {
+                return false;
+            }
+
+            db.Entry(bottedUser).State = EntityState.Deleted;
+
+            await db.SaveChangesAsync();
+
+            return true;
+        }
+
         public string FormatBytes(long bytes)
         {
             string[] suffix = {"B", "KB", "MB", "GB", "TB"};
