@@ -18,15 +18,25 @@ namespace FMBot.Bot.Services.Guild
     public class WebhookService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly string _avatarImagePath;
 
         public WebhookService(IDbContextFactory<FMBotDbContext> contextFactory)
         {
             this._contextFactory = contextFactory;
+
+            this._avatarImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "default-avatar.png");
+
+            if (!File.Exists(this._avatarImagePath))
+            {
+                Log.Information("Downloading avatar...");
+                var wc = new System.Net.WebClient();
+                wc.DownloadFile("https://fmbot.xyz/img/bot/avatar.png", this._avatarImagePath);
+            }
         }
 
         public async Task<Webhook> CreateWebhook(ICommandContext context, int guildId)
         {
-            await using var fs = File.OpenRead(AppDomain.CurrentDomain.BaseDirectory + "avatar.png");
+            await using var fs = File.OpenRead(this._avatarImagePath);
 
             var socketWebChannel = context.Channel as SocketTextChannel;
 
