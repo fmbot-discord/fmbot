@@ -291,7 +291,7 @@ namespace FMBot.LastFM.Repositories
         }
 
         // User
-        public async Task<UserLfm> GetLfmUserInfoAsync(string lastFmUserName, string sessionKey)
+        public async Task<UserLfm> GetLfmUserInfoAsync(string lastFmUserName, string sessionKey = null)
         {
             var queryParams = new Dictionary<string, string>
             {

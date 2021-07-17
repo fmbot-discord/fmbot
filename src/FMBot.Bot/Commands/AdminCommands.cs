@@ -296,6 +296,7 @@ namespace FMBot.Bot.Commands
                     return;
                 }
 
+                _ = this.Context.Channel.TriggerTypingAsync();
 
                 var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
                 var targetedUser = await this._settingService.GetUser(user, contextUser, this.Context);

@@ -538,30 +538,6 @@ namespace FMBot.Bot.Services
             return setGuildRankingSettings;
         }
 
-        public static List<string> GetGenres(string genreOptions)
-        {
-            if (!genreOptions.Contains(",") && !genreOptions.Contains(" - ") && !genreOptions.Contains("|"))
-            {
-                return new List<string> { genreOptions };
-            }
-
-            var list = new List<string>();
-            if (genreOptions.Contains(","))
-            {
-                list = genreOptions.Split(",").Select(s => s.TrimStart().TrimEnd()).ToList();
-            }
-            if (genreOptions.Contains(" - "))
-            {
-                list = genreOptions.Split(" - ").Select(s => s.TrimStart().TrimEnd()).ToList();
-            }
-            if (genreOptions.Contains("|"))
-            {
-                list = genreOptions.Split("|").Select(s => s.TrimStart().TrimEnd()).ToList();
-            }
-
-            return list;
-        }
-
         private static bool Contains(string extraOptions, string[] values)
         {
             var optionArray = extraOptions.Split(" ");
