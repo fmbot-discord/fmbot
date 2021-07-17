@@ -28,6 +28,7 @@ namespace FMBot.Bot.Commands
         private readonly LastFmRepository _lastFmRepository;
         private readonly SupporterService _supporterService;
         private readonly UserService _userService;
+        private readonly SettingService _settingService;
 
         public AdminCommands(
                 AdminService adminService,
@@ -37,7 +38,8 @@ namespace FMBot.Bot.Commands
                 LastFmRepository lastFmRepository,
                 SupporterService supporterService,
                 UserService userService,
-                IOptions<BotSettings> botSettings) : base(botSettings)
+                IOptions<BotSettings> botSettings,
+                SettingService settingService) : base(botSettings)
         {
             this._adminService = adminService;
             this._censorService = censorService;
@@ -46,6 +48,7 @@ namespace FMBot.Bot.Commands
             this._lastFmRepository = lastFmRepository;
             this._supporterService = supporterService;
             this._userService = userService;
+            this._settingService = settingService;
         }
 
         //[Command("debug")]
@@ -289,28 +292,47 @@ namespace FMBot.Bot.Commands
                 if (string.IsNullOrEmpty(user))
                 {
                     await ReplyAsync("Enter an username to check\n" +
-                                     "Example: `.fmcheckbotted \"Kefkef123\"");
+                                     "Example: `.fmcheckbotted Kefkef123`");
                     return;
+                }
+
+
+                var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+                var targetedUser = await this._settingService.GetUser(user, contextUser, this.Context);
+
+                if (targetedUser.DifferentUser)
+                {
+                    user = targetedUser.UserNameLastFm;
                 }
 
                 var bottedUser = await this._adminService.GetBottedUserAsync(user);
 
-                this._embed.WithTitle($"Botted check for {user}");
-                this._embed.WithDescription($"[Profile]({Constants.LastFMUserUrl}{user}) - " +
-                                            $"[Library]({Constants.LastFMUserUrl}{user}/library) - " +
-                                            $"[Last.week]({Constants.LastFMUserUrl}{user}/listening-report) - " +
-                                            $"[Last.year]({Constants.LastFMUserUrl}{user}/listening-report/year)");
+                var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user);
 
-                var dateAgo = DateTime.UtcNow.AddDays(-365);
-                var timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
+                this._embed.WithTitle($"Botted check for Last.fm '{user}'");
 
-                var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(user, timeFrom);
+                if (userInfo == null)
+                {
+                    this._embed.WithDescription($"Not found on Last.fm - [User]({Constants.LastFMUserUrl}{user})");
+                }
+                else
+                {
+                    this._embed.WithDescription($"[Profile]({Constants.LastFMUserUrl}{user}) - " +
+                                                $"[Library]({Constants.LastFMUserUrl}{user}/library) - " +
+                                                $"[Last.week]({Constants.LastFMUserUrl}{user}/listening-report) - " +
+                                                $"[Last.year]({Constants.LastFMUserUrl}{user}/listening-report/year)");
 
-                var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
-                var totalDays = (DateTime.UtcNow - age).TotalDays;
+                    var dateAgo = DateTime.UtcNow.AddDays(-365);
+                    var timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
 
-                var avgPerDay = count / totalDays;
-                this._embed.AddField("Avg scrobbles / day in last year", Math.Round(avgPerDay.GetValueOrDefault(0), 1));
+                    var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(user, timeFrom);
+
+                    var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
+                    var totalDays = (DateTime.UtcNow - age).TotalDays;
+
+                    var avgPerDay = count / totalDays;
+                    this._embed.AddField("Avg scrobbles / day in last year", Math.Round(avgPerDay.GetValueOrDefault(0), 1));
+                }
 
                 this._embed.AddField("Banned from GlobalWhoKnows", bottedUser == null ? "No" : "Yes");
                 if (bottedUser != null)
@@ -344,16 +366,35 @@ namespace FMBot.Bot.Commands
                     return;
                 }
 
-                if(!await this._adminService.AddBottedUserAsync(user, reason))
+                var bottedUser = await this._adminService.GetBottedUserAsync(user);
+                if (bottedUser == null)
                 {
-                    await ReplyAsync("Something went wrong while adding this user to the gwk banlist, are you sure they haven't been banned before?");
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    if (!await this._adminService.AddBottedUserAsync(user, reason))
+                    {
+                        await ReplyAsync("Something went wrong while adding this user to the gwk banlist");
+                        this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    }
+                    else
+                    {
+                        await ReplyAsync($"User {user} has been banned from GlobalWhoKnows with reason '{reason.FilterOutMentions()}'");
+                        this.Context.LogCommandUsed();
+                    }
                 }
                 else
                 {
-                    await ReplyAsync($"User {user} has been banned from GlobalWhoKnows with reason '{reason.FilterOutMentions()}'");
-                    this.Context.LogCommandUsed();
+                    if (!await this._adminService.EnableBottedUserBanAsync(user, reason))
+                    {
+                        await ReplyAsync("Something went wrong while adding this user to the gwk banlist");
+                        this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    }
+                    else
+                    {
+                        await ReplyAsync($"User {user} has been banned from GlobalWhoKnows with reason '{reason.FilterOutMentions()}'");
+                        this.Context.LogCommandUsed();
+                    }
                 }
+
+                
             }
             else
             {
@@ -375,15 +416,31 @@ namespace FMBot.Bot.Commands
                     return;
                 }
 
-                if(!await this._adminService.RemoveBottedUserAsync(user))
+                var bottedUser = await this._adminService.GetBottedUserAsync(user);
+                if (bottedUser == null)
+                {
+                    await ReplyAsync("The specified user has never been banned from GlobalWhoKnows");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                if (!bottedUser.BanActive)
+                {
+                    await ReplyAsync("User is in banned user list, but their ban was already inactive");
+                    return;
+                }
+
+                if (!await this._adminService.DisableBottedUserBanAsync(user))
                 {
                     await ReplyAsync("The specified user has not been banned from GlobalWhoKnows");
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
                 }
                 else
                 {
                     await ReplyAsync($"User {user} has been unbanned from GlobalWhoKnows");
                     this.Context.LogCommandUsed();
+                    return;
                 }
             }
             else
