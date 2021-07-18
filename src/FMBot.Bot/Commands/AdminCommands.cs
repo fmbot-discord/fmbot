@@ -335,11 +335,10 @@ namespace FMBot.Bot.Commands
                     this._embed.AddField("Avg scrobbles / day in last year", Math.Round(avgPerDay.GetValueOrDefault(0), 1));
                 }
 
-                this._embed.AddField("Banned from GlobalWhoKnows", bottedUser == null ? "No" : "Yes");
+                this._embed.AddField("Banned from GlobalWhoKnows", bottedUser == null ? "No" : bottedUser.BanActive ? "Yes" : "No, but has been banned before");
                 if (bottedUser != null)
                 {
                     this._embed.AddField("Reason / additional notes", bottedUser.Notes ?? "*No reason/notes*");
-                    this._embed.AddField("Ban active?", bottedUser.BanActive.ToString());
                 }
 
                 this._embed.WithFooter("Command not intended for use in public channels");
