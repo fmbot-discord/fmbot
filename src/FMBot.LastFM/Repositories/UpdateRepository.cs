@@ -182,6 +182,8 @@ namespace FMBot.LastFM.Repositories
                 }
 
                 await SetUserUpdateTime(user, DateTime.UtcNow, connection);
+
+                this._cache.Remove($"user-{user.UserId}-topartists-alltime");
             }
             catch (Exception e)
             {
@@ -198,7 +200,8 @@ namespace FMBot.LastFM.Repositories
 
         private async Task<IReadOnlyList<ArtistAlias>> GetCachedArtistAliases()
         {
-            if (this._cache.TryGetValue("artists", out IReadOnlyList<ArtistAlias> artists))
+            var cacheKey = $"artist-aliases";
+            if (this._cache.TryGetValue(cacheKey, out IReadOnlyList<ArtistAlias> artists))
             {
                 return artists;
             }
@@ -208,7 +211,7 @@ namespace FMBot.LastFM.Repositories
                 .Include(i => i.Artist)
                 .ToListAsync();
 
-            this._cache.Set("artists", artists, TimeSpan.FromHours(2));
+            this._cache.Set(cacheKey, artists, TimeSpan.FromHours(2));
             Log.Information($"Added {artists.Count} artists to memory cache");
 
             return artists;

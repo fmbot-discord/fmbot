@@ -6,6 +6,7 @@ using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Swan;
 
 namespace FMBot.Bot.Services
 {
@@ -131,9 +132,108 @@ namespace FMBot.Bot.Services
                 .FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == lastFmUserName.ToLower());
         }
 
+        public async Task<bool> DisableBottedUserBanAsync(string lastFmUserName)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+
+            var bottedUser = await db.BottedUsers.FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == lastFmUserName.ToLower());
+
+            if (bottedUser == null)
+            {
+                return false;
+            }
+
+            bottedUser.BanActive = false;
+
+            var stringToAdd = $"*[Unbanned <t:{DateTime.UtcNow.ToUnixEpochDate()}:F>]*";
+
+            if (bottedUser.Notes == null)
+            {
+                bottedUser.Notes = stringToAdd;
+            }
+            else
+            {
+                bottedUser.Notes += $"\n{stringToAdd}";
+            }
+
+            db.Entry(bottedUser).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            return true;
+        }
+
+        public async Task<bool> EnableBottedUserBanAsync(string lastFmUserName, string reason)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+
+            var bottedUser = await db.BottedUsers.FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == lastFmUserName.ToLower());
+
+            if (bottedUser == null)
+            {
+                return false;
+            }
+
+            bottedUser.BanActive = true;
+
+            var stringToAdd = $"*[Re-banned <t:{DateTime.UtcNow.ToUnixEpochDate()}:F>]*";
+
+            if (bottedUser.Notes == null)
+            {
+                if (reason != null)
+                {
+                    bottedUser.Notes = stringToAdd;
+                    bottedUser.Notes = $"\n{reason}";
+                }
+                else
+                {
+                    bottedUser.Notes = stringToAdd;
+                }
+            }
+            else
+            {
+                bottedUser.Notes += $"\n\n{stringToAdd}";
+                if (reason != null)
+                {
+                    bottedUser.Notes += $"\n{reason}";
+                }
+            }
+
+            db.Entry(bottedUser).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            return true;
+        }
+
+        public async Task<bool> AddBottedUserAsync(string lastFmUserName, string reason)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+
+            var bottedUser = await db.BottedUsers.FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == lastFmUserName.ToLower());
+
+            if (bottedUser != null)
+            {
+                return false;
+            }
+
+            var newBottedUser = new BottedUser
+            {
+                UserNameLastFM = lastFmUserName,
+                BanActive = true,
+                Notes = reason
+            };
+
+            await db.BottedUsers.AddAsync(newBottedUser);
+
+            await db.SaveChangesAsync();
+
+            return true;
+        }
+
         public string FormatBytes(long bytes)
         {
-            string[] suffix = {"B", "KB", "MB", "GB", "TB"};
+            string[] suffix = { "B", "KB", "MB", "GB", "TB" };
             int i;
             double dblSByte = bytes;
             for (i = 0; i < suffix.Length && bytes >= 1024; i++, bytes /= 1024)

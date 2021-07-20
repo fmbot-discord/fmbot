@@ -199,6 +199,7 @@ namespace FMBot.Bot.Services
 
             var lastFmUsersToFilter = await db.BottedUsers
                 .AsQueryable()
+                .Where(w => w.BanActive)
                 .Select(s => s.UserNameLastFM.ToLower()).ToListAsync();
 
             var filterDate = DateTime.UtcNow.AddDays(-3);

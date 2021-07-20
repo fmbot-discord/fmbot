@@ -291,7 +291,7 @@ namespace FMBot.LastFM.Repositories
         }
 
         // User
-        public async Task<UserLfm> GetLfmUserInfoAsync(string lastFmUserName, string sessionKey)
+        public async Task<UserLfm> GetLfmUserInfoAsync(string lastFmUserName, string sessionKey = null)
         {
             var queryParams = new Dictionary<string, string>
             {
@@ -367,7 +367,7 @@ namespace FMBot.LastFM.Repositories
             var trackCall = await this._lastFmApi.CallApiAsync<TrackInfoLfmResponse>(queryParams, Call.TrackInfo);
             if (trackCall.Success)
             {
-                var linkToFilter = $"<a href=\"{trackCall.Content.Track.Url.Replace("https", "http")}\">Read more on Last.fm</a>";
+                var linkToFilter = $"<a href=\"{trackCall.Content.Track.Url}\">Read more on Last.fm</a>";
                 var filteredSummary = trackCall.Content.Track.Wiki?.Summary.Replace(linkToFilter, "");
 
                 return new Response<TrackInfo>
@@ -391,7 +391,7 @@ namespace FMBot.LastFM.Repositories
                             ? Guid.Parse(trackCall.Content.Track.Mbid)
                             : null,
                         Description = !string.IsNullOrWhiteSpace(filteredSummary)
-                            ? filteredSummary
+                            ? filteredSummary.Replace(". .", ".")
                             : null,
                         TotalPlaycount = trackCall.Content.Track.Playcount ?? 0,
                         TotalListeners = trackCall.Content.Track.Listeners ?? 0,
@@ -416,7 +416,7 @@ namespace FMBot.LastFM.Repositories
 
         }
 
-        public async Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username = null)
+        public async Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username)
         {
             var queryParams = new Dictionary<string, string>
             {
@@ -445,7 +445,7 @@ namespace FMBot.LastFM.Repositories
                             ? Guid.Parse(artistCall.Content.Artist.Mbid)
                             : null,
                         Description = !string.IsNullOrWhiteSpace(filteredSummary)
-                            ? filteredSummary
+                            ? filteredSummary.Replace(". .", ".")
                             : null,
                         TotalPlaycount = artistCall.Content.Artist.Stats?.Playcount ?? 0,
                         TotalListeners = artistCall.Content.Artist.Stats?.Listeners ?? 0,
@@ -622,11 +622,11 @@ namespace FMBot.LastFM.Repositories
 
         // Top artists
         public async Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName,
-            TimePeriod timePeriod, int count = 2, int amountOfPages = 1)
+            TimePeriod timePeriod, long count = 2, long amountOfPages = 1)
         {
             var lastStatsTimeSpan = TimePeriodToLastStatsTimeSpan(timePeriod);
 
-            var topArtists = await this._lastFmClient.User.GetTopArtists(lastFmUserName, lastStatsTimeSpan, 1, count);
+            var topArtists = await this._lastFmClient.User.GetTopArtists(lastFmUserName, lastStatsTimeSpan, 1, (int)count);
 
             Statistics.LastfmApiCalls.Inc();
 

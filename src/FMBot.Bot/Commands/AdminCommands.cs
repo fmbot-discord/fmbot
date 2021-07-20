@@ -28,6 +28,7 @@ namespace FMBot.Bot.Commands
         private readonly LastFmRepository _lastFmRepository;
         private readonly SupporterService _supporterService;
         private readonly UserService _userService;
+        private readonly SettingService _settingService;
 
         public AdminCommands(
                 AdminService adminService,
@@ -37,7 +38,8 @@ namespace FMBot.Bot.Commands
                 LastFmRepository lastFmRepository,
                 SupporterService supporterService,
                 UserService userService,
-                IOptions<BotSettings> botSettings) : base(botSettings)
+                IOptions<BotSettings> botSettings,
+                SettingService settingService) : base(botSettings)
         {
             this._adminService = adminService;
             this._censorService = censorService;
@@ -46,6 +48,7 @@ namespace FMBot.Bot.Commands
             this._lastFmRepository = lastFmRepository;
             this._supporterService = supporterService;
             this._userService = userService;
+            this._settingService = settingService;
         }
 
         //[Command("debug")]
@@ -282,37 +285,57 @@ namespace FMBot.Bot.Commands
 
         [Command("checkbotted")]
         [Summary("Checks some stats for a user and if they're banned from global whoknows")]
-        public async Task CheckBottedUserAsync(string user)
+        public async Task CheckBottedUserAsync(string user = null)
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 if (string.IsNullOrEmpty(user))
                 {
-                    await ReplyAsync("Enter a correct artist to be censored\n" +
-                                     "Example: `.fmaddcensoredartist \"Last Days of Humanity\"");
+                    await ReplyAsync("Enter an username to check\n" +
+                                     "Example: `.fmcheckbotted Kefkef123`");
                     return;
+                }
+
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+                var targetedUser = await this._settingService.GetUser(user, contextUser, this.Context);
+
+                if (targetedUser.DifferentUser)
+                {
+                    user = targetedUser.UserNameLastFm;
                 }
 
                 var bottedUser = await this._adminService.GetBottedUserAsync(user);
 
-                this._embed.WithTitle($"Botted check for {user}");
-                this._embed.WithDescription($"[Profile]({Constants.LastFMUserUrl}{user}) - " +
-                                            $"[Library]({Constants.LastFMUserUrl}{user}/library) - " +
-                                            $"[Last.week]({Constants.LastFMUserUrl}{user}/listening-report) - " +
-                                            $"[Last.year]({Constants.LastFMUserUrl}{user}/listening-report/year)");
+                var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user);
 
-                var dateAgo = DateTime.UtcNow.AddDays(-365);
-                var timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
+                this._embed.WithTitle($"Botted check for Last.fm '{user}'");
 
-                var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(user, timeFrom);
+                if (userInfo == null)
+                {
+                    this._embed.WithDescription($"Not found on Last.fm - [User]({Constants.LastFMUserUrl}{user})");
+                }
+                else
+                {
+                    this._embed.WithDescription($"[Profile]({Constants.LastFMUserUrl}{user}) - " +
+                                                $"[Library]({Constants.LastFMUserUrl}{user}/library) - " +
+                                                $"[Last.week]({Constants.LastFMUserUrl}{user}/listening-report) - " +
+                                                $"[Last.year]({Constants.LastFMUserUrl}{user}/listening-report/year)");
 
-                var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
-                var totalDays = (DateTime.UtcNow - age).TotalDays;
+                    var dateAgo = DateTime.UtcNow.AddDays(-365);
+                    var timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
 
-                var avgPerDay = count / totalDays;
-                this._embed.AddField("Avg scrobbles / day in last year", Math.Round(avgPerDay.GetValueOrDefault(0), 1));
+                    var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(user, timeFrom);
 
-                this._embed.AddField("Banned from GlobalWhoKnows", bottedUser == null ? "No" : "Yes");
+                    var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
+                    var totalDays = (DateTime.UtcNow - age).TotalDays;
+
+                    var avgPerDay = count / totalDays;
+                    this._embed.AddField("Avg scrobbles / day in last year", Math.Round(avgPerDay.GetValueOrDefault(0), 1));
+                }
+
+                this._embed.AddField("Banned from GlobalWhoKnows", bottedUser == null ? "No" : bottedUser.BanActive ? "Yes" : "No, but has been banned before");
                 if (bottedUser != null)
                 {
                     this._embed.AddField("Reason / additional notes", bottedUser.Notes ?? "*No reason/notes*");
@@ -326,6 +349,103 @@ namespace FMBot.Bot.Commands
             else
             {
                 await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can check botted users");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+
+        [Command("addbotteduser")]
+        public async Task AddBottedUserAsync(string user = null, string reason = null)
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(reason))
+                {
+                    await ReplyAsync("Enter an username and reason to remove someone from gwk banlist\n" +
+                                     "Example: `.fmaddbotteduser \"Kefkef123\" \"8 days listening time in Last.week\"`");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                var bottedUser = await this._adminService.GetBottedUserAsync(user);
+                if (bottedUser == null)
+                {
+                    if (!await this._adminService.AddBottedUserAsync(user, reason))
+                    {
+                        await ReplyAsync("Something went wrong while adding this user to the gwk banlist");
+                        this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    }
+                    else
+                    {
+                        await ReplyAsync($"User {user} has been banned from GlobalWhoKnows with reason '{reason.FilterOutMentions()}'");
+                        this.Context.LogCommandUsed();
+                    }
+                }
+                else
+                {
+                    if (!await this._adminService.EnableBottedUserBanAsync(user, reason))
+                    {
+                        await ReplyAsync("Something went wrong while adding this user to the gwk banlist");
+                        this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    }
+                    else
+                    {
+                        await ReplyAsync($"User {user} has been banned from GlobalWhoKnows with reason '{reason.FilterOutMentions()}'");
+                        this.Context.LogCommandUsed();
+                    }
+                }
+
+                
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can remove botted users");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+
+        [Command("removebotteduser")]
+        public async Task RemoveBottedUserAsync(string user = null)
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                if (string.IsNullOrEmpty(user))
+                {
+                    await ReplyAsync("Enter an username to remove from the gwk banlist. This will flag their ban as `false`.\n" +
+                                     "Example: `.fmremovebotteduser \"Kefkef123\"`");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                var bottedUser = await this._adminService.GetBottedUserAsync(user);
+                if (bottedUser == null)
+                {
+                    await ReplyAsync("The specified user has never been banned from GlobalWhoKnows");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                if (!bottedUser.BanActive)
+                {
+                    await ReplyAsync("User is in banned user list, but their ban was already inactive");
+                    return;
+                }
+
+                if (!await this._adminService.DisableBottedUserBanAsync(user))
+                {
+                    await ReplyAsync("The specified user has not been banned from GlobalWhoKnows");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+                else
+                {
+                    await ReplyAsync($"User {user} has been unbanned from GlobalWhoKnows");
+                    this.Context.LogCommandUsed();
+                    return;
+                }
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can remove botted users");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }

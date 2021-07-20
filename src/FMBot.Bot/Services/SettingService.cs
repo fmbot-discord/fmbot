@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord.Commands;
@@ -29,6 +30,7 @@ namespace FMBot.Bot.Services
 
             options ??= "";
             settingsModel.NewSearchValue = options;
+            settingsModel.UsePlays = false;
 
             var oneDay = new[] { "1-day", "1day", "1d", "today" };
             var twoDays = new[] { "2-day", "2day", "2d" };
@@ -536,7 +538,7 @@ namespace FMBot.Bot.Services
             return setGuildRankingSettings;
         }
 
-        public static bool Contains(string extraOptions, string[] values)
+        private static bool Contains(string extraOptions, string[] values)
         {
             var optionArray = extraOptions.Split(" ");
 
@@ -554,7 +556,7 @@ namespace FMBot.Bot.Services
             return false;
         }
 
-        public static string ContainsAndRemove(string extraOptions, string[] values, bool alwaysReturnValue = false)
+        private static string ContainsAndRemove(string extraOptions, string[] values, bool alwaysReturnValue = false)
         {
             extraOptions = extraOptions.ToLower();
             var somethingFound = false;

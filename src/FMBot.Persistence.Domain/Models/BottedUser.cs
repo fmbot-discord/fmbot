@@ -11,5 +11,7 @@ namespace FMBot.Persistence.Domain.Models
         public DateTime? LastFmRegistered { get; set; }
 
         public string Notes { get; set; }
+
+        public bool BanActive { get; set; }
     }
 }

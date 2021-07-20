@@ -341,11 +341,11 @@ namespace FMBot.Bot.Commands.LastFM
                     var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistWithoutImage.ArtistName, userSettings.UserNameLastFm);
                     if (artistCall.Success && artistCall.Content != null)
                     {
-                        var spotifyArtistImage = await this._spotifyService.GetOrStoreArtistImageAsync(artistCall.Content);
+                        var spotifyArtistImage = await this._spotifyService.GetOrStoreArtistAsync(artistCall.Content);
                         if (spotifyArtistImage != null)
                         {
                             var index = topArtists.FindIndex(f => f.ArtistName == artistWithoutImage.ArtistName);
-                            topArtists[index].ArtistImageUrl = spotifyArtistImage;
+                            topArtists[index].ArtistImageUrl = spotifyArtistImage.SpotifyImageUrl;
                         }
                     }
                 }

@@ -85,18 +85,21 @@ namespace FMBot.Bot.Services.WhoKnows
 
         public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForAlbum(ICommandContext context, string artistName, string albumName)
         {
-            const string sql = "SELECT ut.user_id, " +
-                               "ut.name, " +
-                               "ut.artist_name, " +
-                               "ut.playcount," +
+            const string sql = "SELECT * " +
+                               "FROM (SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
+                               "ub.user_id, " +
+                               "ub.name, " +
+                               "ub.artist_name, " +
+                               "ub.playcount, " +
                                "u.user_name_last_fm, " +
                                "u.discord_user_id, " +
                                "u.registered_last_fm, " +
                                "u.privacy_level " +
-                               "FROM user_albums AS ut " +
-                               "INNER JOIN users AS u ON ut.user_id = u.user_id " +
-                               "WHERE UPPER(ut.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
-                               "ORDER BY ut.playcount DESC ";
+                               "FROM user_albums AS ub " +
+                               "INNER JOIN users AS u ON ub.user_id = u.user_id " +
+                               "WHERE UPPER(ub.name) = UPPER(CAST(@albumName AS CITEXT)) AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                               "ORDER BY UPPER(u.user_name_last_fm) DESC) ub " +
+                               "ORDER BY playcount DESC ";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

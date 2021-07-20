@@ -2,13 +2,10 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
-using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
@@ -40,7 +37,7 @@ namespace FMBot.Bot.Commands
 
         [Command("genius")]
         [Summary("Shares a link to the Genius lyrics based on what a user is listening to or what the user is searching for.")]
-        [Alias("lyrics", "g", "lyricsfind", "lyricsearch", "lyricssearch")]
+        [Alias("lyrics", "lyr", "lr", "gen", "lyricsfind", "lyricsearch", "lyricssearch")]
         [UsernameSetRequired]
         public async Task GeniusAsync([Remainder] string searchValue = null)
         {

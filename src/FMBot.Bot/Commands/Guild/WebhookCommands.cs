@@ -53,7 +53,7 @@ namespace FMBot.Bot.Commands.Guild
             {
                 await ReplyAsync(
                     "In order to create the featured webhook, I need permission to add webhooks.\n" +
-                    $"You can add this permission by going to `Server Settings` > `Roles` > `{Context.Client.CurrentUser.Username}` and enabling the `Manage Webhooks` permission.");
+                    $"You can add this permission by going to `Server Settings` > `Roles` > `{this.Context.Client.CurrentUser.Username}` and enabling the `Manage Webhooks` permission.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }

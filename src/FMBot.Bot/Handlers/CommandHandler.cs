@@ -85,7 +85,14 @@ namespace FMBot.Bot.Handlers
             var argPos = 0; // Check if the message has a valid command prefix
             var prfx = this._prefixService.GetPrefix(context.Guild?.Id);
 
-            // Custom prefix
+            // Custom prefix and user included fm anyways
+            if (prfx != this._botSettings.Bot.Prefix && msg.HasStringPrefix(prfx + "fm", ref argPos, StringComparison.CurrentCultureIgnoreCase) && msg.Content.Length > $"{prfx}fm".Length)
+            {
+                await ExecuteCommand(msg, context, argPos, prfx);
+                return;
+            }
+
+            // Normal or custom prefix
             if (msg.HasStringPrefix(prfx, ref argPos, StringComparison.CurrentCultureIgnoreCase))
             {
                 await ExecuteCommand(msg, context, argPos, prfx);
@@ -99,7 +106,7 @@ namespace FMBot.Bot.Handlers
                 return;
             }
 
-            // Mention
+            // Command equals '.fm' prefix
             if (prfx == this._botSettings.Bot.Prefix && msg.HasStringPrefix(".", ref argPos))
             {
                 var searchResult = this._commands.Search(context, argPos);

@@ -111,7 +111,15 @@ namespace FMBot.Bot.Services
 
         private async Task RegisterTrackForUser(User user, TrackSearchResult result)
         {
-            await this._lastFmRepository.SetNowPlayingAsync(user, result.ArtistName, result.TrackName, result.AlbumName);
+            try
+            {
+                await this._lastFmRepository.SetNowPlayingAsync(user, result.ArtistName, result.TrackName, result.AlbumName);
+            }
+            catch (Exception e)
+            {
+                Log.Error("Error while setting now playing for bot scrobbling", e);
+                throw;
+            }
             Statistics.LastfmNowPlayingUpdates.Inc();
 
             this._cache.Set($"now-playing-{user.UserId}", true, TimeSpan.FromSeconds(59));

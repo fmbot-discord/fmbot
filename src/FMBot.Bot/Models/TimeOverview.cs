@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Models
 {
@@ -25,5 +26,9 @@ namespace FMBot.Bot.Models
         public string TopTrack { get; set; }
 
         public string TopAlbum { get; set; }
+
+        public List<string> TopGenres { get; set; }
+
+        public List<UserPlay> Plays { get; set; }
     }
 }

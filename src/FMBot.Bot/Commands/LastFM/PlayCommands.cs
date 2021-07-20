@@ -20,8 +20,11 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
+using Humanizer;
 using Interactivity;
 using Microsoft.Extensions.Options;
+using Swan;
+using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -578,13 +581,6 @@ namespace FMBot.Bot.Commands.LastFM
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            if (amount == "help")
-            {
-                await ReplyAsync($"{prfx}overview 'number of days (max 8)'");
-                this.Context.LogCommandUsed(CommandResponse.Help);
-                return;
-            }
-
             if (!int.TryParse(amount, out var amountOfDays))
             {
                 await ReplyAsync("Please enter a valid amount. \n" +
@@ -621,15 +617,31 @@ namespace FMBot.Bot.Commands.LastFM
 
                 foreach (var day in week.Days)
                 {
+                    var genreString = new StringBuilder();
+                    if (day.TopGenres != null && day.TopGenres.Any())
+                    {
+                        for (var i = 0; i < day.TopGenres.Count; i++)
+                        {
+                            if (i != 0)
+                            {
+                                genreString.Append(" - ");
+                            }
+
+                            var genre = day.TopGenres[i];
+                            genreString.Append($"{genre}");
+                        }
+                    }
+
                     this._embed.AddField(
-                        $"{day.Playcount} plays - {day.Date.ToString("dddd MMMM d", CultureInfo.InvariantCulture)}",
+                        $"{day.Playcount} plays - <t:{day.Date.ToUnixEpochDate()}:D>",
+                        $"{genreString}\n" +
                         $"{day.TopArtist}\n" +
                         $"{day.TopAlbum}\n" +
                         $"{day.TopTrack}"
                     );
                 }
 
-                var description = $"Top artist, album and track for last {amountOfDays} days";
+                var description = $"Top genres, artist, album and track for last {amountOfDays} days";
 
                 if (week.Days.Count < amountOfDays)
                 {
