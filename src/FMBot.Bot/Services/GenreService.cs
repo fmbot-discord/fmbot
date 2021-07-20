@@ -57,7 +57,7 @@ namespace FMBot.Bot.Services
             var genres = await GetCachedArtistGenres();
 
             var allGenres = new List<string>();
-            Parallel.ForEach(topArtists, artist =>
+            foreach (var artist in topArtists)
             {
                 var foundGenres = genres
                     .Where(item => item.ArtistName.Equals(artist.ArtistName.ToLower()))
@@ -67,7 +67,7 @@ namespace FMBot.Bot.Services
                 {
                     allGenres.AddRange(foundGenres.Select(s => s.Genre));
                 }
-            });
+            }
 
             return allGenres
                 .GroupBy(g => g)
