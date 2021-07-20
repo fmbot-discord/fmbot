@@ -1004,13 +1004,13 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(serverUsers);
 
                 var footer = "";
-                if (cachedArtist.ArtistGenres.Any())
+                if (cachedArtist.ArtistGenres != null && cachedArtist.ArtistGenres.Any())
                 {
                     footer += $"\n{GenreService.GenresToString(cachedArtist.ArtistGenres.ToList())}";
                 }
 
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-                footer = $"\nGlobal WhoKnows artist requested by {userTitle}";
+                footer += $"\nGlobal WhoKnows artist requested by {userTitle}";
 
                 if (filteredUsersWithArtist.Any() && filteredUsersWithArtist.Count > 1)
                 {
