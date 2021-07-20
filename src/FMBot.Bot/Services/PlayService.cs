@@ -60,7 +60,7 @@ namespace FMBot.Bot.Services
                 AvgPerDay = GetAvgPerDayCount(plays.ToList()),
             };
 
-            foreach (var day in overview.Days)
+            foreach (var day in overview.Days.Where(w => w.Plays.Any()))
             {
                 day.TopGenres = await this._genreService.GetTopGenresForPlays(day.Plays);
             }
