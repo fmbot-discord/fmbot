@@ -50,17 +50,33 @@ namespace FMBot.Bot.Services
                     {
                         Date = s.Key,
                         Playcount = s.Count(),
+                        Plays = s.ToList(),
                         TopTrack = GetTopTrackForPlays(s.ToList()),
                         TopAlbum = GetTopAlbumForPlays(s.ToList()),
                         TopArtist = GetTopArtistForPlays(s.ToList()),
-                        TopGenres = this._genreService.GetTopGenresForPlays(s.ToList()).Result
                     }).ToList(),
                 Playcount = plays.Count,
                 Uniques = GetUniqueCount(plays.ToList()),
                 AvgPerDay = GetAvgPerDayCount(plays.ToList()),
             };
 
+            foreach (var day in overview.Days)
+            {
+                day.TopGenres = await this._genreService.GetTopGenresForPlays(day.Plays);
+            }
+
             return overview;
+        }
+
+        public static async Task<IEnumerable<TResult>> SelectInSequenceAsync<TSource, TResult>(IEnumerable<TSource> source, Func<TSource, Task<TResult>> asyncSelector)
+        {
+            var result = new List<TResult>();
+            foreach (var s in source)
+            {
+                result.Add(await asyncSelector(s));
+            }
+
+            return result;
         }
 
         private static int GetUniqueCount(IEnumerable<UserPlay> plays)
