@@ -239,11 +239,10 @@ namespace FMBot.Bot.Commands.Guild
                 await ReplyAsync(
                     "Something went wrong while creating an export.");
             }
-
         }
 
         [Command("prefix", RunMode = RunMode.Async)]
-        [Summary("Changes the `.fm` prefix for your server. Note that this will replace the complete `.fm` and not just the `.`.\n\n" +
+        [Summary("Changes the `.fm` prefix for your server.\n\n" +
                  "For example, with the prefix `!` commands will be used as `!chart` and `!whoknows`\n\n" +
                  "To restore the default prefix, use this command without an option")]
         [Examples("prefix", "prefix !")]
@@ -260,19 +259,12 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            if (string.IsNullOrEmpty(prefix) || prefix.ToLower() == "remove" || prefix.ToLower() == "delete")
+            if (string.IsNullOrEmpty(prefix) || prefix.ToLower() == "remove" || prefix.ToLower() == "delete" || prefix.ToLower() == ".")
             {
                 await this._guildService.SetGuildPrefixAsync(this.Context.Guild, null);
                 this._prefixService.RemovePrefix(this.Context.Guild.Id);
-                await ReplyAsync("Removed prefix!");
-                this.Context.LogCommandUsed();
-                return;
-            }
-            if (prefix.ToLower() == ".fm")
-            {
-                await this._guildService.SetGuildPrefixAsync(this.Context.Guild, null);
-                this._prefixService.RemovePrefix(this.Context.Guild.Id);
-                await ReplyAsync("Reset to default prefix `.fm`!");
+                await ReplyAsync("Reset to default prefix `.`! \n" +
+                                 "Commands prefixed with `.fm` and `.` will both work, so for example .fmbot will respond to `.fmwhoknows` and `.whoknows`.");
                 this.Context.LogCommandUsed();
                 return;
             }
@@ -295,12 +287,11 @@ namespace FMBot.Bot.Commands.Guild
 
             this._embed.WithTitle("Successfully added custom prefix!");
             this._embed.WithDescription("Examples:\n" +
-                                        $"- `{prefix}fm`\n" +
+                                        $"- `{prefix}fm`\n".Replace("fmfm", "fm") +
                                         $"- `{prefix}chart 8x8 monthly`\n" +
                                         $"- `{prefix}whoknows` \n \n" +
                                         "Reminder that you can always mention the bot followed by your command. \n" +
-                                        $"The [.fmbot docs]({Constants.DocsUrl}) will still have the `.fm` prefix everywhere. " +
-                                        $"Custom prefixes are still in the testing phase so please note that some error messages and other places might not show your prefix yet.\n\n" +
+                                        $"The [.fmbot docs]({Constants.DocsUrl}) will still have the `.` prefix everywhere.\n\n" +
                                         $"To remove the custom prefix, do `{prefix}prefix remove`");
 
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);

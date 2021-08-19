@@ -159,7 +159,8 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else
                 {
-                    serverStats += "Run `.fmindex` to get server stats";
+                    var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+                    serverStats += $"Run `{prfx}index` to get server stats";
                 }
 
                 if (!string.IsNullOrWhiteSpace(serverStats))
