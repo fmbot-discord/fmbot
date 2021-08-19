@@ -29,6 +29,8 @@ namespace FMBot.Bot.Models
 
         public List<string> TopGenres { get; set; }
 
+        public TimeSpan ListeningTime { get; set; }
+
         public List<UserPlay> Plays { get; set; }
     }
 }

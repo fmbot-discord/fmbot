@@ -576,19 +576,15 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("o", "overview", "overview 7")]
         [Alias("o", "ov")]
         [UsernameSetRequired]
-        public async Task OverviewAsync(string amount = "4")
+        public async Task OverviewAsync([Remainder] string extraOptions = null)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            if (!int.TryParse(amount, out var amountOfDays))
-            {
-                await ReplyAsync("Please enter a valid amount. \n" +
-                                 $"`{prfx}overview 'number of days (max 8)'` \n" +
-                                 $"Example: `{prfx}overview 8`");
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                return;
-            }
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var amountOfDays = SettingService.GetAmount(extraOptions, 5, 10);
+
+            _ = this.Context.Channel.TriggerTypingAsync();
 
             if (amountOfDays > 8)
             {
@@ -600,22 +596,11 @@ namespace FMBot.Bot.Commands.LastFM
                 amountOfDays = 1;
             }
 
-            if (userSettings.LastIndexed == null)
-            {
-                _ = this.Context.Channel.TriggerTypingAsync();
-                await this._indexService.IndexUser(userSettings);
-            }
-            else if (userSettings.LastUpdated < DateTime.UtcNow.AddMinutes(-20))
-            {
-                _ = this.Context.Channel.TriggerTypingAsync();
-                await this._updateService.UpdateUser(userSettings);
-            }
-
             try
             {
-                var week = await this._playService.GetDailyOverview(userSettings, amountOfDays);
+                var week = await this._playService.GetDailyOverview(userSettings.UserId, amountOfDays);
 
-                foreach (var day in week.Days)
+                foreach (var day in week.Days.OrderBy(o => o.Date))
                 {
                     var genreString = new StringBuilder();
                     if (day.TopGenres != null && day.TopGenres.Any())
@@ -632,8 +617,11 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                     }
 
+                    var listeningTime =
+                        $"{day.ListeningTime.Hours}h{day.ListeningTime.Minutes}m";
+
                     this._embed.AddField(
-                        $"{day.Playcount} plays - <t:{day.Date.ToUnixEpochDate()}:D>",
+                        $"{day.Playcount} plays - {listeningTime} - <t:{day.Date.ToUnixEpochDate()}:D>",
                         $"{genreString}\n" +
                         $"{day.TopArtist}\n" +
                         $"{day.TopAlbum}\n" +
@@ -651,9 +639,9 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(description);
 
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-                this._embedAuthor.WithName($"Daily overview for {userTitle}");
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFM}/library?date_preset=LAST_7_DAYS");
+                this._embedAuthor.WithName($"Daily overview for {userSettings.DiscordUserName}");
+                //this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library?date_preset=LAST_7_DAYS");
                 this._embed.WithAuthor(this._embedAuthor);
 
                 this._embedFooter.WithText($"{week.Uniques} unique tracks - {week.Playcount} total plays - avg {Math.Round(week.AvgPerDay, 1)} per day");
