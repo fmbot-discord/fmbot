@@ -58,7 +58,7 @@ namespace FMBot.Bot.Services
 
         private async Task CacheAllTrackLengths()
         {
-            const string cacheKey = "album-spotify-covers-cached";
+            const string cacheKey = "track-lengths-cached";
             var cacheTime = TimeSpan.FromMinutes(10);
 
             if (this._cache.TryGetValue(cacheKey, out _))

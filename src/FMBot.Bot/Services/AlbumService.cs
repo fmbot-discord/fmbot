@@ -29,28 +29,30 @@ namespace FMBot.Bot.Services
                 return topAlbums;
             }
 
-            var albumCovers = await GetCachedAlbumCovers();
+            await CacheAllSpotifyAlbumCovers();
 
             foreach (var topAlbum in topAlbums.Where(w => w.AlbumCoverUrl == null))
             {
                 var url = topAlbum.AlbumUrl.ToLower();
-                var albumCover = albumCovers.FirstOrDefault(item => item.LastFmUrl.Contains(url));
+                var albumCover = (string)this._cache.Get(CacheKeyForAlbumCover(url));
 
                 if (albumCover != null)
                 {
-                    topAlbum.AlbumCoverUrl = albumCover.SpotifyImageUrl;
+                    topAlbum.AlbumCoverUrl = albumCover;
                 }
             }
 
             return topAlbums;
         }
 
-        private async Task<List<AlbumSpotifyCoverDto>> GetCachedAlbumCovers()
+        private async Task CacheAllSpotifyAlbumCovers()
         {
             const string cacheKey = "album-spotify-covers";
-            if (this._cache.TryGetValue(cacheKey, out List<AlbumSpotifyCoverDto> albumCovers))
+            var cacheTime = TimeSpan.FromMinutes(5);
+
+            if (this._cache.TryGetValue(cacheKey, out _))
             {
-                return albumCovers;
+                return;
             }
 
             const string sql = "SELECT LOWER(last_fm_url) as last_fm_url, LOWER(spotify_image_url) as spotify_image_url " +
@@ -60,11 +62,19 @@ namespace FMBot.Bot.Services
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            albumCovers = (await connection.QueryAsync<AlbumSpotifyCoverDto>(sql)).ToList();
+            var albumCovers = (await connection.QueryAsync<AlbumSpotifyCoverDto>(sql)).ToList();
 
-            this._cache.Set(cacheKey, albumCovers, TimeSpan.FromMinutes(1));
+            foreach (var cover in albumCovers)
+            {
+                this._cache.Set(CacheKeyForAlbumCover(cover.LastFmUrl), cover.SpotifyImageUrl, cacheTime);
+            }
 
-            return albumCovers;
+            this._cache.Set(cacheKey, true, cacheTime);
+        }
+
+        private static string CacheKeyForAlbumCover(string lastFmUrl)
+        {
+            return $"album-spotify-cover-{lastFmUrl}";
         }
     }
 }

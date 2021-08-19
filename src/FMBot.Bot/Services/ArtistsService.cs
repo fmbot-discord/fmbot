@@ -40,28 +40,30 @@ namespace FMBot.Bot.Services
                 return topArtists;
             }
 
-            var albumCovers = await GetCachedArtistImages();
+            await CacheSpotifyArtistImages();
 
             foreach (var topArtist in topArtists.Where(w => w.ArtistImageUrl == null))
             {
                 var url = topArtist.ArtistUrl.ToLower();
-                var artistImage = albumCovers.FirstOrDefault(item => item.LastFmUrl.Equals(url));
+                var artistImage = (string)this._cache.Get(CacheKeyForArtist(url));
 
                 if (artistImage != null)
                 {
-                    topArtist.ArtistImageUrl = artistImage.SpotifyImageUrl;
+                    topArtist.ArtistImageUrl = artistImage;
                 }
             }
 
             return topArtists;
         }
 
-        private async Task<List<ArtistSpotifyCoverDto>> GetCachedArtistImages()
+        private async Task CacheSpotifyArtistImages()
         {
             const string cacheKey = "artist-spotify-covers";
-            if (this._cache.TryGetValue(cacheKey, out List<ArtistSpotifyCoverDto> artistCovers))
+            var cacheTime = TimeSpan.FromMinutes(5);
+
+            if (this._cache.TryGetValue(cacheKey, out _))
             {
-                return artistCovers;
+                return;
             }
 
             const string sql = "SELECT LOWER(last_fm_url) as last_fm_url, LOWER(spotify_image_url) as spotify_image_url " +
@@ -71,11 +73,19 @@ namespace FMBot.Bot.Services
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            artistCovers = (await connection.QueryAsync<ArtistSpotifyCoverDto>(sql)).ToList();
+            var artistCovers = (await connection.QueryAsync<ArtistSpotifyCoverDto>(sql)).ToList();
 
-            this._cache.Set(cacheKey, artistCovers, TimeSpan.FromMinutes(1));
+            foreach (var artistCover in artistCovers)
+            {
+                this._cache.Set(CacheKeyForArtist(artistCover.LastFmUrl), artistCover.SpotifyImageUrl, cacheTime);
+            }
 
-            return artistCovers;
+            this._cache.Set(cacheKey, true, cacheTime);
+        }
+
+        private static string CacheKeyForArtist(string lastFmUrl)
+        {
+            return $"artist-spotify-image-{lastFmUrl}";
         }
 
         // Top artists for 2 users
