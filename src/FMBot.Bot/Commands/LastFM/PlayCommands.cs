@@ -582,19 +582,9 @@ namespace FMBot.Bot.Commands.LastFM
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-            var amountOfDays = SettingService.GetAmount(extraOptions, 5, 10);
+            var amountOfDays = SettingService.GetAmount(extraOptions, 4, 8);
 
             _ = this.Context.Channel.TriggerTypingAsync();
-
-            if (amountOfDays > 8)
-            {
-                amountOfDays = 8;
-            }
-
-            if (amountOfDays < 1)
-            {
-                amountOfDays = 1;
-            }
 
             try
             {
