@@ -578,17 +578,27 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         public async Task OverviewAsync([Remainder] string extraOptions = null)
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
             var amountOfDays = SettingService.GetAmount(extraOptions, 4, 8);
 
-            _ = this.Context.Channel.TriggerTypingAsync();
+
+            await this._updateService.UpdateUser(contextUser);
 
             try
             {
                 var week = await this._playService.GetDailyOverview(userSettings.UserId, amountOfDays);
+
+                if (week == null)
+                {
+                    await ReplyAsync("Sorry, we don't have plays for you in the selected amount of days.");
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                    return;
+                }
 
                 foreach (var day in week.Days.OrderBy(o => o.Date))
                 {

@@ -43,6 +43,11 @@ namespace FMBot.Bot.Services
                             w.UserId == userId)
                 .ToListAsync();
 
+            if (!plays.Any())
+            {
+                return null;
+            }
+
             var overview = new DailyOverview
             {
                 Days = plays
