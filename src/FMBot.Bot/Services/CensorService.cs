@@ -56,6 +56,11 @@ namespace FMBot.Bot.Services
                 return false;
             }
 
+            if (albumName == null)
+            {
+                return true;
+            }
+
             if (db.CensoredMusic
                     .AsQueryable()
                     .Select(s => s.ArtistName.ToLower())
