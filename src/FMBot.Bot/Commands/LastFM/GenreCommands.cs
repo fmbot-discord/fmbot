@@ -204,7 +204,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                List<string> genres;
+                List<string> genres = new List<string>();
                 if (string.IsNullOrWhiteSpace(genreOptions))
                 {
                     var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(contextUser.UserNameLastFM, 1, true, contextUser.SessionKeyLastFm);
@@ -216,9 +216,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                     var artistName = recentScrobbles.Content.RecentTracks.First().ArtistName;
 
-                    genres = await this._genreService.GetGenresForArtist(artistName);
+                    var foundGenres = await this._genreService.GetGenresForArtist(artistName);
 
-                    if (!genres.Any())
+                    if (foundGenres == null)
                     {
                         var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistName, contextUser.UserNameLastFM);
                         if (artistCall.Success)
@@ -230,6 +230,10 @@ namespace FMBot.Bot.Commands.LastFM
                                 genres.AddRange(cachedArtist.ArtistGenres.Select(s => s.Name));
                             }
                         }
+                    }
+                    else
+                    {
+                        genres.AddRange(foundGenres);
                     }
 
                     if (genres.Any())
