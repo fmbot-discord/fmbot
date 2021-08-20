@@ -723,6 +723,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var currentSettings = new WhoKnowsSettings
                 {
                     HidePrivateUsers = false,
+                    ShowBotters = false,
                     NewSearchValue = albumValues
                 };
 
