@@ -105,6 +105,7 @@ namespace FMBot.Bot.Handlers
                     searchResult.Commands.FirstOrDefault().Command.Name == "fm")
                 {
                     await ExecuteCommand(msg, context, argPos, prfx);
+                    return;
                 }
             }
 
