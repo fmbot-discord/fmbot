@@ -20,14 +20,16 @@ namespace FMBot.Bot.Services
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
         private readonly GenreService _genreService;
+        private readonly TimeService _timeService;
 
-        public PlayService(IDbContextFactory<FMBotDbContext> contextFactory, GenreService genreService)
+        public PlayService(IDbContextFactory<FMBotDbContext> contextFactory, GenreService genreService, TimeService timeService)
         {
             this._contextFactory = contextFactory;
             this._genreService = genreService;
+            this._timeService = timeService;
         }
 
-        public async Task<DailyOverview> GetDailyOverview(User user, int amountOfDays)
+        public async Task<DailyOverview> GetDailyOverview(int userId, int amountOfDays)
         {
             await using var db = this._contextFactory.CreateDbContext();
 
@@ -38,8 +40,13 @@ namespace FMBot.Bot.Services
                 .AsQueryable()
                 .Where(w => w.TimePlayed.Date <= now.Date &&
                             w.TimePlayed.Date > minDate.Date &&
-                            w.UserId == user.UserId)
+                            w.UserId == userId)
                 .ToListAsync();
+
+            if (!plays.Any())
+            {
+                return null;
+            }
 
             var overview = new DailyOverview
             {
@@ -64,21 +71,14 @@ namespace FMBot.Bot.Services
             {
                 day.TopGenres = await this._genreService.GetTopGenresForPlays(day.Plays);
             }
+            foreach (var day in overview.Days.Where(w => w.Plays.Any()))
+            {
+                day.ListeningTime = await this._timeService.GetPlayTimeForPlays(day.Plays);
+            }
 
             return overview;
         }
-
-        public static async Task<IEnumerable<TResult>> SelectInSequenceAsync<TSource, TResult>(IEnumerable<TSource> source, Func<TSource, Task<TResult>> asyncSelector)
-        {
-            var result = new List<TResult>();
-            foreach (var s in source)
-            {
-                result.Add(await asyncSelector(s));
-            }
-
-            return result;
-        }
-
+        
         private static int GetUniqueCount(IEnumerable<UserPlay> plays)
         {
             return plays

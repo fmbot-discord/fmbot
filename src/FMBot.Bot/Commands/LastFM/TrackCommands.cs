@@ -855,6 +855,7 @@ namespace FMBot.Bot.Commands.LastFM
             var currentSettings = new WhoKnowsSettings
             {
                 HidePrivateUsers = false,
+                ShowBotters = false,
                 NewSearchValue = trackValues
             };
             var settings = this._settingService.SetWhoKnowsSettings(currentSettings, trackValues);

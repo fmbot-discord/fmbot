@@ -29,12 +29,14 @@ namespace FMBot.Bot.Services
             this._botSettings = botSettings.Value;
         }
 
-        private async Task<List<ArtistGenreDto>> GetCachedArtistGenres()
+        private async Task CacheAllArtistGenres()
         {
-            const string cacheKey = "artist-genres";
-            if (this._cache.TryGetValue(cacheKey, out List<ArtistGenreDto> artistGenres))
+            const string cacheKey = "artist-genres-cached";
+            var cacheTime = TimeSpan.FromMinutes(5);
+
+            if (this._cache.TryGetValue(cacheKey, out _))
             {
-                return artistGenres;
+                return;
             }
 
             const string sql = "SELECT ag.name AS genre, LOWER(artists.name) AS artist_name " +
@@ -45,27 +47,43 @@ namespace FMBot.Bot.Services
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            artistGenres = (await connection.QueryAsync<ArtistGenreDto>(sql)).ToList();
+            var artistGenres = (await connection.QueryAsync<ArtistGenreDto>(sql)).ToList();
 
-            this._cache.Set(cacheKey, artistGenres, TimeSpan.FromMinutes(5));
+            foreach (var artist in artistGenres.GroupBy(g => g.ArtistName))
+            {
+                var genres = artist.Select(s => s.Genre).ToList();
+                this._cache.Set(CacheKeyForArtist(artist.Key), genres, cacheTime);
+            }
+            foreach (var genre in artistGenres.GroupBy(g => g.Genre))
+            {
+                var artists = genre.Select(s => s.ArtistName).ToList();
+                this._cache.Set(CacheKeyForGenre(genre.Key), artists, cacheTime);
+            }
 
-            return artistGenres;
+            this._cache.Set(cacheKey, true, cacheTime);
+        }
+
+        private static string CacheKeyForArtist(string artistName)
+        {
+            return $"artist-genres-{artistName}";
+        }
+        private static string CacheKeyForGenre(string genreName)
+        {
+            return $"genre-artists-{genreName}";
         }
 
         public async Task<List<TopGenre>> GetTopGenresForTopArtists(IEnumerable<TopArtist> topArtists)
         {
-            var genres = await GetCachedArtistGenres();
+            await CacheAllArtistGenres();
 
             var allGenres = new List<string>();
             foreach (var artist in topArtists)
             {
-                var foundGenres = genres
-                    .Where(item => item.ArtistName.Equals(artist.ArtistName.ToLower()))
-                    .ToList();
+                 var foundGenres = (List<string>)this._cache.Get(CacheKeyForArtist(artist.ArtistName.ToLower()));
 
-                if (foundGenres.Any())
+                if (foundGenres != null && foundGenres.Any())
                 {
-                    allGenres.AddRange(foundGenres.Select(s => s.Genre));
+                    allGenres.AddRange(foundGenres);
                 }
             }
 
@@ -82,33 +100,26 @@ namespace FMBot.Bot.Services
 
         public async Task<List<string>> GetGenresForArtist(string artistName)
         {
-            var genres = await GetCachedArtistGenres();
-
-            var foundGenres = genres
-                .Where(item => item.ArtistName.Equals(artistName.ToLower()))
-                .ToList();
-
-            return foundGenres.Select(s => s.Genre).ToList();
+            await CacheAllArtistGenres();
+            return (List<string>)this._cache.Get(CacheKeyForArtist(artistName.ToLower()));
         }
 
         public async Task<List<TopGenre>> GetArtistsForGenres(IEnumerable<string> selectedGenres, List<TopArtist> topArtists)
         {
-            var genres = await GetCachedArtistGenres();
+            await CacheAllArtistGenres();
 
             var foundGenres = new List<TopGenre>();
             foreach (var selectedGenre in selectedGenres)
             {
-                var artistGenres = genres
-                    .Where(f => f.Genre.ToLower().Equals(selectedGenre.ToLower()))
-                    .ToList();
+                var artistGenres = (List<string>)this._cache.Get(CacheKeyForGenre(selectedGenre.ToLower()));
 
-                if (artistGenres.Any())
+                if (artistGenres != null && artistGenres.Any())
                 {
                     foundGenres.Add(new TopGenre
                     {
                         GenreName = selectedGenre,
                         Artists = topArtists
-                            .Where(w => artistGenres.Any(a => a.ArtistName.ToLower().Equals(w.ArtistName.ToLower())))
+                            .Where(w => artistGenres.Any(a => a.ToLower().Equals(w.ArtistName.ToLower())))
                             .OrderByDescending(o => o.UserPlaycount)
                             .ToList()
                     });

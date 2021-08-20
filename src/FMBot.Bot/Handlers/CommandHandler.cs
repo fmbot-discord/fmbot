@@ -70,6 +70,7 @@ namespace FMBot.Bot.Handlers
                 return; // Ignore self when checking commands
             }
 
+
             // Create the command context
             var context = new ShardedCommandContext(this._discord, msg);
 
@@ -85,11 +86,26 @@ namespace FMBot.Bot.Handlers
             var argPos = 0; // Check if the message has a valid command prefix
             var prfx = this._prefixService.GetPrefix(context.Guild?.Id);
 
-            // Custom prefix and user included fm anyways
-            if (prfx != this._botSettings.Bot.Prefix && msg.HasStringPrefix(prfx + "fm", ref argPos, StringComparison.CurrentCultureIgnoreCase) && msg.Content.Length > $"{prfx}fm".Length)
+            // New prefix '.' but user still uses the '.fm' prefix anyway
+            if (prfx == this._botSettings.Bot.Prefix &&
+                msg.HasStringPrefix(prfx + "fm", ref argPos, StringComparison.CurrentCultureIgnoreCase) &&
+                msg.Content.Length > $"{prfx}fm".Length)
             {
                 await ExecuteCommand(msg, context, argPos, prfx);
                 return;
+            }
+
+            // Prefix is set to '.fm' and the user uses '.fm'
+            if (prfx == ".fm" && msg.HasStringPrefix(".", ref argPos))
+            {
+                var searchResult = this._commands.Search(context, argPos);
+                if (searchResult.IsSuccess &&
+                    searchResult.Commands != null &&
+                    searchResult.Commands.Any() &&
+                    searchResult.Commands.FirstOrDefault().Command.Name == "fm")
+                {
+                    await ExecuteCommand(msg, context, argPos, prfx);
+                }
             }
 
             // Normal or custom prefix
@@ -104,16 +120,6 @@ namespace FMBot.Bot.Handlers
             {
                 await ExecuteCommand(msg, context, argPos, prfx);
                 return;
-            }
-
-            // Command equals '.fm' prefix
-            if (prfx == this._botSettings.Bot.Prefix && msg.HasStringPrefix(".", ref argPos))
-            {
-                var searchResult = this._commands.Search(context, argPos);
-                if (searchResult.IsSuccess && searchResult.Commands != null && searchResult.Commands.Any() && searchResult.Commands.FirstOrDefault().Command.Name == "fm")
-                {
-                    await ExecuteCommand(msg, context, argPos, prfx);
-                }
             }
         }
 

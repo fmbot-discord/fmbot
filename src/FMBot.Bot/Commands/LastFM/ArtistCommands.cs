@@ -159,7 +159,8 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else
                 {
-                    serverStats += "Run `.fmindex` to get server stats";
+                    var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+                    serverStats += $"Run `{prfx}index` to get server stats";
                 }
 
                 if (!string.IsNullOrWhiteSpace(serverStats))
@@ -662,25 +663,23 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (lastfmToCompare == null)
                 {
-                    var errorReply = $"Error while attempting taste comparison: \n\n" +
-                                     $"Please enter a valid user to compare your top artists to.\n" +
-                                     $"Example: `{prfx}taste lastfmusername` or `{prfx}taste @user`.\n" +
-                                     $"Make sure the user is registered in .fmbot or has a public Last.fm profile.";
-
-
-                    await ReplyAsync(errorReply);
+                    this._embed.WithDescription($"Please enter a Last.fm username or mention someone to compare yourself to.\n" +
+                                                $"Examples:\n" +
+                                                $"- `{prfx}taste fm-bot`\n" +
+                                                $"- `{prfx}taste @.fmbot`");
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
                 if (lastfmToCompare.ToLower() == userSettings.UserNameLastFM.ToLower())
                 {
-                    var errorReply =
-                        $"Error while attempting taste comparison: \n\n" +
-                        $"You can't compare your own taste with yourself. For viewing your top artists, use `{prfx}topartists`\n" +
-                        $"Please enter a different last.fm username or mention another user.";
-
-                    await ReplyAsync(errorReply);
+                    this._embed.WithDescription($"You can't compare your own taste with yourself. For viewing your top artists, use `{prfx}topartists`.\n\n" +
+                                                $"Please enter a Last.fm username or mention someone to compare yourself to.\n" +
+                                                $"Examples:\n" +
+                                                $"- `{prfx}taste fm-bot`\n" +
+                                                $"- `{prfx}taste @.fmbot`");
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
@@ -935,6 +934,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var currentSettings = new WhoKnowsSettings
                 {
                     HidePrivateUsers = false,
+                    ShowBotters = false,
                     NewSearchValue = artistValues
                 };
                 var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues);

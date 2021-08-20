@@ -168,7 +168,8 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                     else
                     {
-                        serverStats += "Run `.fmindex` to get server stats";
+                        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+                        serverStats += $"Run `{prfx}index` to get server stats";
                     }
 
                     this._embed.AddField("Server stats", serverStats, true);
@@ -722,6 +723,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var currentSettings = new WhoKnowsSettings
                 {
                     HidePrivateUsers = false,
+                    ShowBotters = false,
                     NewSearchValue = albumValues
                 };
 

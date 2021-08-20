@@ -58,7 +58,15 @@ namespace FMBot.Bot.Models
 
         public string ArtistName { get; set; }
 
-        public int Playcount { get; set; }
+        public long DurationMs { get; set; }
+    }
+
+    public class TrackLengthDto
+    {
+        public string ArtistName { get; set; }
+        public string TrackName { get; set; }
+
+        public long DurationMs { get; set; }
     }
 
 

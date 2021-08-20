@@ -103,6 +103,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription($"You or the user you're searching for don't have any crowns yet. \n" +
                                             $"Use `{prfx}whoknows` to start getting crowns!");
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                this.Context.LogCommandUsed();
                 return;
             }
 

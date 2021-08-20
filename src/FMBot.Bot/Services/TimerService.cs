@@ -238,7 +238,7 @@ namespace FMBot.Bot.Services
                         Log.Information("Updating status");
                         if (!PublicProperties.IssuesAtLastFm)
                         {
-                            await client.SetGameAsync($"{this._botSettings.Bot.Prefix} | {client.Guilds.Count} servers | fmbot.xyz");
+                            await client.SetGameAsync($"{this._botSettings.Bot.Prefix}fm | {client.Guilds.Count} servers | fmbot.xyz");
                         }
                         else
                         {
