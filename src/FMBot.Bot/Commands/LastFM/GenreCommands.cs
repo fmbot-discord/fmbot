@@ -269,7 +269,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
                     this._embed.WithDescription(
-                        "Sorry, we don't have any registered artists for the artist you're currently listening to.\n\n" +
+                        "Sorry, we don't have any registered genres for the artist you're currently listening to.\n\n" +
                         $"Please try again later or manually enter a genre (example: `{prfx}genre hip hop`)");
                     await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
@@ -307,6 +307,16 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var genre = genresWithArtists.First();
+
+                if (!genre.Artists.Any())
+                {
+                    var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+                    this._embed.WithDescription(
+                        "Sorry, we don't have any registered artists for you for the genre you're searching for.");
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 this._embedAuthor.WithName($"Top '{genre.GenreName.Transform(To.TitleCase)}' artists for {userTitle}");
