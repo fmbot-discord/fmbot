@@ -638,9 +638,12 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithDescription(description);
 
-                var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-                this._embedAuthor.WithName($"Daily overview for {userSettings.DiscordUserName}");
-                //this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+                this._embedAuthor.WithName($"Daily overview for {userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}");
+                if (!userSettings.DifferentUser)
+                {
+                    this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+                }
+
                 this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library?date_preset=LAST_7_DAYS");
                 this._embed.WithAuthor(this._embedAuthor);
 
@@ -870,8 +873,13 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
-                this._embedAuthor.WithName($"{userTitle} streak overview");
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+
+                this._embedAuthor.WithName($"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}'s streak overview");
+                if (!userSettings.DifferentUser)
+                {
+                    this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+                }
+
                 this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library");
                 this._embed.WithAuthor(this._embedAuthor);
 
