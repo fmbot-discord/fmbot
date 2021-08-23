@@ -36,39 +36,21 @@ namespace FMBot.Bot.Services
             return friends;
         }
 
-        public async Task AddLastFmFriendAsync(ulong discordSenderId, string lastFmUserName, int? discordFriendId)
+        public async Task AddLastFmFriendAsync(User contextUser, string lastFmUserName, int? friendUserId)
         {
             await using var db = this._contextFactory.CreateDbContext();
-            var user = db.Users.FirstOrDefault(f => f.DiscordUserId == discordSenderId);
-
-            this._cache.Remove($"user-settings-{discordSenderId}");
-
-            if (user == null)
-            {
-                var newUser = new User
-                {
-                    DiscordUserId = discordSenderId,
-                    UserType = UserType.User
-                };
-
-                await db.Users.AddAsync(newUser);
-                user = newUser;
-            }
-
+            
             var friend = new Friend
             {
-                User = user,
+                UserId = contextUser.UserId,
                 LastFMUserName = lastFmUserName,
-                FriendUserId = discordFriendId
+                FriendUserId = friendUserId
             };
 
             await db.Friends.AddAsync(friend);
 
             await db.SaveChangesAsync();
-
-            await Task.CompletedTask;
         }
-
 
         public async Task<bool> RemoveLastFmFriendAsync(int userId, string lastFmUserName)
         {

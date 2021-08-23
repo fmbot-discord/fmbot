@@ -144,6 +144,61 @@ namespace FMBot.Bot.Services.WhoKnows
             return whoKnowsTrackList;
         }
 
+        public async Task<IList<WhoKnowsObjectWithUser>> GetFriendUsersForTrack(ICommandContext context, int guildId, int userId, string artistName, string trackName)
+        {
+            const string sql = "SELECT ut.user_id, " +
+                               "ut.name, " +
+                               "ut.artist_name, " +
+                               "ut.playcount," +
+                               "u.user_name_last_fm, " +
+                               "u.discord_user_id, " +
+                               "gu.user_name, " +
+                               "gu.who_knows_whitelisted " +
+                               "FROM user_tracks AS ut " +
+                               "INNER JOIN users AS u ON ut.user_id = u.user_id " +
+                               "INNER JOIN friends AS fr ON fr.friend_user_id = u.user_id " +
+                               "LEFT JOIN guild_users AS gu ON gu.user_id = u.user_id AND gu.guild_id = @guildId " +
+                               "WHERE fr.user_id = @userId AND " +
+                               "UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                               "ORDER BY ut.playcount DESC ";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var userArtists = (await connection.QueryAsync<WhoKnowsTrackDto>(sql, new
+            {
+                artistName,
+                trackName,
+                guildId,
+                userId
+            })).ToList();
+
+            var whoKnowsArtistList = new List<WhoKnowsObjectWithUser>();
+
+            foreach (var userArtist in userArtists)
+            {
+                var userName = userArtist.UserName ?? userArtist.UserNameLastFm;
+
+                var discordUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId);
+                if (discordUser != null)
+                {
+                    userName = discordUser.Nickname ?? discordUser.Username;
+                }
+
+                whoKnowsArtistList.Add(new WhoKnowsObjectWithUser
+                {
+                    Name = userArtist.Name,
+                    DiscordName = userName,
+                    Playcount = userArtist.Playcount,
+                    LastFMUsername = userArtist.UserNameLastFm,
+                    UserId = userArtist.UserId,
+                });
+            }
+
+            return whoKnowsArtistList;
+        }
+
         public async Task<int?> GetTrackPlayCountForUser(string artistName, string trackName, int userId)
         {
             const string sql = "SELECT ut.playcount " +

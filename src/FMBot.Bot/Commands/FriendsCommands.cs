@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dasync.Collections;
-using Discord;
 using Discord.Commands;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
-using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
@@ -27,6 +25,7 @@ namespace FMBot.Bot.Commands
         private readonly IPrefixService _prefixService;
         private readonly LastFmRepository _lastFmRepository;
         private readonly UserService _userService;
+        private readonly SettingService _settingService;
 
         public FriendsCommands(
                 FriendsService friendsService,
@@ -34,13 +33,15 @@ namespace FMBot.Bot.Commands
                 IPrefixService prefixService,
                 LastFmRepository lastFmRepository,
                 UserService userService,
-                IOptions<BotSettings> botSettings) : base(botSettings)
+                IOptions<BotSettings> botSettings,
+                SettingService settingService) : base(botSettings)
         {
             this._friendsService = friendsService;
             this._guildService = guildService;
             this._lastFmRepository = lastFmRepository;
             this._prefixService = prefixService;
             this._userService = userService;
+            this._settingService = settingService;
         }
 
         [Command("friends", RunMode = RunMode.Async)]
@@ -50,6 +51,7 @@ namespace FMBot.Bot.Commands
         public async Task FriendsAsync()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
 
             try
             {
@@ -58,12 +60,14 @@ namespace FMBot.Bot.Commands
                 if (friends?.Any() != true)
                 {
                     await ReplyAsync("We couldn't find any friends. To add friends:\n" +
-                                     "`.fmaddfriends 'lastfmname/discord name'`");
+                                     $"`{prfx}addfriends 'lastfmname/discord name'`");
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
                     return;
                 }
 
                 _ = this.Context.Channel.TriggerTypingAsync();
+
+                var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
                 var embedFooterText = "Amount of scrobbles of all your friends together: ";
                 string embedTitle;
@@ -89,6 +93,17 @@ namespace FMBot.Bot.Commands
                 await friends.ParallelForEachAsync(async friend =>
                 {
                     var friendUsername = friend.LastFMUserName;
+                    var friendNameToDisplay = friendUsername;
+
+                    if (guild?.GuildUsers != null && guild.GuildUsers.Any() && friend.FriendUserId.HasValue)
+                    {
+                        var guildUser = guild.GuildUsers.FirstOrDefault(f => f.UserId == friend.FriendUserId.Value);
+                        if (guildUser?.UserName != null)
+                        {
+                            friendNameToDisplay = guildUser.UserName;
+                        }
+                    }
+
                     string sessionKey = null;
                     if (friend.FriendUser?.UserNameLastFM != null)
                     {
@@ -98,7 +113,7 @@ namespace FMBot.Bot.Commands
                             sessionKey = friend.FriendUser.SessionKeyLastFm;
                         }
                     }
-                    
+
                     var tracks = await this._lastFmRepository.GetRecentTracksAsync(friendUsername, useCache: true, sessionKey: sessionKey);
 
                     string track;
@@ -126,7 +141,7 @@ namespace FMBot.Bot.Commands
                         totalPlaycount += (int)tracks.Content.TotalAmount;
                     }
 
-                    embedDescription += $"**[{friendUsername}]({Constants.LastFMUserUrl}{friendUsername})** | {track}\n";
+                    embedDescription += $"**[{friendNameToDisplay}]({Constants.LastFMUserUrl}{friendUsername})** | {track}\n";
                 }, maxDegreeOfParallelism: 3);
 
                 this._embedFooter.WithText(embedFooterText + totalPlaycount.ToString("0"));
@@ -151,21 +166,18 @@ namespace FMBot.Bot.Commands
         [Examples("addfriends fm-bot @user", "addfriends 356268235697553409")]
         [Alias("friendsset", "setfriends", "friendsadd", "addfriend", "setfriend", "friends add", "friend add", "add friends")]
         [UsernameSetRequired]
+        [GuildOnly]
         public async Task AddFriends([Summary("Friend names")] params string[] enteredFriends)
         {
-            if (this._guildService.CheckIfDM(this.Context))
-            {
-                await ReplyAsync("Sorry, but adding friends in dms is not supported.");
-                this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                return;
-            }
-
             if (enteredFriends.Length == 0)
             {
                 await ReplyAsync("Please enter at least one friend to add. You can use their last.fm usernames, discord mention or discord id.");
                 this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
                 return;
             }
+
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
 
             try
             {
@@ -175,22 +187,26 @@ namespace FMBot.Bot.Commands
 
                 var existingFriends = await this._friendsService.GetFmFriendsAsync(this.Context.User);
 
-                if (existingFriends.Count + enteredFriends.Length > 10)
-                {
-                    await ReplyAsync("Sorry, but you can't have more than 10 friends.");
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                    return;
-                }
+                var friendLimitReached = false;
 
                 foreach (var enteredFriendParameter in enteredFriends)
                 {
-                    var guildUser = await this._guildService.MentionToUserAsync(enteredFriendParameter);
+                    if (contextUser.UserType == UserType.User && existingFriends.Count >= 12 ||
+                        contextUser.UserType != UserType.User && existingFriends.Count >= 15)
+                    {
+                        friendLimitReached = true;
+                        break;
+                    }
+
+                    var foundFriend = await this._settingService.GetUser(enteredFriendParameter, contextUser, this.Context, true);
 
                     string friendUsername;
+                    int? friendUserId = null;
 
-                    if (guildUser != null)
+                    if (foundFriend.DifferentUser)
                     {
-                        friendUsername = guildUser.UserNameLastFM ?? enteredFriendParameter;
+                        friendUsername = foundFriend.UserNameLastFm;
+                        friendUserId = foundFriend.UserId;
                     }
                     else
                     {
@@ -202,7 +218,7 @@ namespace FMBot.Bot.Commands
                     {
                         if (await this._lastFmRepository.LastFmUserExistsAsync(friendUsername))
                         {
-                            await this._friendsService.AddLastFmFriendAsync(this.Context.User.Id, friendUsername, guildUser?.UserId);
+                            await this._friendsService.AddLastFmFriendAsync(contextUser, friendUsername, friendUserId);
                             addedFriendsList.Add(friendUsername);
                             existingFriends.Add(new Friend
                             {
@@ -217,6 +233,22 @@ namespace FMBot.Bot.Commands
                     else
                     {
                         duplicateFriendsList.Add(friendUsername);
+                    }
+
+                }
+
+                if (friendLimitReached)
+                {
+                    if (contextUser.UserType == UserType.User)
+                    {
+                        this._embed.AddField("Friend limit reached",
+                            "Sorry, but you can't have more than 12 friends. \n\n" +
+                            $"Did you know that .fmbot supporters can add up to 15 friends? For more information, check out `{prfx}donate`.");
+                    }
+                    else
+                    {
+                        this._embed.AddField("Friend limit reached",
+                            "Sorry, but you can't have more than 15 friends.");
                     }
                 }
 
@@ -249,6 +281,12 @@ namespace FMBot.Bot.Commands
                 }
 
                 this._embed.WithDescription(reply);
+
+                if (contextUser.UserType != UserType.User && !friendLimitReached)
+                {
+                    this._embed.WithFooter($"Thank you for being an .fmbot {contextUser.UserType}! You can now add up to 15 friends.");
+                }
+
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed();
             }
@@ -267,7 +305,8 @@ namespace FMBot.Bot.Commands
         [UsernameSetRequired]
         public async Task RemoveFriends([Summary("Friend names")] params string[] enteredFriends)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
 
             if (enteredFriends.Length == 0)
             {
@@ -285,14 +324,13 @@ namespace FMBot.Bot.Commands
 
                 foreach (var enteredFriendParameter in enteredFriends)
                 {
-                    var friendGuildUser = await this._guildService.FindUserFromGuildAsync(this.Context, enteredFriendParameter);
+                    var foundFriend = await this._settingService.GetUser(enteredFriendParameter, contextUser, this.Context, true);
 
                     string friendUsername;
 
-                    if (friendGuildUser != null)
+                    if (foundFriend.DifferentUser)
                     {
-                        var friendUserSettings = await this._userService.GetUserSettingsAsync(friendGuildUser);
-                        friendUsername = friendUserSettings?.UserNameLastFM ?? enteredFriendParameter;
+                        friendUsername = foundFriend.UserNameLastFm;
                     }
                     else
                     {
@@ -302,7 +340,7 @@ namespace FMBot.Bot.Commands
                     if (existingFriends.Where(w => w.LastFMUserName != null).Select(s => s.LastFMUserName.ToLower()).Contains(friendUsername.ToLower()) ||
                         existingFriends.Where(w => w.FriendUser != null).Select(s => s.FriendUser.UserNameLastFM.ToLower()).Contains(friendUsername.ToLower()))
                     {
-                        var friendSuccessfullyRemoved = await this._friendsService.RemoveLastFmFriendAsync(userSettings.UserId, friendUsername);
+                        var friendSuccessfullyRemoved = await this._friendsService.RemoveLastFmFriendAsync(contextUser.UserId, friendUsername);
                         if (friendSuccessfullyRemoved)
                         {
                             removedFriendsList.Add(friendUsername);
