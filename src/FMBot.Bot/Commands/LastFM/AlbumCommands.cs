@@ -44,6 +44,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly SettingService _settingService;
         private readonly UserService _userService;
         private readonly TrackService _trackService;
+        private readonly FriendsService _friendsService;
         private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
         private readonly WhoKnowsPlayService _whoKnowsPlayService;
         private readonly WhoKnowsService _whoKnowsService;
@@ -66,7 +67,8 @@ namespace FMBot.Bot.Commands.LastFM
                 InteractivityService interactivity,
                 TrackService trackService,
                 SpotifyService spotifyService,
-                IOptions<BotSettings> botSettings) : base(botSettings)
+                IOptions<BotSettings> botSettings,
+                FriendsService friendsService) : base(botSettings)
         {
             this._censorService = censorService;
             this._guildService = guildService;
@@ -83,6 +85,7 @@ namespace FMBot.Bot.Commands.LastFM
             this.Interactivity = interactivity;
             this._trackService = trackService;
             this._spotifyService = spotifyService;
+            this._friendsService = friendsService;
         }
 
         [Command("album", RunMode = RunMode.Async)]
@@ -864,7 +867,16 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+                var user = await this._userService.GetUserWithFriendsAsync(this.Context.User);
+
+                if (user.Friends?.Any() != true)
+                {
+                    await ReplyAsync("We couldn't find any friends. To add friends:\n" +
+                                     $"`{prfx}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+
                 var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
                 var album = await this.SearchAlbum(albumValues, user.UserNameLastFM, user.SessionKeyLastFm);
@@ -899,6 +911,12 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(serverUsers);
 
                 var footer = "";
+
+                var amountOfHiddenFriends = user.Friends.Count(c => !c.FriendUserId.HasValue);
+                if (amountOfHiddenFriends > 0)
+                {
+                    footer += $"\n{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible";
+                }
 
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
                 footer += $"\nFriends WhoKnow album requested by {userTitle}";

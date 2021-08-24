@@ -12,12 +12,10 @@ namespace FMBot.Bot.Services
 {
     public class FriendsService
     {
-        private readonly IMemoryCache _cache;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
 
-        public FriendsService(IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory)
+        public FriendsService(IDbContextFactory<FMBotDbContext> contextFactory)
         {
-            this._cache = cache;
             this._contextFactory = contextFactory;
         }
 
@@ -34,6 +32,15 @@ namespace FMBot.Bot.Services
                 .ToList();
 
             return friends;
+        }
+
+        public async Task<int> GetNonFmFriendsCount(int userId)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            return await db.Friends
+                .AsQueryable()
+                .Where(w => w.UserId == userId && w.FriendUserId == null)
+                .CountAsync();
         }
 
         public async Task AddLastFmFriendAsync(User contextUser, string lastFmUserName, int? friendUserId)

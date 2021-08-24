@@ -60,7 +60,7 @@ namespace FMBot.Bot.Commands
                 if (friends?.Any() != true)
                 {
                     await ReplyAsync("We couldn't find any friends. To add friends:\n" +
-                                     $"`{prfx}addfriends 'lastfmname/discord name'`");
+                                     $"`{prfx}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`");
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
                     return;
                 }
@@ -101,6 +101,12 @@ namespace FMBot.Bot.Commands
                         if (guildUser?.UserName != null)
                         {
                             friendNameToDisplay = guildUser.UserName;
+
+                            var discordUser = await Context.Guild.GetUserAsync(guildUser.User.DiscordUserId);
+                            if (discordUser != null)
+                            {
+                                friendNameToDisplay = discordUser.Nickname ?? discordUser.Username;
+                            }
                         }
                     }
 
@@ -175,6 +181,8 @@ namespace FMBot.Bot.Commands
                 this.Context.LogCommandUsed(CommandResponse.NotSupportedInDm);
                 return;
             }
+
+            _ = this.Context.Channel.TriggerTypingAsync();
 
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
@@ -255,7 +263,7 @@ namespace FMBot.Bot.Commands
                 var reply = "";
                 if (addedFriendsList.Count > 0)
                 {
-                    reply += $"Succesfully added {addedFriendsList.Count} friend(s):\n";
+                    reply += $"Succesfully added {addedFriendsList.Count} {StringExtensions.GetFriendsString(addedFriendsList.Count)}:\n";
                     foreach (var addedFriend in addedFriendsList)
                     {
                         reply += $"- *[{addedFriend}]({Constants.LastFMUserUrl}{addedFriend})*\n";
@@ -264,7 +272,7 @@ namespace FMBot.Bot.Commands
                 }
                 if (friendNotFoundList.Count > 0)
                 {
-                    reply += $"Could not add {addedFriendsList.Count} friend(s). Please ensure you spelled their name correctly or that they are registered in .fmbot.\n";
+                    reply += $"Could not add {addedFriendsList.Count} {StringExtensions.GetFriendsString(friendNotFoundList.Count)}. Please ensure you spelled their name correctly or that they are registered in .fmbot.\n";
                     foreach (var notFoundFriend in friendNotFoundList)
                     {
                         reply += $"- *[{notFoundFriend}]({Constants.LastFMUserUrl}{notFoundFriend})*\n";
@@ -273,7 +281,7 @@ namespace FMBot.Bot.Commands
                 }
                 if (duplicateFriendsList.Count > 0)
                 {
-                    reply += $"Could not add {duplicateFriendsList.Count} friend(s) because you already have them added:\n";
+                    reply += $"Could not add {duplicateFriendsList.Count} {StringExtensions.GetFriendsString(duplicateFriendsList.Count)} because you already have them added:\n";
                     foreach (var dupeFriend in duplicateFriendsList)
                     {
                         reply += $"- *[{dupeFriend}]({Constants.LastFMUserUrl}{dupeFriend})*\n";
@@ -284,7 +292,8 @@ namespace FMBot.Bot.Commands
 
                 if (contextUser.UserType != UserType.User && !friendLimitReached)
                 {
-                    this._embed.WithFooter($"Thank you for being an .fmbot {contextUser.UserType}! You can now add up to 15 friends.");
+                    var userType = contextUser.UserType.ToString().ToLower();
+                    this._embed.WithFooter($"Thank you for being an .fmbot {userType}! You can now add up to 15 friends.");
                 }
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());

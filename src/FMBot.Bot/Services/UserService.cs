@@ -103,11 +103,20 @@ namespace FMBot.Bot.Services
             }
         }
 
-        // User settings
         public async Task<User> GetUserSettingsAsync(IUser discordUser)
         {
             await using var db = this._contextFactory.CreateDbContext();
             return await db.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+        }
+
+        public async Task<User> GetUserWithFriendsAsync(IUser discordUser)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            return await db.Users
+                .Include(i => i.Friends)
+                .ThenInclude(i => i.FriendUser)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
         }

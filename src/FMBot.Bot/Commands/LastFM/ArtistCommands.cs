@@ -46,6 +46,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly SpotifyService _spotifyService;
         private readonly UserService _userService;
         private readonly GenreService _genreService;
+        private readonly FriendsService _friendsService;
         private readonly WhoKnowsService _whoKnowsService;
         private readonly WhoKnowsArtistService _whoKnowArtistService;
         private readonly WhoKnowsPlayService _whoKnowsPlayService;
@@ -69,7 +70,8 @@ namespace FMBot.Bot.Commands.LastFM
                 InteractivityService interactivity,
                 WhoKnowsService whoKnowsService,
                 IOptions<BotSettings> botSettings,
-                GenreService genreService) : base(botSettings)
+                GenreService genreService,
+                FriendsService friendsService) : base(botSettings)
         {
             this._artistsService = artistsService;
             this._crownService = crownService;
@@ -87,6 +89,7 @@ namespace FMBot.Bot.Commands.LastFM
             this.Interactivity = interactivity;
             this._whoKnowsService = whoKnowsService;
             this._genreService = genreService;
+            this._friendsService = friendsService;
         }
 
         [Command("artist", RunMode = RunMode.Async)]
@@ -1092,7 +1095,16 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+                var user = await this._userService.GetUserWithFriendsAsync(this.Context.User);
+
+                if (user.Friends?.Any() != true)
+                {
+                    await ReplyAsync("We couldn't find any friends. To add friends:\n" +
+                                     $"`{prfx}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+
                 var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
                 string artistName;
@@ -1153,9 +1165,16 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithDescription(serverUsers);
 
                 var footer = "";
+
                 if (cachedArtist.ArtistGenres != null && cachedArtist.ArtistGenres.Any())
                 {
                     footer += $"\n{GenreService.GenresToString(cachedArtist.ArtistGenres.ToList())}";
+                }
+
+                var amountOfHiddenFriends = user.Friends.Count(c => !c.FriendUserId.HasValue);
+                if (amountOfHiddenFriends > 0)
+                {
+                    footer += $"\n{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible";
                 }
 
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
