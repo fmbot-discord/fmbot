@@ -245,7 +245,7 @@ namespace FMBot.Bot.Commands.LastFM
                                             "Only tracks that already exist on Last.fm will be scrobbled. This feature works best with Spotify music.\n\n" +
                                             "Currently supported bots:\n" +
                                             "- Groovy (✝️)\n" +
-                                            "- Rythm\n" +
+                                            "- Rythm (Requires setting '[announcesongs](https://rythm.fm/docs/commands#settings)' to be enabled)\n" +
                                             "- Hydra\n");
 
                 if ((newBotScrobblingDisabledSetting == null || newBotScrobblingDisabledSetting == false) && !string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
