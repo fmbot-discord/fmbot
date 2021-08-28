@@ -177,7 +177,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
             foreach (var userArtist in userArtists)
             {
-                var userName = userArtist.UserNameLastFm;
+                var userName = userArtist.UserName ?? userArtist.UserNameLastFm;
 
                 var discordUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId);
                 if (discordUser != null)
