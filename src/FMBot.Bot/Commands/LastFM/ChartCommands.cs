@@ -194,7 +194,7 @@ namespace FMBot.Bot.Commands.LastFM
                     this._embed.WithFooter(this._embedFooter);
                 }
 
-                var supporter = await this._supporterService.GetRandomSupporter(this.Context.Guild);
+                var supporter = await this._supporterService.GetRandomSupporter(this.Context.Guild, user.UserType);
                 embedDescription += ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, prfx);
 
                 var nsfwAllowed = this.Context.Guild == null || ((SocketTextChannel)this.Context.Channel).IsNsfw;
@@ -386,7 +386,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithFooter(footer.ToString());
 
-                var supporter = await this._supporterService.GetRandomSupporter(this.Context.Guild);
+                var supporter = await this._supporterService.GetRandomSupporter(this.Context.Guild, user.UserType);
                 embedDescription += ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, prfx);
 
                 var chart = await this._chartService.GenerateChartAsync(chartSettings, true);
