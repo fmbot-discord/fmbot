@@ -112,7 +112,7 @@ namespace FMBot.Bot.Commands
 
         [Command("donate", RunMode = RunMode.Async)]
         [Summary("Please donate if you like this bot!")]
-        [Alias("support", "patreon", "opencollective", "donations")]
+        [Alias("support", "patreon", "opencollective", "donations", "support")]
         public async Task DonateAsync()
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -128,9 +128,10 @@ namespace FMBot.Bot.Commands
             embedDescription.AppendLine();
             embedDescription.AppendLine("**.fmbot supporter advantages include**:\n" +
                                         "- An emote behind their name (⭐)\n" +
-                                        "- Their name added to the list of supporters.\n" +
-                                        $"- A 1/{Constants.SupporterMessageChance} chance of sponsoring a chart\n" +
-                                        "- WhoKnows tracking increased to top 25K (instead of top 4/5/6k artist/albums/tracks)");
+                                        "- Their name added to the list of supporters\n" +
+                                        "- A chance of sponsoring a chart\n" +
+                                        "- Friend limit increased to 15 (up from 12)\n" +
+                                        "- WhoKnows tracking increased to all your music (instead of top 4/5/6k artist/albums/tracks)");
 
             if (IsBotSelfHosted(this.Context.Client.CurrentUser.Id))
             {
@@ -201,9 +202,10 @@ namespace FMBot.Bot.Commands
             var shardDescription = new StringBuilder();
 
             var client = this.Context.Client as DiscordShardedClient;
+
             foreach (var shard in client.Shards)
             {
-                shardDescription.AppendLine($"Shard `{shard.ShardId}` - `{shard.Latency}ms`");
+                shardDescription.Append($"`{shard.ShardId}` - `{shard.Latency}ms`, ");
             }
 
             this._embed.WithDescription(shardDescription.ToString());

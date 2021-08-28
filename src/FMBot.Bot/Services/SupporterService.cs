@@ -22,9 +22,14 @@ namespace FMBot.Bot.Services
             this._contextFactory = contextFactory;
         }
 
-        public async Task<string> GetRandomSupporter(IGuild guild)
+        public async Task<string> GetRandomSupporter(IGuild guild, UserType userUserType)
         {
             if (guild == null)
+            {
+                return null;
+            }
+
+            if (userUserType == UserType.Backer)
             {
                 return null;
             }

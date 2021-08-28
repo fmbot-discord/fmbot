@@ -44,6 +44,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly SettingService _settingService;
         private readonly UserService _userService;
         private readonly TrackService _trackService;
+        private readonly FriendsService _friendsService;
         private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
         private readonly WhoKnowsPlayService _whoKnowsPlayService;
         private readonly WhoKnowsService _whoKnowsService;
@@ -66,7 +67,8 @@ namespace FMBot.Bot.Commands.LastFM
                 InteractivityService interactivity,
                 TrackService trackService,
                 SpotifyService spotifyService,
-                IOptions<BotSettings> botSettings) : base(botSettings)
+                IOptions<BotSettings> botSettings,
+                FriendsService friendsService) : base(botSettings)
         {
             this._censorService = censorService;
             this._guildService = guildService;
@@ -83,6 +85,7 @@ namespace FMBot.Bot.Commands.LastFM
             this.Interactivity = interactivity;
             this._trackService = trackService;
             this._spotifyService = spotifyService;
+            this._friendsService = friendsService;
         }
 
         [Command("album", RunMode = RunMode.Async)]
@@ -588,7 +591,7 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                //var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
+                var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
 
                 var albumName = $"{album.AlbumName} by {album.ArtistName}";
 
@@ -677,10 +680,10 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithFooter(this._embedFooter);
 
                 var albumCoverUrl = album.AlbumCoverUrl;
-                //if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
-                //{
-                //    albumCoverUrl = databaseAlbum.SpotifyImageUrl;
-                //}
+                if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
+                {
+                    albumCoverUrl = databaseAlbum.SpotifyImageUrl;
+                }
                 if (albumCoverUrl != null)
                 {
                     var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
@@ -735,11 +738,11 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                //var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
+                var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
 
                 var albumName = $"{album.AlbumName} by {album.ArtistName}";
 
-                var usersWithArtist = await this._whoKnowsAlbumService.GetGlobalUsersForAlbum(this.Context, album.ArtistName, album.AlbumName);
+                var usersWithAlbum = await this._whoKnowsAlbumService.GetGlobalUsersForAlbum(this.Context, album.ArtistName, album.AlbumName);
 
                 if (album.UserPlaycount.HasValue && this.Context.Guild != null)
                 {
@@ -749,12 +752,12 @@ namespace FMBot.Bot.Commands.LastFM
                         UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : userSettings.UserNameLastFM,
                         User = userSettings
                     };
-                    usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, guildUser, albumName, album.UserPlaycount);
+                    usersWithAlbum = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, guildUser, albumName, album.UserPlaycount);
                 }
 
                 var guild = await guildTask;
 
-                var filteredUsersWithAlbum = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithArtist);
+                var filteredUsersWithAlbum = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithAlbum);
 
                 filteredUsersWithAlbum =
                     WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithAlbum, guild.GuildUsers.ToList());
@@ -815,10 +818,10 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithFooter(this._embedFooter);
 
                 var albumCoverUrl = album.AlbumCoverUrl;
-                //if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
-                //{
-                //    albumCoverUrl = databaseAlbum.SpotifyImageUrl;
-                //}
+                if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
+                {
+                    albumCoverUrl = databaseAlbum.SpotifyImageUrl;
+                }
                 if (albumCoverUrl != null)
                 {
                     var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
@@ -845,6 +848,131 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     this.Context.LogCommandException(e);
                     await ReplyAsync("Something went wrong while using global whoknows album.");
+                }
+            }
+        }
+
+        [Command("friendwhoknowsalbum", RunMode = RunMode.Async)]
+        [Summary("Shows who of your friends listen to an album in .fmbot")]
+        [Examples("fwa", "fwka COMA", "friendwhoknows", "friendwhoknowsalbum the beatles abbey road", "friendwhoknowsalbum Metallica & Lou Reed | Lulu")]
+        [Alias("fwa", "fwka", "fwkab", "fwab", "friendwhoknows album", "friends whoknows album", "friend whoknows album")]
+        [UsernameSetRequired]
+        [GuildOnly]
+        [RequiresIndex]
+        public async Task FriendWhoKnowsAlbumAsync([Remainder] string albumValues = null)
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+            try
+            {
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                var user = await this._userService.GetUserWithFriendsAsync(this.Context.User);
+
+                if (user.Friends?.Any() != true)
+                {
+                    await ReplyAsync("We couldn't find any friends. To add friends:\n" +
+                                     $"`{prfx}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+
+                var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+                var album = await this.SearchAlbum(albumValues, user.UserNameLastFM, user.SessionKeyLastFm);
+                if (album == null)
+                {
+                    return;
+                }
+
+                var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
+
+                var albumName = $"{album.AlbumName} by {album.ArtistName}";
+
+                var usersWithAlbum = await this._whoKnowsAlbumService.GetFriendUsersForAlbum(this.Context, guild.GuildId, user.UserId, album.ArtistName, album.AlbumName);
+
+                if (album.UserPlaycount.HasValue && this.Context.Guild != null)
+                {
+                    var discordGuildUser = await this.Context.Guild.GetUserAsync(user.DiscordUserId);
+                    var guildUser = new GuildUser
+                    {
+                        UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : user.UserNameLastFM,
+                        User = user
+                    };
+                    usersWithAlbum = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, guildUser, albumName, album.UserPlaycount);
+                }
+
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithAlbum, user.UserId, PrivacyLevel.Server);
+                if (usersWithAlbum.Count == 0)
+                {
+                    serverUsers = "None of your friends have listened to this album.";
+                }
+
+                this._embed.WithDescription(serverUsers);
+
+                var footer = "";
+
+                var amountOfHiddenFriends = user.Friends.Count(c => !c.FriendUserId.HasValue);
+                if (amountOfHiddenFriends > 0)
+                {
+                    footer += $"\n{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible";
+                }
+
+                var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+                footer += $"\nFriends WhoKnow album requested by {userTitle}";
+
+                if (usersWithAlbum.Any() && usersWithAlbum.Count > 1)
+                {
+                    var globalListeners = usersWithAlbum.Count;
+                    var globalPlaycount = usersWithAlbum.Sum(a => a.Playcount);
+                    var avgPlaycount = usersWithAlbum.Average(a => a.Playcount);
+
+                    footer += $"\n{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ";
+                    footer += $"{globalPlaycount} total {StringExtensions.GetPlaysString(globalPlaycount)} - ";
+                    footer += $"{(int)avgPlaycount} avg {StringExtensions.GetPlaysString((int)avgPlaycount)}";
+                }
+
+                this._embed.WithTitle($"{albumName} with friends");
+
+                if (Uri.IsWellFormedUriString(album.AlbumUrl, UriKind.Absolute))
+                {
+                    this._embed.WithUrl(album.AlbumUrl);
+                }
+
+                this._embedFooter.WithText(footer);
+                this._embed.WithFooter(this._embedFooter);
+
+                var albumCoverUrl = album.AlbumCoverUrl;
+                if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
+                {
+                    albumCoverUrl = databaseAlbum.SpotifyImageUrl;
+                }
+                if (albumCoverUrl != null)
+                {
+                    var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
+                        album.AlbumName, album.ArtistName, album.AlbumUrl);
+                    if (safeForChannel)
+                    {
+                        this._embed.WithThumbnailUrl(albumCoverUrl);
+                    }
+                }
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
+                {
+                    this.Context.LogCommandException(e);
+                    await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
+                                     "Make sure it has permission to 'Embed links' and 'Attach Images'");
+                }
+                else
+                {
+                    this.Context.LogCommandException(e);
+                    await ReplyAsync("Something went wrong while using friend whoknows album.");
                 }
             }
         }

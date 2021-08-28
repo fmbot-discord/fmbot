@@ -105,6 +105,11 @@ namespace FMBot.Bot.Extensions
             return listeners == 1 ? "listener" : "listeners";
         }
 
+        public static string GetFriendsString(long? friends)
+        {
+            return friends == 1 ? "friend" : "friends";
+        }
+
         public static string GetCrownsString(long? crowns)
         {
             return crowns == 1 ? "crown" : "crowns";

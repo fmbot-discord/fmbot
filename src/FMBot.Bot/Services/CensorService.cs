@@ -144,6 +144,22 @@ namespace FMBot.Bot.Services
             await db.SaveChangesAsync();
         }
 
+        public async Task AddNsfwAlbum(string albumName, string artistName)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+
+            await db.CensoredMusic.AddAsync(new CensoredMusic
+            {
+                AlbumName = albumName,
+                ArtistName = artistName,
+                Artist = false,
+                SafeForCommands = true,
+                SafeForFeatured = false
+            });
+
+            await db.SaveChangesAsync();
+        }
+
         public async Task AddCensoredArtist(string artistName)
         {
             await using var db = this._contextFactory.CreateDbContext();

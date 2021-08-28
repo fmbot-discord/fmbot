@@ -46,6 +46,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly SpotifyService _spotifyService;
         private readonly UserService _userService;
         private readonly GenreService _genreService;
+        private readonly FriendsService _friendsService;
         private readonly WhoKnowsService _whoKnowsService;
         private readonly WhoKnowsArtistService _whoKnowArtistService;
         private readonly WhoKnowsPlayService _whoKnowsPlayService;
@@ -69,7 +70,8 @@ namespace FMBot.Bot.Commands.LastFM
                 InteractivityService interactivity,
                 WhoKnowsService whoKnowsService,
                 IOptions<BotSettings> botSettings,
-                GenreService genreService) : base(botSettings)
+                GenreService genreService,
+                FriendsService friendsService) : base(botSettings)
         {
             this._artistsService = artistsService;
             this._crownService = crownService;
@@ -87,6 +89,7 @@ namespace FMBot.Bot.Commands.LastFM
             this.Interactivity = interactivity;
             this._whoKnowsService = whoKnowsService;
             this._genreService = genreService;
+            this._friendsService = friendsService;
         }
 
         [Command("artist", RunMode = RunMode.Async)]
@@ -1073,6 +1076,152 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     this.Context.LogCommandException(e);
                     await ReplyAsync("Something went wrong while using global whoknows.");
+                }
+            }
+        }
+
+        [Command("friendwhoknows", RunMode = RunMode.Async)]
+        [Summary("Shows who of your friends listen to an artist in .fmbot")]
+        [Examples("fw", "fwk COMA", "friendwhoknows", "friendwhoknows DJ Seinfeld")]
+        [Alias("fw", "fwk", "friendwhoknows artist", "friend whoknows", "friends whoknows", "friend whoknows artist", "friends whoknows artist")]
+        [UsernameSetRequired]
+        [GuildOnly]
+        [RequiresIndex]
+        public async Task FriendWhoKnowsAsync([Remainder] string artistValues = null)
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+            try
+            {
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                var user = await this._userService.GetUserWithFriendsAsync(this.Context.User);
+
+                if (user.Friends?.Any() != true)
+                {
+                    await ReplyAsync("We couldn't find any friends. To add friends:\n" +
+                                     $"`{prfx}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+
+                var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+                string artistName;
+                string artistUrl;
+                string spotifyImageUrl;
+                long? userPlaycount;
+
+                var cachedArtist = await this._artistsService.GetArtistFromDatabase(artistValues);
+
+                if (user.LastUpdated > DateTime.UtcNow.AddHours(-1) && cachedArtist != null)
+                {
+                    artistName = cachedArtist.Name;
+                    artistUrl = cachedArtist.LastFmUrl;
+                    spotifyImageUrl = cachedArtist.SpotifyImageUrl;
+
+                    userPlaycount = await this._whoKnowArtistService.GetArtistPlayCountForUser(artistName, user.UserId);
+                }
+                else
+                {
+                    var artist = await GetArtist(artistValues, user.UserNameLastFM, user.SessionKeyLastFm);
+                    if (artist == null)
+                    {
+                        return;
+                    }
+
+                    artistName = artist.ArtistName;
+                    artistUrl = artist.ArtistUrl;
+
+                    cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artist, artist.ArtistName);
+                    spotifyImageUrl = cachedArtist.SpotifyImageUrl;
+                    userPlaycount = artist.UserPlaycount;
+                    if (userPlaycount.HasValue)
+                    {
+                        await this._updateService.CorrectUserArtistPlaycount(user.UserId, artist.ArtistName,
+                            userPlaycount.Value);
+                    }
+                }
+
+                var usersWithArtist = await this._whoKnowArtistService.GetFriendUsersForArtists(this.Context, guild.GuildId, user.UserId, artistName);
+
+                if (userPlaycount != 0 && this.Context.Guild != null)
+                {
+                    var discordGuildUser = await this.Context.Guild.GetUserAsync(user.DiscordUserId);
+                    var guildUser = new GuildUser
+                    {
+                        UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : user.UserNameLastFM,
+                        User = user
+                    };
+                    usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, guildUser, artistName, userPlaycount);
+                }
+
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithArtist, user.UserId, PrivacyLevel.Server);
+                if (usersWithArtist.Count == 0)
+                {
+                    serverUsers = "None of your friends has listened to this artist.";
+                }
+
+                this._embed.WithDescription(serverUsers);
+
+                var footer = "";
+
+                if (cachedArtist.ArtistGenres != null && cachedArtist.ArtistGenres.Any())
+                {
+                    footer += $"\n{GenreService.GenresToString(cachedArtist.ArtistGenres.ToList())}";
+                }
+
+                var amountOfHiddenFriends = user.Friends.Count(c => !c.FriendUserId.HasValue);
+                if (amountOfHiddenFriends > 0)
+                {
+                    footer += $"\n{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible";
+                }
+
+                var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+                footer += $"\nFriends WhoKnow artist requested by {userTitle}";
+
+                if (usersWithArtist.Any() && usersWithArtist.Count > 1)
+                {
+                    var globalListeners = usersWithArtist.Count;
+                    var globalPlaycount = usersWithArtist.Sum(a => a.Playcount);
+                    var avgPlaycount = usersWithArtist.Average(a => a.Playcount);
+
+                    footer += $"\n{globalListeners} {StringExtensions.GetListenersString(globalListeners)} - ";
+                    footer += $"{globalPlaycount} total {StringExtensions.GetPlaysString(globalPlaycount)} - ";
+                    footer += $"{(int)avgPlaycount} avg {StringExtensions.GetPlaysString((int)avgPlaycount)}";
+                }
+
+                this._embed.WithTitle($"{artistName} with friends");
+
+                if (Uri.IsWellFormedUriString(artistUrl, UriKind.Absolute))
+                {
+                    this._embed.WithUrl(artistUrl);
+                }
+
+                this._embedFooter.WithText(footer);
+                this._embed.WithFooter(this._embedFooter);
+
+                if (spotifyImageUrl != null)
+                {
+                    this._embed.WithThumbnailUrl(spotifyImageUrl);
+                }
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
+                {
+                    this.Context.LogCommandException(e);
+                    await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
+                                     "Make sure it has permission to 'Embed links' and 'Attach Images'");
+                }
+                else
+                {
+                    this.Context.LogCommandException(e);
+                    await ReplyAsync("Something went wrong while using friend whoknows.");
                 }
             }
         }

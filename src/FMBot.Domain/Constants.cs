@@ -16,7 +16,7 @@ namespace FMBot.Domain
         public const ulong BotDevelopId = 493845886166630443;
 
         public const string DocsUrl = "https://fmbot.xyz";
-        public const string SpotifyStuckFaqDocsUrl = "https://fmbot.xyz/faq.html#commands-are-showing-the-wrong-songs-its-not-showing-what-i-listen-to-on-spotify";
+        public const string SpotifyStuckFaqDocsUrl = "https://fmbot.xyz/faq/#commands-are-showing-the-wrong-songs-its-not-showing-what-i-listen-to-on-spotify";
 
         public const string CompactTimePeriodList = "weekly/monthly/quarterly/half/yearly/alltime";
 
@@ -26,13 +26,10 @@ namespace FMBot.Domain
 
         public const string UserMentionOrLfmUserNameExample = "`fm-bot` / `@usermention` / `356268235697553409`";
 
-        /// <summary>Amount of users to index. Should always end with 000</summary>
-        public const int ArtistsToIndex = 4000;
-
         /// <summary>Amount of days to store plays for users for</summary>
         public const int DaysToStorePlays = 32;
 
-        public const int SupporterMessageChance = 25;
+        public const int SupporterMessageChance = 15;
 
         public const int DefaultPlaysForCrown = 30;
 

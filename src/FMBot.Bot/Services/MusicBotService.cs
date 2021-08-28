@@ -79,7 +79,87 @@ namespace FMBot.Bot.Services
             }
             catch (Exception e)
             {
-                Log.Error("Error in music bot scrobbler", e);
+                Log.Error("Error in music bot scrobbler (groovy)", e);
+            }
+        }
+
+        public async Task ScrobbleRythm(SocketUserMessage msg, ICommandContext context)
+        {
+            try
+            {
+                if (context.Guild == null ||
+                    msg.Embeds == null ||
+                    !msg.Embeds.Any() ||
+                    msg.Embeds.Any(a => a.Title == null) ||
+                    msg.Embeds.Any(a => a.Title != "Now Playing 🎵") ||
+                    msg.Embeds.Any(a => a.Description == null))
+                {
+                    return;
+                }
+
+                var usersInChannel = await GetUsersInVoice(context, msg.Author.Id);
+
+                if (usersInChannel == null || usersInChannel.Count == 0)
+                {
+                    Log.Information("Skipped scrobble for {guildName} / {guildId} because no found listeners", context.Guild.Name, context.Guild.Id);
+                    return;
+                }
+
+                var trackResult = await this._trackService.GetTrackFromLink(msg.Embeds.First().Description);
+
+                if (trackResult == null)
+                {
+                    Log.Information("Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
+                    return;
+                }
+
+                _ = RegisterTrack(usersInChannel, trackResult);
+
+                _ = SendScrobbleMessage(context, trackResult, usersInChannel.Count);
+            }
+            catch (Exception e)
+            {
+                Log.Error("Error in music bot scrobbler (rythm)", e);
+            }
+        }
+
+        public async Task ScrobbleHydra(SocketUserMessage msg, ICommandContext context)
+        {
+            try
+            {
+                if (context.Guild == null ||
+                    msg.Embeds == null ||
+                    !msg.Embeds.Any() ||
+                    msg.Embeds.Any(a => a.Title == null) ||
+                    msg.Embeds.Any(a => a.Title != "Now playing") ||
+                    msg.Embeds.Any(a => a.Description == null))
+                {
+                    return;
+                }
+
+                var usersInChannel = await GetUsersInVoice(context, msg.Author.Id);
+
+                if (usersInChannel == null || usersInChannel.Count == 0)
+                {
+                    Log.Information("Skipped scrobble for {guildName} / {guildId} because no found listeners", context.Guild.Name, context.Guild.Id);
+                    return;
+                }
+
+                var trackResult = await this._trackService.GetTrackFromLink(msg.Embeds.First().Description);
+
+                if (trackResult == null)
+                {
+                    Log.Information("Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
+                    return;
+                }
+
+                _ = RegisterTrack(usersInChannel, trackResult);
+
+                _ = SendScrobbleMessage(context, trackResult, usersInChannel.Count);
+            }
+            catch (Exception e)
+            {
+                Log.Error("Error in music bot scrobbler (hydra)", e);
             }
         }
 

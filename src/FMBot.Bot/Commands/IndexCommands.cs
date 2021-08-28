@@ -184,7 +184,7 @@ namespace FMBot.Bot.Commands
                 if (userSettings.UserType != UserType.User)
                 {
                     indexDescription += "\n\n" +
-                                        $"*As a thank you for being an .fmbot {userSettings.UserType.ToString().ToLower()} the bot will index the top 25k of your artists/albums/tracks (instead of top 4k/5k/6k).*";
+                                        $"*As a thank you for being an .fmbot {userSettings.UserType.ToString().ToLower()} the bot will index all of your of your artists/albums/tracks (instead of top 4k/5k/6k).*";
                 }
 
                 this._embed.WithDescription(indexDescription);
@@ -199,7 +199,7 @@ namespace FMBot.Bot.Commands
                 if (rnd.Next(0, 4) == 1 && userSettings.UserType == UserType.User)
                 {
                     updatedDescription += "\n\n" +
-                                          $"*Did you know that .fmbot stores the top 25k artists/albums/tracks instead of the top 4k/5k/6k for supporters? See {prfx}donate on how to become an .fmbot supporter.*";
+                                          $"*Did you know that .fmbot stores all artists/albums/tracks for supporters instead of just the top 4k/5k/6k? See `{prfx}donate` on how to become an .fmbot supporter.*";
                 }
 
                 await message.ModifyAsync(m =>

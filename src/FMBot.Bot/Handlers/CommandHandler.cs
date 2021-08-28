@@ -80,6 +80,14 @@ namespace FMBot.Bot.Handlers
                 {
                     await this._musicBotService.ScrobbleGroovy(msg, context);
                 }
+                if (msg.Author.Username.StartsWith("Rythm"))
+                {
+                    await this._musicBotService.ScrobbleRythm(msg, context);
+                }
+                if (msg.Author.Username.StartsWith("Hydra"))
+                {
+                    await this._musicBotService.ScrobbleHydra(msg, context);
+                }
                 return; // Ignore other bots
             }
 
