@@ -258,6 +258,31 @@ namespace FMBot.Bot.Commands
             }
         }
 
+        [Command("addnsfwalbum")]
+        [Summary("Adds nsfw album")]
+        public async Task AddNsfwAlbumAsync(string album, string artist)
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                if (string.IsNullOrEmpty(album) || string.IsNullOrEmpty(artist))
+                {
+                    await ReplyAsync("Enter a correct album to be censored\n" +
+                                     "Example: `.fmaddnsfwalbum \"No Love Deep Web\" \"Death Grips\"");
+                    return;
+                }
+
+                await this._censorService.AddNsfwAlbum(album, artist);
+
+                await ReplyAsync($"Added `{album}` by `{artist}` to the list of nsfw albums.");
+                this.Context.LogCommandUsed();
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only FMBot admins add nsfw albums.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+
         [Command("addcensoredartist")]
         [Summary("Adds censored artist")]
         public async Task AddCensoredArtistAsync(string artist)
