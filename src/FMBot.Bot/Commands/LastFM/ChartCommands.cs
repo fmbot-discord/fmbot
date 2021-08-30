@@ -114,7 +114,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                var perms = await GuildService.CheckSufficientPermissionsAsync(this.Context);
+                var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
                 if (!perms.AttachFiles)
                 {
                     await ReplyAsync(
@@ -288,7 +288,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                var perms = await GuildService.CheckSufficientPermissionsAsync(this.Context);
+                var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
                 if (!perms.AttachFiles)
                 {
                     await ReplyAsync(

@@ -114,7 +114,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var paginationEnabled = false;
                 var maxAmount = userCrowns.Count > 15 ? 15 : userCrowns.Count;
                 var pages = new List<PageBuilder>();
-                var perms = await GuildService.CheckSufficientPermissionsAsync(this.Context);
+                var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
                 if (perms.ManageMessages && userCrowns.Count > 15)
                 {
                     paginationEnabled = true;
@@ -309,7 +309,7 @@ namespace FMBot.Bot.Commands.LastFM
             var paginationEnabled = false;
             var maxAmount = topCrownUsers.Count > 15 ? 15 : topCrownUsers.Count;
             var pages = new List<PageBuilder>();
-            var perms = await GuildService.CheckSufficientPermissionsAsync(this.Context);
+            var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
             if (perms.ManageMessages && topCrownUsers.Count > 15)
             {
                 paginationEnabled = true;
