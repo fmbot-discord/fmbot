@@ -125,6 +125,10 @@ namespace FMBot.Bot.Commands.LastFM
                 for (var index = 0; index < maxAmount; index++)
                 {
                     var userCrown = userCrowns[index];
+
+                    var specifiedDateTime = DateTime.SpecifyKind(userCrown.Created, DateTimeKind.Utc);
+                    var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+
                     embedDescription.AppendLine($"{index + 1}. **{userCrown.ArtistName}** - **{userCrown.CurrentPlaycount}** plays (claimed <t:{((DateTimeOffset)userCrown.Created).ToUnixTimeSeconds()}:R>)");
 
                     var pageAmount = index + 1;
