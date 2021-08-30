@@ -707,7 +707,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var avgPerDay = count / totalDays;
 
-            var goalDate = (DateTime.Now.AddDays(playsLeft / avgPerDay.Value)).ToString("dd MMM yyyy");
+            var goalDate = (DateTime.UtcNow.AddDays(playsLeft / avgPerDay.Value));
 
             var reply = new StringBuilder();
 
@@ -722,7 +722,7 @@ namespace FMBot.Bot.Commands.LastFM
                 reply.Append($"<@{this.Context.User.Id}> My estimate is that you");
             }
 
-            reply.AppendLine($" will reach **{goalAmount}** scrobbles on **{goalDate}**.");
+            reply.AppendLine($" will reach **{goalAmount}** scrobbles on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
 
             if (timeType.TimePeriod == TimePeriod.AllTime)
             {
