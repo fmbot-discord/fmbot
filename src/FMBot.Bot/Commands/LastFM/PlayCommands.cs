@@ -871,9 +871,6 @@ namespace FMBot.Bot.Commands.LastFM
                 var streak = await this._playService.GetStreak(userSettings.UserId, recentTracks);
                 this._embed.WithDescription(streak);
 
-                var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-
-
                 this._embedAuthor.WithName($"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}'s streak overview");
                 if (!userSettings.DifferentUser)
                 {

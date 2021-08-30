@@ -336,7 +336,7 @@ namespace FMBot.Bot.Services.WhoKnows
             return await db.UserCrowns
                 .AsQueryable()
                 .Include(i => i.User)
-                .OrderByDescending(o => o.CurrentPlaycount)
+                .OrderByDescending(o => o.Created)
                 .Where(f => f.GuildId == guild.GuildId &&
                             f.Active &&
                             f.UserId == userId)

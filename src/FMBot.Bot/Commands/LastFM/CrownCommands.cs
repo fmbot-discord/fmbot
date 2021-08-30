@@ -123,13 +123,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var embedDescription = new StringBuilder();
                 for (var index = 0; index < maxAmount; index++)
-                { var userCrown = userCrowns[index];
-
-                    var claimTimeDescription = DateTime.UtcNow.AddDays(-3) < userCrown.Created
-                        ? StringExtensions.GetTimeAgo(userCrown.Created)
-                        : userCrown.Created.Date.ToString("dddd MMM d", CultureInfo.InvariantCulture);
-
-                    embedDescription.AppendLine($"{index + 1}. **{userCrown.ArtistName}** - **{userCrown.CurrentPlaycount}** plays (claimed {claimTimeDescription})");
+                {
+                    var userCrown = userCrowns[index];
+                    embedDescription.AppendLine($"{index + 1}. **{userCrown.ArtistName}** - **{userCrown.CurrentPlaycount}** plays (claimed <t:{((DateTimeOffset)userCrown.Created).ToUnixTimeSeconds()}:R>)");
 
                     var pageAmount = index + 1;
                     if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == maxAmount))
