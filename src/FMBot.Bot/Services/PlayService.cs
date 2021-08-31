@@ -281,7 +281,7 @@ namespace FMBot.Bot.Services
             return "No active streak found.";
         }
 
-        private string GetEmojiForStreakCount(int count)
+        private static string GetEmojiForStreakCount(int count)
         {
             if (count > 50 && count < 100 || count > 100)
             {

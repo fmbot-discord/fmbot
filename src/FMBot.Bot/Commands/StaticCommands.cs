@@ -56,7 +56,8 @@ namespace FMBot.Bot.Commands
         [Alias("server", "info")]
         public async Task InviteAsync()
         {
-            var selfId = this.Context.Client.CurrentUser.Id.ToString();
+            var socketCommandContext = (SocketCommandContext)this.Context;
+            var selfId = socketCommandContext.Client.CurrentUser.Id.ToString();
             var embedDescription = new StringBuilder();
 
             embedDescription.AppendLine("- You can invite .fmbot to your own server by **[clicking here](" +
@@ -76,7 +77,7 @@ namespace FMBot.Bot.Commands
 
             this._embed.WithDescription(embedDescription.ToString());
 
-            if (IsBotSelfHosted(this.Context.Client.CurrentUser.Id))
+            if (IsBotSelfHosted(socketCommandContext.Client.CurrentUser.Id))
             {
                 this._embed.AddField("Note:",
                     "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot. " +
@@ -133,7 +134,8 @@ namespace FMBot.Bot.Commands
                                         "- Friend limit increased to 15 (up from 12)\n" +
                                         "- WhoKnows tracking increased to all your music (instead of top 4/5/6k artist/albums/tracks)");
 
-            if (IsBotSelfHosted(this.Context.Client.CurrentUser.Id))
+            var socketCommandContext = (SocketCommandContext)this.Context;
+            if (IsBotSelfHosted(socketCommandContext.Client.CurrentUser.Id))
             {
                 this._embed.AddField("Note:",
                     "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot. Any supporter advantages will not apply on this bot.");
@@ -149,7 +151,8 @@ namespace FMBot.Bot.Commands
         [Summary("Displays bot stats.")]
         public async Task StatusAsync()
         {
-            var selfUser = this.Context.Client.CurrentUser;
+            var socketCommandContext = (SocketCommandContext)this.Context;
+            var selfUser = socketCommandContext.Client.CurrentUser;
 
             this._embedAuthor.WithIconUrl(selfUser.GetAvatarUrl());
             this._embedAuthor.WithName(selfUser.Username);
@@ -288,7 +291,8 @@ namespace FMBot.Bot.Commands
 
             this._embed.WithFooter($"To view a complete list of all commands, use '{prefix}fullhelp'.");
 
-            if (IsBotSelfHosted(this.Context.Client.CurrentUser.Id))
+            var socketCommandContext = (SocketCommandContext)this.Context;
+            if (IsBotSelfHosted(socketCommandContext.Client.CurrentUser.Id))
             {
                 this._embed.AddField("Note:",
                     "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot. \n" +

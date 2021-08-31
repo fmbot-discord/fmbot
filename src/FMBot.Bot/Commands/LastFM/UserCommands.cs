@@ -155,7 +155,8 @@ namespace FMBot.Bot.Commands.LastFM
         {
             try
             {
-                var selfUser = this.Context.Client.CurrentUser;
+                var socketCommandContext = (SocketCommandContext)this.Context;
+                var selfUser = socketCommandContext.Client.CurrentUser;
                 this._embed.WithThumbnailUrl(selfUser.GetAvatarUrl());
                 this._embed.AddField("Featured:", this._timer.GetTrackString());
 
