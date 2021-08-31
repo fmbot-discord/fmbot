@@ -155,7 +155,8 @@ namespace FMBot.Bot.Commands.LastFM
         {
             try
             {
-                var selfUser = this.Context.Client.CurrentUser;
+                var socketCommandContext = (SocketCommandContext)this.Context;
+                var selfUser = socketCommandContext.Client.CurrentUser;
                 this._embed.WithThumbnailUrl(selfUser.GetAvatarUrl());
                 this._embed.AddField("Featured:", this._timer.GetTrackString());
 
@@ -372,7 +373,7 @@ namespace FMBot.Bot.Commands.LastFM
                     await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(this.Context.User.Id), newUserSettings);
                 }
 
-                var perms = await GuildService.CheckSufficientPermissionsAsync(this.Context);
+                var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
                 if (!perms.EmbedLinks || !perms.AttachFiles)
                 {
                     await ReplyAsync(

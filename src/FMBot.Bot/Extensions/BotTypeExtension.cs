@@ -9,7 +9,8 @@ namespace FMBot.Bot.Extensions
     {
         public static BotType GetBotType(this ICommandContext context)
         {
-            var botId = context.Client.CurrentUser.Id;
+            var socketCommandContext = (SocketCommandContext)context;
+            var botId = socketCommandContext.Client.CurrentUser.Id;
 
             return botId switch
             {

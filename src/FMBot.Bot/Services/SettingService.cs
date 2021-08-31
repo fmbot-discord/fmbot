@@ -32,7 +32,7 @@ namespace FMBot.Bot.Services
             settingsModel.NewSearchValue = options;
             settingsModel.UsePlays = false;
 
-            var oneDay = new[] { "1-day", "1day", "1d", "today" };
+            var oneDay = new[] { "1-day", "1day", "1d", "today", "day" };
             var twoDays = new[] { "2-day", "2day", "2d" };
             var threeDays = new[] { "3-day", "3day", "3d" };
             var fourDays = new[] { "4-day", "4day", "4d" };

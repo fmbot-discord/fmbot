@@ -78,7 +78,7 @@ namespace FMBot.Bot.Services
 
             return overview;
         }
-        
+
         private static int GetUniqueCount(IEnumerable<UserPlay> plays)
         {
             return plays
@@ -202,6 +202,8 @@ namespace FMBot.Bot.Services
             var albumCount = 1;
             var trackCount = 1;
 
+            var streakStarted = new DateTime?();
+
             var artistContinue = true;
             var albumContinue = true;
             var trackContinue = true;
@@ -212,6 +214,7 @@ namespace FMBot.Bot.Services
                 if (firstPlay.ArtistName.ToLower() == play.ArtistName.ToLower() && artistContinue)
                 {
                     artistCount++;
+                    streakStarted = play.TimePlayed;
                 }
                 else
                 {
@@ -221,6 +224,7 @@ namespace FMBot.Bot.Services
                 if (firstPlay.AlbumName != null && play.AlbumName != null && firstPlay.AlbumName.ToLower() == play.AlbumName.ToLower() && albumContinue)
                 {
                     albumCount++;
+                    streakStarted = play.TimePlayed;
                 }
                 else
                 {
@@ -230,6 +234,7 @@ namespace FMBot.Bot.Services
                 if (firstPlay.TrackName.ToLower() == play.TrackName.ToLower() && trackContinue)
                 {
                     trackCount++;
+                    streakStarted = play.TimePlayed;
                 }
                 else
                 {
@@ -259,6 +264,15 @@ namespace FMBot.Bot.Services
                                        $"{GetEmojiForStreakCount(trackCount)}*{trackCount} plays in a row*");
             }
 
+            if (streakStarted.HasValue)
+            {
+                var specifiedDateTime = DateTime.SpecifyKind(streakStarted.Value, DateTimeKind.Utc);
+                var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+
+                description.AppendLine();
+                description.AppendLine($"Streak started <t:{dateValue}:R>.");
+            }
+
             if (description.Length > 0)
             {
                 return description.ToString();
@@ -267,7 +281,7 @@ namespace FMBot.Bot.Services
             return "No active streak found.";
         }
 
-        private string GetEmojiForStreakCount(int count)
+        private static string GetEmojiForStreakCount(int count)
         {
             if (count > 50 && count < 100 || count > 100)
             {
@@ -346,7 +360,7 @@ namespace FMBot.Bot.Services
             var minDate = DateTime.UtcNow.AddDays(-days);
 
             await using var db = this._contextFactory.CreateDbContext();
-            var topArtists =  await db.UserPlays
+            var topArtists = await db.UserPlays
                 .AsQueryable()
                 .Where(t => t.TimePlayed.Date <= now.Date &&
                                  t.TimePlayed.Date > minDate.Date &&

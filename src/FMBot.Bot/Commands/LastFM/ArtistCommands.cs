@@ -232,7 +232,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var paginationEnabled = false;
             var pages = new List<PageBuilder>();
-            var perms = await GuildService.CheckSufficientPermissionsAsync(this.Context);
+            var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
             if (perms.ManageMessages)
             {
                 paginationEnabled = true;
@@ -445,11 +445,11 @@ namespace FMBot.Bot.Commands.LastFM
 
             var timeSettings = SettingService.GetTimePeriod(extraOptions);
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-            var amount = SettingService.GetAmount(extraOptions);
+            var amount = (long)SettingService.GetAmount(extraOptions);
 
             var paginationEnabled = false;
             var pages = new List<PageBuilder>();
-            var perms = await GuildService.CheckSufficientPermissionsAsync(this.Context);
+            var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
             if (perms.ManageMessages)
             {
                 paginationEnabled = true;
@@ -547,6 +547,8 @@ namespace FMBot.Bot.Commands.LastFM
                         Content = await this._playService.GetTopArtists(userId,
                             timeSettings.PlayDays.GetValueOrDefault())
                     };
+
+                    amount = artists.Content.TotalAmount;
 
                     footer = $"{artists.Content.TotalAmount} different artists in this time period";
                 }

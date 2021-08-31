@@ -48,12 +48,13 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            var user = await this.Context.Guild.GetUserAsync(this.Context.Client.CurrentUser.Id);
+            var socketCommandContext = (SocketCommandContext)this.Context;
+            var user = await this.Context.Guild.GetUserAsync(socketCommandContext.Client.CurrentUser.Id);
             if (!user.GuildPermissions.ManageWebhooks)
             {
                 await ReplyAsync(
                     "In order to create the featured webhook, I need permission to add webhooks.\n" +
-                    $"You can add this permission by going to `Server Settings` > `Roles` > `{this.Context.Client.CurrentUser.Username}` and enabling the `Manage Webhooks` permission.");
+                    $"You can add this permission by going to `Server Settings` > `Roles` > `{socketCommandContext.Client.CurrentUser.Username}` and enabling the `Manage Webhooks` permission.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }

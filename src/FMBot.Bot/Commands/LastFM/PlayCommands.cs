@@ -707,7 +707,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var avgPerDay = count / totalDays;
 
-            var goalDate = (DateTime.Now.AddDays(playsLeft / avgPerDay.Value)).ToString("dd MMM yyyy");
+            var goalDate = (DateTime.UtcNow.AddDays(playsLeft / avgPerDay.Value));
 
             var reply = new StringBuilder();
 
@@ -722,7 +722,7 @@ namespace FMBot.Bot.Commands.LastFM
                 reply.Append($"<@{this.Context.User.Id}> My estimate is that you");
             }
 
-            reply.AppendLine($" will reach **{goalAmount}** scrobbles on **{goalDate}**.");
+            reply.AppendLine($" will reach **{goalAmount}** scrobbles on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
 
             if (timeType.TimePeriod == TimePeriod.AllTime)
             {
@@ -774,7 +774,6 @@ namespace FMBot.Bot.Commands.LastFM
             var userTitle = $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}";
 
             this._embed.WithTitle($"{mileStoneAmount}{StringExtensions.GetAmountEnd(mileStoneAmount)} scrobble from {userTitle}");
-            this._embed.WithDescription(reply.ToString());
 
             if (mileStonePlay.Content.AlbumCoverUrl != null)
             {
@@ -791,9 +790,10 @@ namespace FMBot.Bot.Commands.LastFM
                 var dateString = mileStonePlay.Content.TimePlayed.Value.ToString("yyyy-M-dd");
                 this._embed.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library?from={dateString}&to={dateString}");
 
-                this._embed.WithFooter("Date played ");
-                this._embed.WithTimestamp(mileStonePlay.Content.TimePlayed.Value);
+                reply.AppendLine($"Date played: **<t:{mileStonePlay.Content.TimePlayed.Value.ToUnixEpochDate()}:D>**");
             }
+
+            this._embed.WithDescription(reply.ToString());
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
@@ -870,9 +870,6 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var streak = await this._playService.GetStreak(userSettings.UserId, recentTracks);
                 this._embed.WithDescription(streak);
-
-                var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-
 
                 this._embedAuthor.WithName($"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}'s streak overview");
                 if (!userSettings.DifferentUser)

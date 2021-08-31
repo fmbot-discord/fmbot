@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using Discord.WebSocket;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -18,8 +16,6 @@ namespace FMBot.Bot.Services.Guild
     public class GuildService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-
-        private readonly Regex _mentionRegex = new Regex(@"[^<>@]");
 
         public GuildService(IDbContextFactory<FMBotDbContext> contextFactory)
         {
@@ -76,26 +72,11 @@ namespace FMBot.Bot.Services.Guild
             return guildUsers.ToList();
         }
 
-        public static async Task<GuildPermissions> CheckSufficientPermissionsAsync(ICommandContext context)
+        public static async Task<GuildPermissions> GetGuildPermissionsAsync(ICommandContext context)
         {
-            var user = await context.Guild.GetUserAsync(context.Client.CurrentUser.Id);
-            return user.GuildPermissions;
-        }
-
-        // Get user from guild with searchvalue
-        public async Task<IGuildUser> FindUserFromGuildAsync(ICommandContext context, string searchValue)
-        {
-            if (searchValue.Length > 3 && this._mentionRegex.IsMatch(searchValue))
-            {
-                var id = searchValue.Trim('@', '!', '<', '>');
-
-                if (ulong.TryParse(id, out var discordUserId))
-                {
-                    return await context.Guild.GetUserAsync(discordUserId);
-                }
-            }
-
-            return null;
+            var socketCommandContext = (SocketCommandContext) context;
+            var guildUser = await context.Guild.GetUserAsync(socketCommandContext.Client.CurrentUser.Id);
+            return guildUser.GuildPermissions;
         }
 
         public async Task<GuildUser> GetUserFromGuild(Persistence.Domain.Models.Guild guild, int userId)
@@ -103,7 +84,6 @@ namespace FMBot.Bot.Services.Guild
             return guild.GuildUsers
                 .FirstOrDefault(f => f.UserId == userId);
         }
-
 
         public async Task<GuildUser> GetUserFromGuild(ulong discordGuildId, int userId)
         {
@@ -116,30 +96,6 @@ namespace FMBot.Bot.Services.Guild
             if (guild?.GuildUsers != null && guild.GuildUsers.Any())
             {
                 return guild.GuildUsers.FirstOrDefault(f => f.UserId == userId);
-            }
-
-            return null;
-        }
-
-        // Get user from guild with searchvalue
-        public async Task<User> MentionToUserAsync(string searchValue)
-        {
-            if (searchValue.Length > 3)
-            {
-                if (this._mentionRegex.IsMatch(searchValue))
-                {
-                    var id = searchValue.Trim('@', '!', '<', '>');
-
-                    if (ulong.TryParse(id, out ulong discordUserId))
-                    {
-                        await using var db = this._contextFactory.CreateDbContext();
-                        var userSettings = await db.Users
-                            .AsQueryable()
-                            .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
-
-                        return userSettings;
-                    }
-                }
             }
 
             return null;

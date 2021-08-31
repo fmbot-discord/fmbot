@@ -114,7 +114,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var paginationEnabled = false;
                 var maxAmount = userCrowns.Count > 15 ? 15 : userCrowns.Count;
                 var pages = new List<PageBuilder>();
-                var perms = await GuildService.CheckSufficientPermissionsAsync(this.Context);
+                var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
                 if (perms.ManageMessages && userCrowns.Count > 15)
                 {
                     paginationEnabled = true;
@@ -123,13 +123,13 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var embedDescription = new StringBuilder();
                 for (var index = 0; index < maxAmount; index++)
-                { var userCrown = userCrowns[index];
+                {
+                    var userCrown = userCrowns[index];
 
-                    var claimTimeDescription = DateTime.UtcNow.AddDays(-3) < userCrown.Created
-                        ? StringExtensions.GetTimeAgo(userCrown.Created)
-                        : userCrown.Created.Date.ToString("dddd MMM d", CultureInfo.InvariantCulture);
+                    var specifiedDateTime = DateTime.SpecifyKind(userCrown.Created, DateTimeKind.Utc);
+                    var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
 
-                    embedDescription.AppendLine($"{index + 1}. **{userCrown.ArtistName}** - **{userCrown.CurrentPlaycount}** plays (claimed {claimTimeDescription})");
+                    embedDescription.AppendLine($"{index + 1}. **{userCrown.ArtistName}** - **{userCrown.CurrentPlaycount}** plays (claimed <t:{((DateTimeOffset)userCrown.Created).ToUnixTimeSeconds()}:R>)");
 
                     var pageAmount = index + 1;
                     if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == maxAmount))
@@ -309,7 +309,7 @@ namespace FMBot.Bot.Commands.LastFM
             var paginationEnabled = false;
             var maxAmount = topCrownUsers.Count > 15 ? 15 : topCrownUsers.Count;
             var pages = new List<PageBuilder>();
-            var perms = await GuildService.CheckSufficientPermissionsAsync(this.Context);
+            var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
             if (perms.ManageMessages && topCrownUsers.Count > 15)
             {
                 paginationEnabled = true;

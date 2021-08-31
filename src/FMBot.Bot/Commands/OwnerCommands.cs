@@ -151,7 +151,7 @@ namespace FMBot.Bot.Commands
 
                 foreach (var guild in client.Guilds.OrderByDescending(o => o.MemberCount).Take(100))
                 {
-                    desc += $"{guild.Name} - Users: {guild.Users.Count()}, Owner: {guild.Owner}\n";
+                    desc += $"{guild.Name} - Users: {guild.MemberCount}, Owner: {guild.Owner}\n";
                 }
 
                 if (!string.IsNullOrWhiteSpace(desc))
