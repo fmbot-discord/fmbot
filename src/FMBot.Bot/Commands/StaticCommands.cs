@@ -312,13 +312,15 @@ namespace FMBot.Bot.Commands
         [Alias("donators", "donors", "backers")]
         public async Task AllSupportersAsync()
         {
+            var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
             var supporters = await this._supporterService.GetAllVisibleSupporters();
 
             var supporterLists = supporters.ChunkBy(10);
 
             var description = new StringBuilder();
             description.AppendLine("Thank you to all our supporters that help keep .fmbot running. If you would like to be on this list too, please check out our [OpenCollective](https://opencollective.com/fmbot). \n" +
-                                   $"For all information on donating to .fmbot you can check out `.fmdonate`.");
+                                   $"For all information on donating to .fmbot you can check out `{prefix}donate`.");
             description.AppendLine();
 
             var pages = new List<PageBuilder>();
