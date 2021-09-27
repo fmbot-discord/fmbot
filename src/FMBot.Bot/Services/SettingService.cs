@@ -536,6 +536,27 @@ namespace FMBot.Bot.Services
             return setGuildRankingSettings;
         }
 
+        public static CrownViewSettings SetCrownViewSettings(CrownViewSettings crownViewSettings, string extraOptions)
+        {
+            var setCrownViewSettings = crownViewSettings;
+
+            if (string.IsNullOrWhiteSpace(extraOptions))
+            {
+                return setCrownViewSettings;
+            }
+
+            if (extraOptions.Contains("p") || extraOptions.Contains("pc") || extraOptions.Contains("playcount") || extraOptions.Contains("plays"))
+            {
+                setCrownViewSettings.CrownOrderType = CrownOrderType.Playcount;
+            }
+            if (extraOptions.Contains("r") || extraOptions.Contains("rc") || extraOptions.Contains("recent") || extraOptions.Contains("new") || extraOptions.Contains("latest"))
+            {
+                setCrownViewSettings.CrownOrderType = CrownOrderType.Recent;
+            }
+
+            return setCrownViewSettings;
+        }
+
         private static bool Contains(string extraOptions, string[] values)
         {
             var optionArray = extraOptions.Split(" ");

@@ -8,4 +8,15 @@ namespace FMBot.Bot.Models
 
         public int Playcount { get; set; }
     }
+
+    public class CrownViewSettings
+    {
+        public CrownOrderType CrownOrderType { get; set; }
+    }
+
+    public enum CrownOrderType
+    {
+        Playcount = 1,
+        Recent = 2
+    }
 }

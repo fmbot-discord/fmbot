@@ -330,17 +330,27 @@ namespace FMBot.Bot.Services.WhoKnows
             await db.SaveChangesAsync();
         }
 
-        public async Task<List<UserCrown>> GetCrownsForUser(Persistence.Domain.Models.Guild guild, int userId)
+        public async Task<List<UserCrown>> GetCrownsForUser(Persistence.Domain.Models.Guild guild, int userId,
+            CrownOrderType crownOrderType)
         {
             await using var db = this._contextFactory.CreateDbContext();
-            return await db.UserCrowns
+            var query = db.UserCrowns
                 .AsQueryable()
                 .Include(i => i.User)
-                .OrderByDescending(o => o.Created)
                 .Where(f => f.GuildId == guild.GuildId &&
                             f.Active &&
-                            f.UserId == userId)
-                .ToListAsync();
+                            f.UserId == userId);
+
+            if (crownOrderType == CrownOrderType.Playcount)
+            {
+                query = query.OrderByDescending(o => o.CurrentPlaycount);
+            }
+            else
+            {
+                query = query.OrderByDescending(o => o.Created);
+            }
+
+            return await query.ToListAsync();
         }
 
         public async Task<List<IGrouping<int, UserCrown>>> GetTopCrownUsersForGuild(Persistence.Domain.Models.Guild guild)
