@@ -162,7 +162,11 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var paginator = StringService.BuildStaticPaginator(pages);
 
-                _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
+                _ = this.Interactivity.SendPaginatorAsync(
+                    paginator,
+                    this.Context.Channel,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                    resetTimeoutOnInput: true);
 
                 this.Context.LogCommandUsed();
             }
@@ -312,7 +316,7 @@ namespace FMBot.Bot.Commands.LastFM
                     var genrePageString = new StringBuilder();
                     foreach (var genreArtist in genrePage)
                     {
-                        genrePageString.AppendLine($"{counter}. **{genreArtist.ArtistName}** ({genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)}");
+                        genrePageString.AppendLine($"{counter}. **{genreArtist.ArtistName}** ({genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)})");
                         counter++;
                     }
 
@@ -328,7 +332,11 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var paginator = StringService.BuildStaticPaginator(pages);
 
-                _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
+                _ = this.Interactivity.SendPaginatorAsync(
+                    paginator,
+                    this.Context.Channel,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                    resetTimeoutOnInput: true);
 
                 this.Context.LogCommandUsed();
             }

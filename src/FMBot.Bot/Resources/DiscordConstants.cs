@@ -25,6 +25,6 @@ namespace FMBot.Bot.Resources
             { Emote.Parse("<:pages_last:883825508482183258>"), PaginatorAction.SkipToEnd}
         };
 
-        public const int PaginationTimeoutInSeconds = 120;
+        public const int PaginationTimeoutInSeconds = 60;
     }
 }

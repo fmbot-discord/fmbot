@@ -287,7 +287,11 @@ namespace FMBot.Bot.Commands.LastFM
 
             var paginator = StringService.BuildStaticPaginator(pages);
 
-            _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+            _ = this.Interactivity.SendPaginatorAsync(
+                paginator,
+                this.Context.Channel,
+                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                resetTimeoutOnInput: true);
 
             this.Context.LogCommandUsed();
         }
@@ -356,7 +360,11 @@ namespace FMBot.Bot.Commands.LastFM
 
             var paginator = StringService.BuildStaticPaginator(pages);
 
-            _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
+            _ = this.Interactivity.SendPaginatorAsync(
+                paginator,
+                this.Context.Channel,
+                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                resetTimeoutOnInput: true);
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
@@ -526,7 +534,11 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var paginator = StringService.BuildStaticPaginator(pages);
 
-                _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
+                _ = this.Interactivity.SendPaginatorAsync(
+                    paginator,
+                    this.Context.Channel,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                    resetTimeoutOnInput: true);
 
                 this.Context.LogCommandUsed();
             }

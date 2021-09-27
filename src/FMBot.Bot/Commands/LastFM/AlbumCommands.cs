@@ -525,7 +525,8 @@ namespace FMBot.Bot.Commands.LastFM
                 _ = this.Interactivity.SendPaginatorAsync(
                     paginator,
                     this.Context.Channel,
-                    TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                    resetTimeoutOnInput: true);
 
                 this.Context.LogCommandUsed();
             }
