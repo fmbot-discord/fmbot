@@ -1103,6 +1103,7 @@ namespace FMBot.Bot.Commands.LastFM
             var serverAlbumSettings = new GuildRankingSettings
             {
                 ChartTimePeriod = TimePeriod.Weekly,
+                TimeDescription = "weekly",
                 OrderType = OrderType.Listeners,
                 AmountOfDays = 7
             };
@@ -1110,6 +1111,14 @@ namespace FMBot.Bot.Commands.LastFM
             try
             {
                 serverAlbumSettings = SettingService.SetGuildRankingSettings(serverAlbumSettings, extraOptions);
+                var foundTimePeriod = SettingService.GetTimePeriod(extraOptions, serverAlbumSettings.ChartTimePeriod);
+
+                if (foundTimePeriod.UsePlays || foundTimePeriod.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
+                {
+                    serverAlbumSettings.ChartTimePeriod = foundTimePeriod.TimePeriod;
+                    serverAlbumSettings.TimeDescription = foundTimePeriod.Description;
+                    serverAlbumSettings.AmountOfDays = foundTimePeriod.PlayDays.GetValueOrDefault();
+                }
 
                 var description = "";
                 var footer = "";
@@ -1118,6 +1127,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     serverAlbumSettings.AmountOfDays = 7;
                     serverAlbumSettings.ChartTimePeriod = TimePeriod.Weekly;
+                    serverAlbumSettings.TimeDescription = "weekly";
                     footer += "Sorry, monthly time period is not supported on large servers.\n";
                 }
 
@@ -1125,18 +1135,13 @@ namespace FMBot.Bot.Commands.LastFM
                 if (serverAlbumSettings.ChartTimePeriod == TimePeriod.AllTime)
                 {
                     topGuildAlbums = await this._whoKnowsAlbumService.GetTopAllTimeAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType);
-                    this._embed.WithTitle($"Top alltime albums in {this.Context.Guild.Name}");
-                }
-                else if (serverAlbumSettings.ChartTimePeriod == TimePeriod.Weekly)
-                {
-                    topGuildAlbums = await this._whoKnowsPlayService.GetTopAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType, serverAlbumSettings.AmountOfDays);
-                    this._embed.WithTitle($"Top weekly albums in {this.Context.Guild.Name}");
                 }
                 else
                 {
                     topGuildAlbums = await this._whoKnowsPlayService.GetTopAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType, serverAlbumSettings.AmountOfDays);
-                    this._embed.WithTitle($"Top monthly albums in {this.Context.Guild.Name}");
                 }
+
+                this._embed.WithTitle($"Top {serverAlbumSettings.TimeDescription} albums in {this.Context.Guild.Name}");
 
                 if (serverAlbumSettings.OrderType == OrderType.Listeners)
                 {
@@ -1162,7 +1167,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else if (randomHintNumber == 2)
                 {
-                    footer += $"Available time periods: alltime and weekly\n";
+                    footer += $"Available time periods: alltime, weekly and daily\n";
                 }
                 else if (randomHintNumber == 3)
                 {

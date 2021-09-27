@@ -22,6 +22,18 @@ namespace FMBot.Bot.Services
             this._contextFactory = contextFactory;
         }
 
+        public static TimeSettingsModel GetTimePeriod(string[] options,
+            TimePeriod defaultTimePeriod = TimePeriod.Weekly)
+        {
+            var optionsAsString = "";
+            if (options.Any())
+            {
+                optionsAsString = string.Join(" ", options);
+            }
+
+            return GetTimePeriod(optionsAsString, defaultTimePeriod);
+        }
+
         public static TimeSettingsModel GetTimePeriod(string options,
             TimePeriod defaultTimePeriod = TimePeriod.Weekly)
         {
@@ -32,7 +44,7 @@ namespace FMBot.Bot.Services
             settingsModel.NewSearchValue = options;
             settingsModel.UsePlays = false;
 
-            var oneDay = new[] { "1-day", "1day", "1d", "today", "day" };
+            var oneDay = new[] { "1-day", "1day", "1d", "today", "day", "daily" };
             var twoDays = new[] { "2-day", "2day", "2d" };
             var threeDays = new[] { "3-day", "3day", "3d" };
             var fourDays = new[] { "4-day", "4day", "4d" };
@@ -512,20 +524,6 @@ namespace FMBot.Bot.Services
         {
             var setGuildRankingSettings = guildRankingSettings;
 
-            if (extraOptions.Contains("w") || extraOptions.Contains("week") || extraOptions.Contains("weekly") || extraOptions.Contains("7d"))
-            {
-                setGuildRankingSettings.ChartTimePeriod = TimePeriod.Weekly;
-                setGuildRankingSettings.AmountOfDays = 7;
-            }
-            else if (extraOptions.Contains("m") || extraOptions.Contains("month") || extraOptions.Contains("monthly") || extraOptions.Contains("30d"))
-            {
-                setGuildRankingSettings.ChartTimePeriod = TimePeriod.Monthly;
-                setGuildRankingSettings.AmountOfDays = 30;
-            }
-            if (extraOptions.Contains("a") || extraOptions.Contains("at") || extraOptions.Contains("alltime"))
-            {
-                setGuildRankingSettings.ChartTimePeriod = TimePeriod.AllTime;
-            }
             if (extraOptions.Contains("p") || extraOptions.Contains("pc") || extraOptions.Contains("playcount") || extraOptions.Contains("plays"))
             {
                 setGuildRankingSettings.OrderType = OrderType.Playcount;
