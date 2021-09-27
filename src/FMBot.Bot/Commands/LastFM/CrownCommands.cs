@@ -9,6 +9,7 @@ using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
@@ -88,7 +89,13 @@ namespace FMBot.Bot.Commands.LastFM
                 }
             }
 
-            var userCrowns = await this._crownService.GetCrownsForUser(guild, contextUser.UserId);
+            var crownViewSettings = new CrownViewSettings
+            {
+                CrownOrderType = CrownOrderType.Playcount
+            };
+
+            crownViewSettings = SettingService.SetCrownViewSettings(crownViewSettings, extraOptions);
+            var userCrowns = await this._crownService.GetCrownsForUser(guild, contextUser.UserId, crownViewSettings.CrownOrderType);
 
             var title = differentUser
                 ? $"Crowns for {contextUser.UserNameLastFM}, requested by {userTitle}"
@@ -120,12 +127,23 @@ namespace FMBot.Bot.Commands.LastFM
                         counter++;
                     }
 
-                    var footer = $"Page {pageCounter}/{crownPages.Count} - {userCrowns.Count} total crowns";
+                    var footer = new StringBuilder();
+
+                    footer.AppendLine($"Page {pageCounter}/{crownPages.Count} - {userCrowns.Count} total crowns");
+
+                    if (crownViewSettings.CrownOrderType == CrownOrderType.Playcount)
+                    {
+                        footer.AppendLine("Ordered by playcount - Available options: playcount and recent");
+                    }
+                    else
+                    {
+                        footer.AppendLine("Ordered by recent crowns - Available options: playcount and recent");
+                    }
 
                     pages.Add(new PageBuilder()
                         .WithDescription(crownPageString.ToString())
                         .WithTitle(title)
-                        .WithFooter(footer));
+                        .WithFooter(footer.ToString()));
                     pageCounter++;
                 }
 
