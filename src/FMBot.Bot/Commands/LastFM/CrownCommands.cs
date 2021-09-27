@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
-using Discord;
 using Discord.Commands;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
@@ -18,8 +16,6 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
-using Interactivity;
-using Interactivity.Pagination;
 using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -35,7 +31,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly SettingService _settingService;
         private readonly UserService _userService;
 
-        private InteractivityService Interactivity { get; }
+        private InteractiveService Interactivity { get; }
 
         public CrownCommands(CrownService crownService,
             GuildService guildService,
@@ -44,7 +40,7 @@ namespace FMBot.Bot.Commands.LastFM
             AdminService adminService,
             LastFmRepository lastFmRepository,
             SettingService settingService,
-            InteractivityService interactivity,
+            InteractiveService interactivity,
             IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._crownService = crownService;
@@ -107,59 +103,39 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var footer = $"{userCrowns.Count} total crowns";
-
             try
             {
-                var paginationEnabled = false;
-                var maxAmount = userCrowns.Count > 15 ? 15 : userCrowns.Count;
                 var pages = new List<PageBuilder>();
-                var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
-                if (perms.ManageMessages && userCrowns.Count > 15)
+
+                var crownPages = userCrowns.ChunkBy(10);
+
+                var counter = 1;
+                var pageCounter = 1;
+                foreach (var crownPage in crownPages)
                 {
-                    paginationEnabled = true;
-                    maxAmount = userCrowns.Count;
-                }
-
-                var embedDescription = new StringBuilder();
-                for (var index = 0; index < maxAmount; index++)
-                {
-                    var userCrown = userCrowns[index];
-
-                    var specifiedDateTime = DateTime.SpecifyKind(userCrown.Created, DateTimeKind.Utc);
-                    var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
-
-                    embedDescription.AppendLine($"{index + 1}. **{userCrown.ArtistName}** - **{userCrown.CurrentPlaycount}** plays (claimed <t:{((DateTimeOffset)userCrown.Created).ToUnixTimeSeconds()}:R>)");
-
-                    var pageAmount = index + 1;
-                    if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == maxAmount))
+                    var crownPageString = new StringBuilder();
+                    foreach (var userCrown in crownPage)
                     {
-                        pages.Add(new PageBuilder().WithDescription(embedDescription.ToString()).WithTitle(title).WithFooter(footer));
-                        embedDescription = new StringBuilder();
+                        crownPageString.AppendLine($"{counter}. **{userCrown.ArtistName}** - **{userCrown.CurrentPlaycount}** plays (claimed <t:{((DateTimeOffset)userCrown.Created).ToUnixTimeSeconds()}:R>)");
+                        counter++;
                     }
+
+                    var footer = $"Page {pageCounter}/{crownPages.Count} - {userCrowns.Count} total crowns";
+
+                    pages.Add(new PageBuilder()
+                        .WithDescription(crownPageString.ToString())
+                        .WithTitle(title)
+                        .WithFooter(footer));
+                    pageCounter++;
                 }
 
-                if (paginationEnabled)
-                {
-                    var paginator = new StaticPaginatorBuilder()
-                        .WithPages(pages)
-                        .WithFooter(PaginatorFooter.PageNumber)
-                        .WithEmotes(DiscordConstants.PaginationEmotes)
-                        .WithTimoutedEmbed(null)
-                        .WithCancelledEmbed(null)
-                        .WithDeletion(DeletionOptions.Valid)
-                        .Build();
+                var paginator = StringService.BuildStaticPaginator(pages);
 
-                    _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds), runOnGateway: false);
-                }
-                else
-                {
-                    footer += "\nWant pagination? Enable the 'Manage Messages' permission for .fmbot.";
-                    this._embed.WithTitle(title);
-                    this._embed.WithDescription(embedDescription.ToString());
-                    this._embed.WithFooter(footer);
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                }
+                _ = this.Interactivity.SendPaginatorAsync(
+                    paginator,
+                    this.Context.Channel,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                    resetTimeoutOnInput: true);
             }
             catch (Exception e)
             {
@@ -306,70 +282,50 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var paginationEnabled = false;
-            var maxAmount = topCrownUsers.Count > 15 ? 15 : topCrownUsers.Count;
             var pages = new List<PageBuilder>();
-            var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
-            if (perms.ManageMessages && topCrownUsers.Count > 15)
-            {
-                paginationEnabled = true;
-                maxAmount = topCrownUsers.Count;
-            }
 
             var title = $"Users with most crowns in {this.Context.Guild.Name}";
-            var embedDescription = new StringBuilder();
-            var footer = $"{guildCrownCount} total active crowns in this server";
 
-            if (topCrownUsers.Count < 15)
+            var crownPages = topCrownUsers.ChunkBy(10);
+
+            var counter = 1;
+            var pageCounter = 1;
+            foreach (var crownPage in crownPages)
             {
-                paginationEnabled = false;
-            }
-
-            for (var index = 0; index < maxAmount; index++)
-            {
-                var crownUser = topCrownUsers[index];
-
-                var guildUser = guild
-                    .GuildUsers
-                    .FirstOrDefault(f => f.UserId == crownUser.Key);
-
-                string name = null;
-
-                if (guildUser != null)
+                var crownPageString = new StringBuilder();
+                foreach (var crownUser in crownPage)
                 {
-                    name = guildUser.UserName;
+                    var guildUser = guild
+                        .GuildUsers
+                        .FirstOrDefault(f => f.UserId == crownUser.Key);
+
+                    string name = null;
+
+                    if (guildUser != null)
+                    {
+                        name = guildUser.UserName;
+                    }
+
+                    crownPageString.AppendLine($"{counter}. **{name ?? crownUser.First().User.UserNameLastFM}** - **{crownUser.Count()}** {StringExtensions.GetCrownsString(crownUser.Count())}");
+                    counter++;
                 }
 
-                embedDescription.AppendLine($"{index + 1}. **{name ?? crownUser.First().User.UserNameLastFM}** - **{crownUser.Count()}** {StringExtensions.GetCrownsString(crownUser.Count())}");
+                var footer = $"Page {pageCounter}/{crownPages.Count} - {guildCrownCount} total active crowns in this server";
 
-                var pageAmount = index + 1;
-                if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == maxAmount))
-                {
-                    pages.Add(new PageBuilder().WithDescription(embedDescription.ToString()).WithTitle(title).WithFooter(footer));
-                    embedDescription = new StringBuilder();
-                }
+                pages.Add(new PageBuilder()
+                    .WithDescription(crownPageString.ToString())
+                    .WithTitle(title)
+                    .WithFooter(footer));
+                pageCounter++;
             }
 
-            if (paginationEnabled)
-            {
-                var paginator = new StaticPaginatorBuilder()
-                    .WithPages(pages)
-                    .WithFooter(PaginatorFooter.PageNumber)
-                    .WithEmotes(DiscordConstants.PaginationEmotes)
-                    .WithTimoutedEmbed(null)
-                    .WithCancelledEmbed(null)
-                    .WithDeletion(DeletionOptions.Valid)
-                    .Build();
+            var paginator = StringService.BuildStaticPaginator(pages);
 
-                _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds), runOnGateway: false);
-            }
-            else
-            {
-                this._embed.WithTitle(title);
-                this._embed.WithDescription(embedDescription.ToString());
-                this._embed.WithFooter(footer);
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-            }
+            _ = this.Interactivity.SendPaginatorAsync(
+                paginator,
+                this.Context.Channel,
+                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                resetTimeoutOnInput: true);
 
             this.Context.LogCommandUsed();
         }

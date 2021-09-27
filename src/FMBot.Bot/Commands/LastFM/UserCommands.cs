@@ -245,9 +245,7 @@ namespace FMBot.Bot.Commands.LastFM
                                             "For this to work properly you need to make sure .fmbot can see the voice channel and use a supported music bot.\n\n" +
                                             "Only tracks that already exist on Last.fm will be scrobbled. This feature works best with Spotify music.\n\n" +
                                             "Currently supported bots:\n" +
-                                            "- Groovy (✝️)\n" +
-                                            "- Rythm (Requires setting '[announcesongs](https://rythm.fm/docs/commands#settings)' to be enabled)\n" +
-                                            "- Hydra\n");
+                                            "- Hydra (Only in 'normal' mode)\n");
 
                 if ((newBotScrobblingDisabledSetting == null || newBotScrobblingDisabledSetting == false) && !string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
                 {
@@ -510,7 +508,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("login", RunMode = RunMode.Async)]
         [Summary("Logs you in using a link.\n\n" +
                  "Not receiving a DM? Please check if you have direct messages from server members enabled.")]
-        [Alias("set", "setusername", "fm set")]
+        [Alias("set", "setusername", "fm set", "connect")]
         public async Task LoginAsync([Remainder] string unusedValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -555,6 +553,9 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
+                var serverEmbed = new EmbedBuilder()
+                    .WithColor(DiscordConstants.InformationColorBlue);
+
                 var reply = "Check your DMs for a link to connect your Last.fm account to .fmbot!";
 
                 if (this.Context.Message.Content.Contains("set"))
@@ -562,7 +563,15 @@ namespace FMBot.Bot.Commands.LastFM
                     reply += $"\nPlease use `{prfx}mode` to change how your .fm command looks.";
                 }
 
-                await ReplyAsync(reply);
+                if (existingUserSettings != null)
+                {
+                    reply = $"You have already logged in before, however a link to re-connect your Last.fm account to .fmbot has still been sent to your DMs!\n\n" +
+                            $"Note that .fmbot is not affiliated with Last.fm and/or [Spotify](https://fmbot.xyz/faq/#commands-are-showing-the-wrong-songs-its-not-showing-what-i-listen-to-on-spotify). " +
+                            $"This means that re-logging in will not fix any issues related to those applications.";
+                }
+
+                serverEmbed.WithDescription(reply);
+                await this.Context.Channel.SendMessageAsync("", false, serverEmbed.Build());
             }
 
             var success = await GetAndStoreAuthSession(this.Context.User, token.Content.Token);

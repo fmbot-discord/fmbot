@@ -330,7 +330,7 @@ namespace FMBot.Bot.Services.WhoKnows
             await db.SaveChangesAsync();
         }
 
-        public async Task<IList<UserCrown>> GetCrownsForUser(Persistence.Domain.Models.Guild guild, int userId)
+        public async Task<List<UserCrown>> GetCrownsForUser(Persistence.Domain.Models.Guild guild, int userId)
         {
             await using var db = this._contextFactory.CreateDbContext();
             return await db.UserCrowns

@@ -76,20 +76,42 @@ namespace FMBot.Bot.Services
         {
             await CacheAllArtistGenres();
 
-            var allGenres = new List<string>();
+            var allGenres = new List<GenreWithPlaycount>();
             foreach (var artist in topArtists)
             {
-                 var foundGenres = (List<string>)this._cache.Get(CacheKeyForArtist(artist.ArtistName.ToLower()));
+                var foundGenres = (List<string>)this._cache.Get(CacheKeyForArtist(artist.ArtistName.ToLower()));
 
                 if (foundGenres != null && foundGenres.Any())
                 {
-                    allGenres.AddRange(foundGenres);
+                    foreach (var genre in foundGenres)
+                    {
+                        var playcount = artist.UserPlaycount.GetValueOrDefault();
+                        var score = playcount switch
+                        {
+                            0 => 0,
+                            > 3 and < 16 => artist.UserPlaycount.Value * 0.3,
+                            >= 16 and < 28 => artist.UserPlaycount.Value * 0.25,
+                            >= 28 and < 40 => artist.UserPlaycount.Value * 0.2,
+                            >= 40 and < 80 => 10,
+                            >= 80 and < 150 => 15,
+                            >= 150 and < 300 => 20,
+                            >= 300 and < 600 => 30,
+                            >= 600 and < 1500 => 40,
+                            >= 1500 => 50,
+                            _ => 0.5
+                        };
+
+                        if (score > 0)
+                        {
+                            allGenres.Add(new GenreWithPlaycount(genre, score));
+                        }
+                    }
                 }
             }
 
             return allGenres
-                .GroupBy(g => g)
-                .OrderByDescending(o => o.Count())
+                .GroupBy(g => g.Name)
+                .OrderByDescending(o => o.Sum(s => s.Score))
                 .Where(w => w.Key != null)
                 .Select(s => new TopGenre
                 {
@@ -97,6 +119,8 @@ namespace FMBot.Bot.Services
                     GenreName = s.Key
                 }).ToList();
         }
+
+        private record GenreWithPlaycount(string Name, double Score);
 
         public async Task<List<string>> GetGenresForArtist(string artistName)
         {

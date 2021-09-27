@@ -9,6 +9,8 @@ namespace FMBot.Bot.Models
 
         public TimePeriod ChartTimePeriod { get; set; }
 
+        public string TimeDescription { get; set; }
+
         public int AmountOfDays { get; set; }
     }
 

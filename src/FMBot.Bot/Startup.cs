@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using Fergun.Interactive;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Handlers;
 using FMBot.Bot.Interfaces;
@@ -18,7 +19,6 @@ using FMBot.LastFM.Repositories;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
 using FMBot.Youtube.Services;
-using Interactivity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -119,7 +119,7 @@ namespace FMBot.Bot
                 .AddSingleton<IChannelDisabledCommandService, ChannelDisabledCommandService>()
                 .AddSingleton<IIndexService, IndexService>()
                 .AddSingleton<IPrefixService, PrefixService>()
-                .AddSingleton<InteractivityService>()
+                .AddSingleton<InteractiveService>()
                 .AddSingleton<IUserIndexQueue, UserIndexQueue>()
                 .AddSingleton<IUserUpdateQueue, UserUpdateQueue>()
                 .AddSingleton<PlayService>()
@@ -147,8 +147,7 @@ namespace FMBot.Bot
 
             // These services can only be added after the config is loaded
             services
-                .AddSingleton<InteractivityService>()
-                .AddSingleton(new InteractivityConfig { DefaultTimeout = TimeSpan.FromMinutes(3) }) 
+                .AddSingleton<InteractiveService>()
                 .AddSingleton<IndexRepository>()
                 .AddSingleton<UpdateRepository>()
                 .AddSingleton<IUpdateService, UpdateService>()

@@ -6,10 +6,9 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Discord;
 using Discord.Commands;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -22,8 +21,6 @@ using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
-using Interactivity;
-using Interactivity.Pagination;
 using Microsoft.Extensions.Options;
 using Constants = FMBot.Domain.Constants;
 using ImageFormat = System.Drawing.Imaging.ImageFormat;
@@ -49,7 +46,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly WhoKnowsPlayService _whoKnowsPlayService;
         private readonly WhoKnowsService _whoKnowsService;
 
-        private InteractivityService Interactivity { get; }
+        private InteractiveService Interactivity { get; }
 
         public AlbumCommands(
                 CensorService censorService,
@@ -64,7 +61,7 @@ namespace FMBot.Bot.Commands.LastFM
                 WhoKnowsAlbumService whoKnowsAlbumService,
                 WhoKnowsPlayService whoKnowsPlayService,
                 WhoKnowsService whoKnowsService,
-                InteractivityService interactivity,
+                InteractiveService interactivity,
                 TrackService trackService,
                 SpotifyService spotifyService,
                 IOptions<BotSettings> botSettings,
@@ -393,15 +390,8 @@ namespace FMBot.Bot.Commands.LastFM
 
             var timeSettings = SettingService.GetTimePeriod(extraOptions);
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-            var amount = SettingService.GetAmount(extraOptions);
 
-            var paginationEnabled = false;
             var pages = new List<PageBuilder>();
-            var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
-            if (perms.ManageMessages)
-            {
-                paginationEnabled = true;
-            }
 
             string userTitle;
             if (!userSettings.DifferentUser)
@@ -414,16 +404,17 @@ namespace FMBot.Bot.Commands.LastFM
                     $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
             }
 
-            this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            var artistsString = amount == 1 ? "album" : "albums";
-            this._embedAuthor.WithName($"Top {timeSettings.Description.ToLower()} {artistsString} for {userTitle}");
+            if (!userSettings.DifferentUser)
+            {
+                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+            }
+            this._embedAuthor.WithName($"Top {timeSettings.Description.ToLower()} albums for {userTitle}");
             this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?{timeSettings.UrlParameter}");
 
-            amount = paginationEnabled ? 100 : amount;
+            const int amount = 200;
 
             try
             {
-                var description = "";
                 if (!timeSettings.UsePlays)
                 {
                     var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings.TimePeriod, amount);
@@ -435,27 +426,14 @@ namespace FMBot.Bot.Commands.LastFM
                         return;
                     }
 
-                    if (albums.Content.TotalAmount <= 10)
-                    {
-                        paginationEnabled = false;
-                    }
-                    var footer = $"{albums.Content.TotalAmount} different albums in this time period";
+                    var albumPages = albums.Content.TopAlbums.ChunkBy(10);
 
-                    var rnd = new Random();
-                    if (rnd.Next(0, 2) == 1 && albums.Content.TopAlbums.Count > 10 && !paginationEnabled)
+                    var counter = 1;
+                    var pageCounter = 1;
+                    foreach (var albumPage in albumPages)
                     {
-                        footer += $"\nWant pagination? Enable the 'Manage Messages' permission for .fmbot.";
-                    }
-
-                    for (var i = 0; i < albums.Content.TopAlbums.Count; i++)
-                    {
-                        var album = albums.Content.TopAlbums[i];
-
-                        if (albums.Content.TopAlbums.Count > 10 && !paginationEnabled)
-                        {
-                            description += $"{i + 1}. **{album.ArtistName}** - **{album.AlbumName}** ({album.UserPlaycount}  {StringExtensions.GetPlaysString(album.UserPlaycount)}) \n";
-                        }
-                        else
+                        var albumPageString = new StringBuilder();
+                        foreach (var album in albumPage)
                         {
                             var url = album.AlbumUrl;
                             var escapedAlbumName = Regex.Replace(album.AlbumName, @"([|\\*])", @"\$1");
@@ -465,18 +443,18 @@ namespace FMBot.Bot.Commands.LastFM
                                 url = StringExtensions.GetRymUrl(album.AlbumName, album.ArtistName);
                             }
 
-                            description += $"{i + 1}. **{album.ArtistName}** - **[{escapedAlbumName}]({url})** ({album.UserPlaycount}  {StringExtensions.GetPlaysString(album.UserPlaycount)}) \n";
+                            albumPageString.AppendLine($"{counter}. **{album.ArtistName}** - **[{escapedAlbumName}]({url})** ({album.UserPlaycount} {StringExtensions.GetPlaysString(album.UserPlaycount)})");
+                            counter++;
                         }
 
-                        var pageAmount = i + 1;
-                        if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == amount))
-                        {
-                            pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor).WithFooter(footer));
-                            description = "";
-                        }
+                        var footer = $"Page {pageCounter}/{albumPages.Count} - {albums.Content.TotalAmount} different albums in this time period";
+
+                        pages.Add(new PageBuilder()
+                            .WithDescription(albumPageString.ToString())
+                            .WithAuthor(this._embedAuthor)
+                            .WithFooter(footer));
+                        pageCounter++;
                     }
-
-                    this._embedFooter.WithText(footer);
                 }
                 else
                 {
@@ -512,51 +490,43 @@ namespace FMBot.Bot.Commands.LastFM
                     var albums = await this._playService.GetTopAlbums(userId,
                         timeSettings.PlayDays.GetValueOrDefault());
 
-                    if (albums.Count <= 10)
+                    var albumPages = albums.ChunkBy(10);
+
+                    var counter = 1;
+                    var pageCounter = 1;
+                    foreach (var albumPage in albumPages)
                     {
-                        paginationEnabled = false;
-                    }
-
-                    var footer = $"{albums.Count} different albums in this time period";
-
-                    var amountAvailable = albums.Count < amount ? albums.Count : amount;
-                    for (var i = 0; i < amountAvailable; i++)
-                    {
-                        var album = albums[i];
-                        description += $"{i + 1}. **{album.ArtistName}** - **{album.Name}** ({album.Playcount} {StringExtensions.GetPlaysString(album.Playcount)}) \n";
-
-                        var pageAmount = i + 1;
-                        if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == amount))
+                        var albumPageString = new StringBuilder();
+                        foreach (var album in albumPage)
                         {
-                            pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor).WithFooter(footer));
-                            description = "";
+                            albumPageString.AppendLine($"{counter}. **{album.ArtistName}** - **{album.Name}** ({album.Playcount} {StringExtensions.GetPlaysString(album.Playcount)})");
+                            counter++;
                         }
+
+                        var footer = $"Page {pageCounter}/{albumPages.Count} - {albums.Count} different albums in this time period";
+
+                        pages.Add(new PageBuilder()
+                            .WithDescription(albumPageString.ToString())
+                            .WithAuthor(this._embedAuthor)
+                            .WithFooter(footer));
+                        pageCounter++;
                     }
-
-                    this._embedFooter.WithText(footer);
                 }
 
-                if (paginationEnabled)
+                if (!pages.Any())
                 {
-                    var paginator = new StaticPaginatorBuilder()
-                        .WithPages(pages)
-                        .WithFooter(PaginatorFooter.PageNumber)
-                        .WithEmotes(DiscordConstants.PaginationEmotes)
-                        .WithTimoutedEmbed(null)
-                        .WithCancelledEmbed(null)
-                        .WithDeletion(DeletionOptions.Valid)
-                        .Build();
-
-                    _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds), runOnGateway: false);
+                    pages.Add(new PageBuilder()
+                        .WithDescription("No albums played in this time period.")
+                        .WithAuthor(this._embedAuthor));
                 }
-                else
-                {
-                    this._embed.WithAuthor(this._embedAuthor);
-                    this._embed.WithDescription(description);
-                    this._embed.WithFooter(this._embedFooter);
 
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                }
+                var paginator = StringService.BuildStaticPaginator(pages);
+
+                _ = this.Interactivity.SendPaginatorAsync(
+                    paginator,
+                    this.Context.Channel,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                    resetTimeoutOnInput: true);
 
                 this.Context.LogCommandUsed();
             }
@@ -708,7 +678,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("globalwhoknowsalbum", RunMode = RunMode.Async)]
         [Summary("Shows what other users listen to the an album on .fmbot")]
         [Examples("gwa", "globalwhoknowsalbum", "globalwhoknowsalbum the beatles abbey road", "globalwhoknowsalbum Metallica & Lou Reed | Lulu")]
-        [Alias("gwa", "gwka", "gwab", "gwkab", "globalwhoknows album")]
+        [Alias("gwa", "gwka", "gwab", "gwkab", "globalwka", "globalwkalbum", "globalwhoknows album")]
         [UsernameSetRequired]
         [GuildOnly]
         [RequiresIndex]
@@ -1134,6 +1104,7 @@ namespace FMBot.Bot.Commands.LastFM
             var serverAlbumSettings = new GuildRankingSettings
             {
                 ChartTimePeriod = TimePeriod.Weekly,
+                TimeDescription = "weekly",
                 OrderType = OrderType.Listeners,
                 AmountOfDays = 7
             };
@@ -1141,6 +1112,14 @@ namespace FMBot.Bot.Commands.LastFM
             try
             {
                 serverAlbumSettings = SettingService.SetGuildRankingSettings(serverAlbumSettings, extraOptions);
+                var foundTimePeriod = SettingService.GetTimePeriod(extraOptions, serverAlbumSettings.ChartTimePeriod);
+
+                if (foundTimePeriod.UsePlays || foundTimePeriod.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
+                {
+                    serverAlbumSettings.ChartTimePeriod = foundTimePeriod.TimePeriod;
+                    serverAlbumSettings.TimeDescription = foundTimePeriod.Description;
+                    serverAlbumSettings.AmountOfDays = foundTimePeriod.PlayDays.GetValueOrDefault();
+                }
 
                 var description = "";
                 var footer = "";
@@ -1149,6 +1128,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     serverAlbumSettings.AmountOfDays = 7;
                     serverAlbumSettings.ChartTimePeriod = TimePeriod.Weekly;
+                    serverAlbumSettings.TimeDescription = "weekly";
                     footer += "Sorry, monthly time period is not supported on large servers.\n";
                 }
 
@@ -1156,18 +1136,13 @@ namespace FMBot.Bot.Commands.LastFM
                 if (serverAlbumSettings.ChartTimePeriod == TimePeriod.AllTime)
                 {
                     topGuildAlbums = await this._whoKnowsAlbumService.GetTopAllTimeAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType);
-                    this._embed.WithTitle($"Top alltime albums in {this.Context.Guild.Name}");
-                }
-                else if (serverAlbumSettings.ChartTimePeriod == TimePeriod.Weekly)
-                {
-                    topGuildAlbums = await this._whoKnowsPlayService.GetTopAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType, serverAlbumSettings.AmountOfDays);
-                    this._embed.WithTitle($"Top weekly albums in {this.Context.Guild.Name}");
                 }
                 else
                 {
                     topGuildAlbums = await this._whoKnowsPlayService.GetTopAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType, serverAlbumSettings.AmountOfDays);
-                    this._embed.WithTitle($"Top monthly albums in {this.Context.Guild.Name}");
                 }
+
+                this._embed.WithTitle($"Top {serverAlbumSettings.TimeDescription} albums in {this.Context.Guild.Name}");
 
                 if (serverAlbumSettings.OrderType == OrderType.Listeners)
                 {
@@ -1193,7 +1168,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else if (randomHintNumber == 2)
                 {
-                    footer += $"Available time periods: alltime and weekly\n";
+                    footer += $"Available time periods: alltime, weekly and daily\n";
                 }
                 else if (randomHintNumber == 3)
                 {

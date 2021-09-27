@@ -165,6 +165,21 @@ namespace FMBot.Bot.Commands.LastFM
 
                 topAlbums = await this._albumService.FillMissingAlbumCovers(topAlbums);
 
+                var albumWithoutImage = topAlbums.FirstOrDefault(f => f.AlbumCoverUrl == null);
+                if (albumWithoutImage != null)
+                {
+                    var albumCall = await this._lastFmRepository.GetAlbumInfoAsync(albumWithoutImage.ArtistName, albumWithoutImage.AlbumName, userSettings.UserNameLastFm);
+                    if (albumCall.Success && albumCall.Content != null)
+                    {
+                        var spotifyArtistImage = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumCall.Content);
+                        if (spotifyArtistImage?.SpotifyImageUrl != null)
+                        {
+                            var index = topAlbums.FindIndex(f => f.ArtistName == albumWithoutImage.ArtistName);
+                            topAlbums[index].AlbumCoverUrl = spotifyArtistImage.SpotifyImageUrl;
+                        }
+                    }
+                }
+
                 chartSettings.Albums = topAlbums;
 
                 var embedAuthorDescription = "";

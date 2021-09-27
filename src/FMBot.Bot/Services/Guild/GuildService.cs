@@ -753,7 +753,7 @@ namespace FMBot.Bot.Services.Guild
         {
             foreach (var emote in emoteString)
             {
-                if (emote.Length == 2)
+                if (emote.Length is 2 or 3)
                 {
                     try
                     {
@@ -795,7 +795,7 @@ namespace FMBot.Bot.Services.Guild
 
             foreach (var emoteString in dbGuild.EmoteReactions)
             {
-                if (emoteString.Length == 2)
+                if (emoteString.Length is 2 or 3)
                 {
                     var emote = new Emoji(emoteString);
                     await message.AddReactionAsync(emote);

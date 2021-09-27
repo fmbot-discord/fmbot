@@ -518,7 +518,7 @@ namespace FMBot.LastFM.Repositories
                         AlbumCoverUrl = !string.IsNullOrWhiteSpace(albumCall.Content.Album.Image?.FirstOrDefault(a => a.Size == "extralarge")?.Text) &&
                                         !albumCall.Content.Album.Image.First(a => a.Size == "extralarge").Text
                                             .Contains(Constants.LastFmNonExistentImageName)
-                            ? albumCall.Content.Album.Image?.First(a => a.Size == "extralarge").Text
+                            ? albumCall.Content.Album.Image?.First(a => a.Size == "extralarge").Text.Replace("/u/300x300/", "/u/")
                             : null,
                     }
                 };

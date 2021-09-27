@@ -2,12 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using FMBot.Bot.Configurations;
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -16,7 +15,6 @@ using FMBot.Domain;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using Interactivity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Serilog;
@@ -31,9 +29,9 @@ namespace FMBot.Bot.Services
         private readonly IMemoryCache _cache;
         private readonly IPrefixService _prefixService;
 
-        private InteractivityService Interactivity { get; }
+        private InteractiveService Interactivity { get; }
 
-        public MusicBotService(IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository, TrackService trackService, IMemoryCache cache, InteractivityService interactivity, IPrefixService prefixService)
+        public MusicBotService(IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository, TrackService trackService, IMemoryCache cache, InteractiveService interactivity, IPrefixService prefixService)
         {
             this._contextFactory = contextFactory;
             this._lastFmRepository = lastFmRepository;
