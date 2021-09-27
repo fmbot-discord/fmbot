@@ -52,40 +52,13 @@ namespace FMBot.Bot.Services
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
-        public static void NoScrobblesFoundErrorResponse(this EmbedBuilder embed, LastResponseStatus? apiResponse, string prfx, string userName)
-        {
-            switch (apiResponse)
-            {
-                case LastResponseStatus.Failure:
-                    embed.WithTitle("Error while attempting get Last.fm information");
-                    embed.WithDescription(
-                        "Can't retrieve scrobbles because Last.fm is having issues. Please try again later. \n" +
-                        "Please note that .fmbot isn't affiliated with Last.fm.");
-                    break;
-                case LastResponseStatus.MissingParameters:
-                    embed.WithTitle("Error while attempting get Last.fm information");
-                    embed.WithDescription(
-                        "You or the user you're searching for has no scrobbles/artists on their profile, or Last.fm is having issues. Please try again later. \n \n" +
-                        $"Recently changed your Last.fm username? Please change it here too using `{prfx}login` again.");
-                    break;
-                default:
-                    embed.WithDescription(
-                        $"The Last.fm user `{userName}` has no scrobbles/artists/albums/tracks on [their profile]({Constants.LastFMUserUrl}{userName}).\n\n" +
-                        $"Just signed up for last.fm and added your account in the bot? Make sure you [track your music](https://www.last.fm/about/trackmymusic) and your Last.fm profile is showing the music that you're listening to.");
-                    break;
-            }
-
-            embed.WithThumbnailUrl("https://www.last.fm/static/images/marvin.e51495403de9.png");
-            embed.WithColor(DiscordConstants.WarningColorOrange);
-        }
-
         private static void NoScrobblesFoundErrorResponse(this EmbedBuilder embed, string userName)
         {
-            embed.WithTitle("Error while attempting get Last.fm information");
-
-            embed.WithDescription($"The Last.fm user `{userName}` has no scrobbles/artists/albums/tracks on [their Last.fm profile]({Constants.LastFMUserUrl}{userName}).\n\n" +
+            embed.WithDescription($"The Last.fm user `{userName}` has no scrobbles/artists/albums/tracks on [their Last.fm profile]({Constants.LastFMUserUrl}{userName}) yet.\n\n" +
                                   $"Just signed up for last.fm and added your account in the bot? Make sure you properly [track your plays](https://www.last.fm/about/trackmymusic) " +
-                                  $"and your [Last.fm profile]({Constants.LastFMUserUrl}{userName}) is showing the music that you're listening to.");
+                                  $"and your [Last.fm profile]({Constants.LastFMUserUrl}{userName}) is showing the music that you're listening to. \n" +
+                                  $"Usually it takes a few minutes before Last.fm starts working with Spotify after connecting.\n\n" +
+                                  $"Please note that .fmbot is **not** affiliated with Last.fm or Spotify.");
 
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
