@@ -313,35 +313,50 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var topAlbums = await this._artistsService.GetTopAlbumsForArtist(user.UserId, artist.ArtistName);
-
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+
             if (topAlbums.Count == 0)
             {
                 this._embed.WithDescription(
                     $"{userTitle} has no scrobbles for this artist or their scrobbles have no album associated with them.");
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                return;
             }
-            else
-            {
-                var description = new StringBuilder();
-                for (var i = 0; i < topAlbums.Count; i++)
-                {
-                    var album = topAlbums[i];
 
-                    description.AppendLine($"{i + 1}. **{album.Name}** ({album.Playcount} plays)");
+            var pages = new List<PageBuilder>();
+            var albumPages = topAlbums.ChunkBy(10);
+
+            var counter = 1;
+            var pageCounter = 1;
+            foreach (var albumPage in albumPages)
+            {
+                var albumPageString = new StringBuilder();
+                foreach (var artistAlbum in albumPage)
+                {
+                    albumPageString.AppendLine($"{counter}. **{artistAlbum.Name}** ({artistAlbum.Playcount} {StringExtensions.GetPlaysString(artistAlbum.Playcount)})");
+                    counter++;
                 }
 
-                this._embed.WithDescription(description.ToString());
+                var footer = $"Page {pageCounter}/{albumPages.Count} - {userTitle} has {artist.UserPlaycount} total scrobbles on this artist";
 
-                this._embed.WithFooter($"{userTitle} has {artist.UserPlaycount} total scrobbles on this artist");
+                var page = new PageBuilder()
+                    .WithDescription(albumPageString.ToString())
+                    .WithTitle($"Your top albums for '{artist.ArtistName}'")
+                    .WithFooter(footer);
+
+                var url = $"{Constants.LastFMUserUrl}{user.UserNameLastFM}/library/music/{UrlEncoder.Default.Encode(artist.ArtistName)}";
+                if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+                {
+                    page.WithUrl(url);
+                }
+
+                pages.Add(page);
+                pageCounter++;
             }
 
-            this._embed.WithTitle($"Your top albums for '{artist.ArtistName}'");
+            var paginator = StringService.BuildStaticPaginator(pages);
 
-            var url = $"{Constants.LastFMUserUrl}{user.UserNameLastFM}/library/music/{UrlEncoder.Default.Encode(artist.ArtistName)}";
-            if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
-            {
-                this._embed.WithUrl(url);
-            }
+            _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
