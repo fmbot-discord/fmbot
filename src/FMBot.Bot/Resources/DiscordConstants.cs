@@ -19,7 +19,7 @@ namespace FMBot.Bot.Resources
 
         public static readonly IDictionary<IEmote, PaginatorAction> PaginationEmotes = new Dictionary<IEmote, PaginatorAction>
         {
-            { Emote.Parse("<:pagesfirst:883825508633182208>"), PaginatorAction.SkipToStart},
+            { Emote.Parse("<:pages_first:883825508633182208>"), PaginatorAction.SkipToStart},
             { Emote.Parse("<:pages_previous:883825508507336704>"), PaginatorAction.Backward},
             { Emote.Parse("<:pages_next:883825508087922739>"), PaginatorAction.Forward},
             { Emote.Parse("<:pages_last:883825508482183258>"), PaginatorAction.SkipToEnd}
