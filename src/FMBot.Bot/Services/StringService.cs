@@ -1,5 +1,9 @@
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Web;
+using Fergun.Interactive;
+using Fergun.Interactive.Pagination;
+using FMBot.Bot.Resources;
 using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Services
@@ -42,6 +46,21 @@ namespace FMBot.Bot.Services
                    (string.IsNullOrWhiteSpace(track.AlbumName)
                        ? "\n"
                        : $" | *{track.AlbumName}*\n");
+        }
+
+        public static StaticPaginator BuildStaticPaginator(IList<PageBuilder> pages, bool paginationEnabled = true)
+        {
+            var builder = new StaticPaginatorBuilder()
+                .WithPages(pages)
+                .WithFooter(PaginatorFooter.None)
+                .WithActionOnTimeout(ActionOnStop.DeleteInput);
+
+            if (pages.Count != 1)
+            {
+                builder.WithOptions(DiscordConstants.PaginationEmotes);
+            }
+
+            return builder.Build();
         }
     }
 }

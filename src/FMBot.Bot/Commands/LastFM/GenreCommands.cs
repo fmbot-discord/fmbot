@@ -4,21 +4,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord.Commands;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
-using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using Humanizer;
-using Interactivity;
-using Interactivity.Pagination;
 using Microsoft.Extensions.Options;
+using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -33,7 +32,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly GenreService _genreService;
         private readonly ArtistsService _artistsService;
         private readonly SpotifyService _spotifyService;
-        private InteractivityService Interactivity { get; }
+        private InteractiveService Interactivity { get; }
 
         public GenreCommands(
             IPrefixService prefixService,
@@ -42,7 +41,7 @@ namespace FMBot.Bot.Commands.LastFM
             SettingService settingService,
             LastFmRepository lastFmRepository,
             PlayService playService,
-            InteractivityService interactivity,
+            InteractiveService interactivity,
             GenreService genreService,
             ArtistsService artistsService,
             SpotifyService spotifyService) : base(botSettings)
@@ -65,7 +64,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("gl", "tg", "genrelist", "genres", "top genres", "genreslist")]
         [UsernameSetRequired]
         [SupportsPagination]
-        public async Task TopArtistsAsync([Remainder] string extraOptions = null)
+        public async Task TopGenresAsync([Remainder] string extraOptions = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
@@ -74,17 +73,12 @@ namespace FMBot.Bot.Commands.LastFM
             var timeSettings = SettingService.GetTimePeriod(extraOptions);
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
 
-            var paginationEnabled = false;
             var pages = new List<PageBuilder>();
-            var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
-            if (perms.ManageMessages)
-            {
-                paginationEnabled = true;
-            }
 
             string userTitle;
             if (!userSettings.DifferentUser)
             {
+                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 userTitle = await this._userService.GetUserTitleAsync(this.Context);
             }
             else
@@ -93,14 +87,11 @@ namespace FMBot.Bot.Commands.LastFM
                     $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
             }
 
-            this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
             this._embedAuthor.WithName($"Top {timeSettings.Description.ToLower()} artist genres for {userTitle}");
             this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/artists?{timeSettings.UrlParameter}");
 
             try
             {
-                var description = "";
-                var footer = "";
                 Response<TopArtistList> artists;
 
                 if (!timeSettings.UsePlays && timeSettings.TimePeriod != TimePeriod.AllTime)
@@ -145,40 +136,33 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var genres = await this._genreService.GetTopGenresForTopArtists(artists.Content.TopArtists);
-                for (var i = 0; i < (paginationEnabled ? genres.Count : 15); i++)
+
+                var genrePages = genres.ChunkBy(10);
+
+                var counter = 1;
+                var pageCounter = 1;
+                foreach (var genrePage in genrePages)
                 {
-                    var genre = genres[i];
-
-                    description += $"{i + 1}. **{genre.GenreName.Humanize(LetterCasing.Title)}**\n";
-
-                    var pageAmount = i + 1;
-                    if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == genres.Count))
+                    var genrePageString = new StringBuilder();
+                    foreach (var genre in genrePage)
                     {
-                        pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor).WithFooter(footer));
-                        description = "";
+                        genrePageString.AppendLine($"{counter}. **{genre.GenreName.Humanize(LetterCasing.Title)}**");
+                        counter++;
                     }
+
+                    var footer = $"Genre source: Spotify\n" +
+                                 $"Page {pageCounter}/{genrePages.Count} - {genres.Count} total genres";
+
+                    pages.Add(new PageBuilder()
+                        .WithDescription(genrePageString.ToString())
+                        .WithAuthor(this._embedAuthor)
+                        .WithFooter(footer));
+                    pageCounter++;
                 }
 
-                if (paginationEnabled)
-                {
-                    var paginator = new StaticPaginatorBuilder()
-                        .WithPages(pages)
-                        .WithFooter(PaginatorFooter.PageNumber)
-                        .WithTimoutedEmbed(null)
-                        .WithCancelledEmbed(null)
-                        .WithEmotes(DiscordConstants.PaginationEmotes)
-                        .Build();
+                var paginator = StringService.BuildStaticPaginator(pages);
 
-                    _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds), runOnGateway: false);
-                }
-                else
-                {
-                    this._embed.WithAuthor(this._embedAuthor);
-                    this._embed.WithDescription(description);
-                    this._embed.WithFooter(this._embedFooter);
-
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                }
+                _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
 
                 this.Context.LogCommandUsed();
             }
@@ -204,7 +188,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                List<string> genres = new List<string>();
+                var genres = new List<string>();
                 if (string.IsNullOrWhiteSpace(genreOptions))
                 {
                     var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(contextUser.UserNameLastFM, 1, true, contextUser.SessionKeyLastFm);
@@ -266,7 +250,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else
                 {
-                    genres = new List<string>{ genreOptions };
+                    genres = new List<string> { genreOptions };
                 }
 
                 if (!genres.Any())
@@ -302,13 +286,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
-                var paginationEnabled = false;
                 var pages = new List<PageBuilder>();
-                var perms = await GuildService.GetGuildPermissionsAsync(this.Context);
-                if (perms.ManageMessages)
-                {
-                    paginationEnabled = true;
-                }
 
                 var genre = genresWithArtists.First();
 
@@ -325,41 +303,32 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 this._embedAuthor.WithName($"Top '{genre.GenreName.Transform(To.TitleCase)}' artists for {userTitle}");
 
-                var description = "";
-                for (var i = 0; i < (paginationEnabled ? genre.Artists.Count : 15); i++)
+                var genrePages = genre.Artists.ChunkBy(10);
+
+                var counter = 1;
+                var pageCounter = 1;
+                foreach (var genrePage in genrePages)
                 {
-                    var genreArtist = genre.Artists[i];
-
-                    description += $"{i + 1}. **{genreArtist.ArtistName}** ({genreArtist.UserPlaycount} plays)\n";
-
-                    var pageAmount = i + 1;
-                    if (paginationEnabled && (pageAmount > 0 && pageAmount % 10 == 0 || pageAmount == genre.Artists.Count))
+                    var genrePageString = new StringBuilder();
+                    foreach (var genreArtist in genrePage)
                     {
-                        pages.Add(new PageBuilder().WithDescription(description).WithAuthor(this._embedAuthor));
-                        description = "";
+                        genrePageString.AppendLine($"{counter}. **{genreArtist.ArtistName}** ({genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)}");
+                        counter++;
                     }
+
+                    var footer = $"Genre source: Spotify\n" +
+                                 $"Page {pageCounter}/{genrePages.Count} - {genre.Artists.Count} total artists";
+
+                    pages.Add(new PageBuilder()
+                        .WithDescription(genrePageString.ToString())
+                        .WithAuthor(this._embedAuthor)
+                        .WithFooter(footer));
+                    pageCounter++;
                 }
 
-                if (paginationEnabled)
-                {
-                    var paginator = new StaticPaginatorBuilder()
-                        .WithPages(pages)
-                        .WithFooter(PaginatorFooter.PageNumber)
-                        .WithTimoutedEmbed(null)
-                        .WithCancelledEmbed(null)
-                        .WithEmotes(DiscordConstants.PaginationEmotes)
-                        .Build();
+                var paginator = StringService.BuildStaticPaginator(pages);
 
-                    _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds), runOnGateway: false);
-                }
-                else
-                {
-                    this._embed.WithAuthor(this._embedAuthor);
-                    this._embed.WithDescription(description);
-                    this._embed.WithFooter(this._embedFooter);
-
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                }
+                _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
 
                 this.Context.LogCommandUsed();
             }

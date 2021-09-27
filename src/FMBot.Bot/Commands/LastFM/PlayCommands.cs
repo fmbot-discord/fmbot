@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
@@ -20,8 +19,6 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
-using Humanizer;
-using Interactivity;
 using Microsoft.Extensions.Options;
 using Swan;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
@@ -45,7 +42,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly WhoKnowsArtistService _whoKnowsArtistService;
         private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
         private readonly WhoKnowsTrackService _whoKnowsTrackService;
-        private InteractivityService Interactivity { get; }
+        private InteractiveService Interactivity { get; }
 
         private static readonly List<DateTimeOffset> StackCooldownTimer = new();
         private static readonly List<SocketUser> StackCooldownTarget = new();
@@ -65,7 +62,7 @@ namespace FMBot.Bot.Commands.LastFM
                 WhoKnowsArtistService whoKnowsArtistService,
                 WhoKnowsAlbumService whoKnowsAlbumService,
                 WhoKnowsTrackService whoKnowsTrackService,
-                InteractivityService interactivity,
+                InteractiveService interactivity,
                 IOptions<BotSettings> botSettings) : base(botSettings)
         {
             this._guildService = guildService;
@@ -147,7 +144,7 @@ namespace FMBot.Bot.Commands.LastFM
                                 .AddSeconds(existingFmCooldown.Value) - DateTimeOffset.Now).TotalSeconds;
                             if (secondsLeft <= existingFmCooldown.Value - 2)
                             {
-                                this.Interactivity.DelayedDeleteMessageAsync(
+                                _ = this.Interactivity.DelayedDeleteMessageAsync(
                                     await this.Context.Channel.SendMessageAsync($"This channel has a `{existingFmCooldown.Value}` second cooldown on `.fm`. Please wait for this to expire before using this command again."),
                                     TimeSpan.FromSeconds(6));
                                 this.Context.LogCommandUsed(CommandResponse.Cooldown);

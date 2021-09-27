@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
@@ -30,6 +30,7 @@ namespace FMBot.Bot.Commands
         private readonly IPrefixService _prefixService;
         private readonly SupporterService _supporterService;
         private readonly UserService _userService;
+        private InteractiveService Interactivity { get; }
 
         private static readonly List<DateTimeOffset> StackCooldownTimer = new();
         private static readonly List<SocketUser> StackCooldownTarget = new();
@@ -41,7 +42,8 @@ namespace FMBot.Bot.Commands
                 IPrefixService prefixService,
                 SupporterService supporterService,
                 UserService userService,
-                IOptions<BotSettings> botSettings) : base(botSettings)
+                IOptions<BotSettings> botSettings,
+                InteractiveService interactivity) : base(botSettings)
         {
             this._friendService = friendsService;
             this._guildService = guildService;
@@ -49,6 +51,7 @@ namespace FMBot.Bot.Commands
             this._service = service;
             this._supporterService = supporterService;
             this._userService = userService;
+            this.Interactivity = interactivity;
         }
 
         [Command("invite", RunMode = RunMode.Async)]
@@ -143,7 +146,9 @@ namespace FMBot.Bot.Commands
 
             this._embed.WithDescription(embedDescription.ToString());
 
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            var components = new ComponentBuilder().WithButton("Get .fmbot supporter", style: ButtonStyle.Link, url: "https://opencollective.com/fmbot/contribute");
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build(), component: components.Build());
             this.Context.LogCommandUsed();
         }
 
@@ -252,13 +257,7 @@ namespace FMBot.Bot.Commands
 
             this._embed.WithTitle(".fmbot Quick Start Guide");
 
-            var mainCommand = "fm";
-            if (!customPrefix)
-            {
-                mainCommand = "";
-            }
-
-            this._embed.AddField($"Main command `{prefix}{mainCommand}`",
+            this._embed.AddField($"Main command `{prefix}fm`",
                 "Displays last scrobbles, and looks different depending on the mode you've set.");
 
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -283,11 +282,8 @@ namespace FMBot.Bot.Commands
             {
                 this._embed.AddField("Custom prefix:",
                     $"This server has the `{prefix}` prefix.\n" +
-                    $"Note that the documentation has the `.fm` prefix everywhere, so you'll have to replace `.fm` with `{prefix}`.");
+                    $"Some examples of commands with this prefix are `{prefix}whoknows`, `{prefix}chart` and `{prefix}artisttracks`.");
             }
-
-            this._embed.AddField("For more commands and info, please read the documentation here:",
-                "https://fmbot.xyz/commands/");
 
             this._embed.WithFooter($"To view a complete list of all commands, use '{prefix}fullhelp'.");
 
@@ -305,7 +301,9 @@ namespace FMBot.Bot.Commands
                                               ".fmbot is not affiliated with Last.fm.");
             }
 
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            var components = new ComponentBuilder().WithButton("All commands", style: ButtonStyle.Link, url: "https://fmbot.xyz/commands/");
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build(), component: components.Build());
             this.Context.LogCommandUsed();
         }
 
@@ -314,15 +312,20 @@ namespace FMBot.Bot.Commands
         [Alias("donators", "donors", "backers")]
         public async Task AllSupportersAsync()
         {
-            this._embed.WithTitle(".fmbot supporters");
-
             var supporters = await this._supporterService.GetAllVisibleSupporters();
 
-            var supporterLists = supporters.ChunkBy(12);
+            var supporterLists = supporters.ChunkBy(10);
 
+            var description = new StringBuilder();
+            description.AppendLine("Thank you to all our supporters that help keep .fmbot running. If you would like to be on this list too, please check out our [OpenCollective](https://opencollective.com/fmbot). \n" +
+                                   $"For all information on donating to .fmbot you can check out `.fmdonate`.");
+            description.AppendLine();
+
+            var pages = new List<PageBuilder>();
             foreach (var supporterList in supporterLists)
             {
                 var supporterString = new StringBuilder();
+                supporterString.Append(description.ToString());
 
                 foreach (var supporter in supporterList)
                 {
@@ -337,20 +340,19 @@ namespace FMBot.Bot.Commands
                     supporterString.AppendLine($" - **{supporter.Name}** {type}");
                 }
 
-                this._embed.AddField("Supporters", supporterString.ToString(), true);
+                pages.Add(new PageBuilder()
+                    .WithDescription(supporterString.ToString())
+                    .WithAuthor(this._embedAuthor)
+                    .WithTitle(".fmbot supporters overview"));
             }
-
-            var description = new StringBuilder();
-            description.AppendLine();
-            description.AppendLine("Thank you to all our supporters that help keep .fmbot running. If you would like to be on this list too, please check out our [OpenCollective](https://opencollective.com/fmbot). \n" +
-                                   "For all information on donating to .fmbot you can check out `.fmdonate`.");
 
             this._embed.WithDescription(description.ToString());
 
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            var paginator = StringService.BuildStaticPaginator(pages);
+
+            _ = this.Interactivity.SendPaginatorAsync(paginator, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
             this.Context.LogCommandUsed();
         }
-
 
         [Command("countdown", RunMode = RunMode.Async)]
         [Summary("Counts down. Doesn't work that well above 3 seconds.")]

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
@@ -26,6 +27,7 @@ namespace FMBot.Bot.Handlers
         private readonly MusicBotService _musicBotService;
         private readonly GuildService _guildService;
         private readonly IPrefixService _prefixService;
+        private readonly InteractiveService _interactiveService;
         private readonly IGuildDisabledCommandService _guildDisabledCommandService;
         private readonly IChannelDisabledCommandService _channelDisabledCommandService;
         private readonly IServiceProvider _provider;
@@ -42,7 +44,8 @@ namespace FMBot.Bot.Handlers
             UserService userService,
             MusicBotService musicBotService,
             IOptions<BotSettings> botSettings,
-            GuildService guildService)
+            GuildService guildService,
+            InteractiveService interactiveService)
         {
             this._discord = discord;
             this._commands = commands;
@@ -53,6 +56,7 @@ namespace FMBot.Bot.Handlers
             this._userService = userService;
             this._musicBotService = musicBotService;
             this._guildService = guildService;
+            this._interactiveService = interactiveService;
             this._botSettings = botSettings.Value;
             this._discord.MessageReceived += OnMessageReceivedAsync;
         }
@@ -149,7 +153,9 @@ namespace FMBot.Bot.Handlers
                     disabledGuildCommands != null &&
                     disabledGuildCommands.Any(searchResult.Commands[0].Command.Name.Contains))
                 {
-                    await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this server.");
+                    _ = this._interactiveService.DelayedDeleteMessageAsync(
+                        await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this server."),
+                        TimeSpan.FromSeconds(8));
                     return;
                 }
 
@@ -160,7 +166,9 @@ namespace FMBot.Bot.Handlers
                     disabledChannelCommands.Any(searchResult.Commands[0].Command.Name.Contains) &&
                     context.Channel != null)
                 {
-                    await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this channel.");
+                    _ = this._interactiveService.DelayedDeleteMessageAsync(
+                        await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this channel."),
+                        TimeSpan.FromSeconds(8));
                     return;
                 }
             }

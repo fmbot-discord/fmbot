@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using Discord;
-using Interactivity.Pagination;
+using Fergun.Interactive.Pagination;
 
 namespace FMBot.Bot.Resources
 {
@@ -17,12 +17,12 @@ namespace FMBot.Bot.Resources
 
         public static Color SpotifyColorGreen = new(30, 215, 97);
 
-        public static readonly Dictionary<IEmote, PaginatorAction> PaginationEmotes = new()
+        public static readonly IDictionary<IEmote, PaginatorAction> PaginationEmotes = new Dictionary<IEmote, PaginatorAction>
         {
-            { new Emoji("⏮️"), PaginatorAction.SkipToStart},
-            { new Emoji("⬅️"), PaginatorAction.Backward},
-            { new Emoji("➡️"), PaginatorAction.Forward},
-            { new Emoji("⏭️"), PaginatorAction.SkipToEnd}
+            { Emote.Parse("<:pagesfirst:883825508633182208>"), PaginatorAction.SkipToStart},
+            { Emote.Parse("<:pages_previous:883825508507336704>"), PaginatorAction.Backward},
+            { Emote.Parse("<:pages_next:883825508087922739>"), PaginatorAction.Forward},
+            { Emote.Parse("<:pages_last:883825508482183258>"), PaginatorAction.SkipToEnd}
         };
 
         public const int PaginationTimeoutInSeconds = 120;
