@@ -258,6 +258,10 @@ namespace FMBot.Bot.Commands.LastFM
                     if (guild?.FmEmbedType != null)
                     {
                         embedType = guild.FmEmbedType.Value;
+                    }
+
+                    if (guild != null)
+                    {
                         await this._indexService.UpdateGuildUser(await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId), contextUser.UserId, guild);
                     }
                 }

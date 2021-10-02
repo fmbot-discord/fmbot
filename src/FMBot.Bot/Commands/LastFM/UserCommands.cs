@@ -469,8 +469,17 @@ namespace FMBot.Bot.Commands.LastFM
                 setReply += $" with no extra playcount.";
             }
 
-            setReply +=
-                "\n\nNote that servers can force a specific mode. The server setting will always overrule your own.";
+            if (this.Context.Guild != null)
+            {
+                var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+                if (guild?.FmEmbedType != null)
+                {
+                    setReply +=
+                        $"\n\nNote that servers can force a specific mode which will override your own mode. " +
+                        $"\nThis server has the **{guild?.FmEmbedType}** mode set for everyone, which means your own setting will not apply here.";
+                }
+            }
+
 
             this._embed.WithColor(DiscordConstants.InformationColorBlue);
             this._embed.WithDescription(setReply);
