@@ -147,6 +147,36 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
+        [Command("link", RunMode = RunMode.Async)]
+        [Summary("Links a users Last.fm profile")]
+        [Alias("profile", "lastfm", "lfm")]
+        [UsernameSetRequired]
+        public async Task LinkAsync([Remainder] string userOptions = null)
+        {
+            var user = await this._userService.GetFullUserAsync(this.Context.User.Id);
+
+            try
+            {
+                var userSettings = await this._settingService.GetUser(userOptions, user, this.Context, true);
+
+                if (userSettings.DifferentUser)
+                {
+                    await this.Context.Channel.SendMessageAsync($"<@{userSettings.DiscordUserId}>'s Last.fm profile: {Constants.LastFMUserUrl}{userSettings.UserNameLastFm}", allowedMentions: AllowedMentions.None);
+                }
+                else
+                {
+                    await this.Context.Channel.SendMessageAsync($"Your Last.fm profile: {Constants.LastFMUserUrl}{userSettings.UserNameLastFm}", allowedMentions: AllowedMentions.None);
+                }
+
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync("Unable to show link profile due to an internal error.");
+            }
+        }
+
         [Command("featured", RunMode = RunMode.Async)]
         [Summary("Displays the currently picked feature and the user.\n\n" +
                  "This command will also show something special if the user is in your server")]
