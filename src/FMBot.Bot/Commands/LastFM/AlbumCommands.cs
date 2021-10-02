@@ -1094,7 +1094,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("sab", "stab", "servertopalbums", "serveralbum", "server albums")]
         [RequiresIndex]
         [GuildOnly]
-        public async Task GuildAlbumsAsync(params string[] extraOptions)
+        public async Task GuildAlbumsAsync([Remainder] string guildAlbumsOptions = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
@@ -1106,13 +1106,15 @@ namespace FMBot.Bot.Commands.LastFM
                 ChartTimePeriod = TimePeriod.Weekly,
                 TimeDescription = "weekly",
                 OrderType = OrderType.Listeners,
-                AmountOfDays = 7
+                AmountOfDays = 7,
+                NewSearchValue = guildAlbumsOptions
             };
 
             try
             {
-                serverAlbumSettings = SettingService.SetGuildRankingSettings(serverAlbumSettings, extraOptions);
-                var foundTimePeriod = SettingService.GetTimePeriod(extraOptions, serverAlbumSettings.ChartTimePeriod);
+                serverAlbumSettings = SettingService.SetGuildRankingSettings(serverAlbumSettings, guildAlbumsOptions);
+                var foundTimePeriod = SettingService.GetTimePeriod(serverAlbumSettings.NewSearchValue, serverAlbumSettings.ChartTimePeriod);
+                var artistName = foundTimePeriod.NewSearchValue;
 
                 if (foundTimePeriod.UsePlays || foundTimePeriod.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
                 {
@@ -1135,14 +1137,21 @@ namespace FMBot.Bot.Commands.LastFM
                 IReadOnlyList<ListAlbum> topGuildAlbums;
                 if (serverAlbumSettings.ChartTimePeriod == TimePeriod.AllTime)
                 {
-                    topGuildAlbums = await this._whoKnowsAlbumService.GetTopAllTimeAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType);
+                    topGuildAlbums = await this._whoKnowsAlbumService.GetTopAllTimeAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType, artistName);
                 }
                 else
                 {
-                    topGuildAlbums = await this._whoKnowsPlayService.GetTopAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType, serverAlbumSettings.AmountOfDays);
+                    topGuildAlbums = await this._whoKnowsPlayService.GetTopAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType, serverAlbumSettings.AmountOfDays, artistName);
                 }
 
-                this._embed.WithTitle($"Top {serverAlbumSettings.TimeDescription} albums in {this.Context.Guild.Name}");
+                if (string.IsNullOrWhiteSpace(artistName))
+                {
+                    this._embed.WithTitle($"Top {serverAlbumSettings.TimeDescription.ToLower()} albums in {this.Context.Guild.Name}");
+                }
+                else
+                {
+                    this._embed.WithTitle($"Top {serverAlbumSettings.TimeDescription.ToLower()} '{artistName}' albums in {this.Context.Guild.Name}");
+                }
 
                 if (serverAlbumSettings.OrderType == OrderType.Listeners)
                 {

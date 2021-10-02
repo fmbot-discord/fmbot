@@ -220,8 +220,11 @@ namespace FMBot.Bot.Services.WhoKnows
         }
 
         public async Task<IReadOnlyList<ListTrack>> GetTopAllTimeTracksForGuild(int guildId,
-            OrderType orderType)
+            OrderType orderType, string artistName)
         {
+            var dbArgs = new DynamicParameters();
+            dbArgs.Add("guildId", guildId);
+
             var sql = "SELECT ut.name AS track_name, ut.artist_name, " +
                       "SUM(ut.playcount) AS total_playcount, " +
                       "COUNT(ut.user_id) AS listener_count " +
@@ -230,8 +233,15 @@ namespace FMBot.Bot.Services.WhoKnows
                       "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id  " +
                       "WHERE gu.guild_id = @guildId  AND gu.bot != true " +
                       "AND NOT ut.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
-                      "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
-                      "GROUP BY ut.name, ut.artist_name ";
+                      "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) ";
+
+            if (!string.IsNullOrWhiteSpace(artistName))
+            {
+                sql += "AND UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) ";
+                dbArgs.Add("artistName", artistName);
+            }
+
+            sql += "GROUP BY ut.name, ut.artist_name ";
 
             sql += orderType == OrderType.Playcount ?
                 "ORDER BY total_playcount DESC, listener_count DESC " :
@@ -243,10 +253,7 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            return (await connection.QueryAsync<ListTrack>(sql, new
-            {
-                guildId
-            })).ToList();
+            return (await connection.QueryAsync<ListTrack>(sql, dbArgs)).ToList();
         }
 
         public async Task<int> GetWeekTrackPlaycountForGuildAsync(IEnumerable<User> guildUsers, string trackName, string artistName)
