@@ -1178,7 +1178,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("sa", "sta", "servertopartists", "server artists", "serverartist")]
         [GuildOnly]
         [RequiresIndex]
-        public async Task GuildArtistsAsync([Remainder] string extraOptions)
+        public async Task GuildArtistsAsync([Remainder] string extraOptions = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
@@ -1190,7 +1190,8 @@ namespace FMBot.Bot.Commands.LastFM
                 ChartTimePeriod = TimePeriod.Weekly,
                 TimeDescription = "weekly",
                 OrderType = OrderType.Listeners,
-                AmountOfDays = 7
+                AmountOfDays = 7,
+                NewSearchValue = extraOptions
             };
 
             serverArtistSettings = SettingService.SetGuildRankingSettings(serverArtistSettings, extraOptions);
