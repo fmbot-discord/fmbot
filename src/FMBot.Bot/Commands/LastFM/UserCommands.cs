@@ -149,7 +149,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("link", RunMode = RunMode.Async)]
         [Summary("Links a users Last.fm profile")]
-        [Alias("profile", "lastfm", "lfm")]
+        [Alias("lastfm", "lfm")]
         [UsernameSetRequired]
         public async Task LinkAsync([Remainder] string userOptions = null)
         {
