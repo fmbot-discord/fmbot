@@ -599,12 +599,9 @@ namespace FMBot.Bot.Services
             {
                 if (extraOptions.Contains(value.ToLower()))
                 {
-                    extraOptions = extraOptions.Replace($"{value.ToLower()} ", "");
-                    extraOptions = extraOptions.Replace($" {value.ToLower()}", "");
-                    if (extraOptions.Length == value.Length)
-                    {
-                        extraOptions = extraOptions.Replace($"{value.ToLower()}", "");
-                    }
+                    extraOptions = $" {extraOptions} ";
+                    extraOptions = extraOptions.Replace($" {value.ToLower()} ", "");
+                    extraOptions = extraOptions.Trim();
                     somethingFound = true;
                 }
             }

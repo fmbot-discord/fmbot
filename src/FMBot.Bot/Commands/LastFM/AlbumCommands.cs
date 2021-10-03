@@ -1088,9 +1088,9 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("serveralbums", RunMode = RunMode.Async)]
-        [Summary("Shows top albums for your server")]
-        [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`")]
-        [Examples("sab", "sab a p", "serveralbums", "serveralbums alltime", "serveralbums listeners weekly")]
+        [Summary("Shows top albums for your server, optionally for a specific artist.")]
+        [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`", "Artist name")]
+        [Examples("sab", "sab a p", "serveralbums", "serveralbums alltime", "serveralbums listeners weekly", "serveralbums the beatles monthly")]
         [Alias("sab", "stab", "servertopalbums", "serveralbum", "server albums")]
         [RequiresIndex]
         [GuildOnly]

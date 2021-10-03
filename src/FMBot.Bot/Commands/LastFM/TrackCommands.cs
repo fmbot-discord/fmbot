@@ -1005,9 +1005,9 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("servertracks", RunMode = RunMode.Async)]
-        [Summary("Shows top tracks for your server")]
-        [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`")]
-        [Examples("st", "st a p", "servertracks", "servertracks alltime", "servertracks listeners weekly")]
+        [Summary("Shows top tracks for your server, optionally for a specific artist")]
+        [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`", "Artist name")]
+        [Examples("st", "st a p", "servertracks", "servertracks alltime", "servertracks listeners weekly", "servertracks kanye west listeners")]
         [Alias("st", "stt", "servertoptracks", "servertrack", "server tracks")]
         [GuildOnly]
         [RequiresIndex]
