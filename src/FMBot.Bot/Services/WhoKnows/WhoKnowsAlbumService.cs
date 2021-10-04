@@ -219,7 +219,7 @@ namespace FMBot.Bot.Services.WhoKnows
         }
 
         public async Task<IReadOnlyList<ListAlbum>> GetTopAllTimeAlbumsForGuild(int guildId,
-            OrderType orderType)
+            OrderType orderType, string artistName)
         {
             var sql = "SELECT ub.name AS album_name, ub.artist_name, " +
                       "SUM(ub.playcount) AS total_playcount, " +
@@ -229,8 +229,14 @@ namespace FMBot.Bot.Services.WhoKnows
                       "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id  " +
                       "WHERE gu.guild_id = @guildId AND gu.bot != true " +
                       "AND NOT ub.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
-                      "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
-                      "GROUP BY ub.name, ub.artist_name ";
+                      "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) ";
+
+            if (!string.IsNullOrWhiteSpace(artistName))
+            {
+                sql += "AND UPPER(ub.artist_name) = UPPER(CAST(@artistName AS CITEXT)) ";
+            }
+
+            sql += "GROUP BY ub.name, ub.artist_name ";
 
             sql += orderType == OrderType.Playcount ?
                 "ORDER BY total_playcount DESC, listener_count DESC " :
@@ -244,7 +250,8 @@ namespace FMBot.Bot.Services.WhoKnows
 
             return (await connection.QueryAsync<ListAlbum>(sql, new
             {
-                guildId
+                guildId,
+                artistName
             })).ToList();
         }
 

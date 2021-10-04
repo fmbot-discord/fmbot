@@ -12,6 +12,8 @@ namespace FMBot.Bot.Models
         public string TimeDescription { get; set; }
 
         public int AmountOfDays { get; set; }
+
+        public string NewSearchValue { get; set; }
     }
 
     public enum OrderType

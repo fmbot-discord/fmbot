@@ -520,17 +520,32 @@ namespace FMBot.Bot.Services
             return goalAmount;
         }
 
-        public static GuildRankingSettings SetGuildRankingSettings(GuildRankingSettings guildRankingSettings, string[] extraOptions)
+        public static GuildRankingSettings SetGuildRankingSettings(GuildRankingSettings guildRankingSettings, string extraOptions)
         {
             var setGuildRankingSettings = guildRankingSettings;
 
-            if (extraOptions.Contains("p") || extraOptions.Contains("pc") || extraOptions.Contains("playcount") || extraOptions.Contains("plays"))
+            if (string.IsNullOrWhiteSpace(extraOptions))
             {
+                return setGuildRankingSettings;
+            }
+
+            var playcounts = new[] { "p", "pc", "playcount", "plays" };
+            if (Contains(extraOptions, playcounts))
+            {
+                guildRankingSettings.NewSearchValue = ContainsAndRemove(guildRankingSettings.NewSearchValue, playcounts);
                 setGuildRankingSettings.OrderType = OrderType.Playcount;
             }
-            if (extraOptions.Contains("l") || extraOptions.Contains("lc") || extraOptions.Contains("listenercount") || extraOptions.Contains("listeners"))
+
+            var listenerCounts = new[] { "l", "lc", "listenercount", "listeners" };
+            if (Contains(extraOptions, listenerCounts))
             {
+                guildRankingSettings.NewSearchValue = ContainsAndRemove(guildRankingSettings.NewSearchValue, listenerCounts);
                 setGuildRankingSettings.OrderType = OrderType.Listeners;
+            }
+
+            if (string.IsNullOrWhiteSpace(extraOptions))
+            {
+                guildRankingSettings.NewSearchValue = null;
             }
 
             return setGuildRankingSettings;
@@ -584,7 +599,9 @@ namespace FMBot.Bot.Services
             {
                 if (extraOptions.Contains(value.ToLower()))
                 {
-                    extraOptions = extraOptions.Replace(value.ToLower(), "");
+                    extraOptions = $" {extraOptions} ";
+                    extraOptions = extraOptions.Replace($" {value.ToLower()} ", "");
+                    extraOptions = extraOptions.Trim();
                     somethingFound = true;
                 }
             }

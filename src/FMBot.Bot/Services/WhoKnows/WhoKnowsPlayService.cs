@@ -58,7 +58,8 @@ namespace FMBot.Bot.Services.WhoKnows
             })).ToList();
         }
 
-        public async Task<IReadOnlyList<ListAlbum>> GetTopAlbumsForGuild(int guildId, OrderType orderType, int amountOfDays)
+        public async Task<IReadOnlyList<ListAlbum>> GetTopAlbumsForGuild(int guildId, OrderType orderType,
+            int amountOfDays, string artistName)
         {
             var sql = "SELECT up.artist_name, up.album_name, " +
                       "COUNT(up.user_play_id) AS total_playcount, " +
@@ -68,8 +69,14 @@ namespace FMBot.Bot.Services.WhoKnows
                       "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
                       $"WHERE gu.guild_id = @guildId AND gu.bot != true AND time_played > current_date - interval '{amountOfDays}' day " +
                       "AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
-                      "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
-                      "GROUP BY up.artist_name, album_name ";
+                      "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) ";
+
+            if (!string.IsNullOrWhiteSpace(artistName))
+            {
+                sql += "AND UPPER(up.artist_name) = UPPER(CAST(@artistName AS CITEXT)) ";
+            }
+
+            sql += "GROUP BY up.artist_name, album_name ";
 
             sql += orderType == OrderType.Playcount ?
                 "ORDER BY total_playcount DESC, listener_count DESC " :
@@ -83,11 +90,13 @@ namespace FMBot.Bot.Services.WhoKnows
 
             return (await connection.QueryAsync<ListAlbum>(sql, new
             {
-                guildId
+                guildId,
+                artistName
             })).ToList();
         }
 
-        public async Task<IReadOnlyList<ListTrack>> GetTopTracksForGuild(int guildId, OrderType orderType, int amountOfDays)
+        public async Task<IReadOnlyList<ListTrack>> GetTopTracksForGuild(int guildId, OrderType orderType,
+            int amountOfDays, string artistName)
         {
             var sql = "SELECT up.artist_name, up.track_name, " +
                       "COUNT(up.user_play_id) AS total_playcount, " +
@@ -97,8 +106,14 @@ namespace FMBot.Bot.Services.WhoKnows
                       "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
                       $"WHERE gu.guild_id = @guildId  AND gu.bot != true AND time_played > current_date - interval '{amountOfDays}' day " +
                       "AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
-                      "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
-                      "GROUP BY up.artist_name, track_name ";
+                      "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) ";
+
+            if (!string.IsNullOrWhiteSpace(artistName))
+            {
+                sql += "AND UPPER(up.artist_name) = UPPER(CAST(@artistName AS CITEXT)) ";
+            }
+
+            sql += "GROUP BY up.artist_name, track_name ";
 
             sql += orderType == OrderType.Playcount ?
                 "ORDER BY total_playcount DESC, listener_count DESC " :
@@ -112,7 +127,8 @@ namespace FMBot.Bot.Services.WhoKnows
 
             return (await connection.QueryAsync<ListTrack>(sql, new
             {
-                guildId
+                guildId,
+                artistName
             })).ToList();
         }
 

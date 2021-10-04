@@ -1005,13 +1005,13 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("servertracks", RunMode = RunMode.Async)]
-        [Summary("Shows top tracks for your server")]
-        [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`")]
-        [Examples("st", "st a p", "servertracks", "servertracks alltime", "servertracks listeners weekly")]
+        [Summary("Shows top tracks for your server, optionally for a specific artist")]
+        [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`", "Artist name")]
+        [Examples("st", "st a p", "servertracks", "servertracks alltime", "servertracks listeners weekly", "servertracks kanye west listeners")]
         [Alias("st", "stt", "servertoptracks", "servertrack", "server tracks")]
         [GuildOnly]
         [RequiresIndex]
-        public async Task GuildTracksAsync(params string[] extraOptions)
+        public async Task GuildTracksAsync([Remainder] string guildTracksOptions = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
@@ -1023,17 +1023,19 @@ namespace FMBot.Bot.Commands.LastFM
                 ChartTimePeriod = TimePeriod.Weekly,
                 TimeDescription = "weekly",
                 OrderType = OrderType.Listeners,
-                AmountOfDays = 7
+                AmountOfDays = 7,
+                NewSearchValue = guildTracksOptions
             };
 
-            serverTrackSettings = SettingService.SetGuildRankingSettings(serverTrackSettings, extraOptions);
-            var timePeriod = SettingService.GetTimePeriod(extraOptions, serverTrackSettings.ChartTimePeriod);
+            serverTrackSettings = SettingService.SetGuildRankingSettings(serverTrackSettings, guildTracksOptions);
+            var foundTimePeriod = SettingService.GetTimePeriod(serverTrackSettings.NewSearchValue, serverTrackSettings.ChartTimePeriod);
+            var artistName = foundTimePeriod.NewSearchValue;
 
-            if (timePeriod.UsePlays || timePeriod.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
+            if (foundTimePeriod.UsePlays || foundTimePeriod.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
             {
-                serverTrackSettings.ChartTimePeriod = timePeriod.TimePeriod;
-                serverTrackSettings.TimeDescription = timePeriod.Description;
-                serverTrackSettings.AmountOfDays = timePeriod.PlayDays.GetValueOrDefault();
+                serverTrackSettings.ChartTimePeriod = foundTimePeriod.TimePeriod;
+                serverTrackSettings.TimeDescription = foundTimePeriod.Description;
+                serverTrackSettings.AmountOfDays = foundTimePeriod.PlayDays.GetValueOrDefault();
             }
 
             var description = "";
@@ -1052,14 +1054,21 @@ namespace FMBot.Bot.Commands.LastFM
                 IReadOnlyList<ListTrack> topGuildTracks;
                 if (serverTrackSettings.ChartTimePeriod == TimePeriod.AllTime)
                 {
-                    topGuildTracks = await this._whoKnowsTrackService.GetTopAllTimeTracksForGuild(guild.GuildId, serverTrackSettings.OrderType);
+                    topGuildTracks = await this._whoKnowsTrackService.GetTopAllTimeTracksForGuild(guild.GuildId, serverTrackSettings.OrderType, artistName);
                 }
                 else
                 {
-                    topGuildTracks = await this._whoKnowsPlayService.GetTopTracksForGuild(guild.GuildId, serverTrackSettings.OrderType, serverTrackSettings.AmountOfDays);
+                    topGuildTracks = await this._whoKnowsPlayService.GetTopTracksForGuild(guild.GuildId, serverTrackSettings.OrderType, serverTrackSettings.AmountOfDays, artistName);
                 }
 
-                this._embed.WithTitle($"Top {serverTrackSettings.TimeDescription} tracks in {this.Context.Guild.Name}");
+                if (string.IsNullOrWhiteSpace(artistName))
+                {
+                    this._embed.WithTitle($"Top {serverTrackSettings.TimeDescription.ToLower()} tracks in {this.Context.Guild.Name}");
+                }
+                else
+                {
+                    this._embed.WithTitle($"Top {serverTrackSettings.TimeDescription.ToLower()} '{artistName}' tracks in {this.Context.Guild.Name}");
+                }
 
                 if (serverTrackSettings.OrderType == OrderType.Listeners)
                 {

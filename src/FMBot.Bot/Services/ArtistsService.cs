@@ -323,7 +323,6 @@ namespace FMBot.Bot.Services
                 .Where(w => w.ArtistName.ToLower() == artistName.ToLower()
                             && w.UserId == userId)
                 .OrderByDescending(o => o.Playcount)
-                .Take(12)
                 .ToListAsync();
         }
     }

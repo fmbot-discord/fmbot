@@ -147,6 +147,36 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
+        [Command("link", RunMode = RunMode.Async)]
+        [Summary("Links a users Last.fm profile")]
+        [Alias("lastfm", "lfm")]
+        [UsernameSetRequired]
+        public async Task LinkAsync([Remainder] string userOptions = null)
+        {
+            var user = await this._userService.GetFullUserAsync(this.Context.User.Id);
+
+            try
+            {
+                var userSettings = await this._settingService.GetUser(userOptions, user, this.Context, true);
+
+                if (userSettings.DifferentUser)
+                {
+                    await this.Context.Channel.SendMessageAsync($"<@{userSettings.DiscordUserId}>'s Last.fm profile: {Constants.LastFMUserUrl}{userSettings.UserNameLastFm}", allowedMentions: AllowedMentions.None);
+                }
+                else
+                {
+                    await this.Context.Channel.SendMessageAsync($"Your Last.fm profile: {Constants.LastFMUserUrl}{userSettings.UserNameLastFm}", allowedMentions: AllowedMentions.None);
+                }
+
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync("Unable to show link profile due to an internal error.");
+            }
+        }
+
         [Command("featured", RunMode = RunMode.Async)]
         [Summary("Displays the currently picked feature and the user.\n\n" +
                  "This command will also show something special if the user is in your server")]
@@ -439,8 +469,17 @@ namespace FMBot.Bot.Commands.LastFM
                 setReply += $" with no extra playcount.";
             }
 
-            setReply +=
-                "\n\nNote that servers can force a specific mode. The server setting will always overrule your own.";
+            if (this.Context.Guild != null)
+            {
+                var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+                if (guild?.FmEmbedType != null)
+                {
+                    setReply +=
+                        $"\n\nNote that servers can force a specific mode which will override your own mode. " +
+                        $"\nThis server has the **{guild?.FmEmbedType}** mode set for everyone, which means your own setting will not apply here.";
+                }
+            }
+
 
             this._embed.WithColor(DiscordConstants.InformationColorBlue);
             this._embed.WithDescription(setReply);
