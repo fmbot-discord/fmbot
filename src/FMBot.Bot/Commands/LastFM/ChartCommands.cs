@@ -335,10 +335,12 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var albums = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm, chartSettings.TimePeriod, imagesToRequest);
 
-                if (albums.Content.TopArtists.Count < chartSettings.ImagesNeeded)
+                if (albums.Content.TopArtists == null || albums.Content.TopArtists.Count < chartSettings.ImagesNeeded)
                 {
+                    var count = albums.Content.TopArtists?.Count ?? 0;
+
                     var reply =
-                        $"User hasn't listened to enough artists ({albums.Content.TopArtists.Count} of required {chartSettings.ImagesNeeded}) for a chart this size. \n" +
+                        $"User hasn't listened to enough artists ({count} of required {chartSettings.ImagesNeeded}) for a chart this size. \n" +
                         $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList}).";
 
                     if (chartSettings.SkipWithoutImage)
