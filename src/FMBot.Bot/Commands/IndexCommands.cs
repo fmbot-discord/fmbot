@@ -229,7 +229,7 @@ namespace FMBot.Bot.Commands
                 if (userSettings.LastIndexed == null)
                 {
                     await ReplyAsync(
-                        "Please do a full update first. (`.fmupdate full`)");
+                        "Just logged in to the bot? Please wait a little bit and try again later, since the bot is still fetching all your Last.fm data.");
                     this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                     return;
                 }
