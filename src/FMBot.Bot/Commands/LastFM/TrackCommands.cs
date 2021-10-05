@@ -416,8 +416,7 @@ namespace FMBot.Bot.Commands.LastFM
                 _ = this.Interactivity.SendPaginatorAsync(
                     paginator,
                     this.Context.Channel,
-                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
-                    resetTimeoutOnInput: true);
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
                 this.Context.LogCommandUsed();
             }
@@ -659,8 +658,7 @@ namespace FMBot.Bot.Commands.LastFM
                 _ = this.Interactivity.SendPaginatorAsync(
                     paginator,
                     this.Context.Channel,
-                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
-                    resetTimeoutOnInput: true);
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
                 this.Context.LogCommandUsed();
             }

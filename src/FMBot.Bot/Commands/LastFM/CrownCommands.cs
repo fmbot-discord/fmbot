@@ -152,8 +152,7 @@ namespace FMBot.Bot.Commands.LastFM
                 _ = this.Interactivity.SendPaginatorAsync(
                     paginator,
                     this.Context.Channel,
-                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
-                    resetTimeoutOnInput: true);
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
             }
             catch (Exception e)
             {
@@ -342,8 +341,7 @@ namespace FMBot.Bot.Commands.LastFM
             _ = this.Interactivity.SendPaginatorAsync(
                 paginator,
                 this.Context.Channel,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
-                resetTimeoutOnInput: true);
+                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
             this.Context.LogCommandUsed();
         }

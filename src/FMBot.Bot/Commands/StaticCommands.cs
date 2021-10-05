@@ -355,8 +355,7 @@ namespace FMBot.Bot.Commands
             _ = this.Interactivity.SendPaginatorAsync(
                 paginator,
                 this.Context.Channel,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
-                resetTimeoutOnInput: true);
+                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
             this.Context.LogCommandUsed();
         }
