@@ -1,8 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
+using Fergun.Interactive;
+using Fergun.Interactive.Selection;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -41,13 +47,12 @@ namespace FMBot.Bot.Commands
         [UsernameSetRequired]
         public async Task GeniusAsync([Remainder] string searchValue = null)
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
 
             try
             {
-                _ = this.Context.Channel.TriggerTypingAsync();
-
                 var currentTrackName = "";
                 var currentTrackArtist = "";
 
@@ -90,8 +95,8 @@ namespace FMBot.Bot.Commands
                     }
 
                     var firstResult = geniusResults.First().Result;
-                    if (firstResult.TitleWithFeatured.ToLower().StartsWith(currentTrackName.ToLower()) &&
-                        firstResult.PrimaryArtist.Name.ToLower().Equals(currentTrackArtist.ToLower()) ||
+                    if (firstResult.TitleWithFeatured.Trim().ToLower().StartsWith(currentTrackName.Trim().ToLower()) &&
+                        firstResult.PrimaryArtist.Name.Trim().ToLower().Equals(currentTrackArtist.Trim().ToLower()) ||
                         geniusResults.Count == 1)
                     {
                         this._embed.WithTitle(firstResult.Url);
