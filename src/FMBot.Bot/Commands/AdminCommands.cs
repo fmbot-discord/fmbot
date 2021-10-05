@@ -168,7 +168,7 @@ namespace FMBot.Bot.Commands
                 if (!PublicProperties.IssuesAtLastFm)
                 {
                     PublicProperties.IssuesAtLastFm = true;
-                    await ReplyAsync("Enabled issue mode");
+                    await ReplyAsync("Enabled issue mode. This adds some warning messages, changes the bot status and disables full updates.");
 
                 }
                 else
@@ -235,6 +235,7 @@ namespace FMBot.Bot.Commands
 
         [Command("addcensoredalbum")]
         [Summary("Adds censored album")]
+        [Examples("addcensoredalbum \"No Love Deep Web\" \"Death Grips\"")]
         public async Task AddCensoredAlbumAsync(string album, string artist)
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -242,7 +243,7 @@ namespace FMBot.Bot.Commands
                 if (string.IsNullOrEmpty(album) || string.IsNullOrEmpty(artist))
                 {
                     await ReplyAsync("Enter a correct album to be censored\n" +
-                                     "Example: `.fmaddcensoredalbum \"No Love Deep Web\" \"Death Grips\"");
+                                     "Example: `.addcensoredalbum \"No Love Deep Web\" \"Death Grips\"");
                     return;
                 }
 
@@ -260,6 +261,7 @@ namespace FMBot.Bot.Commands
 
         [Command("addnsfwalbum")]
         [Summary("Adds nsfw album")]
+        [Examples("addnsfwalbum \"No Love Deep Web\" \"Death Grips\"")]
         public async Task AddNsfwAlbumAsync(string album, string artist)
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -267,7 +269,7 @@ namespace FMBot.Bot.Commands
                 if (string.IsNullOrEmpty(album) || string.IsNullOrEmpty(artist))
                 {
                     await ReplyAsync("Enter a correct album to be censored\n" +
-                                     "Example: `.fmaddnsfwalbum \"No Love Deep Web\" \"Death Grips\"");
+                                     "Example: `.addnsfwalbum \"No Love Deep Web\" \"Death Grips\"");
                     return;
                 }
 
@@ -285,6 +287,7 @@ namespace FMBot.Bot.Commands
 
         [Command("addcensoredartist")]
         [Summary("Adds censored artist")]
+        [Examples("addcensoredartist \"Last Days of Humanity\"")]
         public async Task AddCensoredArtistAsync(string artist)
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -292,7 +295,7 @@ namespace FMBot.Bot.Commands
                 if (string.IsNullOrEmpty(artist))
                 {
                     await ReplyAsync("Enter a correct artist to be censored\n" +
-                                     "Example: `.fmaddcensoredartist \"Last Days of Humanity\"");
+                                     "Example: `.addcensoredartist \"Last Days of Humanity\"");
                     return;
                 }
 
@@ -309,6 +312,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("checkbotted")]
+        [Alias("checkbotteduser")]
         [Summary("Checks some stats for a user and if they're banned from global whoknows")]
         public async Task CheckBottedUserAsync(string user = null)
         {
@@ -378,7 +382,9 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        [Command("addbotteduser")]
+        [Command("addbotted")]
+        [Alias("addbotteduser")]
+        [Examples(".addbotteduser \"Kefkef123\" \"8 days listening time in Last.week\"")]
         public async Task AddBottedUserAsync(string user = null, string reason = null)
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -386,7 +392,7 @@ namespace FMBot.Bot.Commands
                 if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(reason))
                 {
                     await ReplyAsync("Enter an username and reason to remove someone from gwk banlist\n" +
-                                     "Example: `.fmaddbotteduser \"Kefkef123\" \"8 days listening time in Last.week\"`");
+                                     "Example: `.addbotteduser \"Kefkef123\" \"8 days listening time in Last.week\"`");
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
@@ -428,7 +434,9 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        [Command("removebotteduser")]
+        [Command("removebotted")]
+        [Alias("removebotteduser")]
+        [Examples("removebotteduser \"Kefkef123\"")]
         public async Task RemoveBottedUserAsync(string user = null)
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -436,7 +444,7 @@ namespace FMBot.Bot.Commands
                 if (string.IsNullOrEmpty(user))
                 {
                     await ReplyAsync("Enter an username to remove from the gwk banlist. This will flag their ban as `false`.\n" +
-                                     "Example: `.fmremovebotteduser \"Kefkef123\"`");
+                                     "Example: `.removebotteduser \"Kefkef123\"`");
                     this.Context.LogCommandUsed(CommandResponse.WrongInput);
                     return;
                 }
@@ -476,14 +484,15 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("addsupporter")]
+        [Examples("addsupporter \"125740103539621888\" \"Drasil\" \"lifetime supporter\"", "addsupporter \"278633844763262976\" \"Aetheling\" \"monthly supporter (perm at 28-11-2021)\"")]
         public async Task AddSupporterAsync(string user = null, string name = null, string internalNotes = null)
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 var formatError = "Make sure to follow the correct format when adding a supporter\n" +
                                   "Examples: \n" +
-                                  "`.fmaddsupporter \"125740103539621888\" \"Drasil\" \"lifetime supporter\"`\n" +
-                                  "`.fmaddsupporter \"278633844763262976\" \"Aetheling\" \"monthly supporter (perm at 28-11-2021)\"`";
+                                  "`.addsupporter \"125740103539621888\" \"Drasil\" \"lifetime supporter\"`\n" +
+                                  "`.addsupporter \"278633844763262976\" \"Aetheling\" \"monthly supporter (perm at 28-11-2021)\"`";
 
                 if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(internalNotes) || string.IsNullOrEmpty(name) || user == "help")
                 {
@@ -560,7 +569,7 @@ namespace FMBot.Bot.Commands
             }
             else
             {
-                await ReplyAsync("Error: Insufficient rights. Only FMBot owners can set featured.");
+                await ReplyAsync("Error: Insufficient rights. Only .fmbot owners can set featured.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }
@@ -708,6 +717,7 @@ namespace FMBot.Bot.Commands
 
         [Command("globalblacklistadd")]
         [Summary("Adds a user to the global FMBot blacklist.")]
+        [Alias("globalblocklistadd")]
         public async Task BlacklistAddAsync(SocketGuildUser user = null)
         {
             try
@@ -757,6 +767,7 @@ namespace FMBot.Bot.Commands
 
         [Command("globalblacklistremove")]
         [Summary("Removes a user from the global FMBot blacklist.")]
+        [Alias("globalblocklistremove")]
         public async Task BlackListRemoveAsync(SocketGuildUser user = null)
         {
             try

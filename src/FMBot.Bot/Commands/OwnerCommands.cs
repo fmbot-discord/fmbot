@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Services;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
 
@@ -76,7 +77,8 @@ namespace FMBot.Bot.Commands
             {
                 if (userId == null || userType == null || userId == "help")
                 {
-                    await ReplyAsync("Please format your command like this: `.fmsetusertype 'discord id' 'User/Admin/Owner'`");
+                    await ReplyAsync(
+                        "Please format your command like this: `.fmsetusertype 'discord id' 'User/Admin/Owner'`");
                     this.Context.LogCommandUsed(CommandResponse.Help);
                     return;
                 }
@@ -122,7 +124,9 @@ namespace FMBot.Bot.Commands
 
                     foreach (DriveInfo drive in drives.Where(w => w.IsReady))
                     {
-                        builder.AddField(drive.Name + " - " + drive.VolumeLabel + ":", drive.AvailableFreeSpace.ToFormattedByteString() + " free of " + drive.TotalSize.ToFormattedByteString());
+                        builder.AddField(drive.Name + " - " + drive.VolumeLabel + ":",
+                            drive.AvailableFreeSpace.ToFormattedByteString() + " free of " +
+                            drive.TotalSize.ToFormattedByteString());
                     }
 
                     await this.Context.Channel.SendMessageAsync("", false, builder.Build());
@@ -141,7 +145,8 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        [Command("serverlist"), Summary("Displays a list showing information related to every server the bot has joined.")]
+        [Command("serverlist"),
+         Summary("Displays a list showing information related to every server the bot has joined.")]
         public async Task ServerListAsync()
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
@@ -172,7 +177,6 @@ namespace FMBot.Bot.Commands
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
         }
-
 
         [Command("deleteinactiveusers")]
         [Summary("Deletes inactive users")]
@@ -212,6 +216,34 @@ namespace FMBot.Bot.Commands
                 await ReplyAsync("Only .fmbot owners can execute this command.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
             }
+        }
+
+        [Command("togglespecialguild", RunMode = RunMode.Async)]
+        [Summary("Makes the server a special server")]
+        [GuildOnly]
+        public async Task ToggleSpecialGuildAsync()
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
+            {
+                var specialGuild = await this._adminService.ToggleSpecialGuildAsync(this.Context.Guild);
+
+                if (specialGuild == true)
+                {
+                    await ReplyAsync("This is now a special guild!!1!");
+                }
+                else
+                {
+                    await ReplyAsync($"Not a special guild anymore :(");
+                }
+
+                this.Context.LogCommandUsed();
+            }
+            else
+            {
+                await ReplyAsync("Only .fmbot owners can execute this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+
         }
     }
 }

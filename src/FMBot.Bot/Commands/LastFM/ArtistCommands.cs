@@ -915,9 +915,10 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     HidePrivateUsers = false,
                     ShowBotters = false,
+                    AdminView = false,
                     NewSearchValue = artistValues
                 };
-                var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues);
+                var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, user.UserType);
 
                 string artistName;
                 string artistUrl;
@@ -975,7 +976,13 @@ namespace FMBot.Bot.Commands.LastFM
                 filteredUsersWithArtist =
                     WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithArtist, guild.GuildUsers.ToList());
 
-                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, user.UserId, PrivacyLevel.Global, hidePrivateUsers: settings.HidePrivateUsers);
+                var privacyLevel = PrivacyLevel.Global;
+                if (settings.AdminView && guild.SpecialGuild == true)
+                {
+                    privacyLevel = PrivacyLevel.Server;
+                }
+
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, user.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
                 if (filteredUsersWithArtist.Count == 0)
                 {
                     serverUsers = "Nobody that uses .fmbot has listened to this artist.";
@@ -1012,6 +1019,10 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += guildAlsoPlaying;
                 }
 
+                if (settings.AdminView)
+                {
+                    footer += "\nAdmin view enabled - not for public channels";
+                }
                 if (user.PrivacyLevel != PrivacyLevel.Global)
                 {
                     footer += $"\nYou are currently not globally visible - use '{prfx}privacy global' to enable.";

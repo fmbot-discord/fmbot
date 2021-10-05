@@ -385,7 +385,7 @@ namespace FMBot.Bot.Commands
             var msg = this.Context.Message as SocketUserMessage;
             if (StackCooldownTarget.Contains(this.Context.Message.Author))
             {
-                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(countdown + 30) >= DateTimeOffset.Now)
+                if (StackCooldownTimer[StackCooldownTarget.IndexOf(msg.Author)].AddSeconds(countdown + 20) >= DateTimeOffset.Now)
                 {
                     var secondsLeft = (int)(StackCooldownTimer[
                             StackCooldownTarget.IndexOf(this.Context.Message.Author as SocketGuildUser)]

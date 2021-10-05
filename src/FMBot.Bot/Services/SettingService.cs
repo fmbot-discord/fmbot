@@ -213,7 +213,7 @@ namespace FMBot.Bot.Services
             return settingsModel;
         }
 
-        public WhoKnowsSettings SetWhoKnowsSettings(WhoKnowsSettings currentWhoKnowsSettings, string extraOptions)
+        public WhoKnowsSettings SetWhoKnowsSettings(WhoKnowsSettings currentWhoKnowsSettings, string extraOptions, UserType userType = UserType.User)
         {
             var whoKnowsSettings = currentWhoKnowsSettings;
 
@@ -227,6 +227,13 @@ namespace FMBot.Bot.Services
             {
                 whoKnowsSettings.NewSearchValue = ContainsAndRemove(whoKnowsSettings.NewSearchValue, hidePrivateUsers);
                 whoKnowsSettings.HidePrivateUsers = true;
+            }
+
+            var adminView = new[] { "av", "adminview" };
+            if (Contains(extraOptions, adminView) && userType is UserType.Admin or UserType.Owner)
+            {
+                whoKnowsSettings.NewSearchValue = ContainsAndRemove(whoKnowsSettings.NewSearchValue, adminView);
+                whoKnowsSettings.AdminView = true;
             }
 
             return whoKnowsSettings;

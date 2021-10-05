@@ -244,6 +244,31 @@ namespace FMBot.Bot.Services
             return string.Format("{0:0.##} {1}", dblSByte, suffix[i]);
         }
 
+        public async Task<bool?> ToggleSpecialGuildAsync(IGuild guild)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingGuild = await db.Guilds
+                .AsQueryable()
+                .FirstAsync(f => f.DiscordGuildId == guild.Id);
+
+            existingGuild.Name = guild.Name;
+
+            if (existingGuild.SpecialGuild == true)
+            {
+                existingGuild.SpecialGuild = false;
+            }
+            else
+            {
+                existingGuild.SpecialGuild = true;
+            }
+
+            db.Entry(existingGuild).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            return existingGuild.SpecialGuild;
+        }
+
         public async Task FixValues()
         {
             await using var db = this._contextFactory.CreateDbContext();

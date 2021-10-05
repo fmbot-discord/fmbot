@@ -696,10 +696,11 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     HidePrivateUsers = false,
                     ShowBotters = false,
+                    AdminView = false,
                     NewSearchValue = albumValues
                 };
 
-                var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues);
+                var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues, userSettings.UserType);
 
                 var album = await this.SearchAlbum(settings.NewSearchValue, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
                 if (album == null)
@@ -731,7 +732,13 @@ namespace FMBot.Bot.Commands.LastFM
                 filteredUsersWithAlbum =
                     WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithAlbum, guild.GuildUsers.ToList());
 
-                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, userSettings.UserId, PrivacyLevel.Global, hidePrivateUsers: settings.HidePrivateUsers);
+                var privacyLevel = PrivacyLevel.Global;
+                if (settings.AdminView && guild.SpecialGuild == true)
+                {
+                    privacyLevel = PrivacyLevel.Server;
+                }
+
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, userSettings.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
                 if (filteredUsersWithAlbum.Count == 0)
                 {
                     serverUsers = "Nobody that uses .fmbot has listened to this album.";
@@ -762,6 +769,10 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += guildAlsoPlaying;
                 }
 
+                if (settings.AdminView)
+                {
+                    footer += "\nAdmin view enabled - not for public channels";
+                }
                 if (userSettings.PrivacyLevel != PrivacyLevel.Global)
                 {
                     footer += $"\nYou are currently not globally visible - use " +
