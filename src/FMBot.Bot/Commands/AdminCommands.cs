@@ -382,6 +382,59 @@ namespace FMBot.Bot.Commands
             }
         }
 
+        [Command("getusers")]
+        [Examples("getusers frikandel_")]
+        public async Task GetUsersForLastfmUserNameAsync(string userString = null)
+        {
+            if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                if (string.IsNullOrEmpty(userString))
+                {
+                    await ReplyAsync("Enter a Last.fm username to get the accounts for.");
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
+                var users = await this._adminService.GetUsersWithLfmUsernameAsync(userString);
+
+                this._embed.WithTitle($"All .fmbot users with Last.fm username {userString}");
+
+                foreach (var user in users)
+                {
+                    var userDescription = new StringBuilder();
+
+                    if (user.SessionKeyLastFm != null)
+                    {
+                        userDescription.AppendLine($"Authorized");
+                    }
+
+                    userDescription.AppendLine($"`{user.DiscordUserId}`");
+                    userDescription.AppendLine($"<@{user.DiscordUserId}>");
+
+                    if (user.LastUsed.HasValue)
+                    {
+                        var specifiedDateTime = DateTime.SpecifyKind(user.LastUsed.Value, DateTimeKind.Utc);
+                        var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+
+                        userDescription.AppendLine($"Last used: <t:{dateValue}:R>.");
+                    }
+
+                    this._embed.AddField($"{user.UserId}", userDescription.ToString());
+                }
+
+                this._embed.WithFooter("Command not intended for use in public channels");
+
+                await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+                this.Context.LogCommandUsed();
+
+            }
+            else
+            {
+                await ReplyAsync("Error: Insufficient rights. Only .fmbot staff can use this command");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+            }
+        }
+
         [Command("addbotted")]
         [Alias("addbotteduser")]
         [Examples(".addbotteduser \"Kefkef123\" \"8 days listening time in Last.week\"")]
