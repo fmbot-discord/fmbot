@@ -384,10 +384,20 @@ namespace FMBot.Bot.Commands
 
         [Command("getusers")]
         [Examples("getusers frikandel_")]
+        [GuildOnly]
         public async Task GetUsersForLastfmUserNameAsync(string userString = null)
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
+                var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+                if (guild.SpecialGuild != true)
+                {
+                    await ReplyAsync("This command can only be used in special guilds.");
+                    this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                    return;
+                }
+
                 if (string.IsNullOrEmpty(userString))
                 {
                     await ReplyAsync("Enter a Last.fm username to get the accounts for.");
