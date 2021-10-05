@@ -72,9 +72,9 @@ namespace FMBot.Bot.Services
             this._cache.Set(cacheKey, true, cacheTime);
         }
 
-        private static string CacheKeyForAlbumCover(string lastFmUrl)
+        public static string CacheKeyForAlbumCover(string lastFmUrl)
         {
-            return $"album-spotify-cover-{lastFmUrl}";
+            return $"album-spotify-cover-{lastFmUrl.ToLower()}";
         }
     }
 }

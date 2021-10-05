@@ -416,7 +416,7 @@ namespace FMBot.LastFM.Repositories
 
         }
 
-        public async Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username)
+        public async Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username, string sessionKey = null)
         {
             var queryParams = new Dictionary<string, string>
             {
@@ -425,7 +425,15 @@ namespace FMBot.LastFM.Repositories
                 {"autocorrect", "1"}
             };
 
-            var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo);
+            var authorizedCall = false;
+
+            if (!string.IsNullOrEmpty(sessionKey))
+            {
+                queryParams.Add("sk", sessionKey);
+                authorizedCall = true;
+            }
+
+            var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo, authorizedCall);
 
             if (artistCall.Success)
             {
@@ -467,7 +475,7 @@ namespace FMBot.LastFM.Repositories
             };
         }
 
-        public async Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, string username = null)
+        public async Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, string username = null, string sessionKey = null)
         {
             var queryParams = new Dictionary<string, string>
             {
@@ -476,7 +484,15 @@ namespace FMBot.LastFM.Repositories
                 {"username", username }
             };
 
-            var albumCall = await this._lastFmApi.CallApiAsync<AlbumInfoLfmResponse>(queryParams, Call.AlbumInfo);
+            var authorizedCall = false;
+
+            if (!string.IsNullOrEmpty(sessionKey))
+            {
+                queryParams.Add("sk", sessionKey);
+                authorizedCall = true;
+            }
+
+            var albumCall = await this._lastFmApi.CallApiAsync<AlbumInfoLfmResponse>(queryParams, Call.AlbumInfo, authorizedCall);
             if (albumCall.Success)
             {
                 var linkToFilter = $"<a href=\"{albumCall.Content.Album.Url.Replace("https", "http")}\">Read more on Last.fm</a>";

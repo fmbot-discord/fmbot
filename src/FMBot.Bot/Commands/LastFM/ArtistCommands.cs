@@ -1326,7 +1326,7 @@ namespace FMBot.Bot.Commands.LastFM
                     lastFmUserName = otherUserUsername;
                 }
 
-                var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistValues, lastFmUserName);
+                var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistValues, lastFmUserName, otherUserUsername == null ? null : sessionKey);
                 if (!artistCall.Success && artistCall.Error == ResponseStatus.MissingParameters)
                 {
                     this._embed.WithDescription($"Artist `{artistValues}` could not be found, please check your search values and try again.");

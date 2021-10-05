@@ -8,6 +8,7 @@ using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
@@ -23,13 +24,15 @@ namespace FMBot.Bot.Services.ThirdParty
         private readonly ArtistRepository _artistRepository;
         private readonly AlbumRepository _albumRepository;
         private readonly TrackRepository _trackRepository;
+        private readonly IMemoryCache _cache;
 
-        public SpotifyService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, ArtistRepository artistRepository, TrackRepository trackRepository, AlbumRepository albumRepository)
+        public SpotifyService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, ArtistRepository artistRepository, TrackRepository trackRepository, AlbumRepository albumRepository, IMemoryCache cache)
         {
             this._contextFactory = contextFactory;
             this._artistRepository = artistRepository;
             this._trackRepository = trackRepository;
             this._albumRepository = albumRepository;
+            this._cache = cache;
             this._botSettings = botSettings.Value;
         }
 
@@ -47,8 +50,6 @@ namespace FMBot.Bot.Services.ThirdParty
 
         public async Task<Artist> GetOrStoreArtistAsync(ArtistInfo artistInfo, string artistNameBeforeCorrect = null)
         {
-            Log.Information("Executing GetOrStoreArtistImageAsync");
-
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
@@ -77,6 +78,8 @@ namespace FMBot.Bot.Services.ThirdParty
                         {
                             artistToAdd.SpotifyImageUrl = spotifyArtist.Images.OrderByDescending(o => o.Height).First().Url;
                             artistToAdd.SpotifyImageDate = DateTime.UtcNow;
+
+                            this._cache.Set(ArtistsService.CacheKeyForArtist(artistInfo.ArtistUrl), artistToAdd.SpotifyImageUrl,TimeSpan.FromMinutes(5));
                         }
 
                         await db.Artists.AddAsync(artistToAdd);
@@ -136,6 +139,8 @@ namespace FMBot.Bot.Services.ThirdParty
                     {
                         dbArtist.SpotifyImageUrl = spotifyArtist.Images.OrderByDescending(o => o.Height).First().Url;
                         dbArtist.Popularity = spotifyArtist.Popularity;
+
+                        this._cache.Set(ArtistsService.CacheKeyForArtist(artistInfo.ArtistUrl), dbArtist.SpotifyImageUrl, TimeSpan.FromMinutes(5));
                     }
 
                     if (spotifyArtist != null && spotifyArtist.Genres.Any())
@@ -194,8 +199,6 @@ namespace FMBot.Bot.Services.ThirdParty
 
         public async Task<Track> GetOrStoreTrackAsync(TrackInfo trackInfo)
         {
-            Log.Information("Executing GetOrStoreTrackAsync");
-
             try
             {
                 await using var db = this._contextFactory.CreateDbContext();
@@ -365,8 +368,6 @@ namespace FMBot.Bot.Services.ThirdParty
 
         public async Task<Album> GetOrStoreSpotifyAlbumAsync(AlbumInfo albumInfo)
         {
-            Log.Information("Executing GetOrStoreSpotifyAlbumAsync");
-
             await using var db = this._contextFactory.CreateDbContext();
 
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -399,6 +400,8 @@ namespace FMBot.Bot.Services.ThirdParty
                     albumToAdd.Label = spotifyAlbum.Label;
                     albumToAdd.Popularity = spotifyAlbum.Popularity;
                     albumToAdd.SpotifyImageUrl = spotifyAlbum.Images.OrderByDescending(o => o.Height).First().Url;
+
+                    this._cache.Set(AlbumService.CacheKeyForAlbumCover(albumInfo.AlbumUrl), albumToAdd.SpotifyImageUrl, TimeSpan.FromMinutes(5));
                 }
 
                 albumToAdd.SpotifyImageDate = DateTime.UtcNow;
@@ -436,6 +439,8 @@ namespace FMBot.Bot.Services.ThirdParty
                     dbAlbum.Label = spotifyAlbum.Label;
                     dbAlbum.Popularity = spotifyAlbum.Popularity;
                     dbAlbum.SpotifyImageUrl = spotifyAlbum.Images.OrderByDescending(o => o.Height).First().Url;
+
+                    this._cache.Set(AlbumService.CacheKeyForAlbumCover(albumInfo.AlbumUrl), dbAlbum.SpotifyImageUrl, TimeSpan.FromMinutes(5));
                 }
 
                 dbAlbum.SpotifyImageDate = DateTime.UtcNow;

@@ -165,16 +165,20 @@ namespace FMBot.Bot.Commands.LastFM
 
                 topAlbums = await this._albumService.FillMissingAlbumCovers(topAlbums);
 
-                var albumWithoutImage = topAlbums.FirstOrDefault(f => f.AlbumCoverUrl == null);
-                if (albumWithoutImage != null)
+                var albumsWithoutImage = topAlbums.Where(f => f.AlbumCoverUrl == null).ToList();
+
+                var amountToFetch = albumsWithoutImage.Count > 3 ? 3 : albumsWithoutImage.Count;
+                for (var i = 0; i < amountToFetch; i++)
                 {
-                    var albumCall = await this._lastFmRepository.GetAlbumInfoAsync(albumWithoutImage.ArtistName, albumWithoutImage.AlbumName, userSettings.UserNameLastFm);
+                    var albumWithoutImage = albumsWithoutImage[i];
+                    var albumCall = await this._lastFmRepository.GetAlbumInfoAsync(albumWithoutImage.ArtistName, albumWithoutImage.AlbumName, userSettings.UserNameLastFm, userSettings.DifferentUser ? null : userSettings.SessionKeyLastFm);
                     if (albumCall.Success && albumCall.Content != null)
                     {
                         var spotifyArtistImage = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumCall.Content);
                         if (spotifyArtistImage?.SpotifyImageUrl != null)
                         {
-                            var index = topAlbums.FindIndex(f => f.ArtistName == albumWithoutImage.ArtistName);
+                            var index = topAlbums.FindIndex(f => f.ArtistName == albumWithoutImage.ArtistName &&
+                                                                 f.AlbumName == albumWithoutImage.AlbumName);
                             topAlbums[index].AlbumCoverUrl = spotifyArtistImage.SpotifyImageUrl;
                         }
                     }
@@ -352,10 +356,14 @@ namespace FMBot.Bot.Commands.LastFM
 
                 topArtists = await this._artistService.FillArtistImages(topArtists);
 
-                var artistWithoutImage = topArtists.FirstOrDefault(f => f.ArtistImageUrl == null);
-                if (artistWithoutImage != null)
+                var artistsWithoutImages = topArtists.Where(w => w.ArtistImageUrl == null).ToList();
+
+                var amountToFetch = artistsWithoutImages.Count > 3 ? 3 : artistsWithoutImages.Count;
+                for (int i = 0; i < amountToFetch; i++)
                 {
-                    var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistWithoutImage.ArtistName, userSettings.UserNameLastFm);
+                    var artistWithoutImage = artistsWithoutImages[i];
+
+                    var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistWithoutImage.ArtistName, userSettings.UserNameLastFm, userSettings.DifferentUser ? null : userSettings.SessionKeyLastFm);
                     if (artistCall.Success && artistCall.Content != null)
                     {
                         var spotifyArtistImage = await this._spotifyService.GetOrStoreArtistAsync(artistCall.Content);
