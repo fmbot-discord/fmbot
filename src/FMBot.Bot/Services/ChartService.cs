@@ -481,8 +481,8 @@ namespace FMBot.Bot.Services
             else if (extraOptions.Contains("6x6"))
             {
                 chartSettings.ImagesNeeded = 36;
-                chartSettings.Height = 6;
-                chartSettings.Width = 6;
+                chartSettings.Height = 10;
+                chartSettings.Width = 1;
             }
             else if (extraOptions.Contains("7x7"))
             {

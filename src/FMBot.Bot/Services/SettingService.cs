@@ -301,7 +301,9 @@ namespace FMBot.Bot.Services
 
                 if (otherUser != null)
                 {
-                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { "<", "@", "!", ">", otherUser.DiscordUserId.ToString(), otherUser.UserNameLastFM.ToLower() }, true);
+                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { "<", "@", "!", ">", "&",
+                        otherUser.DiscordUserId.ToString(), $"<@!{otherUser.DiscordUserId}>", $"<@{otherUser.DiscordUserId}>", $"<@&{otherUser.DiscordUserId}>",
+                        otherUser.UserNameLastFM.ToLower() }, true);
 
                     if (context.Guild != null)
                     {
@@ -378,7 +380,7 @@ namespace FMBot.Bot.Services
                 return null;
             }
 
-            var id = value.Trim('@', '!', '<', '>');
+            var id = value.Trim('@', '!', '<', '>', '&');
 
             if (!ulong.TryParse(id, out var discordUserId))
             {
