@@ -38,11 +38,49 @@ namespace FMBot.Bot.Services
             TimePeriod defaultTimePeriod = TimePeriod.Weekly)
         {
             var settingsModel = new TimeSettingsModel();
-            var customTimePeriod = true;
+            bool? customTimePeriod = null;
 
             options ??= "";
             settingsModel.NewSearchValue = options;
             settingsModel.UsePlays = false;
+            settingsModel.EndDateTime = DateTime.UtcNow;
+
+            var year = GetYear(options);
+            var month = GetMonth(options);
+
+            if (year != null || month != null)
+            {
+                settingsModel.StartDateTime = new DateTime(
+                    year.GetValueOrDefault(DateTime.Today.Year),
+                    month.GetValueOrDefault(1),
+                    1);
+
+                if (year.HasValue && !month.HasValue)
+                {
+                    settingsModel.Description = $"{year}";
+                    settingsModel.AltDescription = $"{year}";
+                    settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddYears(1).AddSeconds(-1);
+                }
+                if (!year.HasValue && month.HasValue)
+                {
+                    settingsModel.Description = settingsModel.StartDateTime.Value.ToString("MMMMM");
+                    settingsModel.AltDescription = settingsModel.StartDateTime.Value.ToString("MMMMM");
+                    settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
+                }
+                if (year.HasValue && month.HasValue)
+                {
+                    settingsModel.Description = settingsModel.StartDateTime.Value.ToString("MMMMM") + $" {year}";
+                    settingsModel.AltDescription = settingsModel.StartDateTime.Value.ToString("MMMMM") + $" {year}";
+                    settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
+                }
+
+                var startDateString = settingsModel.StartDateTime.Value.ToString("yyyy-M-dd");
+                var endDateString = settingsModel.EndDateTime.Value.ToString("yyyy-M-dd");
+
+                settingsModel.UrlParameter = $"from={startDateString}&to={endDateString}";
+
+                return settingsModel;
+            }
 
             var oneDay = new[] { "1-day", "1day", "1d", "today", "day", "daily" };
             var twoDays = new[] { "2-day", "2day", "2d" };
@@ -131,6 +169,7 @@ namespace FMBot.Bot.Services
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 6;
+                settingsModel.StartDateTime = DateTime.Today.AddDays(-6);
             }
             else if (Contains(options, fiveDays))
             {
@@ -141,6 +180,7 @@ namespace FMBot.Bot.Services
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 5;
+                settingsModel.StartDateTime = DateTime.Today.AddDays(-5);
             }
             else if (Contains(options, fourDays))
             {
@@ -151,6 +191,7 @@ namespace FMBot.Bot.Services
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 4;
+                settingsModel.StartDateTime = DateTime.Today.AddDays(-4);
             }
             else if (Contains(options, threeDays))
             {
@@ -161,6 +202,7 @@ namespace FMBot.Bot.Services
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 3;
+                settingsModel.StartDateTime = DateTime.Today.AddDays(-3);
             }
             else if (Contains(options, twoDays))
             {
@@ -171,6 +213,7 @@ namespace FMBot.Bot.Services
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 2;
+                settingsModel.StartDateTime = DateTime.Today.AddDays(-2);
             }
             else if (Contains(options, oneDay))
             {
@@ -181,13 +224,14 @@ namespace FMBot.Bot.Services
                 settingsModel.UrlParameter = $"from={dateString}";
                 settingsModel.UsePlays = true;
                 settingsModel.PlayDays = 1;
+                settingsModel.StartDateTime = DateTime.Today.AddDays(-1);
             }
             else
             {
                 customTimePeriod = false;
             }
 
-            if (!customTimePeriod)
+            if (customTimePeriod == false)
             {
                 if (defaultTimePeriod == TimePeriod.AllTime)
                 {
@@ -423,9 +467,77 @@ namespace FMBot.Bot.Services
             return amount;
         }
 
+        public static int? GetYear(string extraOptions)
+        {
+            if (string.IsNullOrWhiteSpace(extraOptions))
+            {
+                return null;
+            }
+
+            var options = extraOptions.Split(' ');
+            foreach (var option in options)
+            {
+                if (option.Length == 4 && int.TryParse(option, out var result))
+                {
+                    if (result > 2000 && result <= DateTime.Today.AddDays(1).Year)
+                    {
+                        return result;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        public static int? GetMonth(string extraOptions)
+        {
+            if (string.IsNullOrWhiteSpace(extraOptions))
+            {
+                return null;
+            }
+
+            var options = extraOptions.Split(' ');
+            foreach (var option in options)
+            {
+                foreach (var month in Months.Where(month => option.ToLower().Contains(month.Key)))
+                {
+                    return month.Value;
+                }
+            }
+
+            return null;
+        }
+
+        private static readonly Dictionary<string, int> Months = new()
+        {
+            { "january", 1 },
+            { "jan", 1 },
+            { "february", 2 },
+            { "feb", 2 },
+            { "march", 3 },
+            { "mar", 3 },
+            { "april", 4 },
+            { "apr", 4 },
+            { "may", 5 },
+            { "june", 6 },
+            { "jun", 6 },
+            { "july", 7 },
+            { "jul", 7 },
+            { "august", 8 },
+            { "aug", 8 },
+            { "september", 9 },
+            { "sep", 9 },
+            { "october", 10 },
+            { "oct", 10 },
+            { "november", 11 },
+            { "nov", 11 },
+            { "december", 12 },
+            { "dec", 12 },
+        };
+
         public static long GetGoalAmount(
-            string extraOptions,
-            long currentPlaycount)
+                    string extraOptions,
+                    long currentPlaycount)
         {
             var goalAmount = 100;
             var ownGoalSet = false;
@@ -583,6 +695,11 @@ namespace FMBot.Bot.Services
 
         private static bool Contains(string extraOptions, string[] values)
         {
+            if (string.IsNullOrWhiteSpace(extraOptions))
+            {
+                return false;
+            }
+
             var optionArray = extraOptions.Split(" ");
 
             foreach (var value in values)

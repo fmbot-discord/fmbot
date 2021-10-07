@@ -312,13 +312,13 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                //var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
+                var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
 
                 var albumCoverUrl = album.AlbumCoverUrl;
-                //if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
-                //{
-                //    albumCoverUrl = databaseAlbum.SpotifyImageUrl;
-                //}
+                if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
+                {
+                    albumCoverUrl = databaseAlbum.SpotifyImageUrl;
+                }
 
                 if (albumCoverUrl == null)
                 {
@@ -415,102 +415,48 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                if (!timeSettings.UsePlays)
+
+                var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount);
+                if (!albums.Success || albums.Content == null)
                 {
-                    var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings.TimePeriod, amount);
-                    if (!albums.Success || albums.Content == null)
-                    {
-                        this._embed.ErrorResponse(albums.Error, albums.Message, this.Context);
-                        this.Context.LogCommandUsed(CommandResponse.LastFmError);
-                        await ReplyAsync("", false, this._embed.Build());
-                        return;
-                    }
-
-                    var albumPages = albums.Content.TopAlbums.ChunkBy(10);
-
-                    var counter = 1;
-                    var pageCounter = 1;
-                    foreach (var albumPage in albumPages)
-                    {
-                        var albumPageString = new StringBuilder();
-                        foreach (var album in albumPage)
-                        {
-                            var url = album.AlbumUrl;
-                            var escapedAlbumName = Regex.Replace(album.AlbumName, @"([|\\*])", @"\$1");
-
-                            if (contextUser.RymEnabled == true)
-                            {
-                                url = StringExtensions.GetRymUrl(album.AlbumName, album.ArtistName);
-                            }
-
-                            albumPageString.AppendLine($"{counter}. **{album.ArtistName}** - **[{escapedAlbumName}]({url})** ({album.UserPlaycount} {StringExtensions.GetPlaysString(album.UserPlaycount)})");
-                            counter++;
-                        }
-
-                        var footer = $"Page {pageCounter}/{albumPages.Count} - {albums.Content.TotalAmount} different albums in this time period";
-
-                        pages.Add(new PageBuilder()
-                            .WithDescription(albumPageString.ToString())
-                            .WithAuthor(this._embedAuthor)
-                            .WithFooter(footer));
-                        pageCounter++;
-                    }
+                    this._embed.ErrorResponse(albums.Error, albums.Message, this.Context);
+                    this.Context.LogCommandUsed(CommandResponse.LastFmError);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
                 }
-                else
+
+                var albumPages = albums.Content.TopAlbums.ChunkBy(10);
+
+                var counter = 1;
+                var pageCounter = 1;
+                foreach (var albumPage in albumPages)
                 {
-                    int userId;
-                    if (userSettings.DifferentUser)
+                    var albumPageString = new StringBuilder();
+                    foreach (var album in albumPage)
                     {
-                        var otherUser = await this._userService.GetUserAsync(userSettings.DiscordUserId);
-                        if (otherUser.LastIndexed == null)
+                        var url = album.AlbumUrl;
+                        var escapedAlbumName = Regex.Replace(album.AlbumName, @"([|\\*])", @"\$1");
+
+                        if (contextUser.RymEnabled == true)
                         {
-                            await this._indexService.IndexUser(otherUser);
-                        }
-                        else if (contextUser.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
-                        {
-                            await this._updateService.UpdateUser(otherUser);
+                            url = StringExtensions.GetRymUrl(album.AlbumName, album.ArtistName);
                         }
 
-                        userId = otherUser.UserId;
-                    }
-                    else
-                    {
-                        if (contextUser.LastIndexed == null)
-                        {
-                            await this._indexService.IndexUser(contextUser);
-                        }
-                        else if (contextUser.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
-                        {
-                            await this._updateService.UpdateUser(contextUser);
-                        }
-
-                        userId = contextUser.UserId;
+                        albumPageString.AppendLine($"{counter}. **{album.ArtistName}** - **[{escapedAlbumName}]({url})** ({album.UserPlaycount} {StringExtensions.GetPlaysString(album.UserPlaycount)})");
+                        counter++;
                     }
 
-                    var albums = await this._playService.GetTopAlbums(userId,
-                        timeSettings.PlayDays.GetValueOrDefault());
-
-                    var albumPages = albums.ChunkBy(10);
-
-                    var counter = 1;
-                    var pageCounter = 1;
-                    foreach (var albumPage in albumPages)
+                    var footer = $"Page {pageCounter}/{albumPages.Count}";
+                    if (albums.Content.TotalAmount.HasValue && albums.Content.TotalAmount.Value != amount)
                     {
-                        var albumPageString = new StringBuilder();
-                        foreach (var album in albumPage)
-                        {
-                            albumPageString.AppendLine($"{counter}. **{album.ArtistName}** - **{album.Name}** ({album.Playcount} {StringExtensions.GetPlaysString(album.Playcount)})");
-                            counter++;
-                        }
-
-                        var footer = $"Page {pageCounter}/{albumPages.Count} - {albums.Count} different albums in this time period";
-
-                        pages.Add(new PageBuilder()
-                            .WithDescription(albumPageString.ToString())
-                            .WithAuthor(this._embedAuthor)
-                            .WithFooter(footer));
-                        pageCounter++;
+                        footer += $" - {albums.Content.TotalAmount} different albums in this time period";
                     }
+
+                    pages.Add(new PageBuilder()
+                        .WithDescription(albumPageString.ToString())
+                        .WithAuthor(this._embedAuthor)
+                        .WithFooter(footer));
+                    pageCounter++;
                 }
 
                 if (!pages.Any())

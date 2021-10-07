@@ -530,7 +530,7 @@ namespace FMBot.Bot.Services
                 timeSettings = SettingService.GetTimePeriod("weekly");
             }
 
-            chartSettings.TimePeriod = timeSettings.TimePeriod;
+            chartSettings.TimeSettings = timeSettings;
             chartSettings.TimespanString = $"{timeSettings.Description}";
             chartSettings.TimespanUrlString = timeSettings.UrlParameter;
 

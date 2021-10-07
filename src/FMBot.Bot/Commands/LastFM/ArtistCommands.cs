@@ -483,64 +483,22 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                Response<TopArtistList> artists;
+                var artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm,
+                        timeSettings, 200);
 
-                if (!timeSettings.UsePlays)
+                if (!artists.Success || artists.Content == null)
                 {
-                    artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm,
-                        timeSettings.TimePeriod, 200);
-
-                    if (!artists.Success || artists.Content == null)
-                    {
-                        this._embed.ErrorResponse(artists.Error, artists.Message, this.Context);
-                        this.Context.LogCommandUsed(CommandResponse.LastFmError);
-                        await ReplyAsync("", false, this._embed.Build());
-                        return;
-                    }
-                    if (artists.Content.TopArtists == null)
-                    {
-                        this._embed.WithDescription("Sorry, you or the user you're searching for don't have any top artists in the selected time period.");
-                        this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                        await ReplyAsync("", false, this._embed.Build());
-                        return;
-                    }
+                    this._embed.ErrorResponse(artists.Error, artists.Message, this.Context);
+                    this.Context.LogCommandUsed(CommandResponse.LastFmError);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
                 }
-                else
+                if (artists.Content.TopArtists == null)
                 {
-                    int userId;
-                    if (userSettings.DifferentUser)
-                    {
-                        var otherUser = await this._userService.GetUserAsync(userSettings.DiscordUserId);
-                        if (otherUser.LastIndexed == null)
-                        {
-                            await this._indexService.IndexUser(otherUser);
-                        }
-                        else if (contextUser.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
-                        {
-                            await this._updateService.UpdateUser(otherUser);
-                        }
-
-                        userId = otherUser.UserId;
-                    }
-                    else
-                    {
-                        if (contextUser.LastIndexed == null)
-                        {
-                            await this._indexService.IndexUser(contextUser);
-                        }
-                        else if (contextUser.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
-                        {
-                            await this._updateService.UpdateUser(contextUser);
-                        }
-
-                        userId = contextUser.UserId;
-                    }
-
-                    artists = new Response<TopArtistList>
-                    {
-                        Content = await this._playService.GetTopArtists(userId,
-                            timeSettings.PlayDays.GetValueOrDefault())
-                    };
+                    this._embed.WithDescription("Sorry, you or the user you're searching for don't have any top artists in the selected time period.");
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
                 }
 
                 var artistPages = artists.Content.TopArtists.ChunkBy(10);
@@ -556,7 +514,12 @@ namespace FMBot.Bot.Commands.LastFM
                         counter++;
                     }
 
-                    var footer = $"Page {pageCounter}/{artistPages.Count} - {artists.Content.TotalAmount} different artists in this time period";
+                    var footer = $"Page {pageCounter}/{artistPages.Count}";
+
+                    if (artists.Content.TotalAmount.HasValue)
+                    {
+                        footer += $" - { artists.Content.TotalAmount} different artists in this time period";
+                    }
 
                     pages.Add(new PageBuilder()
                         .WithDescription(artistPageString.ToString())
@@ -667,8 +630,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 tasteSettings.OtherUserLastFmUsername = lastfmToCompare;
 
-                var ownArtistsTask = this._lastFmRepository.GetTopArtistsAsync(ownLastFmUsername, timeType.TimePeriod, 1000);
-                var otherArtistsTask = this._lastFmRepository.GetTopArtistsAsync(lastfmToCompare, timeType.TimePeriod, 1000);
+                var ownArtistsTask = this._lastFmRepository.GetTopArtistsAsync(ownLastFmUsername, timeType, 1000);
+                var otherArtistsTask = this._lastFmRepository.GetTopArtistsAsync(lastfmToCompare, timeType, 1000);
 
                 var ownArtists = await ownArtistsTask;
                 var otherArtists = await otherArtistsTask;

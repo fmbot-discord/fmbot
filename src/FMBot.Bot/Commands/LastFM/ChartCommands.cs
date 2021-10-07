@@ -71,7 +71,7 @@ namespace FMBot.Bot.Commands.LastFM
             "Size: `2x2`, `3x3` up to `10x10`",
             Constants.UserMentionExample)]
         [Examples("c", "c q 8x8 nt s", "chart 8x8 quarterly notitles skip", "c 10x10 alltime notitles skip", "c @user 7x7 yearly")]
-        [Alias("c")]
+        [Alias("c", "aoty")]
         [UsernameSetRequired]
         public async Task ChartAsync(params string[] otherSettings)
         {
@@ -128,7 +128,10 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                var chartSettings = new ChartSettings(this.Context.User) {ArtistChart = false};
+                var chartSettings = new ChartSettings(this.Context.User)
+                {
+                    ArtistChart = false
+                };
 
                 chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, this.Context);
 
@@ -140,7 +143,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var imagesToRequest = chartSettings.ImagesNeeded + extraAlbums;
 
-                var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, chartSettings.TimePeriod, imagesToRequest);
+                var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, chartSettings.TimeSettings, imagesToRequest);
 
                 if (albums.Content.TopAlbums == null || albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
                 {
@@ -172,7 +175,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     var albumWithoutImage = albumsWithoutImage[i];
                     var albumCall = await this._lastFmRepository.GetAlbumInfoAsync(albumWithoutImage.ArtistName, albumWithoutImage.AlbumName, userSettings.UserNameLastFm, userSettings.DifferentUser ? null : userSettings.SessionKeyLastFm);
-                    if (albumCall.Success && albumCall.Content != null)
+                    if (albumCall.Success && albumCall.Content?.AlbumUrl != null)
                     {
                         var spotifyArtistImage = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumCall.Content);
                         if (spotifyArtistImage?.SpotifyImageUrl != null)
@@ -231,7 +234,6 @@ namespace FMBot.Bot.Commands.LastFM
                         embedDescription +=
                             $"{chartSettings.CensoredAlbums.Value} album(s) filtered due to nsfw images.\n";
                     }
-
                 }
 
                 this._embed.WithDescription(embedDescription);
@@ -241,7 +243,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this.Context.Channel.SendFileAsync(
                     stream,
-                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimePeriod}-{userSettings.UserNameLastFm}.png",
+                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png",
                     embed: this._embed.Build());
                 await stream.DisposeAsync();
 
@@ -325,19 +327,19 @@ namespace FMBot.Bot.Commands.LastFM
 
                 chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, this.Context);
 
-                var extraAlbums = 0;
+                var extraArtists = 0;
                 if (chartSettings.SkipWithoutImage)
                 {
-                    extraAlbums = chartSettings.Height * 2 + (chartSettings.Height > 5 ? 8 : 2);
+                    extraArtists = chartSettings.Height * 2 + (chartSettings.Height > 5 ? 8 : 2);
                 }
 
-                var imagesToRequest = chartSettings.ImagesNeeded + extraAlbums;
+                var imagesToRequest = chartSettings.ImagesNeeded + extraArtists;
 
-                var albums = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm, chartSettings.TimePeriod, imagesToRequest);
+                var artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm, chartSettings.TimeSettings, imagesToRequest);
 
-                if (albums.Content.TopArtists == null || albums.Content.TopArtists.Count < chartSettings.ImagesNeeded)
+                if (artists.Content.TopArtists == null || artists.Content.TopArtists.Count < chartSettings.ImagesNeeded)
                 {
-                    var count = albums.Content.TopArtists?.Count ?? 0;
+                    var count = artists.Content.TopArtists?.Count ?? 0;
 
                     var reply =
                         $"User hasn't listened to enough artists ({count} of required {chartSettings.ImagesNeeded}) for a chart this size. \n" +
@@ -346,7 +348,7 @@ namespace FMBot.Bot.Commands.LastFM
                     if (chartSettings.SkipWithoutImage)
                     {
                         reply += "\n\n" +
-                                 $"Note that {extraAlbums} extra albums are required because you are skipping artists without an image.";
+                                 $"Note that {extraArtists} extra albums are required because you are skipping artists without an image.";
                     }
 
                     await ReplyAsync(reply);
@@ -354,7 +356,7 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                var topArtists = albums.Content.TopArtists;
+                var topArtists = artists.Content.TopArtists;
 
                 topArtists = await this._artistService.FillArtistImages(topArtists);
 
@@ -366,7 +368,7 @@ namespace FMBot.Bot.Commands.LastFM
                     var artistWithoutImage = artistsWithoutImages[i];
 
                     var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistWithoutImage.ArtistName, userSettings.UserNameLastFm, userSettings.DifferentUser ? null : userSettings.SessionKeyLastFm);
-                    if (artistCall.Success && artistCall.Content != null)
+                    if (artistCall.Success && artistCall.Content?.ArtistUrl != null)
                     {
                         var spotifyArtistImage = await this._spotifyService.GetOrStoreArtistAsync(artistCall.Content);
                         if (spotifyArtistImage != null)
@@ -423,7 +425,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this.Context.Channel.SendFileAsync(
                     stream,
-                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimePeriod}-{userSettings.UserNameLastFm}.png",
+                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png",
                     embed: this._embed.Build());
                 await stream.DisposeAsync();
 

@@ -17,6 +17,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public string SpotifyImageUrl { get; set; }
 
+        public string LastfmImageUrl { get; set; }
+
         public DateTime? SpotifyImageDate { get; set; }
 
         public string SpotifyId { get; set; }

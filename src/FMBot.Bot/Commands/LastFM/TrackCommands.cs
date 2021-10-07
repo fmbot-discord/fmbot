@@ -561,65 +561,18 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                Response<TopTracksLfmResponse> topTracks;
-                long totalAmount = 0;
+                Response<TopTrackList> topTracks;
 
-                if (!timeSettings.UsePlays)
+                topTracks = await this._lastFmRepository.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 200);
+
+                if (!topTracks.Success)
                 {
-                    topTracks = await this._lastFmRepository.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings.ApiParameter, 200);
-
-                    if (!topTracks.Success)
-                    {
-                        this._embed.ErrorResponse(topTracks.Error, topTracks.Message, this.Context);
-                        await ReplyAsync("", false, this._embed.Build());
-                        return;
-                    }
-
-                    if (topTracks.Content?.TopTracks?.Attr != null)
-                    {
-                        totalAmount = topTracks.Content.TopTracks.Attr.Total;
-                    }
-                }
-                else
-                {
-                    int userId;
-                    if (userSettings.DifferentUser)
-                    {
-                        var otherUser = await this._userService.GetUserAsync(userSettings.DiscordUserId);
-                        if (otherUser.LastIndexed == null)
-                        {
-                            await this._indexService.IndexUser(otherUser);
-                        }
-                        else if (contextUser.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
-                        {
-                            await this._updateService.UpdateUser(otherUser);
-                        }
-
-                        userId = otherUser.UserId;
-                    }
-                    else
-                    {
-                        if (contextUser.LastIndexed == null)
-                        {
-                            await this._indexService.IndexUser(contextUser);
-                        }
-                        else if (contextUser.LastUpdated < DateTime.UtcNow.AddMinutes(-15))
-                        {
-                            await this._updateService.UpdateUser(contextUser);
-                        }
-
-                        userId = contextUser.UserId;
-                    }
-
-                    topTracks = await this._playService.GetTopTracks(userId,
-                        timeSettings.PlayDays.GetValueOrDefault());
-
-                    totalAmount = topTracks.Content.TopTracks.Track.Count;
-
-                    topTracks.Content.TopTracks.Track = topTracks.Content.TopTracks.Track.ToList();
+                    this._embed.ErrorResponse(topTracks.Error, topTracks.Message, this.Context);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
                 }
 
-                if (topTracks.Content?.TopTracks == null || !topTracks.Content.TopTracks.Track.Any())
+                if (topTracks.Content?.TopTracks == null || !topTracks.Content.TopTracks.Any())
                 {
                     this._embed.WithDescription("No top tracks returned for selected time period.\n" +
                                                 $"View [track history here]({userUrl})");
@@ -631,7 +584,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithAuthor(this._embedAuthor);
 
-                var trackPages = topTracks.Content.TopTracks.Track.ChunkBy(10);
+                var trackPages = topTracks.Content.TopTracks.ChunkBy(10);
 
                 var counter = 1;
                 var pageCounter = 1;
@@ -640,11 +593,15 @@ namespace FMBot.Bot.Commands.LastFM
                     var trackPageString = new StringBuilder();
                     foreach (var track in trackPage)
                     {
-                        trackPageString.AppendLine($"{counter}. **{track.Artist.Name}** - **[{track.Name}]({track.Url})** ({track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)})");
+                        trackPageString.AppendLine($"{counter}. **{track.ArtistName}** - **[{track.TrackName}]({track.TrackUrl})** ({track.UserPlaycount} {StringExtensions.GetPlaysString(track.UserPlaycount)})");
                         counter++;
                     }
 
-                    var footer = $"Page {pageCounter}/{trackPages.Count} - {totalAmount} total tracks in this time period";
+                    var footer = $"Page {pageCounter}/{trackPages.Count}";
+                    if (topTracks.Content.TotalAmount.HasValue)
+                    {
+                        footer += $" - {topTracks.Content.TotalAmount.Value} total tracks in this time period";
+                    }
 
                     pages.Add(new PageBuilder()
                         .WithDescription(trackPageString.ToString())

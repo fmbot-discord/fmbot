@@ -79,7 +79,7 @@ namespace FMBot.Bot.Services.ThirdParty
                             artistToAdd.SpotifyImageUrl = spotifyArtist.Images.OrderByDescending(o => o.Height).First().Url;
                             artistToAdd.SpotifyImageDate = DateTime.UtcNow;
 
-                            this._cache.Set(ArtistsService.CacheKeyForArtist(artistInfo.ArtistUrl), artistToAdd.SpotifyImageUrl,TimeSpan.FromMinutes(5));
+                            this._cache.Set(ArtistsService.CacheKeyForArtist(artistInfo.ArtistUrl), artistToAdd.SpotifyImageUrl, TimeSpan.FromMinutes(5));
                         }
 
                         await db.Artists.AddAsync(artistToAdd);
@@ -382,7 +382,8 @@ namespace FMBot.Bot.Services.ThirdParty
                     Name = albumInfo.AlbumName,
                     ArtistName = albumInfo.ArtistName,
                     LastFmUrl = albumInfo.AlbumUrl,
-                    Mbid = albumInfo.Mbid
+                    Mbid = albumInfo.Mbid,
+                    LastfmImageUrl = albumInfo.AlbumCoverUrl
                 };
 
                 var artist = await this._artistRepository.GetArtistForName(albumInfo.ArtistName, connection);
@@ -400,8 +401,12 @@ namespace FMBot.Bot.Services.ThirdParty
                     albumToAdd.Label = spotifyAlbum.Label;
                     albumToAdd.Popularity = spotifyAlbum.Popularity;
                     albumToAdd.SpotifyImageUrl = spotifyAlbum.Images.OrderByDescending(o => o.Height).First().Url;
+                }
 
-                    this._cache.Set(AlbumService.CacheKeyForAlbumCover(albumInfo.AlbumUrl), albumToAdd.SpotifyImageUrl, TimeSpan.FromMinutes(5));
+                var coverUrl = albumInfo.AlbumCoverUrl ?? albumToAdd.SpotifyImageUrl;
+                if (coverUrl != null)
+                {
+                    this._cache.Set(AlbumService.CacheKeyForAlbumCover(albumInfo.AlbumUrl), coverUrl, TimeSpan.FromMinutes(5));
                 }
 
                 albumToAdd.SpotifyImageDate = DateTime.UtcNow;
@@ -417,6 +422,12 @@ namespace FMBot.Bot.Services.ThirdParty
                 await connection.CloseAsync();
 
                 return albumToAdd;
+            }
+            if (albumInfo.AlbumCoverUrl != null && dbAlbum.LastfmImageUrl == null)
+            {
+                dbAlbum.LastfmImageUrl = albumInfo.AlbumCoverUrl;
+                db.Entry(dbAlbum).State = EntityState.Modified;
+                await db.SaveChangesAsync();
             }
             if (dbAlbum.Artist == null)
             {
@@ -439,11 +450,16 @@ namespace FMBot.Bot.Services.ThirdParty
                     dbAlbum.Label = spotifyAlbum.Label;
                     dbAlbum.Popularity = spotifyAlbum.Popularity;
                     dbAlbum.SpotifyImageUrl = spotifyAlbum.Images.OrderByDescending(o => o.Height).First().Url;
+                }
 
-                    this._cache.Set(AlbumService.CacheKeyForAlbumCover(albumInfo.AlbumUrl), dbAlbum.SpotifyImageUrl, TimeSpan.FromMinutes(5));
+                var coverUrl = albumInfo.AlbumCoverUrl ?? dbAlbum.SpotifyImageUrl;
+                if (coverUrl != null)
+                {
+                    this._cache.Set(AlbumService.CacheKeyForAlbumCover(albumInfo.AlbumUrl), coverUrl, TimeSpan.FromMinutes(5));
                 }
 
                 dbAlbum.SpotifyImageDate = DateTime.UtcNow;
+                dbAlbum.LastfmImageUrl = albumInfo.AlbumCoverUrl;
 
                 db.Entry(dbAlbum).State = EntityState.Modified;
 
@@ -500,7 +516,7 @@ namespace FMBot.Bot.Services.ThirdParty
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var albumTracks =  await this._trackRepository.GetAlbumTracks(albumId, connection);
+            var albumTracks = await this._trackRepository.GetAlbumTracks(albumId, connection);
             await connection.CloseAsync();
 
             return albumTracks;

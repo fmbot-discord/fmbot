@@ -581,6 +581,18 @@ namespace FMBot.LastFM.Repositories
             }
         }
 
+        public async Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName,
+            TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1)
+        {
+            if (!timeSettings.StartDateTime.HasValue || !timeSettings.EndDateTime.HasValue)
+            {
+                return await GetTopAlbumsAsync(lastFmUserName, timeSettings.TimePeriod, count, amountOfPages);
+            }
+
+            return await GetTopAlbumsForCustomTimePeriodAsyncAsync(lastFmUserName, timeSettings.StartDateTime.Value,
+                timeSettings.EndDateTime.Value, (int)count);
+        }
+
         // Top albums
         public async Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName,
             TimePeriod timePeriod, int count = 2, int amountOfPages = 1)
@@ -605,10 +617,7 @@ namespace FMBot.LastFM.Repositories
                 return new Response<TopAlbumList>
                 {
                     Success = true,
-                    Content = new TopAlbumList
-                    {
-                        TotalAmount = 0
-                    }
+                    Content = new TopAlbumList()
                 };
             }
 
@@ -631,14 +640,72 @@ namespace FMBot.LastFM.Repositories
                         Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
                             ? Guid.Parse(s.Mbid)
                             : null
-                    }).ToList()
+                    }).Take(count).ToList()
                 }
             };
         }
 
+        public async Task<Response<TopAlbumList>> GetTopAlbumsForCustomTimePeriodAsyncAsync(string lastFmUserName,
+            DateTime startDateTime, DateTime endDateTime, int count)
+        {
+            var start = ((DateTimeOffset)startDateTime).ToUnixTimeSeconds();
+            var end = ((DateTimeOffset)endDateTime).ToUnixTimeSeconds();
+            var queryParams = new Dictionary<string, string>
+            {
+                {"username", lastFmUserName },
+                {"limit", count.ToString() },
+                {"from", start.ToString() },
+                {"to", end.ToString() },
+            };
+
+            var artistCall = await this._lastFmApi.CallApiAsync<WeeklyAlbumChartsResponse>(queryParams, Call.GetWeeklyAlbumChart);
+            if (artistCall.Success)
+            {
+                return new Response<TopAlbumList>
+                {
+                    Success = true,
+                    Content = new TopAlbumList
+                    {
+                        TopAlbums = artistCall.Content.WeeklyAlbumChart.Album.Select(s => new TopAlbum
+                        {
+                            ArtistUrl = s.Url,
+                            ArtistName = s.Artist.Text,
+                            AlbumName = s.Name,
+                            Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
+                                ? Guid.Parse(s.Mbid)
+                                : null,
+                            AlbumUrl = Uri.IsWellFormedUriString(s.Url, UriKind.Absolute)
+                                ? s.Url
+                                : null,
+                            UserPlaycount = s.Playcount
+                        }).ToList()
+                    }
+                };
+            }
+
+            return new Response<TopAlbumList>
+            {
+                Success = false,
+                Error = artistCall.Error,
+                Message = artistCall.Message
+            };
+        }
+
+        public async Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName,
+            TimeSettingsModel timeSettings, long count = 2, long amountOfPages = 1)
+        {
+            if (!timeSettings.StartDateTime.HasValue || !timeSettings.EndDateTime.HasValue)
+            {
+                return await GetTopArtistsAsync(lastFmUserName, timeSettings.TimePeriod, count, amountOfPages);
+            }
+
+            return await GetTopArtistsForCustomTimePeriodAsync(lastFmUserName, timeSettings.StartDateTime.Value,
+                timeSettings.EndDateTime.Value, (int)count);
+        }
+
         // Top artists
         public async Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName,
-            TimePeriod timePeriod, long count = 2, long amountOfPages = 1)
+        TimePeriod timePeriod, long count = 2, long amountOfPages = 1)
         {
             var lastStatsTimeSpan = TimePeriodToLastStatsTimeSpan(timePeriod);
 
@@ -661,10 +728,7 @@ namespace FMBot.LastFM.Repositories
                 return new Response<TopArtistList>
                 {
                     Success = true,
-                    Content = new TopArtistList
-                    {
-                        TotalAmount = 0
-                    }
+                    Content = new TopArtistList()
                 };
             }
 
@@ -687,9 +751,68 @@ namespace FMBot.LastFM.Repositories
             };
         }
 
+        // Top artists custom time period
+        public async Task<Response<TopArtistList>> GetTopArtistsForCustomTimePeriodAsync(string lastFmUserName,
+            DateTime startDateTime, DateTime endDateTime, int count)
+        {
+            var start = ((DateTimeOffset)startDateTime).ToUnixTimeSeconds();
+            var end = ((DateTimeOffset)endDateTime).ToUnixTimeSeconds();
+
+            var queryParams = new Dictionary<string, string>
+            {
+                {"username", lastFmUserName },
+                {"limit", count.ToString() },
+                {"from", start.ToString() },
+                {"to", end.ToString() },
+            };
+
+            var artistCall = await this._lastFmApi.CallApiAsync<WeeklyArtistChartsResponse>(queryParams, Call.GetWeeklyArtistChart);
+            if (artistCall.Success)
+            {
+                return new Response<TopArtistList>
+                {
+                    Success = true,
+                    Content = new TopArtistList
+                    {
+                        TopArtists = artistCall.Content.WeeklyArtistChart.Artist.Select(s => new TopArtist
+                        {
+                            ArtistUrl = s.Url,
+                            ArtistName = s.Name,
+                            Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
+                                ? Guid.Parse(s.Mbid)
+                                : null,
+                            ArtistImageUrl = Uri.IsWellFormedUriString(s.Url, UriKind.Absolute)
+                                ? s.Url
+                                : null,
+                            UserPlaycount = s.Playcount
+                        }).ToList()
+                    }
+                };
+            }
+
+            return new Response<TopArtistList>
+            {
+                Success = false,
+                Error = artistCall.Error,
+                Message = artistCall.Message
+            };
+        }
+
+        public async Task<Response<TopTrackList>> GetTopTracksAsync(string lastFmUserName,
+            TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1)
+        {
+            if (!timeSettings.StartDateTime.HasValue || !timeSettings.EndDateTime.HasValue)
+            {
+                return await GetTopTracksAsync(lastFmUserName, timeSettings.ApiParameter, count, amountOfPages);
+            }
+
+            return await GetTopTracksForCustomTimePeriodAsyncAsync(lastFmUserName, timeSettings.StartDateTime.Value,
+                timeSettings.EndDateTime.Value, count);
+        }
+
         // Top tracks
-        public async Task<Response<TopTracksLfmResponse>> GetTopTracksAsync(string lastFmUserName,
-            string period, int count = 2, int amountOfPages = 1)
+        public async Task<Response<TopTrackList>> GetTopTracksAsync(string lastFmUserName,
+        string period, int count = 2, int amountOfPages = 1)
         {
             var queryParams = new Dictionary<string, string>
             {
@@ -698,37 +821,118 @@ namespace FMBot.LastFM.Repositories
                 {"period", period },
             };
 
+            Response<TopTracksLfmResponse> topTracksCall;
             if (amountOfPages == 1)
             {
-                return await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
+                topTracksCall = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
             }
-
-            var response = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
-            if (response.Success && response.Content.TopTracks.Track.Count > 998)
+            else
             {
-                for (var i = 1; i < amountOfPages; i++)
+                topTracksCall = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
+                if (topTracksCall.Success && topTracksCall.Content.TopTracks.Track.Count > 998)
                 {
-                    queryParams.Remove("page");
-                    queryParams.Add("page", (i + 1).ToString());
-
-                    var pageResponse = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
-
-                    if (pageResponse.Success)
+                    for (var i = 1; i < amountOfPages; i++)
                     {
-                        response.Content.TopTracks.Track.AddRange(pageResponse.Content.TopTracks.Track);
-                        if (pageResponse.Content.TopTracks.Track.Count < 1000)
+                        queryParams.Remove("page");
+                        queryParams.Add("page", (i + 1).ToString());
+
+                        var pageResponse = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
+
+                        if (pageResponse.Success)
+                        {
+                            topTracksCall.Content.TopTracks.Track.AddRange(pageResponse.Content.TopTracks.Track);
+                            if (pageResponse.Content.TopTracks.Track.Count < 1000)
+                            {
+                                break;
+                            }
+                        }
+                        else
                         {
                             break;
                         }
                     }
-                    else
-                    {
-                        break;
-                    }
                 }
             }
 
-            return response;
+            if (topTracksCall.Success)
+            {
+                return new Response<TopTrackList>
+                {
+                    Success = true,
+                    Content = new TopTrackList
+                    {
+                        TotalAmount = topTracksCall.Content.TopTracks.Attr?.Total,
+                        TopTracks = topTracksCall.Content.TopTracks.Track.Select(s => new TopTrack
+                        {
+                            AlbumCoverUrl = !string.IsNullOrWhiteSpace(s.Image?.FirstOrDefault(f => f.Size != null && f.Size.ToLower() == "extralarge")?.Text)
+                                ? s.Image.FirstOrDefault(f => f.Size != null && f.Size.ToLower() == "extralarge").Text
+                                : null,
+                            TrackName = s.Name,
+                            ArtistName = s.Artist.Name,
+                            Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
+                                ? Guid.Parse(s.Mbid)
+                                : null,
+                            TrackUrl = Uri.IsWellFormedUriString(s.Url, UriKind.Absolute)
+                                ? s.Url
+                                : null,
+                            UserPlaycount = s.Playcount
+                        }).ToList()
+                    }
+                };
+            }
+
+            return new Response<TopTrackList>
+            {
+                Success = false,
+                Error = topTracksCall.Error,
+                Message = topTracksCall.Message
+            };
+        }
+
+        public async Task<Response<TopTrackList>> GetTopTracksForCustomTimePeriodAsyncAsync(string lastFmUserName,
+            DateTime startDateTime, DateTime endDateTime, int count)
+        {
+            var start = ((DateTimeOffset)startDateTime).ToUnixTimeSeconds();
+            var end = ((DateTimeOffset)endDateTime).ToUnixTimeSeconds();
+            var queryParams = new Dictionary<string, string>
+            {
+                {"username", lastFmUserName },
+                {"limit", count.ToString() },
+                {"from", start.ToString() },
+                {"to", end.ToString() },
+            };
+
+            var artistCall = await this._lastFmApi.CallApiAsync<WeeklyTrackChartsResponse>(queryParams, Call.GetWeeklyTrackChart);
+            if (artistCall.Success)
+            {
+                return new Response<TopTrackList>
+                {
+                    Success = true,
+                    Content = new TopTrackList
+                    {
+                        TopTracks = artistCall.Content.WeeklyTrackChart.Track.Select(s => new TopTrack
+                        {
+                            ArtistUrl = s.Url,
+                            ArtistName = s.Artist.Text,
+                            TrackName = s.Name,
+                            Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
+                                ? Guid.Parse(s.Mbid)
+                                : null,
+                            TrackUrl = Uri.IsWellFormedUriString(s.Url, UriKind.Absolute)
+                                ? s.Url
+                                : null,
+                            UserPlaycount = s.Playcount
+                        }).ToList()
+                    }
+                };
+            }
+
+            return new Response<TopTrackList>
+            {
+                Success = false,
+                Error = artistCall.Error,
+                Message = artistCall.Message
+            };
         }
 
         private LastStatsTimeSpan TimePeriodToLastStatsTimeSpan(TimePeriod timePeriod)

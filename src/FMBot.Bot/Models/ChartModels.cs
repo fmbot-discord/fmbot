@@ -33,7 +33,7 @@ namespace FMBot.Bot.Models
 
         public List<ChartImage> ChartImages { get; set; }
 
-        public TimePeriod TimePeriod { get; set; }
+        public TimeSettingsModel TimeSettings { get; set; }
 
         public IUser DiscordUser { get; set; }
 
