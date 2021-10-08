@@ -466,7 +466,7 @@ namespace FMBot.Bot.Services
                 Match matchedOption = matchSizeOption.Matches(option).FirstOrDefault();
                 if (matchedOption != null)
                 {
-                    int[] dimensions = matchedOption.Value.Split('x').Select(value =>
+                    int[] dimensions = matchedOption.Value.Split(new char[] { 'x', 'X' }).Select(value =>
                     {
                         int size = int.TryParse(value, out int i) ? i : _defaultChartSize;
                         return size;
