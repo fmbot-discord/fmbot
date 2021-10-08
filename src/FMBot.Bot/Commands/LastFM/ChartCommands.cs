@@ -63,12 +63,12 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("chart", RunMode = RunMode.Async)]
-        [Summary("Generates a an album chart.")]
+        [Summary("Generates an album chart.")]
         [Options(
             Constants.CompactTimePeriodList,
             "Disable titles: `notitles` / `nt`",
             "Skip albums with no image: `skipemptyimages` / `s`",
-            "Size: `2x2`, `3x3` up to `10x10`",
+            "Size: WidthxHeight - `2x2`, `3x3`, `4x5` up to `10x10`",
             Constants.UserMentionExample)]
         [Examples("c", "c q 8x8 nt s", "chart 8x8 quarterly notitles skip", "c 10x10 alltime notitles skip", "c @user 7x7 yearly")]
         [Alias("c", "aoty")]
@@ -258,12 +258,12 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("artistchart", RunMode = RunMode.Async)]
-        [Summary("Generates a an artist chart.")]
+        [Summary("Generates an artist chart.")]
         [Options(
             Constants.CompactTimePeriodList,
             "Disable titles: `notitles` / `nt`",
             "Skip albums with no image: `skipemptyimages` / `s`",
-            "Size: `2x2`, `3x3` up to `10x10`",
+            "Size: WidthxHeight - `2x2`, `3x3`, `4x5` up to `10x10`",
             Constants.UserMentionExample)]
         [Examples("ac", "ac q 8x8 nt s", "artistchart 8x8 quarterly notitles skip", "ac 10x10 alltime notitles skip", "ac @user 7x7 yearly")]
         [Alias("ac", "top")]
