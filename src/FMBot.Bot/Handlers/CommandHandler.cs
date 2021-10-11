@@ -151,7 +151,7 @@ namespace FMBot.Bot.Handlers
                 var disabledGuildCommands = this._guildDisabledCommandService.GetDisabledCommands(context.Guild?.Id);
                 if (searchResult.Commands != null &&
                     disabledGuildCommands != null &&
-                    disabledGuildCommands.Any(searchResult.Commands[0].Command.Name.Contains))
+                    disabledGuildCommands.Any(searchResult.Commands[0].Command.Name.Equals))
                 {
                     _ = this._interactiveService.DelayedDeleteMessageAsync(
                         await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this server."),
@@ -163,7 +163,7 @@ namespace FMBot.Bot.Handlers
                 if (searchResult.Commands != null &&
                     disabledChannelCommands != null &&
                     disabledChannelCommands.Any() &&
-                    disabledChannelCommands.Any(searchResult.Commands[0].Command.Name.Contains) &&
+                    disabledChannelCommands.Any(searchResult.Commands[0].Command.Name.Equals) &&
                     context.Channel != null)
                 {
                     _ = this._interactiveService.DelayedDeleteMessageAsync(

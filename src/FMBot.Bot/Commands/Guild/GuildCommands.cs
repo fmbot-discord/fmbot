@@ -312,7 +312,7 @@ namespace FMBot.Bot.Commands.Guild
 
             this._embed.WithFooter(
                 $"Toggling server-wide for all channels\n" +
-                $"to toggle per channel use {prfx}togglecommand");
+                $"To toggle per channel use '{prfx}togglecommand'");
 
             if (string.IsNullOrEmpty(command))
             {
@@ -349,7 +349,7 @@ namespace FMBot.Bot.Commands.Guild
 
             var searchResult = this._commands.Search(command.ToLower());
 
-            if (searchResult.Commands == null || command.ToLower() == "togglecommand" || command.ToLower() == "toggleservercommand")
+            if (searchResult.Commands == null || !searchResult.Commands.Any() || searchResult.Commands.Any(a => a.Command.Name == "toggleservercommand") || searchResult.Commands.Any(a => a.Command.Name == "togglecommand"))
             {
                 this._embed.WithDescription("No commands found or command can't be disabled.\n" +
                                             "Remember to remove the `.fm` prefix.");
@@ -358,24 +358,26 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            if (disabledCommandsForGuild != null && disabledCommandsForGuild.Contains(command.ToLower()))
+            var foundCommand = searchResult.Commands.FirstOrDefault().Command;
+
+            if (disabledCommandsForGuild != null && disabledCommandsForGuild.Equals(command.ToLower()))
             {
-                var newDisabledCommands = await this._guildService.RemoveGuildDisabledCommandAsync(this.Context.Guild, command.ToLower());
+                var newDisabledCommands = await this._guildService.RemoveGuildDisabledCommandAsync(this.Context.Guild, foundCommand.Name.ToLower());
 
                 this._guildDisabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Guild.Id);
 
-                this._embed.WithDescription($"Re-enabled command `{command.ToLower()}` for this server.");
+                this._embed.WithDescription($"Re-enabled command `{foundCommand.Name}` for this server.");
             }
             else
             {
-                var newDisabledCommands = await this._guildService.AddGuildDisabledCommandAsync(this.Context.Guild, command.ToLower());
+                var newDisabledCommands = await this._guildService.AddGuildDisabledCommandAsync(this.Context.Guild, foundCommand.Name.ToLower());
 
                 this._guildDisabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Guild.Id);
 
-                this._embed.WithDescription($"Disabled command `{command.ToLower()}` for this server.");
+                this._embed.WithDescription($"Disabled command `{foundCommand.Name}` for this server.");
             }
 
-            await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
+            await ReplyAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
         }
 
@@ -394,7 +396,7 @@ namespace FMBot.Bot.Commands.Guild
 
             this._embed.WithFooter(
                 $"Toggling per channel\n" +
-                $"To toggle server-wide use {prfx}toggleservercommand");
+                $"To toggle server-wide use '{prfx}toggleservercommand'");
 
             if (string.IsNullOrEmpty(command))
             {
@@ -447,7 +449,7 @@ namespace FMBot.Bot.Commands.Guild
 
             var searchResult = this._commands.Search(command.ToLower());
 
-            if (searchResult.Commands == null || command.ToLower() == "togglecommand" || command.ToLower() == "toggleservercommand")
+            if (searchResult.Commands == null || !searchResult.Commands.Any() || searchResult.Commands.Any(a => a.Command.Name == "toggleservercommand") || searchResult.Commands.Any(a => a.Command.Name == "togglecommand"))
             {
                 this._embed.WithDescription("No commands found or command can't be disabled.\n" +
                                             "Remember to remove the `.fm` prefix.");
@@ -456,21 +458,23 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            if (disabledCommands != null && disabledCommands.Contains(command.ToLower()))
+            var foundCommand = searchResult.Commands.FirstOrDefault().Command;
+
+            if (disabledCommands != null && disabledCommands.Equals(foundCommand.Name.ToLower()))
             {
-                var newDisabledCommands = await this._guildService.RemoveChannelDisabledCommandAsync(this.Context.Channel, command.ToLower());
+                var newDisabledCommands = await this._guildService.RemoveChannelDisabledCommandAsync(this.Context.Channel, foundCommand.Name.ToLower());
 
                 this._channelDisabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Channel.Id);
 
-                this._embed.WithDescription($"Re-enabled command `{command.ToLower()}` for this channel.");
+                this._embed.WithDescription($"Re-enabled command `{foundCommand.Name}` for this channel.");
             }
             else
             {
-                var newDisabledCommands = await this._guildService.AddChannelDisabledCommandAsync(this.Context.Channel, guild.GuildId, command.ToLower());
+                var newDisabledCommands = await this._guildService.AddChannelDisabledCommandAsync(this.Context.Channel, guild.GuildId, foundCommand.Name.ToLower()));
 
                 this._channelDisabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Channel.Id);
 
-                this._embed.WithDescription($"Disabled command `{command.ToLower()}` for this channel.");
+                this._embed.WithDescription($"Disabled command `{foundCommand.Name}` for this channel.");
             }
 
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);
