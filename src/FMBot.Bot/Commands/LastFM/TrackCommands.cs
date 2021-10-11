@@ -141,6 +141,15 @@ namespace FMBot.Bot.Commands.LastFM
                     $"`{pitch}` key\n" +
                     $"`{bpm}` bpm\n",
                     true);
+
+                var danceability = ((decimal)(spotifyTrack.Danceability / 1)).ToString("0%");
+                var energetic = ((decimal)(spotifyTrack.Energy / 1)).ToString("0%");
+                var instrumental = ((decimal)(spotifyTrack.Instrumentalness / 1)).ToString("0%");
+                var acoustic = ((decimal)(spotifyTrack.Acousticness / 1)).ToString("0%");
+                var speechful = ((decimal)(spotifyTrack.Speechiness / 1)).ToString("0%");
+                var lively = ((decimal)(spotifyTrack.Liveness / 1)).ToString("0%");
+                this._embed.WithFooter($"{danceability} danceable - {energetic} energetic - {acoustic} acoustic\n" +
+                                       $"{instrumental} instrumental - {speechful} speechful - {lively} lively");
             }
             else
             {
@@ -765,6 +774,8 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 return;
             }
+
+            await this._spotifyService.GetOrStoreTrackAsync(track);
 
             var trackName = $"{track.TrackName} by {track.ArtistName}";
 

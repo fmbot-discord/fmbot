@@ -230,6 +230,7 @@ namespace FMBot.Bot.Services.ThirdParty
                     {
                         trackToAdd.SpotifyId = spotifyTrack.Id;
                         trackToAdd.DurationMs = spotifyTrack.DurationMs;
+                        trackToAdd.Popularity = spotifyTrack.Popularity;
 
                         var audioFeatures = await GetAudioFeaturesFromSpotify(spotifyTrack.Id);
 
@@ -237,6 +238,14 @@ namespace FMBot.Bot.Services.ThirdParty
                         {
                             trackToAdd.Key = audioFeatures.Key;
                             trackToAdd.Tempo = audioFeatures.Tempo;
+                            trackToAdd.Acousticness = audioFeatures.Acousticness;
+                            trackToAdd.Danceability = audioFeatures.Danceability;
+                            trackToAdd.Energy = audioFeatures.Energy;
+                            trackToAdd.Instrumentalness = audioFeatures.Instrumentalness;
+                            trackToAdd.Liveness = audioFeatures.Liveness;
+                            trackToAdd.Loudness = audioFeatures.Loudness;
+                            trackToAdd.Speechiness = audioFeatures.Speechiness;
+                            trackToAdd.Valence = audioFeatures.Valence;
                         }
                     }
 
@@ -266,6 +275,7 @@ namespace FMBot.Bot.Services.ThirdParty
                     {
                         dbTrack.SpotifyId = spotifyTrack.Id;
                         dbTrack.DurationMs = spotifyTrack.DurationMs;
+                        dbTrack.Popularity = spotifyTrack.Popularity;
 
                         var audioFeatures = await GetAudioFeaturesFromSpotify(spotifyTrack.Id);
 
@@ -273,6 +283,14 @@ namespace FMBot.Bot.Services.ThirdParty
                         {
                             dbTrack.Key = audioFeatures.Key;
                             dbTrack.Tempo = audioFeatures.Tempo;
+                            dbTrack.Acousticness = audioFeatures.Acousticness;
+                            dbTrack.Danceability = audioFeatures.Danceability;
+                            dbTrack.Energy = audioFeatures.Energy;
+                            dbTrack.Instrumentalness = audioFeatures.Instrumentalness;
+                            dbTrack.Liveness = audioFeatures.Liveness;
+                            dbTrack.Loudness = audioFeatures.Loudness;
+                            dbTrack.Speechiness = audioFeatures.Speechiness;
+                            dbTrack.Valence = audioFeatures.Valence;
                         }
                     }
 

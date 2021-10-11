@@ -470,7 +470,7 @@ namespace FMBot.Bot.Commands.Guild
             }
             else
             {
-                var newDisabledCommands = await this._guildService.AddChannelDisabledCommandAsync(this.Context.Channel, guild.GuildId, foundCommand.Name.ToLower()));
+                var newDisabledCommands = await this._guildService.AddChannelDisabledCommandAsync(this.Context.Channel, guild.GuildId, foundCommand.Name.ToLower());
 
                 this._channelDisabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Channel.Id);
 
