@@ -24,7 +24,7 @@ Get them from https://github.com/fmbot-discord/fmbot/releases (Stable) or https:
 
 <h3>Selfhosting</h3>
 
-Please see https://fmbot.xyz/setup/.
+Please see https://fmbot.xyz/setup.html.
 
 <h3>Thanks</h3>
 Thanks to <a href="https://www.jetbrains.com/?from=fmbot">JetBrains</a> for providing a free license of ReSharper.
