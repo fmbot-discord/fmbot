@@ -25,9 +25,33 @@ namespace FMBot.Bot.Models
 
         public bool ArtistChart { get; set; }
 
-        public int Height { get; set; }
+        private int _height;
+        public int Height
+        {
+            get
+            {
+                return this._height;
+            }
+            set
+            {
+                this._height = value;
+                this.ImagesNeeded = this._width * this._height;
+            }
+        }
 
-        public int Width { get; set; }
+        private int _width;
+        public int Width
+        {
+            get
+            {
+                return this._width;
+            }
+            set
+            {
+                this._width = value;
+                this.ImagesNeeded = this._width * this._height;
+            }
+        }
 
         public int ImagesNeeded { get; set; }
 

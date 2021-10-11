@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Dasync.Collections;
 using Discord.Commands;
@@ -16,6 +17,8 @@ namespace FMBot.Bot.Services
 {
     public class ChartService
     {
+        private static readonly int _defaultChartSize = 3;
+
         private readonly CensorService _censorService;
 
         private readonly string _fontPath;
@@ -62,7 +65,7 @@ namespace FMBot.Bot.Services
                 var chartImageHeight = 300;
                 var chartImageWidth = 300;
 
-                if (chart.Width > 6)
+                if (chart.Width > 6 || chart.Height > 6)
                 {
                     largerImages = false;
                     chartImageHeight = 180;
@@ -454,65 +457,24 @@ namespace FMBot.Bot.Services
             }
 
             // chart size
-            if (extraOptions.Contains("1x1"))
+            chartSettings.Width = _defaultChartSize;
+            chartSettings.Height = _defaultChartSize;
+
+            foreach (string option in extraOptions)
             {
-                chartSettings.ImagesNeeded = 1;
-                chartSettings.Height = 1;
-                chartSettings.Width = 1;
-            }
-            else if (extraOptions.Contains("2x2"))
-            {
-                chartSettings.ImagesNeeded = 4;
-                chartSettings.Height = 2;
-                chartSettings.Width = 2;
-            }
-            else if (extraOptions.Contains("4x4"))
-            {
-                chartSettings.ImagesNeeded = 16;
-                chartSettings.Height = 4;
-                chartSettings.Width = 4;
-            }
-            else if (extraOptions.Contains("5x5"))
-            {
-                chartSettings.ImagesNeeded = 25;
-                chartSettings.Height = 5;
-                chartSettings.Width = 5;
-            }
-            else if (extraOptions.Contains("6x6"))
-            {
-                chartSettings.ImagesNeeded = 36;
-                chartSettings.Height = 10;
-                chartSettings.Width = 1;
-            }
-            else if (extraOptions.Contains("7x7"))
-            {
-                chartSettings.ImagesNeeded = 49;
-                chartSettings.Height = 7;
-                chartSettings.Width = 7;
-            }
-            else if (extraOptions.Contains("8x8"))
-            {
-                chartSettings.ImagesNeeded = 64;
-                chartSettings.Height = 8;
-                chartSettings.Width = 8;
-            }
-            else if (extraOptions.Contains("9x9"))
-            {
-                chartSettings.ImagesNeeded = 81;
-                chartSettings.Height = 9;
-                chartSettings.Width = 9;
-            }
-            else if (extraOptions.Contains("10x10"))
-            {
-                chartSettings.ImagesNeeded = 100;
-                chartSettings.Height = 10;
-                chartSettings.Width = 10;
-            }
-            else
-            {
-                chartSettings.ImagesNeeded = 9;
-                chartSettings.Height = 3;
-                chartSettings.Width = 3;
+                Regex matchSizeOption = new Regex("^([1-9]|10)x([1-9]|10)$", RegexOptions.IgnoreCase);
+                Match matchedOption = matchSizeOption.Matches(option).FirstOrDefault();
+                if (matchedOption != null)
+                {
+                    int[] dimensions = matchedOption.Value.Split(new char[] { 'x', 'X' }).Select(value =>
+                    {
+                        int size = int.TryParse(value, out int i) ? i : _defaultChartSize;
+                        return size;
+                    }).ToArray();
+
+                    chartSettings.Width = dimensions[0];
+                    chartSettings.Height = dimensions[1];
+                }
             }
 
             var optionsAsString = "";
