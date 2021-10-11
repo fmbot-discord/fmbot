@@ -17,7 +17,7 @@ namespace FMBot.Bot.Services
 {
     public class ChartService
     {
-        private static readonly int _defaultChartSize = 3;
+        private const int DefaultChartSize = 3;
 
         private readonly CensorService _censorService;
 
@@ -26,7 +26,6 @@ namespace FMBot.Bot.Services
         private readonly string _unknownImagePath;
         private readonly string _unknownArtistImagePath;
         private readonly string _censoredImagePath;
-
         public ChartService(CensorService censorService)
         {
             this._censorService = censorService;
@@ -457,18 +456,17 @@ namespace FMBot.Bot.Services
             }
 
             // chart size
-            chartSettings.Width = _defaultChartSize;
-            chartSettings.Height = _defaultChartSize;
+            chartSettings.Width = DefaultChartSize;
+            chartSettings.Height = DefaultChartSize;
 
-            foreach (string option in extraOptions)
+            foreach (var option in extraOptions.Where(w => !string.IsNullOrWhiteSpace(w) && w.Length is >= 3 and <= 5))
             {
-                Regex matchSizeOption = new Regex("^([1-9]|10)x([1-9]|10)$", RegexOptions.IgnoreCase);
-                Match matchedOption = matchSizeOption.Matches(option).FirstOrDefault();
-                if (matchedOption != null)
+                var matchFound = Regex.IsMatch(option, "^([1-9]|10)x([1-9]|10)$", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(300));
+                if (matchFound)
                 {
-                    int[] dimensions = matchedOption.Value.Split(new char[] { 'x', 'X' }).Select(value =>
+                    var dimensions = option.ToLower().Split('x').Select(value =>
                     {
-                        int size = int.TryParse(value, out int i) ? i : _defaultChartSize;
+                        var size = int.TryParse(value, out var i) ? i : DefaultChartSize;
                         return size;
                     }).ToArray();
 
