@@ -668,15 +668,12 @@ namespace FMBot.LastFM.Repositories
                     {
                         TopAlbums = artistCall.Content.WeeklyAlbumChart.Album.Select(s => new TopAlbum
                         {
-                            ArtistUrl = s.Url,
                             ArtistName = s.Artist.Text,
                             AlbumName = s.Name,
                             Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
                                 ? Guid.Parse(s.Mbid)
                                 : null,
-                            AlbumUrl = Uri.IsWellFormedUriString(s.Url, UriKind.Absolute)
-                                ? s.Url
-                                : null,
+                            AlbumUrl = s.Url,
                             UserPlaycount = s.Playcount
                         }).ToList()
                     }
