@@ -383,8 +383,8 @@ namespace FMBot.LastFM.Repositories
                         AlbumArtist = trackCall.Content.Track.Album?.Artist,
                         AlbumUrl = trackCall.Content.Track.Album?.Url,
                         ArtistName = trackCall.Content.Track.Artist?.Name,
-                        ArtistUrl = Uri.IsWellFormedUriString(trackCall.Content.Track.Artist.Url, UriKind.Absolute)
-                            ? trackCall.Content.Track.Artist.Url
+                        ArtistUrl = Uri.IsWellFormedUriString(trackCall.Content.Track.Artist?.Url, UriKind.Absolute)
+                            ? trackCall.Content.Track.Artist?.Url
                             : null,
                         ArtistMbid = !string.IsNullOrWhiteSpace(trackCall.Content.Track.Artist?.Mbid)
                             ? Guid.Parse(trackCall.Content.Track.Artist?.Mbid)
