@@ -266,7 +266,9 @@ namespace FMBot.Bot.Services.ThirdParty
                         db.Entry(dbTrack).State = EntityState.Modified;
                     }
                 }
-                if ((string.IsNullOrEmpty(dbTrack.SpotifyId) || dbTrack.SpotifyId != null) && dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddMonths(-2))
+
+                var monthsToGoBack = !string.IsNullOrEmpty(dbTrack.SpotifyId) && !dbTrack.Energy.HasValue ? 1 : 3;
+                if ((string.IsNullOrEmpty(dbTrack.SpotifyId) || dbTrack.SpotifyId != null) && dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddMonths(-monthsToGoBack))
                 {
                     var spotifyTrack = await GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
 
