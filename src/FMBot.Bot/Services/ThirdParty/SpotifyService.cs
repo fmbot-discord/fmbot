@@ -268,7 +268,7 @@ namespace FMBot.Bot.Services.ThirdParty
                 }
 
                 var monthsToGoBack = !string.IsNullOrEmpty(dbTrack.SpotifyId) && !dbTrack.Energy.HasValue ? 1 : 3;
-                if ((string.IsNullOrEmpty(dbTrack.SpotifyId) || dbTrack.SpotifyId != null) && dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddMonths(-monthsToGoBack))
+                if (dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddMonths(-monthsToGoBack))
                 {
                     var spotifyTrack = await GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
 
@@ -420,6 +420,8 @@ namespace FMBot.Bot.Services.ThirdParty
                     albumToAdd.Label = spotifyAlbum.Label;
                     albumToAdd.Popularity = spotifyAlbum.Popularity;
                     albumToAdd.SpotifyImageUrl = spotifyAlbum.Images.OrderByDescending(o => o.Height).First().Url;
+                    albumToAdd.ReleaseDate = spotifyAlbum.ReleaseDate;
+                    albumToAdd.ReleaseDatePrecision = spotifyAlbum.ReleaseDatePrecision;
                 }
 
                 var coverUrl = albumInfo.AlbumCoverUrl ?? albumToAdd.SpotifyImageUrl;
@@ -459,7 +461,9 @@ namespace FMBot.Bot.Services.ThirdParty
                     await db.SaveChangesAsync();
                 }
             }
-            if (string.IsNullOrEmpty(dbAlbum.SpotifyId) && dbAlbum.SpotifyImageDate < DateTime.UtcNow.AddMonths(-2))
+
+            var monthsToGoBack = !string.IsNullOrEmpty(dbAlbum.SpotifyId) && dbAlbum.ReleaseDate == null ? 1 : 3;
+            if (dbAlbum.SpotifyImageDate < DateTime.UtcNow.AddMonths(-monthsToGoBack))
             {
                 var spotifyAlbum = await GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
 
@@ -469,6 +473,8 @@ namespace FMBot.Bot.Services.ThirdParty
                     dbAlbum.Label = spotifyAlbum.Label;
                     dbAlbum.Popularity = spotifyAlbum.Popularity;
                     dbAlbum.SpotifyImageUrl = spotifyAlbum.Images.OrderByDescending(o => o.Height).First().Url;
+                    dbAlbum.ReleaseDate = spotifyAlbum.ReleaseDate;
+                    dbAlbum.ReleaseDatePrecision = spotifyAlbum.ReleaseDatePrecision;
                 }
 
                 var coverUrl = albumInfo.AlbumCoverUrl ?? dbAlbum.SpotifyImageUrl;

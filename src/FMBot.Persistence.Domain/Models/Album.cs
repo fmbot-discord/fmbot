@@ -27,7 +27,9 @@ namespace FMBot.Persistence.Domain.Models
 
         public string Label { get; set; }
 
-        public DateTime? ReleaseDate { get; set; }
+        public string ReleaseDate { get; set; }
+
+        public string ReleaseDatePrecision { get; set; }
 
         public int? ArtistId { get; set; }
 
