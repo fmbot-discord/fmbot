@@ -243,7 +243,7 @@ namespace FMBot.LastFM.Repositories
 
         public static string ResponseTrackToLinkedString(TrackInfo trackInfo)
         {
-            if (trackInfo.TrackUrl.IndexOfAny(new[] { '(', ')' }) >= 0)
+            if (string.IsNullOrEmpty(trackInfo.TrackUrl) || trackInfo.TrackUrl.IndexOfAny(new[] { '(', ')' }) >= 0)
             {
                 return ResponseTrackToString(trackInfo);
             }
@@ -383,7 +383,9 @@ namespace FMBot.LastFM.Repositories
                         AlbumArtist = trackCall.Content.Track.Album?.Artist,
                         AlbumUrl = trackCall.Content.Track.Album?.Url,
                         ArtistName = trackCall.Content.Track.Artist?.Name,
-                        ArtistUrl = trackCall.Content.Track.Artist?.Name,
+                        ArtistUrl = Uri.IsWellFormedUriString(trackCall.Content.Track.Artist?.Url, UriKind.Absolute)
+                            ? trackCall.Content.Track.Artist?.Url
+                            : null,
                         ArtistMbid = !string.IsNullOrWhiteSpace(trackCall.Content.Track.Artist?.Mbid)
                             ? Guid.Parse(trackCall.Content.Track.Artist?.Mbid)
                             : null,
