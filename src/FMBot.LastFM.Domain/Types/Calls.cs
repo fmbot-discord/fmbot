@@ -14,6 +14,9 @@ namespace FMBot.LastFM.Domain.Types
             TopTracks = "user.getTopTracks",
             RecentTracks = "user.getRecentTracks",
             LovedTracks = "user.getLovedTracks",
+            GetWeeklyArtistChart = "user.getWeeklyArtistChart",
+            GetWeeklyAlbumChart = "user.getWeeklyAlbumChart",
+            GetWeeklyTrackChart = "user.getWeeklyTrackChart",
             GetToken = "auth.GetToken",
             GetAuthSession = "auth.getSession";
     }

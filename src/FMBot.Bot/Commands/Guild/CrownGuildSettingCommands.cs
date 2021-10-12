@@ -55,7 +55,7 @@ namespace FMBot.Bot.Commands.Guild
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync(
-                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                    "You are not authorized to use this command. Only users with the 'Ban Members' or server admins can use this command.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -167,7 +167,7 @@ namespace FMBot.Bot.Commands.Guild
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync(
-                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                    "You are not authorized to use this command. Only users with the 'Ban Members' or server admins can use this command.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -235,7 +235,7 @@ namespace FMBot.Bot.Commands.Guild
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync(
-                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                    "You are not authorized to use this command. Only users with the 'Ban Members' or server admins can use this command.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -281,7 +281,7 @@ namespace FMBot.Bot.Commands.Guild
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync(
-                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                    "You are not authorized to use this command. Only users with the 'Ban Members' or server admins can use this command. ");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -345,7 +345,7 @@ namespace FMBot.Bot.Commands.Guild
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync(
-                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                    "You are not authorized to use this command. Only users with the 'Ban Members' or server admins can use this command. ");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -409,7 +409,7 @@ namespace FMBot.Bot.Commands.Guild
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync(
-                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                    "You are not authorized to use this command. Only users with the 'Ban Members' or server admins can use this command. This is because some servers prefer the manual crown claiming process.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -469,7 +469,7 @@ namespace FMBot.Bot.Commands.Guild
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync(
-                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                    "You are not authorized to use this command. Only users with the 'Ban Members' or server admins can use this command. ");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -536,7 +536,7 @@ namespace FMBot.Bot.Commands.Guild
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync(
-                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                    "You are not authorized to use this command. Only users with the 'Ban Members' or server admins can use this command. ");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }

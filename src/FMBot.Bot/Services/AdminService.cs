@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord;
 using FMBot.Domain.Models;
@@ -7,6 +8,7 @@ using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Swan;
+using System.Linq;
 
 namespace FMBot.Bot.Services
 {
@@ -24,7 +26,9 @@ namespace FMBot.Bot.Services
         public async Task<bool> HasCommandAccessAsync(IUser discordUser, UserType userType)
         {
             await using var db = this._contextFactory.CreateDbContext();
-            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+            var user = await db.Users
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
             if (user == null)
             {
@@ -67,7 +71,9 @@ namespace FMBot.Bot.Services
         public async Task<bool> SetUserTypeAsync(ulong discordUserId, UserType userType)
         {
             await using var db = this._contextFactory.CreateDbContext();
-            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+            var user = await db.Users
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
 
             if (user == null)
             {
@@ -86,7 +92,9 @@ namespace FMBot.Bot.Services
         public async Task<bool> AddUserToBlocklistAsync(ulong discordUserId)
         {
             await using var db = this._contextFactory.CreateDbContext();
-            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+            var user = await db.Users
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
 
             if (user == null)
             {
@@ -107,7 +115,9 @@ namespace FMBot.Bot.Services
         public async Task<bool> RemoveUserFromBlocklistAsync(ulong discordUserId)
         {
             await using var db = this._contextFactory.CreateDbContext();
-            var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+            var user = await db.Users
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
 
             if (user == null)
             {
@@ -129,14 +139,26 @@ namespace FMBot.Bot.Services
         {
             await using var db = this._contextFactory.CreateDbContext();
             return await db.BottedUsers
+                .AsQueryable()
                 .FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == lastFmUserName.ToLower());
+        }
+
+        public async Task<List<User>> GetUsersWithLfmUsernameAsync(string lastFmUserName)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            return await db.Users
+                .AsQueryable()
+                .Where(w => w.UserNameLastFM.ToLower() == lastFmUserName.ToLower())
+                .ToListAsync();
         }
 
         public async Task<bool> DisableBottedUserBanAsync(string lastFmUserName)
         {
             await using var db = this._contextFactory.CreateDbContext();
 
-            var bottedUser = await db.BottedUsers.FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == lastFmUserName.ToLower());
+            var bottedUser = await db.BottedUsers
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == lastFmUserName.ToLower());
 
             if (bottedUser == null)
             {
@@ -167,7 +189,9 @@ namespace FMBot.Bot.Services
         {
             await using var db = this._contextFactory.CreateDbContext();
 
-            var bottedUser = await db.BottedUsers.FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == lastFmUserName.ToLower());
+            var bottedUser = await db.BottedUsers
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == lastFmUserName.ToLower());
 
             if (bottedUser == null)
             {
@@ -210,7 +234,9 @@ namespace FMBot.Bot.Services
         {
             await using var db = this._contextFactory.CreateDbContext();
 
-            var bottedUser = await db.BottedUsers.FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == lastFmUserName.ToLower());
+            var bottedUser = await db.BottedUsers
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == lastFmUserName.ToLower());
 
             if (bottedUser != null)
             {
@@ -242,6 +268,31 @@ namespace FMBot.Bot.Services
             }
 
             return string.Format("{0:0.##} {1}", dblSByte, suffix[i]);
+        }
+
+        public async Task<bool?> ToggleSpecialGuildAsync(IGuild guild)
+        {
+            await using var db = this._contextFactory.CreateDbContext();
+            var existingGuild = await db.Guilds
+                .AsQueryable()
+                .FirstAsync(f => f.DiscordGuildId == guild.Id);
+
+            existingGuild.Name = guild.Name;
+
+            if (existingGuild.SpecialGuild == true)
+            {
+                existingGuild.SpecialGuild = false;
+            }
+            else
+            {
+                existingGuild.SpecialGuild = true;
+            }
+
+            db.Entry(existingGuild).State = EntityState.Modified;
+
+            await db.SaveChangesAsync();
+
+            return existingGuild.SpecialGuild;
         }
 
         public async Task FixValues()

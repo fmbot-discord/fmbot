@@ -8,6 +8,7 @@ using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
@@ -23,13 +24,15 @@ namespace FMBot.Bot.Services.ThirdParty
         private readonly ArtistRepository _artistRepository;
         private readonly AlbumRepository _albumRepository;
         private readonly TrackRepository _trackRepository;
+        private readonly IMemoryCache _cache;
 
-        public SpotifyService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, ArtistRepository artistRepository, TrackRepository trackRepository, AlbumRepository albumRepository)
+        public SpotifyService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, ArtistRepository artistRepository, TrackRepository trackRepository, AlbumRepository albumRepository, IMemoryCache cache)
         {
             this._contextFactory = contextFactory;
             this._artistRepository = artistRepository;
             this._trackRepository = trackRepository;
             this._albumRepository = albumRepository;
+            this._cache = cache;
             this._botSettings = botSettings.Value;
         }
 
@@ -47,8 +50,6 @@ namespace FMBot.Bot.Services.ThirdParty
 
         public async Task<Artist> GetOrStoreArtistAsync(ArtistInfo artistInfo, string artistNameBeforeCorrect = null)
         {
-            Log.Information("Executing GetOrStoreArtistImageAsync");
-
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
@@ -77,6 +78,8 @@ namespace FMBot.Bot.Services.ThirdParty
                         {
                             artistToAdd.SpotifyImageUrl = spotifyArtist.Images.OrderByDescending(o => o.Height).First().Url;
                             artistToAdd.SpotifyImageDate = DateTime.UtcNow;
+
+                            this._cache.Set(ArtistsService.CacheKeyForArtist(artistInfo.ArtistUrl), artistToAdd.SpotifyImageUrl, TimeSpan.FromMinutes(5));
                         }
 
                         await db.Artists.AddAsync(artistToAdd);
@@ -136,6 +139,8 @@ namespace FMBot.Bot.Services.ThirdParty
                     {
                         dbArtist.SpotifyImageUrl = spotifyArtist.Images.OrderByDescending(o => o.Height).First().Url;
                         dbArtist.Popularity = spotifyArtist.Popularity;
+
+                        this._cache.Set(ArtistsService.CacheKeyForArtist(artistInfo.ArtistUrl), dbArtist.SpotifyImageUrl, TimeSpan.FromMinutes(5));
                     }
 
                     if (spotifyArtist != null && spotifyArtist.Genres.Any())
@@ -194,8 +199,6 @@ namespace FMBot.Bot.Services.ThirdParty
 
         public async Task<Track> GetOrStoreTrackAsync(TrackInfo trackInfo)
         {
-            Log.Information("Executing GetOrStoreTrackAsync");
-
             try
             {
                 await using var db = this._contextFactory.CreateDbContext();
@@ -227,6 +230,7 @@ namespace FMBot.Bot.Services.ThirdParty
                     {
                         trackToAdd.SpotifyId = spotifyTrack.Id;
                         trackToAdd.DurationMs = spotifyTrack.DurationMs;
+                        trackToAdd.Popularity = spotifyTrack.Popularity;
 
                         var audioFeatures = await GetAudioFeaturesFromSpotify(spotifyTrack.Id);
 
@@ -234,6 +238,14 @@ namespace FMBot.Bot.Services.ThirdParty
                         {
                             trackToAdd.Key = audioFeatures.Key;
                             trackToAdd.Tempo = audioFeatures.Tempo;
+                            trackToAdd.Acousticness = audioFeatures.Acousticness;
+                            trackToAdd.Danceability = audioFeatures.Danceability;
+                            trackToAdd.Energy = audioFeatures.Energy;
+                            trackToAdd.Instrumentalness = audioFeatures.Instrumentalness;
+                            trackToAdd.Liveness = audioFeatures.Liveness;
+                            trackToAdd.Loudness = audioFeatures.Loudness;
+                            trackToAdd.Speechiness = audioFeatures.Speechiness;
+                            trackToAdd.Valence = audioFeatures.Valence;
                         }
                     }
 
@@ -244,7 +256,6 @@ namespace FMBot.Bot.Services.ThirdParty
 
                     return trackToAdd;
                 }
-
                 if (!dbTrack.ArtistId.HasValue)
                 {
                     var artist = await this._artistRepository.GetArtistForName(trackInfo.ArtistName, connection);
@@ -255,7 +266,9 @@ namespace FMBot.Bot.Services.ThirdParty
                         db.Entry(dbTrack).State = EntityState.Modified;
                     }
                 }
-                if (string.IsNullOrEmpty(dbTrack.SpotifyId) && dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddMonths(-2))
+
+                var monthsToGoBack = !string.IsNullOrEmpty(dbTrack.SpotifyId) && !dbTrack.Energy.HasValue ? 1 : 3;
+                if (dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddMonths(-monthsToGoBack))
                 {
                     var spotifyTrack = await GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
 
@@ -263,6 +276,7 @@ namespace FMBot.Bot.Services.ThirdParty
                     {
                         dbTrack.SpotifyId = spotifyTrack.Id;
                         dbTrack.DurationMs = spotifyTrack.DurationMs;
+                        dbTrack.Popularity = spotifyTrack.Popularity;
 
                         var audioFeatures = await GetAudioFeaturesFromSpotify(spotifyTrack.Id);
 
@@ -270,6 +284,14 @@ namespace FMBot.Bot.Services.ThirdParty
                         {
                             dbTrack.Key = audioFeatures.Key;
                             dbTrack.Tempo = audioFeatures.Tempo;
+                            dbTrack.Acousticness = audioFeatures.Acousticness;
+                            dbTrack.Danceability = audioFeatures.Danceability;
+                            dbTrack.Energy = audioFeatures.Energy;
+                            dbTrack.Instrumentalness = audioFeatures.Instrumentalness;
+                            dbTrack.Liveness = audioFeatures.Liveness;
+                            dbTrack.Loudness = audioFeatures.Loudness;
+                            dbTrack.Speechiness = audioFeatures.Speechiness;
+                            dbTrack.Valence = audioFeatures.Valence;
                         }
                     }
 
@@ -365,8 +387,6 @@ namespace FMBot.Bot.Services.ThirdParty
 
         public async Task<Album> GetOrStoreSpotifyAlbumAsync(AlbumInfo albumInfo)
         {
-            Log.Information("Executing GetOrStoreSpotifyAlbumAsync");
-
             await using var db = this._contextFactory.CreateDbContext();
 
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
@@ -381,7 +401,8 @@ namespace FMBot.Bot.Services.ThirdParty
                     Name = albumInfo.AlbumName,
                     ArtistName = albumInfo.ArtistName,
                     LastFmUrl = albumInfo.AlbumUrl,
-                    Mbid = albumInfo.Mbid
+                    Mbid = albumInfo.Mbid,
+                    LastfmImageUrl = albumInfo.AlbumCoverUrl
                 };
 
                 var artist = await this._artistRepository.GetArtistForName(albumInfo.ArtistName, connection);
@@ -399,6 +420,14 @@ namespace FMBot.Bot.Services.ThirdParty
                     albumToAdd.Label = spotifyAlbum.Label;
                     albumToAdd.Popularity = spotifyAlbum.Popularity;
                     albumToAdd.SpotifyImageUrl = spotifyAlbum.Images.OrderByDescending(o => o.Height).First().Url;
+                    albumToAdd.ReleaseDate = spotifyAlbum.ReleaseDate;
+                    albumToAdd.ReleaseDatePrecision = spotifyAlbum.ReleaseDatePrecision;
+                }
+
+                var coverUrl = albumInfo.AlbumCoverUrl ?? albumToAdd.SpotifyImageUrl;
+                if (coverUrl != null)
+                {
+                    this._cache.Set(AlbumService.CacheKeyForAlbumCover(albumInfo.AlbumUrl), coverUrl, TimeSpan.FromMinutes(5));
                 }
 
                 albumToAdd.SpotifyImageDate = DateTime.UtcNow;
@@ -415,6 +444,12 @@ namespace FMBot.Bot.Services.ThirdParty
 
                 return albumToAdd;
             }
+            if (albumInfo.AlbumCoverUrl != null && dbAlbum.LastfmImageUrl == null)
+            {
+                dbAlbum.LastfmImageUrl = albumInfo.AlbumCoverUrl;
+                db.Entry(dbAlbum).State = EntityState.Modified;
+                await db.SaveChangesAsync();
+            }
             if (dbAlbum.Artist == null)
             {
                 var artist = await this._artistRepository.GetArtistForName(albumInfo.ArtistName, connection);
@@ -426,7 +461,9 @@ namespace FMBot.Bot.Services.ThirdParty
                     await db.SaveChangesAsync();
                 }
             }
-            if (string.IsNullOrEmpty(dbAlbum.SpotifyId) && dbAlbum.SpotifyImageDate < DateTime.UtcNow.AddMonths(-2))
+
+            var monthsToGoBack = !string.IsNullOrEmpty(dbAlbum.SpotifyId) && dbAlbum.ReleaseDate == null ? 1 : 3;
+            if (dbAlbum.SpotifyImageDate < DateTime.UtcNow.AddMonths(-monthsToGoBack))
             {
                 var spotifyAlbum = await GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
 
@@ -436,9 +473,18 @@ namespace FMBot.Bot.Services.ThirdParty
                     dbAlbum.Label = spotifyAlbum.Label;
                     dbAlbum.Popularity = spotifyAlbum.Popularity;
                     dbAlbum.SpotifyImageUrl = spotifyAlbum.Images.OrderByDescending(o => o.Height).First().Url;
+                    dbAlbum.ReleaseDate = spotifyAlbum.ReleaseDate;
+                    dbAlbum.ReleaseDatePrecision = spotifyAlbum.ReleaseDatePrecision;
+                }
+
+                var coverUrl = albumInfo.AlbumCoverUrl ?? dbAlbum.SpotifyImageUrl;
+                if (coverUrl != null)
+                {
+                    this._cache.Set(AlbumService.CacheKeyForAlbumCover(albumInfo.AlbumUrl), coverUrl, TimeSpan.FromMinutes(5));
                 }
 
                 dbAlbum.SpotifyImageDate = DateTime.UtcNow;
+                dbAlbum.LastfmImageUrl = albumInfo.AlbumCoverUrl;
 
                 db.Entry(dbAlbum).State = EntityState.Modified;
 
@@ -495,7 +541,7 @@ namespace FMBot.Bot.Services.ThirdParty
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var albumTracks =  await this._trackRepository.GetAlbumTracks(albumId, connection);
+            var albumTracks = await this._trackRepository.GetAlbumTracks(albumId, connection);
             await connection.CloseAsync();
 
             return albumTracks;

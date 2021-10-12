@@ -3,15 +3,17 @@ using System;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace FMBot.Persistence.EntityFrameWork.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    partial class FMBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20211007192626_AddLfmCoverUrlAndTrackFeatures")]
+    partial class AddLfmCoverUrlAndTrackFeatures
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -61,13 +63,9 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("popularity");
 
-                    b.Property<string>("ReleaseDate")
-                        .HasColumnType("text")
+                    b.Property<DateTime?>("ReleaseDate")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("release_date");
-
-                    b.Property<string>("ReleaseDatePrecision")
-                        .HasColumnType("text")
-                        .HasColumnName("release_date_precision");
 
                     b.Property<string>("SpotifyId")
                         .HasColumnType("text")
@@ -691,10 +689,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                     b.Property<DateTime?>("SpotifyLastUpdated")
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("spotify_last_updated");
-
-                    b.Property<float?>("Tempo")
-                        .HasColumnType("real")
-                        .HasColumnName("tempo");
 
                     b.Property<float?>("Valence")
                         .HasColumnType("real")

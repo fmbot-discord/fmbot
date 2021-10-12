@@ -522,7 +522,7 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                     }
 
-                    var trackString = resultAmount > 6 ? StringService.TrackToString(track) : StringService.TrackToLinkedString(track, contextUser.RymEnabled);
+                    var trackString = StringService.TrackToLinkedString(track, contextUser.RymEnabled);
 
                     if (track.NowPlaying)
                     {

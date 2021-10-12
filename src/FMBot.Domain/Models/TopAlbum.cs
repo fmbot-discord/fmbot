@@ -5,7 +5,7 @@ namespace FMBot.Domain.Models
 {
     public class TopAlbumList
     {
-        public long TotalAmount { get; set; }
+        public long? TotalAmount { get; set; }
 
         public string UserUrl { get; set; }
         public string UserTopAlbumsUrl { get; set; }

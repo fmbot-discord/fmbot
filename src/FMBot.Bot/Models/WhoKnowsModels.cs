@@ -29,6 +29,7 @@ namespace FMBot.Bot.Models
         public bool HidePrivateUsers { get; set; }
 
         public bool ShowBotters { get; set; }
+        public bool AdminView { get; set; }
 
         public string NewSearchValue { get; set; }
     }

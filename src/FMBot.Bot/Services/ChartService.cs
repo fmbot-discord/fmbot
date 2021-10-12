@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Dasync.Collections;
 using Discord.Commands;
@@ -16,6 +17,8 @@ namespace FMBot.Bot.Services
 {
     public class ChartService
     {
+        private const int DefaultChartSize = 3;
+
         private readonly CensorService _censorService;
 
         private readonly string _fontPath;
@@ -23,7 +26,6 @@ namespace FMBot.Bot.Services
         private readonly string _unknownImagePath;
         private readonly string _unknownArtistImagePath;
         private readonly string _censoredImagePath;
-
         public ChartService(CensorService censorService)
         {
             this._censorService = censorService;
@@ -62,7 +64,7 @@ namespace FMBot.Bot.Services
                 var chartImageHeight = 300;
                 var chartImageWidth = 300;
 
-                if (chart.Width > 6)
+                if (chart.Width > 6 || chart.Height > 6)
                 {
                     largerImages = false;
                     chartImageHeight = 180;
@@ -454,65 +456,23 @@ namespace FMBot.Bot.Services
             }
 
             // chart size
-            if (extraOptions.Contains("1x1"))
+            chartSettings.Width = DefaultChartSize;
+            chartSettings.Height = DefaultChartSize;
+
+            foreach (var option in extraOptions.Where(w => !string.IsNullOrWhiteSpace(w) && w.Length is >= 3 and <= 5))
             {
-                chartSettings.ImagesNeeded = 1;
-                chartSettings.Height = 1;
-                chartSettings.Width = 1;
-            }
-            else if (extraOptions.Contains("2x2"))
-            {
-                chartSettings.ImagesNeeded = 4;
-                chartSettings.Height = 2;
-                chartSettings.Width = 2;
-            }
-            else if (extraOptions.Contains("4x4"))
-            {
-                chartSettings.ImagesNeeded = 16;
-                chartSettings.Height = 4;
-                chartSettings.Width = 4;
-            }
-            else if (extraOptions.Contains("5x5"))
-            {
-                chartSettings.ImagesNeeded = 25;
-                chartSettings.Height = 5;
-                chartSettings.Width = 5;
-            }
-            else if (extraOptions.Contains("6x6"))
-            {
-                chartSettings.ImagesNeeded = 36;
-                chartSettings.Height = 6;
-                chartSettings.Width = 6;
-            }
-            else if (extraOptions.Contains("7x7"))
-            {
-                chartSettings.ImagesNeeded = 49;
-                chartSettings.Height = 7;
-                chartSettings.Width = 7;
-            }
-            else if (extraOptions.Contains("8x8"))
-            {
-                chartSettings.ImagesNeeded = 64;
-                chartSettings.Height = 8;
-                chartSettings.Width = 8;
-            }
-            else if (extraOptions.Contains("9x9"))
-            {
-                chartSettings.ImagesNeeded = 81;
-                chartSettings.Height = 9;
-                chartSettings.Width = 9;
-            }
-            else if (extraOptions.Contains("10x10"))
-            {
-                chartSettings.ImagesNeeded = 100;
-                chartSettings.Height = 10;
-                chartSettings.Width = 10;
-            }
-            else
-            {
-                chartSettings.ImagesNeeded = 9;
-                chartSettings.Height = 3;
-                chartSettings.Width = 3;
+                var matchFound = Regex.IsMatch(option, "^([1-9]|10)x([1-9]|10)$", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(300));
+                if (matchFound)
+                {
+                    var dimensions = option.ToLower().Split('x').Select(value =>
+                    {
+                        var size = int.TryParse(value, out var i) ? i : DefaultChartSize;
+                        return size;
+                    }).ToArray();
+
+                    chartSettings.Width = dimensions[0];
+                    chartSettings.Height = dimensions[1];
+                }
             }
 
             var optionsAsString = "";
@@ -530,7 +490,7 @@ namespace FMBot.Bot.Services
                 timeSettings = SettingService.GetTimePeriod("weekly");
             }
 
-            chartSettings.TimePeriod = timeSettings.TimePeriod;
+            chartSettings.TimeSettings = timeSettings;
             chartSettings.TimespanString = $"{timeSettings.Description}";
             chartSettings.TimespanUrlString = timeSettings.UrlParameter;
 

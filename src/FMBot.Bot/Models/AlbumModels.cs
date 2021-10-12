@@ -59,11 +59,13 @@ namespace FMBot.Bot.Models
         public bool? WhoKnowsWhitelisted { get; set; }
     }
 
-    public class AlbumSpotifyCoverDto
+    public class AlbumCoverDto
     {
         public string LastFmUrl { get; set; }
 
         public string SpotifyImageUrl { get; set; }
+
+        public string LastfmImageUrl { get; set; }
     }
 
     public class WhoKnowsGlobalAlbumDto

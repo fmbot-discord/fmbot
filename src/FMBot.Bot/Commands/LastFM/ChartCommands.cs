@@ -63,15 +63,15 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("chart", RunMode = RunMode.Async)]
-        [Summary("Generates a an album chart.")]
+        [Summary("Generates an album chart.")]
         [Options(
             Constants.CompactTimePeriodList,
             "Disable titles: `notitles` / `nt`",
             "Skip albums with no image: `skipemptyimages` / `s`",
-            "Size: `2x2`, `3x3` up to `10x10`",
+            "Size: WidthxHeight - `2x2`, `3x3`, `4x5` up to `10x10`",
             Constants.UserMentionExample)]
         [Examples("c", "c q 8x8 nt s", "chart 8x8 quarterly notitles skip", "c 10x10 alltime notitles skip", "c @user 7x7 yearly")]
-        [Alias("c")]
+        [Alias("c", "aoty")]
         [UsernameSetRequired]
         public async Task ChartAsync(params string[] otherSettings)
         {
@@ -128,7 +128,10 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                var chartSettings = new ChartSettings(this.Context.User) {ArtistChart = false};
+                var chartSettings = new ChartSettings(this.Context.User)
+                {
+                    ArtistChart = false
+                };
 
                 chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, this.Context);
 
@@ -140,7 +143,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var imagesToRequest = chartSettings.ImagesNeeded + extraAlbums;
 
-                var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, chartSettings.TimePeriod, imagesToRequest);
+                var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, chartSettings.TimeSettings, imagesToRequest);
 
                 if (albums.Content.TopAlbums == null || albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
                 {
@@ -165,16 +168,20 @@ namespace FMBot.Bot.Commands.LastFM
 
                 topAlbums = await this._albumService.FillMissingAlbumCovers(topAlbums);
 
-                var albumWithoutImage = topAlbums.FirstOrDefault(f => f.AlbumCoverUrl == null);
-                if (albumWithoutImage != null)
+                var albumsWithoutImage = topAlbums.Where(f => f.AlbumCoverUrl == null).ToList();
+
+                var amountToFetch = albumsWithoutImage.Count > 3 ? 3 : albumsWithoutImage.Count;
+                for (var i = 0; i < amountToFetch; i++)
                 {
-                    var albumCall = await this._lastFmRepository.GetAlbumInfoAsync(albumWithoutImage.ArtistName, albumWithoutImage.AlbumName, userSettings.UserNameLastFm);
-                    if (albumCall.Success && albumCall.Content != null)
+                    var albumWithoutImage = albumsWithoutImage[i];
+                    var albumCall = await this._lastFmRepository.GetAlbumInfoAsync(albumWithoutImage.ArtistName, albumWithoutImage.AlbumName, userSettings.UserNameLastFm, userSettings.DifferentUser ? null : userSettings.SessionKeyLastFm);
+                    if (albumCall.Success && albumCall.Content?.AlbumUrl != null)
                     {
                         var spotifyArtistImage = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumCall.Content);
                         if (spotifyArtistImage?.SpotifyImageUrl != null)
                         {
-                            var index = topAlbums.FindIndex(f => f.ArtistName == albumWithoutImage.ArtistName);
+                            var index = topAlbums.FindIndex(f => f.ArtistName == albumWithoutImage.ArtistName &&
+                                                                 f.AlbumName == albumWithoutImage.AlbumName);
                             topAlbums[index].AlbumCoverUrl = spotifyArtistImage.SpotifyImageUrl;
                         }
                     }
@@ -227,7 +234,6 @@ namespace FMBot.Bot.Commands.LastFM
                         embedDescription +=
                             $"{chartSettings.CensoredAlbums.Value} album(s) filtered due to nsfw images.\n";
                     }
-
                 }
 
                 this._embed.WithDescription(embedDescription);
@@ -237,7 +243,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this.Context.Channel.SendFileAsync(
                     stream,
-                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimePeriod}-{userSettings.UserNameLastFm}.png",
+                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png",
                     embed: this._embed.Build());
                 await stream.DisposeAsync();
 
@@ -252,12 +258,12 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("artistchart", RunMode = RunMode.Async)]
-        [Summary("Generates a an artist chart.")]
+        [Summary("Generates an artist chart.")]
         [Options(
             Constants.CompactTimePeriodList,
             "Disable titles: `notitles` / `nt`",
             "Skip albums with no image: `skipemptyimages` / `s`",
-            "Size: `2x2`, `3x3` up to `10x10`",
+            "Size: WidthxHeight - `2x2`, `3x3`, `4x5` up to `10x10`",
             Constants.UserMentionExample)]
         [Examples("ac", "ac q 8x8 nt s", "artistchart 8x8 quarterly notitles skip", "ac 10x10 alltime notitles skip", "ac @user 7x7 yearly")]
         [Alias("ac", "top")]
@@ -321,26 +327,28 @@ namespace FMBot.Bot.Commands.LastFM
 
                 chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, this.Context);
 
-                var extraAlbums = 0;
+                var extraArtists = 0;
                 if (chartSettings.SkipWithoutImage)
                 {
-                    extraAlbums = chartSettings.Height * 2 + (chartSettings.Height > 5 ? 8 : 2);
+                    extraArtists = chartSettings.Height * 2 + (chartSettings.Height > 5 ? 8 : 2);
                 }
 
-                var imagesToRequest = chartSettings.ImagesNeeded + extraAlbums;
+                var imagesToRequest = chartSettings.ImagesNeeded + extraArtists;
 
-                var albums = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm, chartSettings.TimePeriod, imagesToRequest);
+                var artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm, chartSettings.TimeSettings, imagesToRequest);
 
-                if (albums.Content.TopArtists.Count < chartSettings.ImagesNeeded)
+                if (artists.Content.TopArtists == null || artists.Content.TopArtists.Count < chartSettings.ImagesNeeded)
                 {
+                    var count = artists.Content.TopArtists?.Count ?? 0;
+
                     var reply =
-                        $"User hasn't listened to enough artists ({albums.Content.TopArtists.Count} of required {chartSettings.ImagesNeeded}) for a chart this size. \n" +
+                        $"User hasn't listened to enough artists ({count} of required {chartSettings.ImagesNeeded}) for a chart this size. \n" +
                         $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList}).";
 
                     if (chartSettings.SkipWithoutImage)
                     {
                         reply += "\n\n" +
-                                 $"Note that {extraAlbums} extra albums are required because you are skipping artists without an image.";
+                                 $"Note that {extraArtists} extra albums are required because you are skipping artists without an image.";
                     }
 
                     await ReplyAsync(reply);
@@ -348,15 +356,19 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                var topArtists = albums.Content.TopArtists;
+                var topArtists = artists.Content.TopArtists;
 
                 topArtists = await this._artistService.FillArtistImages(topArtists);
 
-                var artistWithoutImage = topArtists.FirstOrDefault(f => f.ArtistImageUrl == null);
-                if (artistWithoutImage != null)
+                var artistsWithoutImages = topArtists.Where(w => w.ArtistImageUrl == null).ToList();
+
+                var amountToFetch = artistsWithoutImages.Count > 3 ? 3 : artistsWithoutImages.Count;
+                for (int i = 0; i < amountToFetch; i++)
                 {
-                    var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistWithoutImage.ArtistName, userSettings.UserNameLastFm);
-                    if (artistCall.Success && artistCall.Content != null)
+                    var artistWithoutImage = artistsWithoutImages[i];
+
+                    var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistWithoutImage.ArtistName, userSettings.UserNameLastFm, userSettings.DifferentUser ? null : userSettings.SessionKeyLastFm);
+                    if (artistCall.Success && artistCall.Content?.ArtistUrl != null)
                     {
                         var spotifyArtistImage = await this._spotifyService.GetOrStoreArtistAsync(artistCall.Content);
                         if (spotifyArtistImage != null)
@@ -413,7 +425,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this.Context.Channel.SendFileAsync(
                     stream,
-                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimePeriod}-{userSettings.UserNameLastFm}.png",
+                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png",
                     embed: this._embed.Build());
                 await stream.DisposeAsync();
 

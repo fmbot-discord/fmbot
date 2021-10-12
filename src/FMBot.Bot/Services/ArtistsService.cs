@@ -83,9 +83,9 @@ namespace FMBot.Bot.Services
             this._cache.Set(cacheKey, true, cacheTime);
         }
 
-        private static string CacheKeyForArtist(string lastFmUrl)
+        public static string CacheKeyForArtist(string lastFmUrl)
         {
-            return $"artist-spotify-image-{lastFmUrl}";
+            return $"artist-spotify-image-{lastFmUrl.ToLower()}";
         }
 
         // Top artists for 2 users

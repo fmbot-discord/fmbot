@@ -33,7 +33,7 @@ namespace FMBot.LastFM.Domain.Models
         public List<ImageLfm> Image { get; set; }
         public string Mbid { get; set; }
         public string Name { get; set; }
-        public Uri Url { get; set; }
+        public string Url { get; set; }
     }
 
     public class Artist

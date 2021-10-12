@@ -1,3 +1,4 @@
+using System;
 using IF.Lastfm.Core.Api.Enums;
 
 namespace FMBot.Domain.Models
@@ -11,6 +12,8 @@ namespace FMBot.Domain.Models
         public LastStatsTimeSpan LastStatsTimeSpan { get; set; }
         public TimePeriod TimePeriod { get; set; }
         public bool UsePlays { get; set; }
+        public DateTime? StartDateTime { get; set; }
+        public DateTime? EndDateTime { get; set; }
         public int? PlayDays { get; set; }
         public string NewSearchValue { get; set; }
     }

@@ -199,16 +199,16 @@ namespace FMBot.LastFM.Repositories
 
             var trackResult = await this._lastFmRepository.GetTopTracksAsync(user.UserNameLastFM, "overall", 1000, indexLimit);
 
-            if (!trackResult.Success || trackResult.Content.TopTracks.Track.Count == 0)
+            if (!trackResult.Success || trackResult.Content.TopTracks.Count == 0)
             {
                 return new List<UserTrack>();
             }
 
-            return trackResult.Content.TopTracks.Track.Select(a => new UserTrack
+            return trackResult.Content.TopTracks.Select(a => new UserTrack
             {
-                Name = a.Name,
-                ArtistName = a.Artist.Name,
-                Playcount = Convert.ToInt32(a.Playcount),
+                Name = a.TrackName,
+                ArtistName = a.ArtistName,
+                Playcount = Convert.ToInt32(a.UserPlaycount),
                 UserId = user.UserId
             }).ToList();
         }
