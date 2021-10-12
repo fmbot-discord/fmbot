@@ -142,14 +142,18 @@ namespace FMBot.Bot.Commands.LastFM
                     $"`{bpm}` bpm\n",
                     true);
 
-                var danceability = ((decimal)(spotifyTrack.Danceability / 1)).ToString("0%");
-                var energetic = ((decimal)(spotifyTrack.Energy / 1)).ToString("0%");
-                var instrumental = ((decimal)(spotifyTrack.Instrumentalness / 1)).ToString("0%");
-                var acoustic = ((decimal)(spotifyTrack.Acousticness / 1)).ToString("0%");
-                var speechful = ((decimal)(spotifyTrack.Speechiness / 1)).ToString("0%");
-                var lively = ((decimal)(spotifyTrack.Liveness / 1)).ToString("0%");
-                this._embed.WithFooter($"{danceability} danceable - {energetic} energetic - {acoustic} acoustic\n" +
-                                       $"{instrumental} instrumental - {speechful} speechful - {lively} lively");
+                if (spotifyTrack.Danceability.HasValue && spotifyTrack.Energy.HasValue && spotifyTrack.Instrumentalness.HasValue &&
+                    spotifyTrack.Acousticness.HasValue && spotifyTrack.Speechiness.HasValue && spotifyTrack.Liveness.HasValue)
+                {
+                    var danceability = ((decimal)(spotifyTrack.Danceability / 1)).ToString("0%");
+                    var energetic = ((decimal)(spotifyTrack.Energy / 1)).ToString("0%");
+                    var instrumental = ((decimal)(spotifyTrack.Instrumentalness / 1)).ToString("0%");
+                    var acoustic = ((decimal)(spotifyTrack.Acousticness / 1)).ToString("0%");
+                    var speechful = ((decimal)(spotifyTrack.Speechiness / 1)).ToString("0%");
+                    var lively = ((decimal)(spotifyTrack.Liveness / 1)).ToString("0%");
+                    this._embed.WithFooter($"{danceability} danceable - {energetic} energetic - {acoustic} acoustic\n" +
+                                           $"{instrumental} instrumental - {speechful} speechful - {lively} lively");
+                }
             }
             else
             {

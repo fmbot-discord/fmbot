@@ -256,7 +256,6 @@ namespace FMBot.Bot.Services.ThirdParty
 
                     return trackToAdd;
                 }
-
                 if (!dbTrack.ArtistId.HasValue)
                 {
                     var artist = await this._artistRepository.GetArtistForName(trackInfo.ArtistName, connection);
@@ -267,7 +266,7 @@ namespace FMBot.Bot.Services.ThirdParty
                         db.Entry(dbTrack).State = EntityState.Modified;
                     }
                 }
-                if (string.IsNullOrEmpty(dbTrack.SpotifyId) && dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddMonths(-2))
+                if ((string.IsNullOrEmpty(dbTrack.SpotifyId) || dbTrack.SpotifyId != null) && dbTrack.SpotifyLastUpdated < DateTime.UtcNow.AddMonths(-2))
                 {
                     var spotifyTrack = await GetTrackFromSpotify(trackInfo.TrackName, trackInfo.ArtistName.ToLower());
 
