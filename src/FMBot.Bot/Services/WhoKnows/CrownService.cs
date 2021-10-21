@@ -429,12 +429,12 @@ namespace FMBot.Bot.Services.WhoKnows
             await db.SaveChangesAsync();
         }
 
-        public async Task RemoveAllCrownsFromDiscordUser(SocketGuildUser user)
+        public async Task RemoveAllCrownsFromDiscordUser(ulong discordUserId, ulong discordGuildId)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var userThatLeft = await db.Users
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordUserId == user.Id);
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
 
             if (userThatLeft == null)
             {
@@ -442,24 +442,23 @@ namespace FMBot.Bot.Services.WhoKnows
             }
 
             var guild = await db.Guilds
-                .Include(i => i.GuildUsers)
-                .Include(i => i.GuildCrowns)
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == user.Guild.Id);
+                .AsQueryable()
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
 
-            if (guild?.GuildCrowns != null && guild.GuildCrowns.Any())
+            if (guild != null)
             {
-                var userGuildCrowns = await db.UserCrowns
-                    .AsQueryable()
-                    .Where(f => f.UserId == userThatLeft.UserId &&
-                                f.GuildId == guild.GuildId)
-                    .ToListAsync();
+                DefaultTypeMap.MatchNamesWithUnderscores = true;
+                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+                await connection.OpenAsync();
 
-                if (userGuildCrowns != null && userGuildCrowns.Any())
+                const string deleteCrownsFromUserSql = "DELETE FROM public.user_crowns " +
+                                                       "WHERE guild_id = @guildId AND user_id = @userId;";
+
+                await connection.QueryAsync(deleteCrownsFromUserSql, new
                 {
-                    db.UserCrowns.RemoveRange(userGuildCrowns);
-
-                    await db.SaveChangesAsync();
-                }
+                    guild.GuildId,
+                    userThatLeft.UserId
+                });
             }
         }
 
