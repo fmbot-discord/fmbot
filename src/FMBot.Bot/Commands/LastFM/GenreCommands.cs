@@ -266,7 +266,17 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else
                 {
-                    genres = new List<string> { genreOptions };
+                    var foundGenre = await this._genreService.GetValidGenre(genreOptions);
+                    if (foundGenre == null)
+                    {
+                        this._embed.WithDescription(
+                            "Sorry, Spotify does not have the genre you're searching for.");
+                        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                        this.Context.LogCommandUsed(CommandResponse.NotFound);
+                        return;
+                    }
+
+                    genres = new List<string> { foundGenre };
                 }
 
                 if (!genres.Any())
@@ -374,6 +384,17 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
 
+                var genre = await this._genreService.GetValidGenre(genreValues);
+
+                if (genre == null)
+                {
+                    this._embed.WithDescription(
+                        "Sorry, Spotify does not have the genre you're searching for.");
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+
                 var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
 
                 var user = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -389,9 +410,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this._indexService.UpdateGuildUser(await this.Context.Guild.GetUserAsync(user.DiscordUserId), currentUser.UserId, guild);
 
-                var guildTopUserArtists = await this._whoKnowsArtistService.GetTopUserArtistsForGuildAsync(guild.GuildId);
+                var guildTopUserArtists = await this._genreService.GetTopUserArtistsForGuildAsync(guild.GuildId, genre);
                 var usersWithGenre =
-                    await this._genreService.GetUsersWithGenreForUserArtists(guildTopUserArtists, guild.GuildUsers, genreValues);
+                    await this._genreService.GetUsersWithGenreForUserArtists(guildTopUserArtists, guild.GuildUsers);
 
                 var filteredUsersWithGenre = WhoKnowsService.FilterGuildUsersAsync(usersWithGenre, guild);
 
@@ -436,7 +457,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $"\nUsers with WhoKnows whitelisted role only";
                 }
 
-                this._embed.WithTitle($"{genreValues} in {this.Context.Guild.Name}");
+                this._embed.WithTitle($"{genre.Transform(To.TitleCase)} in {this.Context.Guild.Name}");
                 this._embedFooter.WithText(footer);
                 this._embed.WithFooter(this._embedFooter);
 

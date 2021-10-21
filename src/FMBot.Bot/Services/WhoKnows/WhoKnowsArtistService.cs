@@ -269,44 +269,6 @@ namespace FMBot.Bot.Services.WhoKnows
             });
         }
 
-        public async Task<IEnumerable<UserArtist>> GetTopUserArtistsForGuildAsync(int guildId, bool cacheEnabled = true)
-        {
-            var cacheTime = TimeSpan.FromMinutes(1);
-            if (cacheEnabled && this._cache.TryGetValue(CacheKeyForGuildUserArtists(guildId), out IEnumerable<UserArtist> cachedUserArtists))
-            {
-                return cachedUserArtists;
-            }
-
-            const string sql = "SELECT ua.user_id, " +
-                               "LOWER(ua.name) AS name, " +
-                               "ua.playcount " +
-                               "FROM user_artists AS ua " +
-                               "INNER JOIN users AS u ON ua.user_id = u.user_id " +
-                               "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
-                               "WHERE gu.guild_id = @guildId AND gu.bot != true " +
-                               "AND NOT ua.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
-                               "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL)   " +
-                               "AND playcount > 4; ";
-
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-            await connection.OpenAsync();
-
-            var userArtists = await connection.QueryAsync<UserArtist>(sql, new
-            {
-                guildId
-            });
-
-            this._cache.Set(CacheKeyForGuildUserArtists(guildId), cacheTime);
-
-            return userArtists;
-        }
-
-        private static string CacheKeyForGuildUserArtists(int guildId)
-        {
-            return $"user-artists-guild-{guildId}";
-        }
-
         // TODO: figure out how to do this
         public async Task<int> GetWeekArtistListenerCountForGuildAsync(IEnumerable<User> guildUsers, string artistName)
         {

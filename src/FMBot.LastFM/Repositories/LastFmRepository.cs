@@ -834,7 +834,6 @@ namespace FMBot.LastFM.Repositories
                     {
                         queryParams.Remove("page");
                         queryParams.Add("page", (i + 1).ToString());
-
                         var pageResponse = await this._lastFmApi.CallApiAsync<TopTracksLfmResponse>(queryParams, Call.TopTracks);
 
                         if (pageResponse.Success)
