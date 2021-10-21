@@ -166,7 +166,10 @@ namespace FMBot.Bot.Services
                     UserPlaycount = s.Playcount
                 }).ToList();
 
-            this._cache.Set(cacheKey, freshTopArtists, TimeSpan.FromMinutes(10));
+            if (freshTopArtists.Count > 100)
+            {
+                this._cache.Set(cacheKey, freshTopArtists, TimeSpan.FromMinutes(10));
+            }
 
             return freshTopArtists;
         }

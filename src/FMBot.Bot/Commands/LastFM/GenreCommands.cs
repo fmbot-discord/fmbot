@@ -8,9 +8,12 @@ using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Types;
@@ -32,6 +35,10 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly GenreService _genreService;
         private readonly ArtistsService _artistsService;
         private readonly SpotifyService _spotifyService;
+        private readonly GuildService _guildService;
+        private readonly IIndexService _indexService;
+        private readonly WhoKnowsArtistService _whoKnowsArtistService;
+
         private InteractiveService Interactivity { get; }
 
         public GenreCommands(
@@ -44,7 +51,10 @@ namespace FMBot.Bot.Commands.LastFM
             InteractiveService interactivity,
             GenreService genreService,
             ArtistsService artistsService,
-            SpotifyService spotifyService) : base(botSettings)
+            SpotifyService spotifyService,
+            GuildService guildService,
+            IIndexService indexService,
+            WhoKnowsArtistService whoKnowsArtistService) : base(botSettings)
         {
             this._prefixService = prefixService;
             this._userService = userService;
@@ -55,6 +65,9 @@ namespace FMBot.Bot.Commands.LastFM
             this._genreService = genreService;
             this._artistsService = artistsService;
             this._spotifyService = spotifyService;
+            this._guildService = guildService;
+            this._indexService = indexService;
+            this._whoKnowsArtistService = whoKnowsArtistService;
         }
 
         [Command("topgenres", RunMode = RunMode.Async)]
@@ -253,7 +266,17 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else
                 {
-                    genres = new List<string> { genreOptions };
+                    var foundGenre = await this._genreService.GetValidGenre(genreOptions);
+                    if (foundGenre == null)
+                    {
+                        this._embed.WithDescription(
+                            "Sorry, Spotify does not have the genre you're searching for.");
+                        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                        this.Context.LogCommandUsed(CommandResponse.NotFound);
+                        return;
+                    }
+
+                    genres = new List<string> { foundGenre };
                 }
 
                 if (!genres.Any())
@@ -342,6 +365,119 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync("Unable to show genre info due to an internal error. Please contact .fmbot staff.");
+            }
+        }
+
+
+        [Command("whoknowsgenre", RunMode = RunMode.Async)]
+        [Summary("Shows what other users listen to a genre in your server")]
+        [Examples("wg", "wkg hip hop", "whoknowsgenre", "whoknowsgenre techno")]
+        [Alias("wg", "wkg", "whoknows genre")]
+        [UsernameSetRequired]
+        [GuildOnly]
+        [RequiresIndex]
+        public async Task WhoKnowsGenreAsync([Remainder] string genreValues = null)
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+            try
+            {
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                var genre = await this._genreService.GetValidGenre(genreValues);
+
+                if (genre == null)
+                {
+                    this._embed.WithDescription(
+                        "Sorry, Spotify does not have the genre you're searching for.");
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+
+                var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+
+                var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+                var guild = await guildTask;
+
+                var currentUser = await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(user.DiscordUserId), user);
+
+                if (!guild.GuildUsers.Select(s => s.UserId).Contains(user.UserId))
+                {
+                    guild.GuildUsers.Add(currentUser);
+                }
+
+                await this._indexService.UpdateGuildUser(await this.Context.Guild.GetUserAsync(user.DiscordUserId), currentUser.UserId, guild);
+
+                var guildTopUserArtists = await this._genreService.GetTopUserArtistsForGuildAsync(guild.GuildId, genre);
+                var usersWithGenre =
+                    await this._genreService.GetUsersWithGenreForUserArtists(guildTopUserArtists, guild.GuildUsers);
+
+                var filteredUsersWithGenre = WhoKnowsService.FilterGuildUsersAsync(usersWithGenre, guild);
+
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithGenre, user.UserId, PrivacyLevel.Server);
+                if (filteredUsersWithGenre.Count == 0)
+                {
+                    serverUsers = "Nobody in this server (not even you) has listened to this genre.";
+                }
+
+                this._embed.WithDescription(serverUsers);
+
+                var footer = "";
+
+                var userTitle = await this._userService.GetUserTitleAsync(this.Context);
+                footer += $"\nWhoKnows genre requested by {userTitle}";
+
+                var rnd = new Random();
+                var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
+                if (rnd.Next(0, 10) == 1 && lastIndex < DateTime.UtcNow.AddDays(-50))
+                {
+                    footer += $"\nMissing members? Update with {prfx}index";
+                }
+
+                if (filteredUsersWithGenre.Any() && filteredUsersWithGenre.Count > 1)
+                {
+                    var serverListeners = filteredUsersWithGenre.Count;
+                    var serverPlaycount = filteredUsersWithGenre.Sum(a => a.Playcount);
+                    var avgServerPlaycount = filteredUsersWithGenre.Average(a => a.Playcount);
+
+                    footer += $"\n{serverListeners} {StringExtensions.GetListenersString(serverListeners)} - ";
+                    footer += $"{serverPlaycount} total {StringExtensions.GetPlaysString(serverPlaycount)} - ";
+                    footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
+                }
+
+                if (usersWithGenre.Count > filteredUsersWithGenre.Count && !guild.WhoKnowsWhitelistRoleId.HasValue)
+                {
+                    var filteredAmount = usersWithGenre.Count - filteredUsersWithGenre.Count;
+                    footer += $"\n{filteredAmount} inactive/blocked users filtered";
+                }
+                if (guild.WhoKnowsWhitelistRoleId.HasValue)
+                {
+                    footer += $"\nUsers with WhoKnows whitelisted role only";
+                }
+
+                this._embed.WithTitle($"{genre.Transform(To.TitleCase)} in {this.Context.Guild.Name}");
+                this._embedFooter.WithText(footer);
+                this._embed.WithFooter(this._embedFooter);
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
+                {
+                    this.Context.LogCommandException(e);
+                    await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
+                                     "Make sure it has permission to 'Embed links' and 'Attach Images'");
+                }
+                else
+                {
+                    this.Context.LogCommandException(e);
+                    await ReplyAsync("Something went wrong while using whoknows.");
+                }
             }
         }
     }

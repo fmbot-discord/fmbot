@@ -3,6 +3,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
@@ -27,18 +29,21 @@ namespace FMBot.Bot.Commands.Guild
         private readonly SettingService _settingService;
 
         private readonly IPrefixService _prefixService;
+        private InteractiveService Interactivity { get; }
+
 
         public CrownGuildSettingCommands(IPrefixService prefixService,
             GuildService guildService,
             AdminService adminService,
             SettingService settingService,
             CrownService crownService,
-            IOptions<BotSettings> botSettings) : base(botSettings)
+            IOptions<BotSettings> botSettings, InteractiveService interactivity) : base(botSettings)
         {
             this._prefixService = prefixService;
             this._guildService = guildService;
             this._settingService = settingService;
             this._crownService = crownService;
+            this.Interactivity = interactivity;
             this._adminService = adminService;
         }
 
@@ -100,7 +105,7 @@ namespace FMBot.Bot.Commands.Guild
         [Summary("Sets amount of days to filter out users from earning crowns for inactivity. " +
                  "Inactivity is counted by the last date that someone has used .fmbot")]
         [Options("Amount of days to filter someone")]
-        [Alias("setcrownactivitythreshold",  "setcwactivitythreshold", "cwactivitythreshold", "crownactivitytreshold")]
+        [Alias("setcrownactivitythreshold", "setcwactivitythreshold", "cwactivitythreshold", "crownactivitytreshold")]
         [GuildOnly]
         [RequiresIndex]
         public async Task SetCrownActivityThresholdAsync([Remainder] string days = null)
@@ -218,6 +223,93 @@ namespace FMBot.Bot.Commands.Guild
             {
                 await ReplyAsync("Something went wrong while attempting to crownblock user, please contact .fmbot staff.");
                 this.Context.LogCommandUsed(CommandResponse.Error);
+            }
+        }
+
+        [Command("removeusercrowns", RunMode = RunMode.Async)]
+        [Summary("Block a user from gaining any crowns in your server")]
+        [Options(Constants.UserMentionExample)]
+        [Alias("deleteusercrowns", "deleteusercrown", "removeusercrowns", "removeusercws", "deleteusercws", "usercrownsdelete", "usercrownsremove")]
+        [GuildOnly]
+        [RequiresIndex]
+        public async Task RemoveUserCrownsAsync([Remainder] string user = null)
+        {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+            var serverUser = (IGuildUser)this.Context.Message.Author;
+            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
+                !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await ReplyAsync(
+                    "You are not authorized to use this command. Only users with the 'Ban Members' or server admins can use this command.");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                return;
+            }
+
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+
+            if (user == null)
+            {
+                await ReplyAsync("Please mention a user, enter a discord id or enter a Last.fm username to remove their crowns from.");
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            var userToBlock = await this._settingService.GetDifferentUser(user);
+
+            if (userToBlock == null)
+            {
+                await ReplyAsync("User not found. Are you sure they are registered in .fmbot?");
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            try
+            {
+                this._embed.WithTitle("Are you sure you want to delete all crowns for this user?");
+                this._embed.WithDescription($"Discord user id: `{userToBlock.DiscordUserId}` (<@{userToBlock.DiscordUserId}>)\n" +
+                                            $"Last.fm username: `{userToBlock.UserNameLastFM}`\n" +
+                                            $".fmbot id: `{userToBlock.UserId}`");
+                this._embed.WithFooter($"Expires in 30 seconds..");
+
+                var builder = new ComponentBuilder()
+                    .WithButton("Confirm", "id");
+
+                var msg = await ReplyAsync("", false, this._embed.Build(), component: builder.Build());
+
+                var result = await this.Interactivity.NextInteractionAsync(x => x is SocketMessageComponent c && c.Message.Id == msg.Id && x.User.Id == this.Context.User.Id,
+                    timeout: TimeSpan.FromSeconds(30));
+
+                if (result.IsSuccess)
+                {
+                    await result.Value.DeferAsync();
+                    await this._crownService.RemoveAllCrownsFromDiscordUser(userToBlock.DiscordUserId, guild.DiscordGuildId);
+
+                    this._embed.WithTitle("Crowns have been removed for:");
+                    await msg.ModifyAsync(x =>
+                    {
+                        x.Embed = this._embed.Build();
+                        x.Components = new ComponentBuilder().Build(); // No components
+                        x.AllowedMentions = AllowedMentions.None;
+                    });
+                }
+                else
+                {
+                    this._embed.WithTitle("Crown removal timed out");
+                    await msg.ModifyAsync(x =>
+                    {
+                        x.Embed = this._embed.Build();
+                        x.Components = new ComponentBuilder().Build(); // No components
+                    x.AllowedMentions = AllowedMentions.None;
+                    });
+                }
+
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                await ReplyAsync("Something went wrong while attempting to remove crowns for user, please contact .fmbot staff.");
+                this.Context.LogCommandException(e);
             }
         }
 

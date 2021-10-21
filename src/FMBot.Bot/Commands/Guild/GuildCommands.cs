@@ -360,7 +360,7 @@ namespace FMBot.Bot.Commands.Guild
 
             var foundCommand = searchResult.Commands.FirstOrDefault().Command;
 
-            if (disabledCommandsForGuild != null && disabledCommandsForGuild.Equals(command.ToLower()))
+            if (disabledCommandsForGuild != null && disabledCommandsForGuild.Any(a => a.Equals(foundCommand.Name.ToLower())))
             {
                 var newDisabledCommands = await this._guildService.RemoveGuildDisabledCommandAsync(this.Context.Guild, foundCommand.Name.ToLower());
 
@@ -426,6 +426,7 @@ namespace FMBot.Bot.Commands.Guild
                         {
                             description.Append($"`{disabledCommand}` ");
                         }
+                        description.AppendLine();
                     }
 
                     description.AppendLine();
@@ -460,7 +461,7 @@ namespace FMBot.Bot.Commands.Guild
 
             var foundCommand = searchResult.Commands.FirstOrDefault().Command;
 
-            if (disabledCommands != null && disabledCommands.Equals(foundCommand.Name.ToLower()))
+            if (disabledCommands != null && disabledCommands.Any(a => a.Equals(foundCommand.Name.ToLower())))
             {
                 var newDisabledCommands = await this._guildService.RemoveChannelDisabledCommandAsync(this.Context.Channel, foundCommand.Name.ToLower());
 

@@ -314,12 +314,12 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async Task RemoveUserFromGuild(SocketGuildUser user)
+        public async Task RemoveUserFromGuild(ulong discordUserId, ulong discordGuildId)
         {
             await using var db = this._contextFactory.CreateDbContext();
             var userThatLeft = await db.Users
                 .Include(i => i.GuildUsers)
-                .FirstOrDefaultAsync(f => f.DiscordUserId == user.Id);
+                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
 
             if (userThatLeft == null)
             {
@@ -328,7 +328,7 @@ namespace FMBot.Bot.Services
 
             var guild = await db.Guilds
                 .Include(i => i.GuildUsers)
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == user.Guild.Id);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
 
             if (guild?.GuildUsers != null && guild.GuildUsers.Any() && guild.GuildUsers.Select(g => g.UserId).Contains(userThatLeft.UserId))
             {

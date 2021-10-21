@@ -19,7 +19,7 @@ namespace FMBot.Bot.Interfaces
 
         Task UpdateGuildUserEvent(IGuildUser discordGuildUser);
 
-        Task RemoveUserFromGuild(SocketGuildUser user);
+        Task RemoveUserFromGuild(ulong discordUserId, ulong discordGuildId);
 
         Task<(int, int?)> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers);
 
