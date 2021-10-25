@@ -10,6 +10,6 @@ namespace FMBot.Domain.Models
 
         Contributor = 3,
 
-        Backer = 4
+        Supporter = 4
     }
 }

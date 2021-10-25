@@ -29,7 +29,7 @@ namespace FMBot.Bot.Services
                 return null;
             }
 
-            if (userUserType == UserType.Backer)
+            if (userUserType == UserType.Supporter)
             {
                 return null;
             }
@@ -75,7 +75,7 @@ namespace FMBot.Bot.Services
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == id);
 
-            user.UserType = UserType.Backer;
+            user.UserType = UserType.Supporter;
             db.Update(user);
 
             var supporterToAdd = new Supporter

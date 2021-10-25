@@ -79,7 +79,10 @@ namespace FMBot.Bot.Services.ThirdParty
                             artistToAdd.SpotifyImageUrl = spotifyArtist.Images.OrderByDescending(o => o.Height).First().Url;
                             artistToAdd.SpotifyImageDate = DateTime.UtcNow;
 
-                            this._cache.Set(ArtistsService.CacheKeyForArtist(artistInfo.ArtistUrl), artistToAdd.SpotifyImageUrl, TimeSpan.FromMinutes(5));
+                            if (artistInfo.ArtistUrl != null)
+                            {
+                                this._cache.Set(ArtistsService.CacheKeyForArtist(artistInfo.ArtistUrl), artistToAdd.SpotifyImageUrl, TimeSpan.FromMinutes(5));
+                            }
                         }
 
                         await db.Artists.AddAsync(artistToAdd);
@@ -140,7 +143,10 @@ namespace FMBot.Bot.Services.ThirdParty
                         dbArtist.SpotifyImageUrl = spotifyArtist.Images.OrderByDescending(o => o.Height).First().Url;
                         dbArtist.Popularity = spotifyArtist.Popularity;
 
-                        this._cache.Set(ArtistsService.CacheKeyForArtist(artistInfo.ArtistUrl), dbArtist.SpotifyImageUrl, TimeSpan.FromMinutes(5));
+                        if (artistInfo.ArtistUrl != null)
+                        {
+                            this._cache.Set(ArtistsService.CacheKeyForArtist(artistInfo.ArtistUrl), dbArtist.SpotifyImageUrl, TimeSpan.FromMinutes(5));
+                        }
                     }
 
                     if (spotifyArtist != null && spotifyArtist.Genres.Any())
@@ -425,7 +431,7 @@ namespace FMBot.Bot.Services.ThirdParty
                 }
 
                 var coverUrl = albumInfo.AlbumCoverUrl ?? albumToAdd.SpotifyImageUrl;
-                if (coverUrl != null)
+                if (coverUrl != null && albumInfo.AlbumUrl != null)
                 {
                     this._cache.Set(AlbumService.CacheKeyForAlbumCover(albumInfo.AlbumUrl), coverUrl, TimeSpan.FromMinutes(5));
                 }
@@ -478,7 +484,7 @@ namespace FMBot.Bot.Services.ThirdParty
                 }
 
                 var coverUrl = albumInfo.AlbumCoverUrl ?? dbAlbum.SpotifyImageUrl;
-                if (coverUrl != null)
+                if (coverUrl != null && albumInfo.AlbumUrl != null)
                 {
                     this._cache.Set(AlbumService.CacheKeyForAlbumCover(albumInfo.AlbumUrl), coverUrl, TimeSpan.FromMinutes(5));
                 }

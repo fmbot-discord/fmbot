@@ -59,7 +59,7 @@ namespace FMBot.Bot.Extensions
                     return " 🛡";
                 case UserType.Contributor:
                     return " 🔥";
-                case UserType.Backer:
+                case UserType.Supporter:
                     return " ⭐";
                 default:
                     return "";

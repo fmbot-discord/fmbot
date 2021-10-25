@@ -337,7 +337,7 @@ namespace FMBot.LastFM.Repositories
         {
             switch (user.UserType)
             {
-                case UserType.Backer:
+                case UserType.Supporter:
                     return true;
                 case UserType.Contributor:
                     return true;
