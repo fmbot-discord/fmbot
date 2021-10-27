@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
@@ -275,7 +276,7 @@ namespace FMBot.Bot.Commands
 
                 await this._censorService.AddNsfwAlbum(album, artist);
 
-                await ReplyAsync($"Added `{album}` by `{artist}` to the list of nsfw albums.");
+                await ReplyAsync($"Added `{album}` by `{artist}` to the list of nsfw albums.", allowedMentions: AllowedMentions.None);
                 this.Context.LogCommandUsed();
             }
             else
@@ -470,7 +471,7 @@ namespace FMBot.Bot.Commands
                     }
                     else
                     {
-                        await ReplyAsync($"User {user} has been banned from GlobalWhoKnows with reason '{reason.FilterOutMentions()}'");
+                        await ReplyAsync($"User {user} has been banned from GlobalWhoKnows with reason `{reason.FilterOutMentions()}`", allowedMentions: AllowedMentions.None);
                         this.Context.LogCommandUsed();
                     }
                 }
@@ -483,7 +484,7 @@ namespace FMBot.Bot.Commands
                     }
                     else
                     {
-                        await ReplyAsync($"User {user} has been banned from GlobalWhoKnows with reason '{reason.FilterOutMentions()}'");
+                        await ReplyAsync($"User {user} has been banned from GlobalWhoKnows with reason `{reason.FilterOutMentions()}`", allowedMentions: AllowedMentions.None);
                         this.Context.LogCommandUsed();
                     }
                 }

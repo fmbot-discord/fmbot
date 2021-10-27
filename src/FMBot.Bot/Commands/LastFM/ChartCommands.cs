@@ -232,7 +232,7 @@ namespace FMBot.Bot.Commands.LastFM
                     else
                     {
                         embedDescription +=
-                            $"{chartSettings.CensoredAlbums.Value} album(s) filtered due to nsfw images.\n";
+                            $"{chartSettings.CensoredAlbums.Value} album(s) filtered due to nsfw images. Use this command in an nsfw channel to disable this.\n";
                     }
                 }
 

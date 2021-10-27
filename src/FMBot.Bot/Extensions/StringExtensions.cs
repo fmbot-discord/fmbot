@@ -40,7 +40,13 @@ namespace FMBot.Bot.Extensions
 
         public static string ReplaceInvalidChars(string filename)
         {
-            return string.Join("_", filename.Split(Path.GetInvalidFileNameChars()));
+            filename = filename.Replace("\"", "_");
+            filename = filename.Replace("'", "_");
+            filename = filename.Replace(".", "_");
+            filename = filename.Replace(" ", "_");
+
+            var invalidChars = Path.GetInvalidFileNameChars();
+            return string.Join("_", filename.Split(invalidChars));
         }
 
         public static string UserTypeToIcon(this UserType userType)
@@ -53,7 +59,7 @@ namespace FMBot.Bot.Extensions
                     return " 🛡";
                 case UserType.Contributor:
                     return " 🔥";
-                case UserType.Backer:
+                case UserType.Supporter:
                     return " ⭐";
                 default:
                     return "";

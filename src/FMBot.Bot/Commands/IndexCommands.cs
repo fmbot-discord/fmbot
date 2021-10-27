@@ -229,7 +229,8 @@ namespace FMBot.Bot.Commands
                 if (userSettings.LastIndexed == null)
                 {
                     await ReplyAsync(
-                        "Just logged in to the bot? Please wait a little bit and try again later, since the bot is still fetching all your Last.fm data.");
+                        "Just logged in to the bot? Please wait a little bit and try again later, since the bot is still fetching all your Last.fm data.\n\n" +
+                        $"If you keep getting this message, please try using `{prfx}update full` once.");
                     this.Context.LogCommandUsed(CommandResponse.IndexRequired);
                     return;
                 }
