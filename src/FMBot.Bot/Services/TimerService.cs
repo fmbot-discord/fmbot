@@ -218,6 +218,12 @@ namespace FMBot.Bot.Services
 
             this._internalStatsTimer = new Timer(async _ =>
                 {
+                    if (client?.Guilds?.Count == null)
+                    {
+                        Log.Information("Client guild count is null, cancelling");
+                        return;
+                    }
+
                     Log.Information("Updating metrics");
                     Statistics.DiscordServerCount.Set(client.Guilds.Count);
 
@@ -233,19 +239,30 @@ namespace FMBot.Bot.Services
                         Console.WriteLine(e);
                     }
 
-                    if (string.IsNullOrEmpty(this._botSettings.Bot.Status))
+                    try
                     {
-                        Log.Information("Updating status");
-                        if (!PublicProperties.IssuesAtLastFm)
+                        if (string.IsNullOrEmpty(this._botSettings.Bot.Status))
                         {
-                            await client.SetGameAsync($"{this._botSettings.Bot.Prefix}fm | {client.Guilds.Count} servers | fmbot.xyz");
-                        }
-                        else
-                        {
-                            await client.SetGameAsync($"⚠️ Last.fm is currently experiencing issues -> twitter.com/lastfmstatus");
-                        }
+                            Log.Information("Updating status");
+                            if (!PublicProperties.IssuesAtLastFm)
+                            {
+                                await client.SetGameAsync(
+                                    $"{this._botSettings.Bot.Prefix}fm | {client.Guilds.Count} servers | fmbot.xyz");
+                            }
+                            else
+                            {
+                                await client.SetGameAsync(
+                                    $"⚠️ Last.fm is currently experiencing issues -> twitter.com/lastfmstatus");
+                            }
 
+                        }
                     }
+                    catch (Exception e)
+                    {
+                        Log.Error(e, "UpdatingMetrics");
+                        Console.WriteLine(e);
+                    }
+
                 },
                 null,
                 TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds + 5),
