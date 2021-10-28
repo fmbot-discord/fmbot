@@ -111,12 +111,12 @@ namespace FMBot.Bot.Commands.LastFM
 
             var spotifyArtistTask = this._spotifyService.GetOrStoreArtistAsync(artist, artistValues);
 
-            var spotifyArtist = await spotifyArtistTask;
+            var fullArtist = await spotifyArtistTask;
 
             var footer = new StringBuilder();
-            if (spotifyArtist.SpotifyImageUrl != null)
+            if (fullArtist.SpotifyImageUrl != null)
             {
-                this._embed.WithThumbnailUrl(spotifyArtist.SpotifyImageUrl);
+                this._embed.WithThumbnailUrl(fullArtist.SpotifyImageUrl);
                 footer.AppendLine("Image source: Spotify");
             }
 
@@ -126,6 +126,77 @@ namespace FMBot.Bot.Commands.LastFM
             this._embedAuthor.WithName($"Artist info about {artist.ArtistName} for {userTitle}");
             this._embedAuthor.WithUrl(artist.ArtistUrl);
             this._embed.WithAuthor(this._embedAuthor);
+
+            if (!string.IsNullOrWhiteSpace(fullArtist.Type))
+            {
+                var artistInfo = new StringBuilder();
+
+                if (!string.IsNullOrWhiteSpace(fullArtist.Disambiguation))
+                {
+                    if (fullArtist.Country != null)
+                    {
+                        artistInfo.Append($"**{fullArtist.Disambiguation}**");
+                        artistInfo.Append($" from **{fullArtist.Country}**");
+                    }
+                    else
+                    {
+                        artistInfo.AppendLine($"**{fullArtist.Disambiguation}**");
+                    }
+                }
+                if (fullArtist.Country != null && string.IsNullOrWhiteSpace(fullArtist.Disambiguation))
+                {
+                    artistInfo.AppendLine($"{fullArtist.Country}");
+                }
+                if (fullArtist.Type != null)
+                {
+                    artistInfo.Append($"{fullArtist.Type}");
+                    if (fullArtist.Gender != null)
+                    {
+                        artistInfo.Append($" - ");
+                        artistInfo.Append($"{fullArtist.Gender}");
+                    }
+
+                    artistInfo.AppendLine();
+                }
+                if (fullArtist.StartDate.HasValue && !fullArtist.EndDate.HasValue)
+                {
+                    var specifiedDateTime = DateTime.SpecifyKind(fullArtist.StartDate.Value, DateTimeKind.Utc);
+                    var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
+
+                    if (fullArtist.Type?.ToLower() == "person")
+                    {
+                        artistInfo.AppendLine($"Born: <t:{dateValue}:D>");
+                    }
+                    else
+                    {
+                        artistInfo.AppendLine($"Started: <t:{dateValue}:D>");
+                    }
+                }
+                if (fullArtist.StartDate.HasValue && fullArtist.EndDate.HasValue)
+                {
+                    var specifiedStartDateTime = DateTime.SpecifyKind(fullArtist.StartDate.Value, DateTimeKind.Utc);
+                    var startDateValue = ((DateTimeOffset)specifiedStartDateTime).ToUnixTimeSeconds();
+
+                    var specifiedEndDateTime = DateTime.SpecifyKind(fullArtist.EndDate.Value, DateTimeKind.Utc);
+                    var endDateValue = ((DateTimeOffset)specifiedEndDateTime).ToUnixTimeSeconds();
+
+                    if (fullArtist.Type?.ToLower() == "person")
+                    {
+                        artistInfo.AppendLine($"Born: <t:{startDateValue}:D>");
+                        artistInfo.AppendLine($"Died: <t:{endDateValue}:D>");
+                    }
+                    else
+                    {
+                        artistInfo.AppendLine($"Started: <t:{startDateValue}:D>");
+                        artistInfo.AppendLine($"Stopped: <t:{endDateValue}:D>");
+                    }
+                }
+
+                if (artistInfo.Length > 0)
+                {
+                    this._embed.WithDescription(artistInfo.ToString());
+                }
+            }
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
@@ -186,16 +257,16 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.AddField("Summary", artist.Description);
             }
 
-            if (artist.Tags != null && artist.Tags.Any() && (spotifyArtist.ArtistGenres == null || !spotifyArtist.ArtistGenres.Any()))
+            if (artist.Tags != null && artist.Tags.Any() && (fullArtist.ArtistGenres == null || !fullArtist.ArtistGenres.Any()))
             {
                 var tags = LastFmRepository.TagsToLinkedString(artist.Tags);
 
                 this._embed.AddField("Tags", tags);
             }
 
-            if (spotifyArtist.ArtistGenres != null && spotifyArtist.ArtistGenres.Any())
+            if (fullArtist.ArtistGenres != null && fullArtist.ArtistGenres.Any())
             {
-                footer.AppendLine(GenreService.GenresToString(spotifyArtist.ArtistGenres.ToList()));
+                footer.AppendLine(GenreService.GenresToString(fullArtist.ArtistGenres.ToList()));
             }
 
             this._embed.WithFooter(footer.ToString());
@@ -823,7 +894,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithTitle($"{artistName} in {this.Context.Guild.Name}");
 
-                if (Uri.IsWellFormedUriString(artistUrl, UriKind.Absolute))
+                if (artistUrl != null && Uri.IsWellFormedUriString(artistUrl, UriKind.Absolute))
                 {
                     this._embed.WithUrl(artistUrl);
                 }

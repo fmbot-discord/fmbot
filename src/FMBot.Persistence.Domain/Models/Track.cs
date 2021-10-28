@@ -12,6 +12,9 @@ namespace FMBot.Persistence.Domain.Models
 
         public int? AlbumId { get; set; }
 
+        public Guid? Mbid { get; set; }
+
+
         public string ArtistName { get; set; }
 
         public string AlbumName { get; set; }

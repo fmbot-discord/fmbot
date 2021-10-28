@@ -26,7 +26,12 @@ namespace FMBot.Bot.Services.ThirdParty
         private readonly TrackRepository _trackRepository;
         private readonly IMemoryCache _cache;
 
-        public SpotifyService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, ArtistRepository artistRepository, TrackRepository trackRepository, AlbumRepository albumRepository, IMemoryCache cache)
+        public SpotifyService(IDbContextFactory<FMBotDbContext> contextFactory,
+            IOptions<BotSettings> botSettings,
+            ArtistRepository artistRepository,
+            TrackRepository trackRepository,
+            AlbumRepository albumRepository,
+            IMemoryCache cache)
         {
             this._contextFactory = contextFactory;
             this._artistRepository = artistRepository;
@@ -68,6 +73,13 @@ namespace FMBot.Bot.Services.ThirdParty
                         LastFmUrl = artistInfo.ArtistUrl,
                         Mbid = artistInfo.Mbid
                     };
+
+                    var musicBrainzUpdated = await MusicBrainzService.AddMusicBrainzDataToArtistAsync(artistToAdd);
+
+                    if (musicBrainzUpdated.Updated)
+                    {
+                        artistToAdd = musicBrainzUpdated.Artist;
+                    }
 
                     if (spotifyArtist != null)
                     {
@@ -130,6 +142,17 @@ namespace FMBot.Bot.Services.ThirdParty
                 {
                     await this._artistRepository
                         .AddOrUpdateArtistAlias(dbArtist.Id, artistNameBeforeCorrect, connection);
+                }
+
+                var musicBrainzUpdate = await MusicBrainzService.AddMusicBrainzDataToArtistAsync(dbArtist);
+
+                if (musicBrainzUpdate.Updated)
+                {
+                    dbArtist = musicBrainzUpdate.Artist;
+
+                    await using var db = this._contextFactory.CreateDbContext();
+                    db.Entry(dbArtist).State = EntityState.Modified;
+                    await db.SaveChangesAsync();
                 }
 
                 if (dbArtist.SpotifyImageUrl == null || dbArtist.SpotifyImageDate < DateTime.UtcNow.AddDays(-15))

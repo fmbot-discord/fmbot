@@ -12,6 +12,8 @@ namespace FMBot.Persistence.Domain.Models
         public string LastFmUrl { get; set; }
 
         public Guid? Mbid { get; set; }
+        public DateTime? MusicBrainzDate { get; set; }
+
 
         public string SpotifyImageUrl { get; set; }
 
@@ -20,6 +22,14 @@ namespace FMBot.Persistence.Domain.Models
         public string SpotifyId { get; set; }
 
         public int? Popularity { get; set; }
+
+        public string Country { get; set; }
+        public string Type { get; set; }
+        public string Gender { get; set; }
+        public string Disambiguation { get; set; }
+
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
 
         public ICollection<Track> Tracks { get; set; }
 
