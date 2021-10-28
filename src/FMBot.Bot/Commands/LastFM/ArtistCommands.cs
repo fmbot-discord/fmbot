@@ -137,6 +137,7 @@ namespace FMBot.Bot.Commands.LastFM
                     {
                         artistInfo.Append($"**{fullArtist.Disambiguation}**");
                         artistInfo.Append($" from **{fullArtist.Country}**");
+                        artistInfo.AppendLine();
                     }
                     else
                     {
