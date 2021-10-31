@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -26,7 +27,12 @@ namespace FMBot.Bot.Services.ThirdParty
         private readonly TrackRepository _trackRepository;
         private readonly IMemoryCache _cache;
 
-        public SpotifyService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, ArtistRepository artistRepository, TrackRepository trackRepository, AlbumRepository albumRepository, IMemoryCache cache)
+        public SpotifyService(IDbContextFactory<FMBotDbContext> contextFactory,
+            IOptions<BotSettings> botSettings,
+            ArtistRepository artistRepository,
+            TrackRepository trackRepository,
+            AlbumRepository albumRepository,
+            IMemoryCache cache)
         {
             this._contextFactory = contextFactory;
             this._artistRepository = artistRepository;
@@ -45,6 +51,7 @@ namespace FMBot.Bot.Services.ThirdParty
 
             var searchRequest = new SearchRequest(searchType, searchValue);
 
+            Statistics.SpotifyApiCalls.Inc();
             return await spotify.Search.Item(searchRequest);
         }
 
@@ -68,6 +75,13 @@ namespace FMBot.Bot.Services.ThirdParty
                         LastFmUrl = artistInfo.ArtistUrl,
                         Mbid = artistInfo.Mbid
                     };
+
+                    var musicBrainzUpdated = await MusicBrainzService.AddMusicBrainzDataToArtistAsync(artistToAdd);
+
+                    if (musicBrainzUpdated.Updated)
+                    {
+                        artistToAdd = musicBrainzUpdated.Artist;
+                    }
 
                     if (spotifyArtist != null)
                     {
@@ -132,6 +146,17 @@ namespace FMBot.Bot.Services.ThirdParty
                         .AddOrUpdateArtistAlias(dbArtist.Id, artistNameBeforeCorrect, connection);
                 }
 
+                var musicBrainzUpdate = await MusicBrainzService.AddMusicBrainzDataToArtistAsync(dbArtist);
+
+                if (musicBrainzUpdate.Updated)
+                {
+                    dbArtist = musicBrainzUpdate.Artist;
+
+                    await using var db = this._contextFactory.CreateDbContext();
+                    db.Entry(dbArtist).State = EntityState.Modified;
+                    await db.SaveChangesAsync();
+                }
+
                 if (dbArtist.SpotifyImageUrl == null || dbArtist.SpotifyImageDate < DateTime.UtcNow.AddDays(-15))
                 {
                     await using var db = this._contextFactory.CreateDbContext();
@@ -186,6 +211,7 @@ namespace FMBot.Bot.Services.ThirdParty
             var searchRequest = new SearchRequest(SearchRequest.Types.Artist, artistName);
 
             var results = await spotify.Search.Item(searchRequest);
+            Statistics.SpotifyApiCalls.Inc();
 
             if (results.Artists.Items?.Any() == true)
             {
@@ -326,6 +352,7 @@ namespace FMBot.Bot.Services.ThirdParty
             var searchRequest = new SearchRequest(SearchRequest.Types.Track, $"track:{trackName} artist:{artistName}");
 
             var results = await spotify.Search.Item(searchRequest);
+            Statistics.SpotifyApiCalls.Inc();
 
             if (results.Tracks.Items?.Any() == true)
             {
@@ -350,6 +377,7 @@ namespace FMBot.Bot.Services.ThirdParty
             var searchRequest = new SearchRequest(SearchRequest.Types.Album, $"{albumName} {artistName}");
 
             var results = await spotify.Search.Item(searchRequest);
+            Statistics.SpotifyApiCalls.Inc();
 
             if (results.Albums.Items?.Any() == true)
             {
@@ -370,6 +398,7 @@ namespace FMBot.Bot.Services.ThirdParty
             //Create the auth object
             var spotify = GetSpotifyWebApi();
 
+            Statistics.SpotifyApiCalls.Inc();
             return await spotify.Tracks.Get(spotifyId);
         }
 
@@ -378,6 +407,7 @@ namespace FMBot.Bot.Services.ThirdParty
             //Create the auth object
             var spotify = GetSpotifyWebApi();
 
+            Statistics.SpotifyApiCalls.Inc();
             return await spotify.Albums.Get(spotifyId);
         }
 
@@ -387,6 +417,7 @@ namespace FMBot.Bot.Services.ThirdParty
             var spotify = GetSpotifyWebApi();
 
             var result = await spotify.Tracks.GetAudioFeatures(spotifyId);
+            Statistics.SpotifyApiCalls.Inc();
 
             return result;
         }

@@ -41,6 +41,14 @@ namespace FMBot.Domain
             .CreateCounter("lastfm_errors_badauth", "Amount of badauth errors Last.fm is returning");
 
 
+        public static readonly Counter SpotifyApiCalls = Metrics
+            .CreateCounter("spotify_api_calls", "Amount of Spotify API calls");
+
+
+        public static readonly Counter MusicBrainzApiCalls = Metrics
+            .CreateCounter("musicbrainz_api_calls", "Amount of MusicBrainz API calls");
+
+
         public static readonly Counter CommandsExecuted = Metrics
             .CreateCounter("bot_commands_executed", "Amount of commands executed");
 
