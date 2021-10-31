@@ -133,10 +133,10 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (!string.IsNullOrWhiteSpace(fullArtist.Disambiguation))
                 {
-                    if (fullArtist.Country != null)
+                    if (fullArtist.Location != null)
                     {
                         artistInfo.Append($"**{fullArtist.Disambiguation}**");
-                        artistInfo.Append($" from **{fullArtist.Country}**");
+                        artistInfo.Append($" from **{fullArtist.Location}**");
                         artistInfo.AppendLine();
                     }
                     else
@@ -144,9 +144,9 @@ namespace FMBot.Bot.Commands.LastFM
                         artistInfo.AppendLine($"**{fullArtist.Disambiguation}**");
                     }
                 }
-                if (fullArtist.Country != null && string.IsNullOrWhiteSpace(fullArtist.Disambiguation))
+                if (fullArtist.Location != null && string.IsNullOrWhiteSpace(fullArtist.Disambiguation))
                 {
-                    artistInfo.AppendLine($"{fullArtist.Country}");
+                    artistInfo.AppendLine($"{fullArtist.Location}");
                 }
                 if (fullArtist.Type != null)
                 {

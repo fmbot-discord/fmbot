@@ -23,7 +23,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public int? Popularity { get; set; }
 
-        public string Country { get; set; }
+        public string Location { get; set; }
+        public string CountryCode { get; set; }
         public string Type { get; set; }
         public string Gender { get; set; }
         public string Disambiguation { get; set; }

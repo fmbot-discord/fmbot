@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using FMBot.Domain;
 using FMBot.Persistence.Domain.Models;
 using MetaBrainz.MusicBrainz;
 using Serilog;
@@ -24,11 +25,13 @@ namespace FMBot.Bot.Services
                 if (artist.Mbid.HasValue)
                 {
                     var musicBrainzArtist = await api.LookupArtistAsync(artist.Mbid.Value);
+                    Statistics.MusicBrainzApiCalls.Inc();
 
                     if (musicBrainzArtist.Name != null)
                     {
                         artist.MusicBrainzDate = DateTime.UtcNow;
-                        artist.Country = musicBrainzArtist.Area?.Name;
+                        artist.Location = musicBrainzArtist.Area?.Name;
+                        artist.CountryCode = musicBrainzArtist.Country;
                         artist.Type = musicBrainzArtist.Type;
                         artist.Disambiguation = musicBrainzArtist.Disambiguation;
                         artist.Gender = musicBrainzArtist.Gender;
@@ -47,7 +50,8 @@ namespace FMBot.Bot.Services
                     if (musicBrainzArtist != null)
                     {
                         artist.MusicBrainzDate = DateTime.UtcNow;
-                        artist.Country = musicBrainzArtist.Area?.Name;
+                        artist.Location = musicBrainzArtist.Area?.Name;
+                        artist.CountryCode = musicBrainzArtist.Country;
                         artist.Type = musicBrainzArtist.Type;
                         artist.Disambiguation = musicBrainzArtist.Disambiguation;
                         artist.Gender = musicBrainzArtist.Gender;
