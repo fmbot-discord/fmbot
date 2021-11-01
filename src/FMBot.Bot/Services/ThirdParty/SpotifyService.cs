@@ -76,12 +76,12 @@ namespace FMBot.Bot.Services.ThirdParty
                         Mbid = artistInfo.Mbid
                     };
 
-                    var musicBrainzUpdated = await MusicBrainzService.AddMusicBrainzDataToArtistAsync(artistToAdd);
+                    //var musicBrainzUpdated = await MusicBrainzService.AddMusicBrainzDataToArtistAsync(artistToAdd);
 
-                    if (musicBrainzUpdated.Updated)
-                    {
-                        artistToAdd = musicBrainzUpdated.Artist;
-                    }
+                    //if (musicBrainzUpdated.Updated)
+                    //{
+                    //    artistToAdd = musicBrainzUpdated.Artist;
+                    //}
 
                     if (spotifyArtist != null)
                     {
@@ -146,16 +146,16 @@ namespace FMBot.Bot.Services.ThirdParty
                         .AddOrUpdateArtistAlias(dbArtist.Id, artistNameBeforeCorrect, connection);
                 }
 
-                var musicBrainzUpdate = await MusicBrainzService.AddMusicBrainzDataToArtistAsync(dbArtist);
+                //var musicBrainzUpdate = await MusicBrainzService.AddMusicBrainzDataToArtistAsync(dbArtist);
 
-                if (musicBrainzUpdate.Updated)
-                {
-                    dbArtist = musicBrainzUpdate.Artist;
+                //if (musicBrainzUpdate.Updated)
+                //{
+                //    dbArtist = musicBrainzUpdate.Artist;
 
-                    await using var db = this._contextFactory.CreateDbContext();
-                    db.Entry(dbArtist).State = EntityState.Modified;
-                    await db.SaveChangesAsync();
-                }
+                //    await using var db = this._contextFactory.CreateDbContext();
+                //    db.Entry(dbArtist).State = EntityState.Modified;
+                //    await db.SaveChangesAsync();
+                //}
 
                 if (dbArtist.SpotifyImageUrl == null || dbArtist.SpotifyImageDate < DateTime.UtcNow.AddDays(-15))
                 {
