@@ -89,7 +89,8 @@ namespace FMBot.Bot
             var discordClient = new DiscordShardedClient(new DiscordSocketConfig
             {
                 LogLevel = LogSeverity.Verbose,
-                MessageCacheSize = 0
+                MessageCacheSize = 0,
+                ConnectionTimeout = 240000
             });
 
             services.Configure<BotSettings>(this.Configuration);
