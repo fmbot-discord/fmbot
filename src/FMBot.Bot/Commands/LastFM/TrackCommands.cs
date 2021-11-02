@@ -753,13 +753,11 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("gwt", "globalwhoknowstrack", "globalwhoknowstrack Hothouse Flowers Don't Go", "globalwhoknowstrack Natasha Bedingfield | Unwritten")]
         [Alias("gwt", "gwkt", "gwtr", "gwktr", "globalwkt", "globalwktrack", "globalwhoknows track")]
         [UsernameSetRequired]
-        [GuildOnly]
-        [RequiresIndex]
         public async Task GlobalWhoKnowsTrackAsync([Remainder] string trackValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+            var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild?.Id);
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -799,16 +797,19 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var guild = await guildTask;
+                var privacyLevel = PrivacyLevel.Global;
 
                 var filteredUsersWithAlbum = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithArtist);
 
-                filteredUsersWithAlbum =
-                    WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithAlbum, guild.GuildUsers.ToList());
-
-                var privacyLevel = PrivacyLevel.Global;
-                if (settings.AdminView && guild.SpecialGuild == true)
+                if (guild != null)
                 {
-                    privacyLevel = PrivacyLevel.Server;
+                    filteredUsersWithAlbum =
+                        WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithAlbum, guild.GuildUsers.ToList());
+
+                    if (settings.AdminView && guild.SpecialGuild == true)
+                    {
+                        privacyLevel = PrivacyLevel.Server;
+                    }
                 }
 
                 var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, userSettings.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);

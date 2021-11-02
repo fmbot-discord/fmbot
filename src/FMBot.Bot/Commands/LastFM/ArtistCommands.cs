@@ -933,15 +933,13 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("gw", "gwk COMA", "globalwhoknows", "globalwhoknows DJ Seinfeld")]
         [Alias("gw", "gwk", "globalwk", "globalwhoknows artist")]
         [UsernameSetRequired]
-        [GuildOnly]
-        [RequiresIndex]
         public async Task GlobalWhoKnowsAsync([Remainder] string artistValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             try
             {
-                var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+                var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild?.Id);
                 _ = this.Context.Channel.TriggerTypingAsync();
 
                 var user = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -1006,15 +1004,18 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var filteredUsersWithArtist = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithArtist);
 
-                var guild = await guildTask;
-
-                filteredUsersWithArtist =
-                    WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithArtist, guild.GuildUsers.ToList());
-
                 var privacyLevel = PrivacyLevel.Global;
-                if (settings.AdminView && guild.SpecialGuild == true)
+
+                var guild = await guildTask;
+                if (guild != null)
                 {
-                    privacyLevel = PrivacyLevel.Server;
+                    filteredUsersWithArtist =
+                        WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithArtist, guild.GuildUsers.ToList());
+
+                    if (settings.AdminView && guild.SpecialGuild == true)
+                    {
+                        privacyLevel = PrivacyLevel.Server;
+                    }
                 }
 
                 var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithArtist, user.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
@@ -1046,7 +1047,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingArtist(user.UserId,
-                    this.Context.Guild.Id, artistName);
+                    this.Context.Guild?.Id, artistName);
 
                 if (guildAlsoPlaying != null)
                 {

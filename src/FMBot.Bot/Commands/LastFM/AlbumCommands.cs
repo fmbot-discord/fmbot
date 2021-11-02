@@ -625,15 +625,13 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("gwa", "globalwhoknowsalbum", "globalwhoknowsalbum the beatles abbey road", "globalwhoknowsalbum Metallica & Lou Reed | Lulu")]
         [Alias("gwa", "gwka", "gwab", "gwkab", "globalwka", "globalwkalbum", "globalwhoknows album")]
         [UsernameSetRequired]
-        [GuildOnly]
-        [RequiresIndex]
         public async Task GlobalWhoKnowsAlbumAsync([Remainder] string albumValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             try
             {
-                var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+                var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild?.Id);
                 _ = this.Context.Channel.TriggerTypingAsync();
 
                 var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -671,17 +669,20 @@ namespace FMBot.Bot.Commands.LastFM
                     usersWithAlbum = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, guildUser, albumName, album.UserPlaycount);
                 }
 
-                var guild = await guildTask;
-
                 var filteredUsersWithAlbum = await this._whoKnowsService.FilterGlobalUsersAsync(usersWithAlbum);
 
-                filteredUsersWithAlbum =
-                    WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithAlbum, guild.GuildUsers.ToList());
-
+                var guild = await guildTask;
                 var privacyLevel = PrivacyLevel.Global;
-                if (settings.AdminView && guild.SpecialGuild == true)
+
+                if (guild != null)
                 {
-                    privacyLevel = PrivacyLevel.Server;
+                    filteredUsersWithAlbum =
+                        WhoKnowsService.ShowGuildMembersInGlobalWhoKnowsAsync(filteredUsersWithAlbum, guild.GuildUsers.ToList());
+
+                    if (settings.AdminView && guild.SpecialGuild == true)
+                    {
+                        privacyLevel = PrivacyLevel.Server;
+                    }
                 }
 
                 var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, userSettings.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
@@ -707,7 +708,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingAlbum(userSettings.UserId,
-                    this.Context.Guild.Id, album.ArtistName, album.AlbumName);
+                    this.Context.Guild?.Id, album.ArtistName, album.AlbumName);
 
                 if (guildAlsoPlaying != null)
                 {

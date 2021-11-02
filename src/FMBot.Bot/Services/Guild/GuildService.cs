@@ -36,8 +36,13 @@ namespace FMBot.Bot.Services.Guild
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guildId);
         }
 
-        public async Task<Persistence.Domain.Models.Guild> GetFullGuildAsync(ulong guildId)
+        public async Task<Persistence.Domain.Models.Guild> GetFullGuildAsync(ulong? guildId = null)
         {
+            if (guildId == null)
+            {
+                return null;
+            }
+
             await using var db = this._contextFactory.CreateDbContext();
             return await db.Guilds
                 .AsNoTracking()

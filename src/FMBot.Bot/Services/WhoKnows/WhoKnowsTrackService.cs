@@ -122,10 +122,13 @@ namespace FMBot.Bot.Services.WhoKnows
 
                 if (i < 15)
                 {
-                    var discordUser = await context.Guild.GetUserAsync(userTrack.DiscordUserId);
-                    if (discordUser != null)
+                    if (context.Guild != null)
                     {
-                        userName = discordUser.Nickname ?? discordUser.Username;
+                        var discordUser = await context.Guild.GetUserAsync(userTrack.DiscordUserId);
+                        if (discordUser != null)
+                        {
+                            userName = discordUser.Nickname ?? discordUser.Username;
+                        }
                     }
                 }
 

@@ -149,12 +149,17 @@ namespace FMBot.Bot.Services.WhoKnows
             }
         }
 
-        public async Task<string> GuildAlsoPlayingTrack(int userId, ulong discordGuildId, string artistName, string trackName)
+        public async Task<string> GuildAlsoPlayingTrack(int userId, ulong? discordGuildId, string artistName, string trackName)
         {
+            if (!discordGuildId.HasValue)
+            {
+                return null;
+            }
+
             await using var db = this._contextFactory.CreateDbContext();
             var guild = await db.Guilds
                 .Include(i => i.GuildUsers.Where(w => w.UserId != userId))
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId.Value);
 
             if (guild == null || !guild.GuildUsers.Any())
             {
@@ -200,12 +205,17 @@ namespace FMBot.Bot.Services.WhoKnows
             return null;
         }
 
-        public async Task<string> GuildAlsoPlayingAlbum(int userId, ulong discordGuildId, string artistName, string albumName)
+        public async Task<string> GuildAlsoPlayingAlbum(int userId, ulong? discordGuildId, string artistName, string albumName)
         {
+            if (!discordGuildId.HasValue)
+            {
+                return null;
+            }
+
             await using var db = this._contextFactory.CreateDbContext();
             var guild = await db.Guilds
                 .Include(i => i.GuildUsers.Where(w => w.UserId != userId))
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId.Value);
 
             if (guild == null || !guild.GuildUsers.Any())
             {
@@ -251,12 +261,17 @@ namespace FMBot.Bot.Services.WhoKnows
             return null;
         }
 
-        public async Task<string> GuildAlsoPlayingArtist(int userId, ulong discordGuildId, string artistName)
+        public async Task<string> GuildAlsoPlayingArtist(int userId, ulong? discordGuildId, string artistName)
         {
+            if (!discordGuildId.HasValue)
+            {
+                return null;
+            }
+
             await using var db = this._contextFactory.CreateDbContext();
             var guild = await db.Guilds
                 .Include(i => i.GuildUsers.Where(w => w.UserId != userId))
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId.Value);
 
             if (guild == null || !guild.GuildUsers.Any())
             {
