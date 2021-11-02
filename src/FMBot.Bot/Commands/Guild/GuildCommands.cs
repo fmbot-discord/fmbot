@@ -201,11 +201,11 @@ namespace FMBot.Bot.Commands.Guild
         public async Task GetMembersAsync()
         {
             var serverUser = (IGuildUser)this.Context.Message.Author;
-            if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
+            if (!serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync(
-                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                    "You are not authorized to use this command. For privacy reasons only server admins can use this command.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
