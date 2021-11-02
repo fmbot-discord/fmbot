@@ -202,9 +202,8 @@ namespace FMBot.Bot.Services
                     var score = playcount switch
                     {
                         0 => 0,
-                        > 3 and < 16 => playcount * 0.3,
-                        >= 16 and < 28 => playcount * 0.25,
-                        >= 28 and < 40 => playcount * 0.2,
+                        > 0 and < 24 => playcount * 0.25,
+                        >= 24 and < 40 => playcount * 0.2,
                         >= 40 and < 80 => 10,
                         >= 80 and < 150 => 15,
                         >= 150 and < 300 => 20,
