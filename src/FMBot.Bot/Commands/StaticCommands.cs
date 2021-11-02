@@ -4,11 +4,13 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Fergun.Interactive;
+using Fergun.Interactive.Selection;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -208,19 +210,66 @@ namespace FMBot.Bot.Commands
         {
             this._embed.WithTitle("Bot instance shards");
 
-            var shardDescription = new StringBuilder();
-
             var client = this.Context.Client as DiscordShardedClient;
 
-            foreach (var shard in client.Shards)
+            var onlineShards = new StringBuilder();
+            foreach (var shard in client.Shards.Where(w => w.Latency > 0))
             {
-                shardDescription.Append($"`{shard.ShardId}` - `{shard.Latency}ms`, ");
+                onlineShards.Append($"`{shard.ShardId}` - `{shard.Latency}ms`, ");
             }
+            this._embed.AddField("Online shards", onlineShards.Length > 0 ? onlineShards.ToString() : "No online shards");
 
-            this._embed.WithDescription(shardDescription.ToString());
+            var offlineShards = new StringBuilder();
+            foreach (var shard in client.Shards.Where(w => w.Latency == 0))
+            {
+                offlineShards.Append($"`{shard.ShardId}` - `{shard.Latency}ms`, ");
+            }
+            this._embed.AddField("Offline shards", offlineShards.Length > 0 ? offlineShards.ToString() : "No offline shards");
 
             this._embed.WithFooter(
                 $"Guild {this.Context.Guild.Name} | {this.Context.Guild.Id} is on shard {client.GetShardIdFor(this.Context.Guild)}");
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
+        }
+
+        [Command("shard", RunMode = RunMode.Async)]
+        [Summary("Displays shard info for a specific guild")]
+        [GuildOnly]
+        [ExcludeFromHelp]
+        [Alias("shardinfo")]
+        public async Task ShardInfoAsync(ulong? guildId = null)
+        {
+            if (!guildId.HasValue)
+            {
+                await this.Context.Channel.SendMessageAsync($"Enter a server id please (this server is `{this.Context.Guild.Id}`)");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
+
+            var client = this.Context.Client as DiscordShardedClient;
+
+            var guild = client.GetGuild(guildId.Value);
+
+            if (guild != null)
+            {
+                var shard = client.GetShardFor(guild);
+
+
+                this._embed.WithDescription($"Guild `{guildId}` is on the following shard:\n\n" +
+                                            $"Shard id: `{shard.ShardId}`\n" +
+                                            $"Latency: `{shard.Latency}ms`\n" +
+                                            $"Guilds: `{shard.Guilds.Count}`\n" +
+                                            $"Connection state: `{shard.ConnectionState}`");
+
+                this._embed.WithFooter($"{guild.Name} - {guild.MemberCount} members");
+            }
+            else
+            {
+                await this.Context.Channel.SendMessageAsync("Server could not be found.");
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
@@ -306,6 +355,218 @@ namespace FMBot.Bot.Commands
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build(), component: components.Build());
             this.Context.LogCommandUsed();
+        }
+
+        [Command("menu", RunMode = RunMode.Async)]
+        public async Task MenuAsync()
+        {
+            // Create CancellationTokenSource that will be canceled after 10 minutes.
+            var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+
+            var options = new[]
+            {
+                "Cache messages",
+                "Cache users",
+                "Allow using mentions as prefix",
+                "Ignore command errors"
+            };
+
+            var values = new[]
+            {
+                true,
+                false,
+                true,
+                false
+            };
+
+            // Dynamically create the number emotes
+            var emotes = Enumerable.Range(1, options.Length)
+                .ToDictionary(x => new Emoji($"{x}\ufe0f\u20e3") as IEmote, y => y);
+
+            // Add the cancel emote at the end of the dictionary
+            emotes.Add(new Emoji("❌"), -1);
+
+
+            // If we can use interactions, prefer disabling the input (buttons, select menus) instead of removing them from the message.
+
+            InteractiveMessageResult<KeyValuePair<IEmote, int>> result = null;
+            IUserMessage message = null;
+
+            while (result is null || result.Status == InteractiveStatus.Success)
+            {
+                var pageBuilder = new PageBuilder()
+                    .WithTitle("Bot Control Panel")
+                    .WithDescription("Use the reactions/buttons to enable or disable an option.")
+                    .AddField("Option", string.Join('\n', options.Select((x, i) => $"**{i + 1}**. {x}")), true)
+                    .AddField("Value", string.Join('\n', values), true);
+
+                var selection = new EmoteSelectionBuilder<int>()
+                    .AddUser(Context.User)
+                    .WithSelectionPage(pageBuilder)
+                    .WithOptions(emotes)
+                    .WithAllowCancel(true)
+                    .WithActionOnTimeout(ActionOnStop.DisableInput)
+                    .Build();
+
+                // if message is null, SendSelectionAsync() will send a message, otherwise it will modify the message.
+                // The cancellation token persists here, so it will be canceled after 10 minutes no matter how many times the selection is used.
+                result = await this.Interactivity.SendSelectionAsync(selection, Context.Channel, TimeSpan.FromMinutes(10), message, cancellationToken: cts.Token);
+
+                // Store the used message.
+                message = result.Message;
+
+                // Break the loop if the result isn't successful
+                if (!result.IsSuccess) break;
+
+                int selected = result.Value.Value;
+
+                // Invert the value of the selected option
+                values[selected - 1] = !values[selected - 1];
+
+                // Do stuff with the selected option
+            }
+        }
+
+        [Command("multiselecthelp", RunMode = RunMode.Async)]
+        public async Task MultiSelect()
+        {
+            try
+            {
+                IUserMessage message = null;
+                InteractiveMessageResult<MultiSelectionOption<string>> selectedResult = null;
+
+                var options = new List<MultiSelectionOption<string>>();
+                foreach (var module in this._service.Modules
+                             .OrderByDescending(o => o.Commands.Count(w => !w.Attributes.OfType<ExcludeFromHelp>().Any() &&
+                                                                           !w.Attributes.OfType<ServerStaffOnly>().Any()))
+                             .Where(w =>
+                                 !w.Attributes.OfType<ExcludeFromHelp>().Any() &&
+                                 !w.Attributes.OfType<ServerStaffOnly>().Any()))
+                {
+                    options.Add(new MultiSelectionOption<string>(module.Name, 1));
+                }
+
+                while (selectedResult is null || selectedResult.Status == InteractiveStatus.Success)
+                {
+                    var commands = "";
+                    var selectedModule = selectedResult?.Value.Option;
+
+                    options = options.Where(w => w.Row == 1).ToList();
+                    if (selectedModule != null)
+                    {
+                        var selectedModuleResult = this._service.Modules.FirstOrDefault(f => f.Name == selectedModule);
+                        if (selectedModuleResult != null)
+                        {
+                            foreach (var cmd in selectedModuleResult.Commands.Where(w =>
+                                         !w.Attributes.OfType<ExcludeFromHelp>().Any()))
+                            {
+                                var result = await cmd.CheckPreconditionsAsync(this.Context);
+                                if (result.IsSuccess)
+                                {
+                                    options.Add(new MultiSelectionOption<string>(cmd.Name, 2));
+                                    commands += $"{cmd.Name}, ";
+                                }
+                            }
+                        }
+                    }
+
+                    var multiSelection = new MultiSelectionBuilder<string>()
+                        .WithOptions(options)
+                        .WithSelectionPage(new PageBuilder()
+                            .WithText(commands))
+                        .Build();
+
+                    selectedResult =
+                        await this.Interactivity.SendSelectionAsync(multiSelection, this.Context.Channel, message: message);
+                    message = selectedResult.Message;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+
+        // Builder for multi selection
+        public class MultiSelectionBuilder<T> : BaseSelectionBuilder<MultiSelection<T>, MultiSelectionOption<T>, MultiSelectionBuilder<T>>
+        {
+            public override InputType InputType => InputType.SelectMenus;
+
+            public override MultiSelection<T> Build() => new(EmoteConverter, StringConverter,
+            EqualityComparer, AllowCancel, SelectionPage?.Build(), Users?.ToArray(), Options?.ToArray(),
+            CanceledPage?.Build(), TimeoutPage?.Build(), SuccessPage?.Build(), Deletion, InputType,
+            ActionOnCancellation, ActionOnTimeout, ActionOnSuccess);
+        }
+
+        // A selection that uses multiple select menus
+        public class MultiSelection<T> : BaseSelection<MultiSelectionOption<T>>
+        {
+            // Selections have a bunch of properties
+            public MultiSelection(Func<MultiSelectionOption<T>, IEmote> emoteConverter, Func<MultiSelectionOption<T>, string> stringConverter,
+                IEqualityComparer<MultiSelectionOption<T>> equalityComparer, bool allowCancel, Page selectionPage, IReadOnlyCollection<IUser> users,
+                IReadOnlyCollection<MultiSelectionOption<T>> options, Page canceledPage, Page timeoutPage, Page successPage, DeletionOptions deletion,
+                InputType inputType, ActionOnStop actionOnCancellation, ActionOnStop actionOnTimeout, ActionOnStop actionOnSuccess)
+                : base(emoteConverter, stringConverter, equalityComparer, allowCancel, selectionPage, users, options, canceledPage,
+                      timeoutPage, successPage, deletion, inputType, actionOnCancellation, actionOnTimeout, actionOnSuccess)
+            {
+            }
+
+            public override MessageComponent BuildComponents(bool disableAll)
+            {
+                var builder = new ComponentBuilder();
+                var selectMenus = new Dictionary<int, SelectMenuBuilder>();
+
+                foreach (var option in Options)
+                {
+                    if (!selectMenus.ContainsKey(option.Row))
+                    {
+                        selectMenus[option.Row] = new SelectMenuBuilder()
+                            .WithCustomId($"selectmenu{option.Row}")
+                            .WithDisabled(disableAll);
+                    }
+
+                    var emote = EmoteConverter?.Invoke(option);
+                    string label = StringConverter?.Invoke(option);
+                    if (emote is null && label is null)
+                    {
+                        throw new InvalidOperationException($"Neither {nameof(EmoteConverter)} nor {nameof(StringConverter)} returned a valid emote or string.");
+                    }
+
+                    var optionBuilder = new SelectMenuOptionBuilder()
+                        .WithLabel(label)
+                        .WithEmote(emote)
+                        .WithValue(emote?.ToString() ?? label);
+
+                    selectMenus[option.Row].AddOption(optionBuilder);
+                }
+
+                foreach ((int row, var selectMenu) in selectMenus)
+                {
+                    builder.WithSelectMenu(selectMenu, row);
+                }
+
+                return builder.Build();
+            }
+        }
+
+        public readonly struct MultiSelectionOption<T>
+        {
+            public MultiSelectionOption(T option, int row)
+            {
+                Option = option;
+                Row = row;
+            }
+
+            public T Option { get; }
+
+            public int Row { get; }
+
+            public override string ToString() => Option.ToString();
+
+            public override int GetHashCode() => Option.GetHashCode();
+
+            public override bool Equals(object obj) => Equals(Option, obj);
         }
 
         [Command("supporters", RunMode = RunMode.Async)]
