@@ -357,76 +357,6 @@ namespace FMBot.Bot.Commands
             this.Context.LogCommandUsed();
         }
 
-        [Command("menu", RunMode = RunMode.Async)]
-        public async Task MenuAsync()
-        {
-            // Create CancellationTokenSource that will be canceled after 10 minutes.
-            var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
-
-            var options = new[]
-            {
-                "Cache messages",
-                "Cache users",
-                "Allow using mentions as prefix",
-                "Ignore command errors"
-            };
-
-            var values = new[]
-            {
-                true,
-                false,
-                true,
-                false
-            };
-
-            // Dynamically create the number emotes
-            var emotes = Enumerable.Range(1, options.Length)
-                .ToDictionary(x => new Emoji($"{x}\ufe0f\u20e3") as IEmote, y => y);
-
-            // Add the cancel emote at the end of the dictionary
-            emotes.Add(new Emoji("❌"), -1);
-
-
-            // If we can use interactions, prefer disabling the input (buttons, select menus) instead of removing them from the message.
-
-            InteractiveMessageResult<KeyValuePair<IEmote, int>> result = null;
-            IUserMessage message = null;
-
-            while (result is null || result.Status == InteractiveStatus.Success)
-            {
-                var pageBuilder = new PageBuilder()
-                    .WithTitle("Bot Control Panel")
-                    .WithDescription("Use the reactions/buttons to enable or disable an option.")
-                    .AddField("Option", string.Join('\n', options.Select((x, i) => $"**{i + 1}**. {x}")), true)
-                    .AddField("Value", string.Join('\n', values), true);
-
-                var selection = new EmoteSelectionBuilder<int>()
-                    .AddUser(Context.User)
-                    .WithSelectionPage(pageBuilder)
-                    .WithOptions(emotes)
-                    .WithAllowCancel(true)
-                    .WithActionOnTimeout(ActionOnStop.DisableInput)
-                    .Build();
-
-                // if message is null, SendSelectionAsync() will send a message, otherwise it will modify the message.
-                // The cancellation token persists here, so it will be canceled after 10 minutes no matter how many times the selection is used.
-                result = await this.Interactivity.SendSelectionAsync(selection, Context.Channel, TimeSpan.FromMinutes(10), message, cancellationToken: cts.Token);
-
-                // Store the used message.
-                message = result.Message;
-
-                // Break the loop if the result isn't successful
-                if (!result.IsSuccess) break;
-
-                int selected = result.Value.Value;
-
-                // Invert the value of the selected option
-                values[selected - 1] = !values[selected - 1];
-
-                // Do stuff with the selected option
-            }
-        }
-
         [Command("multiselecthelp", RunMode = RunMode.Async)]
         public async Task MultiSelect()
         {
@@ -434,6 +364,7 @@ namespace FMBot.Bot.Commands
             {
                 IUserMessage message = null;
                 InteractiveMessageResult<MultiSelectionOption<string>> selectedResult = null;
+                var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
                 var options = new List<MultiSelectionOption<string>>();
                 foreach (var module in this._service.Modules
@@ -448,7 +379,7 @@ namespace FMBot.Bot.Commands
 
                 while (selectedResult is null || selectedResult.Status == InteractiveStatus.Success)
                 {
-                    var commands = "";
+                    var commands = "**Commands:** \n";
                     var selectedModule = selectedResult?.Value.Option;
 
                     options = options.Where(w => w.Row == 1).ToList();
@@ -464,7 +395,7 @@ namespace FMBot.Bot.Commands
                                 if (result.IsSuccess)
                                 {
                                     options.Add(new MultiSelectionOption<string>(cmd.Name, 2));
-                                    commands += $"{cmd.Name}, ";
+                                    commands += $"`{prefix}{cmd.Name}` - `{cmd.Summary}`\n";
                                 }
                             }
                         }
@@ -472,6 +403,7 @@ namespace FMBot.Bot.Commands
 
                     var multiSelection = new MultiSelectionBuilder<string>()
                         .WithOptions(options)
+                        .WithActionOnSuccess(ActionOnStop.None)
                         .WithSelectionPage(new PageBuilder()
                             .WithText(commands))
                         .Build();
@@ -480,11 +412,12 @@ namespace FMBot.Bot.Commands
                         await this.Interactivity.SendSelectionAsync(multiSelection, this.Context.Channel, message: message);
                     message = selectedResult.Message;
                 }
+
+                this.Context.LogCommandUsed();
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
-                throw;
+                this.Context.LogCommandException(e);
             }
         }
 

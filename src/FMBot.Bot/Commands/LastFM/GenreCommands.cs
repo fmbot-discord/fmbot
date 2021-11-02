@@ -159,7 +159,7 @@ namespace FMBot.Bot.Commands.LastFM
                     var genrePageString = new StringBuilder();
                     foreach (var genre in genrePage)
                     {
-                        genrePageString.AppendLine($"{counter}. **{genre.GenreName.Humanize(LetterCasing.Title)}**");
+                        genrePageString.AppendLine($"{counter}. **{genre.GenreName.Transform(To.TitleCase)}**");
                         counter++;
                     }
 
@@ -239,15 +239,13 @@ namespace FMBot.Bot.Commands.LastFM
                     if (genres.Any())
                     {
                         var artist = await this._artistsService.GetArtistFromDatabase(artistName);
-                        var userTopArtists = await this._artistsService.GetUserAllTimeTopArtists(contextUser.UserId, true);
-                        var topGenres = await this._genreService.GetArtistsForGenres(genres, userTopArtists);
 
                         this._embed.WithTitle($"Genre info for '{artistName}'");
 
                         var genreDescription = new StringBuilder();
-                        foreach (var topGenre in topGenres)
+                        foreach (var artistGenre in artist.ArtistGenres)
                         {
-                            genreDescription.AppendLine($"- **{topGenre.GenreName.Transform(To.TitleCase)}**");
+                            genreDescription.AppendLine($"- **{artistGenre.Name.Transform(To.TitleCase)}**");
                         }
 
                         if (artist?.SpotifyImageUrl != null)
@@ -379,10 +377,59 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task WhoKnowsGenreAsync([Remainder] string genreValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             try
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
+
+                if (string.IsNullOrWhiteSpace(genreValues))
+                {
+                    var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(contextUser.UserNameLastFM, 1, true, contextUser.SessionKeyLastFm);
+
+                    if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, contextUser.UserNameLastFM, this.Context))
+                    {
+                        return;
+                    }
+
+                    var artistName = recentScrobbles.Content.RecentTracks.First().ArtistName;
+
+                    var foundGenres = await this._genreService.GetGenresForArtist(artistName);
+
+                    if (foundGenres.Any())
+                    {
+                        var artist = await this._artistsService.GetArtistFromDatabase(artistName);
+
+                        this._embed.WithTitle($"Genre info for '{artistName}'");
+
+                        var genreDescription = new StringBuilder();
+                        foreach (var artistGenre in artist.ArtistGenres)
+                        {
+                            genreDescription.AppendLine($"- **{artistGenre.Name.Transform(To.TitleCase)}**");
+                        }
+
+                        if (artist?.SpotifyImageUrl != null)
+                        {
+                            this._embed.WithThumbnailUrl(artist.SpotifyImageUrl);
+                        }
+
+                        this._embed.WithDescription(genreDescription.ToString());
+
+                        this._embed.WithFooter($"Genre source: Spotify\n" +
+                                               $"Add a genre to this command to WhoKnows this genre");
+
+                        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                        return;
+                    }
+                    else
+                    {
+                        this._embed.WithDescription(
+                            "Sorry, we don't have any stored genres for this artist.");
+                        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                        this.Context.LogCommandUsed(CommandResponse.NotFound);
+                        return;
+                    }
+                }
 
                 var genre = await this._genreService.GetValidGenre(genreValues);
 
