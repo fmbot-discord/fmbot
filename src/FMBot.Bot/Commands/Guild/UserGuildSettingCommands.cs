@@ -50,7 +50,7 @@ namespace FMBot.Bot.Commands.Guild
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync(
-                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                    "You are not authorized to use this command. Only users with the 'Ban Members' permission or server admins can use this command.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -107,7 +107,7 @@ namespace FMBot.Bot.Commands.Guild
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync(
-                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                    "You are not authorized to use this command. Only users with the 'Ban Members' permission or server admins can use this command.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -123,9 +123,10 @@ namespace FMBot.Bot.Commands.Guild
 
             var userToBlock = await this._settingService.GetDifferentUser(user);
 
-            if (userToBlock == null)
+            if (userToBlock == null || !guild.GuildUsers.Select(s => s.UserId).Contains(userToBlock.UserId))
             {
-                await ReplyAsync("User not found. Are you sure they are registered in .fmbot?");
+                await ReplyAsync("User not found. Are you sure they are registered in .fmbot and in this server?\n" +
+                                 $"To refresh the cached memberlist on your server, use `{prfx}index`.");
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }

@@ -63,7 +63,7 @@ namespace FMBot.Bot.Commands.Guild
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync(
-                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or .fmbot admins can use this command.");
+                    "You are not authorized to use this command. Only users with the 'Ban Members' permission or server admins can use this command.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -126,7 +126,7 @@ namespace FMBot.Bot.Commands.Guild
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync(
-                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                    "You are not authorized to use this command. Only users with the 'Ban Members' permission or server admins can use this command.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -170,12 +170,13 @@ namespace FMBot.Bot.Commands.Guild
         [GuildOnly]
         public async Task ToggleSupportMessagesAsync()
         {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync(
-                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                    "You are not authorized to use this command. Only users with the 'Ban Members' permission or server admins can use this command.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -184,7 +185,7 @@ namespace FMBot.Bot.Commands.Guild
 
             if (messagesDisabled == true)
             {
-                await ReplyAsync(".fmbot supporter messages have been disabled. Supporters are still visible in `.fmsupporters`, but they will not be shown in `.fmchart` or other commands anymore.");
+                await ReplyAsync($".fmbot supporter messages have been disabled. Supporters are still visible in `{prfx}supporters`, but they will not be shown in `{prfx}chart` or other commands anymore.");
             }
             else
             {
@@ -254,7 +255,7 @@ namespace FMBot.Bot.Commands.Guild
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync(
-                    "You are not authorized to use this command. Only users with the 'Ban Members' permission, server admins or FMBot admins can use this command.");
+                    "You are not authorized to use this command. Only users with the 'Ban Members' permission or server admins can use this command.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -443,7 +444,7 @@ namespace FMBot.Bot.Commands.Guild
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync(
-                    "You are not authorized to toggle commands. Only users with the 'Ban Members' permission, server admins or FMBot admins disable/enable commands.");
+                    "You are not authorized to toggle commands. Only users with the 'Ban Members' permission or server admins can use this command.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }
@@ -487,18 +488,11 @@ namespace FMBot.Bot.Commands.Guild
                  "To pick a channel, simply use this command in the channel you want the cooldown in.")]
         [Options("Cooldown in seconds (Min 2 seconds - Max 600 seconds)")]
         [GuildOnly]
+        [RequiresIndex]
         public async Task FmSetFmCooldownCommand(string command = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-
-            if (guild == null)
-            {
-                await ReplyAsync("This server hasn't been stored yet.\n" +
-                                 $"Please run `{prfx}index` to store this server.");
-                this.Context.LogCommandUsed(CommandResponse.IndexRequired);
-                return;
-            }
 
             int? newCooldown = null;
 
@@ -517,7 +511,7 @@ namespace FMBot.Bot.Commands.Guild
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 await ReplyAsync(
-                    "You are not authorized to change the `.fm` cooldown. Only users with the 'Ban Members' permission, server admins or FMBot admins can change this.");
+                    "You are not authorized to change the `.fm` cooldown. Only users with the 'Ban Members' permission or server admins can use this command.");
                 this.Context.LogCommandUsed(CommandResponse.NoPermission);
                 return;
             }

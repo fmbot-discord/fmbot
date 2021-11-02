@@ -188,9 +188,10 @@ namespace FMBot.Bot.Commands.Guild
 
             var userToBlock = await this._settingService.GetDifferentUser(user);
 
-            if (userToBlock == null)
+            if (userToBlock == null || !guild.GuildUsers.Select(s => s.UserId).Contains(userToBlock.UserId))
             {
-                await ReplyAsync("User not found. Are you sure they are registered in .fmbot?");
+                await ReplyAsync("User not found. Are you sure they are registered in .fmbot and in this server?\n" +
+                                 $"To refresh the cached memberlist on your server, use `{prfx}index`.");
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
