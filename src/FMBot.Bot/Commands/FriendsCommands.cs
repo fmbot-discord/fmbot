@@ -11,6 +11,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -26,6 +27,7 @@ namespace FMBot.Bot.Commands
         private readonly LastFmRepository _lastFmRepository;
         private readonly UserService _userService;
         private readonly SettingService _settingService;
+        private readonly IUpdateService _updateService;
 
         public FriendsCommands(
                 FriendsService friendsService,
@@ -34,7 +36,8 @@ namespace FMBot.Bot.Commands
                 LastFmRepository lastFmRepository,
                 UserService userService,
                 IOptions<BotSettings> botSettings,
-                SettingService settingService) : base(botSettings)
+                SettingService settingService,
+                IUpdateService updateService) : base(botSettings)
         {
             this._friendsService = friendsService;
             this._guildService = guildService;
@@ -42,6 +45,7 @@ namespace FMBot.Bot.Commands
             this._prefixService = prefixService;
             this._userService = userService;
             this._settingService = settingService;
+            this._updateService = updateService;
         }
 
         [Command("friends", RunMode = RunMode.Async)]
@@ -102,7 +106,7 @@ namespace FMBot.Bot.Commands
                         {
                             friendNameToDisplay = guildUser.UserName;
 
-                            var discordUser = await Context.Guild.GetUserAsync(guildUser.User.DiscordUserId);
+                            var discordUser = await this.Context.Guild.GetUserAsync(guildUser.User.DiscordUserId);
                             if (discordUser != null)
                             {
                                 friendNameToDisplay = discordUser.Nickname ?? discordUser.Username;
@@ -120,7 +124,16 @@ namespace FMBot.Bot.Commands
                         }
                     }
 
-                    var tracks = await this._lastFmRepository.GetRecentTracksAsync(friendUsername, useCache: true, sessionKey: sessionKey);
+                    Response<RecentTrackList> tracks;
+
+                    if (friend.FriendUserId != null && friend.FriendUser?.SessionKeyLastFm != null)
+                    {
+                        tracks = await this._updateService.UpdateUserAndGetRecentTracks(friend.FriendUser);
+                    }
+                    else
+                    {
+                        tracks = await this._lastFmRepository.GetRecentTracksAsync(friendUsername, useCache: true, sessionKey: sessionKey);
+                    }
 
                     string track;
                     if (!tracks.Success || tracks.Content == null)
