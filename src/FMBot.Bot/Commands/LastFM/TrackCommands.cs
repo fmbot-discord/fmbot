@@ -93,6 +93,7 @@ namespace FMBot.Bot.Commands.LastFM
             "track Crystal Waters | Gypsy Woman (She's Homeless) - Radio Edit")]
         [Alias("tr", "ti", "ts", "trackinfo")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Tracks)]
         public async Task TrackAsync([Remainder] string trackValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -190,6 +191,7 @@ namespace FMBot.Bot.Commands.LastFM
             "trackplays Cocteau Twins | Heaven or Las Vegas @user")]
         [Alias("tp", "trackplay", "tplays", "trackp", "track plays")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Tracks)]
         public async Task TrackPlaysAsync([Remainder] string trackValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -227,6 +229,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("love", "l", "love Tame Impala Borderline")]
         [Alias("l", "heart", "favorite", "affection", "appreciation", "lust", "fuckyeah", "fukk", "unfuck")]
         [UserSessionRequired]
+        [CommandCategories(CommandCategory.Tracks)]
         public async Task LoveAsync([Remainder] string trackValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -284,6 +287,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("unlove", "ul", "unlove Lou Reed Brandenburg Gate")]
         [Alias("ul", "unheart", "hate", "fuck")]
         [UserSessionRequired]
+        [CommandCategories(CommandCategory.Tracks)]
         public async Task UnLoveAsync([Remainder] string trackValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -341,6 +345,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("lovedtracks", "lt")]
         [UserSessionRequired]
         [SupportsPagination]
+        [CommandCategories(CommandCategory.Tracks)]
         public async Task LovedAsync([Remainder] string extraOptions = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -446,6 +451,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("scrobble", "sb stronger Kanye West", "scrobble Loona Heart Attack", "scrobble Mac DeMarco | Chamber of Reflection")]
         [UserSessionRequired]
         [Alias("sb")]
+        [CommandCategories(CommandCategory.Tracks)]
         public async Task ScrobbleAsync([Remainder] string trackValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -545,6 +551,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("tt", "tl", "tracklist", "tracks", "trackslist", "top tracks", "top track")]
         [UsernameSetRequired]
         [SupportsPagination]
+        [CommandCategories(CommandCategory.Tracks)]
         public async Task TopTracksAsync([Remainder] string extraOptions = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -646,6 +653,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Tracks, CommandCategory.WhoKnows)]
         public async Task WhoKnowsTrackAsync([Remainder] string trackValues = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -753,6 +761,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("gwt", "globalwhoknowstrack", "globalwhoknowstrack Hothouse Flowers Don't Go", "globalwhoknowstrack Natasha Bedingfield | Unwritten")]
         [Alias("gwt", "gwkt", "gwtr", "gwktr", "globalwkt", "globalwktrack", "globalwhoknows track")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Tracks, CommandCategory.WhoKnows)]
         public async Task GlobalWhoKnowsTrackAsync([Remainder] string trackValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -885,6 +894,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Tracks, CommandCategory.WhoKnows, CommandCategory.Friends)]
         public async Task FriendWhoKnowsTrackAsync([Remainder] string albumValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -993,6 +1003,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("st", "stt", "servertoptracks", "servertrack", "server tracks")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Tracks)]
         public async Task GuildTracksAsync([Remainder] string guildTracksOptions = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

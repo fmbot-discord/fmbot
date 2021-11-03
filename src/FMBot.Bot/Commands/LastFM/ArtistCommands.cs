@@ -97,6 +97,7 @@ namespace FMBot.Bot.Commands.LastFM
             "artist Gamma Intel")]
         [Alias("a")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Artists)]
         public async Task ArtistAsync([Remainder] string artistValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -284,6 +285,7 @@ namespace FMBot.Bot.Commands.LastFM
             "artisttracks DMX")]
         [Alias("at", "att", "artisttrack", "artist track", "artist tracks", "artistrack", "artisttoptracks", "artisttoptrack", "favs")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Artists)]
         public async Task ArtistTracksAsync([Remainder] string artistValues = null)
         {
             _ = this.Context.Channel.TriggerTypingAsync();
@@ -391,6 +393,7 @@ namespace FMBot.Bot.Commands.LastFM
             "artistalbums The Prodigy")]
         [Alias("aa", "aab", "atab", "artistalbum", "artist album", "artist albums", "artistopalbum", "artisttopalbums", "artisttab")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Artists)]
         public async Task ArtistAlbumsAsync([Remainder] string artistValues = null)
         {
             _ = this.Context.Channel.TriggerTypingAsync();
@@ -486,6 +489,7 @@ namespace FMBot.Bot.Commands.LastFM
             "artistplays Mall Grab @user")]
         [Alias("ap", "artist plays")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Artists)]
         public async Task ArtistPlaysAsync([Remainder] string artistValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -526,6 +530,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("al", "as", "ta", "artistlist", "artists", "top artists", "artistslist")]
         [UsernameSetRequired]
         [SupportsPagination]
+        [CommandCategories(CommandCategory.Artists)]
         public async Task TopArtistsAsync([Remainder] string extraOptions = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -622,6 +627,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("t frikandel_", "t @user", "taste bitldev", "taste @user monthly embed")]
         [UsernameSetRequired]
         [Alias("t")]
+        [CommandCategories(CommandCategory.Artists)]
         public async Task TasteAsync(string user = null, [Remainder] string extraOptions = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -764,6 +770,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows)]
         public async Task WhoKnowsAsync([Remainder] string artistValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -933,6 +940,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("gw", "gwk COMA", "globalwhoknows", "globalwhoknows DJ Seinfeld")]
         [Alias("gw", "gwk", "globalwk", "globalwhoknows artist")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows)]
         public async Task GlobalWhoKnowsAsync([Remainder] string artistValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -1111,6 +1119,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Artists, CommandCategory.WhoKnows, CommandCategory.Friends)]
         public async Task FriendWhoKnowsAsync([Remainder] string artistValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -1257,6 +1266,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("sa", "sta", "servertopartists", "server artists", "serverartist")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Artists)]
         public async Task GuildArtistsAsync([Remainder] string extraOptions = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -1364,6 +1374,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Artists)]
         public async Task AffinityAsync()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);

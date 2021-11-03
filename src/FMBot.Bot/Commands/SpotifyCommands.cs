@@ -44,6 +44,7 @@ namespace FMBot.Bot.Commands
         [Summary("Shares a link to a Spotify track based on what a user is listening to or searching for")]
         [Alias("sp", "s", "spotifyfind", "spotifysearch")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.ThirdParty)]
         public async Task SpotifyAsync([Remainder] string searchValue = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -114,6 +115,7 @@ namespace FMBot.Bot.Commands
         [Summary("Shares a link to a Spotify album based on what a user is listening to or searching for")]
         [Alias("spab")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.ThirdParty)]
         public async Task SpotifyAlbumAsync([Remainder] string searchValue = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -183,6 +185,7 @@ namespace FMBot.Bot.Commands
         [Summary("Shares a link to a Spotify artist based on what a user is listening to or searching for")]
         [Alias("spa")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.ThirdParty)]
         public async Task SpotifyArtistAsync([Remainder] string searchValue = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);

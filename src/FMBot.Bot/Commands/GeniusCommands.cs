@@ -45,6 +45,7 @@ namespace FMBot.Bot.Commands
         [Summary("Shares a link to the Genius lyrics based on what a user is listening to or what the user is searching for.")]
         [Alias("lyrics", "lyr", "lr", "gen", "lyricsfind", "lyricsearch", "lyricssearch")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.ThirdParty)]
         public async Task GeniusAsync([Remainder] string searchValue = null)
         {
             _ = this.Context.Channel.TriggerTypingAsync();

@@ -94,6 +94,7 @@ namespace FMBot.Bot.Commands.LastFM
             "ab Boy Harsher | Yr Body Is Nothing")]
         [Alias("ab")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Albums)]
         public async Task AlbumAsync([Remainder] string albumValues = null)
         {
             try
@@ -261,6 +262,7 @@ namespace FMBot.Bot.Commands.LastFM
             "abp The Beatles | Yesterday @user")]
         [Alias("abp", "albumplay", "abplays", "albump", "album plays")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Albums)]
         public async Task AlbumPlaysAsync([Remainder] string albumValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -298,6 +300,7 @@ namespace FMBot.Bot.Commands.LastFM
             "cover la priest inji")]
         [Alias("abc", "abco", "co", "albumcover", "album cover")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Albums, CommandCategory.Charts)]
         public async Task AlbumCoverAsync([Remainder] string albumValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -382,6 +385,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("abl", "abs", "tab", "albumlist", "top albums", "albums", "albumslist")]
         [UsernameSetRequired]
         [SupportsPagination]
+        [CommandCategories(CommandCategory.Albums)]
         public async Task TopAlbumsAsync([Remainder] string extraOptions = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -489,6 +493,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Albums, CommandCategory.WhoKnows)]
         public async Task WhoKnowsAlbumAsync([Remainder] string albumValues = null)
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -625,6 +630,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("gwa", "globalwhoknowsalbum", "globalwhoknowsalbum the beatles abbey road", "globalwhoknowsalbum Metallica & Lou Reed | Lulu")]
         [Alias("gwa", "gwka", "gwab", "gwkab", "globalwka", "globalwkalbum", "globalwhoknows album")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Albums, CommandCategory.WhoKnows)]
         public async Task GlobalWhoKnowsAlbumAsync([Remainder] string albumValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -786,6 +792,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Albums, CommandCategory.WhoKnows, CommandCategory.Friends)]
         public async Task FriendWhoKnowsAlbumAsync([Remainder] string albumValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -909,6 +916,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("abt", "albumtracks", "albumtracks de jeugd van tegenwoordig machine", "albumtracks U2 | The Joshua Tree")]
         [Alias("abt", "abtracks", "albumt")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Albums)]
         public async Task AlbumTracksAsync([Remainder] string albumValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -1051,6 +1059,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("sab", "stab", "servertopalbums", "serveralbum", "server albums")]
         [RequiresIndex]
         [GuildOnly]
+        [CommandCategories(CommandCategory.Albums)]
         public async Task GuildAlbumsAsync([Remainder] string guildAlbumsOptions = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

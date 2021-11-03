@@ -62,6 +62,7 @@ namespace FMBot.Bot.Commands.LastFM
         [GuildOnly]
         [SupportsPagination]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Crowns)]
         public async Task UserCrownsAsync([Remainder] string extraOptions = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -169,6 +170,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Crowns)]
         public async Task CrownAsync([Remainder] string artistValues = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -277,6 +279,7 @@ namespace FMBot.Bot.Commands.LastFM
         [GuildOnly]
         [SupportsPagination]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Crowns)]
         public async Task CrownLeaderboardAsync()
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

@@ -196,12 +196,6 @@ namespace FMBot.Bot.Services
 
                 embed.AddField("Aliases", aliasesString.ToString());
             }
-
-            if (commandInfo.Attributes.OfType<SupportsPagination>().Any())
-            {
-                embed.AddField("Pagination",
-                    "This command supports pagination. To enable you need to make sure that .fmbot has the `Manage Messages` permission.");
-            }
         }
     }
 }

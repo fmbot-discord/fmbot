@@ -64,6 +64,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("stats", RunMode = RunMode.Async)]
         [Summary("Displays user stats related to Last.fm and .fmbot")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Other)]
         public async Task StatsAsync([Remainder] string userOptions = null)
         {
             var user = await this._userService.GetFullUserAsync(this.Context.User.Id);
@@ -76,6 +77,13 @@ namespace FMBot.Bot.Commands.LastFM
                 string userTitle;
                 if (userSettings.DifferentUser)
                 {
+                    if (userSettings.DifferentUser && user.DiscordUserId == userSettings.DiscordUserId)
+                    {
+                        await ReplyAsync("That user is not registered in .fmbot.");
+                        this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                        return;
+                    }
+
                     userTitle =
                         $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
                     user = await this._userService.GetFullUserAsync(userSettings.DiscordUserId);
@@ -151,6 +159,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Links a users Last.fm profile")]
         [Alias("lastfm", "lfm")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Other)]
         public async Task LinkAsync([Remainder] string userOptions = null)
         {
             var user = await this._userService.GetFullUserAsync(this.Context.User.Id);
@@ -181,6 +190,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Displays the currently picked feature and the user.\n\n" +
                  "This command will also show something special if the user is in your server")]
         [Alias("featuredavatar", "featureduser", "featuredalbum", "avatar")]
+        [CommandCategories(CommandCategory.Other)]
         public async Task FeaturedAsync()
         {
             try
@@ -222,6 +232,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("rateyourmusic", RunMode = RunMode.Async)]
         [Summary("Enables or disables the rateyourmusic links. This changes all album links in .fmbot to RYM links instead of Last.fm links.")]
         [Alias("rym")]
+        [CommandCategories(CommandCategory.UserSettings)]
         public async Task RateYourMusicAsync()
         {
             try
@@ -261,7 +272,8 @@ namespace FMBot.Bot.Commands.LastFM
         [Command("botscrobbling", RunMode = RunMode.Async)]
         [Summary("Enables or disables the bot scrobbling. For more info, use the command.")]
         [Alias("botscrobble", "bottrack", "bottracking")]
-        public async Task BotTrackingAsync([Remainder]string option = null)
+        [CommandCategories(CommandCategory.UserSettings)]
+        public async Task BotTrackingAsync([Remainder] string option = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
@@ -419,6 +431,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("mode embedmini", "mode embedfull track", "mode textfull", "embedtiny album")]
         [Alias("m", "md", "fmmode")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.UserSettings)]
         public async Task ModeAsync(params string[] otherSettings)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -494,6 +507,7 @@ namespace FMBot.Bot.Commands.LastFM
             "**Server**: You are not visible in global WhoKnows, but users in the same server will still see your name.")]
         [Examples("privacy global", "privacy server")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.UserSettings)]
         public async Task PrivacyAsync(params string[] otherSettings)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -548,6 +562,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Logs you in using a link.\n\n" +
                  "Not receiving a DM? Please check if you have direct messages from server members enabled.")]
         [Alias("set", "setusername", "fm set", "connect")]
+        [CommandCategories(CommandCategory.UserSettings)]
         public async Task LoginAsync([Remainder] string unusedValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

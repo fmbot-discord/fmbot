@@ -36,6 +36,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("addfeaturedwebhook")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.ServerSettings)]
         public async Task AddFeaturedWebhookAsync()
         {
             var serverUser = (IGuildUser)this.Context.Message.Author;
@@ -85,6 +86,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("testfeatured", "testfeaturedwebhook")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.ServerSettings)]
         public async Task TestFeaturedWebhookAsync()
         {
             var serverUser = (IGuildUser)this.Context.Message.Author;

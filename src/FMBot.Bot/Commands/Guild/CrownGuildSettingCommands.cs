@@ -53,6 +53,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("setcrownthreshold", "setcwthreshold", "cwthreshold", "crowntreshold")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
         public async Task SetCrownPlaycountThresholdAsync([Remainder] string playcount = null)
         {
             var serverUser = (IGuildUser)this.Context.Message.Author;
@@ -108,6 +109,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("setcrownactivitythreshold", "setcwactivitythreshold", "cwactivitythreshold", "crownactivitytreshold")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
         public async Task SetCrownActivityThresholdAsync([Remainder] string days = null)
         {
             var serverUser = (IGuildUser)this.Context.Message.Author;
@@ -163,6 +165,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("crownblockuser", "crownban", "cwblock", "cwban", "crownbanuser", "crownbanmember")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
         public async Task GuildBlockUserFromCrownsAsync([Remainder] string user = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -233,6 +236,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("deleteusercrowns", "deleteusercrown", "removeusercrowns", "removeusercws", "deleteusercws", "usercrownsdelete", "usercrownsremove")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
         public async Task RemoveUserCrownsAsync([Remainder] string user = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -319,6 +323,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("crownblocked", "crownbanned", "crownbannedusers", "crownbannedmembers")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
         public async Task BlockedUsersAsync()
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -364,6 +369,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("togglecrown")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
         public async Task ToggleCrownsAsync([Remainder] string confirmation = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -407,6 +413,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("kcw", "kcrown", "killcw", "kill crown", "crown kill")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
         public async Task KillCrownAsync([Remainder] string killCrownValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -471,6 +478,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("crownseed", "seedcrowns")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
         public async Task SeedCrownsAsync([Remainder] string helpValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -531,6 +539,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("removeallcrowns")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
         public async Task KillAllCrownsAsync([Remainder] string confirmation = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -598,6 +607,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("removeallseededcrowns")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
         public async Task KillAllSeededCrownsAsync([Remainder] string confirmation = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

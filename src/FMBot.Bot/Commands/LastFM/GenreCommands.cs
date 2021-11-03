@@ -77,6 +77,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("gl", "tg", "genrelist", "genres", "top genres", "genreslist")]
         [UsernameSetRequired]
         [SupportsPagination]
+        [CommandCategories(CommandCategory.Genres)]
         public async Task TopGenresAsync([Remainder] string extraOptions = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -196,6 +197,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("genreinfo", "genres", "gi", "g")]
         [UsernameSetRequired]
         [SupportsPagination]
+        [CommandCategories(CommandCategory.Genres)]
         public async Task GenreInfoAsync([Remainder] string genreOptions = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -374,6 +376,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.Genres, CommandCategory.WhoKnows)]
         public async Task WhoKnowsGenreAsync([Remainder] string genreValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

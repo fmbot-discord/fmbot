@@ -52,6 +52,7 @@ namespace FMBot.Bot.Commands
         [Summary("Displays your friends and what they're listening to.")]
         [Alias("recentfriends", "friendsrecent", "f")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Friends)]
         public async Task FriendsAsync()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -186,6 +187,7 @@ namespace FMBot.Bot.Commands
         [Alias("friendsset", "setfriends", "friendsadd", "addfriend", "setfriend", "friends add", "friend add", "add friends")]
         [UsernameSetRequired]
         [GuildOnly]
+        [CommandCategories(CommandCategory.Friends)]
         public async Task AddFriends([Summary("Friend names")] params string[] enteredFriends)
         {
             if (enteredFriends.Length == 0)
@@ -325,6 +327,7 @@ namespace FMBot.Bot.Commands
         [Examples("removefriends fm-bot @user", "removefriend 356268235697553409")]
         [Alias("friendsremove", "deletefriend", "deletefriends", "removefriend", "remove friend", "remove friends", "friends remove", "friend remove")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Friends)]
         public async Task RemoveFriends([Summary("Friend names")] params string[] enteredFriends)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -409,6 +412,7 @@ namespace FMBot.Bot.Commands
         [Summary("Remove all your friends")]
         [Alias("friendsremoveall", "friends remove all")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Friends)]
         public async Task RemoveAllFriends()
         {
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);

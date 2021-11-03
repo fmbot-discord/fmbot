@@ -50,6 +50,7 @@ namespace FMBot.Bot.Commands
         [Summary("Refreshed the cached member list that .fmbot has for your server.")]
         [Alias("i")]
         [GuildOnly]
+        [CommandCategories(CommandCategory.ServerSettings)]
         public async Task IndexGuildAsync()
         {
             _ = this.Context.Channel.TriggerTypingAsync();
@@ -128,6 +129,7 @@ namespace FMBot.Bot.Commands
         [Alias("u")]
         [GuildOnly]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.UserSettings)]
         public async Task UpdateUserAsync(string force = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

@@ -56,6 +56,7 @@ namespace FMBot.Bot.Commands.Guild
         [Options("Modes: embedtiny/embedmini/embedfull/textmini/textfull")]
         [Alias("guildmode")]
         [GuildOnly]
+        [CommandCategories(CommandCategory.ServerSettings)]
         public async Task SetServerModeAsync(params string[] otherSettings)
         {
             var serverUser = (IGuildUser)this.Context.Message.Author;
@@ -119,6 +120,7 @@ namespace FMBot.Bot.Commands.Guild
         [Examples("serverreactions :PagChomp: :PensiveBlob:", "serverreactions 😀 😯 🥵", "serverreactions 😀 😯 :PensiveBlob:", "serverreactions")]
         [Alias("serversetreactions")]
         [GuildOnly]
+        [CommandCategories(CommandCategory.ServerSettings)]
         public async Task SetGuildReactionsAsync(params string[] emotes)
         {
             var serverUser = (IGuildUser)this.Context.Message.Author;
@@ -168,6 +170,7 @@ namespace FMBot.Bot.Commands.Guild
         [Summary("Enables/ disables the supporter messages on the `chart` command")]
         [Alias("togglesupporter", "togglesupporters", "togglesupport")]
         [GuildOnly]
+        [CommandCategories(CommandCategory.ServerSettings)]
         public async Task ToggleSupportMessagesAsync()
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -199,6 +202,7 @@ namespace FMBot.Bot.Commands.Guild
         [Summary("Gets Last.fm usernames from your server members in json format.")]
         [Alias("getmembers", "exportmembers")]
         [GuildOnly]
+        [CommandCategories(CommandCategory.ServerSettings)]
         public async Task GetMembersAsync()
         {
             var serverUser = (IGuildUser)this.Context.Message.Author;
@@ -248,6 +252,7 @@ namespace FMBot.Bot.Commands.Guild
                  "To restore the default prefix, use this command without an option")]
         [Examples("prefix", "prefix !")]
         [GuildOnly]
+        [CommandCategories(CommandCategory.ServerSettings)]
         public async Task SetPrefixAsync(string prefix = null)
         {
             var serverUser = (IGuildUser)this.Context.Message.Author;
@@ -306,6 +311,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("toggleservercommands", "toggleserver", "servertoggle")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.ServerSettings)]
         public async Task ToggleGuildCommand(string command = null)
         {
             var disabledCommandsForGuild = await this._guildService.GetDisabledCommandsForGuild(this.Context.Guild);
@@ -388,6 +394,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("togglecommands", "channeltoggle", "togglechannel", "togglechannelcommand", "togglechannelcommands")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.ServerSettings)]
         public async Task ToggleChannelCommand(string command = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -489,6 +496,7 @@ namespace FMBot.Bot.Commands.Guild
         [Options("Cooldown in seconds (Min 2 seconds - Max 600 seconds)")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.ServerSettings)]
         public async Task FmSetFmCooldownCommand(string command = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

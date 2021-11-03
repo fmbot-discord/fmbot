@@ -63,7 +63,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("chart", RunMode = RunMode.Async)]
-        [Summary("Generates an album chart.")]
+        [Summary("Generates an album image chart.")]
         [Options(
             Constants.CompactTimePeriodList,
             "Disable titles: `notitles` / `nt`",
@@ -73,6 +73,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("c", "c q 8x8 nt s", "chart 8x8 quarterly notitles skip", "c 10x10 alltime notitles skip", "c @user 7x7 yearly")]
         [Alias("c", "aoty")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Charts, CommandCategory.Albums)]
         public async Task ChartAsync(params string[] otherSettings)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -258,7 +259,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("artistchart", RunMode = RunMode.Async)]
-        [Summary("Generates an artist chart.")]
+        [Summary("Generates an artist image chart.")]
         [Options(
             Constants.CompactTimePeriodList,
             "Disable titles: `notitles` / `nt`",
@@ -268,6 +269,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("ac", "ac q 8x8 nt s", "artistchart 8x8 quarterly notitles skip", "ac 10x10 alltime notitles skip", "ac @user 7x7 yearly")]
         [Alias("ac", "top")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Charts, CommandCategory.Artists)]
         public async Task ArtistChartAsync(params string[] otherSettings)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

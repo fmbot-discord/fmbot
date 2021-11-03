@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -59,6 +60,7 @@ namespace FMBot.Bot.Commands
         [Command("invite", RunMode = RunMode.Async)]
         [Summary("Info for inviting the bot to a server")]
         [Alias("server", "info")]
+        [CommandCategories(CommandCategory.Other)]
         public async Task InviteAsync()
         {
             var socketCommandContext = (SocketCommandContext)this.Context;
@@ -96,6 +98,7 @@ namespace FMBot.Bot.Commands
         [Command("source", RunMode = RunMode.Async)]
         [Summary("Info for inviting the bot to a server")]
         [Alias("github", "gitlab", "opensource", "sourcecode", "code")]
+        [CommandCategories(CommandCategory.Other)]
         public async Task SourceAsync()
         {
             var embedDescription = new StringBuilder();
@@ -119,6 +122,7 @@ namespace FMBot.Bot.Commands
         [Command("donate", RunMode = RunMode.Async)]
         [Summary("Please donate if you like this bot!")]
         [Alias("support", "patreon", "opencollective", "donations", "support")]
+        [CommandCategories(CommandCategory.Other)]
         public async Task DonateAsync()
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -156,6 +160,7 @@ namespace FMBot.Bot.Commands
 
         [Command("status", RunMode = RunMode.Async)]
         [Summary("Displays bot stats.")]
+        [CommandCategories(CommandCategory.Other)]
         public async Task StatusAsync()
         {
             var socketCommandContext = (SocketCommandContext)this.Context;
@@ -278,6 +283,7 @@ namespace FMBot.Bot.Commands
         [Command("help", RunMode = RunMode.Async)]
         [Summary("Quick help summary to get started.")]
         [Alias("bot")]
+        [CommandCategories(CommandCategory.Other)]
         public async Task HelpAsync([Remainder] string extraValues = null)
         {
             var customPrefix = true;
@@ -358,6 +364,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("multiselecthelp", RunMode = RunMode.Async)]
+        [CommandCategories(CommandCategory.Other)]
         public async Task MultiSelect()
         {
             try
@@ -366,46 +373,71 @@ namespace FMBot.Bot.Commands
                 InteractiveMessageResult<MultiSelectionOption<string>> selectedResult = null;
                 var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
+                this._embed.WithColor(DiscordConstants.InformationColorBlue);
+
                 var options = new List<MultiSelectionOption<string>>();
-                foreach (var module in this._service.Modules
-                             .OrderByDescending(o => o.Commands.Count(w => !w.Attributes.OfType<ExcludeFromHelp>().Any() &&
-                                                                           !w.Attributes.OfType<ServerStaffOnly>().Any()))
-                             .Where(w =>
-                                 !w.Attributes.OfType<ExcludeFromHelp>().Any() &&
-                                 !w.Attributes.OfType<ServerStaffOnly>().Any()))
+                foreach (var commandCategory in (CommandCategory[])Enum.GetValues(typeof(CommandCategory)))
                 {
-                    options.Add(new MultiSelectionOption<string>(module.Name, 1));
+                    options.Add(new MultiSelectionOption<string>(StringExtensions.CommandCategoryToString(commandCategory), commandCategory.ToString(), 1, null));
                 }
 
                 while (selectedResult is null || selectedResult.Status == InteractiveStatus.Success)
                 {
                     var commands = "**Commands:** \n";
-                    var selectedModule = selectedResult?.Value.Option;
+                    var selectedCategoryOrCommand = selectedResult?.Value?.Value;
 
-                    options = options.Where(w => w.Row == 1).ToList();
-                    if (selectedModule != null)
+                    if (selectedResult?.Value == null || selectedResult.Value.Row == 1)
                     {
-                        var selectedModuleResult = this._service.Modules.FirstOrDefault(f => f.Name == selectedModule);
-                        if (selectedModuleResult != null)
+                        options = options.Where(w => w.Row == 1).ToList();
+                        if (selectedCategoryOrCommand != null)
                         {
-                            foreach (var cmd in selectedModuleResult.Commands.Where(w =>
-                                         !w.Attributes.OfType<ExcludeFromHelp>().Any()))
+                            Enum.TryParse(selectedCategoryOrCommand, out CommandCategory selectedCategory);
+                            var selectedCommands = this._service.Commands.Where(w =>
+                                w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories).Any(a => a.Contains(selectedCategory))).ToList();
+
+                            if (selectedCommands.Any())
                             {
-                                var result = await cmd.CheckPreconditionsAsync(this.Context);
-                                if (result.IsSuccess)
+                                options.ForEach(x => x.IsDefault = false); // Reset to default
+                                options.First(x => x.Option == selectedCategoryOrCommand).IsDefault = true;
+
+                                foreach (var selectedCommand in selectedCommands)
                                 {
-                                    options.Add(new MultiSelectionOption<string>(cmd.Name, 2));
-                                    commands += $"`{prefix}{cmd.Name}` - `{cmd.Summary}`\n";
+                                    options.Add(new MultiSelectionOption<string>(selectedCommand.Name, selectedCommand.Name, 2, null));
+
+                                    using var reader = new StringReader(selectedCommand.Summary);
+                                    var firstLine = await reader.ReadLineAsync();
+
+                                    commands += $"**{prefix}{selectedCommand.Name}** - *{firstLine}*\n";
                                 }
                             }
+
+                            this._embed.WithTitle(
+                                $"Overview of all {StringExtensions.CommandCategoryToString(selectedCategory)} commands");
+                        }
+
+
+                        this._embed.WithDescription(commands);
+                        this._embed.Fields = new List<EmbedFieldBuilder>();
+                    }
+                    else
+                    {
+                        options.Where(w => w.Row == 2).ToList().ForEach(x => x.IsDefault = false); // Reset to default
+                        options.First(x => x.Row == 2 && x.Option == selectedCategoryOrCommand).IsDefault = true;
+
+                        var searchResult = this._service.Search(selectedCategoryOrCommand);
+                        if (searchResult.IsSuccess && searchResult.Commands != null && searchResult.Commands.Any())
+                        {
+                            var userName = (this.Context.Message.Author as SocketGuildUser)?.Nickname ?? this.Context.User.Username;
+                            this._embed.HelpResponse(searchResult.Commands[0].Command, prefix, userName);
                         }
                     }
+
+                    var pageBuilder = new PageBuilder();
 
                     var multiSelection = new MultiSelectionBuilder<string>()
                         .WithOptions(options)
                         .WithActionOnSuccess(ActionOnStop.None)
-                        .WithSelectionPage(new PageBuilder()
-                            .WithText(commands))
+                        .WithSelectionPage(PageBuilder.FromEmbed(this._embed.Build()))
                         .Build();
 
                     selectedResult =
@@ -427,15 +459,13 @@ namespace FMBot.Bot.Commands
             public override InputType InputType => InputType.SelectMenus;
 
             public override MultiSelection<T> Build() => new(EmoteConverter, StringConverter,
-            EqualityComparer, AllowCancel, SelectionPage?.Build(), Users?.ToArray(), Options?.ToArray(),
-            CanceledPage?.Build(), TimeoutPage?.Build(), SuccessPage?.Build(), Deletion, InputType,
-            ActionOnCancellation, ActionOnTimeout, ActionOnSuccess);
+                EqualityComparer, AllowCancel, SelectionPage?.Build(), Users?.ToArray(), Options?.ToArray(),
+                CanceledPage?.Build(), TimeoutPage?.Build(), SuccessPage?.Build(), Deletion, InputType,
+                ActionOnCancellation, ActionOnTimeout, ActionOnSuccess);
         }
 
-        // A selection that uses multiple select menus
         public class MultiSelection<T> : BaseSelection<MultiSelectionOption<T>>
         {
-            // Selections have a bunch of properties
             public MultiSelection(Func<MultiSelectionOption<T>, IEmote> emoteConverter, Func<MultiSelectionOption<T>, string> stringConverter,
                 IEqualityComparer<MultiSelectionOption<T>> equalityComparer, bool allowCancel, Page selectionPage, IReadOnlyCollection<IUser> users,
                 IReadOnlyCollection<MultiSelectionOption<T>> options, Page canceledPage, Page timeoutPage, Page successPage, DeletionOptions deletion,
@@ -459,17 +489,11 @@ namespace FMBot.Bot.Commands
                             .WithDisabled(disableAll);
                     }
 
-                    var emote = EmoteConverter?.Invoke(option);
-                    string label = StringConverter?.Invoke(option);
-                    if (emote is null && label is null)
-                    {
-                        throw new InvalidOperationException($"Neither {nameof(EmoteConverter)} nor {nameof(StringConverter)} returned a valid emote or string.");
-                    }
-
                     var optionBuilder = new SelectMenuOptionBuilder()
-                        .WithLabel(label)
-                        .WithEmote(emote)
-                        .WithValue(emote?.ToString() ?? label);
+                        .WithLabel(option.Option)
+                        .WithValue(option.Value)
+                        .WithDescription(option.Description)
+                        .WithDefault(option.IsDefault);
 
                     selectMenus[option.Row].AddOption(optionBuilder);
                 }
@@ -483,17 +507,34 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        public readonly struct MultiSelectionOption<T>
+        public class MultiSelectionOption<T>
         {
-            public MultiSelectionOption(T option, int row)
+            public MultiSelectionOption(string option, string value, int row, string description)
             {
                 Option = option;
+                Value = value;
                 Row = row;
+                IsDefault = false;
+                Description = description;
             }
 
-            public T Option { get; }
+            public MultiSelectionOption(string option, string value, int row, bool isDefault, string description)
+            {
+                Option = option;
+                Value = value;
+                Row = row;
+                IsDefault = isDefault;
+                Description = description;
+            }
+
+            public string Option { get; }
+            public string Value { get; }
+
+            public string Description { get; }
 
             public int Row { get; }
+
+            public bool IsDefault { get; set; }
 
             public override string ToString() => Option.ToString();
 
@@ -502,9 +543,11 @@ namespace FMBot.Bot.Commands
             public override bool Equals(object obj) => Equals(Option, obj);
         }
 
+
         [Command("supporters", RunMode = RunMode.Async)]
         [Summary("Displays all .fmbot supporters.")]
         [Alias("donators", "donors", "backers")]
+        [CommandCategories(CommandCategory.Other)]
         public async Task AllSupportersAsync()
         {
             var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -672,6 +715,7 @@ namespace FMBot.Bot.Commands
         [Command("settinghelp", RunMode = RunMode.Async)]
         [Summary("Displays a list of all server settings.")]
         [Alias("serverhelp", "serversettings", "settings", "help server")]
+        [CommandCategories(CommandCategory.Other)]
         public async Task ServerHelpAsync()
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

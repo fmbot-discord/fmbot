@@ -96,6 +96,26 @@ namespace FMBot.Bot.Extensions
             };
         }
 
+        public static string CommandCategoryToString(CommandCategory commandCategory)
+        {
+            return commandCategory switch
+            {
+                CommandCategory.Artists => "Artists",
+                CommandCategory.Tracks => "Tracks",
+                CommandCategory.Albums => "Albums",
+                CommandCategory.WhoKnows => "WhoKnows",
+                CommandCategory.Friends => "Friends",
+                CommandCategory.Genres => "Genres",
+                CommandCategory.Charts => "Charts",
+                CommandCategory.Crowns => "Crowns",
+                CommandCategory.ThirdParty => "Spotify, Youtube and Genius",
+                CommandCategory.UserSettings => "User settings",
+                CommandCategory.ServerSettings => "Server settings",
+                CommandCategory.Other => "Other",
+                _ => null
+            };
+        }
+
         public static string GetPlaysString(long? playcount)
         {
             return playcount == 1 ? "play" : "plays";

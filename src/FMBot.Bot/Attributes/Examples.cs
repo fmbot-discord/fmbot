@@ -9,7 +9,7 @@ namespace FMBot.Bot.Attributes
 
         public ExamplesAttribute(params string[] examples)
         {
-            Examples = examples;
+            this.Examples = examples;
         }
     }
 }

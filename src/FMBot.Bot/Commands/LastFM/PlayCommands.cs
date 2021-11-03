@@ -86,6 +86,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Alias("np", "qm", "wm", "em", "rm", "tm", "ym", "om", "pm", "gm", "sm", "am", "hm", "jm", "km",
             "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm", "nowplaying")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Tracks)]
         public async Task NowPlayingAsync(params string[] parameters)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -472,6 +473,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("recent", "r", "recent 8", "recent 5 @user", "recent lfm:fm-bot")]
         [Alias("recenttracks", "recents", "r")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Tracks)]
         public async Task RecentAsync([Remainder] string extraOptions = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -577,6 +579,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("o", "overview", "overview 7")]
         [Alias("o", "ov")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
         public async Task OverviewAsync([Remainder] string extraOptions = null)
         {
             _ = this.Context.Channel.TriggerTypingAsync();
@@ -668,6 +671,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("pc", "pc 100k q", "pc 40000 h @user", "pace", "pace yearly @user 250000")]
         [UsernameSetRequired]
         [Alias("pc")]
+        [CommandCategories(CommandCategory.Other)]
         public async Task PaceAsync([Remainder] string extraOptions = null)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -747,6 +751,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("ms", "ms 10k", "milestone 500 @user", "milestone", "milestone @user 250k")]
         [UsernameSetRequired]
         [Alias("m", "ms")]
+        [CommandCategories(CommandCategory.Other)]
         public async Task MilestoneAsync([Remainder] string extraOptions = null)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -806,6 +811,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Examples("p", "plays", "plays @frikandel", "plays monthly")]
         [Alias("p", "scrobbles")]
         [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Other)]
         public async Task PlaysAsync([Remainder] string extraOptions = null)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -844,6 +850,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Shows you your streak")]
         [UsernameSetRequired]
         [Alias("str", "combo", "cb")]
+        [CommandCategories(CommandCategory.Albums, CommandCategory.Artists, CommandCategory.Tracks)]
         public async Task StreakAsync([Remainder] string extraOptions = null)
         {
             var user = await this._userService.GetUserSettingsAsync(this.Context.User);

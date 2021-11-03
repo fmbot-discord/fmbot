@@ -43,6 +43,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("setactivitythreshold", "setthreshold")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
         public async Task SetWhoKnowsThresholdAsync([Remainder] string days = null)
         {
             var serverUser = (IGuildUser)this.Context.Message.Author;
@@ -98,6 +99,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("blockuser", "ban", "banuser", "banmember", "blockmember")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
         public async Task GuildBlockUserAsync([Remainder] string user = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -169,6 +171,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("unblockuser", "unban", "unbanuser", "unbanmember", "removeblock", "removeban", "crownunblock")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
         public async Task GuildUnBlockUserAsync([Remainder] string user = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -234,6 +237,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("blocked", "banned", "bannedusers", "blockedmembers", "bannedmembers")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
         public async Task BlockedUsersAsync()
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -283,6 +287,7 @@ namespace FMBot.Bot.Commands.Guild
         [Alias("wkwhitelist", "wkwl")]
         [GuildOnly]
         [RequiresIndex]
+        [CommandCategories(CommandCategory.ServerSettings, CommandCategory.WhoKnows)]
         public async Task SetWhoKnowsWhitelistRoleAsync([Remainder] string roleQuery = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
