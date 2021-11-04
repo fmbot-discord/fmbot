@@ -2,6 +2,7 @@ namespace FMBot.Domain.Models
 {
     public enum CommandCategory
     {
+        General,
         Tracks,
         Albums,
         Artists,

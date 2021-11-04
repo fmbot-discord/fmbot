@@ -100,17 +100,17 @@ namespace FMBot.Bot.Extensions
         {
             return commandCategory switch
             {
-                CommandCategory.Artists => "Artists",
-                CommandCategory.Tracks => "Tracks",
-                CommandCategory.Albums => "Albums",
-                CommandCategory.WhoKnows => "WhoKnows",
-                CommandCategory.Friends => "Friends",
-                CommandCategory.Genres => "Genres",
-                CommandCategory.Charts => "Charts",
-                CommandCategory.Crowns => "Crowns",
+                CommandCategory.Artists => "Info, WhoKnows, tracks, albums, serverartists, topartists",
+                CommandCategory.Tracks => "Info, WhoKnows, love, unlove, servertracks, toptracks",
+                CommandCategory.Albums => "Info, WhoKnows, cover, serveralbums, topalbums",
+                CommandCategory.WhoKnows => "Global, server, friends, settings",
+                CommandCategory.Friends => "Add, remove, WhoKnows, view",
+                CommandCategory.Genres => "Info, WhoKnows, topgenres",
+                CommandCategory.Charts => "Image charts",
+                CommandCategory.Crowns => "Crowns commands and crown management",
                 CommandCategory.ThirdParty => "Spotify, Youtube and Genius",
-                CommandCategory.UserSettings => "User settings",
-                CommandCategory.ServerSettings => "Server settings",
+                CommandCategory.UserSettings => "Configure your user settings",
+                CommandCategory.ServerSettings => "Configure your server settings",
                 CommandCategory.Other => "Other",
                 _ => null
             };

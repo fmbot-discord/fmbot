@@ -89,7 +89,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("artist", RunMode = RunMode.Async)]
-        [Summary("Displays information about the artist you're currently listening to or searching for.")]
+        [Summary("Artist you're currently listening to or searching for.")]
         [Examples(
             "a",
             "artist",
@@ -278,7 +278,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("artisttracks", RunMode = RunMode.Async)]
-        [Summary("Displays your top tracks for an artist.")]
+        [Summary("Top tracks for an artist")]
         [Examples(
             "at",
             "artisttracks",
@@ -386,7 +386,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("artistalbums", RunMode = RunMode.Async)]
-        [Summary("Displays your top albums for an artist.")]
+        [Summary("Top albums for an artist.")]
         [Examples(
             "aa",
             "artistalbums",
@@ -479,7 +479,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("artistplays", RunMode = RunMode.Async)]
-        [Summary("Displays playcount for the artist you're currently listening to or searching for.\n\n" +
+        [Summary("Shows playcount for current artist or the one you're searching for.\n\n" +
                  "You can also mention another user to see their playcount.")]
         [Examples(
             "ap",
@@ -524,7 +524,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("topartists", RunMode = RunMode.Async)]
-        [Summary("Shows a list of your or someone else their top artists over a certain time period.")]
+        [Summary("Shows your or someone else their top artists over a certain time period.")]
         [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
         [Examples("ta", "topartists", "ta a lfm:fm-bot", "topartists weekly @user")]
         [Alias("al", "as", "ta", "artistlist", "artists", "top artists", "artistslist")]
@@ -1260,7 +1260,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("serverartists", RunMode = RunMode.Async)]
-        [Summary("Shows top artists for your server")]
+        [Summary("Top albums for your server")]
         [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`")]
         [Examples("sa", "sa a p", "serverartists", "serverartists alltime", "serverartists listeners weekly")]
         [Alias("sa", "sta", "servertopartists", "server artists", "serverartist")]
@@ -1368,7 +1368,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("affinity", RunMode = RunMode.Async)]
-        [Summary("Shows what other users in the same server listen to the same music as you.\n\n" +
+        [Summary("Shows server users with similar top artists.\n\n" +
                  "This command is still a work in progress.")]
         [Alias("n", "aff", "neighbors")]
         [UsernameSetRequired]

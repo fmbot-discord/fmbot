@@ -82,7 +82,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("fm", RunMode = RunMode.Async)]
-        [Summary("Displays what you or someone else is listening to.")]
+        [Summary("Shows you or someone else their current track")]
         [Alias("np", "qm", "wm", "em", "rm", "tm", "ym", "om", "pm", "gm", "sm", "am", "hm", "jm", "km",
             "lm", "zm", "xm", "cm", "vm", "bm", "nm", "mm", "lastfm", "nowplaying")]
         [UsernameSetRequired]
@@ -468,7 +468,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("recent", RunMode = RunMode.Async)]
-        [Summary("Displays what you or someone else is listening to in a list.")]
+        [Summary("Shows you or someone else their recent tracks")]
         [Options("Amount of recent tracks to show (max 10)", Constants.UserMentionExample)]
         [Examples("recent", "r", "recent 8", "recent 5 @user", "recent lfm:fm-bot")]
         [Alias("recenttracks", "recents", "r")]
@@ -574,7 +574,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("overview", RunMode = RunMode.Async)]
-        [Summary("Displays a daily overview.")]
+        [Summary("Shows a daily overview")]
         [Options("Amount of days to show (max 8)")]
         [Examples("o", "overview", "overview 7")]
         [Alias("o", "ov")]
@@ -666,7 +666,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("pace", RunMode = RunMode.Async)]
-        [Summary("Displays the date you reach a scrobble goal based on average scrobbles per day.")]
+        [Summary("Shows estimated date you reach a scrobble goal based on average scrobbles per day")]
         [Options(Constants.CompactTimePeriodList, "Optional goal amount: For example `10000` or `10k`", Constants.UserMentionExample)]
         [Examples("pc", "pc 100k q", "pc 40000 h @user", "pace", "pace yearly @user 250000")]
         [UsernameSetRequired]
@@ -746,7 +746,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("milestone", RunMode = RunMode.Async)]
-        [Summary("Displays a milestone scrobble.")]
+        [Summary("Shows a milestone scrobble")]
         [Options("Optional milestone amount: For example `10000` or `10k`", Constants.UserMentionExample)]
         [Examples("ms", "ms 10k", "milestone 500 @user", "milestone", "milestone @user 250k")]
         [UsernameSetRequired]

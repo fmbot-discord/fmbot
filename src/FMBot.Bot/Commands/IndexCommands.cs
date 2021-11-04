@@ -123,7 +123,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("update", RunMode = RunMode.Async)]
-        [Summary("Updates a users cached playcounts based on their recent plays. \n\n" +
+        [Summary("Updates a users cached playcounts based on their recent plays\n\n" +
                  "This command also has an option to completely refresh a users cache (`full`). This is recommended if you have edited your scrobble history.")]
         [Examples("update", "update full")]
         [Alias("u")]

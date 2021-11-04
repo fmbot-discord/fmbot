@@ -86,7 +86,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("album", RunMode = RunMode.Async)]
-        [Summary("Displays information for the album you're currently listening to or searching for.")]
+        [Summary("Shows album you're currently listening to or searching for.")]
         [Examples(
             "ab",
             "album",
@@ -250,7 +250,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("albumplays", RunMode = RunMode.Async)]
-        [Summary("Displays playcount for the album you're currently listening to or searching for.\n\n" +
+        [Summary("Shows playcount for current album or the one you're searching for.\n\n" +
                  "You can also mention another user to see their playcount.")]
         [Examples(
             "abp",
@@ -293,7 +293,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("cover", RunMode = RunMode.Async)]
-        [Summary("Displays cover for the album you're currently listening to or searching for.")]
+        [Summary("Cover for current album or the one you're searching for.")]
         [Examples(
             "co",
             "cover",
@@ -379,7 +379,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("topalbums", RunMode = RunMode.Async)]
-        [Summary("Shows a list of your or someone else their top albums over a certain time period.")]
+        [Summary("Shows your or someone else their top albums over a certain time period.")]
         [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
         [Examples("tab", "topalbums", "tab a lfm:fm-bot", "topalbums weekly @user")]
         [Alias("abl", "abs", "tab", "albumlist", "top albums", "albums", "albumslist")]
@@ -912,7 +912,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("albumtracks", RunMode = RunMode.Async)]
-        [Summary("Displays track playcounts for a specific album.")]
+        [Summary("Shows track playcounts for a specific album")]
         [Examples("abt", "albumtracks", "albumtracks de jeugd van tegenwoordig machine", "albumtracks U2 | The Joshua Tree")]
         [Alias("abt", "abtracks", "albumt")]
         [UsernameSetRequired]
@@ -1053,7 +1053,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("serveralbums", RunMode = RunMode.Async)]
-        [Summary("Shows top albums for your server, optionally for a specific artist.")]
+        [Summary("Top albums for your server, optionally for a specific artist.")]
         [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`", "Artist name")]
         [Examples("sab", "sab a p", "serveralbums", "serveralbums alltime", "serveralbums listeners weekly", "serveralbums the beatles monthly")]
         [Alias("sab", "stab", "servertopalbums", "serveralbum", "server albums")]

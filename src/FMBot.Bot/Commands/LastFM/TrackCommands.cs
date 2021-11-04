@@ -85,7 +85,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("track", RunMode = RunMode.Async)]
-        [Summary("Displays information about the track you're currently listening to or searching for.")]
+        [Summary("Track you're currently listening to or searching for.")]
         [Examples(
             "tr",
             "track",
@@ -181,7 +181,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("trackplays", RunMode = RunMode.Async)]
-        [Summary("Displays playcount for the track you're currently listening to or searching for.\n\n" +
+        [Summary("Shows playcount for current track or the one you're searching for.\n\n" +
                  "You can also mention another user to see their playcount.")]
         [Examples(
             "tp",
@@ -225,7 +225,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("love", RunMode = RunMode.Async)]
-        [Summary("Adds the track you're currently listening to or searching for to your last.fm loved tracks.")]
+        [Summary("Loves a track on Last.fm")]
         [Examples("love", "l", "love Tame Impala Borderline")]
         [Alias("l", "heart", "favorite", "affection", "appreciation", "lust", "fuckyeah", "fukk", "unfuck")]
         [UserSessionRequired]
@@ -340,7 +340,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("loved", RunMode = RunMode.Async)]
-        [Summary("Displays a user's loved tracks.")]
+        [Summary("Shows your Last.fm loved tracks.")]
         [Examples("loved", "lt", "lovedtracks lfm:fm-bot", "lovedtracks @user")]
         [Alias("lovedtracks", "lt")]
         [UserSessionRequired]
@@ -447,7 +447,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("scrobble", RunMode = RunMode.Async)]
-        [Summary("Scrobbles the track you're searching for. You can only scrobble tracks that already exist on Last.fm.")]
+        [Summary("Scrobbles a track on Last.fm.")]
         [Examples("scrobble", "sb stronger Kanye West", "scrobble Loona Heart Attack", "scrobble Mac DeMarco | Chamber of Reflection")]
         [UserSessionRequired]
         [Alias("sb")]
@@ -545,7 +545,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("toptracks", RunMode = RunMode.Async)]
-        [Summary("Shows a list of your or someone else their top tracks over a certain time period.")]
+        [Summary("Shows your or someone else their top tracks over a certain time period.")]
         [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
         [Examples("tt", "toptracks", "tt y 3", "toptracks weekly @user")]
         [Alias("tt", "tl", "tracklist", "tracks", "trackslist", "top tracks", "top track")]
@@ -997,7 +997,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("servertracks", RunMode = RunMode.Async)]
-        [Summary("Shows top tracks for your server, optionally for a specific artist")]
+        [Summary("Top tracks for your server, optionally for an artist")]
         [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`", "Artist name")]
         [Examples("st", "st a p", "servertracks", "servertracks alltime", "servertracks listeners weekly", "servertracks kanye west listeners")]
         [Alias("st", "stt", "servertoptracks", "servertrack", "server tracks")]

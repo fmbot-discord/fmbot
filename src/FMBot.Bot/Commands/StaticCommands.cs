@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -15,11 +16,13 @@ using Fergun.Interactive.Selection;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.Persistence.EntityFrameWork.Migrations;
 using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Commands
@@ -284,15 +287,9 @@ namespace FMBot.Bot.Commands
         [Summary("Quick help summary to get started.")]
         [Alias("bot")]
         [CommandCategories(CommandCategory.Other)]
-        public async Task HelpAsync([Remainder] string extraValues = null)
+        public async Task Help([Remainder] string extraValues = null)
         {
-            var customPrefix = true;
             var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            if (prefix == this._botSettings.Bot.Prefix)
-            {
-                customPrefix = false;
-            }
-
             if (!string.IsNullOrWhiteSpace(extraValues))
             {
                 if (extraValues.Length > prefix.Length && extraValues.Contains(prefix))
@@ -311,74 +308,19 @@ namespace FMBot.Bot.Commands
                 }
             }
 
-            this._embed.WithTitle(".fmbot Quick Start Guide");
-
-            this._embed.AddField($"Main command `{prefix}fm`",
-                "Displays last scrobbles, and looks different depending on the mode you've set.");
-
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-            if (contextUser == null)
-            {
-                this._embed.AddField($"Connecting your Last.fm account: `{prefix}login`",
-                    $"Not receiving a DM from .fmbot when logging in? Please check if you have DMs enabled in this servers privacy settings.");
-            }
-            else
-            {
-                this._embed.AddField("Customizing your .fm",
-                    $"For changing how your .fm command looks, use `{prefix}mode`.");
-
-                this._embed.WithFooter($"Logged in to .fmbot with the Last.fm account '{contextUser.UserNameLastFM}'");
-            }
-
-            this._embed.AddField("Command information",
-                $"To view information about specific commands add `help` after the command.\n" +
-                $"Some examples are: `{prefix}chart help` and `{prefix}whoknows help`.");
-
-            if (customPrefix)
-            {
-                this._embed.AddField("Custom prefix:",
-                    $"This server has the `{prefix}` prefix.\n" +
-                    $"Some examples of commands with this prefix are `{prefix}whoknows`, `{prefix}chart` and `{prefix}artisttracks`.");
-            }
-
-            this._embed.WithFooter($"To view a complete list of all commands, use '{prefix}fullhelp'.");
-
-            var socketCommandContext = (SocketCommandContext)this.Context;
-            if (IsBotSelfHosted(socketCommandContext.Client.CurrentUser.Id))
-            {
-                this._embed.AddField("Note:",
-                    "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot. \n" +
-                    "Keep in mind that the instance might not be fully up to date or other users might not be registered.");
-            }
-
-            if (PublicProperties.IssuesAtLastFm)
-            {
-                this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues.\n" +
-                                              ".fmbot is not affiliated with Last.fm.");
-            }
-
-            var components = new ComponentBuilder().WithButton("All commands", style: ButtonStyle.Link, url: "https://fmbot.xyz/commands/");
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build(), component: components.Build());
-            this.Context.LogCommandUsed();
-        }
-
-        [Command("multiselecthelp", RunMode = RunMode.Async)]
-        [CommandCategories(CommandCategory.Other)]
-        public async Task MultiSelect()
-        {
             try
             {
                 IUserMessage message = null;
                 InteractiveMessageResult<MultiSelectionOption<string>> selectedResult = null;
-                var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
                 this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
                 var options = new List<MultiSelectionOption<string>>();
                 foreach (var commandCategory in (CommandCategory[])Enum.GetValues(typeof(CommandCategory)))
                 {
-                    options.Add(new MultiSelectionOption<string>(StringExtensions.CommandCategoryToString(commandCategory), commandCategory.ToString(), 1, null));
+                    var description = StringExtensions.CommandCategoryToString(commandCategory);
+                    options.Add(new MultiSelectionOption<string>(commandCategory.ToString(), commandCategory.ToString(), 1, description?.ToLower() != commandCategory.ToString().ToLower() ? description : null));
+                    options.First(x => x.Option == CommandCategory.General.ToString()).IsDefault = true;
                 }
 
                 while (selectedResult is null || selectedResult.Status == InteractiveStatus.Success)
@@ -386,12 +328,15 @@ namespace FMBot.Bot.Commands
                     var commands = "**Commands:** \n";
                     var selectedCategoryOrCommand = selectedResult?.Value?.Value;
 
+                    await SetGeneralHelpEmbed(prefix);
+
                     if (selectedResult?.Value == null || selectedResult.Value.Row == 1)
                     {
                         options = options.Where(w => w.Row == 1).ToList();
                         if (selectedCategoryOrCommand != null)
                         {
                             Enum.TryParse(selectedCategoryOrCommand, out CommandCategory selectedCategory);
+
                             var selectedCommands = this._service.Commands.Where(w =>
                                 w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories).Any(a => a.Contains(selectedCategory))).ToList();
 
@@ -400,24 +345,76 @@ namespace FMBot.Bot.Commands
                                 options.ForEach(x => x.IsDefault = false); // Reset to default
                                 options.First(x => x.Option == selectedCategoryOrCommand).IsDefault = true;
 
-                                foreach (var selectedCommand in selectedCommands)
+                                foreach (var selectedCommand in selectedCommands.Take(25))
                                 {
                                     options.Add(new MultiSelectionOption<string>(selectedCommand.Name, selectedCommand.Name, 2, null));
+                                }
 
-                                    using var reader = new StringReader(selectedCommand.Summary);
-                                    var firstLine = await reader.ReadLineAsync();
+                                var totalCategories = new List<CommandCategory>();
+                                foreach (var selectedCommand in selectedCommands.Select(s => s.Attributes.OfType<CommandCategoriesAttribute>().Select(se => se.Categories)).Distinct())
+                                {
+                                    foreach (var test in selectedCommand)
+                                    {
+                                        totalCategories.AddRange(test);
+                                    }
+                                }
 
-                                    commands += $"**{prefix}{selectedCommand.Name}** - *{firstLine}*\n";
+                                var usedCommands = new List<CommandInfo>();
+
+                                var lastCategory = selectedCategory;
+
+                                foreach (var selectedCommand in selectedCommands.Where(w => w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories).Any(a => a.Length == 1 && a.Contains(selectedCategory))))
+                                {
+                                    if (!usedCommands.Contains(selectedCommand))
+                                    {
+                                        commands += await CommandInfoToHelpString(prefix, selectedCommand);
+                                        usedCommands.Add(selectedCommand);
+                                    }
+                                }
+
+                                if (selectedCategory != CommandCategory.WhoKnows)
+                                {
+                                    commands += "\n";
+
+                                    foreach (var selectedCommand in selectedCommands.Where(w => w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories).Any(a => a.Contains(CommandCategory.WhoKnows) && a.Length > 1)))
+                                    {
+                                        if (!usedCommands.Contains(selectedCommand))
+                                        {
+                                            commands += await CommandInfoToHelpString(prefix, selectedCommand);
+                                            usedCommands.Add(selectedCommand);
+                                        }
+                                    }
+
+                                    commands += "\n";
+                                }
+
+                                foreach (var category in totalCategories.Distinct())
+                                {
+                                    foreach (var selectedCommand in selectedCommands.Where(w => w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories).Any(a => a.Contains(category) && a.Length > 1)))
+                                    {
+                                        if (!usedCommands.Contains(selectedCommand))
+                                        {
+                                            commands += await CommandInfoToHelpString(prefix, selectedCommand);
+                                            usedCommands.Add(selectedCommand);
+                                        }
+                                    }
                                 }
                             }
 
-                            this._embed.WithTitle(
-                                $"Overview of all {StringExtensions.CommandCategoryToString(selectedCategory)} commands");
+                            if (selectedCategory == CommandCategory.General)
+                            {
+                                await SetGeneralHelpEmbed(prefix);
+                            }
+                            else
+                            {
+                                this._embed.WithTitle(
+                                    $"Overview of all {selectedCategory} commands");
+                            }
+
+                            this._embed.WithDescription(commands);
+                            this._embed.Footer = null;
+                            this._embed.Fields = new List<EmbedFieldBuilder>();
                         }
-
-
-                        this._embed.WithDescription(commands);
-                        this._embed.Fields = new List<EmbedFieldBuilder>();
                     }
                     else
                     {
@@ -431,8 +428,6 @@ namespace FMBot.Bot.Commands
                             this._embed.HelpResponse(searchResult.Commands[0].Command, prefix, userName);
                         }
                     }
-
-                    var pageBuilder = new PageBuilder();
 
                     var multiSelection = new MultiSelectionBuilder<string>()
                         .WithOptions(options)
@@ -453,96 +448,100 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        // Builder for multi selection
-        public class MultiSelectionBuilder<T> : BaseSelectionBuilder<MultiSelection<T>, MultiSelectionOption<T>, MultiSelectionBuilder<T>>
+        private async Task SetGeneralHelpEmbed(string prefix)
         {
-            public override InputType InputType => InputType.SelectMenus;
+            this._embedAuthor.WithIconUrl(this.Context.Client.CurrentUser?.GetAvatarUrl());
+            this._embedAuthor.WithName(".fmbot help & command overview");
+            this._embed.WithAuthor(this._embedAuthor);
 
-            public override MultiSelection<T> Build() => new(EmoteConverter, StringConverter,
-                EqualityComparer, AllowCancel, SelectionPage?.Build(), Users?.ToArray(), Options?.ToArray(),
-                CanceledPage?.Build(), TimeoutPage?.Build(), SuccessPage?.Build(), Deletion, InputType,
-                ActionOnCancellation, ActionOnTimeout, ActionOnSuccess);
+            var description = new StringBuilder();
+            var footer = new StringBuilder();
+
+            footer.AppendLine($"Use the dropdown below to view all commands");
+
+            description.AppendLine($"**Main command `{prefix}fm`**");
+            description.AppendLine($"*Displays last scrobbles, and looks different depending on the mode you've set.*");
+
+            description.AppendLine();
+
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            if (contextUser == null)
+            {
+                description.AppendLine($"**Connecting your Last.fm account: `{prefix}login`**");
+                description.AppendLine($"*Not receiving a DM from .fmbot when logging in? Please check if you have DMs enabled in this servers privacy settings.*");
+            }
+            else
+            {
+                description.AppendLine($"**Customizing your `{prefix}fm`**");
+                description.AppendLine($"*For changing how your .fm command looks, use `{prefix}mode`.*");
+
+                footer.AppendLine($"Logged in to .fmbot with the Last.fm account '{contextUser.UserNameLastFM}'");
+            }
+
+            if (prefix != this._botSettings.Bot.Prefix)
+            {
+                description.AppendLine();
+                description.AppendLine($"**Custom prefix:**");
+                description.AppendLine($"*This server has the `{prefix}` prefix*");
+                description.AppendLine($"Some examples of commands with this prefix are `{prefix}whoknows`, `{prefix}chart` and `{prefix}artisttracks`.");
+            }
+
+            description.AppendLine();
+            description.AppendLine("**Links**");
+            description.Append("[Help website](https://fmbot.xyz/) - ");
+
+            var socketCommandContext = (SocketCommandContext)this.Context;
+            var selfId = socketCommandContext.Client.CurrentUser.Id.ToString();
+            description.Append("[Invite the bot](" +
+                                   "https://discord.com/oauth2/authorize?" +
+                                   $"client_id={selfId}" +
+                                   "&scope=bot%20applications.commands" +
+                                   $"&permissions={Constants.InviteLinkPermissions})");
+
+            description.Append(" - [Get Supporter](https://opencollective.com/fmbot/contribute)");
+            description.Append(" - [Support server](https://discord.gg/6y3jJjtDqK)");
+
+            if (IsBotSelfHosted(socketCommandContext.Client.CurrentUser.Id))
+            {
+                this._embed.AddField("Notice",
+                    "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot. \n" +
+                    "Keep in mind that the instance might not be fully up to date or other users might not be registered.");
+            }
+
+            if (PublicProperties.IssuesAtLastFm)
+            {
+                this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues.\n" +
+                                              ".fmbot is not affiliated with Last.fm.");
+            }
+
+            this._embed.WithDescription(description.ToString());
+            this._embed.WithFooter(footer.ToString());
         }
 
-        public class MultiSelection<T> : BaseSelection<MultiSelectionOption<T>>
+        private static async Task<string> CommandInfoToHelpString(string prefix, CommandInfo commandInfo)
         {
-            public MultiSelection(Func<MultiSelectionOption<T>, IEmote> emoteConverter, Func<MultiSelectionOption<T>, string> stringConverter,
-                IEqualityComparer<MultiSelectionOption<T>> equalityComparer, bool allowCancel, Page selectionPage, IReadOnlyCollection<IUser> users,
-                IReadOnlyCollection<MultiSelectionOption<T>> options, Page canceledPage, Page timeoutPage, Page successPage, DeletionOptions deletion,
-                InputType inputType, ActionOnStop actionOnCancellation, ActionOnStop actionOnTimeout, ActionOnStop actionOnSuccess)
-                : base(emoteConverter, stringConverter, equalityComparer, allowCancel, selectionPage, users, options, canceledPage,
-                      timeoutPage, successPage, deletion, inputType, actionOnCancellation, actionOnTimeout, actionOnSuccess)
+            var firstAlias = commandInfo.Aliases.FirstOrDefault(f => f != commandInfo.Name && f.Length <= 4);
+            if (firstAlias != null)
             {
+                firstAlias = $" · `{firstAlias}`";
+            }
+            else
+            {
+                firstAlias = "";
             }
 
-            public override MessageComponent BuildComponents(bool disableAll)
+            if (commandInfo.Summary != null)
             {
-                var builder = new ComponentBuilder();
-                var selectMenus = new Dictionary<int, SelectMenuBuilder>();
+                using var reader = new StringReader(commandInfo.Summary);
+                var firstLine = await reader.ReadLineAsync();
 
-                foreach (var option in Options)
-                {
-                    if (!selectMenus.ContainsKey(option.Row))
-                    {
-                        selectMenus[option.Row] = new SelectMenuBuilder()
-                            .WithCustomId($"selectmenu{option.Row}")
-                            .WithDisabled(disableAll);
-                    }
-
-                    var optionBuilder = new SelectMenuOptionBuilder()
-                        .WithLabel(option.Option)
-                        .WithValue(option.Value)
-                        .WithDescription(option.Description)
-                        .WithDefault(option.IsDefault);
-
-                    selectMenus[option.Row].AddOption(optionBuilder);
-                }
-
-                foreach ((int row, var selectMenu) in selectMenus)
-                {
-                    builder.WithSelectMenu(selectMenu, row);
-                }
-
-                return builder.Build();
+                return $"**`{prefix}{commandInfo.Name}`{firstAlias}** | *{firstLine}*\n";
+            }
+            else
+            {
+                return $"**`{prefix}{commandInfo.Name}`{firstAlias}**\n";
             }
         }
-
-        public class MultiSelectionOption<T>
-        {
-            public MultiSelectionOption(string option, string value, int row, string description)
-            {
-                Option = option;
-                Value = value;
-                Row = row;
-                IsDefault = false;
-                Description = description;
-            }
-
-            public MultiSelectionOption(string option, string value, int row, bool isDefault, string description)
-            {
-                Option = option;
-                Value = value;
-                Row = row;
-                IsDefault = isDefault;
-                Description = description;
-            }
-
-            public string Option { get; }
-            public string Value { get; }
-
-            public string Description { get; }
-
-            public int Row { get; }
-
-            public bool IsDefault { get; set; }
-
-            public override string ToString() => Option.ToString();
-
-            public override int GetHashCode() => Option.GetHashCode();
-
-            public override bool Equals(object obj) => Equals(Option, obj);
-        }
-
 
         [Command("supporters", RunMode = RunMode.Async)]
         [Summary("Displays all .fmbot supporters.")]
