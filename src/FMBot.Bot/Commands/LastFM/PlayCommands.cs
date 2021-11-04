@@ -899,6 +899,89 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
+        [Command("playleaderboard", RunMode = RunMode.Async)]
+        [Summary("Shows users with the most crowns in your server")]
+        [Alias("sblb", "scrobblelb", "scrobbleleaderboard", "scrobble leaderboard")]
+        [UsernameSetRequired]
+        [GuildOnly]
+        [SupportsPagination]
+        [RequiresIndex]
+        [CommandCategories(CommandCategory.Crowns)]
+        public async Task PlayLeaderboardAsync()
+        {
+            try
+            {
+
+
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+                var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild?.Id);
+                var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+                if (guild.CrownsDisabled == true)
+                {
+                    await ReplyAsync("Crown functionality has been disabled in this server.");
+                    this.Context.LogCommandUsed(CommandResponse.Disabled);
+                    return;
+                }
+
+                var topPlaycountUsers = await this._playService.GetGuildUsersTotalPlaycount(this.Context, guild.GuildId);
+
+                if (!topPlaycountUsers.Any())
+                {
+                    this._embed.WithDescription($"No top users in this server. Use `.index` to refresh the cached memberlist");
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    return;
+                }
+
+                var pages = new List<PageBuilder>();
+
+                var title = $"Users with most scrobbles in {this.Context.Guild.Name}";
+
+                var topPlaycountPages = topPlaycountUsers.ChunkBy(10);
+                var requestedUser = topPlaycountUsers.FirstOrDefault(f => f.UserId == user.UserId);
+                var location = topPlaycountUsers.IndexOf(requestedUser);
+
+                var counter = 1;
+                var pageCounter = 1;
+                foreach (var playcountPage in topPlaycountPages)
+                {
+                    var crownPageString = new StringBuilder();
+                    foreach (var userPlaycount in playcountPage)
+                    {
+                        crownPageString.AppendLine($"{counter}. **{userPlaycount.DiscordName}** - **{userPlaycount.Playcount}** {StringExtensions.GetScrobblesString(userPlaycount.Playcount)}");
+                        counter++;
+                    }
+
+                    var footer = $"Your ranking: {location}\n" +
+                                 $"Page {pageCounter}/{topPlaycountPages.Count} - " +
+                                 $"{topPlaycountUsers.Count} users - " +
+                                 $"{topPlaycountUsers.Sum(s => s.Playcount)} total scrobbles";
+
+                    pages.Add(new PageBuilder()
+                        .WithDescription(crownPageString.ToString())
+                        .WithTitle(title)
+                        .WithFooter(footer));
+                    pageCounter++;
+                }
+
+                var paginator = StringService.BuildStaticPaginator(pages);
+
+                _ = this.Interactivity.SendPaginatorAsync(
+                    paginator,
+                    this.Context.Channel,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+
         private async Task<string> FindUser(string user)
         {
             if (await this._lastFmRepository.LastFmUserExistsAsync(user))

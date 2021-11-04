@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using Dapper;
+using Discord.Commands;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
@@ -12,6 +14,8 @@ using FMBot.LastFM.Domain.Types;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Npgsql;
 using Artist = FMBot.LastFM.Domain.Models.Artist;
 
 namespace FMBot.Bot.Services
@@ -21,12 +25,14 @@ namespace FMBot.Bot.Services
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
         private readonly GenreService _genreService;
         private readonly TimeService _timeService;
+        private readonly BotSettings _botSettings;
 
-        public PlayService(IDbContextFactory<FMBotDbContext> contextFactory, GenreService genreService, TimeService timeService)
+        public PlayService(IDbContextFactory<FMBotDbContext> contextFactory, GenreService genreService, TimeService timeService, IOptions<BotSettings> botSettings)
         {
             this._contextFactory = contextFactory;
             this._genreService = genreService;
             this._timeService = timeService;
+            this._botSettings = botSettings.Value;
         }
 
         public async Task<DailyOverview> GetDailyOverview(int userId, int amountOfDays)
@@ -403,6 +409,58 @@ namespace FMBot.Bot.Services
                 })
                 .OrderByDescending(o => o.Playcount)
                 .ToListAsync();
+        }
+
+        public async Task<List<WhoKnowsObjectWithUser>> GetGuildUsersTotalPlaycount(ICommandContext context, int guildId)
+        {
+            const string sql = "SELECT u.total_playcount AS playcount, " +
+                               "u.user_id, " +
+                               "u.user_name_last_fm, " +
+                               "u.discord_user_id, " +
+                               "gu.user_name, " +
+                               "gu.who_knows_whitelisted " +
+                               "FROM users AS u " +
+                               "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                               "WHERE gu.guild_id = @guildId AND u.total_playcount is not null " +
+                               "ORDER BY u.total_playcount DESC ";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var userAlbums = (await connection.QueryAsync<WhoKnowsAlbumDto>(sql, new
+            {
+                guildId,
+            })).ToList();
+
+            var whoKnowsAlbumList = new List<WhoKnowsObjectWithUser>();
+
+            for (var i = 0; i < userAlbums.Count; i++)
+            {
+                var userAlbum = userAlbums[i];
+
+                var userName = userAlbum.UserName ?? userAlbum.UserNameLastFm;
+
+                if (i <= 10)
+                {
+                    var discordUser = await context.Guild.GetUserAsync(userAlbum.DiscordUserId);
+                    if (discordUser != null)
+                    {
+                        userName = discordUser.Nickname ?? discordUser.Username;
+                    }
+                }
+
+                whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
+                {
+                    DiscordName = userName,
+                    Playcount = userAlbum.Playcount,
+                    LastFMUsername = userAlbum.UserNameLastFm,
+                    UserId = userAlbum.UserId,
+                    WhoKnowsWhitelisted = userAlbum.WhoKnowsWhitelisted,
+                });
+            }
+
+            return whoKnowsAlbumList;
         }
     }
 }
