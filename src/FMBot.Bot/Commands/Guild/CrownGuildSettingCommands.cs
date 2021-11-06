@@ -515,7 +515,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            this._embed.WithDescription($"<a:loading:821676038102056991> Seeding crowns for your server...");
+            this._embed.WithDescription($"<a:loading:821676038102056991> Seeding crowns for your server, this can take a while on larger servers...");
             var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
             var guildCrowns = await this._crownService.GetAllCrownsForGuild(guild.GuildId);
