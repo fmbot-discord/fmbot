@@ -497,8 +497,8 @@ namespace FMBot.LastFM.Repositories
             var albumCall = await this._lastFmApi.CallApiAsync<AlbumInfoLfmResponse>(queryParams, Call.AlbumInfo, authorizedCall);
             if (albumCall.Success)
             {
-                var linkToFilter = $"<a href=\"{albumCall.Content.Album.Url.Replace("https", "http")}\">Read more on Last.fm</a>";
-                var filteredSummary = albumCall.Content.Album.Wiki?.Summary.Replace(linkToFilter, "");
+                var linkToFilter = $"<a href=\"{albumCall.Content.Album.Url}\">Read more on Last.fm</a>";
+                var filteredSummary = albumCall.Content.Album.Wiki?.Summary.Replace(linkToFilter, "").Replace(". .", ".");
 
                 return new Response<AlbumInfo>
                 {
