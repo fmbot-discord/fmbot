@@ -911,20 +911,11 @@ namespace FMBot.Bot.Commands.LastFM
         {
             try
             {
-
-
                 _ = this.Context.Channel.TriggerTypingAsync();
 
                 var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
                 var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild?.Id);
                 var user = await this._userService.GetUserSettingsAsync(this.Context.User);
-
-                if (guild.CrownsDisabled == true)
-                {
-                    await ReplyAsync("Crown functionality has been disabled in this server.");
-                    this.Context.LogCommandUsed(CommandResponse.Disabled);
-                    return;
-                }
 
                 var topPlaycountUsers = await this._playService.GetGuildUsersTotalPlaycount(this.Context, guild.GuildId);
 
@@ -950,7 +941,7 @@ namespace FMBot.Bot.Commands.LastFM
                     var crownPageString = new StringBuilder();
                     foreach (var userPlaycount in playcountPage)
                     {
-                        crownPageString.AppendLine($"{counter}. **{userPlaycount.DiscordName}** - **{userPlaycount.Playcount}** {StringExtensions.GetScrobblesString(userPlaycount.Playcount)}");
+                        crownPageString.AppendLine($"{counter}. **{WhoKnowsService.NameWithLink(userPlaycount)}** - **{userPlaycount.Playcount}** {StringExtensions.GetScrobblesString(userPlaycount.Playcount)}");
                         counter++;
                     }
 
