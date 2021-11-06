@@ -424,7 +424,7 @@ namespace FMBot.Bot.Commands.LastFM
                         {
                             var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
                                 currentTrack.AlbumName, currentTrack.ArtistName, currentTrack.AlbumCoverUrl);
-                            if (safeForChannel)
+                            if (safeForChannel.Result)
                             {
                                 this._embed.WithThumbnailUrl(currentTrack.AlbumCoverUrl);
                             }
@@ -785,7 +785,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
                     mileStonePlay.Content.AlbumName, mileStonePlay.Content.ArtistName, mileStonePlay.Content.AlbumCoverUrl);
-                if (safeForChannel)
+                if (safeForChannel.Result)
                 {
                     this._embed.WithThumbnailUrl(mileStonePlay.Content.AlbumCoverUrl);
                 }
@@ -968,8 +968,8 @@ namespace FMBot.Bot.Commands.LastFM
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
-                throw;
+                this.Context.LogCommandException(e);
+                await ReplyAsync("Something went wrong while showing playleaderboard and the error has been logged. Please try again later or contact staff on our support server.");
             }
         }
 

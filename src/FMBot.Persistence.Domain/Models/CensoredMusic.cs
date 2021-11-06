@@ -8,6 +8,10 @@ namespace FMBot.Persistence.Domain.Models
 
         public string AlbumName { get; set; }
 
+        public string AlternativeCoverUrl { get; set; }
+
+        public int? TimesCensored { get; set; }
+
         public bool SafeForCommands { get; set; }
 
         public bool SafeForFeatured { get; set; }

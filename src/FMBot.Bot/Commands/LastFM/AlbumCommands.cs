@@ -185,7 +185,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
                         album.AlbumName, album.ArtistName, album.AlbumUrl);
-                    if (safeForChannel)
+                    if (safeForChannel.Result)
                     {
                         this._embed.WithThumbnailUrl(albumCoverUrl);
                     }
@@ -346,7 +346,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
                     album.AlbumName, album.ArtistName, album.AlbumUrl, this._embed);
-                if (!safeForChannel)
+                if (!safeForChannel.Result)
                 {
                     await this.ReplyAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.Censored);
@@ -608,7 +608,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
                         album.AlbumName, album.ArtistName, album.AlbumUrl);
-                    if (safeForChannel)
+                    if (safeForChannel.Result)
                     {
                         this._embed.WithThumbnailUrl(albumCoverUrl);
                     }
@@ -759,7 +759,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
                         album.AlbumName, album.ArtistName, album.AlbumUrl);
-                    if (safeForChannel)
+                    if (safeForChannel.Result)
                     {
                         this._embed.WithThumbnailUrl(albumCoverUrl);
                     }
@@ -885,7 +885,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
                         album.AlbumName, album.ArtistName, album.AlbumUrl);
-                    if (safeForChannel)
+                    if (safeForChannel.Result)
                     {
                         this._embed.WithThumbnailUrl(albumCoverUrl);
                     }

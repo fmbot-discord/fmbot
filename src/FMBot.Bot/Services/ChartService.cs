@@ -77,6 +77,26 @@ namespace FMBot.Bot.Services
                 {
                     await chart.Albums.ParallelForEachAsync(async album =>
                     {
+                        var censor = false;
+                        var cacheEnabled = true;
+                        if (!await this._censorService.AlbumIsSafe(album.AlbumName, album.ArtistName))
+                        {
+                            cacheEnabled = false;
+                            censor = true;
+
+                            var nsfwResult =
+                                await this._censorService.AlbumIsAllowedInNsfw(album.AlbumName, album.ArtistName);
+                            if (!nsfwAllowed && nsfwResult.Result && nsfwResult.AlternativeCover != null)
+                            {
+                                censor = false;
+                                album.AlbumCoverUrl = nsfwResult.AlternativeCover;
+                            }
+                            else if (nsfwAllowed && nsfwResult.Result)
+                            {
+                                censor = false;
+                            }
+                        }
+
                         var encodedId = StringExtensions.ReplaceInvalidChars(album.AlbumUrl.Replace("https://www.last.fm/music/", ""));
                         var localAlbumId = StringExtensions.TruncateLongString($"album_{encodedId}", 60);
 
@@ -85,8 +105,9 @@ namespace FMBot.Bot.Services
 
                         var fileName = localAlbumId + ".png";
                         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
+                        
 
-                        if (File.Exists(localPath))
+                        if (File.Exists(localPath) && cacheEnabled)
                         {
                             chartImage = SKBitmap.Decode(localPath);
                             Statistics.LastfmCachedImageCalls.Inc();
@@ -118,7 +139,7 @@ namespace FMBot.Bot.Services
                                     validImage = false;
                                 }
 
-                                if (validImage)
+                                if (validImage && cacheEnabled)
                                 {
                                     using var image = SKImage.FromBitmap(chartImage);
                                     using var data = image.Encode(SKEncodedImageFormat.Png, 100);
@@ -133,20 +154,17 @@ namespace FMBot.Bot.Services
                             }
                         }
 
-                        if (!await this._censorService.AlbumIsSafe(album.AlbumName, album.ArtistName))
+                        if (censor)
                         {
-                            if (!nsfwAllowed || !await this._censorService.AlbumIsAllowedInNsfw(album.AlbumName, album.ArtistName))
+                            chartImage = SKBitmap.Decode(this._censoredImagePath);
+                            validImage = false;
+                            if (chart.CensoredAlbums.HasValue)
                             {
-                                chartImage = SKBitmap.Decode(this._censoredImagePath);
-                                validImage = false;
-                                if (chart.CensoredAlbums.HasValue)
-                                {
-                                    chart.CensoredAlbums++;
-                                }
-                                else
-                                {
-                                    chart.CensoredAlbums = 1;
-                                }
+                                chart.CensoredAlbums++;
+                            }
+                            else
+                            {
+                                chart.CensoredAlbums = 1;
                             }
                         }
 
