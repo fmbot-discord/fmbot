@@ -129,7 +129,7 @@ namespace FMBot.Bot.Services
                     msg.Embeds == null ||
                     !msg.Embeds.Any() ||
                     msg.Embeds.Any(a => a.Title == null) ||
-                    msg.Embeds.Any(a => a.Title != "Now playing") ||
+                    (msg.Embeds.Any(a => a.Title != "Now playing") && msg.Embeds.Any(a => a.Title != "Speelt nu")) ||
                     msg.Embeds.Any(a => a.Description == null))
                 {
                     return;
@@ -143,7 +143,7 @@ namespace FMBot.Bot.Services
                     return;
                 }
 
-                var trackResult = await this._trackService.GetTrackFromLink(msg.Embeds.First().Description);
+                var trackResult = await this._trackService.GetTrackFromLink(msg.Embeds.First().Description, false);
 
                 if (trackResult == null)
                 {

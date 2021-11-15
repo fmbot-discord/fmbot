@@ -35,7 +35,7 @@ namespace FMBot.Bot.Services
             this._botSettings = botSettings.Value;
         }
 
-        public async Task<TrackSearchResult> GetTrackFromLink(string description)
+        public async Task<TrackSearchResult> GetTrackFromLink(string description, bool possiblyContainsLinks = true)
         {
             try
             {
@@ -64,7 +64,7 @@ namespace FMBot.Bot.Services
                     }
                 }
 
-                if (description.Contains("["))
+                if (description.Contains("[") && possiblyContainsLinks)
                 {
                     description = description.Split('[', ']')[1];
                 }
@@ -85,7 +85,7 @@ namespace FMBot.Bot.Services
                 else
                 {
                     var artistName = description.Split(" - ")[0];
-                    var trackName = description.Split(" - ")[1];
+                    var trackName = description.Split(" - ")[1].Replace("\\", "");
                     var queryParams = new Dictionary<string, string>
                 {
                     {"track", trackName }
@@ -151,7 +151,7 @@ namespace FMBot.Bot.Services
 
         public async Task<List<UserTrack>> GetAlbumTracksPlaycounts(List<AlbumTrack> albumTracks, int userId, string artistName)
         {
-            const string sql = "SELECT user_track_id, user_id, name, artist_name, playcount"+
+            const string sql = "SELECT user_track_id, user_id, name, artist_name, playcount" +
                " FROM public.user_tracks where user_id = @userId AND UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT));";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
