@@ -919,7 +919,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var topPlaycountUsers = await this._playService.GetGuildUsersTotalPlaycount(this.Context, guild.GuildId);
 
-                if (!topPlaycountUsers.Any())
+                var filteredTopPlaycountUsers = WhoKnowsService.FilterGuildUsersAsync(topPlaycountUsers, guild);
+
+                if (!topPlaycountUsers.Any() && filteredTopPlaycountUsers.Any())
                 {
                     this._embed.WithDescription($"No top users in this server. Use `.index` to refresh the cached memberlist");
                     await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
@@ -930,9 +932,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var title = $"Users with most scrobbles in {this.Context.Guild.Name}";
 
-                var topPlaycountPages = topPlaycountUsers.ChunkBy(10);
-                var requestedUser = topPlaycountUsers.FirstOrDefault(f => f.UserId == user.UserId);
-                var location = topPlaycountUsers.IndexOf(requestedUser);
+                var topPlaycountPages = filteredTopPlaycountUsers.ChunkBy(10);
+                var requestedUser = filteredTopPlaycountUsers.FirstOrDefault(f => f.UserId == user.UserId);
+                var location = filteredTopPlaycountUsers.IndexOf(requestedUser);
 
                 var counter = 1;
                 var pageCounter = 1;
@@ -947,8 +949,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                     var footer = $"Your ranking: {location}\n" +
                                  $"Page {pageCounter}/{topPlaycountPages.Count} - " +
-                                 $"{topPlaycountUsers.Count} users - " +
-                                 $"{topPlaycountUsers.Sum(s => s.Playcount)} total scrobbles";
+                                 $"{filteredTopPlaycountUsers.Count} users - " +
+                                 $"{filteredTopPlaycountUsers.Sum(s => s.Playcount)} total scrobbles";
 
                     pages.Add(new PageBuilder()
                         .WithDescription(crownPageString.ToString())

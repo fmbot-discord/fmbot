@@ -48,7 +48,7 @@ namespace FMBot.Bot.Services.WhoKnows
             return users.OrderByDescending(o => o.Playcount).ToList();
         }
 
-        public static IList<WhoKnowsObjectWithUser> FilterGuildUsersAsync(ICollection<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild)
+        public static List<WhoKnowsObjectWithUser> FilterGuildUsersAsync(ICollection<WhoKnowsObjectWithUser> users, Persistence.Domain.Models.Guild guild)
         {
             if (guild.ActivityThresholdDays.HasValue)
             {
