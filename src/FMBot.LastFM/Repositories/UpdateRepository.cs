@@ -260,7 +260,7 @@ namespace FMBot.LastFM.Repositories
                     ArtistName = s.ArtistName,
                     AlbumName = s.AlbumName,
                     TrackName = s.TrackName,
-                    TimePlayed = s.TimePlayed.Value,
+                    TimePlayed = DateTime.SpecifyKind(s.TimePlayed.Value, DateTimeKind.Utc),
                     UserId = user.UserId
                 }).ToList();
 
@@ -273,7 +273,7 @@ namespace FMBot.LastFM.Repositories
                 .MapText("track_name", x => x.TrackName)
                 .MapText("album_name", x => x.AlbumName)
                 .MapText("artist_name", x => x.ArtistName)
-                .MapTimeStamp("time_played", x => x.TimePlayed)
+                .MapTimeStampTz("time_played", x => x.TimePlayed)
                 .MapInteger("user_id", x => x.UserId);
 
             await copyHelper.SaveAllAsync(connection, userPlays);

@@ -88,7 +88,7 @@ namespace FMBot.Bot.Services
 
             if (user != null)
             {
-                user.LastUsed = DateTime.UtcNow;
+                user.LastUsed = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
                 db.Update(user);
 

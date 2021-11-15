@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Threading.Tasks;
-using Dasync.Collections;
 using FMBot.Bot.Interfaces;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
@@ -74,8 +74,12 @@ namespace FMBot.Bot.Services.Guild
         {
             await using var db = this._contextFactory.CreateDbContext();
             var servers = await db.Guilds
-                .Where(w => w.DisabledCommands != null && w.DisabledCommands.Length > 0)
+                .Where(w => w.DisabledCommands != null)
                 .ToListAsync();
+
+            servers = servers
+                .Where(w => w.DisabledCommands.Length > 0)
+                .ToList();
 
             foreach (var server in servers)
             {

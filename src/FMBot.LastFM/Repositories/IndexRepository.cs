@@ -229,7 +229,7 @@ namespace FMBot.LastFM.Repositories
                 .MapText("track_name", x => x.TrackName)
                 .MapText("album_name", x => x.AlbumName)
                 .MapText("artist_name", x => x.ArtistName)
-                .MapTimeStamp("time_played", x => x.TimePlayed)
+                .MapTimeStampTz("time_played", x => DateTime.SpecifyKind(x.TimePlayed, DateTimeKind.Utc))
                 .MapInteger("user_id", x => x.UserId);
 
             await copyHelper.SaveAllAsync(connection, userPlays);

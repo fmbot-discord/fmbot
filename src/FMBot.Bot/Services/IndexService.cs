@@ -226,9 +226,9 @@ namespace FMBot.Bot.Services
                 await using var db = this._contextFactory.CreateDbContext();
 
                 const string sql = "UPDATE guild_users " +
-                                   "SET user_name =  @userName, " +
-                                   "who_knows_whitelisted =  @whoKnowsWhitelisted " +
-                                   "WHERE guild_id = @guildId AND user_id = @userId ";
+                                   "SET user_name =  @UserName, " +
+                                   "who_knows_whitelisted =  @WhoKnowsWhitelisted " +
+                                   "WHERE guild_id = @GuildId AND user_id = @UserId ";
 
                 DefaultTypeMap.MatchNamesWithUnderscores = true;
                 await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

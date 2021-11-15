@@ -53,7 +53,8 @@ namespace FMBot.Bot.Services.WhoKnows
                             .Select(s => s.UserId).Contains(w.UserId))
                     .ToList();
             }
-            if (guild.WhoKnowsWhitelistRoleId.HasValue) {
+            if (guild.WhoKnowsWhitelistRoleId.HasValue)
+            {
                 eligibleUsers = eligibleUsers.Where(w => w.WhoKnowsWhitelisted != false)
                     .ToList();
             }
@@ -70,13 +71,7 @@ namespace FMBot.Bot.Services.WhoKnows
             }
 
             await using var db = this._contextFactory.CreateDbContext();
-            var currentCrownHolder = await db.UserCrowns
-                .AsQueryable()
-                .Include(i => i.User)
-                .OrderByDescending(o => o.CurrentPlaycount)
-                .FirstOrDefaultAsync(f => f.GuildId == guild.GuildId &&
-                                          f.Active &&
-                                          EF.Functions.ILike(f.ArtistName, artistName));
+            var currentCrownHolder = await GetCurrentCrownHolder(guild.GuildId, artistName);
 
             // Crown exists and is same as top user
             if (currentCrownHolder != null && topUser.UserId == currentCrownHolder.UserId)
@@ -217,6 +212,25 @@ namespace FMBot.Bot.Services.WhoKnows
             return null;
         }
 
+        private async Task<UserCrown> GetCurrentCrownHolder(int guildId, string artistName)
+        {
+            const string sql = "SELECT * FROM public.user_crowns AS uc " +
+                                    "WHERE uc.guild_id = @guildId AND " +
+                                    "uc.active = true AND " +
+                                    "UPPER(uc.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                                    "ORDER BY current_playcount desc";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            return await connection.QueryFirstOrDefaultAsync<UserCrown>(sql, new
+            {
+                guildId,
+                artistName
+            });
+        }
+
         public async Task<int> SeedCrownsForGuild(Persistence.Domain.Models.Guild guild, IList<UserCrown> existingCrowns)
         {
             const string sql = "SELECT DISTINCT ON(ua.name) " +
@@ -281,8 +295,8 @@ namespace FMBot.Bot.Services.WhoKnows
                 .MapText("artist_name", x => x.ArtistName)
                 .MapInteger("current_playcount", x => x.CurrentPlaycount)
                 .MapInteger("start_playcount", x => x.StartPlaycount)
-                .MapTimeStamp("created", x => x.Created)
-                .MapTimeStamp("modified", x => x.Created)
+                .MapTimeStampTz("created", x => DateTime.SpecifyKind(x.Created, DateTimeKind.Utc))
+                .MapTimeStampTz("modified", x => DateTime.SpecifyKind(x.Created, DateTimeKind.Utc))
                 .MapBoolean("active", x => x.Active)
                 .MapBoolean("seeded_crown", x => x.SeededCrown);
 
