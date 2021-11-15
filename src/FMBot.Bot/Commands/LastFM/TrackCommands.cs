@@ -113,7 +113,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (track.TrackUrl != null)
             {
-                this._embed.WithUrl(track.TrackUrl);
+                this._embedAuthor.WithUrl(track.TrackUrl);
             }
 
             this._embed.WithAuthor(this._embedAuthor);
