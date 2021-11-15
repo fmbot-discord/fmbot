@@ -5,11 +5,15 @@ on:
     branches: [ main, dev ]
     tags: [ 'v*.*.*' ]
 
+
 jobs:
+    
+
   build:
     name: Docker Build, Tag, Push
     runs-on: ubuntu-latest
-
+    strategy:
+      max-parallel: 4
     steps:
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
