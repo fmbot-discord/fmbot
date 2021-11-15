@@ -370,7 +370,7 @@ namespace FMBot.Bot.Services
                 {
                     settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { "lfm:" }, true);
 
-                    var lfmUserName = option.Replace("lfm:", "");
+                    var lfmUserName = option.ToLower().Replace("lfm:", "");
 
                     var foundLfmUser = await GetDifferentUser(lfmUserName);
 
@@ -408,10 +408,12 @@ namespace FMBot.Bot.Services
             if (otherUser == null)
             {
                 await using var db = this._contextFactory.CreateDbContext();
+
+                searchValue = searchValue.ToLower().Replace("lfm:", "");
                 return await db.Users
                     .AsQueryable()
                     .OrderByDescending(o => o.LastUsed)
-                    .FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == searchValue.ToLower());
+                    .FirstOrDefaultAsync(f => f.UserNameLastFM.ToLower() == searchValue);
             }
 
             return otherUser;
