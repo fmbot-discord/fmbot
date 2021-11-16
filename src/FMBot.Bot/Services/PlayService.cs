@@ -67,7 +67,7 @@ namespace FMBot.Bot.Services
                         TopTrack = GetTopTrackForPlays(s.ToList()),
                         TopAlbum = GetTopAlbumForPlays(s.ToList()),
                         TopArtist = GetTopArtistForPlays(s.ToList()),
-                    }).ToList(),
+                    }).Take(amountOfDays).ToList(),
                 Playcount = plays.Count,
                 Uniques = GetUniqueCount(plays.ToList()),
                 AvgPerDay = GetAvgPerDayCount(plays.ToList()),

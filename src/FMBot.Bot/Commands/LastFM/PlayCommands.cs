@@ -604,7 +604,7 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                foreach (var day in week.Days.OrderBy(o => o.Date))
+                foreach (var day in week.Days.OrderByDescending(o => o.Date))
                 {
                     var genreString = new StringBuilder();
                     if (day.TopGenres != null && day.TopGenres.Any())
