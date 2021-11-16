@@ -180,7 +180,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, false);
 
             if (user == null)
             {

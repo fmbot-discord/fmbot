@@ -36,7 +36,7 @@ namespace FMBot.Bot.Services.Guild
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guildId);
         }
 
-        public async Task<Persistence.Domain.Models.Guild> GetFullGuildAsync(ulong? guildId = null)
+        public async Task<Persistence.Domain.Models.Guild> GetFullGuildAsync(ulong? guildId = null, bool filterBots = true)
         {
             if (guildId == null)
             {
@@ -48,7 +48,7 @@ namespace FMBot.Bot.Services.Guild
                 .AsNoTracking()
                 .Include(i => i.GuildBlockedUsers)
                     .ThenInclude(t => t.User)
-                .Include(i => i.GuildUsers)
+                .Include(i => i.GuildUsers.Where(w => filterBots ? w.Bot != true : w.UserId != null))
                     .ThenInclude(t => t.User)
                 .Include(i => i.Channels)
                 .Include(i => i.Webhooks)
