@@ -287,7 +287,7 @@ namespace FMBot.Bot.Commands.LastFM
                                             "For this to work properly you need to make sure .fmbot can see the voice channel and use a supported music bot.\n\n" +
                                             "Only tracks that already exist on Last.fm will be scrobbled. This feature works best with Spotify music.\n\n" +
                                             "Currently supported bots:\n" +
-                                            "- Hydra (Only in 'normal' mode)\n");
+                                            "- Hydra (Only with Now Playing messages enabled in English)\n");
 
                 if ((newBotScrobblingDisabledSetting == null || newBotScrobblingDisabledSetting == false) && !string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
                 {

@@ -146,31 +146,9 @@ namespace FMBot.Bot.Handlers
                 return;
             }
 
-            if (context.Guild != null)
+            if (!await CommandDisabled(context, searchResult))
             {
-                var disabledGuildCommands = this._guildDisabledCommandService.GetDisabledCommands(context.Guild?.Id);
-                if (searchResult.Commands != null &&
-                    disabledGuildCommands != null &&
-                    disabledGuildCommands.Any(searchResult.Commands[0].Command.Name.Equals))
-                {
-                    _ = this._interactiveService.DelayedDeleteMessageAsync(
-                        await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this server."),
-                        TimeSpan.FromSeconds(8));
-                    return;
-                }
-
-                var disabledChannelCommands = this._channelDisabledCommandService.GetDisabledCommands(context.Channel?.Id);
-                if (searchResult.Commands != null &&
-                    disabledChannelCommands != null &&
-                    disabledChannelCommands.Any() &&
-                    disabledChannelCommands.Any(searchResult.Commands[0].Command.Name.Equals) &&
-                    context.Channel != null)
-                {
-                    _ = this._interactiveService.DelayedDeleteMessageAsync(
-                        await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this channel."),
-                        TimeSpan.FromSeconds(8));
-                    return;
-                }
+                return;
             }
 
             var userBlocked = await this._userService.UserBlockedAsync(context.User.Id);
@@ -188,6 +166,11 @@ namespace FMBot.Bot.Handlers
                 if (userBlocked)
                 {
                     await UserBlockedResponse(context, prfx);
+                    return;
+                }
+
+                if (!await CommandDisabled(context, fmSearchResult))
+                {
                     return;
                 }
 
@@ -299,6 +282,38 @@ namespace FMBot.Bot.Handlers
             {
                 Log.Error(result.ToString(), context.Message.Content);
             }
+        }
+
+        private async Task<bool> CommandDisabled(ShardedCommandContext context, SearchResult searchResult)
+        {
+            if (context.Guild != null)
+            {
+                var disabledGuildCommands = this._guildDisabledCommandService.GetDisabledCommands(context.Guild?.Id);
+                if (searchResult.Commands != null &&
+                    disabledGuildCommands != null &&
+                    disabledGuildCommands.Any(searchResult.Commands[0].Command.Name.Equals))
+                {
+                    _ = this._interactiveService.DelayedDeleteMessageAsync(
+                        await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this server."),
+                        TimeSpan.FromSeconds(8));
+                    return false;
+                }
+
+                var disabledChannelCommands = this._channelDisabledCommandService.GetDisabledCommands(context.Channel?.Id);
+                if (searchResult.Commands != null &&
+                    disabledChannelCommands != null &&
+                    disabledChannelCommands.Any() &&
+                    disabledChannelCommands.Any(searchResult.Commands[0].Command.Name.Equals) &&
+                    context.Channel != null)
+                {
+                    _ = this._interactiveService.DelayedDeleteMessageAsync(
+                        await context.Channel.SendMessageAsync("The command you're trying to execute has been disabled in this channel."),
+                        TimeSpan.FromSeconds(8));
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private async Task UserBlockedResponse(ShardedCommandContext shardedCommandContext, string s)
