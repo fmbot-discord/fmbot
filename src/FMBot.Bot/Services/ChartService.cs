@@ -105,25 +105,12 @@ namespace FMBot.Bot.Services
 
                         var fileName = localAlbumId + ".png";
                         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
-
+                        
 
                         if (File.Exists(localPath) && cacheEnabled)
                         {
-                            try
-                            {
-                                chartImage = SKBitmap.Decode(localPath);
-                                Statistics.LastfmCachedImageCalls.Inc();
-                            }
-                            catch (Exception e)
-                            {
-                                Log.Error(e, "error while getting img from local cache");
-                                var bytes = await httpClient.GetByteArrayAsync(album.AlbumCoverUrl);
-
-                                Statistics.LastfmImageCalls.Inc();
-
-                                await using var stream = new MemoryStream(bytes);
-                                chartImage = SKBitmap.Decode(stream);
-                            }
+                            chartImage = SKBitmap.Decode(localPath);
+                            Statistics.LastfmCachedImageCalls.Inc();
                         }
                         else
                         {
