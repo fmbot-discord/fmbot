@@ -274,7 +274,8 @@ namespace FMBot.Bot.Commands
             }
             else
             {
-                await this.Context.Channel.SendMessageAsync("Server could not be found.");
+                await this.Context.Channel.SendMessageAsync("Server could not be found. \n" +
+                                                            "This either means the bot is not connected to that server or that the bot is not in this server.");
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
