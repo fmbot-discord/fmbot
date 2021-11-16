@@ -432,11 +432,12 @@ namespace FMBot.Bot.Commands
                     var multiSelection = new MultiSelectionBuilder<string>()
                         .WithOptions(options)
                         .WithActionOnSuccess(ActionOnStop.None)
+                        .WithActionOnTimeout(ActionOnStop.DisableInput)
                         .WithSelectionPage(PageBuilder.FromEmbed(this._embed.Build()))
                         .Build();
 
                     selectedResult =
-                        await this.Interactivity.SendSelectionAsync(multiSelection, this.Context.Channel, message: message);
+                        await this.Interactivity.SendSelectionAsync(multiSelection, this.Context.Channel, message: message, timeout: TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
                     message = selectedResult.Message;
                 }
 
