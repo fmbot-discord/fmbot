@@ -333,7 +333,7 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                var image = await LastFmRepository.GetAlbumImageAsBitmapAsync(albumCoverUrl);
+                var image = await this._lastFmRepository.GetAlbumImageAsStreamAsync(albumCoverUrl);
                 if (image == null)
                 {
                     this._embed.WithDescription("Sorry, something went wrong while getting album cover for this album: \n" +
@@ -358,16 +358,15 @@ namespace FMBot.Bot.Commands.LastFM
                     $"Album cover requested by {await this._userService.GetUserTitleAsync(this.Context)}");
                 this._embed.WithFooter(this._embedFooter);
 
-                var imageMemoryStream = new MemoryStream();
-                image.Save(imageMemoryStream, ImageFormat.Png);
-                imageMemoryStream.Position = 0;
 
                 await this.Context.Channel.SendFileAsync(
-                    imageMemoryStream,
+                    image,
                     $"cover-{StringExtensions.ReplaceInvalidChars($"{album.ArtistName}_{album.AlbumName}")}.png",
                     null,
                     false,
                     this._embed.Build());
+
+                await image.DisposeAsync();
 
                 this.Context.LogCommandUsed();
             }

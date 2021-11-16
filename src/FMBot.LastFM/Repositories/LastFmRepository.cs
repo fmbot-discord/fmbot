@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using FMBot.Domain;
@@ -28,13 +31,15 @@ namespace FMBot.LastFM.Repositories
         private readonly LastfmClient _lastFmClient;
         private readonly IMemoryCache _cache;
         private readonly ILastfmApi _lastFmApi;
+        private readonly HttpClient _client;
 
-        public LastFmRepository(IConfiguration configuration, ILastfmApi lastFmApi, IMemoryCache cache)
+        public LastFmRepository(IConfiguration configuration, ILastfmApi lastFmApi, IMemoryCache cache, IHttpClientFactory httpClientFactory)
         {
             this._lastFmClient =
                 new LastfmClient(configuration.GetSection("LastFm:Key").Value, configuration.GetSection("LastFm:Secret").Value);
             this._lastFmApi = lastFmApi;
             this._cache = cache;
+            this._client = httpClientFactory.CreateClient();
         }
 
         // Recent scrobbles
@@ -567,15 +572,17 @@ namespace FMBot.LastFM.Repositories
             return album?.Content?.Images;
         }
 
-        public static async Task<Bitmap> GetAlbumImageAsBitmapAsync(string imageUrl)
+        public async Task<MemoryStream> GetAlbumImageAsStreamAsync(string imageUrl)
         {
             try
             {
-                var request = WebRequest.Create(imageUrl);
-                using var response = await request.GetResponseAsync();
-                await using var responseStream = response.GetResponseStream();
+                await using var file = await this._client.GetStreamAsync(imageUrl);
+                var memoryStream = new MemoryStream();
 
-                return new Bitmap(responseStream);
+                await file.CopyToAsync(memoryStream);
+
+                memoryStream.Position = 0;
+                return memoryStream;
             }
             catch
             {

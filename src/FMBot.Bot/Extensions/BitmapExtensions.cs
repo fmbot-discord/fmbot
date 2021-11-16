@@ -1,6 +1,5 @@
 using System;
 using System.Drawing;
-using System.Drawing.Imaging;
 using SkiaSharp;
 
 namespace FMBot.Bot.Extensions
@@ -20,52 +19,37 @@ namespace FMBot.Bot.Extensions
             return Color.FromArgb(r, g, b);
         }
 
-        public static unsafe Color GetAverageRgbColor(this SKBitmap skbmp)
+        public static Color GetAverageRgbColor(this SKBitmap skbmp)
         {
-            var bmp = SkiaSharp.Views.Desktop.Extensions.ToBitmap(skbmp);
+            var r = 0;
+            var g = 0;
+            var b = 0;
 
-            var totalRed = 0;
-            var totalGreen = 0;
-            var totalBlue = 0;
+            var total = 0;
 
-            var bData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadWrite,
-                bmp.PixelFormat);
-            var bitsPerPixel = GetBitsPerPixel(bData.PixelFormat);
-            var scan0 = (byte*) bData.Scan0.ToPointer();
-            for (var i = 0; i < bData.Height; ++i)
+            for (var x = 0; x < skbmp.Width; x++)
             {
-                for (var j = 0; j < bData.Width; ++j)
+                for (var y = 0; y < skbmp.Height; y++)
                 {
-                    var data = scan0 + i * bData.Stride + j * bitsPerPixel / 8;
-                    var clr = Color.FromArgb(data[3], data[2], data[1], data[0]);
-                    totalRed += clr.R;
-                    totalGreen += clr.G;
-                    totalBlue += clr.B;
+                    var clr = skbmp.GetPixel(x, y);
+
+                    r += clr.Red;
+                    g += clr.Green;
+                    b += clr.Blue;
+
+                    total++;
                 }
             }
 
-            bmp.UnlockBits(bData);
+            total = total == 0 ? 1 : total;
 
-            var totalPixels = bData.Width * bData.Height;
-            var avgRed = (byte) (totalRed / totalPixels);
-            var avgGreen = (byte) (totalGreen / totalPixels);
-            var avgBlue = (byte) (totalBlue / totalPixels);
-            return Color.FromArgb(avgRed, avgGreen, avgBlue);
-        }
+            r /= total;
+            g /= total;
+            b /= total;
 
-        internal static byte GetBitsPerPixel(PixelFormat pixelFormat)
-        {
-            switch (pixelFormat)
-            {
-                case PixelFormat.Format24bppRgb:
-                    return 24;
-                case PixelFormat.Format32bppArgb:
-                case PixelFormat.Format32bppPArgb:
-                case PixelFormat.Format32bppRgb:
-                    return 32;
-                default:
-                    throw new ArgumentException("Only 24 and 32 bit images are supported");
-            }
+            var color = Color.FromArgb(r, g, b);
+
+            return color;
         }
 
         private static int PerceivedBrightness(Color c)
@@ -79,11 +63,6 @@ namespace FMBot.Bot.Extensions
         public static SKColor GetTextColor(this SKBitmap bmp)
         {
             return PerceivedBrightness(MostDifferent(GetAverageRgbColor(bmp))) > 130 ? SKColors.White : SKColors.Black;
-        }
-
-        public static Color GetPrimaryColor(this SKBitmap bmp)
-        {
-            return GetAverageRgbColor(bmp);
         }
     }
 }
