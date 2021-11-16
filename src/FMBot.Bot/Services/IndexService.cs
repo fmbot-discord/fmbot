@@ -190,10 +190,10 @@ namespace FMBot.Bot.Services
 
                     await connection.ExecuteAsync(sql, new
                     {
-                        guildUserToAdd.GuildId,
-                        guildUserToAdd.UserId,
-                        guildUserToAdd.UserName,
-                        guildUserToAdd.WhoKnowsWhitelisted,
+                        guildId = guildUserToAdd.GuildId,
+                        userId = guildUserToAdd.UserId,
+                        userName = guildUserToAdd.UserName,
+                        whoKnowsWhiteListed = guildUserToAdd.WhoKnowsWhitelisted
                     });
 
                     Log.Information("Added user {userId} to guild {guildName}", user.UserId, guild.Name);
