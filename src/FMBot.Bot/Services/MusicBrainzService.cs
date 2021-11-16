@@ -29,14 +29,17 @@ namespace FMBot.Bot.Services
 
                     if (musicBrainzArtist.Name != null)
                     {
+                        var startDate = musicBrainzArtist.LifeSpan?.Begin?.NearestDate;
+                        var endDate = musicBrainzArtist.LifeSpan?.End?.NearestDate;
+
                         artist.MusicBrainzDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                         artist.Location = musicBrainzArtist.Area?.Name;
                         artist.CountryCode = musicBrainzArtist.Country;
                         artist.Type = musicBrainzArtist.Type;
                         artist.Disambiguation = musicBrainzArtist.Disambiguation;
                         artist.Gender = musicBrainzArtist.Gender;
-                        artist.StartDate = musicBrainzArtist.LifeSpan?.Begin?.NearestDate;
-                        artist.EndDate = musicBrainzArtist.LifeSpan?.End?.NearestDate;
+                        artist.StartDate = startDate.HasValue ? DateTime.SpecifyKind(startDate.Value, DateTimeKind.Utc) : null;
+                        artist.EndDate = endDate.HasValue ? DateTime.SpecifyKind(endDate.Value, DateTimeKind.Utc) : null;
 
                         updated = true;
                     }
@@ -49,14 +52,18 @@ namespace FMBot.Bot.Services
 
                     if (musicBrainzArtist != null)
                     {
+
+                        var startDate = musicBrainzArtist.LifeSpan?.Begin?.NearestDate;
+                        var endDate = musicBrainzArtist.LifeSpan?.End?.NearestDate;
+
                         artist.MusicBrainzDate = DateTime.SpecifyKind(DateTime.UtcNow,DateTimeKind.Utc);
                         artist.Location = musicBrainzArtist.Area?.Name;
                         artist.CountryCode = musicBrainzArtist.Country;
                         artist.Type = musicBrainzArtist.Type;
                         artist.Disambiguation = musicBrainzArtist.Disambiguation;
                         artist.Gender = musicBrainzArtist.Gender;
-                        artist.StartDate = musicBrainzArtist.LifeSpan?.Begin?.NearestDate;
-                        artist.EndDate = musicBrainzArtist.LifeSpan?.End?.NearestDate;
+                        artist.StartDate = startDate.HasValue ? DateTime.SpecifyKind(startDate.Value, DateTimeKind.Utc) : null;
+                        artist.EndDate = endDate.HasValue ? DateTime.SpecifyKind(endDate.Value, DateTimeKind.Utc) : null;
 
                         updated = true;
                     }
