@@ -125,12 +125,29 @@ namespace FMBot.Bot.Commands.Guild
 
             var userToBlock = await this._settingService.GetDifferentUser(user);
 
-            if (userToBlock == null || !guild.GuildUsers.Select(s => s.UserId).Contains(userToBlock.UserId))
+            if (userToBlock == null)
             {
-                await ReplyAsync("User not found. Are you sure they are registered in .fmbot and in this server?\n" +
-                                 $"To refresh the cached memberlist on your server, use `{prfx}index`.");
+                await ReplyAsync("User not found. Are you sure they are registered in .fmbot?");
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
+            }
+
+            if (!guild.GuildUsers.Select(s => s.UserId).Contains(userToBlock.UserId))
+            {
+                var similarUsers = await this._adminService.GetUsersWithLfmUsernameAsync(userToBlock.UserNameLastFM);
+
+                var userInThisServer = similarUsers.FirstOrDefault(f =>
+                    f.UserNameLastFM.ToLower() == userToBlock.UserNameLastFM.ToLower() && guild.GuildUsers.Select(s => s.UserId).Contains(f.UserId));
+
+                if (userInThisServer == null)
+                {
+                    await ReplyAsync("User not found. Are you sure they are in this server?\n" +
+                                     $"To refresh the cached memberlist on your server, use `{prfx}index`.");
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
+                }
+
+                userToBlock = userInThisServer;
             }
 
             if (guild.GuildBlockedUsers != null &&
