@@ -48,7 +48,7 @@ namespace FMBot.Bot.Services.Guild
                 .AsNoTracking()
                 .Include(i => i.GuildBlockedUsers)
                     .ThenInclude(t => t.User)
-                .Include(i => i.GuildUsers.Where(w => w.Bot != true))
+                .Include(i => i.GuildUsers)
                     .ThenInclude(t => t.User)
                 .Include(i => i.Channels)
                 .Include(i => i.Webhooks)
