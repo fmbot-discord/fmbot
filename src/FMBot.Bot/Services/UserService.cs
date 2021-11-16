@@ -46,7 +46,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> UserBlockedAsync(ulong discordUserId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             const string cacheKey = "blocked-users";
 
             if (this._cache.TryGetValue(cacheKey, out IReadOnlyList<User> blockedUsers))
@@ -66,7 +66,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> UserHasSessionAsync(IUser discordUser)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var user = await db.Users
                 .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
@@ -81,7 +81,7 @@ namespace FMBot.Bot.Services
 
         public async Task UpdateUserLastUsedAsync(ulong discordUserId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var user = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
@@ -113,7 +113,7 @@ namespace FMBot.Bot.Services
 
         public async Task<User> GetUserWithFriendsAsync(IUser discordUser)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.Users
                 .Include(i => i.Friends)
                 .ThenInclude(i => i.FriendUser)
@@ -123,7 +123,7 @@ namespace FMBot.Bot.Services
 
         public async Task LogFeatured(int userId, FeaturedMode mode, BotType botType, string description, string artistName, string albumName, string trackName = null)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
 
             var featuredLog = new FeaturedLog
             {
@@ -134,7 +134,7 @@ namespace FMBot.Bot.Services
                 TrackName = trackName,
                 ArtistName = artistName,
                 FeaturedMode = mode,
-                DateTime = DateTime.UtcNow
+                DateTime = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc)
             };
 
             await db.FeaturedLogs.AddAsync(featuredLog);
@@ -144,7 +144,7 @@ namespace FMBot.Bot.Services
 
         public async Task<User> GetUserAsync(ulong discordUserId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.Users
                 .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
@@ -153,7 +153,7 @@ namespace FMBot.Bot.Services
         // User settings
         public async Task<User> GetFullUserAsync(ulong discordUserId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var query = db.Users
                 .Include(i => i.Friends)
                 .Include(i => i.FriendedByUsers);

@@ -272,34 +272,6 @@ namespace FMBot.Bot.Services.WhoKnows
             });
         }
 
-        // TODO: figure out how to do this
-        public async Task<int> GetWeekArtistListenerCountForGuildAsync(IEnumerable<User> guildUsers, string artistName)
-        {
-            var now = DateTime.UtcNow;
-            var minDate = DateTime.UtcNow.AddDays(-7);
-
-            var userIds = guildUsers.Select(s => s.UserId);
-
-            try
-            {
-                await using var db = this._contextFactory.CreateDbContext();
-                return await db.UserPlays
-                    .AsQueryable()
-                    .Where(w =>
-                        userIds.Contains(w.UserId) &&
-                        w.TimePlayed.Date <= now.Date &&
-                        w.TimePlayed.Date > minDate.Date &&
-                        EF.Functions.ILike(w.ArtistName, artistName))
-                    .GroupBy(x => new { x.UserId, x.ArtistName, x.UserPlayId })
-                    .CountAsync();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
-        }
-
         public async Task<IReadOnlyList<AffinityArtistResultWithUser>> GetNeighbors(IEnumerable<User> guildUsers, int userId)
         {
             var userIds = guildUsers

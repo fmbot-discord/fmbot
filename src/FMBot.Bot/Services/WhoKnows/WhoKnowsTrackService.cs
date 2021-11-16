@@ -266,7 +266,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var userIds = guildUsers.Select(s => s.UserId);
 
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.UserPlays
                 .AsQueryable()
                 .CountAsync(t =>

@@ -208,7 +208,7 @@ namespace FMBot.LastFM.Repositories
                 return;
             }
 
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var artistAliases = await db.ArtistAliases
                 .Include(i => i.Artist)
                 .ToListAsync();
@@ -229,7 +229,7 @@ namespace FMBot.LastFM.Repositories
 
         private async Task<UserPlay> GetLastStoredPlay(User user)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.UserPlays
                 .OrderByDescending(o => o.TimePlayed)
                 .FirstOrDefaultAsync(f => f.UserId == user.UserId);
@@ -298,7 +298,7 @@ namespace FMBot.LastFM.Repositories
             NpgsqlConnection connection,
             IReadOnlyCollection<UserArtist> userArtists)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
 
             foreach (var artist in newScrobbles.GroupBy(g => g.ArtistName.ToLower()))
             {
@@ -560,7 +560,7 @@ namespace FMBot.LastFM.Repositories
                 return;
             }
 
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingInactiveUser = await db.InactiveUsers.FirstOrDefaultAsync(f => f.UserId == user.UserId);
 
             if (existingInactiveUser == null)
@@ -569,8 +569,8 @@ namespace FMBot.LastFM.Repositories
                 {
                     UserNameLastFM = user.UserNameLastFM,
                     UserId = user.UserId,
-                    Created = DateTime.UtcNow,
-                    Updated = DateTime.UtcNow,
+                    Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+                    Updated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
                     MissingParametersErrorCount = 1
                 };
 
@@ -581,7 +581,7 @@ namespace FMBot.LastFM.Repositories
             else
             {
                 existingInactiveUser.MissingParametersErrorCount++;
-                existingInactiveUser.Updated = DateTime.UtcNow;
+                existingInactiveUser.Updated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
                 db.Entry(existingInactiveUser).State = EntityState.Modified;
 
@@ -607,8 +607,8 @@ namespace FMBot.LastFM.Repositories
                 {
                     UserNameLastFM = user.UserNameLastFM,
                     UserId = user.UserId,
-                    Created = DateTime.UtcNow,
-                    Updated = DateTime.UtcNow,
+                    Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+                    Updated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
                     RecentTracksPrivateCount = 1
                 };
 
@@ -619,7 +619,7 @@ namespace FMBot.LastFM.Repositories
             else
             {
                 existingPrivateUser.RecentTracksPrivateCount++;
-                existingPrivateUser.Updated = DateTime.UtcNow;
+                existingPrivateUser.Updated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
                 db.Entry(existingPrivateUser).State = EntityState.Modified;
 

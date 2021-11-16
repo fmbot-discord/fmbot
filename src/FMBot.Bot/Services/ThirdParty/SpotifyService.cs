@@ -66,7 +66,7 @@ namespace FMBot.Bot.Services.ThirdParty
 
                 if (dbArtist == null)
                 {
-                    await using var db = this._contextFactory.CreateDbContext();
+                    await using var db = await this._contextFactory.CreateDbContextAsync();
                     var spotifyArtist = await GetArtistFromSpotify(artistInfo.ArtistName);
 
                     var artistToAdd = new Artist
@@ -91,7 +91,7 @@ namespace FMBot.Bot.Services.ThirdParty
                         if (spotifyArtist.Images.Any())
                         {
                             artistToAdd.SpotifyImageUrl = spotifyArtist.Images.OrderByDescending(o => o.Height).First().Url;
-                            artistToAdd.SpotifyImageDate = DateTime.UtcNow;
+                            artistToAdd.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
                             if (artistInfo.ArtistUrl != null)
                             {
@@ -152,14 +152,14 @@ namespace FMBot.Bot.Services.ThirdParty
                 {
                     dbArtist = musicBrainzUpdate.Artist;
 
-                    await using var db = this._contextFactory.CreateDbContext();
+                    await using var db = await this._contextFactory.CreateDbContextAsync();
                     db.Entry(dbArtist).State = EntityState.Modified;
                     await db.SaveChangesAsync();
                 }
 
                 if (dbArtist.SpotifyImageUrl == null || dbArtist.SpotifyImageDate < DateTime.UtcNow.AddDays(-15))
                 {
-                    await using var db = this._contextFactory.CreateDbContext();
+                    await using var db = await this._contextFactory.CreateDbContextAsync();
 
                     var spotifyArtist = await GetArtistFromSpotify(artistInfo.ArtistName);
 
@@ -180,7 +180,7 @@ namespace FMBot.Bot.Services.ThirdParty
                             .AddOrUpdateArtistGenres(dbArtist.Id, spotifyArtist.Genres.Select(s => s), connection);
                     }
 
-                    dbArtist.SpotifyImageDate = DateTime.UtcNow;
+                    dbArtist.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                     db.Entry(dbArtist).State = EntityState.Modified;
                     await db.SaveChangesAsync();
 
@@ -233,7 +233,7 @@ namespace FMBot.Bot.Services.ThirdParty
         {
             try
             {
-                await using var db = this._contextFactory.CreateDbContext();
+                await using var db = await this._contextFactory.CreateDbContextAsync();
 
                 await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
                 await connection.OpenAsync();
@@ -281,7 +281,7 @@ namespace FMBot.Bot.Services.ThirdParty
                         }
                     }
 
-                    trackToAdd.SpotifyLastUpdated = DateTime.UtcNow;
+                    trackToAdd.SpotifyLastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
                     await db.Tracks.AddAsync(trackToAdd);
                     await db.SaveChangesAsync();
@@ -327,7 +327,7 @@ namespace FMBot.Bot.Services.ThirdParty
                         }
                     }
 
-                    dbTrack.SpotifyLastUpdated = DateTime.UtcNow;
+                    dbTrack.SpotifyLastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                     db.Entry(dbTrack).State = EntityState.Modified;
                 }
 
@@ -424,7 +424,7 @@ namespace FMBot.Bot.Services.ThirdParty
 
         public async Task<Album> GetOrStoreSpotifyAlbumAsync(AlbumInfo albumInfo)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
 
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
@@ -467,7 +467,7 @@ namespace FMBot.Bot.Services.ThirdParty
                     this._cache.Set(AlbumService.CacheKeyForAlbumCover(albumInfo.AlbumUrl), coverUrl, TimeSpan.FromMinutes(5));
                 }
 
-                albumToAdd.SpotifyImageDate = DateTime.UtcNow;
+                albumToAdd.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
                 await db.Albums.AddAsync(albumToAdd);
                 await db.SaveChangesAsync();
@@ -520,7 +520,7 @@ namespace FMBot.Bot.Services.ThirdParty
                     this._cache.Set(AlbumService.CacheKeyForAlbumCover(albumInfo.AlbumUrl), coverUrl, TimeSpan.FromMinutes(5));
                 }
 
-                dbAlbum.SpotifyImageDate = DateTime.UtcNow;
+                dbAlbum.SpotifyImageDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                 dbAlbum.LastfmImageUrl = albumInfo.AlbumCoverUrl;
 
                 db.Entry(dbAlbum).State = EntityState.Modified;
@@ -541,7 +541,7 @@ namespace FMBot.Bot.Services.ThirdParty
         private async Task GetOrStoreAlbumTracks(IEnumerable<SimpleTrack> simpleTracks, AlbumInfo albumInfo,
             int albumId, NpgsqlConnection connection)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var dbTracks = new List<Track>();
             foreach (var track in simpleTracks.OrderBy(o => o.TrackNumber))
             {
@@ -560,7 +560,7 @@ namespace FMBot.Bot.Services.ThirdParty
                         DurationMs = track.DurationMs,
                         SpotifyId = track.Id,
                         ArtistName = albumInfo.ArtistName,
-                        SpotifyLastUpdated = DateTime.UtcNow,
+                        SpotifyLastUpdated = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
                         AlbumId = albumId
                     };
 
@@ -595,7 +595,7 @@ namespace FMBot.Bot.Services.ThirdParty
 
         public static RecentTrack SpotifyGameToRecentTrack(SpotifyGame spotifyActivity)
         {
-            return new()
+            return new RecentTrack
             {
                 TrackName = spotifyActivity.TrackTitle,
                 AlbumName = spotifyActivity.AlbumTitle,

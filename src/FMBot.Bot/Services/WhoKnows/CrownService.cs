@@ -151,8 +151,8 @@ namespace FMBot.Bot.Services.WhoKnows
                     GuildId = guild.GuildId,
                     ArtistName = artistName,
                     Active = true,
-                    Created = DateTime.UtcNow,
-                    Modified = DateTime.UtcNow,
+                    Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+                    Modified = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
                     StartPlaycount = topUser.Playcount,
                     CurrentPlaycount = topUser.Playcount,
                     SeededCrown = false
@@ -188,8 +188,8 @@ namespace FMBot.Bot.Services.WhoKnows
                         GuildId = guild.GuildId,
                         ArtistName = artistName,
                         Active = true,
-                        Created = DateTime.UtcNow,
-                        Modified = DateTime.UtcNow,
+                        Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+                        Modified = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
                         StartPlaycount = topUser.Playcount,
                         CurrentPlaycount = topUser.Playcount,
                         SeededCrown = false
@@ -287,7 +287,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 minPlaycount
             });
 
-            var now = DateTime.UtcNow;
+            var now = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
             var crownsToSeed = topUsersForPlaycount.Select(s =>
                 new UserCrown
                 {

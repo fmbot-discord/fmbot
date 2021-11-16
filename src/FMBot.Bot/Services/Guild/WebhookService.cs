@@ -56,7 +56,7 @@ namespace FMBot.Bot.Services.Guild
             {
                 GuildId = guildId,
                 BotType = botType,
-                Created = DateTime.UtcNow,
+                Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
                 DiscordWebhookId = newWebhook.Id,
                 Token = newWebhook.Token
             };

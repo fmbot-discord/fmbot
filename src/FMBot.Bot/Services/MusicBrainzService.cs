@@ -29,7 +29,7 @@ namespace FMBot.Bot.Services
 
                     if (musicBrainzArtist.Name != null)
                     {
-                        artist.MusicBrainzDate = DateTime.UtcNow;
+                        artist.MusicBrainzDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
                         artist.Location = musicBrainzArtist.Area?.Name;
                         artist.CountryCode = musicBrainzArtist.Country;
                         artist.Type = musicBrainzArtist.Type;
@@ -49,7 +49,7 @@ namespace FMBot.Bot.Services
 
                     if (musicBrainzArtist != null)
                     {
-                        artist.MusicBrainzDate = DateTime.UtcNow;
+                        artist.MusicBrainzDate = DateTime.SpecifyKind(DateTime.UtcNow,DateTimeKind.Utc);
                         artist.Location = musicBrainzArtist.Area?.Name;
                         artist.CountryCode = musicBrainzArtist.Country;
                         artist.Type = musicBrainzArtist.Type;
