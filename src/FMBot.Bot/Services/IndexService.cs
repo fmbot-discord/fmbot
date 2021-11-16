@@ -193,7 +193,7 @@ namespace FMBot.Bot.Services
                         guildId = guildUserToAdd.GuildId,
                         userId = guildUserToAdd.UserId,
                         userName = guildUserToAdd.UserName,
-                        whoKnowsWhiteListed = guildUserToAdd.WhoKnowsWhitelisted
+                        whoKnowsWhitelisted = guildUserToAdd.WhoKnowsWhitelisted
                     });
 
                     Log.Information("Added user {userId} to guild {guildName}", user.UserId, guild.Name);
@@ -280,7 +280,7 @@ namespace FMBot.Bot.Services
                 var discordName = discordGuildUser.Nickname ?? discordGuildUser.Username;
 
                 const string sql = "UPDATE guild_users " +
-                                   "SET user_name =  @userName, " +
+                                   "SET user_name =  @UserName, " +
                                    "who_knows_whitelisted =  @whoKnowsWhitelisted " +
                                    "WHERE guild_id = @guildId AND user_id = @userId ";
 
