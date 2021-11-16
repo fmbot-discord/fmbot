@@ -142,7 +142,6 @@ namespace FMBot.Bot.Services
             await db.SaveChangesAsync();
         }
 
-        // Log featured
         public async Task<User> GetUserAsync(ulong discordUserId)
         {
             await using var db = this._contextFactory.CreateDbContext();

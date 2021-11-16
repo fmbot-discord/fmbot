@@ -108,7 +108,7 @@ namespace FMBot.LastFM.Repositories
                 return recentTracks;
             }
 
-            await RemoveInactiveUserIfExists(user);
+            _ = RemoveInactiveUserIfExists(user);
 
             await using var connection = new NpgsqlConnection(this._connectionString);
             await connection.OpenAsync();
@@ -631,7 +631,7 @@ namespace FMBot.LastFM.Repositories
 
         private async Task RemoveInactiveUserIfExists(User user)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
 
             var existingInactiveUser = await db.InactiveUsers.FirstOrDefaultAsync(f => f.UserId == user.UserId);
 

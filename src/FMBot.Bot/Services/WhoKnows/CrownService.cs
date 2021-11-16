@@ -70,8 +70,10 @@ namespace FMBot.Bot.Services.WhoKnows
                 return null;
             }
 
-            await using var db = this._contextFactory.CreateDbContext();
-            var currentCrownHolder = await GetCurrentCrownHolder(guild.GuildId, artistName);
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var currentCrownHolder = await GetCurrentCrownHolder(connection, guild.GuildId, artistName);
 
             // Crown exists and is same as top user
             if (currentCrownHolder != null && topUser.UserId == currentCrownHolder.UserId)
@@ -83,8 +85,7 @@ namespace FMBot.Bot.Services.WhoKnows
                     currentCrownHolder.Modified = DateTime.UtcNow;
                     currentCrownHolder.SeededCrown = false;
 
-                    db.Entry(currentCrownHolder).State = EntityState.Modified;
-                    await db.SaveChangesAsync();
+                    await UpdateCrown(connection, currentCrownHolder.CrownId, currentCrownHolder);
 
                     return new CrownModel
                     {
@@ -98,11 +99,17 @@ namespace FMBot.Bot.Services.WhoKnows
                 };
             }
 
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+
             // Crown exists, but top user is a different person
             if (currentCrownHolder != null && topUser.UserId != currentCrownHolder.UserId)
             {
+                var crownUser = await db.Users
+                    .AsNoTracking()
+                    .FirstAsync(f => f.UserId == currentCrownHolder.UserId);
+
                 var currentPlaycountForCrownHolder =
-                    await GetCurrentPlaycountForUser(artistName, currentCrownHolder.User.UserNameLastFM, currentCrownHolder.UserId);
+                    await GetCurrentPlaycountForUser(artistName, crownUser.UserNameLastFM, currentCrownHolder.UserId);
 
                 if (PublicProperties.IssuesAtLastFm)
                 {
@@ -125,9 +132,7 @@ namespace FMBot.Bot.Services.WhoKnows
                     currentCrownHolder.CurrentPlaycount = topUser.Playcount;
                     currentCrownHolder.Modified = DateTime.UtcNow;
 
-                    db.Entry(currentCrownHolder).State = EntityState.Modified;
-
-                    await db.SaveChangesAsync();
+                    await UpdateCrown(connection, currentCrownHolder.CrownId, currentCrownHolder);
 
                     return new CrownModel
                     {
@@ -138,7 +143,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 currentCrownHolder.Active = false;
                 currentCrownHolder.Modified = DateTime.UtcNow;
 
-                db.Entry(currentCrownHolder).State = EntityState.Modified;
+                await UpdateCrown(connection, currentCrownHolder.CrownId, currentCrownHolder);
 
                 var newCrown = new UserCrown
                 {
@@ -157,13 +162,16 @@ namespace FMBot.Bot.Services.WhoKnows
 
                 await db.SaveChangesAsync();
 
+                await db.DisposeAsync();
+                await connection.CloseAsync();
+
                 var currentCrownHolderName = users.FirstOrDefault(f => f.UserId == currentCrownHolder.UserId)?.DiscordName;
 
                 return new CrownModel
                 {
                     Crown = newCrown,
                     CrownResult = $"Crown stolen by {topUser.DiscordName} with `{topUser.Playcount}` plays! \n" +
-                                  $"*Previous owner: {currentCrownHolderName ?? currentCrownHolder.User.UserNameLastFM} with `{currentCrownHolder.CurrentPlaycount}` plays*."
+                                  $"*Previous owner: {currentCrownHolderName ?? crownUser.UserNameLastFM} with `{currentCrownHolder.CurrentPlaycount}` plays*."
                 };
             }
 
@@ -191,6 +199,9 @@ namespace FMBot.Bot.Services.WhoKnows
 
                     await db.SaveChangesAsync();
 
+                    await db.DisposeAsync();
+                    await connection.CloseAsync();
+
                     return new CrownModel
                     {
                         Crown = newCrown,
@@ -212,7 +223,7 @@ namespace FMBot.Bot.Services.WhoKnows
             return null;
         }
 
-        private async Task<UserCrown> GetCurrentCrownHolder(int guildId, string artistName)
+        private static async Task<UserCrown> GetCurrentCrownHolder(NpgsqlConnection connection, int guildId, string artistName)
         {
             const string sql = "SELECT * FROM public.user_crowns AS uc " +
                                     "WHERE uc.guild_id = @guildId AND " +
@@ -221,13 +232,32 @@ namespace FMBot.Bot.Services.WhoKnows
                                     "ORDER BY current_playcount desc";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
-            await connection.OpenAsync();
 
             return await connection.QueryFirstOrDefaultAsync<UserCrown>(sql, new
             {
                 guildId,
                 artistName
+            });
+        }
+
+        private static async Task UpdateCrown(NpgsqlConnection connection, int crownId, UserCrown updatedCrown)
+        {
+            const string sql = "UPDATE public.user_crowns " +
+                               "SET current_playcount = @currentPlaycount, " +
+                               "modified = @modified, " +
+                               "active = @active, " +
+                               "seeded_crown = @seededCrown " +
+                               "WHERE crown_id = @crownId";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+            await connection.QueryAsync(sql, new
+            {
+                crownId,
+                currentPlaycount = updatedCrown.CurrentPlaycount,
+                modified = updatedCrown.Modified,
+                active = updatedCrown.Active,
+                seededCrown = updatedCrown.SeededCrown
             });
         }
 
@@ -369,7 +399,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
         public async Task<List<IGrouping<int, UserCrown>>> GetTopCrownUsersForGuild(Persistence.Domain.Models.Guild guild)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var guildCrowns = await db.UserCrowns
                 .AsQueryable()
                 .Include(i => i.User)
