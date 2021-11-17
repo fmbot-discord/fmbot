@@ -322,7 +322,7 @@ namespace FMBot.Bot.Commands.Guild
                     {
                         x.Embed = this._embed.Build();
                         x.Components = new ComponentBuilder().Build(); // No components
-                    x.AllowedMentions = AllowedMentions.None;
+                        x.AllowedMentions = AllowedMentions.None;
                     });
                 }
 
@@ -535,20 +535,28 @@ namespace FMBot.Bot.Commands.Guild
             this._embed.WithDescription($"<a:loading:821676038102056991> Seeding crowns for your server, this can take a while on larger servers...");
             var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
-            var guildCrowns = await this._crownService.GetAllCrownsForGuild(guild.GuildId);
-
-            var amountOfCrownsSeeded = await this._crownService.SeedCrownsForGuild(guild, guildCrowns).ConfigureAwait(false);
-
-            await message.ModifyAsync(m =>
+            try
             {
-                m.Embed = new EmbedBuilder()
-                    .WithDescription($"Seeded {amountOfCrownsSeeded} crowns for your server.\n\n" +
-                                     $"Tip: You can remove all crowns with `{prfx}killallcrowns` or remove all automatically seeded crowns with `{prfx}killallseededcrowns`.")
-                    .WithColor(DiscordConstants.SuccessColorGreen)
-                    .Build();
-            });
+                var guildCrowns = await this._crownService.GetAllCrownsForGuild(guild.GuildId);
 
-            this.Context.LogCommandUsed();
+                var amountOfCrownsSeeded = await this._crownService.SeedCrownsForGuild(guild, guildCrowns).ConfigureAwait(false);
+
+                await message.ModifyAsync(m =>
+                {
+                    m.Embed = new EmbedBuilder()
+                        .WithDescription($"Seeded {amountOfCrownsSeeded} crowns for your server.\n\n" +
+                                         $"Tip: You can remove all crowns with `{prfx}killallcrowns` or remove all automatically seeded crowns with `{prfx}killallseededcrowns`.")
+                        .WithColor(DiscordConstants.SuccessColorGreen)
+                        .Build();
+                });
+
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                await ReplyAsync("Something went wrong while attempting to seed crowns, please contact .fmbot staff.");
+                this.Context.LogCommandException(e);
+            }
         }
 
         [Command("killallcrowns", RunMode = RunMode.Async)]

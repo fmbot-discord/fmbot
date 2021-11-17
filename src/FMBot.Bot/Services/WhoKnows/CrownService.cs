@@ -283,7 +283,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
             var topUsersForPlaycount = await connection.QueryAsync<CrownSeedDto>(sql, new
             {
-                guild.GuildId,
+                guildId = guild.GuildId,
                 minPlaycount
             });
 
@@ -316,7 +316,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
             await connection.ExecuteAsync(deleteOldSeededCrownsSql, new
             {
-                guild.GuildId,
+                guildId = guild.GuildId,
             });
 
             var copyHelper = new PostgreSQLCopyHelper<UserCrown>("public", "user_crowns")
