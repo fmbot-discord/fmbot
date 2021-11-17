@@ -398,7 +398,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                     var foundGenres = await this._genreService.GetGenresForArtist(artistName);
 
-                    if (foundGenres.Any())
+                    if (foundGenres != null && foundGenres.Any())
                     {
                         var artist = await this._artistsService.GetArtistFromDatabase(artistName);
 
