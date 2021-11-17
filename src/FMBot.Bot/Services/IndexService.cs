@@ -153,7 +153,7 @@ namespace FMBot.Bot.Services
 
         public async Task<GuildUser> GetOrAddUserToGuild(Persistence.Domain.Models.Guild guild, IGuildUser discordGuildUser, User user)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
 
             try
             {
@@ -210,7 +210,7 @@ namespace FMBot.Bot.Services
                 {
                     GuildId = guild.GuildId,
                     UserId = user.UserId,
-                    UserName = discordGuildUser.Nickname ?? discordGuildUser.Username
+                    UserName = discordGuildUser.Nickname ?? discordGuildUser.Username ?? user.UserNameLastFM
                 };
             }
 
