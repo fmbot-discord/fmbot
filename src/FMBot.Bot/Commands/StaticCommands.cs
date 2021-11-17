@@ -223,14 +223,14 @@ namespace FMBot.Bot.Commands
             var onlineShards = new StringBuilder();
             foreach (var shard in client.Shards.Where(w => w.Latency > 0))
             {
-                onlineShards.Append($"`{shard.ShardId}` - `{shard.Latency}ms`, ");
+                onlineShards.Append($"{shard.ShardId} ({shard.Latency}), ");
             }
             this._embed.AddField("Online shards", onlineShards.Length > 0 ? onlineShards.ToString() : "No online shards");
 
             var offlineShards = new StringBuilder();
             foreach (var shard in client.Shards.Where(w => w.Latency == 0))
             {
-                offlineShards.Append($"`{shard.ShardId}` - `{shard.Latency}ms`, ");
+                offlineShards.Append($"{shard.ShardId} ({shard.Latency}), ");
             }
             this._embed.AddField("Offline shards", offlineShards.Length > 0 ? offlineShards.ToString() : "No offline shards");
 
