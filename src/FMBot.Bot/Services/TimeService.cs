@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
+using Discord.Commands;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -95,6 +97,52 @@ namespace FMBot.Bot.Services
         private static string CacheKeyForArtist(string artistName)
         {
             return $"artist-length-avg-{artistName}";
+        }
+
+        public async Task<List<WhoKnowsObjectWithUser>> UserPlaysToGuildLeaderboard(ICommandContext context, List<UserPlay> userPlays, ICollection<GuildUser> guildUsers)
+        {
+            var whoKnowsAlbumList = new List<WhoKnowsObjectWithUser>();
+
+            var userPlaysPerUser = userPlays
+                .GroupBy(g => g.UserId)
+                .ToList();
+
+            for (var i = 0; i < userPlaysPerUser.Count(); i++)
+            {
+                var user = userPlaysPerUser[i];
+
+                var timeListened = await GetPlayTimeForPlays(user);
+
+                var guildUser = guildUsers.FirstOrDefault(f => f.UserId == user.Key);
+
+                if (guildUser != null)
+                {
+                    var userName = guildUser.UserName ?? guildUser.User.UserNameLastFM;
+
+                    if (i <= 10)
+                    {
+                        var discordUser = await context.Guild.GetUserAsync(guildUser.User.DiscordUserId);
+                        if (discordUser != null)
+                        {
+                            userName = discordUser.Nickname ?? discordUser.Username;
+                        }
+                    }
+
+                    whoKnowsAlbumList.Add(new WhoKnowsObjectWithUser
+                    {
+                        DiscordName = userName,
+                        Playcount = (int)timeListened.TotalMinutes,
+                        LastFMUsername = guildUser.User.UserNameLastFM,
+                        UserId = user.Key,
+                        WhoKnowsWhitelisted = guildUser.WhoKnowsWhitelisted,
+                        Name = StringExtensions.GetListeningTimeString(timeListened)
+                    });
+                }
+            }
+
+            return whoKnowsAlbumList
+                .OrderByDescending(o => o.Playcount)
+                .ToList();
         }
     }
 }
