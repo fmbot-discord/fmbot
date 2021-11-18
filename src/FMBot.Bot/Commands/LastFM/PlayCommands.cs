@@ -907,7 +907,7 @@ namespace FMBot.Bot.Commands.LastFM
         [SupportsPagination]
         [RequiresIndex]
         [CommandCategories(CommandCategory.Crowns)]
-        public async Task PlayLeaderboardAsync()
+        public async Task PlayLeaderboardAsync([Remainder] string options = null)
         {
             try
             {
@@ -983,7 +983,7 @@ namespace FMBot.Bot.Commands.LastFM
         [SupportsPagination]
         [RequiresIndex]
         [CommandCategories(CommandCategory.Crowns)]
-        public async Task TimeLeaderboardAsync()
+        public async Task TimeLeaderboardAsync([Remainder] string options = null)
         {
             try
             {
