@@ -270,6 +270,12 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                 }
 
+                if (!currentTrack.NowPlaying && currentTrack.TimePlayed.HasValue && currentTrack.TimePlayed < DateTime.UtcNow.AddHours(-1) && currentTrack.TimePlayed > DateTime.UtcNow.AddDays(-5))
+                {
+                    footerText +=
+                        $"Using Spotify and fm lagging behind? Check '.outofsync'\n";
+                }
+
                 if (currentTrack.Loved)
                 {
                     footerText +=

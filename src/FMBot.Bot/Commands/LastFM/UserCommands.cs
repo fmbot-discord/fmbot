@@ -768,6 +768,8 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 sb.AppendLine();
+                sb.AppendLine($"Logging out will not fix any sync issues with Spotify, for that please check out `{prfx}outofsync`.");
+                sb.AppendLine();
                 sb.AppendLine($"Type `{prfx}remove confirm` to confirm deletion.");
 
                 this._embed.WithDescription(sb.ToString());
