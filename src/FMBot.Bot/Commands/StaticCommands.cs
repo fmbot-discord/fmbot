@@ -125,8 +125,8 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("outofsync", RunMode = RunMode.Async)]
-        [Summary("Info for inviting the bot to a server")]
-        [Alias("broken", "sync", "fix")]
+        [Summary("Info for what to do when now playing track is lagging behind")]
+        [Alias("broken", "sync", "fix", "lagging", "stuck")]
         [CommandCategories(CommandCategory.Other)]
         public async Task OutOfSyncAsync()
         {
