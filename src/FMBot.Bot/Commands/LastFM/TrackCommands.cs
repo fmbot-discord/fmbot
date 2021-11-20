@@ -39,6 +39,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly PlayService _playService;
         private readonly SettingService _settingService;
         private readonly SpotifyService _spotifyService;
+        private readonly TimeService _timeService;
         private readonly UserService _userService;
         private readonly FriendsService _friendsService;
         private readonly WhoKnowsTrackService _whoKnowsTrackService;
@@ -66,7 +67,8 @@ namespace FMBot.Bot.Commands.LastFM
                 InteractiveService interactivity,
                 WhoKnowsService whoKnowsService,
                 IOptions<BotSettings> botSettings,
-                FriendsService friendsService) : base(botSettings)
+                FriendsService friendsService,
+                TimeService timeService) : base(botSettings)
         {
             this._guildService = guildService;
             this._indexService = indexService;
@@ -82,6 +84,7 @@ namespace FMBot.Bot.Commands.LastFM
             this.Interactivity = interactivity;
             this._whoKnowsService = whoKnowsService;
             this._friendsService = friendsService;
+            this._timeService = timeService;
         }
 
         [Command("track", RunMode = RunMode.Async)]
@@ -119,65 +122,96 @@ namespace FMBot.Bot.Commands.LastFM
             this._embed.WithAuthor(this._embedAuthor);
 
             var spotifyTrack = await this._spotifyService.GetOrStoreTrackAsync(track);
-
-            if (spotifyTrack != null && !string.IsNullOrEmpty(spotifyTrack.SpotifyId))
+            try
             {
-                this._embed.AddField("Stats",
-                    $"`{track.TotalListeners}` listeners\n" +
-                    $"`{track.TotalPlaycount}` global {StringExtensions.GetPlaysString(track.TotalPlaycount)}\n" +
-                    $"`{track.UserPlaycount}` {StringExtensions.GetPlaysString(track.UserPlaycount)} by you\n",
-                    true);
 
-                var trackLength = TimeSpan.FromMilliseconds(spotifyTrack.DurationMs.GetValueOrDefault());
-                var formattedTrackLength = string.Format("{0}{1}:{2:D2}",
-                    trackLength.Hours == 0 ? "" : $"{trackLength.Hours}:",
-                    trackLength.Minutes,
-                    trackLength.Seconds);
 
-                var pitch = StringExtensions.KeyIntToPitchString(spotifyTrack.Key.GetValueOrDefault());
-                var bpm = $"{spotifyTrack.Tempo.GetValueOrDefault():0.0}";
 
-                this._embed.AddField("Info",
-                    $"`{formattedTrackLength}` duration\n" +
-                    $"`{pitch}` key\n" +
-                    $"`{bpm}` bpm\n",
-                    true);
+                var leftStats = new StringBuilder();
+                var rightStats = new StringBuilder();
 
-                if (spotifyTrack.Danceability.HasValue && spotifyTrack.Energy.HasValue && spotifyTrack.Instrumentalness.HasValue &&
-                    spotifyTrack.Acousticness.HasValue && spotifyTrack.Speechiness.HasValue && spotifyTrack.Liveness.HasValue)
+                leftStats.AppendLine($"`{track.TotalListeners}` listeners");
+                leftStats.AppendLine($"`{track.TotalPlaycount}` global {StringExtensions.GetPlaysString(track.TotalPlaycount)}");
+                leftStats.AppendLine($"`{track.UserPlaycount}` {StringExtensions.GetPlaysString(track.UserPlaycount)} by you");
+
+
+                var duration = spotifyTrack?.DurationMs ?? track.Duration;
+                if (duration is > 0)
                 {
-                    var danceability = ((decimal)(spotifyTrack.Danceability / 1)).ToString("0%");
-                    var energetic = ((decimal)(spotifyTrack.Energy / 1)).ToString("0%");
-                    var instrumental = ((decimal)(spotifyTrack.Instrumentalness / 1)).ToString("0%");
-                    var acoustic = ((decimal)(spotifyTrack.Acousticness / 1)).ToString("0%");
-                    var speechful = ((decimal)(spotifyTrack.Speechiness / 1)).ToString("0%");
-                    var lively = ((decimal)(spotifyTrack.Liveness / 1)).ToString("0%");
-                    this._embed.WithFooter($"{danceability} danceable - {energetic} energetic - {acoustic} acoustic\n" +
-                                           $"{instrumental} instrumental - {speechful} speechful - {lively} lively");
+                    var trackLength = TimeSpan.FromMilliseconds(duration.GetValueOrDefault());
+                    var formattedTrackLength = string.Format("{0}{1}:{2:D2}",
+                        trackLength.Hours == 0 ? "" : $"{trackLength.Hours}:",
+                        trackLength.Minutes,
+                        trackLength.Seconds);
+
+                    rightStats.AppendLine($"`{formattedTrackLength}` duration");
+
+                    if (track.UserPlaycount > 1)
+                    {
+                        var listeningTime =
+                            await this._timeService.GetPlayTimeForTrackWithPlaycount(track.ArtistName, track.TrackName,
+                                track.UserPlaycount.GetValueOrDefault());
+
+                        leftStats.AppendLine($"`{StringExtensions.GetListeningTimeString(listeningTime)}` spent listening");
+                    }
                 }
+
+                if (spotifyTrack != null && !string.IsNullOrEmpty(spotifyTrack.SpotifyId))
+                {
+                    var pitch = StringExtensions.KeyIntToPitchString(spotifyTrack.Key.GetValueOrDefault());
+
+                    rightStats.AppendLine($"`{pitch}` key");
+
+                    if (spotifyTrack.Tempo.HasValue)
+                    {
+                        var bpm = $"{spotifyTrack.Tempo.Value:0.0}";
+                        rightStats.AppendLine($"`{bpm}` bpm");
+                    }
+
+                    if (spotifyTrack.Danceability.HasValue && spotifyTrack.Energy.HasValue && spotifyTrack.Instrumentalness.HasValue &&
+                        spotifyTrack.Acousticness.HasValue && spotifyTrack.Speechiness.HasValue && spotifyTrack.Liveness.HasValue)
+                    {
+                        var danceability = ((decimal)(spotifyTrack.Danceability / 1)).ToString("0%");
+                        var energetic = ((decimal)(spotifyTrack.Energy / 1)).ToString("0%");
+                        var instrumental = ((decimal)(spotifyTrack.Instrumentalness / 1)).ToString("0%");
+                        var acoustic = ((decimal)(spotifyTrack.Acousticness / 1)).ToString("0%");
+                        var speechful = ((decimal)(spotifyTrack.Speechiness / 1)).ToString("0%");
+                        var lively = ((decimal)(spotifyTrack.Liveness / 1)).ToString("0%");
+                        this._embed.WithFooter($"{danceability} danceable - {energetic} energetic - {acoustic} acoustic\n" +
+                                               $"{instrumental} instrumental - {speechful} speechful - {lively} lively");
+                    }
+                }
+
+                this._embed.AddField("Statistics", leftStats.ToString(), true);
+
+                if (rightStats.Length > 0)
+                {
+                    this._embed.AddField("Info", rightStats.ToString(), true);
+                }
+
+                if (!string.IsNullOrWhiteSpace(track.Description))
+                {
+                    this._embed.AddField("Summary", track.Description);
+                }
+
+                if (track.Tags != null && track.Tags.Any())
+                {
+                    var tags = LastFmRepository.TagsToLinkedString(track.Tags);
+
+                    this._embed.AddField("Tags", tags);
+                }
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+                this.Context.LogCommandUsed();
+
             }
-            else
+            catch (Exception e)
             {
-                this._embed.AddField("Listeners", track.TotalListeners, true);
-                this._embed.AddField("Global playcount", track.TotalPlaycount, true);
-                this._embed.AddField("Your playcount", track.UserPlaycount, true);
+                this.Context.LogCommandException(e);
+                await ReplyAsync(
+                    "Unable to show your track info due to an internal error. Please try again later or contact .fmbot support.");
             }
-
-            if (!string.IsNullOrWhiteSpace(track.Description))
-            {
-                this._embed.AddField("Summary", track.Description);
-            }
-
-            if (track.Tags != null && track.Tags.Any())
-            {
-                var tags = LastFmRepository.TagsToLinkedString(track.Tags);
-
-                this._embed.AddField("Tags", tags);
-            }
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-            this.Context.LogCommandUsed();
         }
 
         [Command("trackplays", RunMode = RunMode.Async)]

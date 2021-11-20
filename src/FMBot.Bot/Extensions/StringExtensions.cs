@@ -143,9 +143,17 @@ namespace FMBot.Bot.Extensions
 
         public static string GetListeningTimeString(TimeSpan timeSpan)
         {
-            return timeSpan.TotalDays >= 1 ?
-                $"{(int)timeSpan.TotalDays}d{timeSpan.Hours}h{timeSpan.Minutes}m" :
-                $"{timeSpan.Hours}h{timeSpan.Minutes}m";
+            if (timeSpan.TotalDays >= 1)
+            {
+                return $"{(int)timeSpan.TotalDays}d{timeSpan.Hours}h{timeSpan.Minutes}m";
+            }
+
+            if (timeSpan.TotalHours >= 1)
+            {
+                return $"{timeSpan.Hours}h{timeSpan.Minutes}m";
+            }
+
+            return $"{timeSpan.Minutes}m";
         }
 
         public static string GetRymUrl(string albumName, string artistName)

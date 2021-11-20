@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 using Dapper;
 using Discord.Commands;
@@ -27,36 +28,36 @@ namespace FMBot.Bot.Services
 
         public async Task<TimeSpan> GetPlayTimeForPlays(IEnumerable<UserPlay> plays)
         {
-            long totalMs = 0;
             await CacheAllTrackLengths();
 
-            foreach (var userPlay in plays)
-            {
-                var length = (long?)this._cache.Get(CacheKeyForTrack(userPlay.TrackName.ToLower(), userPlay.ArtistName.ToLower()));
-
-                if (length.HasValue)
-                {
-                    totalMs += length.Value;
-                }
-                else
-                {
-                    var artistLength = (long?)this._cache.Get(CacheKeyForArtist(userPlay.ArtistName.ToLower()));
-
-
-                    if (artistLength.HasValue)
-                    {
-                        totalMs += artistLength.Value;
-                    }
-                    else
-                    {
-                        // Average song length
-                        totalMs += 210000;
-                    }
-                }
-            }
+            var totalMs = plays.Sum(userPlay => GetTrackLengthForTrack(userPlay.ArtistName, userPlay.TrackName));
 
             return TimeSpan.FromMilliseconds(totalMs);
         }
+
+        public async Task<TimeSpan> GetPlayTimeForTrackWithPlaycount(string artistName, string trackName, long playcount)
+        {
+            await CacheAllTrackLengths();
+
+            var length = GetTrackLengthForTrack(artistName, trackName);
+
+            return TimeSpan.FromMilliseconds(length * playcount);
+        }
+
+        private long GetTrackLengthForTrack(string artistName, string trackName)
+        {
+            var trackLength = (long?)this._cache.Get(CacheKeyForTrack(trackName.ToLower(), artistName.ToLower()));
+
+            if (trackLength.HasValue)
+            {
+                return trackLength.Value;
+            }
+
+            var avgArtistTrackLength = (long?)this._cache.Get(CacheKeyForArtist(artistName.ToLower()));
+
+            return avgArtistTrackLength ?? 210000;
+        }
+
 
         private async Task CacheAllTrackLengths()
         {

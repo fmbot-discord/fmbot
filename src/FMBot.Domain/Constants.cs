@@ -16,7 +16,6 @@ namespace FMBot.Domain
         public const ulong BotDevelopId = 493845886166630443;
 
         public const string DocsUrl = "https://fmbot.xyz";
-        public const string SpotifyStuckFaqDocsUrl = "https://fmbot.xyz/faq/#commands-are-showing-the-wrong-songs-its-not-showing-what-i-listen-to-on-spotify";
 
         public const string CompactTimePeriodList = "weekly/monthly/quarterly/half/yearly/alltime";
 

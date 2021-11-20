@@ -246,7 +246,8 @@ namespace FMBot.Bot.Services.ThirdParty
                     {
                         Name = trackInfo.TrackName,
                         AlbumName = trackInfo.AlbumName,
-                        ArtistName = trackInfo.ArtistName
+                        ArtistName = trackInfo.ArtistName,
+                        DurationMs = (int)trackInfo.Duration
                     };
 
                     var artist = await this._artistRepository.GetArtistForName(trackInfo.ArtistName, connection);
