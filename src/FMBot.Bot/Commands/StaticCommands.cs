@@ -140,11 +140,11 @@ namespace FMBot.Bot.Commands
             embedDescription.AppendLine($"Unfortunately, Last.fm and Spotify sometimes have issues keeping up to date with your current song, which can cause `{prfx}fm` and other commands to lag behind the song you're currently listening to.");
             embedDescription.AppendLine();
             embedDescription.Append("First, **.fmbot is not affiliated with Last.fm**. Your music is tracked by Last.fm, and not by .fmbot. ");
-            embedDescription.AppendLine("This means that this is a Last.fm issue and not an .fmbot issue. We can't fix it for you, but we can give you some tips that worked for others.");
+            embedDescription.AppendLine("This means that this is a Last.fm issue and **not an .fmbot issue**. We can't fix it for you, but we can give you some tips that worked for others.");
             embedDescription.AppendLine();
             embedDescription.AppendLine("Some things you can try that usually work:");
             embedDescription.AppendLine(" - Restarting your Spotify application");
-            embedDescription.AppendLine(" - Disconnecting and reconnecting Spotify in [your Last.fm settings](https://www.last.fm/settings/applications)");
+            embedDescription.AppendLine(" - Disconnecting and **reconnecting Spotify in [your Last.fm settings](https://www.last.fm/settings/applications)**");
             embedDescription.AppendLine();
             embedDescription.AppendLine("If the two options above don't work, check out **[the complete guide for this issue on the Last.fm support forums](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184)**.");
 
