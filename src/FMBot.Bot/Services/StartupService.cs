@@ -109,7 +109,7 @@ namespace FMBot.Bot.Services
                 Log.Information("ShardStartConnection: shard {shardId}", shard.ShardId);
                 await shard.StartAsync();
                 await Task.Delay(shardTimeOut);
-                shardTimeOut += 125;
+                shardTimeOut += 100;
             }
 
             Log.Information("Preparing cache folder");
@@ -129,7 +129,7 @@ namespace FMBot.Bot.Services
 
             if (lastFMUser.Status.ToString().Equals("BadApiKey"))
             {
-                Log.Fatal("BadLastfmApiKey",
+                Log.Fatal("BadLastfmApiKey\n" +
                     "Warning! Invalid API key for Last.fm! Please set the proper API keys in the `/Configs/ConfigData.json`! \n \n" +
                     "Exiting in 5 seconds...");
 

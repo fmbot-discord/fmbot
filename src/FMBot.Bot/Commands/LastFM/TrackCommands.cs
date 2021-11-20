@@ -124,11 +124,9 @@ namespace FMBot.Bot.Commands.LastFM
             var spotifyTrack = await this._spotifyService.GetOrStoreTrackAsync(track);
             try
             {
-
-
-
                 var leftStats = new StringBuilder();
                 var rightStats = new StringBuilder();
+                var footer = new StringBuilder();
 
                 leftStats.AppendLine($"`{track.TotalListeners}` listeners");
                 leftStats.AppendLine($"`{track.TotalPlaycount}` global {StringExtensions.GetPlaysString(track.TotalPlaycount)}");
@@ -177,9 +175,19 @@ namespace FMBot.Bot.Commands.LastFM
                         var acoustic = ((decimal)(spotifyTrack.Acousticness / 1)).ToString("0%");
                         var speechful = ((decimal)(spotifyTrack.Speechiness / 1)).ToString("0%");
                         var lively = ((decimal)(spotifyTrack.Liveness / 1)).ToString("0%");
-                        this._embed.WithFooter($"{danceability} danceable - {energetic} energetic - {acoustic} acoustic\n" +
+                        footer.AppendLine($"{danceability} danceable - {energetic} energetic - {acoustic} acoustic\n" +
                                                $"{instrumental} instrumental - {speechful} speechful - {lively} lively");
                     }
+                }
+
+                if (contextUser.TotalPlaycount.HasValue && track.UserPlaycount is >= 10)
+                {
+                    footer.AppendLine($"{(decimal)track.UserPlaycount.Value / contextUser.TotalPlaycount.Value:P} of all your scrobbles are on this track");
+                }
+
+                if (footer.Length > 0)
+                {
+                    this._embed.WithFooter(footer.ToString());
                 }
 
                 this._embed.AddField("Statistics", leftStats.ToString(), true);
