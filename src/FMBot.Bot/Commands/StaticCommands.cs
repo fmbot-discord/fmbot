@@ -249,7 +249,6 @@ namespace FMBot.Bot.Commands
 
         [Command("shards", RunMode = RunMode.Async)]
         [Summary("Displays bot sharding info.")]
-        [GuildOnly]
         [ExcludeFromHelp]
         public async Task ShardsAsync()
         {
@@ -271,8 +270,11 @@ namespace FMBot.Bot.Commands
             }
             this._embed.AddField("Offline shards", offlineShards.Length > 0 ? offlineShards.ToString() : "No offline shards");
 
-            this._embed.WithFooter(
-                $"Guild {this.Context.Guild.Name} | {this.Context.Guild.Id} is on shard {client.GetShardIdFor(this.Context.Guild)}");
+            if (this.Context.Guild != null)
+            {
+                this._embed.WithFooter(
+                    $"Guild {this.Context.Guild.Name} | {this.Context.Guild.Id} is on shard {client.GetShardIdFor(this.Context.Guild)}");
+            }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
