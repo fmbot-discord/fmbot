@@ -69,12 +69,13 @@ namespace FMBot.Bot.Commands
             var socketCommandContext = (SocketCommandContext)this.Context;
             var selfId = socketCommandContext.Client.CurrentUser.Id.ToString();
             var embedDescription = new StringBuilder();
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
             embedDescription.AppendLine("- You can invite .fmbot to your own server by **[clicking here](" +
-                "https://discord.com/oauth2/authorize?" +
-                $"client_id={selfId}" +
-                "&scope=bot%20applications.commands" +
-                $"&permissions={Constants.InviteLinkPermissions}).**");
+                                        "https://discord.com/oauth2/authorize?" +
+                                        $"client_id={selfId}" +
+                                        "&scope=bot%20applications.commands" +
+                                        $"&permissions={Constants.InviteLinkPermissions}).**");
 
             embedDescription.AppendLine(
                 "- Join the [.fmbot server](http://server.fmbot.xyz/) for support and updates.");
@@ -105,9 +106,10 @@ namespace FMBot.Bot.Commands
         public async Task SourceAsync()
         {
             var embedDescription = new StringBuilder();
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
             embedDescription.AppendLine(".fmbot is open-source, non-profit and maintained by volunteers.");
-            embedDescription.AppendLine("The bot is written in C#, uses .NET 5 and Discord.Net.");
+            embedDescription.AppendLine("The bot is written in C#, uses .NET 6 and Discord.Net Labs.");
 
             this._embed.WithDescription(embedDescription.ToString());
 
@@ -122,6 +124,39 @@ namespace FMBot.Bot.Commands
             this.Context.LogCommandUsed();
         }
 
+        [Command("outofsync", RunMode = RunMode.Async)]
+        [Summary("Info for what to do when now playing track is lagging behind")]
+        [Alias("broken", "sync", "fix", "lagging", "stuck")]
+        [CommandCategories(CommandCategory.Other)]
+        public async Task OutOfSyncAsync()
+        {
+            var embedDescription = new StringBuilder();
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
+
+            this._embed.WithTitle("Using Spotify and tracking is out of sync?");
+
+            embedDescription.AppendLine(".fmbot uses your Last.fm account for knowing what you listen to. ");
+            embedDescription.AppendLine($"Unfortunately, Last.fm and Spotify sometimes have issues keeping up to date with your current song, which can cause `{prfx}fm` and other commands to lag behind the song you're currently listening to.");
+            embedDescription.AppendLine();
+            embedDescription.Append("First, **.fmbot is not affiliated with Last.fm**. Your music is tracked by Last.fm, and not by .fmbot. ");
+            embedDescription.AppendLine("This means that this is a Last.fm issue and not an .fmbot issue. We can't fix it for you, but we can give you some tips that worked for others.");
+            embedDescription.AppendLine();
+            embedDescription.AppendLine("Some things you can try that usually work:");
+            embedDescription.AppendLine(" - Restarting your Spotify application");
+            embedDescription.AppendLine(" - Disconnecting and reconnecting Spotify in [your Last.fm settings](https://www.last.fm/settings/applications)");
+            embedDescription.AppendLine();
+            embedDescription.AppendLine("If the two options above don't work, check out **[the complete guide for this issue on the Last.fm support forums](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184)**.");
+
+            this._embed.WithDescription(embedDescription.ToString());
+
+            var components = new ComponentBuilder()
+                .WithButton("Last.fm settings", style: ButtonStyle.Link, url: "https://www.last.fm/settings/applications")
+                .WithButton("Full guide", style: ButtonStyle.Link, url: "https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184");
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build(), component: components.Build());
+            this.Context.LogCommandUsed();
+        }
+
         [Command("donate", RunMode = RunMode.Async)]
         [Summary("Please donate if you like this bot!")]
         [Alias("support", "patreon", "opencollective", "donations", "support")]
@@ -129,6 +164,7 @@ namespace FMBot.Bot.Commands
         public async Task DonateAsync()
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
             var embedDescription = new StringBuilder();
 
@@ -168,6 +204,7 @@ namespace FMBot.Bot.Commands
         {
             var socketCommandContext = (SocketCommandContext)this.Context;
             var selfUser = socketCommandContext.Client.CurrentUser;
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
             this._embedAuthor.WithIconUrl(selfUser.GetAvatarUrl());
             this._embedAuthor.WithName(selfUser.Username);
@@ -552,6 +589,7 @@ namespace FMBot.Bot.Commands
         public async Task AllSupportersAsync()
         {
             var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
             var supporters = await this._supporterService.GetAllVisibleSupporters();
 
@@ -665,6 +703,7 @@ namespace FMBot.Bot.Commands
         public async Task FullHelpAsync()
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
             this._embed.WithDescription("**See a list of all available commands below.**\n" +
                                         $"Use `{prfx}serverhelp` to view all your configurable server settings.");
@@ -720,9 +759,10 @@ namespace FMBot.Bot.Commands
         public async Task ServerHelpAsync()
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
             this._embed.WithDescription("**See all server settings below.**\n" +
-            "These commands require either the `Admin` or the `Ban Members` permission.");
+                                        "These commands require either the `Admin` or the `Ban Members` permission.");
 
             foreach (var module in this._service.Modules
                 .OrderByDescending(o => o.Commands.Count)
@@ -769,9 +809,10 @@ namespace FMBot.Bot.Commands
         public async Task StaffHelpAsync()
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
             this._embed.WithDescription("**See all .fmbot staff commands below.**\n" +
-            "These commands require .fmbot admin or owner.");
+                                        "These commands require .fmbot admin or owner.");
 
             foreach (var module in this._service.Modules
                 .OrderByDescending(o => o.Commands.Count)

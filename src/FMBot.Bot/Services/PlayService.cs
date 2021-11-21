@@ -387,7 +387,6 @@ namespace FMBot.Bot.Services
             };
         }
 
-
         public async Task<List<UserTrack>> GetTopTracksForArtist(int userId, int days, string artistName)
         {
             var now = DateTime.UtcNow;
@@ -461,6 +460,29 @@ namespace FMBot.Bot.Services
             }
 
             return whoKnowsAlbumList;
+        }
+
+        public async Task<List<UserPlay>> GetGuildUsersTotalPlaytime(int guildId)
+        {
+            const string sql = "SELECT user_play_id, up.user_id, up.track_name, up.album_name, up.artist_name, up.time_played " +
+                               "FROM public.user_plays AS up " +
+                               "INNER JOIN users AS u ON up.user_id = u.user_id " +
+                               "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                               "WHERE gu.guild_id = @guildId " +
+                               "AND time_played > current_date - interval '9' day  AND time_played < current_date - interval '2' day  " +
+                               "AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
+                               "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) ";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var userPlays = (await connection.QueryAsync<UserPlay>(sql, new
+            {
+                guildId,
+            })).ToList();
+
+            return userPlays;
         }
     }
 }

@@ -141,6 +141,21 @@ namespace FMBot.Bot.Extensions
             return crowns == 1 ? "crown" : "crowns";
         }
 
+        public static string GetListeningTimeString(TimeSpan timeSpan)
+        {
+            if (timeSpan.TotalDays >= 1)
+            {
+                return $"{(int)timeSpan.TotalDays}d{timeSpan.Hours}h{timeSpan.Minutes}m";
+            }
+
+            if (timeSpan.TotalHours >= 1)
+            {
+                return $"{timeSpan.Hours}h{timeSpan.Minutes}m";
+            }
+
+            return $"{timeSpan.Minutes}m";
+        }
+
         public static string GetRymUrl(string albumName, string artistName)
         {
             var albumQueryName = albumName.Replace(" - Single", "");

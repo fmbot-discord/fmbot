@@ -149,7 +149,8 @@ namespace FMBot.Bot.Commands
                 {
                     await ReplyAsync(
                         "You can't do a full index too often. Please remember that this command should only be used in case you edited your scrobble history.\n" +
-                        "Experiencing issues with the normal update? Please contact us on the .fmbot support server.");
+                        $"Experiencing issues with the normal update? Please contact us on the .fmbot support server. \n\n" +
+                        $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help.");
                     this.Context.LogCommandUsed(CommandResponse.Cooldown);
                     return;
                 }
@@ -219,8 +220,7 @@ namespace FMBot.Bot.Commands
                     var recentlyUpdatedText =
                         $"Your cached playcounts have already been updated recently ({StringExtensions.GetTimeAgoShortString(userSettings.LastUpdated.Value)} ago). \n\n" +
                         $"Any commands that require updating will also update your playcount automatically.\n\n" +
-                        $"Note that updating will not fix Spotify connection issues to Last.fm, especially since .fmbot is not affiliated with Last.fm. " +
-                        $"[*More info here..*]({Constants.SpotifyStuckFaqDocsUrl})";
+                        $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help.";
 
                     this._embed.WithDescription(recentlyUpdatedText);
                     await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
@@ -250,8 +250,7 @@ namespace FMBot.Bot.Commands
                         var newEmbed =
                             new EmbedBuilder()
                                 .WithDescription("No new scrobbles found since last update\n\n" +
-                                                 $"Note that updating will not fix Spotify connection issues to Last.fm, especially since .fmbot is not affiliated with Last.fm.  " +
-                                                 $"[*More info here..*]({Constants.SpotifyStuckFaqDocsUrl})")
+                                                 $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help.")
                                 .WithColor(DiscordConstants.SuccessColorGreen);
 
                         if (userSettings.LastUpdated.HasValue)
@@ -274,8 +273,7 @@ namespace FMBot.Bot.Commands
                             updatedDescription +=
                                 $"\n\n" +
                                 $"Any commands that require updating will also update your playcount automatically.\n\n" +
-                                $"Note that updating will not fix Spotify connection issues to Last.fm, especially since .fmbot is not affiliated with Last.fm. " +
-                                $"[*More info here..*]({Constants.SpotifyStuckFaqDocsUrl})";
+                                $"Using Spotify and having problems with your music not being tracked or it lagging behind? Please use `{prfx}outofsync` for help.";
                         }
 
                         m.Embed = new EmbedBuilder()
