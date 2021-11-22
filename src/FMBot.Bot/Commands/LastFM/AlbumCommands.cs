@@ -405,6 +405,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var timeSettings = SettingService.GetTimePeriod(extraOptions);
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var topListSettings = SettingService.SetTopListSettings(extraOptions);
 
             var pages = new List<PageBuilder>();
 
@@ -438,8 +439,27 @@ namespace FMBot.Bot.Commands.LastFM
                     await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
+                if (albums.Content.TopAlbums == null)
+                {
+                    this._embed.WithDescription("Sorry, you or the user you're searching for don't have any top albums in the selected time period.");
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                    await ReplyAsync("", false, this._embed.Build());
+                    return;
+                }
 
-                var albumPages = albums.Content.TopAlbums.ChunkBy(10);
+                var previousTopAlbums = new List<TopAlbum>();
+                if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
+                {
+                    var previousAlbumsCall = await this._lastFmRepository
+                        .GetTopAlbumsForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, amount, userSettings.SessionKeyLastFm);
+
+                    if (previousAlbumsCall.Success)
+                    {
+                        previousTopAlbums.AddRange(previousAlbumsCall.Content.TopAlbums);
+                    }
+                }
+
+                var albumPages = albums.Content.TopAlbums.ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
 
                 var counter = 1;
                 var pageCounter = 1;
@@ -456,20 +476,40 @@ namespace FMBot.Bot.Commands.LastFM
                             url = StringExtensions.GetRymUrl(album.AlbumName, album.ArtistName);
                         }
 
-                        albumPageString.AppendLine($"{counter}. **{album.ArtistName}** - **[{escapedAlbumName}]({url})** ({album.UserPlaycount} {StringExtensions.GetPlaysString(album.UserPlaycount)})");
+                        var name = $"**{album.ArtistName}** - **[{escapedAlbumName}]({url})** ({album.UserPlaycount} {StringExtensions.GetPlaysString(album.UserPlaycount)})";
+
+                        if (topListSettings.Billboard && previousTopAlbums.Any())
+                        {
+                            var previousTopAlbum = previousTopAlbums.FirstOrDefault(f => f.ArtistName == album.ArtistName && f.AlbumName == album.AlbumName);
+                            int? previousPosition = previousTopAlbum == null ? null : previousTopAlbums.IndexOf(previousTopAlbum);
+
+                            albumPageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition).Text);
+                        }
+                        else
+                        {
+                            albumPageString.Append($"{counter}. ");
+                            albumPageString.AppendLine(name);
+                        }
+
                         counter++;
                     }
 
-                    var footer = $"Page {pageCounter}/{albumPages.Count}";
+                    var footer = new StringBuilder();
+                    footer.Append($"Page {pageCounter}/{albumPages.Count}");
                     if (albums.Content.TotalAmount.HasValue && albums.Content.TotalAmount.Value != amount)
                     {
-                        footer += $" - {albums.Content.TotalAmount} different albums in this time period";
+                        footer.Append($" - {albums.Content.TotalAmount} different albums in this time period");
+                    }
+                    if (topListSettings.Billboard)
+                    {
+                        footer.AppendLine();
+                        footer.Append(StringService.GetBillBoardSettingString(timeSettings));
                     }
 
                     pages.Add(new PageBuilder()
                         .WithDescription(albumPageString.ToString())
                         .WithAuthor(this._embedAuthor)
-                        .WithFooter(footer));
+                        .WithFooter(footer.ToString()));
                     pageCounter++;
                 }
 

@@ -74,8 +74,16 @@ namespace FMBot.Bot.Services
                     settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
                 }
 
+                settingsModel.PlayDays =
+                    (int)(settingsModel.EndDateTime.Value - settingsModel.StartDateTime.Value).TotalDays;
+
                 var startDateString = settingsModel.StartDateTime.Value.ToString("yyyy-M-dd");
                 var endDateString = settingsModel.EndDateTime.Value.ToString("yyyy-M-dd");
+
+                settingsModel.BillboardStartDateTime =
+                    settingsModel.StartDateTime.Value.AddDays(-settingsModel.PlayDays.Value);
+                settingsModel.BillboardEndDateTime =
+                    settingsModel.EndDateTime.Value.AddDays(-settingsModel.PlayDays.Value);
 
                 settingsModel.UrlParameter = $"from={startDateString}&to={endDateString}";
 
@@ -254,7 +262,46 @@ namespace FMBot.Bot.Services
                 }
             }
 
+            if (settingsModel.PlayDays.HasValue)
+            {
+                settingsModel.BillboardStartDateTime =
+                    DateTime.UtcNow.AddDays(-(settingsModel.PlayDays.Value + settingsModel.PlayDays.Value / 3));
+                settingsModel.BillboardEndDateTime =
+                    DateTime.UtcNow.AddDays(-(settingsModel.PlayDays.Value / 3));
+            }
+
             return settingsModel;
+        }
+
+        public static TopListSettings SetTopListSettings(string extraOptions = null)
+        {
+            var topListSettings = new TopListSettings
+            {
+                Billboard = false,
+                ExtraLarge = false,
+                NewSearchValue = extraOptions
+            };
+
+            if (extraOptions == null)
+            {
+                return topListSettings;
+            }
+
+            var billboard = new[] { "bb", "billboard", "compare" };
+            if (Contains(extraOptions, billboard))
+            {
+                topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, billboard);
+                topListSettings.Billboard = true;
+            }
+
+            var extraLarge = new[] { "xl", "xxl", "extralarge" };
+            if (Contains(extraOptions, extraLarge))
+            {
+                topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, extraLarge);
+                topListSettings.ExtraLarge = true;
+            }
+
+            return topListSettings;
         }
 
         public WhoKnowsSettings SetWhoKnowsSettings(WhoKnowsSettings currentWhoKnowsSettings, string extraOptions, UserType userType = UserType.User)

@@ -728,7 +728,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var genreDescription = new StringBuilder();
-                var lines = new List<StringService.LeaderboardLine>();
+                var lines = new List<StringService.BillboardLine>();
                 for (var i = 0; i < genres.Count; i++)
                 {
                     var topGenre = genres[i];
@@ -737,7 +737,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                     int? previousPosition = previousTopGenre == null ? null : previousTopGenres.IndexOf(previousTopGenre);
 
-                    var line = StringService.GetLeaderboardLine($"**{topGenre.GenreName}**", i, previousPosition);
+                    var line = StringService.GetBillboardLine($"**{topGenre.GenreName}**", i, previousPosition);
                     lines.Add(line);
 
                     if (i < 10)
@@ -759,7 +759,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                     var previousPosition = previousTopArtist == null ? null : yearOverview.PreviousTopArtists?.TopArtists?.IndexOf(previousTopArtist);
 
-                    var line = StringService.GetLeaderboardLine($"**{topArtist.ArtistName}**", i, previousPosition);
+                    var line = StringService.GetBillboardLine($"**{topArtist.ArtistName}**", i, previousPosition);
                     lines.Add(line);
 
                     if (i < 10)
@@ -830,7 +830,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                     var previousPosition = previousTopAlbum == null ? null : yearOverview.PreviousTopAlbums?.TopAlbums?.IndexOf(previousTopAlbum);
 
-                    albumDescription.AppendLine(StringService.GetLeaderboardLine($"**{topAlbum.ArtistName}** - **{topAlbum.AlbumName}**", i, previousPosition).Text);
+                    albumDescription.AppendLine(StringService.GetBillboardLine($"**{topAlbum.ArtistName}** - **{topAlbum.AlbumName}**", i, previousPosition).Text);
                 }
                 fields.Add(new EmbedFieldBuilder().WithName("Albums").WithValue(albumDescription.ToString()));
 
@@ -845,7 +845,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                     var previousPosition = previousTopTrack == null ? null : yearOverview.PreviousTopTracks?.TopTracks?.IndexOf(previousTopTrack);
 
-                    trackDescription.AppendLine(StringService.GetLeaderboardLine($"**{topTrack.ArtistName}** - **{topTrack.TrackName}**", i, previousPosition).Text);
+                    trackDescription.AppendLine(StringService.GetBillboardLine($"**{topTrack.ArtistName}** - **{topTrack.TrackName}**", i, previousPosition).Text);
                 }
 
                 fields.Add(new EmbedFieldBuilder().WithName("Tracks").WithValue(trackDescription.ToString()));
@@ -1248,7 +1248,7 @@ namespace FMBot.Bot.Commands.LastFM
                     }
 
                     var footer = $"Your ranking: {location} ({requestedUser?.Name})\n" +
-                                 $"7 days - From {DateTime.UtcNow.AddDays(-9).ToShortDateString()} to {DateTime.UtcNow.AddDays(-2).ToShortDateString()}\n" +
+                                 $"7 days - From {DateTime.UtcNow.AddDays(-9):MMM dd} to {DateTime.UtcNow.AddDays(-2):MMM dd}\n" +
                                  $"Page {pageCounter}/{topListeningTimePages.Count} - " +
                                  $"{filteredTopListeningTimeUsers.Count} users - " +
                                  $"{filteredTopListeningTimeUsers.Sum(s => s.Playcount)} total minutes";

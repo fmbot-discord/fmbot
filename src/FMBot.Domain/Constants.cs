@@ -23,6 +23,9 @@ namespace FMBot.Domain
 
         public const string UserMentionExample = "`@usermention` / `lfm:fm-bot` / `356268235697553409`";
 
+        public const string BillboardExample = "`billboard` / `bb`";
+        public const string ExtraLargeExample = "`extralarge` / `xl`";
+
         public const string UserMentionOrLfmUserNameExample = "`fm-bot` / `@usermention` / `356268235697553409`";
 
         /// <summary>Amount of days to store plays for users for</summary>
@@ -31,6 +34,9 @@ namespace FMBot.Domain
         public const int SupporterMessageChance = 15;
 
         public const int DefaultPlaysForCrown = 30;
+
+        public const int DefaultPageSize = 10;
+        public const int DefaultExtraLargePageSize = 16;
 
         public static readonly int[] PlayCountBreakPoints = {
             100,

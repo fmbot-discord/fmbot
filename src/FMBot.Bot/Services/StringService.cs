@@ -51,9 +51,9 @@ namespace FMBot.Bot.Services
                        : $" | *{track.AlbumName}*\n");
         }
 
-        public record LeaderboardLine(string Text, string Name, int PositionsMoved, int NewPosition, int? OldPosition);
+        public record BillboardLine(string Text, string Name, int PositionsMoved, int NewPosition, int? OldPosition);
 
-        public static LeaderboardLine GetLeaderboardLine(string name, int newPosition, int? oldPosition)
+        public static BillboardLine GetBillboardLine(string name, int newPosition, int? oldPosition)
         {
             var line = new StringBuilder();
 
@@ -103,7 +103,23 @@ namespace FMBot.Bot.Services
 
             line.Append($"{newPosition + 1}. {name}");
 
-            return new LeaderboardLine(line.ToString(), name, positionsMoved, newPosition + 1, oldPosition + 1);
+            return new BillboardLine(line.ToString(), name, positionsMoved, newPosition + 1, oldPosition + 1);
+        }
+
+        public static string GetBillBoardSettingString(TimeSettingsModel timeSettings)
+        {
+            if (timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
+            {
+                if (timeSettings.BillboardEndDateTime.Value.Year == DateTime.UtcNow.Year)
+                {
+                    return $"Billboard mode enabled - Comparing to {timeSettings.BillboardStartDateTime.Value:MMM dd} til {timeSettings.BillboardEndDateTime.Value:MMM dd}";
+
+                }
+
+                return $"Billboard mode enabled - Comparing to {timeSettings.BillboardStartDateTime.Value:MMM dd yyyy} til {timeSettings.BillboardEndDateTime.Value:MMM dd yyyy}";
+            }
+
+            return null;
         }
 
         public static StaticPaginator BuildStaticPaginator(IList<PageBuilder> pages, bool paginationEnabled = true)

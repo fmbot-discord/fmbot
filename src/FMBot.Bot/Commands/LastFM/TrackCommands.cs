@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
 using Fergun.Interactive;
-using Fergun.Interactive.Pagination;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -19,7 +18,6 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
-using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
@@ -601,6 +599,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var timeSettings = SettingService.GetTimePeriod(extraOptions);
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var topListSettings = SettingService.SetTopListSettings(extraOptions);
 
             var pages = new List<PageBuilder>();
 
@@ -622,9 +621,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                Response<TopTrackList> topTracks;
-
-                topTracks = await this._lastFmRepository.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 200);
+                var topTracks = await this._lastFmRepository.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 200);
 
                 if (!topTracks.Success)
                 {
@@ -632,7 +629,6 @@ namespace FMBot.Bot.Commands.LastFM
                     await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
-
                 if (topTracks.Content?.TopTracks == null || !topTracks.Content.TopTracks.Any())
                 {
                     this._embed.WithDescription("No top tracks returned for selected time period.\n" +
@@ -643,9 +639,21 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
+                var previousTopTracks = new List<TopTrack>();
+                if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
+                {
+                    var previousTopTracksCall = await this._lastFmRepository
+                        .GetTopTracksForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200, userSettings.SessionKeyLastFm);
+
+                    if (previousTopTracksCall.Success)
+                    {
+                        previousTopTracks.AddRange(previousTopTracksCall.Content.TopTracks);
+                    }
+                }
+
                 this._embed.WithAuthor(this._embedAuthor);
 
-                var trackPages = topTracks.Content.TopTracks.ChunkBy(10);
+                var trackPages = topTracks.Content.TopTracks.ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize); ;
 
                 var counter = 1;
                 var pageCounter = 1;
@@ -654,20 +662,40 @@ namespace FMBot.Bot.Commands.LastFM
                     var trackPageString = new StringBuilder();
                     foreach (var track in trackPage)
                     {
-                        trackPageString.AppendLine($"{counter}. **{track.ArtistName}** - **[{track.TrackName}]({track.TrackUrl})** ({track.UserPlaycount} {StringExtensions.GetPlaysString(track.UserPlaycount)})");
+                        var name = $"**{track.ArtistName}** - **[{track.TrackName}]({track.TrackUrl})** ({track.UserPlaycount} {StringExtensions.GetPlaysString(track.UserPlaycount)})";
+
+                        if (topListSettings.Billboard && previousTopTracks.Any())
+                        {
+                            var previousTopTrack = previousTopTracks.FirstOrDefault(f => f.ArtistName == track.ArtistName && f.AlbumName == track.AlbumName);
+                            int? previousPosition = previousTopTrack == null ? null : previousTopTracks.IndexOf(previousTopTrack);
+
+                            trackPageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition).Text);
+                        }
+                        else
+                        {
+                            trackPageString.Append($"{counter}. ");
+                            trackPageString.AppendLine(name);
+                        }
+
                         counter++;
                     }
 
-                    var footer = $"Page {pageCounter}/{trackPages.Count}";
+                    var footer = new StringBuilder();
+                    footer.Append($"Page {pageCounter}/{trackPages.Count}");
                     if (topTracks.Content.TotalAmount.HasValue)
                     {
-                        footer += $" - {topTracks.Content.TotalAmount.Value} total tracks in this time period";
+                        footer.Append($" - {topTracks.Content.TotalAmount.Value} total tracks in this time period");
+                    }
+                    if (topListSettings.Billboard)
+                    {
+                        footer.AppendLine();
+                        footer.Append(StringService.GetBillBoardSettingString(timeSettings));
                     }
 
                     pages.Add(new PageBuilder()
                         .WithDescription(trackPageString.ToString())
                         .WithAuthor(this._embedAuthor)
-                        .WithFooter(footer));
+                        .WithFooter(footer.ToString()));
                     pageCounter++;
                 }
 
