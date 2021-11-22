@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Models
@@ -32,5 +33,19 @@ namespace FMBot.Bot.Models
         public TimeSpan ListeningTime { get; set; }
 
         public List<UserPlay> Plays { get; set; }
+    }
+
+    public class YearOverview
+    {
+        public bool LastfmErrors { get; set; }
+        public int Year { get; set; }
+
+        public TopArtistList TopArtists { get; set; }
+        public TopAlbumList TopAlbums { get; set; }
+        public TopTrackList TopTracks { get; set; }
+
+        public TopArtistList PreviousTopArtists { get; set; }
+        public TopAlbumList PreviousTopAlbums { get; set; }
+        public TopTrackList PreviousTopTracks { get; set; }
     }
 }

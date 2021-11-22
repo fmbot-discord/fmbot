@@ -430,8 +430,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-
-                var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount);
+                var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount, userSessionKey: userSettings.SessionKeyLastFm);
                 if (!albums.Success || albums.Content == null)
                 {
                     this._embed.ErrorResponse(albums.Error, albums.Message, this.Context);

@@ -132,7 +132,6 @@ namespace FMBot.Bot.Commands.LastFM
                 leftStats.AppendLine($"`{track.TotalPlaycount}` global {StringExtensions.GetPlaysString(track.TotalPlaycount)}");
                 leftStats.AppendLine($"`{track.UserPlaycount}` {StringExtensions.GetPlaysString(track.UserPlaycount)} by you");
 
-
                 var duration = spotifyTrack?.DurationMs ?? track.Duration;
                 if (duration is > 0)
                 {

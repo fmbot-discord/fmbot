@@ -401,8 +401,6 @@ namespace FMBot.Bot.Commands
 
                                 var usedCommands = new List<CommandInfo>();
 
-                                var lastCategory = selectedCategory;
-
                                 foreach (var selectedCommand in selectedCommands.Where(w => w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories).Any(a => a.Length == 1 && a.Contains(selectedCategory))))
                                 {
                                     if (!usedCommands.Contains(selectedCommand))
@@ -477,7 +475,7 @@ namespace FMBot.Bot.Commands
                         .Build();
 
                     selectedResult =
-                        await this.Interactivity.SendSelectionAsync(multiSelection, this.Context.Channel, message: message, timeout: TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds));
+                        await this.Interactivity.SendSelectionAsync(multiSelection, this.Context.Channel, message: message, timeout: TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds * 2));
                     message = selectedResult.Message;
                 }
 

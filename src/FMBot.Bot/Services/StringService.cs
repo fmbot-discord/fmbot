@@ -1,6 +1,9 @@
+using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
+using Discord;
 using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
 using FMBot.Bot.Resources;
@@ -48,6 +51,61 @@ namespace FMBot.Bot.Services
                        : $" | *{track.AlbumName}*\n");
         }
 
+        public record LeaderboardLine(string Text, string Name, int PositionsMoved, int NewPosition, int? OldPosition);
+
+        public static LeaderboardLine GetLeaderboardLine(string name, int newPosition, int? oldPosition)
+        {
+            var line = new StringBuilder();
+
+            var positionsMoved = 0;
+
+            if (oldPosition != null)
+            {
+                line.Append("  ");
+
+                positionsMoved = oldPosition.Value - newPosition;
+
+                if (oldPosition < newPosition)
+                {
+                    if ((Math.Abs(oldPosition.Value - newPosition)) < 5)
+                    {
+                        line.Append($"<:1_to_5_up:912085138245029888>");
+
+                    }
+                    else
+                    {
+                        line.Append($"<:5_or_more_down:912380324753838140>");
+                    }
+                }
+                else if (oldPosition > newPosition)
+                {
+                    if ((Math.Abs(oldPosition.Value - newPosition)) < 5)
+                    {
+                        line.Append($"<:1_to_5_down:912085138232442920>");
+                    }
+                    else
+                    {
+                        line.Append($"<:5_or_more_up:912380324841918504>");
+                    }
+
+                }
+                else
+                {
+                    line.Append($"<:same_position:912374491752046592>");
+                }
+
+                line.Append(" ");
+            }
+            else
+            {
+                line.Append($"<:new:912087988001980446> ");
+            }
+
+            line.Append($"{newPosition + 1}. {name}");
+
+            return new LeaderboardLine(line.ToString(), name, positionsMoved, newPosition + 1, oldPosition + 1);
+        }
+
         public static StaticPaginator BuildStaticPaginator(IList<PageBuilder> pages, bool paginationEnabled = true)
         {
             var builder = new StaticPaginatorBuilder()
@@ -59,6 +117,22 @@ namespace FMBot.Bot.Services
             {
                 builder.WithOptions(DiscordConstants.PaginationEmotes);
             }
+
+            return builder.Build();
+        }
+
+        public static StaticPaginator BuildSimpleStaticPaginator(IEnumerable<PageBuilder> pages)
+        {
+            var builder = new StaticPaginatorBuilder()
+                .WithPages(pages)
+                .WithFooter(PaginatorFooter.None)
+                .WithActionOnTimeout(ActionOnStop.DeleteInput);
+
+            builder.WithOptions(new Dictionary<IEmote, PaginatorAction>
+            {
+                { Emote.Parse("<:pages_previous:883825508507336704>"), PaginatorAction.Backward},
+                { Emote.Parse("<:pages_next:883825508087922739>"), PaginatorAction.Forward},
+            });
 
             return builder.Build();
         }

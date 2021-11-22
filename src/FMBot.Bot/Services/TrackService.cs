@@ -3,17 +3,19 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Dapper;
-using FMBot.Bot.Configurations;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
@@ -26,11 +28,13 @@ namespace FMBot.Bot.Services
         private readonly SpotifyService _spotifyService;
         private readonly HttpClient _client;
         private readonly BotSettings _botSettings;
+        private readonly IMemoryCache _cache;
 
-        public TrackService(IHttpClientFactory httpClientFactory, LastFmRepository lastFmRepository, IOptions<BotSettings> botSettings, SpotifyService spotifyService)
+        public TrackService(IHttpClientFactory httpClientFactory, LastFmRepository lastFmRepository, IOptions<BotSettings> botSettings, SpotifyService spotifyService, IMemoryCache memoryCache)
         {
             this._lastFmRepository = lastFmRepository;
             this._spotifyService = spotifyService;
+            this._cache = memoryCache;
             this._client = httpClientFactory.CreateClient();
             this._botSettings = botSettings.Value;
         }
@@ -170,5 +174,152 @@ namespace FMBot.Bot.Services
                 .ToList();
         }
 
+        public record AudioFeaturesOverview(int Total, InternalTrackAudioFeatures Average);
+
+        public async Task<AudioFeaturesOverview> GetAverageTrackAudioFeaturesForTopTracks(List<TopTrack> topTracks)
+        {
+            await CacheTrackAudioFeatures();
+            var averageAudioFeatures = new InternalTrackAudioFeatures();
+
+            if (topTracks == null || !topTracks.Any())
+            {
+                return new AudioFeaturesOverview(0, null);
+            }
+
+            var count = 0;
+            foreach (var track in topTracks)
+            {
+                var audioFeatures = (InternalTrackAudioFeatures)this._cache.Get(CacheKeyForAudioFeature(track.TrackName, track.ArtistName));
+
+                if (audioFeatures != null)
+                {
+                    averageAudioFeatures.Danceability += audioFeatures.Danceability;
+                    averageAudioFeatures.Energy += audioFeatures.Energy;
+                    averageAudioFeatures.Tempo += audioFeatures.Tempo;
+                    averageAudioFeatures.Speechiness += audioFeatures.Speechiness;
+                    averageAudioFeatures.Acousticness += audioFeatures.Acousticness;
+                    averageAudioFeatures.Instrumentalness += audioFeatures.Instrumentalness;
+                    averageAudioFeatures.Valence += audioFeatures.Valence;
+                    averageAudioFeatures.Tempo += audioFeatures.Tempo;
+
+                    count++;
+                }
+            }
+
+            return new AudioFeaturesOverview(count, averageAudioFeatures);
+        }
+
+        public static string AudioFeatureAnalysisComparisonString(AudioFeaturesOverview currentOverview,
+            AudioFeaturesOverview previousOverview)
+        {
+            var trackAudioFeatureDescription = new StringBuilder();
+
+            var avgCurrentDanceability = (decimal)currentOverview.Average.Danceability / currentOverview.Total;
+            trackAudioFeatureDescription.Append($"**Danceability**: **__{avgCurrentDanceability:P}__**");
+            if (previousOverview.Total > 0)
+            {
+                var avgPrevDanceability = (decimal)previousOverview.Average.Danceability / previousOverview.Total;
+                trackAudioFeatureDescription.Append(
+                    $" ({StringExtensions.GetChangeString(avgPrevDanceability, avgCurrentDanceability)} {avgPrevDanceability:P})");
+            }
+            trackAudioFeatureDescription.AppendLine();
+
+            var avgCurrentEnergy = (decimal)currentOverview.Average.Energy / currentOverview.Total;
+            trackAudioFeatureDescription.Append($"**Energy**: **__{avgCurrentEnergy:P}__**");
+            if (previousOverview.Total > 0)
+            {
+                var avgPrevEnergy = (decimal)previousOverview.Average.Energy / previousOverview.Total;
+                trackAudioFeatureDescription.Append(
+                    $" ({StringExtensions.GetChangeString(avgPrevEnergy, avgCurrentEnergy)} {avgPrevEnergy:P})");
+            }
+            trackAudioFeatureDescription.AppendLine();
+
+            var avgCurrentSpeechiness = (decimal)currentOverview.Average.Speechiness / currentOverview.Total;
+            trackAudioFeatureDescription.Append($"**Speechiness**: **__{avgCurrentSpeechiness:P}__**");
+            if (previousOverview.Total > 0)
+            {
+                var avgPrevSpeechiness = (decimal)previousOverview.Average.Speechiness / previousOverview.Total;
+                trackAudioFeatureDescription.Append(
+                    $" ({StringExtensions.GetChangeString(avgPrevSpeechiness, avgCurrentSpeechiness)} {avgPrevSpeechiness:P})");
+            }
+            trackAudioFeatureDescription.AppendLine();
+
+            var avgCurrentAcousticness = (decimal)currentOverview.Average.Acousticness / currentOverview.Total;
+            trackAudioFeatureDescription.Append($"**Acousticness**: **__{avgCurrentAcousticness:P}__**");
+            if (previousOverview.Total > 0)
+            {
+                var avgPrevAcousticness = (decimal)previousOverview.Average.Acousticness / previousOverview.Total;
+                trackAudioFeatureDescription.Append(
+                    $" ({StringExtensions.GetChangeString(avgPrevAcousticness, avgCurrentAcousticness)} {avgPrevAcousticness:P})");
+            }
+            trackAudioFeatureDescription.AppendLine();
+
+            var avgCurrentInstrumentalness = (decimal)currentOverview.Average.Instrumentalness / currentOverview.Total;
+            trackAudioFeatureDescription.Append($"**Instrumentalness**: **__{avgCurrentInstrumentalness:P}__**");
+            if (previousOverview.Total > 0)
+            {
+                var avgPrevInstrumentalness = (decimal)previousOverview.Average.Instrumentalness / previousOverview.Total;
+                trackAudioFeatureDescription.Append(
+                    $" ({StringExtensions.GetChangeString(avgPrevInstrumentalness, avgCurrentInstrumentalness)} {avgPrevInstrumentalness:P})");
+            }
+            trackAudioFeatureDescription.AppendLine();
+
+            var avgCurrentValence = (decimal)currentOverview.Average.Valence / currentOverview.Total;
+            trackAudioFeatureDescription.Append($"**Valence (musical positiveness)**: **__{avgCurrentValence:P}__**");
+            if (previousOverview.Total > 0)
+            {
+                var avgPrevValence = (decimal)previousOverview.Average.Valence / previousOverview.Total;
+                trackAudioFeatureDescription.Append(
+                    $" ({StringExtensions.GetChangeString(avgPrevValence, avgCurrentValence)} {avgPrevValence:P})");
+            }
+            trackAudioFeatureDescription.AppendLine();
+
+            //trackAudioFeatureDescription.Append(
+            //    $"**Average tempo**: **__{currentOverview.Average.Tempo / currentOverview.Total:0.0} BPM**");
+            //if (previousOverview.Total > 0)
+            //{
+            //    trackAudioFeatureDescription.Append(
+            //        $" (from {previousOverview.Average.Tempo / previousOverview.Total:0.0} BPM)");
+            //}
+            //trackAudioFeatureDescription.AppendLine();
+
+            return trackAudioFeatureDescription.ToString();
+        }
+
+        private async Task CacheTrackAudioFeatures()
+        {
+            const string cacheKey = "track-audio-features";
+            var cacheTime = TimeSpan.FromMinutes(5);
+
+            if (this._cache.TryGetValue(cacheKey, out _))
+            {
+                return;
+            }
+
+            const string sql = "SELECT * " +
+                               "FROM public.tracks where valence IS NOT null and tempo IS NOT null;";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var audioFeatures = (await connection.QueryAsync<Track>(sql)).ToList();
+
+            foreach (var track in audioFeatures.Where(w => w.Valence.HasValue && w.Tempo.HasValue))
+            {
+                var audioFeature = new InternalTrackAudioFeatures(track.Danceability.GetValueOrDefault(),
+                    track.Energy.GetValueOrDefault(), track.Speechiness.GetValueOrDefault(), track.Acousticness.GetValueOrDefault(),
+                    track.Instrumentalness.GetValueOrDefault(), track.Valence.GetValueOrDefault(), (decimal)track.Tempo.GetValueOrDefault());
+
+                this._cache.Set(CacheKeyForAudioFeature(track.Name, track.ArtistName), audioFeature);
+            }
+
+            this._cache.Set(cacheKey, true, cacheTime);
+        }
+
+        public static string CacheKeyForAudioFeature(string trackName, string artistName)
+        {
+            return $"audio-features-{trackName.ToLower()}-{artistName.ToLower()}";
+        }
     }
 }

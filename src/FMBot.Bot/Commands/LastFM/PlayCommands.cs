@@ -36,8 +36,10 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly IUpdateService _updateService;
         private readonly LastFmRepository _lastFmRepository;
         private readonly PlayService _playService;
+        private readonly GenreService _genreService;
         private readonly SettingService _settingService;
         private readonly TimeService _timeService;
+        private readonly TrackService _trackService;
         private readonly UserService _userService;
         private readonly WhoKnowsPlayService _whoKnowsPlayService;
         private readonly WhoKnowsArtistService _whoKnowsArtistService;
@@ -65,7 +67,9 @@ namespace FMBot.Bot.Commands.LastFM
                 WhoKnowsTrackService whoKnowsTrackService,
                 InteractiveService interactivity,
                 IOptions<BotSettings> botSettings,
-                TimeService timeService) : base(botSettings)
+                TimeService timeService,
+                GenreService genreService,
+                TrackService trackService) : base(botSettings)
         {
             this._guildService = guildService;
             this._indexService = indexService;
@@ -82,6 +86,8 @@ namespace FMBot.Bot.Commands.LastFM
             this._whoKnowsTrackService = whoKnowsTrackService;
             this.Interactivity = interactivity;
             this._timeService = timeService;
+            this._genreService = genreService;
+            this._trackService = trackService;
         }
 
         [Command("fm", RunMode = RunMode.Async)]
@@ -668,6 +674,216 @@ namespace FMBot.Bot.Commands.LastFM
                 this.Context.LogCommandException(e);
                 await ReplyAsync(
                     "Unable to show your overview on Last.fm due to an internal error. Please try again later or contact .fmbot support.");
+            }
+        }
+
+        [Command("year", RunMode = RunMode.Async)]
+        [Summary("Shows an overview of your year")]
+        [Alias("yr", "lastyear", "yearoverview", "yearov", "yov", "last.year")]
+        [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
+        public async Task YearAsync([Remainder] string extraOptions = null)
+        {
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var year = SettingService.GetYear(extraOptions).GetValueOrDefault(DateTime.UtcNow.AddDays(-90).Year);
+
+            try
+            {
+                var yearOverview = await this._playService.GetYear(userSettings.UserId, year);
+
+                if (yearOverview.LastfmErrors)
+                {
+                    await ReplyAsync("Sorry, Last.fm returned an error. Please try again");
+                    this.Context.LogCommandUsed(CommandResponse.LastFmError);
+                    return;
+                }
+                if (yearOverview.TopArtists?.TopArtists == null || !yearOverview.TopArtists.TopArtists.Any())
+                {
+                    await ReplyAsync("Sorry, you haven't listened to music in this year. If you think this message is wrong, please try again.");
+                    this.Context.LogCommandUsed(CommandResponse.LastFmError);
+                    return;
+                }
+
+                var userTitle = $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}'s";
+                var pages = new List<PageBuilder>();
+
+                var description = new StringBuilder();
+                var fields = new List<EmbedFieldBuilder>();
+
+                description.AppendLine($"Your top genres, artists, albums and tracks for {year} compared to {year - 1}.");
+
+                this._embed.WithDescription(description.ToString());
+
+                var genres = await this._genreService.GetTopGenresForTopArtists(yearOverview.TopArtists.TopArtists);
+
+                var previousTopGenres = new List<TopGenre>();
+                if (yearOverview.PreviousTopArtists?.TopArtists != null)
+                {
+                    previousTopGenres = await this._genreService.GetTopGenresForTopArtists(yearOverview.PreviousTopArtists?.TopArtists);
+                }
+
+                var genreDescription = new StringBuilder();
+                var lines = new List<StringService.LeaderboardLine>();
+                for (var i = 0; i < genres.Count; i++)
+                {
+                    var topGenre = genres[i];
+
+                    var previousTopGenre = previousTopGenres.FirstOrDefault(f => f.GenreName == topGenre.GenreName);
+
+                    int? previousPosition = previousTopGenre == null ? null : previousTopGenres.IndexOf(previousTopGenre);
+
+                    var line = StringService.GetLeaderboardLine($"**{topGenre.GenreName}**", i, previousPosition);
+                    lines.Add(line);
+
+                    if (i < 10)
+                    {
+                        genreDescription.AppendLine(line.Text);
+                    }
+                }
+
+                fields.Add(new EmbedFieldBuilder().WithName("Genres").WithValue(genreDescription.ToString()).WithIsInline(true));
+
+                var artistDescription = new StringBuilder();
+                for (var i = 0; i < yearOverview.TopArtists.TopArtists.Count; i++)
+                {
+                    var topArtist = yearOverview.TopArtists.TopArtists[i];
+
+                    var previousTopArtist =
+                        yearOverview.PreviousTopArtists?.TopArtists?.FirstOrDefault(f =>
+                            f.ArtistName == topArtist.ArtistName);
+
+                    var previousPosition = previousTopArtist == null ? null : yearOverview.PreviousTopArtists?.TopArtists?.IndexOf(previousTopArtist);
+
+                    var line = StringService.GetLeaderboardLine($"**{topArtist.ArtistName}**", i, previousPosition);
+                    lines.Add(line);
+
+                    if (i < 10)
+                    {
+                        artistDescription.AppendLine(line.Text);
+                    }
+                }
+
+                fields.Add(new EmbedFieldBuilder().WithName("Artists").WithValue(artistDescription.ToString()).WithIsInline(true));
+
+                var rises = lines
+                    .Where(w => w.OldPosition is >= 20 && w.NewPosition <= 15 && w.PositionsMoved >= 15)
+                    .OrderBy(o => o.PositionsMoved)
+                    .ThenBy(o => o.NewPosition)
+                    .ToList();
+
+                var risesDescription = new StringBuilder();
+                if (rises.Any())
+                {
+                    foreach (var rise in rises.Take(6))
+                    {
+                        risesDescription.Append($"<:5_or_more_up:912380324841918504>");
+                        risesDescription.AppendLine($"{rise.Name} (From #{rise.OldPosition} to #{rise.NewPosition})");
+                    }
+                }
+
+                if (risesDescription.Length > 0)
+                {
+                    fields.Add(new EmbedFieldBuilder().WithName("Rises").WithValue(risesDescription.ToString()));
+                }
+
+                var drops = lines
+                    .Where(w => w.OldPosition is <= 15 && w.NewPosition >= 20 && w.PositionsMoved <= -15)
+                    .OrderBy(o => o.PositionsMoved)
+                    .ThenBy(o => o.OldPosition)
+                    .ToList();
+
+                var dropsDescription = new StringBuilder();
+                if (drops.Any())
+                {
+                    foreach (var drop in drops.Take(6))
+                    {
+                        dropsDescription.Append($"<:5_or_more_down:912380324753838140> ");
+                        dropsDescription.AppendLine($"{drop.Name} (From #{drop.OldPosition} to #{drop.NewPosition})");
+                    }
+                }
+
+                if (dropsDescription.Length > 0)
+                {
+                    fields.Add(new EmbedFieldBuilder().WithName("Drops").WithValue(dropsDescription.ToString()));
+                }
+
+                pages.Add(new PageBuilder()
+                    .WithFields(fields)
+                    .WithDescription(description.ToString())
+                    .WithTitle($"{userTitle} {year} in Review - 1/2"));
+
+                fields = new List<EmbedFieldBuilder>();
+
+                var albumDescription = new StringBuilder();
+                for (var i = 0; i < yearOverview.TopAlbums.TopAlbums.Take(8).Count(); i++)
+                {
+                    var topAlbum = yearOverview.TopAlbums.TopAlbums[i];
+
+                    var previousTopAlbum =
+                        yearOverview.PreviousTopAlbums?.TopAlbums?.FirstOrDefault(f =>
+                            f.ArtistName == topAlbum.ArtistName && f.AlbumName == topAlbum.AlbumName);
+
+                    var previousPosition = previousTopAlbum == null ? null : yearOverview.PreviousTopAlbums?.TopAlbums?.IndexOf(previousTopAlbum);
+
+                    albumDescription.AppendLine(StringService.GetLeaderboardLine($"**{topAlbum.ArtistName}** - **{topAlbum.AlbumName}**", i, previousPosition).Text);
+                }
+                fields.Add(new EmbedFieldBuilder().WithName("Albums").WithValue(albumDescription.ToString()));
+
+                var trackDescription = new StringBuilder();
+                for (var i = 0; i < yearOverview.TopTracks.TopTracks.Take(8).Count(); i++)
+                {
+                    var topTrack = yearOverview.TopTracks.TopTracks[i];
+
+                    var previousTopTrack =
+                        yearOverview.PreviousTopTracks?.TopTracks?.FirstOrDefault(f =>
+                            f.ArtistName == topTrack.ArtistName && f.TrackName == topTrack.TrackName);
+
+                    var previousPosition = previousTopTrack == null ? null : yearOverview.PreviousTopTracks?.TopTracks?.IndexOf(previousTopTrack);
+
+                    trackDescription.AppendLine(StringService.GetLeaderboardLine($"**{topTrack.ArtistName}** - **{topTrack.TrackName}**", i, previousPosition).Text);
+                }
+
+                fields.Add(new EmbedFieldBuilder().WithName("Tracks").WithValue(trackDescription.ToString()));
+
+                var tracksAudioOverview = await this._trackService.GetAverageTrackAudioFeaturesForTopTracks(yearOverview.TopTracks.TopTracks);
+                var previousTracksAudioOverview = await this._trackService.GetAverageTrackAudioFeaturesForTopTracks(yearOverview.PreviousTopTracks?.TopTracks);
+
+                if (tracksAudioOverview.Total > 0)
+                {
+                    fields.Add(new EmbedFieldBuilder().WithName("Top track analysis")
+                        .WithValue(TrackService.AudioFeatureAnalysisComparisonString(tracksAudioOverview, previousTracksAudioOverview)));
+                }
+
+                if (DateTime.UtcNow.Month == 12 && DateTime.UtcNow.Year == year)
+                {
+                    fields.Add(new EmbedFieldBuilder().WithName("Note")
+                        .WithValue("Happy holidays from the .fmbot team!"));
+                    //"Make sure you also check out your [Last.Year](https://www.last.fm/user/_/listening-report/year) report over at Last.fm."
+                }
+
+                pages.Add(new PageBuilder()
+                    .WithFields(fields)
+                    .WithTitle($"{userTitle} {year} in Review - 2/2"));
+
+                var paginator = StringService.BuildSimpleStaticPaginator(pages);
+
+                _ = this.Interactivity.SendPaginatorAsync(
+                    paginator,
+                    this.Context.Channel,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds * 2));
+
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync(
+                    "Unable to show your year overview due to an internal error. Please try again later or contact .fmbot support.");
             }
         }
 
