@@ -15,6 +15,7 @@ namespace FMBot.Domain.Models
         public DateTime? StartDateTime { get; set; }
         public DateTime? EndDateTime { get; set; }
 
+        public string BillboardTimeDescription { get; set; }
         public DateTime? BillboardStartDateTime { get; set; }
         public DateTime? BillboardEndDateTime { get; set; }
 

@@ -35,7 +35,7 @@ namespace FMBot.Bot.Services
         }
 
         public static TimeSettingsModel GetTimePeriod(string options,
-            TimePeriod defaultTimePeriod = TimePeriod.Weekly)
+            TimePeriod defaultTimePeriod = TimePeriod.Weekly, DateTime? registeredLastFm = null)
         {
             var settingsModel = new TimeSettingsModel();
             bool? customTimePeriod = null;
@@ -59,18 +59,20 @@ namespace FMBot.Bot.Services
                 {
                     settingsModel.Description = $"{year}";
                     settingsModel.AltDescription = $"{year}";
+                    settingsModel.BillboardTimeDescription = $"{year - 1}";
                     settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddYears(1).AddSeconds(-1);
                 }
                 if (!year.HasValue && month.HasValue)
                 {
-                    settingsModel.Description = settingsModel.StartDateTime.Value.ToString("MMMMM");
-                    settingsModel.AltDescription = settingsModel.StartDateTime.Value.ToString("MMMMM");
+                    settingsModel.Description = settingsModel.StartDateTime.Value.ToString("MMMM");
+                    settingsModel.AltDescription = settingsModel.StartDateTime.Value.ToString("MMMM");
                     settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
+                    settingsModel.BillboardTimeDescription = $"{settingsModel.StartDateTime.Value.AddMonths(-1):MMMM}";
                 }
                 if (year.HasValue && month.HasValue)
                 {
-                    settingsModel.Description = settingsModel.StartDateTime.Value.ToString("MMMMM") + $" {year}";
-                    settingsModel.AltDescription = settingsModel.StartDateTime.Value.ToString("MMMMM") + $" {year}";
+                    settingsModel.Description = $"{settingsModel.StartDateTime.Value:MMMM} {year}";
+                    settingsModel.AltDescription = $"{settingsModel.StartDateTime.Value:MMMM} {year}";
                     settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
                 }
 

@@ -127,6 +127,11 @@ namespace FMBot.Bot.Services
 
         public async Task<List<TopGenre>> GetTopGenresForTopArtists(IEnumerable<TopArtist> topArtists)
         {
+            if (topArtists == null || !topArtists.Any())
+            {
+                return new List<TopGenre>();
+            }
+
             await CacheAllArtistGenres();
 
             var allGenres = new List<GenreWithPlaycount>();

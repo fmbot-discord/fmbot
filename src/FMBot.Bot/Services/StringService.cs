@@ -61,8 +61,6 @@ namespace FMBot.Bot.Services
 
             if (oldPosition != null)
             {
-                line.Append("  ");
-
                 positionsMoved = oldPosition.Value - newPosition;
 
                 if (oldPosition < newPosition)
@@ -108,6 +106,10 @@ namespace FMBot.Bot.Services
 
         public static string GetBillBoardSettingString(TimeSettingsModel timeSettings)
         {
+            if (timeSettings.BillboardTimeDescription != null)
+            {
+                return $"Billboard mode enabled - Comparing to {timeSettings.BillboardTimeDescription}";
+            }
             if (timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
             {
                 if (timeSettings.BillboardEndDateTime.Value.Year == DateTime.UtcNow.Year)
@@ -122,7 +124,7 @@ namespace FMBot.Bot.Services
             return null;
         }
 
-        public static StaticPaginator BuildStaticPaginator(IList<PageBuilder> pages, bool paginationEnabled = true)
+        public static StaticPaginator BuildStaticPaginator(IList<PageBuilder> pages)
         {
             var builder = new StaticPaginatorBuilder()
                 .WithPages(pages)

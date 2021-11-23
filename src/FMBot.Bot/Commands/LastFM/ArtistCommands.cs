@@ -530,7 +530,8 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("topartists", RunMode = RunMode.Async)]
         [Summary("Shows your or someone else their top artists over a certain time period.")]
-        [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample, Constants.BillboardExample, Constants.ExtraLargeExample)]
+        [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
+            Constants.BillboardExample, Constants.ExtraLargeExample)]
         [Examples("ta", "topartists", "ta a lfm:fm-bot", "topartists weekly @user", "ta bb xl")]
         [Alias("al", "as", "ta", "artistlist", "artists", "top artists", "artistslist")]
         [UsernameSetRequired]
@@ -596,7 +597,8 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                 }
 
-                var artistPages = artists.Content.TopArtists.ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
+                var artistPages = artists.Content.TopArtists
+                    .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
 
                 var counter = 1;
                 var pageCounter = 1;

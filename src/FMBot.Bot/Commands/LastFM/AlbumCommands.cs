@@ -391,8 +391,9 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("topalbums", RunMode = RunMode.Async)]
         [Summary("Shows your or someone else their top albums over a certain time period.")]
-        [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
-        [Examples("tab", "topalbums", "tab a lfm:fm-bot", "topalbums weekly @user")]
+        [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
+            Constants.BillboardExample, Constants.ExtraLargeExample)]
+        [Examples("tab", "topalbums", "tab a lfm:fm-bot", "topalbums weekly @user", "tab bb xl")]
         [Alias("abl", "abs", "tab", "albumlist", "top albums", "albums", "albumslist")]
         [UsernameSetRequired]
         [SupportsPagination]
@@ -459,7 +460,8 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                 }
 
-                var albumPages = albums.Content.TopAlbums.ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
+                var albumPages = albums.Content.TopAlbums
+                    .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
 
                 var counter = 1;
                 var pageCounter = 1;
