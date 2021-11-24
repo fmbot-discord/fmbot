@@ -113,7 +113,7 @@ namespace FMBot.Bot.Commands.LastFM
                 if (!timeSettings.UsePlays && timeSettings.TimePeriod != TimePeriod.AllTime)
                 {
                     artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm,
-                        timeSettings.TimePeriod, 1000);
+                        timeSettings, 1000, userSessionKey: userSettings.SessionKeyLastFm);
 
                     if (!artists.Success || artists.Content == null)
                     {
