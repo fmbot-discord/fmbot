@@ -677,11 +677,11 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        [Command("year", RunMode = RunMode.Async)]
-        [Summary("Shows an overview of your year")]
-        [Alias("yr", "lastyear", "yearoverview", "yearov", "yov", "last.year")]
-        [UsernameSetRequired]
-        [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
+        //[Command("year", RunMode = RunMode.Async)]
+        //[Summary("Shows an overview of your year")]
+        //[Alias("yr", "lastyear", "yearoverview", "yearov", "yov", "last.year")]
+        //[UsernameSetRequired]
+        //[CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
         public async Task YearAsync([Remainder] string extraOptions = null)
         {
             _ = this.Context.Channel.TriggerTypingAsync();
