@@ -29,7 +29,7 @@ namespace FMBot.Domain
         public const string UserMentionOrLfmUserNameExample = "`fm-bot` / `@usermention` / `356268235697553409`";
 
         /// <summary>Amount of days to store plays for users for</summary>
-        public const int DaysToStorePlays = 32;
+        public const int DaysToStorePlays = 46;
 
         public const int SupporterMessageChance = 15;
 
