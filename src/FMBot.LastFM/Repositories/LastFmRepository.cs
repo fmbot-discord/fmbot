@@ -373,7 +373,7 @@ namespace FMBot.LastFM.Repositories
             if (trackCall.Success)
             {
                 var linkToFilter = $"<a href=\"{trackCall.Content.Track.Url}\">Read more on Last.fm</a>";
-                var filteredSummary = trackCall.Content.Track.Wiki?.Summary.Replace(linkToFilter, "");
+                var filteredSummary = trackCall.Content.Track.Wiki?.Summary.Replace(linkToFilter, "").Replace(linkToFilter.Replace("https", "http"), "");
 
                 return new Response<TrackInfo>
                 {

@@ -122,6 +122,11 @@ namespace FMBot.Bot.Commands.LastFM
                 footer.AppendLine("Image source: Spotify");
             }
 
+            if (contextUser.TotalPlaycount.HasValue && artist.UserPlaycount is >= 10)
+            {
+                footer.AppendLine($"{(decimal)artist.UserPlaycount.Value / contextUser.TotalPlaycount.Value:P} of all your scrobbles are on this artist");
+            }
+
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
             this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());

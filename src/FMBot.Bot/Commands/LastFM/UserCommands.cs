@@ -620,8 +620,7 @@ namespace FMBot.Bot.Commands.LastFM
                 if (existingUserSettings != null)
                 {
                     reply = $"You have already logged in before, however a link to re-connect your Last.fm account to .fmbot has still been sent to your DMs!\n\n" +
-                            $"Note that .fmbot is not affiliated with Last.fm and/or [Spotify](https://fmbot.xyz/faq/#commands-are-showing-the-wrong-songs-its-not-showing-what-i-listen-to-on-spotify). " +
-                            $"This means that re-logging in will not fix any issues related to those applications.";
+                            $"Using Spotify and having problems with your music not being tracked or it lagging behind? Re-logging in again will not fix this, please use `{prfx}outofsync` for help instead.";
                 }
 
                 serverEmbed.WithDescription(reply);
@@ -767,6 +766,8 @@ namespace FMBot.Bot.Commands.LastFM
                     sb.AppendLine("*Account status has to be manually changed back by an .fmbot admin*");
                 }
 
+                sb.AppendLine();
+                sb.AppendLine($"Logging out will not fix any sync issues with Spotify, for that please check out `{prfx}outofsync`.");
                 sb.AppendLine();
                 sb.AppendLine($"Type `{prfx}remove confirm` to confirm deletion.");
 

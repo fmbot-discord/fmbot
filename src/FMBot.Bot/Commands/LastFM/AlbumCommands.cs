@@ -191,9 +191,21 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                 }
 
+                var footer = new StringBuilder();
+
+                if (contextUser.TotalPlaycount.HasValue && album.UserPlaycount is >= 10)
+                {
+                    footer.AppendLine($"{(decimal)album.UserPlaycount.Value / contextUser.TotalPlaycount.Value:P} of all your scrobbles are on this album");
+                }
+
                 if (databaseAlbum?.Label != null)
                 {
-                    this._embed.WithFooter($"Label: {databaseAlbum.Label}");
+                    footer.AppendLine($"Label: {databaseAlbum.Label}");
+                }
+
+                if (footer.Length > 0)
+                {
+                    this._embed.WithFooter(footer.ToString());
                 }
 
                 if (album.Description != null)

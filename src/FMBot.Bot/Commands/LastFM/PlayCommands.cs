@@ -37,6 +37,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly LastFmRepository _lastFmRepository;
         private readonly PlayService _playService;
         private readonly SettingService _settingService;
+        private readonly TimeService _timeService;
         private readonly UserService _userService;
         private readonly WhoKnowsPlayService _whoKnowsPlayService;
         private readonly WhoKnowsArtistService _whoKnowsArtistService;
@@ -63,7 +64,8 @@ namespace FMBot.Bot.Commands.LastFM
                 WhoKnowsAlbumService whoKnowsAlbumService,
                 WhoKnowsTrackService whoKnowsTrackService,
                 InteractiveService interactivity,
-                IOptions<BotSettings> botSettings) : base(botSettings)
+                IOptions<BotSettings> botSettings,
+                TimeService timeService) : base(botSettings)
         {
             this._guildService = guildService;
             this._indexService = indexService;
@@ -79,6 +81,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._whoKnowsAlbumService = whoKnowsAlbumService;
             this._whoKnowsTrackService = whoKnowsTrackService;
             this.Interactivity = interactivity;
+            this._timeService = timeService;
         }
 
         [Command("fm", RunMode = RunMode.Async)]
@@ -265,6 +268,12 @@ namespace FMBot.Bot.Commands.LastFM
                     {
                         await this._indexService.UpdateGuildUser(await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId), contextUser.UserId, guild);
                     }
+                }
+
+                if (!currentTrack.NowPlaying && currentTrack.TimePlayed.HasValue && currentTrack.TimePlayed < DateTime.UtcNow.AddHours(-1) && currentTrack.TimePlayed > DateTime.UtcNow.AddDays(-5))
+                {
+                    footerText +=
+                        $"Using Spotify and fm lagging behind? Check '.outofsync'\n";
                 }
 
                 if (currentTrack.Loved)
@@ -621,11 +630,8 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                     }
 
-                    var listeningTime =
-                        $"{day.ListeningTime.Hours}h{day.ListeningTime.Minutes}m";
-
                     this._embed.AddField(
-                        $"{day.Playcount} plays - {listeningTime} - <t:{day.Date.ToUnixEpochDate()}:D>",
+                        $"{day.Playcount} plays - {StringExtensions.GetListeningTimeString(day.ListeningTime)} - <t:{day.Date.ToUnixEpochDate()}:D>",
                         $"{genreString}\n" +
                         $"{day.TopArtist}\n" +
                         $"{day.TopAlbum}\n" +
@@ -907,7 +913,7 @@ namespace FMBot.Bot.Commands.LastFM
         [SupportsPagination]
         [RequiresIndex]
         [CommandCategories(CommandCategory.Crowns)]
-        public async Task PlayLeaderboardAsync()
+        public async Task PlayLeaderboardAsync([Remainder] string options = null)
         {
             try
             {
@@ -940,10 +946,10 @@ namespace FMBot.Bot.Commands.LastFM
                 var pageCounter = 1;
                 foreach (var playcountPage in topPlaycountPages)
                 {
-                    var crownPageString = new StringBuilder();
+                    var playcountString = new StringBuilder();
                     foreach (var userPlaycount in playcountPage)
                     {
-                        crownPageString.AppendLine($"{counter}. **{WhoKnowsService.NameWithLink(userPlaycount)}** - **{userPlaycount.Playcount}** {StringExtensions.GetScrobblesString(userPlaycount.Playcount)}");
+                        playcountString.AppendLine($"{counter}. **{WhoKnowsService.NameWithLink(userPlaycount)}** - **{userPlaycount.Playcount}** {StringExtensions.GetScrobblesString(userPlaycount.Playcount)}");
                         counter++;
                     }
 
@@ -953,7 +959,7 @@ namespace FMBot.Bot.Commands.LastFM
                                  $"{filteredTopPlaycountUsers.Sum(s => s.Playcount)} total scrobbles";
 
                     pages.Add(new PageBuilder()
-                        .WithDescription(crownPageString.ToString())
+                        .WithDescription(playcountString.ToString())
                         .WithTitle(title)
                         .WithFooter(footer));
                     pageCounter++;
@@ -972,6 +978,85 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync("Something went wrong while showing playleaderboard and the error has been logged. Please try again later or contact staff on our support server.");
+            }
+        }
+
+        [Command("timeleaderboard", RunMode = RunMode.Async)]
+        [Summary("Shows users with the most playtime in your server")]
+        [Alias("playtimeleaderboard", "listeningtimeleaderboard", "ptlb", "ltlb", "tlb", "sleepscrobblers")]
+        [UsernameSetRequired]
+        [GuildOnly]
+        [SupportsPagination]
+        [RequiresIndex]
+        [CommandCategories(CommandCategory.Crowns)]
+        public async Task TimeLeaderboardAsync([Remainder] string options = null)
+        {
+            try
+            {
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild?.Id);
+                var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+                var userPlays = await this._playService.GetGuildUsersTotalPlaytime(guild.GuildId);
+
+                var userListeningTime =
+                    await this._timeService.UserPlaysToGuildLeaderboard(this.Context, userPlays, guild.GuildUsers);
+
+                var filteredTopListeningTimeUsers = WhoKnowsService.FilterGuildUsersAsync(userListeningTime, guild);
+
+                if (!userListeningTime.Any() && filteredTopListeningTimeUsers.Any())
+                {
+                    this._embed.WithDescription($"No top users in this server. Use `.index` to refresh the cached memberlist");
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    return;
+                }
+
+                var pages = new List<PageBuilder>();
+
+                var title = $"Users with most listening time in {this.Context.Guild.Name}";
+
+                var topListeningTimePages = filteredTopListeningTimeUsers.ChunkBy(10);
+                var requestedUser = filteredTopListeningTimeUsers.FirstOrDefault(f => f.UserId == user.UserId);
+                var location = filteredTopListeningTimeUsers.IndexOf(requestedUser);
+
+                var counter = 1;
+                var pageCounter = 1;
+                foreach (var listeningTimePAge in topListeningTimePages)
+                {
+                    var listeningTimeString = new StringBuilder();
+                    foreach (var userPlaycount in listeningTimePAge)
+                    {
+                        listeningTimeString.AppendLine($"{counter}. **{WhoKnowsService.NameWithLink(userPlaycount)}** - **{userPlaycount.Name}**");
+                        counter++;
+                    }
+
+                    var footer = $"Your ranking: {location} ({requestedUser?.Name})\n" +
+                                 $"7 days - From {DateTime.UtcNow.AddDays(-9).ToShortDateString()} to {DateTime.UtcNow.AddDays(-2).ToShortDateString()}\n" +
+                                 $"Page {pageCounter}/{topListeningTimePages.Count} - " +
+                                 $"{filteredTopListeningTimeUsers.Count} users - " +
+                                 $"{filteredTopListeningTimeUsers.Sum(s => s.Playcount)} total minutes";
+
+                    pages.Add(new PageBuilder()
+                        .WithDescription(listeningTimeString.ToString())
+                        .WithTitle(title)
+                        .WithFooter(footer));
+                    pageCounter++;
+                }
+
+                var paginator = StringService.BuildStaticPaginator(pages);
+
+                _ = this.Interactivity.SendPaginatorAsync(
+                    paginator,
+                    this.Context.Channel,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync("Something went wrong while showing listening time leaderboard and the error has been logged. Please try again later or contact staff on our support server.");
             }
         }
 
