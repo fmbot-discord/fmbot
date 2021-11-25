@@ -435,19 +435,15 @@ namespace FMBot.Bot.Commands.LastFM
                     this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 }
 
-                string footer;
                 var firstTrack = lovedTracks.Content.RecentTracks[0];
 
-                footer =
-                    $"{userSettings.UserNameLastFm} has {lovedTracks.Content.TotalAmount} loved tracks";
+                var footer = $"{userSettings.UserNameLastFm} has {lovedTracks.Content.TotalAmount} loved tracks";
+                DateTime? timePlaying = null;
 
                 if (!firstTrack.NowPlaying && firstTrack.TimePlayed.HasValue)
                 {
-                    footer += " | Last loved track:";
-                    this._embed.WithTimestamp(firstTrack.TimePlayed.Value);
+                    timePlaying = firstTrack.TimePlayed.Value;
                 }
-
-                this._embedFooter.WithText(footer);
 
                 var lovedTrackPages = lovedTracks.Content.RecentTracks.ChunkBy(10);
 
@@ -463,10 +459,19 @@ namespace FMBot.Bot.Commands.LastFM
                         counter--;
                     }
 
-                    pages.Add(new PageBuilder()
+                    var page = new PageBuilder()
                         .WithDescription(albumPageString.ToString())
                         .WithAuthor(this._embedAuthor)
-                        .WithFooter(footer));
+                        .WithFooter(footer);
+
+                    if (timePlaying.HasValue)
+                    {
+                        footer += " | Last loved track:";
+                        page.WithFooter(footer);
+                        page.WithTimestamp(timePlaying);
+                    }
+
+                    pages.Add(page);
                 }
 
                 var paginator = StringService.BuildStaticPaginator(pages);
