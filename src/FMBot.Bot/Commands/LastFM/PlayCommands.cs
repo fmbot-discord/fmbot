@@ -904,13 +904,12 @@ namespace FMBot.Bot.Commands.LastFM
             var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
 
             var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
-
-            var timeType = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
 
             long timeFrom;
-            if (timeType.TimePeriod != TimePeriod.AllTime && timeType.PlayDays != null)
+            if (timeSettings.TimePeriod != TimePeriod.AllTime && timeSettings.PlayDays != null)
             {
-                var dateAgo = DateTime.UtcNow.AddDays(-timeType.PlayDays.Value);
+                var dateAgo = DateTime.UtcNow.AddDays(-timeSettings.PlayDays.Value);
                 timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
             }
             else
@@ -922,7 +921,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (count == null || count == 0)
             {
-                var errorReply = $"<@{this.Context.User.Id}> No plays found in the {timeType.Description} time period.";
+                var errorReply = $"<@{this.Context.User.Id}> No plays found in the {timeSettings.Description} time period.";
 
                 await this.Context.Channel.SendMessageAsync(errorReply);
             }
@@ -951,7 +950,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             reply.AppendLine($" will reach **{goalAmount}** scrobbles on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
 
-            if (timeType.TimePeriod == TimePeriod.AllTime)
+            if (timeSettings.TimePeriod == TimePeriod.AllTime)
             {
                 reply.AppendLine(
                     $"This is based on {determiner} alltime avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day. ({count} in {Math.Round(totalDays, 0)} days)");

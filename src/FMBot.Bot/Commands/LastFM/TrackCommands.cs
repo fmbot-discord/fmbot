@@ -1093,7 +1093,7 @@ namespace FMBot.Bot.Commands.LastFM
             };
 
             guildListSettings = SettingService.SetGuildRankingSettings(guildListSettings, guildTracksOptions);
-            var timeSettings = SettingService.GetTimePeriod(guildListSettings.NewSearchValue, guildListSettings.ChartTimePeriod);
+            var timeSettings = SettingService.GetTimePeriod(guildListSettings.NewSearchValue, guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
             var artistName = timeSettings.NewSearchValue;
 
             if (timeSettings.UsePlays || timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)

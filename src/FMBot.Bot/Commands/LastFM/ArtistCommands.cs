@@ -299,7 +299,7 @@ namespace FMBot.Bot.Commands.LastFM
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
 
-            var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.AllTime);
+            var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.AllTime, cachedOrAllTimeOnly: true, dailyTimePeriods: false);
 
             var artist = await GetArtist(timeSettings.NewSearchValue, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm, userSettings.UserNameLastFm);
             if (artist == null)
@@ -685,15 +685,13 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var timePeriodString = extraOptions;
-
-            var timeType = SettingService.GetTimePeriod(
-                timePeriodString,
+            var timeSettings = SettingService.GetTimePeriod(
+                extraOptions,
                 TimePeriod.AllTime);
 
             var tasteSettings = new TasteSettings
             {
-                ChartTimePeriod = timeType.TimePeriod
+                ChartTimePeriod = timeSettings.TimePeriod
             };
 
             tasteSettings = this._artistsService.SetTasteSettings(tasteSettings, extraOptions);
@@ -750,8 +748,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 tasteSettings.OtherUserLastFmUsername = lastfmToCompare;
 
-                var ownArtistsTask = this._lastFmRepository.GetTopArtistsAsync(ownLastFmUsername, timeType, 1000);
-                var otherArtistsTask = this._lastFmRepository.GetTopArtistsAsync(lastfmToCompare, timeType, 1000);
+                var ownArtistsTask = this._lastFmRepository.GetTopArtistsAsync(ownLastFmUsername, timeSettings, 1000);
+                var otherArtistsTask = this._lastFmRepository.GetTopArtistsAsync(lastfmToCompare, timeSettings, 1000);
 
                 var ownArtists = await ownArtistsTask;
                 var otherArtists = await otherArtistsTask;
@@ -775,13 +773,13 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 this._embedAuthor.WithName($"Top artist comparison - {ownLastFmUsername} vs {lastfmToCompare}");
-                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{lastfmToCompare}/library/artists?{timeType.UrlParameter}");
+                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{lastfmToCompare}/library/artists?{timeSettings.UrlParameter}");
                 this._embed.WithAuthor(this._embedAuthor);
 
                 int amount = 14;
                 if (tasteSettings.TasteType == TasteType.FullEmbed)
                 {
-                    var taste = this._artistsService.GetEmbedTaste(ownArtists.Content, otherArtists.Content, amount, timeType.TimePeriod);
+                    var taste = this._artistsService.GetEmbedTaste(ownArtists.Content, otherArtists.Content, amount, timeSettings.TimePeriod);
 
                     this._embed.WithDescription(taste.Description);
                     this._embed.AddField("Artist", taste.LeftDescription, true);
@@ -789,7 +787,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 else
                 {
-                    var taste = this._artistsService.GetTableTaste(ownArtists.Content, otherArtists.Content, amount, timeType.TimePeriod, ownLastFmUsername, lastfmToCompare);
+                    var taste = this._artistsService.GetTableTaste(ownArtists.Content, otherArtists.Content, amount, timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare);
 
                     this._embed.WithDescription(taste);
                 }
@@ -1326,7 +1324,7 @@ namespace FMBot.Bot.Commands.LastFM
             };
 
             guildListSettings = SettingService.SetGuildRankingSettings(guildListSettings, extraOptions);
-            var timeSettings = SettingService.GetTimePeriod(extraOptions, guildListSettings.ChartTimePeriod);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions, guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
 
             if (timeSettings.UsePlays || timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
             {
