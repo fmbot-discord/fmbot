@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Fergun.Interactive;
@@ -259,7 +260,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
             }
 
-            await this.Context.Channel.SendMessageAsync(reply);
+            await this.Context.Channel.SendMessageAsync(reply, allowedMentions: AllowedMentions.None);
             this.Context.LogCommandUsed();
         }
 

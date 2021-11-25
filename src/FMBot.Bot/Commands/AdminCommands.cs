@@ -250,7 +250,7 @@ namespace FMBot.Bot.Commands
 
                 await this._censorService.AddCensoredAlbum(album, artist);
 
-                await ReplyAsync($"Added `{album}` by `{artist}` to the list of censored albums.");
+                await ReplyAsync($"Added `{album}` by `{artist}` to the list of censored albums.", allowedMentions: AllowedMentions.None);
                 this.Context.LogCommandUsed();
             }
             else
@@ -806,12 +806,12 @@ namespace FMBot.Bot.Commands
 
                     if (blacklistResult)
                     {
-                        await ReplyAsync("Added " + user.Username + " to the blacklist.");
+                        await ReplyAsync("Added " + user.Username + " to the blacklist.", allowedMentions: AllowedMentions.None);
                     }
                     else
                     {
                         await ReplyAsync("You have already added " + user.Username +
-                                         " to the blacklist or the blacklist does not exist for this user.");
+                                         " to the blacklist or the blacklist does not exist for this user.", allowedMentions: AllowedMentions.None);
                     }
 
                     this.Context.LogCommandUsed();
@@ -825,7 +825,7 @@ namespace FMBot.Bot.Commands
             catch (Exception e)
             {
                 this.Context.LogCommandException(e);
-                await ReplyAsync("Unable to add " + user.Username + " to the blacklist due to an internal error.");
+                await ReplyAsync("Unable to add " + user.Username + " to the blacklist due to an internal error.", allowedMentions: AllowedMentions.None);
             }
         }
 
@@ -849,11 +849,11 @@ namespace FMBot.Bot.Commands
 
                     if (blacklistResult)
                     {
-                        await ReplyAsync("Removed " + user.Username + " from the blacklist.");
+                        await ReplyAsync("Removed " + user.Username + " from the blacklist.", allowedMentions: AllowedMentions.None);
                     }
                     else
                     {
-                        await ReplyAsync("You have already removed " + user.Username + " from the blacklist.");
+                        await ReplyAsync("You have already removed " + user.Username + " from the blacklist.", allowedMentions: AllowedMentions.None);
                     }
                     this.Context.LogCommandUsed();
                 }
@@ -866,7 +866,7 @@ namespace FMBot.Bot.Commands
             catch (Exception e)
             {
                 this.Context.LogCommandException(e);
-                await ReplyAsync("Unable to remove " + user.Username + " from the blacklist due to an internal error.");
+                await ReplyAsync("Unable to remove " + user.Username + " from the blacklist due to an internal error.", allowedMentions: AllowedMentions.None);
             }
         }
     }

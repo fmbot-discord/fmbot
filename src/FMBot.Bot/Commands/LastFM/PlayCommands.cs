@@ -368,7 +368,7 @@ namespace FMBot.Bot.Commands.LastFM
                         fmText +=
                             $"`{footerText.FilterOutMentions()}`";
 
-                        await this.Context.Channel.SendMessageAsync(fmText);
+                        await this.Context.Channel.SendMessageAsync(fmText, allowedMentions: AllowedMentions.None);
                         break;
                     default:
                         if (embedType == FmEmbedType.EmbedMini || embedType == FmEmbedType.EmbedTiny)
@@ -962,7 +962,7 @@ namespace FMBot.Bot.Commands.LastFM
                     $"This is based on {determiner} avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day in the last {Math.Round(totalDays, 0)} days ({count} total)");
             }
 
-            await this.Context.Channel.SendMessageAsync(reply.ToString());
+            await this.Context.Channel.SendMessageAsync(reply.ToString(), allowedMentions: AllowedMentions.None);
 
             this.Context.LogCommandUsed();
         }
@@ -1059,11 +1059,11 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (timeType.TimePeriod == TimePeriod.AllTime)
             {
-                await this.Context.Channel.SendMessageAsync($"**{userTitle}** has `{count}` total scrobbles");
+                await this.Context.Channel.SendMessageAsync($"**{userTitle}** has `{count}` total scrobbles", allowedMentions: AllowedMentions.None);
             }
             else
             {
-                await this.Context.Channel.SendMessageAsync($"**{userTitle}** has `{count}` scrobbles in the {timeType.AltDescription}");
+                await this.Context.Channel.SendMessageAsync($"**{userTitle}** has `{count}` scrobbles in the {timeType.AltDescription}", allowedMentions: AllowedMentions.None);
             }
             this.Context.LogCommandUsed();
         }

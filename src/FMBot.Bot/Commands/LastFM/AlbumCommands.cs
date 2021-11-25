@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -300,7 +301,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
             }
 
-            await this.Context.Channel.SendMessageAsync(reply);
+            await this.Context.Channel.SendMessageAsync(reply, allowedMentions:AllowedMentions.None);
             this.Context.LogCommandUsed();
         }
 

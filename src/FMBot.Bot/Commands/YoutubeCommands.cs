@@ -108,7 +108,7 @@ namespace FMBot.Bot.Commands
                         reply += $"\n*Tip: Search for other songs or videos by simply adding the searchvalue behind {prfx}youtube.*";
                     }
 
-                    await ReplyAsync(reply);
+                    await ReplyAsync(reply, allowedMentions: AllowedMentions.None);
                     this.Context.LogCommandUsed();
                 }
                 catch (Exception e)
