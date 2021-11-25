@@ -105,7 +105,7 @@ namespace FMBot.Bot.Services
 
         public async Task<User> GetUserSettingsAsync(IUser discordUser)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.Users
                 .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);

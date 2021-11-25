@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -19,7 +20,6 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
-using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -531,8 +531,9 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("topartists", RunMode = RunMode.Async)]
         [Summary("Shows your or someone else their top artists over a certain time period.")]
-        [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
-        [Examples("ta", "topartists", "ta a lfm:fm-bot", "topartists weekly @user")]
+        [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
+            Constants.BillboardExample, Constants.ExtraLargeExample)]
+        [Examples("ta", "topartists", "ta a lfm:fm-bot", "topartists weekly @user", "ta bb xl")]
         [Alias("al", "as", "ta", "artistlist", "artists", "top artists", "artistslist")]
         [UsernameSetRequired]
         [SupportsPagination]
@@ -546,6 +547,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var timeSettings = SettingService.GetTimePeriod(extraOptions);
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var topListSettings = SettingService.SetTopListSettings(extraOptions);
 
             var pages = new List<PageBuilder>();
 
@@ -567,7 +569,7 @@ namespace FMBot.Bot.Commands.LastFM
             try
             {
                 var artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm,
-                        timeSettings, 200);
+                        timeSettings, 200, 1, userSettings.SessionKeyLastFm);
 
                 if (!artists.Success || artists.Content == null)
                 {
@@ -584,7 +586,20 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                var artistPages = artists.Content.TopArtists.ChunkBy(10);
+                var previousTopArtists = new List<TopArtist>();
+                if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
+                {
+                    var previousArtistsCall = await this._lastFmRepository
+                        .GetTopArtistsForCustomTimePeriodAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200, userSettings.SessionKeyLastFm);
+
+                    if (previousArtistsCall.Success)
+                    {
+                        previousTopArtists.AddRange(previousArtistsCall.Content.TopArtists);
+                    }
+                }
+
+                var artistPages = artists.Content.TopArtists
+                    .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
 
                 var counter = 1;
                 var pageCounter = 1;
@@ -593,21 +608,42 @@ namespace FMBot.Bot.Commands.LastFM
                     var artistPageString = new StringBuilder();
                     foreach (var artist in artistPage)
                     {
-                        artistPageString.AppendLine($"{counter}. **[{artist.ArtistName}]({artist.ArtistUrl})** ({artist.UserPlaycount} {StringExtensions.GetPlaysString(artist.UserPlaycount)})");
+                        var name =
+                            $"**[{artist.ArtistName}]({artist.ArtistUrl})** ({artist.UserPlaycount} {StringExtensions.GetPlaysString(artist.UserPlaycount)})";
+
+                        if (topListSettings.Billboard && previousTopArtists.Any())
+                        {
+                            var previousTopArtist = previousTopArtists.FirstOrDefault(f => f.ArtistName == artist.ArtistName);
+                            int? previousPosition = previousTopArtist == null ? null : previousTopArtists.IndexOf(previousTopArtist);
+
+                            artistPageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition).Text);
+                        }
+                        else
+                        {
+                            artistPageString.Append($"{counter}. ");
+                            artistPageString.AppendLine(name);
+                        }
+
                         counter++;
                     }
 
-                    var footer = $"Page {pageCounter}/{artistPages.Count}";
+                    var footer = new StringBuilder();
+                    footer.Append($"Page {pageCounter}/{artistPages.Count}");
 
                     if (artists.Content.TotalAmount.HasValue)
                     {
-                        footer += $" - { artists.Content.TotalAmount} different artists in this time period";
+                        footer.Append($" - { artists.Content.TotalAmount} different artists in this time period");
+                    }
+                    if (topListSettings.Billboard)
+                    {
+                        footer.AppendLine();
+                        footer.Append(StringService.GetBillBoardSettingString(timeSettings));
                     }
 
                     pages.Add(new PageBuilder()
                         .WithDescription(artistPageString.ToString())
                         .WithAuthor(this._embedAuthor)
-                        .WithFooter(footer));
+                        .WithFooter(footer.ToString()));
                     pageCounter++;
                 }
 

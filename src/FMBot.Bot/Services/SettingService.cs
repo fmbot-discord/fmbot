@@ -35,7 +35,7 @@ namespace FMBot.Bot.Services
         }
 
         public static TimeSettingsModel GetTimePeriod(string options,
-            TimePeriod defaultTimePeriod = TimePeriod.Weekly)
+            TimePeriod defaultTimePeriod = TimePeriod.Weekly, DateTime? registeredLastFm = null)
         {
             var settingsModel = new TimeSettingsModel();
             bool? customTimePeriod = null;
@@ -59,23 +59,33 @@ namespace FMBot.Bot.Services
                 {
                     settingsModel.Description = $"{year}";
                     settingsModel.AltDescription = $"{year}";
+                    settingsModel.BillboardTimeDescription = $"{year - 1}";
                     settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddYears(1).AddSeconds(-1);
                 }
                 if (!year.HasValue && month.HasValue)
                 {
-                    settingsModel.Description = settingsModel.StartDateTime.Value.ToString("MMMMM");
-                    settingsModel.AltDescription = settingsModel.StartDateTime.Value.ToString("MMMMM");
+                    settingsModel.Description = settingsModel.StartDateTime.Value.ToString("MMMM");
+                    settingsModel.AltDescription = settingsModel.StartDateTime.Value.ToString("MMMM");
                     settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
+                    settingsModel.BillboardTimeDescription = $"{settingsModel.StartDateTime.Value.AddMonths(-1):MMMM}";
                 }
                 if (year.HasValue && month.HasValue)
                 {
-                    settingsModel.Description = settingsModel.StartDateTime.Value.ToString("MMMMM") + $" {year}";
-                    settingsModel.AltDescription = settingsModel.StartDateTime.Value.ToString("MMMMM") + $" {year}";
+                    settingsModel.Description = $"{settingsModel.StartDateTime.Value:MMMM} {year}";
+                    settingsModel.AltDescription = $"{settingsModel.StartDateTime.Value:MMMM} {year}";
                     settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
                 }
 
+                settingsModel.PlayDays =
+                    (int)(settingsModel.EndDateTime.Value - settingsModel.StartDateTime.Value).TotalDays;
+
                 var startDateString = settingsModel.StartDateTime.Value.ToString("yyyy-M-dd");
                 var endDateString = settingsModel.EndDateTime.Value.ToString("yyyy-M-dd");
+
+                settingsModel.BillboardStartDateTime =
+                    settingsModel.StartDateTime.Value.AddDays(-settingsModel.PlayDays.Value);
+                settingsModel.BillboardEndDateTime =
+                    settingsModel.EndDateTime.Value.AddDays(-settingsModel.PlayDays.Value);
 
                 settingsModel.UrlParameter = $"from={startDateString}&to={endDateString}";
 
@@ -254,7 +264,46 @@ namespace FMBot.Bot.Services
                 }
             }
 
+            if (settingsModel.PlayDays.HasValue)
+            {
+                settingsModel.BillboardStartDateTime =
+                    DateTime.UtcNow.AddDays(-(settingsModel.PlayDays.Value + settingsModel.PlayDays.Value / 3));
+                settingsModel.BillboardEndDateTime =
+                    DateTime.UtcNow.AddDays(-(settingsModel.PlayDays.Value / 3));
+            }
+
             return settingsModel;
+        }
+
+        public static TopListSettings SetTopListSettings(string extraOptions = null)
+        {
+            var topListSettings = new TopListSettings
+            {
+                Billboard = false,
+                ExtraLarge = false,
+                NewSearchValue = extraOptions
+            };
+
+            if (extraOptions == null)
+            {
+                return topListSettings;
+            }
+
+            var billboard = new[] { "bb", "billboard", "compare" };
+            if (Contains(extraOptions, billboard))
+            {
+                topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, billboard);
+                topListSettings.Billboard = true;
+            }
+
+            var extraLarge = new[] { "xl", "xxl", "extralarge" };
+            if (Contains(extraOptions, extraLarge))
+            {
+                topListSettings.NewSearchValue = ContainsAndRemove(topListSettings.NewSearchValue, extraLarge);
+                topListSettings.ExtraLarge = true;
+            }
+
+            return topListSettings;
         }
 
         public WhoKnowsSettings SetWhoKnowsSettings(WhoKnowsSettings currentWhoKnowsSettings, string extraOptions, UserType userType = UserType.User)

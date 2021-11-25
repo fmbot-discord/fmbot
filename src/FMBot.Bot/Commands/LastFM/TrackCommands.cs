@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Fergun.Interactive;
-using Fergun.Interactive.Pagination;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -19,7 +19,6 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
-using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
@@ -131,7 +130,6 @@ namespace FMBot.Bot.Commands.LastFM
                 leftStats.AppendLine($"`{track.TotalListeners}` listeners");
                 leftStats.AppendLine($"`{track.TotalPlaycount}` global {StringExtensions.GetPlaysString(track.TotalPlaycount)}");
                 leftStats.AppendLine($"`{track.UserPlaycount}` {StringExtensions.GetPlaysString(track.UserPlaycount)} by you");
-
 
                 var duration = spotifyTrack?.DurationMs ?? track.Duration;
                 if (duration is > 0)
@@ -262,7 +260,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
             }
 
-            await this.Context.Channel.SendMessageAsync(reply);
+            await this.Context.Channel.SendMessageAsync(reply, allowedMentions: AllowedMentions.None);
             this.Context.LogCommandUsed();
         }
 
@@ -588,8 +586,9 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("toptracks", RunMode = RunMode.Async)]
         [Summary("Shows your or someone else their top tracks over a certain time period.")]
-        [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
-        [Examples("tt", "toptracks", "tt y 3", "toptracks weekly @user")]
+        [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
+            Constants.BillboardExample, Constants.ExtraLargeExample)]
+        [Examples("tt", "toptracks", "tt y 3", "toptracks weekly @user", "tt bb xl")]
         [Alias("tt", "tl", "tracklist", "tracks", "trackslist", "top tracks", "top track")]
         [UsernameSetRequired]
         [SupportsPagination]
@@ -602,6 +601,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var timeSettings = SettingService.GetTimePeriod(extraOptions);
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var topListSettings = SettingService.SetTopListSettings(extraOptions);
 
             var pages = new List<PageBuilder>();
 
@@ -623,9 +623,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                Response<TopTrackList> topTracks;
-
-                topTracks = await this._lastFmRepository.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 200);
+                var topTracks = await this._lastFmRepository.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 200);
 
                 if (!topTracks.Success)
                 {
@@ -633,7 +631,6 @@ namespace FMBot.Bot.Commands.LastFM
                     await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
-
                 if (topTracks.Content?.TopTracks == null || !topTracks.Content.TopTracks.Any())
                 {
                     this._embed.WithDescription("No top tracks returned for selected time period.\n" +
@@ -644,9 +641,21 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
+                var previousTopTracks = new List<TopTrack>();
+                if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
+                {
+                    var previousTopTracksCall = await this._lastFmRepository
+                        .GetTopTracksForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200, userSettings.SessionKeyLastFm);
+
+                    if (previousTopTracksCall.Success)
+                    {
+                        previousTopTracks.AddRange(previousTopTracksCall.Content.TopTracks);
+                    }
+                }
+
                 this._embed.WithAuthor(this._embedAuthor);
 
-                var trackPages = topTracks.Content.TopTracks.ChunkBy(10);
+                var trackPages = topTracks.Content.TopTracks.ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize); ;
 
                 var counter = 1;
                 var pageCounter = 1;
@@ -655,20 +664,40 @@ namespace FMBot.Bot.Commands.LastFM
                     var trackPageString = new StringBuilder();
                     foreach (var track in trackPage)
                     {
-                        trackPageString.AppendLine($"{counter}. **{track.ArtistName}** - **[{track.TrackName}]({track.TrackUrl})** ({track.UserPlaycount} {StringExtensions.GetPlaysString(track.UserPlaycount)})");
+                        var name = $"**{track.ArtistName}** - **[{track.TrackName}]({track.TrackUrl})** ({track.UserPlaycount} {StringExtensions.GetPlaysString(track.UserPlaycount)})";
+
+                        if (topListSettings.Billboard && previousTopTracks.Any())
+                        {
+                            var previousTopTrack = previousTopTracks.FirstOrDefault(f => f.ArtistName == track.ArtistName && f.AlbumName == track.AlbumName);
+                            int? previousPosition = previousTopTrack == null ? null : previousTopTracks.IndexOf(previousTopTrack);
+
+                            trackPageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition).Text);
+                        }
+                        else
+                        {
+                            trackPageString.Append($"{counter}. ");
+                            trackPageString.AppendLine(name);
+                        }
+
                         counter++;
                     }
 
-                    var footer = $"Page {pageCounter}/{trackPages.Count}";
+                    var footer = new StringBuilder();
+                    footer.Append($"Page {pageCounter}/{trackPages.Count}");
                     if (topTracks.Content.TotalAmount.HasValue)
                     {
-                        footer += $" - {topTracks.Content.TotalAmount.Value} total tracks in this time period";
+                        footer.Append($" - {topTracks.Content.TotalAmount.Value} total tracks in this time period");
+                    }
+                    if (topListSettings.Billboard)
+                    {
+                        footer.AppendLine();
+                        footer.Append(StringService.GetBillBoardSettingString(timeSettings));
                     }
 
                     pages.Add(new PageBuilder()
                         .WithDescription(trackPageString.ToString())
                         .WithAuthor(this._embedAuthor)
-                        .WithFooter(footer));
+                        .WithFooter(footer.ToString()));
                     pageCounter++;
                 }
 
@@ -1074,14 +1103,14 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var description = "";
-            var footer = "";
+            var footer = new StringBuilder();
 
             if (guild.GuildUsers != null && guild.GuildUsers.Count > 500 && serverTrackSettings.ChartTimePeriod == TimePeriod.Monthly)
             {
                 serverTrackSettings.AmountOfDays = 7;
                 serverTrackSettings.ChartTimePeriod = TimePeriod.Weekly;
                 serverTrackSettings.TimeDescription = "weekly";
-                footer += "Sorry, monthly time period is not supported on large servers.\n";
+                footer.AppendLine("Sorry, monthly time period is not supported on large servers.");
             }
 
             try
@@ -1107,11 +1136,11 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (serverTrackSettings.OrderType == OrderType.Listeners)
                 {
-                    footer += "Listeners / Plays - Ordered by listeners\n";
+                    footer.AppendLine("Listeners / Plays - Ordered by listeners");
                 }
                 else
                 {
-                    footer += "Listeners / Plays  - Ordered by plays\n";
+                    footer.AppendLine("Listeners / Plays  - Ordered by plays");
                 }
 
                 foreach (var track in topGuildTracks)
@@ -1125,22 +1154,22 @@ namespace FMBot.Bot.Commands.LastFM
                 var randomHintNumber = rnd.Next(0, 5);
                 if (randomHintNumber == 1)
                 {
-                    footer += $"View specific track listeners with {prfx}whoknowstrack\n";
+                    footer.AppendLine($"View specific track listeners with {prfx}whoknowstrack");
                 }
                 else if (randomHintNumber == 2)
                 {
-                    footer += $"Available time periods: alltime, weekly and daily\n";
+                    footer.AppendLine($"Available time periods: alltime, weekly and daily");
                 }
                 else if (randomHintNumber == 3)
                 {
-                    footer += $"Available sorting options: plays and listeners\n";
+                    footer.AppendLine($"Available sorting options: plays and listeners");
                 }
                 if (guild.LastIndexed < DateTime.UtcNow.AddDays(-7) && randomHintNumber == 4)
                 {
-                    footer += $"Missing members? Update with {prfx}index\n";
+                    footer.AppendLine($"Missing members? Update with {prfx}index");
                 }
 
-                this._embedFooter.WithText(footer);
+                this._embedFooter.WithText(footer.ToString());
                 this._embed.WithFooter(this._embedFooter);
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());

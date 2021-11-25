@@ -360,7 +360,7 @@ namespace FMBot.Bot.Commands.LastFM
             if (!await this._lastFmRepository.LastFmUserExistsAsync(lastFmUserName))
             {
                 var reply = $"Last.fm user `{lastFmUserName}` could not be found. Please check if the name you entered is correct.";
-                await ReplyAsync(reply.FilterOutMentions());
+                await ReplyAsync(reply.FilterOutMentions(), allowedMentions: AllowedMentions.None);
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;
             }
@@ -394,7 +394,7 @@ namespace FMBot.Bot.Commands.LastFM
                 setReply += $". \nWant more info about the different modes? Use `{prfx}set help`";
             }
 
-            await ReplyAsync(setReply.FilterOutMentions());
+            await ReplyAsync(setReply.FilterOutMentions(), allowedMentions: AllowedMentions.None);
 
             this.Context.LogCommandUsed();
 

@@ -4,12 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
-using Dasync.Collections;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
-using Humanizer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -129,6 +127,11 @@ namespace FMBot.Bot.Services
 
         public async Task<List<TopGenre>> GetTopGenresForTopArtists(IEnumerable<TopArtist> topArtists)
         {
+            if (topArtists == null || !topArtists.Any())
+            {
+                return new List<TopGenre>();
+            }
+
             await CacheAllArtistGenres();
 
             var allGenres = new List<GenreWithPlaycount>();

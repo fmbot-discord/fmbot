@@ -86,6 +86,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var timeSettings = SettingService.GetTimePeriod(extraOptions);
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var topListSettings = SettingService.SetTopListSettings(extraOptions);
 
             var pages = new List<PageBuilder>();
 
@@ -107,11 +108,12 @@ namespace FMBot.Bot.Commands.LastFM
             try
             {
                 Response<TopArtistList> artists;
+                var previousTopArtists = new List<TopArtist>();
 
                 if (!timeSettings.UsePlays && timeSettings.TimePeriod != TimePeriod.AllTime)
                 {
                     artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm,
-                        timeSettings.TimePeriod, 1000);
+                        timeSettings, 1000, userSessionKey: userSettings.SessionKeyLastFm);
 
                     if (!artists.Success || artists.Content == null)
                     {
@@ -140,6 +142,17 @@ namespace FMBot.Bot.Commands.LastFM
                     };
                 }
 
+                if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
+                {
+                    var previousArtistsCall = await this._lastFmRepository
+                        .GetTopArtistsForCustomTimePeriodAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200, userSettings.SessionKeyLastFm);
+
+                    if (previousArtistsCall.Success)
+                    {
+                        previousTopArtists.AddRange(previousArtistsCall.Content.TopArtists);
+                    }
+                }
+
                 if (artists.Content.TopArtists.Count < 10)
                 {
                     this._embed.WithDescription("Sorry, you don't have enough top artists yet to use this command.\n\n" +
@@ -150,8 +163,9 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var genres = await this._genreService.GetTopGenresForTopArtists(artists.Content.TopArtists);
+                var previousTopGenres = await this._genreService.GetTopGenresForTopArtists(previousTopArtists);
 
-                var genrePages = genres.ChunkBy(10);
+                var genrePages = genres.ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
 
                 var counter = 1;
                 var pageCounter = 1;
@@ -160,17 +174,37 @@ namespace FMBot.Bot.Commands.LastFM
                     var genrePageString = new StringBuilder();
                     foreach (var genre in genrePage)
                     {
-                        genrePageString.AppendLine($"{counter}. **{genre.GenreName.Transform(To.TitleCase)}**");
+                        var name = $"**{genre.GenreName.Transform(To.TitleCase)}**";
+
+                        if (topListSettings.Billboard && previousTopGenres.Any())
+                        {
+                            var previousTopGenre = previousTopGenres.FirstOrDefault(f => f.GenreName == genre.GenreName);
+                            int? previousPosition = previousTopGenre == null ? null : previousTopGenres.IndexOf(previousTopGenre);
+
+                            genrePageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition).Text);
+                        }
+                        else
+                        {
+                            genrePageString.Append($"{counter}. ");
+                            genrePageString.AppendLine(name);
+                        }
+
                         counter++;
                     }
 
-                    var footer = $"Genre source: Spotify\n" +
-                                 $"Page {pageCounter}/{genrePages.Count} - {genres.Count} total genres";
+                    var footer = new StringBuilder();
+                    footer.AppendLine("Genre source: Spotify");
+                    footer.AppendLine($"Page {pageCounter}/{genrePages.Count} - {genres.Count} total genres");
+
+                    if (topListSettings.Billboard)
+                    {
+                        footer.Append(StringService.GetBillBoardSettingString(timeSettings));
+                    }
 
                     pages.Add(new PageBuilder()
                         .WithDescription(genrePageString.ToString())
                         .WithAuthor(this._embedAuthor)
-                        .WithFooter(footer));
+                        .WithFooter(footer.ToString()));
                     pageCounter++;
                 }
 

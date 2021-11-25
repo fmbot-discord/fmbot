@@ -69,17 +69,20 @@ namespace FMBot.Bot.Handlers
                 return;
             }
 
-            if (this._discord?.CurrentUser != null && msg.Author.Id == this._discord.CurrentUser.Id)
+            if (this._discord?.CurrentUser != null && msg.Author?.Id == this._discord.CurrentUser?.Id)
             {
                 return; // Ignore self when checking commands
             }
 
-
             // Create the command context
             var context = new ShardedCommandContext(this._discord, msg);
 
-            if (msg.Author.IsBot)
+            if (msg.Author != null && msg.Author.IsBot)
             {
+                if (string.IsNullOrWhiteSpace(msg.Author.Username))
+                {
+                    return;
+                }
                 if (msg.Author.Username.StartsWith("Groovy"))
                 {
                     await this._musicBotService.ScrobbleGroovy(msg, context);
@@ -96,7 +99,7 @@ namespace FMBot.Bot.Handlers
             }
 
             var argPos = 0; // Check if the message has a valid command prefix
-            var prfx = this._prefixService.GetPrefix(context.Guild?.Id);
+            var prfx = this._prefixService.GetPrefix(context.Guild?.Id) ?? this._botSettings.Bot.Prefix;
 
             // New prefix '.' but user still uses the '.fm' prefix anyway
             if (prfx == this._botSettings.Bot.Prefix &&

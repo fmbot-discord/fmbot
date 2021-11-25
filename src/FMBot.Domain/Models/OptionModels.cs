@@ -14,6 +14,11 @@ namespace FMBot.Domain.Models
         public bool UsePlays { get; set; }
         public DateTime? StartDateTime { get; set; }
         public DateTime? EndDateTime { get; set; }
+
+        public string BillboardTimeDescription { get; set; }
+        public DateTime? BillboardStartDateTime { get; set; }
+        public DateTime? BillboardEndDateTime { get; set; }
+
         public int? PlayDays { get; set; }
         public string NewSearchValue { get; set; }
     }

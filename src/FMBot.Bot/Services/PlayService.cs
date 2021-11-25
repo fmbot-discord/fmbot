@@ -11,9 +11,11 @@ using FMBot.Bot.Models;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Models;
 using FMBot.LastFM.Domain.Types;
+using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Artist = FMBot.LastFM.Domain.Models.Artist;
@@ -26,18 +28,22 @@ namespace FMBot.Bot.Services
         private readonly GenreService _genreService;
         private readonly TimeService _timeService;
         private readonly BotSettings _botSettings;
+        private readonly LastFmRepository _lastFmRepository;
+        private readonly IMemoryCache _cache;
 
-        public PlayService(IDbContextFactory<FMBotDbContext> contextFactory, GenreService genreService, TimeService timeService, IOptions<BotSettings> botSettings)
+        public PlayService(IDbContextFactory<FMBotDbContext> contextFactory, GenreService genreService, TimeService timeService, IOptions<BotSettings> botSettings, LastFmRepository lastFmRepository, IMemoryCache cache)
         {
             this._contextFactory = contextFactory;
             this._genreService = genreService;
             this._timeService = timeService;
+            this._lastFmRepository = lastFmRepository;
+            this._cache = cache;
             this._botSettings = botSettings.Value;
         }
 
         public async Task<DailyOverview> GetDailyOverview(int userId, int amountOfDays)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
 
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-amountOfDays);
@@ -83,6 +89,98 @@ namespace FMBot.Bot.Services
             }
 
             return overview;
+        }
+
+        public async Task<YearOverview> GetYear(int userId, int year)
+        {
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            var user = await db.Users
+                 .AsNoTracking()
+                 .FirstOrDefaultAsync(f => f.UserId == userId);
+
+            var cacheKey = $"year-ov-{user.UserId}-{year}";
+
+            var cachedYearAvailable = this._cache.TryGetValue(cacheKey, out YearOverview cachedYearOverview);
+            if (cachedYearAvailable)
+            {
+                return cachedYearOverview;
+            }
+
+            var startDateTime = new DateTime(year, 01, 01);
+            var endDateTime = startDateTime.AddYears(1).AddSeconds(-1);
+
+            var yearOverview = new YearOverview
+            {
+                Year = year,
+                LastfmErrors = false
+            };
+
+            var currentTopTracks =
+                await this._lastFmRepository.GetTopTracksForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime, endDateTime, 500, user.SessionKeyLastFm);
+
+            if (!currentTopTracks.Success)
+            {
+                yearOverview.LastfmErrors = true;
+                return yearOverview;
+            }
+
+            yearOverview.TopTracks = currentTopTracks.Content;
+
+            var currentTopAlbums =
+                await this._lastFmRepository.GetTopAlbumsForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime, endDateTime, 500, user.SessionKeyLastFm);
+
+            if (!currentTopAlbums.Success)
+            {
+                yearOverview.LastfmErrors = true;
+                return yearOverview;
+            }
+
+            yearOverview.TopAlbums = currentTopAlbums.Content;
+
+            var currentTopArtists =
+                await this._lastFmRepository.GetTopArtistsForCustomTimePeriodAsync(user.UserNameLastFM, startDateTime, endDateTime, 500, user.SessionKeyLastFm);
+
+            if (!currentTopArtists.Success)
+            {
+                yearOverview.LastfmErrors = true;
+                return yearOverview;
+            }
+
+            yearOverview.TopArtists = currentTopArtists.Content;
+
+            if (user.RegisteredLastFm < endDateTime.AddYears(-1))
+            {
+                var previousTopTracks =
+                    await this._lastFmRepository.GetTopTracksForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime.AddYears(-2), endDateTime.AddYears(-1), 800, user.SessionKeyLastFm);
+
+                if (previousTopTracks.Success)
+                {
+                    yearOverview.PreviousTopTracks = previousTopTracks.Content;
+                }
+
+                var previousTopAlbums =
+                    await this._lastFmRepository.GetTopAlbumsForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime.AddYears(-2), endDateTime.AddYears(-1), 800, user.SessionKeyLastFm);
+
+                if (previousTopAlbums.Success)
+                {
+                    yearOverview.PreviousTopAlbums = previousTopAlbums.Content;
+                }
+
+                var previousTopArtists =
+                    await this._lastFmRepository.GetTopArtistsForCustomTimePeriodAsync(user.UserNameLastFM, startDateTime.AddYears(-2), endDateTime.AddYears(-1), 800, user.SessionKeyLastFm);
+
+                if (previousTopArtists.Success)
+                {
+                    yearOverview.PreviousTopArtists = previousTopArtists.Content;
+                }
+            }
+
+            if (!yearOverview.LastfmErrors)
+            {
+                this._cache.Set(cacheKey, yearOverview, TimeSpan.FromHours(1));
+            }
+
+            return yearOverview;
         }
 
         private static int GetUniqueCount(IEnumerable<UserPlay> plays)

@@ -141,6 +141,16 @@ namespace FMBot.Bot.Extensions
             return crowns == 1 ? "crown" : "crowns";
         }
 
+        public static string GetChangeString(decimal oldValue, decimal newValue)
+        {
+            if (oldValue < newValue)
+            {
+                return "Up from";
+            }
+            return oldValue > newValue ? "Down from" : "From";
+        }
+
+
         public static string GetListeningTimeString(TimeSpan timeSpan)
         {
             if (timeSpan.TotalDays >= 1)

@@ -93,12 +93,12 @@ namespace FMBot.Bot.Commands
                         reply += $"\n*Tip: Search for other songs by simply adding the searchvalue behind {prfx}spotify.*";
                     }
 
-                    await ReplyAsync(reply);
+                    await ReplyAsync(reply, allowedMentions: AllowedMentions.None);
                     this.Context.LogCommandUsed();
                 }
                 else
                 {
-                    await ReplyAsync("No results have been found for this track. Querystring: `" + querystring.FilterOutMentions() + "`");
+                    await ReplyAsync("No results have been found for this track. Querystring: `" + querystring.FilterOutMentions() + "`", allowedMentions: AllowedMentions.None);
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
                 }
             }
@@ -168,7 +168,7 @@ namespace FMBot.Bot.Commands
                 }
                 else
                 {
-                    await ReplyAsync("No results have been found for this album. Querystring: `" + querystring.FilterOutMentions() + "`");
+                    await ReplyAsync("No results have been found for this album. Querystring: `" + querystring.FilterOutMentions() + "`", allowedMentions: AllowedMentions.None);
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
                 }
             }
@@ -241,7 +241,7 @@ namespace FMBot.Bot.Commands
                 }
                 else
                 {
-                    await ReplyAsync("No results have been found for this artist. Querystring: `" + querystring.FilterOutMentions() + "`");
+                    await ReplyAsync("No results have been found for this artist. Querystring: `" + querystring.FilterOutMentions() + "`", allowedMentions: AllowedMentions.None);
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
                 }
             }
