@@ -1214,7 +1214,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild?.Id);
                 var user = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-                var userPlays = await this._playService.GetGuildUsersTotalPlaytime(guild.GuildId);
+                var userPlays = await this._playService.GetGuildUsersPlaysForTimeLeaderBoard(guild.GuildId);
 
                 var userListeningTime =
                     await this._timeService.UserPlaysToGuildLeaderboard(this.Context, userPlays, guild.GuildUsers);

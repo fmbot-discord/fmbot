@@ -1116,10 +1116,10 @@ namespace FMBot.Bot.Commands.LastFM
         [CommandCategories(CommandCategory.Albums)]
         public async Task GuildAlbumsAsync([Remainder] string guildAlbumsOptions = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-
             _ = this.Context.Channel.TriggerTypingAsync();
+
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
             var serverAlbumSettings = new GuildRankingSettings
             {
@@ -1146,22 +1146,17 @@ namespace FMBot.Bot.Commands.LastFM
                 var description = "";
                 var footer = "";
 
-                if (guild.GuildUsers != null && guild.GuildUsers.Count > 500 && serverAlbumSettings.ChartTimePeriod == TimePeriod.Monthly)
-                {
-                    serverAlbumSettings.AmountOfDays = 7;
-                    serverAlbumSettings.ChartTimePeriod = TimePeriod.Weekly;
-                    serverAlbumSettings.TimeDescription = "weekly";
-                    footer += "Sorry, monthly time period is not supported on large servers.\n";
-                }
-
-                IReadOnlyList<ListAlbum> topGuildAlbums;
+                ICollection<ListAlbum> topGuildAlbums;
                 if (serverAlbumSettings.ChartTimePeriod == TimePeriod.AllTime)
                 {
                     topGuildAlbums = await this._whoKnowsAlbumService.GetTopAllTimeAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType, artistName);
                 }
                 else
                 {
-                    topGuildAlbums = await this._whoKnowsPlayService.GetTopAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType, serverAlbumSettings.AmountOfDays, artistName);
+                    var plays = await this._playService.GetGuildUsersPlays(guild.GuildId,
+                        serverAlbumSettings.AmountOfDays);
+
+                    topGuildAlbums = PlayService.GetGuildTopAlbums(plays, serverAlbumSettings.OrderType, artistName);
                 }
 
                 if (string.IsNullOrWhiteSpace(artistName))

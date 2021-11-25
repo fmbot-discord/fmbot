@@ -508,6 +508,58 @@ namespace FMBot.Bot.Services
                 .ToListAsync();
         }
 
+        public static ICollection<ListTrack> GetGuildTopTracks(IEnumerable<UserPlay> plays, OrderType orderType, string artistName)
+        {
+            return plays
+                .Where(w => string.IsNullOrWhiteSpace(artistName) || w.ArtistName.ToLower() == artistName.ToLower())
+                .GroupBy(x => new { x.ArtistName, x.TrackName })
+                .Select(s => new ListTrack
+                {
+                    TrackName = s.Key.TrackName,
+                    ArtistName = s.Key.ArtistName,
+                    ListenerCount = s.Select(se => se.UserId).Distinct().Count(),
+                    TotalPlaycount = s.Count()
+                })
+                .OrderByDescending(o => orderType == OrderType.Listeners ? o.ListenerCount : o.TotalPlaycount)
+                .ThenBy(o => orderType == OrderType.Listeners ? o.TotalPlaycount : o.ListenerCount)
+                .Take(14)
+                .ToList();
+        }
+
+        public static ICollection<ListAlbum> GetGuildTopAlbums(IEnumerable<UserPlay> plays, OrderType orderType, string artistName)
+        {
+            return plays
+                .Where(w => string.IsNullOrWhiteSpace(artistName) || w.ArtistName.ToLower() == artistName.ToLower())
+                .GroupBy(x => new { x.ArtistName, x.AlbumName })
+                .Select(s => new ListAlbum
+                {
+                    AlbumName = s.Key.AlbumName,
+                    ArtistName = s.Key.ArtistName,
+                    ListenerCount = s.Select(se => se.UserId).Distinct().Count(),
+                    TotalPlaycount = s.Count()
+                })
+                .OrderByDescending(o => orderType == OrderType.Listeners ? o.ListenerCount : o.TotalPlaycount)
+                .ThenBy(o => orderType == OrderType.Listeners ? o.TotalPlaycount : o.ListenerCount)
+                .Take(14)
+                .ToList();
+        }
+
+        public static ICollection<ListArtist> GetGuildTopArtists(IEnumerable<UserPlay> plays, OrderType orderType)
+        {
+            return plays
+                .GroupBy(x => x.ArtistName)
+                .Select(s => new ListArtist
+                {
+                    ArtistName = s.Key,
+                    ListenerCount = s.Select(se => se.UserId).Distinct().Count(),
+                    TotalPlaycount = s.Count()
+                })
+                .OrderByDescending(o => orderType == OrderType.Listeners ? o.ListenerCount : o.TotalPlaycount)
+                .ThenBy(o => orderType == OrderType.Listeners ? o.TotalPlaycount : o.ListenerCount)
+                .Take(14)
+                .ToList();
+        }
+
         public async Task<List<WhoKnowsObjectWithUser>> GetGuildUsersTotalPlaycount(ICommandContext context, int guildId)
         {
             const string sql = "SELECT u.total_playcount AS playcount, " +
@@ -560,7 +612,27 @@ namespace FMBot.Bot.Services
             return whoKnowsAlbumList;
         }
 
-        public async Task<List<UserPlay>> GetGuildUsersTotalPlaytime(int guildId)
+        public async Task<IEnumerable<UserPlay>> GetGuildUsersPlays(int guildId, int amountOfDays)
+        {
+            var sql = "SELECT up.* " +
+                      "FROM user_plays AS up " +
+                      "INNER JOIN users AS u ON up.user_id = u.user_id  " +
+                      "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                      $"WHERE gu.guild_id = @guildId  AND gu.bot != true AND time_played > current_date - interval '{amountOfDays}' day " +
+                      "AND NOT up.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
+                      "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) ";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            return (await connection.QueryAsync<UserPlay>(sql, new
+            {
+                guildId
+            })).ToList();
+        }
+
+        public async Task<List<UserPlay>> GetGuildUsersPlaysForTimeLeaderBoard(int guildId)
         {
             const string sql = "SELECT user_play_id, up.user_id, up.track_name, up.album_name, up.artist_name, up.time_played " +
                                "FROM public.user_plays AS up " +

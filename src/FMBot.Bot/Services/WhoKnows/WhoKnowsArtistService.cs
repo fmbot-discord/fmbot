@@ -201,7 +201,7 @@ namespace FMBot.Bot.Services.WhoKnows
             return whoKnowsArtistList;
         }
 
-        public async Task<IReadOnlyList<ListArtist>> GetTopAllTimeArtistsForGuild(int guildId,
+        public async Task<ICollection<ListArtist>> GetTopAllTimeArtistsForGuild(int guildId,
             OrderType orderType)
         {
             var sql = "SELECT ua.name AS artist_name, " +

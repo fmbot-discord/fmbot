@@ -1313,7 +1313,7 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task GuildArtistsAsync([Remainder] string extraOptions = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -1339,24 +1339,19 @@ namespace FMBot.Bot.Commands.LastFM
             var description = "";
             var footer = "";
 
-            if (guild.GuildUsers != null && guild.GuildUsers.Count > 500 && serverArtistSettings.ChartTimePeriod == TimePeriod.Monthly)
-            {
-                serverArtistSettings.AmountOfDays = 7;
-                serverArtistSettings.ChartTimePeriod = TimePeriod.Weekly;
-                serverArtistSettings.TimeDescription = "weekly";
-                footer += "Sorry, monthly time period is not supported on large servers.\n";
-            }
-
             try
             {
-                IReadOnlyList<ListArtist> topGuildArtists;
+                ICollection<ListArtist> topGuildArtists;
                 if (serverArtistSettings.ChartTimePeriod == TimePeriod.AllTime)
                 {
                     topGuildArtists = await this._whoKnowArtistService.GetTopAllTimeArtistsForGuild(guild.GuildId, serverArtistSettings.OrderType);
                 }
                 else
                 {
-                    topGuildArtists = await this._whoKnowsPlayService.GetTopArtistsForGuild(guild.GuildId, serverArtistSettings.OrderType, serverArtistSettings.AmountOfDays);
+                    var plays = await this._playService.GetGuildUsersPlays(guild.GuildId,
+                        serverArtistSettings.AmountOfDays);
+
+                    topGuildArtists = PlayService.GetGuildTopArtists(plays, serverArtistSettings.OrderType);
                 }
 
                 this._embed.WithTitle($"Top {serverArtistSettings.TimeDescription.ToLower()} artists in {this.Context.Guild.Name}");

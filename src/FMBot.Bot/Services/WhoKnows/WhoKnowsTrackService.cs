@@ -222,7 +222,7 @@ namespace FMBot.Bot.Services.WhoKnows
             });
         }
 
-        public async Task<IReadOnlyList<ListTrack>> GetTopAllTimeTracksForGuild(int guildId,
+        public async Task<ICollection<ListTrack>> GetTopAllTimeTracksForGuild(int guildId,
             OrderType orderType, string artistName)
         {
             var dbArgs = new DynamicParameters();

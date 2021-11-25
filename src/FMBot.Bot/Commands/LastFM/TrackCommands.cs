@@ -1078,10 +1078,10 @@ namespace FMBot.Bot.Commands.LastFM
         [CommandCategories(CommandCategory.Tracks)]
         public async Task GuildTracksAsync([Remainder] string guildTracksOptions = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-
             _ = this.Context.Channel.TriggerTypingAsync();
+
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
             var serverTrackSettings = new GuildRankingSettings
             {
@@ -1106,24 +1106,19 @@ namespace FMBot.Bot.Commands.LastFM
             var description = "";
             var footer = new StringBuilder();
 
-            if (guild.GuildUsers != null && guild.GuildUsers.Count > 500 && serverTrackSettings.ChartTimePeriod == TimePeriod.Monthly)
-            {
-                serverTrackSettings.AmountOfDays = 7;
-                serverTrackSettings.ChartTimePeriod = TimePeriod.Weekly;
-                serverTrackSettings.TimeDescription = "weekly";
-                footer.AppendLine("Sorry, monthly time period is not supported on large servers.");
-            }
-
             try
             {
-                IReadOnlyList<ListTrack> topGuildTracks;
+                ICollection<ListTrack> topGuildTracks;
                 if (serverTrackSettings.ChartTimePeriod == TimePeriod.AllTime)
                 {
                     topGuildTracks = await this._whoKnowsTrackService.GetTopAllTimeTracksForGuild(guild.GuildId, serverTrackSettings.OrderType, artistName);
                 }
                 else
                 {
-                    topGuildTracks = await this._whoKnowsPlayService.GetTopTracksForGuild(guild.GuildId, serverTrackSettings.OrderType, serverTrackSettings.AmountOfDays, artistName);
+                    var plays = await this._playService.GetGuildUsersPlays(guild.GuildId,
+                        serverTrackSettings.AmountOfDays);
+
+                    topGuildTracks = PlayService.GetGuildTopTracks(plays, serverTrackSettings.OrderType, artistName);
                 }
 
                 if (string.IsNullOrWhiteSpace(artistName))

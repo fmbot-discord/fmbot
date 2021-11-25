@@ -221,7 +221,7 @@ namespace FMBot.Bot.Services.WhoKnows
             });
         }
 
-        public async Task<IReadOnlyList<ListAlbum>> GetTopAllTimeAlbumsForGuild(int guildId,
+        public async Task<ICollection<ListAlbum>> GetTopAllTimeAlbumsForGuild(int guildId,
             OrderType orderType, string artistName)
         {
             var sql = "SELECT ub.name AS album_name, ub.artist_name, " +
