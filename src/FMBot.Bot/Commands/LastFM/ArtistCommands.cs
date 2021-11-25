@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -512,7 +513,7 @@ namespace FMBot.Bot.Commands.LastFM
             var reply =
                 $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has " +
                 $"`{artist.UserPlaycount}` {StringExtensions.GetPlaysString(artist.UserPlaycount)} for " +
-                $"**{artist.ArtistName}**";
+                $"**{artist.ArtistName.FilterOutMentions()}**";
 
             if (!userSettings.DifferentUser && contextUser.LastUpdated != null)
             {
@@ -524,7 +525,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
             }
 
-            await this.Context.Channel.SendMessageAsync(reply);
+            await this.Context.Channel.SendMessageAsync(reply, allowedMentions: AllowedMentions.None);
             this.Context.LogCommandUsed();
         }
 
