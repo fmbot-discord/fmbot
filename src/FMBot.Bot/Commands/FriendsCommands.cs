@@ -108,11 +108,16 @@ namespace FMBot.Bot.Commands
                             friendNameToDisplay = guildUser.UserName;
 
                             var discordUser = await this.Context.Guild.GetUserAsync(guildUser.User.DiscordUserId);
-                            if (discordUser != null)
+                            if (discordUser?.Username != null)
                             {
                                 friendNameToDisplay = discordUser.Nickname ?? discordUser.Username;
                             }
                         }
+                    }
+
+                    if (string.IsNullOrWhiteSpace(friendNameToDisplay))
+                    {
+                        friendUsername = friend.LastFMUserName;
                     }
 
                     string sessionKey = null;
