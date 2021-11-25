@@ -169,6 +169,11 @@ namespace FMBot.Bot.Services
                 settingsModel.AltDescription = "all-time";
                 settingsModel.UrlParameter = "date_preset=ALL";
                 settingsModel.ApiParameter = "overall";
+
+                if (registeredLastFm.HasValue)
+                {
+                    settingsModel.PlayDays = (int)(DateTime.UtcNow - registeredLastFm.Value).TotalDays + 1;
+                }
             }
             else if (Contains(options, sixDays))
             {
@@ -266,10 +271,12 @@ namespace FMBot.Bot.Services
 
             if (settingsModel.PlayDays.HasValue)
             {
+                var daysToGoBack = settingsModel.PlayDays.Value > 180 ? 180 : settingsModel.PlayDays.Value / (settingsModel.PlayDays.Value >= 90 ? 4 : 3);
+
                 settingsModel.BillboardStartDateTime =
-                    DateTime.UtcNow.AddDays(-(settingsModel.PlayDays.Value + settingsModel.PlayDays.Value / 3));
+                    DateTime.UtcNow.AddDays(-(settingsModel.PlayDays.Value + daysToGoBack));
                 settingsModel.BillboardEndDateTime =
-                    DateTime.UtcNow.AddDays(-(settingsModel.PlayDays.Value / 3));
+                    DateTime.UtcNow.AddDays(-daysToGoBack);
             }
 
             return settingsModel;
@@ -358,6 +365,7 @@ namespace FMBot.Bot.Services
                 DiscordUserName = discordUserName,
                 UserId = user.UserId,
                 UserType = user.UserType,
+                RegisteredLastFm = user.RegisteredLastFm,
                 NewSearchValue = extraOptions
             };
 
@@ -383,6 +391,7 @@ namespace FMBot.Bot.Services
                     settingsModel.SessionKeyLastFm = otherUser.SessionKeyLastFm;
                     settingsModel.UserType = otherUser.UserType;
                     settingsModel.UserId = otherUser.UserId;
+                    settingsModel.RegisteredLastFm = otherUser.RegisteredLastFm;
 
                     return settingsModel;
                 }
@@ -413,6 +422,7 @@ namespace FMBot.Bot.Services
                     settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
                     settingsModel.UserType = otherUser.UserType;
                     settingsModel.UserId = otherUser.UserId;
+                    settingsModel.RegisteredLastFm = otherUser.RegisteredLastFm;
                 }
 
                 if (option.StartsWith("lfm:") && option.Length > 4)
@@ -434,6 +444,7 @@ namespace FMBot.Bot.Services
                         settingsModel.SessionKeyLastFm = foundLfmUser.SessionKeyLastFm;
                         settingsModel.UserType = foundLfmUser.UserType;
                         settingsModel.UserId = foundLfmUser.UserId;
+                        settingsModel.RegisteredLastFm = otherUser.RegisteredLastFm;
 
                         return settingsModel;
                     }
@@ -441,6 +452,9 @@ namespace FMBot.Bot.Services
                     settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName }, true);
                     settingsModel.UserNameLastFm = lfmUserName;
                     settingsModel.DiscordUserName = lfmUserName;
+                    settingsModel.SessionKeyLastFm = null;
+                    settingsModel.RegisteredLastFm = null;
+                    settingsModel.UserId = 0;
                     settingsModel.DifferentUser = true;
 
                     return settingsModel;

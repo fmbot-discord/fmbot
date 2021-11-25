@@ -599,30 +599,31 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var timeSettings = SettingService.GetTimePeriod(extraOptions);
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-            var topListSettings = SettingService.SetTopListSettings(extraOptions);
-
-            var pages = new List<PageBuilder>();
-
-            string userTitle;
-            if (!userSettings.DifferentUser)
-            {
-                userTitle = await this._userService.GetUserTitleAsync(this.Context);
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            }
-            else
-            {
-                userTitle =
-                    $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
-            }
-
-            var userUrl = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/tracks?{timeSettings.UrlParameter}";
-            this._embedAuthor.WithName($"Top {timeSettings.Description.ToLower()} tracks for {userTitle}");
-            this._embedAuthor.WithUrl(userUrl);
-
             try
             {
+                var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+                var topListSettings = SettingService.SetTopListSettings(extraOptions);
+                userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+                var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm);
+
+                var pages = new List<PageBuilder>();
+
+                string userTitle;
+                if (!userSettings.DifferentUser)
+                {
+                    userTitle = await this._userService.GetUserTitleAsync(this.Context);
+                    this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+                }
+                else
+                {
+                    userTitle =
+                        $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
+                }
+
+                var userUrl = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/tracks?{timeSettings.UrlParameter}";
+                this._embedAuthor.WithName($"Top {timeSettings.Description.ToLower()} tracks for {userTitle}");
+                this._embedAuthor.WithUrl(userUrl);
+
                 var topTracks = await this._lastFmRepository.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 200);
 
                 if (!topTracks.Success)
@@ -691,7 +692,7 @@ namespace FMBot.Bot.Commands.LastFM
                     if (topListSettings.Billboard)
                     {
                         footer.AppendLine();
-                        footer.Append(StringService.GetBillBoardSettingString(timeSettings));
+                        footer.Append(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
                     }
 
                     pages.Add(new PageBuilder()

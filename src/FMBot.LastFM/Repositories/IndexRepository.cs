@@ -94,6 +94,20 @@ namespace FMBot.LastFM.Repositories
             this._cache.Remove(concurrencyCacheKey);
         }
 
+        public async Task<DateTime?> SetUserSignUpTime(User user)
+        {
+            await using var connection = new NpgsqlConnection(this._connectionString);
+            await connection.OpenAsync();
+
+            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user.UserNameLastFM, user.SessionKeyLastFm);
+            if (userInfo?.Registered?.Text != null)
+            {
+                return await SetUserSignUpTime(user.UserId, userInfo.Registered.Text, connection);
+            }
+
+            return null;
+        }
+
         private async Task<IReadOnlyList<UserArtist>> GetArtistsForUserFromLastFm(User user)
         {
             Log.Information($"Getting artists for user {user.UserNameLastFM}");
@@ -294,7 +308,7 @@ namespace FMBot.LastFM.Repositories
             await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
-        private async Task SetUserSignUpTime(int userId, long signUpDateTimeLong, NpgsqlConnection connection)
+        private async Task<DateTime> SetUserSignUpTime(int userId, long signUpDateTimeLong, NpgsqlConnection connection)
         {
             var signUpDateTime = DateTime.UnixEpoch.AddSeconds(signUpDateTimeLong).ToUniversalTime();
 
@@ -302,6 +316,8 @@ namespace FMBot.LastFM.Repositories
 
             await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET registered_last_fm='{signUpDateTime:u}' WHERE user_id = {userId};", connection);
             await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
+
+            return signUpDateTime;
         }
 
         private async Task<DateTime> GetLatestScrobbleDate(User user)
