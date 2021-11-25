@@ -250,7 +250,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 "ORDER BY total_playcount DESC, listener_count DESC " :
                 "ORDER BY listener_count DESC, total_playcount DESC ";
 
-            sql += "LIMIT 14";
+            sql += "LIMIT 120";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
