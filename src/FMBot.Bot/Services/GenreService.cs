@@ -127,7 +127,7 @@ namespace FMBot.Bot.Services
 
         public async Task<List<TopGenre>> GetTopGenresForTopArtists(IEnumerable<TopArtist> topArtists)
         {
-            if (topArtists == null || !topArtists.Any())
+            if (topArtists == null)
             {
                 return new List<TopGenre>();
             }
@@ -146,7 +146,7 @@ namespace FMBot.Bot.Services
                 .Where(w => w.Key != null)
                 .Select(s => new TopGenre
                 {
-                    UserPlaycount = s.Count(),
+                    UserPlaycount = s.Sum(se => se.Playcount),
                     GenreName = s.Key
                 }).ToList();
         }
