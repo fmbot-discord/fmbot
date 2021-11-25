@@ -20,6 +20,7 @@ namespace FMBot.Domain.Models
         public DateTime? BillboardEndDateTime { get; set; }
 
         public int? PlayDays { get; set; }
+        public int? PlayDaysWithBillboard { get; set; }
         public string NewSearchValue { get; set; }
     }
 

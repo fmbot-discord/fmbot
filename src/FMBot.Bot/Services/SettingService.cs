@@ -277,6 +277,8 @@ namespace FMBot.Bot.Services
                     DateTime.UtcNow.AddDays(-(settingsModel.PlayDays.Value + daysToGoBack));
                 settingsModel.BillboardEndDateTime =
                     DateTime.UtcNow.AddDays(-daysToGoBack);
+
+                settingsModel.PlayDaysWithBillboard = settingsModel.PlayDays.Value + daysToGoBack;
             }
 
             return settingsModel;

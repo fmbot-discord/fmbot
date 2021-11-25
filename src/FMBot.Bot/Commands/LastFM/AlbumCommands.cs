@@ -1121,7 +1121,7 @@ namespace FMBot.Bot.Commands.LastFM
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-            var serverAlbumSettings = new GuildRankingSettings
+            var guildListSettings = new GuildRankingSettings
             {
                 ChartTimePeriod = TimePeriod.Weekly,
                 TimeDescription = "weekly",
@@ -1132,81 +1132,110 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                serverAlbumSettings = SettingService.SetGuildRankingSettings(serverAlbumSettings, guildAlbumsOptions);
-                var foundTimePeriod = SettingService.GetTimePeriod(serverAlbumSettings.NewSearchValue, serverAlbumSettings.ChartTimePeriod);
-                var artistName = foundTimePeriod.NewSearchValue;
+                guildListSettings = SettingService.SetGuildRankingSettings(guildListSettings, guildAlbumsOptions);
+                var timeSettings = SettingService.GetTimePeriod(guildListSettings.NewSearchValue, guildListSettings.ChartTimePeriod);
+                var artistName = timeSettings.NewSearchValue;
 
-                if (foundTimePeriod.UsePlays || foundTimePeriod.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
+                if (timeSettings.UsePlays || timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
                 {
-                    serverAlbumSettings.ChartTimePeriod = foundTimePeriod.TimePeriod;
-                    serverAlbumSettings.TimeDescription = foundTimePeriod.Description;
-                    serverAlbumSettings.AmountOfDays = foundTimePeriod.PlayDays.GetValueOrDefault();
+                    guildListSettings.ChartTimePeriod = timeSettings.TimePeriod;
+                    guildListSettings.TimeDescription = timeSettings.Description;
+                    guildListSettings.EndDateTime = timeSettings.EndDateTime.GetValueOrDefault();
+                    guildListSettings.BillboardEndDateTime = timeSettings.BillboardEndDateTime.GetValueOrDefault();
+                    guildListSettings.BillboardTimeDescription = timeSettings.BillboardTimeDescription;
+                    guildListSettings.AmountOfDays = timeSettings.PlayDays.GetValueOrDefault();
+                    guildListSettings.AmountOfDaysWithBillboard = timeSettings.PlayDaysWithBillboard.GetValueOrDefault();
+                    guildListSettings.StartDateTime = timeSettings.StartDateTime.GetValueOrDefault(DateTime.UtcNow.AddDays(-guildListSettings.AmountOfDays));
+                    guildListSettings.BillboardStartDateTime = timeSettings.BillboardStartDateTime.GetValueOrDefault(DateTime.UtcNow.AddDays(-guildListSettings.AmountOfDaysWithBillboard));
                 }
 
-                var description = "";
-                var footer = "";
+                var footer = new StringBuilder();
 
                 ICollection<ListAlbum> topGuildAlbums;
-                if (serverAlbumSettings.ChartTimePeriod == TimePeriod.AllTime)
+                IList<ListAlbum> previousTopGuildAlbums = null;
+                if (guildListSettings.ChartTimePeriod == TimePeriod.AllTime)
                 {
-                    topGuildAlbums = await this._whoKnowsAlbumService.GetTopAllTimeAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType, artistName);
+                    topGuildAlbums = await this._whoKnowsAlbumService.GetTopAllTimeAlbumsForGuild(guild.GuildId, guildListSettings.OrderType, artistName);
                 }
                 else
                 {
-                    var plays = await this._playService.GetGuildUsersPlays(guild.GuildId,
-                        serverAlbumSettings.AmountOfDays);
+                    var plays = await this._playService.GetGuildUsersPlays(guild.GuildId, guildListSettings.AmountOfDaysWithBillboard);
 
-                    topGuildAlbums = PlayService.GetGuildTopAlbums(plays, serverAlbumSettings.OrderType, artistName);
-                }
-
-                if (string.IsNullOrWhiteSpace(artistName))
-                {
-                    this._embed.WithTitle($"Top {serverAlbumSettings.TimeDescription.ToLower()} albums in {this.Context.Guild.Name}");
-                }
-                else
-                {
-                    this._embed.WithTitle($"Top {serverAlbumSettings.TimeDescription.ToLower()} '{artistName}' albums in {this.Context.Guild.Name}");
+                    topGuildAlbums = PlayService.GetGuildTopAlbums(plays, guildListSettings.StartDateTime, guildListSettings.OrderType, artistName);
+                    previousTopGuildAlbums = PlayService.GetGuildTopAlbums(plays, guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, artistName);
                 }
 
-                if (serverAlbumSettings.OrderType == OrderType.Listeners)
-                {
-                    footer += "Listeners / Plays - Ordered by listeners\n";
-                }
-                else
-                {
-                    footer += "Listeners / Plays - Ordered by plays\n";
-                }
+                var title = string.IsNullOrWhiteSpace(artistName) ?
+                    $"Top {guildListSettings.TimeDescription.ToLower()} albums in {this.Context.Guild.Name}" :
+                    $"Top {guildListSettings.TimeDescription.ToLower()} '{artistName}' albums in {this.Context.Guild.Name}";
 
-                foreach (var album in topGuildAlbums)
-                {
-                    description += $"`{album.ListenerCount}` / `{album.TotalPlaycount}` | **{album.AlbumName}** by **{album.ArtistName}**\n";
-                }
-
-                this._embed.WithDescription(description);
+                footer.AppendLine(guildListSettings.OrderType == OrderType.Listeners
+                    ? " - Ordered by listeners"
+                    : " - Ordered by plays");
 
                 var rnd = new Random();
                 var randomHintNumber = rnd.Next(0, 5);
-                if (randomHintNumber == 1)
+                switch (randomHintNumber)
                 {
-                    footer += $"View specific album listeners with {prfx}whoknowsalbum\n";
-                }
-                else if (randomHintNumber == 2)
-                {
-                    footer += $"Available time periods: alltime, weekly and daily\n";
-                }
-                else if (randomHintNumber == 3)
-                {
-                    footer += $"Available sorting options: plays and listeners\n";
-                }
-                if (guild.LastIndexed < DateTime.UtcNow.AddDays(-15) && randomHintNumber == 4)
-                {
-                    footer += $"Missing members? Update with {prfx}index\n";
+                    case 1:
+                        footer.AppendLine($"View specific track listeners with '{prfx}whoknowsalbum'");
+                        break;
+                    case 2:
+                        footer.AppendLine($"Available time periods: alltime, monthly, weekly and daily");
+                        break;
+                    case 3:
+                        footer.AppendLine($"Available sorting options: plays and listeners");
+                        break;
                 }
 
-                this._embedFooter.WithText(footer);
-                this._embed.WithFooter(this._embedFooter);
+                var albumPages = topGuildAlbums.Chunk(12).ToList();
 
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                var counter = 1;
+                var pageCounter = 1;
+                var pages = new List<PageBuilder>();
+                foreach (var page in albumPages)
+                {
+                    var pageString = new StringBuilder();
+                    foreach (var album in page)
+                    {
+                        var name = guildListSettings.OrderType == OrderType.Listeners
+                            ? $"`{album.ListenerCount}` · **{album.ArtistName}** - **{album.AlbumName}** ({album.TotalPlaycount} {StringExtensions.GetPlaysString(album.TotalPlaycount)})"
+                            : $"`{album.TotalPlaycount}` · **{album.ArtistName}** - **{album.AlbumName}** ({album.ListenerCount} {StringExtensions.GetListenersString(album.ListenerCount)})";
+
+                        if (previousTopGuildAlbums != null && previousTopGuildAlbums.Any())
+                        {
+                            var previousTopAlbum = previousTopGuildAlbums.FirstOrDefault(f => f.ArtistName == album.ArtistName && f.AlbumName == album.AlbumName);
+                            int? previousPosition = previousTopAlbum == null ? null : previousTopGuildAlbums.IndexOf(previousTopAlbum);
+
+                            pageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition, false).Text);
+                        }
+                        else
+                        {
+                            pageString.AppendLine(name);
+                        }
+
+                        counter++;
+                    }
+
+                    var pageFooter = new StringBuilder();
+                    pageFooter.Append($"Page {pageCounter}/{albumPages.Count}");
+                    pageFooter.Append(footer);
+
+                    pages.Add(new PageBuilder()
+                        .WithTitle(title)
+                        .WithDescription(pageString.ToString())
+                        .WithAuthor(this._embedAuthor)
+                        .WithFooter(pageFooter.ToString()));
+                    pageCounter++;
+                }
+
+                var paginator = StringService.BuildStaticPaginator(pages);
+
+                _ = this.Interactivity.SendPaginatorAsync(
+                    paginator,
+                    this.Context.Channel,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)

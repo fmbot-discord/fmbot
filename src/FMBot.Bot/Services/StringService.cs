@@ -53,7 +53,7 @@ namespace FMBot.Bot.Services
 
         public record BillboardLine(string Text, string Name, int PositionsMoved, int NewPosition, int? OldPosition);
 
-        public static BillboardLine GetBillboardLine(string name, int newPosition, int? oldPosition)
+        public static BillboardLine GetBillboardLine(string name, int newPosition, int? oldPosition, bool counter = true)
         {
             var line = new StringBuilder();
 
@@ -99,7 +99,12 @@ namespace FMBot.Bot.Services
                 line.Append($"<:new:912087988001980446> ");
             }
 
-            line.Append($"{newPosition + 1}. {name}");
+            if (counter)
+            {
+                line.Append($"{newPosition + 1}. ");
+            }
+
+            line.Append(name);
 
             return new BillboardLine(line.ToString(), name, positionsMoved, newPosition + 1, oldPosition + 1);
         }

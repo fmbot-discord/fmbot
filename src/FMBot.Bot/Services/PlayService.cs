@@ -508,9 +508,10 @@ namespace FMBot.Bot.Services
                 .ToListAsync();
         }
 
-        public static ICollection<ListTrack> GetGuildTopTracks(IEnumerable<UserPlay> plays, OrderType orderType, string artistName)
+        public static List<ListTrack> GetGuildTopTracks(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType, string artistName)
         {
             return plays
+                .Where(w => w.TimePlayed > startDateTime)
                 .Where(w => string.IsNullOrWhiteSpace(artistName) || w.ArtistName.ToLower() == artistName.ToLower())
                 .GroupBy(x => new { x.ArtistName, x.TrackName })
                 .Select(s => new ListTrack
@@ -522,13 +523,14 @@ namespace FMBot.Bot.Services
                 })
                 .OrderByDescending(o => orderType == OrderType.Listeners ? o.ListenerCount : o.TotalPlaycount)
                 .ThenBy(o => orderType == OrderType.Listeners ? o.TotalPlaycount : o.ListenerCount)
-                .Take(14)
+                .Take(120)
                 .ToList();
         }
 
-        public static ICollection<ListAlbum> GetGuildTopAlbums(IEnumerable<UserPlay> plays, OrderType orderType, string artistName)
+        public static List<ListAlbum> GetGuildTopAlbums(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType, string artistName)
         {
             return plays
+                .Where(w => w.TimePlayed > startDateTime && w.AlbumName != null)
                 .Where(w => string.IsNullOrWhiteSpace(artistName) || w.ArtistName.ToLower() == artistName.ToLower())
                 .GroupBy(x => new { x.ArtistName, x.AlbumName })
                 .Select(s => new ListAlbum
@@ -540,13 +542,14 @@ namespace FMBot.Bot.Services
                 })
                 .OrderByDescending(o => orderType == OrderType.Listeners ? o.ListenerCount : o.TotalPlaycount)
                 .ThenBy(o => orderType == OrderType.Listeners ? o.TotalPlaycount : o.ListenerCount)
-                .Take(14)
+                .Take(120)
                 .ToList();
         }
 
-        public static ICollection<ListArtist> GetGuildTopArtists(IEnumerable<UserPlay> plays, OrderType orderType)
+        public static List<ListArtist> GetGuildTopArtists(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType)
         {
             return plays
+                .Where(w => w.TimePlayed > startDateTime)
                 .GroupBy(x => x.ArtistName)
                 .Select(s => new ListArtist
                 {
@@ -556,7 +559,7 @@ namespace FMBot.Bot.Services
                 })
                 .OrderByDescending(o => orderType == OrderType.Listeners ? o.ListenerCount : o.TotalPlaycount)
                 .ThenBy(o => orderType == OrderType.Listeners ? o.TotalPlaycount : o.ListenerCount)
-                .Take(14)
+                .Take(120)
                 .ToList();
         }
 
@@ -612,7 +615,7 @@ namespace FMBot.Bot.Services
             return whoKnowsAlbumList;
         }
 
-        public async Task<IEnumerable<UserPlay>> GetGuildUsersPlays(int guildId, int amountOfDays)
+        public async Task<IList<UserPlay>> GetGuildUsersPlays(int guildId, int amountOfDays)
         {
             var cacheKey = $"guild-user-plays-{guildId}-{amountOfDays}";
 
