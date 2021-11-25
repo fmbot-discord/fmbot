@@ -96,7 +96,7 @@ namespace FMBot.Bot.Services
             await using var db = await this._contextFactory.CreateDbContextAsync();
             var user = await db.Users
                  .AsNoTracking()
-                 .FirstOrDefaultAsync(f => f.UserId == userId);
+                 .FirstAsync(f => f.UserId == userId);
 
             var cacheKey = $"year-ov-{user.UserId}-{year}";
 
@@ -614,6 +614,14 @@ namespace FMBot.Bot.Services
 
         public async Task<IEnumerable<UserPlay>> GetGuildUsersPlays(int guildId, int amountOfDays)
         {
+            var cacheKey = $"guild-user-plays-{guildId}-{amountOfDays}";
+
+            var cachedYearAvailable = this._cache.TryGetValue(cacheKey, out List<UserPlay> userPlays);
+            if (cachedYearAvailable)
+            {
+                return userPlays;
+            }
+
             var sql = "SELECT up.* " +
                       "FROM user_plays AS up " +
                       "INNER JOIN users AS u ON up.user_id = u.user_id  " +
@@ -626,10 +634,14 @@ namespace FMBot.Bot.Services
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            return (await connection.QueryAsync<UserPlay>(sql, new
+            userPlays = (await connection.QueryAsync<UserPlay>(sql, new
             {
                 guildId
             })).ToList();
+
+            this._cache.Set(cacheKey, userPlays, TimeSpan.FromMinutes(2));
+
+            return userPlays;
         }
 
         public async Task<List<UserPlay>> GetGuildUsersPlaysForTimeLeaderBoard(int guildId)
