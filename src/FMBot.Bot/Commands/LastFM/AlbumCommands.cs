@@ -467,6 +467,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var counter = 1;
                 var pageCounter = 1;
+                var rnd = new Random().Next(0, 4);
+
                 foreach (var albumPage in albumPages)
                 {
                     var albumPageString = new StringBuilder();
@@ -508,6 +510,12 @@ namespace FMBot.Bot.Commands.LastFM
                     {
                         footer.AppendLine();
                         footer.Append(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
+                    }
+
+                    if (rnd == 1 && !topListSettings.Billboard)
+                    {
+                        footer.AppendLine();
+                        footer.Append("View this list as a billboard by adding 'billboard' or 'bb'");
                     }
 
                     pages.Add(new PageBuilder()
@@ -1173,8 +1181,7 @@ namespace FMBot.Bot.Commands.LastFM
                     ? " - Ordered by listeners"
                     : " - Ordered by plays");
 
-                var rnd = new Random();
-                var randomHintNumber = rnd.Next(0, 5);
+                var randomHintNumber = new Random().Next(0, 5);
                 switch (randomHintNumber)
                 {
                     case 1:
