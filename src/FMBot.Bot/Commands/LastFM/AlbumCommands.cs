@@ -1040,7 +1040,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     var description = new StringBuilder();
                     var amountOfDiscs = albumTracks.Count(c => c.Rank == 1) == 0 ? 1 : albumTracks.Count(c => c.Rank == 1);
-                    bool maxTracksReached = false;
+                    var maxTracksReached = false;
 
                     var i = 0;
                     var tracksDisplayed = 0;
@@ -1079,7 +1079,7 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                     }
 
-                    this._embed.WithDescription(StringExtensions.TruncateLongString(description.ToString(), 2044));
+                    this._embed.WithDescription(StringExtensions.TruncateLongString(description.ToString(), 4000));
 
                     var footer = spotifySource ? "Album source: Spotify | " : "Album source: Last.fm | ";
 
@@ -1146,15 +1146,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (timeSettings.UsePlays || timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
                 {
-                    guildListSettings.ChartTimePeriod = timeSettings.TimePeriod;
-                    guildListSettings.TimeDescription = timeSettings.Description;
-                    guildListSettings.EndDateTime = timeSettings.EndDateTime.GetValueOrDefault();
-                    guildListSettings.BillboardEndDateTime = timeSettings.BillboardEndDateTime.GetValueOrDefault();
-                    guildListSettings.BillboardTimeDescription = timeSettings.BillboardTimeDescription;
-                    guildListSettings.AmountOfDays = timeSettings.PlayDays.GetValueOrDefault();
-                    guildListSettings.AmountOfDaysWithBillboard = timeSettings.PlayDaysWithBillboard.GetValueOrDefault();
-                    guildListSettings.StartDateTime = timeSettings.StartDateTime.GetValueOrDefault(DateTime.UtcNow.AddDays(-guildListSettings.AmountOfDays));
-                    guildListSettings.BillboardStartDateTime = timeSettings.BillboardStartDateTime.GetValueOrDefault(DateTime.UtcNow.AddDays(-guildListSettings.AmountOfDaysWithBillboard));
+                    guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
                 }
 
                 var footer = new StringBuilder();

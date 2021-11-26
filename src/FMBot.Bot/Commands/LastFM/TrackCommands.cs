@@ -1085,7 +1085,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Top tracks for your server, optionally for an artist")]
         [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`", "Artist name")]
         [Examples("st", "st a p", "servertracks", "servertracks alltime", "servertracks listeners weekly", "servertracks kanye west listeners")]
-        [Alias("st", "stt", "servertoptracks", "servertrack", "server tracks")]
+        [Alias("st", "stt", "servertoptracks", "servertrack", "server tracks", "billboard", "bb")]
         [GuildOnly]
         [RequiresIndex]
         [CommandCategories(CommandCategory.Tracks)]
@@ -1111,15 +1111,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (timeSettings.UsePlays || timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
             {
-                guildListSettings.ChartTimePeriod = timeSettings.TimePeriod;
-                guildListSettings.TimeDescription = timeSettings.Description;
-                guildListSettings.EndDateTime = timeSettings.EndDateTime.GetValueOrDefault();
-                guildListSettings.BillboardEndDateTime = timeSettings.BillboardEndDateTime.GetValueOrDefault();
-                guildListSettings.BillboardTimeDescription = timeSettings.BillboardTimeDescription;
-                guildListSettings.AmountOfDays = timeSettings.PlayDays.GetValueOrDefault();
-                guildListSettings.AmountOfDaysWithBillboard = timeSettings.PlayDaysWithBillboard.GetValueOrDefault();
-                guildListSettings.StartDateTime = timeSettings.StartDateTime.GetValueOrDefault(DateTime.UtcNow.AddDays(-guildListSettings.AmountOfDays));
-                guildListSettings.BillboardStartDateTime = timeSettings.BillboardStartDateTime.GetValueOrDefault(DateTime.UtcNow.AddDays(-guildListSettings.AmountOfDaysWithBillboard));
+                guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
             }
 
             var footer = new StringBuilder();

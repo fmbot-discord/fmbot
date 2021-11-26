@@ -730,6 +730,21 @@ namespace FMBot.Bot.Services
             return setGuildRankingSettings;
         }
 
+        public static GuildRankingSettings TimeSettingsToGuildRankingSettings(GuildRankingSettings guildRankingSettings, TimeSettingsModel timeSettings)
+        {
+            guildRankingSettings.ChartTimePeriod = timeSettings.TimePeriod;
+            guildRankingSettings.TimeDescription = timeSettings.Description;
+            guildRankingSettings.EndDateTime = timeSettings.EndDateTime.GetValueOrDefault();
+            guildRankingSettings.BillboardEndDateTime = timeSettings.BillboardEndDateTime.GetValueOrDefault();
+            guildRankingSettings.BillboardTimeDescription = timeSettings.BillboardTimeDescription;
+            guildRankingSettings.AmountOfDays = timeSettings.PlayDays.GetValueOrDefault();
+            guildRankingSettings.AmountOfDaysWithBillboard = timeSettings.PlayDaysWithBillboard.GetValueOrDefault();
+            guildRankingSettings.StartDateTime = timeSettings.StartDateTime.GetValueOrDefault(DateTime.UtcNow.AddDays(-guildRankingSettings.AmountOfDays));
+            guildRankingSettings.BillboardStartDateTime = timeSettings.BillboardStartDateTime.GetValueOrDefault(DateTime.UtcNow.AddDays(-guildRankingSettings.AmountOfDaysWithBillboard));
+
+            return guildRankingSettings;
+        }
+
         public static CrownViewSettings SetCrownViewSettings(CrownViewSettings crownViewSettings, string extraOptions)
         {
             var setCrownViewSettings = crownViewSettings;

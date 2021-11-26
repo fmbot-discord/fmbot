@@ -330,7 +330,7 @@ namespace FMBot.Bot.Commands.LastFM
             if (topTracks.Count == 0)
             {
                 this._embed.WithDescription(
-                    $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()} has no registered tracks for {artist.ArtistName} in .fmbot.");
+                    $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()} has no registered tracks for the artist **{artist.ArtistName}** in .fmbot.");
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 return;
             }
@@ -1336,15 +1336,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (timeSettings.UsePlays || timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
             {
-                guildListSettings.ChartTimePeriod = timeSettings.TimePeriod;
-                guildListSettings.TimeDescription = timeSettings.Description;
-                guildListSettings.EndDateTime = timeSettings.EndDateTime.GetValueOrDefault();
-                guildListSettings.BillboardEndDateTime = timeSettings.BillboardEndDateTime.GetValueOrDefault();
-                guildListSettings.BillboardTimeDescription = timeSettings.BillboardTimeDescription;
-                guildListSettings.AmountOfDays = timeSettings.PlayDays.GetValueOrDefault();
-                guildListSettings.AmountOfDaysWithBillboard = timeSettings.PlayDaysWithBillboard.GetValueOrDefault();
-                guildListSettings.StartDateTime = timeSettings.StartDateTime.GetValueOrDefault(DateTime.UtcNow.AddDays(-guildListSettings.AmountOfDays));
-                guildListSettings.BillboardStartDateTime = timeSettings.BillboardStartDateTime.GetValueOrDefault(DateTime.UtcNow.AddDays(-guildListSettings.AmountOfDaysWithBillboard));
+                guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
             }
 
             var footer = new StringBuilder();
