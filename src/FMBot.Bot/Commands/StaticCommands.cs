@@ -321,9 +321,9 @@ namespace FMBot.Bot.Commands
 
         [Command("help", RunMode = RunMode.Async)]
         [Summary("Quick help summary to get started.")]
-        [Alias("bot")]
+        [Alias("bot", "fmbot")]
         [CommandCategories(CommandCategory.Other)]
-        public async Task Help([Remainder] string extraValues = null)
+        public async Task HelpAsync([Remainder] string extraValues = null)
         {
             var prefix = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             if (!string.IsNullOrWhiteSpace(extraValues))
@@ -375,6 +375,8 @@ namespace FMBot.Bot.Commands
 
                             var selectedCommands = this._service.Commands.Where(w =>
                                 w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories).Any(a => a.Contains(selectedCategory))).ToList();
+
+                            Console.WriteLine(selectedCategory);
 
                             if (selectedCommands.Any())
                             {
@@ -437,17 +439,18 @@ namespace FMBot.Bot.Commands
 
                             if (selectedCategory == CommandCategory.General)
                             {
+                                options.ForEach(x => x.IsDefault = false); // Reset to default
+                                options.First(x => x.Option == selectedCategoryOrCommand).IsDefault = true;
                                 await SetGeneralHelpEmbed(prefix);
                             }
                             else
                             {
                                 this._embed.WithTitle(
                                     $"Overview of all {selectedCategory} commands");
+                                this._embed.WithDescription(commands);
+                                this._embed.Footer = null;
+                                this._embed.Fields = new List<EmbedFieldBuilder>();
                             }
-
-                            this._embed.WithDescription(commands);
-                            this._embed.Footer = null;
-                            this._embed.Fields = new List<EmbedFieldBuilder>();
                         }
                     }
                     else
@@ -492,8 +495,6 @@ namespace FMBot.Bot.Commands
             var description = new StringBuilder();
             var footer = new StringBuilder();
 
-            footer.AppendLine($"Use the dropdown below to view all commands");
-
             description.AppendLine($"**Main command `{prefix}fm`**");
             description.AppendLine($"*Displays last scrobbles, and looks different depending on the mode you've set.*");
 
@@ -512,6 +513,13 @@ namespace FMBot.Bot.Commands
 
                 footer.AppendLine($"Logged in to .fmbot with the Last.fm account '{contextUser.UserNameLastFM}'");
             }
+
+            description.AppendLine();
+
+            description.AppendLine($"**Commands**");
+            description.AppendLine($" - View all commands on [our website](https://fmbot.xyz/commands/)");
+            description.AppendLine($" - Or use the dropdown below this message to pick a category");
+
 
             if (prefix != this._botSettings.Bot.Prefix)
             {
@@ -535,13 +543,6 @@ namespace FMBot.Bot.Commands
 
             description.Append(" - [Get Supporter](https://opencollective.com/fmbot/contribute)");
             description.Append(" - [Support server](https://discord.gg/6y3jJjtDqK)");
-
-            if (IsBotSelfHosted(socketCommandContext.Client.CurrentUser.Id))
-            {
-                this._embed.AddField("Notice",
-                    "This instance of .fmbot is self-hosted and could differ from the 'official' .fmbot. \n" +
-                    "Keep in mind that the instance might not be fully up to date or other users might not be registered.");
-            }
 
             if (PublicProperties.IssuesAtLastFm)
             {
