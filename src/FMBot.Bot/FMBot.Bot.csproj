@@ -22,15 +22,15 @@
     <PackageReference Include="AsyncEnumerator" Version="4.0.2" />
     <PackageReference Include="BotListAPI" Version="5.5.2" />
     <PackageReference Include="Dapper" Version="2.0.123" />
-    <PackageReference Include="Discord.Net.Labs" Version="3.2.0" />
-    <PackageReference Include="Discord.Net.Labs.Core" Version="3.2.0" />
-    <PackageReference Include="Discord.Net.Labs.Rest" Version="3.2.0" />
-    <PackageReference Include="Discord.Net.Labs.WebSocket" Version="3.2.0" />
+    <PackageReference Include="Discord.Net.Labs" Version="3.3.3" />
+    <PackageReference Include="Discord.Net.Labs.Core" Version="3.3.3" />
+    <PackageReference Include="Discord.Net.Labs.Rest" Version="3.3.3" />
+    <PackageReference Include="Discord.Net.Labs.WebSocket" Version="3.3.3" />
     <PackageReference Include="Fergun.Interactive.Labs" Version="1.2.4" />
     <PackageReference Include="Genius.NET" Version="4.0.1" />
     <PackageReference Include="Google.Apis" Version="1.55.0" />
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.55.0.2449" />
-    <PackageReference Include="Humanizer.Core" Version="2.11.10" />
+    <PackageReference Include="Humanizer.Core" Version="2.13.14" />
     <PackageReference Include="MetaBrainz.MusicBrainz" Version="3.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.0" />
@@ -44,11 +44,11 @@
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.14.0" />
     <PackageReference Include="Npgsql" Version="6.0.0" />
     <PackageReference Include="PostgreSQLCopyHelper" Version="2.8.0" />
-    <PackageReference Include="prometheus-net" Version="5.0.1" />
+    <PackageReference Include="prometheus-net" Version="5.0.2" />
     <PackageReference Include="Serilog" Version="2.10.0" />
     <PackageReference Include="Serilog.Exceptions" Version="8.0.0" />
     <PackageReference Include="Serilog.Sinks.Async" Version="1.5.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="4.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="4.0.1" />
     <PackageReference Include="Serilog.Sinks.Seq" Version="5.1.0" />
     <PackageReference Include="SkiaSharp" Version="2.80.2" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.80.2" />
