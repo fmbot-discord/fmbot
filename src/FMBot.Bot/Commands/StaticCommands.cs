@@ -441,6 +441,7 @@ namespace FMBot.Bot.Commands
                             {
                                 options.ForEach(x => x.IsDefault = false); // Reset to default
                                 options.First(x => x.Option == selectedCategoryOrCommand).IsDefault = true;
+                                this._embed.Fields = new List<EmbedFieldBuilder>();
                                 await SetGeneralHelpEmbed(prefix);
                             }
                             else
