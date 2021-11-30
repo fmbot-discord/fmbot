@@ -88,8 +88,13 @@ namespace FMBot.Bot.Services
                 }
                 else
                 {
-                    var artistName = description.Split(" - ")[0];
-                    var trackName = description.Split(" - ")[1].Replace("\\", "");
+                    if (description.Contains("~"))
+                    { // check whether requester is "on" in hydra
+                        description = description.Split(" ~ ")[0];
+                    }
+                    string[] splitDesc = description.Split(" - ", 2);
+                    var artistName = splitDesc[0];
+                    var trackName = splitDesc[1].Replace("\\", "");
                     var queryParams = new Dictionary<string, string>
                 {
                     {"track", trackName }
