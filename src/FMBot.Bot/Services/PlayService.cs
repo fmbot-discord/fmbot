@@ -151,7 +151,7 @@ namespace FMBot.Bot.Services
             if (user.RegisteredLastFm < endDateTime.AddYears(-1))
             {
                 var previousTopTracks =
-                    await this._lastFmRepository.GetTopTracksForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime.AddYears(-2), endDateTime.AddYears(-1), 800, user.SessionKeyLastFm);
+                    await this._lastFmRepository.GetTopTracksForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800, user.SessionKeyLastFm);
 
                 if (previousTopTracks.Success)
                 {
@@ -163,7 +163,7 @@ namespace FMBot.Bot.Services
                 }
 
                 var previousTopAlbums =
-                    await this._lastFmRepository.GetTopAlbumsForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime.AddYears(-2), endDateTime.AddYears(-1), 800, user.SessionKeyLastFm);
+                    await this._lastFmRepository.GetTopAlbumsForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800, user.SessionKeyLastFm);
 
                 if (previousTopAlbums.Success)
                 {
@@ -175,7 +175,7 @@ namespace FMBot.Bot.Services
                 }
 
                 var previousTopArtists =
-                        await this._lastFmRepository.GetTopArtistsForCustomTimePeriodAsync(user.UserNameLastFM, startDateTime.AddYears(-2), endDateTime.AddYears(-1), 800, user.SessionKeyLastFm);
+                        await this._lastFmRepository.GetTopArtistsForCustomTimePeriodAsync(user.UserNameLastFM, startDateTime.AddYears(-1), endDateTime.AddYears(-1), 800, user.SessionKeyLastFm);
 
                 if (previousTopArtists.Success)
                 {
