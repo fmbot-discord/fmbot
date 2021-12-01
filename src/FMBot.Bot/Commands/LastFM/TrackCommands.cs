@@ -165,7 +165,7 @@ namespace FMBot.Bot.Commands.LastFM
                     }
 
                     if (spotifyTrack.Danceability.HasValue && spotifyTrack.Energy.HasValue && spotifyTrack.Instrumentalness.HasValue &&
-                        spotifyTrack.Acousticness.HasValue && spotifyTrack.Speechiness.HasValue && spotifyTrack.Liveness.HasValue)
+                        spotifyTrack.Acousticness.HasValue && spotifyTrack.Speechiness.HasValue && spotifyTrack.Liveness.HasValue && spotifyTrack.Valence.HasValue)
                     {
                         var danceability = ((decimal)(spotifyTrack.Danceability / 1)).ToString("0%");
                         var energetic = ((decimal)(spotifyTrack.Energy / 1)).ToString("0%");
@@ -173,8 +173,10 @@ namespace FMBot.Bot.Commands.LastFM
                         var acoustic = ((decimal)(spotifyTrack.Acousticness / 1)).ToString("0%");
                         var speechful = ((decimal)(spotifyTrack.Speechiness / 1)).ToString("0%");
                         var lively = ((decimal)(spotifyTrack.Liveness / 1)).ToString("0%");
+                        var valence = ((decimal)(spotifyTrack.Valence / 1)).ToString("0%");
                         footer.AppendLine($"{danceability} danceable - {energetic} energetic - {acoustic} acoustic\n" +
-                                               $"{instrumental} instrumental - {speechful} speechful - {lively} lively");
+                                               $"{instrumental} instrumental - {speechful} speechful - {lively} lively\n" +
+                                               $"{valence} valence (musical positiveness)");
                     }
                 }
 
