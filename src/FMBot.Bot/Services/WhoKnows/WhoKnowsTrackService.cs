@@ -222,7 +222,7 @@ namespace FMBot.Bot.Services.WhoKnows
             });
         }
 
-        public async Task<ICollection<ListTrack>> GetTopAllTimeTracksForGuild(int guildId,
+        public async Task<ICollection<GuildTrack>> GetTopAllTimeTracksForGuild(int guildId,
             OrderType orderType, string artistName)
         {
             var dbArgs = new DynamicParameters();
@@ -256,7 +256,7 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            return (await connection.QueryAsync<ListTrack>(sql, dbArgs)).ToList();
+            return (await connection.QueryAsync<GuildTrack>(sql, dbArgs)).ToList();
         }
 
         public async Task<int> GetWeekTrackPlaycountForGuildAsync(IEnumerable<User> guildUsers, string trackName, string artistName)

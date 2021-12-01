@@ -445,6 +445,11 @@ namespace FMBot.Bot.Commands.LastFM
                     timePlaying = firstTrack.TimePlayed.Value;
                 }
 
+                if (timePlaying.HasValue)
+                {
+                    footer += " | Last loved track:";
+                }
+
                 var lovedTrackPages = lovedTracks.Content.RecentTracks.ChunkBy(10);
 
                 var counter = lovedTracks.Content.RecentTracks.Count;
@@ -466,8 +471,6 @@ namespace FMBot.Bot.Commands.LastFM
 
                     if (timePlaying.HasValue)
                     {
-                        footer += " | Last loved track:";
-                        page.WithFooter(footer);
                         page.WithTimestamp(timePlaying);
                     }
 
@@ -1118,8 +1121,8 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                ICollection<ListTrack> topGuildTracks;
-                IList<ListTrack> previousTopGuildTracks = null;
+                ICollection<GuildTrack> topGuildTracks;
+                IList<GuildTrack> previousTopGuildTracks = null;
                 if (guildListSettings.ChartTimePeriod == TimePeriod.AllTime)
                 {
                     topGuildTracks = await this._whoKnowsTrackService.GetTopAllTimeTracksForGuild(guild.GuildId, guildListSettings.OrderType, artistName);

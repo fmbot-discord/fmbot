@@ -3,7 +3,7 @@ using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Models
 {
-    public class ListTrack
+    public class GuildTrack
     {
         public string ArtistName { get; set; }
 

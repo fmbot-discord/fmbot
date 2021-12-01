@@ -1151,8 +1151,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var footer = new StringBuilder();
 
-                ICollection<ListAlbum> topGuildAlbums;
-                IList<ListAlbum> previousTopGuildAlbums = null;
+                ICollection<GuildAlbum> topGuildAlbums;
+                IList<GuildAlbum> previousTopGuildAlbums = null;
                 if (guildListSettings.ChartTimePeriod == TimePeriod.AllTime)
                 {
                     topGuildAlbums = await this._whoKnowsAlbumService.GetTopAllTimeAlbumsForGuild(guild.GuildId, guildListSettings.OrderType, artistName);

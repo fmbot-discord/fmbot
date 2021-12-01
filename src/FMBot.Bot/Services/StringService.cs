@@ -67,7 +67,7 @@ namespace FMBot.Bot.Services
                 {
                     if ((Math.Abs(oldPosition.Value - newPosition)) < 5)
                     {
-                        line.Append($"<:1_to_5_up:912085138245029888>");
+                        line.Append($"<:1_to_5_down:912085138245029888>");
 
                     }
                     else
@@ -79,7 +79,7 @@ namespace FMBot.Bot.Services
                 {
                     if ((Math.Abs(oldPosition.Value - newPosition)) < 5)
                     {
-                        line.Append($"<:1_to_5_down:912085138232442920>");
+                        line.Append($"<:1_to_5_up:912085138232442920>");
                     }
                     else
                     {

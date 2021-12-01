@@ -221,7 +221,7 @@ namespace FMBot.Bot.Services.WhoKnows
             });
         }
 
-        public async Task<ICollection<ListAlbum>> GetTopAllTimeAlbumsForGuild(int guildId,
+        public async Task<ICollection<GuildAlbum>> GetTopAllTimeAlbumsForGuild(int guildId,
             OrderType orderType, string artistName)
         {
             var sql = "SELECT ub.name AS album_name, ub.artist_name, " +
@@ -251,7 +251,7 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            return (await connection.QueryAsync<ListAlbum>(sql, new
+            return (await connection.QueryAsync<GuildAlbum>(sql, new
             {
                 guildId,
                 artistName

@@ -30,7 +30,7 @@ namespace FMBot.Bot.Models
         Listeners = 2
     }
 
-    public class ListArtist
+    public class GuildArtist
     {
         public string ArtistName { get; set; }
 

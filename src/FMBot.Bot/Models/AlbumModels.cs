@@ -29,7 +29,7 @@ namespace FMBot.Bot.Models
         public string Url { get; }
     }
 
-    public class ListAlbum
+    public class GuildAlbum
     {
         public string ArtistName { get; set; }
 

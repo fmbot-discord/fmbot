@@ -201,7 +201,7 @@ namespace FMBot.Bot.Services.WhoKnows
             return whoKnowsArtistList;
         }
 
-        public async Task<ICollection<ListArtist>> GetTopAllTimeArtistsForGuild(int guildId,
+        public async Task<ICollection<GuildArtist>> GetTopAllTimeArtistsForGuild(int guildId,
             OrderType orderType)
         {
             var sql = "SELECT ua.name AS artist_name, " +
@@ -225,7 +225,7 @@ namespace FMBot.Bot.Services.WhoKnows
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            return (await connection.QueryAsync<ListArtist>(sql, new
+            return (await connection.QueryAsync<GuildArtist>(sql, new
             {
                 guildId
             })).ToList();

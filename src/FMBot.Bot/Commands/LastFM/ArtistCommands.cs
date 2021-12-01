@@ -1343,8 +1343,8 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                ICollection<ListArtist> topGuildArtists;
-                IList<ListArtist> previousTopGuildArtists = null;
+                ICollection<GuildArtist> topGuildArtists;
+                IList<GuildArtist> previousTopGuildArtists = null;
                 if (guildListSettings.ChartTimePeriod == TimePeriod.AllTime)
                 {
                     topGuildArtists = await this._whoKnowArtistService.GetTopAllTimeArtistsForGuild(guild.GuildId, guildListSettings.OrderType);

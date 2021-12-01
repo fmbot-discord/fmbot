@@ -155,7 +155,7 @@ namespace FMBot.Bot.Commands.LastFM
                             if (secondsLeft <= existingFmCooldown.Value - 2)
                             {
                                 _ = this.Interactivity.DelayedDeleteMessageAsync(
-                                    await this.Context.Channel.SendMessageAsync($"This channel has a `{existingFmCooldown.Value}` second cooldown on `.fm`. Please wait for this to expire before using this command again."),
+                                    await this.Context.Channel.SendMessageAsync($"This channel has a `{existingFmCooldown.Value}` second cooldown on `{prfx}fm`. Please wait for this to expire before using this command again."),
                                     TimeSpan.FromSeconds(6));
                                 this.Context.LogCommandUsed(CommandResponse.Cooldown);
                             }
@@ -279,7 +279,7 @@ namespace FMBot.Bot.Commands.LastFM
                 if (!currentTrack.NowPlaying && currentTrack.TimePlayed.HasValue && currentTrack.TimePlayed < DateTime.UtcNow.AddHours(-1) && currentTrack.TimePlayed > DateTime.UtcNow.AddDays(-5))
                 {
                     footerText +=
-                        $"Using Spotify and fm lagging behind? Check '.outofsync'\n";
+                        $"Using Spotify and fm lagging behind? Check '{prfx}outofsync'\n";
                 }
 
                 if (currentTrack.Loved)
@@ -458,7 +458,7 @@ namespace FMBot.Bot.Commands.LastFM
                         {
                             this.Context.LogCommandException(e, "Could not add emote reactions");
                             await ReplyAsync(
-                                "Couldn't add emote reactions to `.fm`. If you have recently changed changed any of the configured emotes please use `.fmserverreactions` to reset the automatic emote reactions.");
+                                $"Couldn't add emote reactions to `{prfx}fm`. If you have recently changed changed any of the configured emotes please use `{prfx}serverreactions` to reset the automatic emote reactions.");
                         }
 
                         break;
@@ -677,11 +677,11 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        //[Command("year", RunMode = RunMode.Async)]
-        //[Summary("Shows an overview of your year")]
-        //[Alias("yr", "lastyear", "yearoverview", "yearov", "yov", "last.year")]
-        //[UsernameSetRequired]
-        //[CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
+        [Command("year", RunMode = RunMode.Async)]
+        [Summary("Shows an overview of your year")]
+        [Alias("yr", "lastyear", "yearoverview", "yearov", "yov", "last.year", "wrapped")]
+        [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
         public async Task YearAsync([Remainder] string extraOptions = null)
         {
             _ = this.Context.Channel.TriggerTypingAsync();

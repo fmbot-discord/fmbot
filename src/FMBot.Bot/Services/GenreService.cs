@@ -151,6 +151,32 @@ namespace FMBot.Bot.Services
                 }).ToList();
         }
 
+        //public async Task<List<TopGenre>> GetTopGenresForGuildArtists(IEnumerable<GuildArtist> guildArtists)
+        //{
+        //    if (guildArtists == null)
+        //    {
+        //        return new List<TopGenre>();
+        //    }
+
+        //    await CacheAllArtistGenres();
+
+        //    var allGenres = new List<GuildGenre>();
+        //    foreach (var artist in guildArtists)
+        //    {
+        //        allGenres = GetGenreWithPlaycountsForArtist(allGenres, artist.ArtistName, artist.TotalPlaycount);
+        //    }
+
+        //    return allGenres
+        //        .GroupBy(g => g.Name)
+        //        .OrderByDescending(o => o.Sum(s => s.Playcount))
+        //        .Where(w => w.Key != null)
+        //        .Select(s => new TopGenre
+        //        {
+        //            UserPlaycount = s.Sum(se => se.Playcount),
+        //            GenreName = s.Key
+        //        }).ToList();
+        //}
+
         public async Task<ICollection<WhoKnowsObjectWithUser>> GetUsersWithGenreForUserArtists(
             IEnumerable<UserArtist> userArtists,
             ICollection<GuildUser> guildUsers)
@@ -214,6 +240,7 @@ namespace FMBot.Bot.Services
         }
 
         private record GenreWithPlaycount(string Name, long Playcount);
+        private record GuildGenre(string Name, long TotalPlaycount, long Listeners);
 
         public async Task<List<string>> GetGenresForArtist(string artistName)
         {

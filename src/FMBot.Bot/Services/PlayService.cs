@@ -157,6 +157,10 @@ namespace FMBot.Bot.Services
                 {
                     yearOverview.PreviousTopTracks = previousTopTracks.Content;
                 }
+                else
+                {
+                    yearOverview.LastfmErrors = true;
+                }
 
                 var previousTopAlbums =
                     await this._lastFmRepository.GetTopAlbumsForCustomTimePeriodAsyncAsync(user.UserNameLastFM, startDateTime.AddYears(-2), endDateTime.AddYears(-1), 800, user.SessionKeyLastFm);
@@ -165,19 +169,27 @@ namespace FMBot.Bot.Services
                 {
                     yearOverview.PreviousTopAlbums = previousTopAlbums.Content;
                 }
+                else
+                {
+                    yearOverview.LastfmErrors = true;
+                }
 
                 var previousTopArtists =
-                    await this._lastFmRepository.GetTopArtistsForCustomTimePeriodAsync(user.UserNameLastFM, startDateTime.AddYears(-2), endDateTime.AddYears(-1), 800, user.SessionKeyLastFm);
+                        await this._lastFmRepository.GetTopArtistsForCustomTimePeriodAsync(user.UserNameLastFM, startDateTime.AddYears(-2), endDateTime.AddYears(-1), 800, user.SessionKeyLastFm);
 
                 if (previousTopArtists.Success)
                 {
                     yearOverview.PreviousTopArtists = previousTopArtists.Content;
                 }
+                else
+                {
+                    yearOverview.LastfmErrors = true;
+                }
             }
 
             if (!yearOverview.LastfmErrors)
             {
-                this._cache.Set(cacheKey, yearOverview, TimeSpan.FromHours(1));
+                this._cache.Set(cacheKey, yearOverview, TimeSpan.FromHours(3));
             }
 
             return yearOverview;
@@ -508,13 +520,13 @@ namespace FMBot.Bot.Services
                 .ToListAsync();
         }
 
-        public static List<ListTrack> GetGuildTopTracks(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType, string artistName)
+        public static List<GuildTrack> GetGuildTopTracks(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType, string artistName)
         {
             return plays
                 .Where(w => w.TimePlayed > startDateTime)
                 .Where(w => string.IsNullOrWhiteSpace(artistName) || w.ArtistName.ToLower() == artistName.ToLower())
                 .GroupBy(x => new { x.ArtistName, x.TrackName })
-                .Select(s => new ListTrack
+                .Select(s => new GuildTrack
                 {
                     TrackName = s.Key.TrackName,
                     ArtistName = s.Key.ArtistName,
@@ -527,13 +539,13 @@ namespace FMBot.Bot.Services
                 .ToList();
         }
 
-        public static List<ListAlbum> GetGuildTopAlbums(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType, string artistName)
+        public static List<GuildAlbum> GetGuildTopAlbums(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType, string artistName)
         {
             return plays
                 .Where(w => w.TimePlayed > startDateTime && w.AlbumName != null)
                 .Where(w => string.IsNullOrWhiteSpace(artistName) || w.ArtistName.ToLower() == artistName.ToLower())
                 .GroupBy(x => new { x.ArtistName, x.AlbumName })
-                .Select(s => new ListAlbum
+                .Select(s => new GuildAlbum
                 {
                     AlbumName = s.Key.AlbumName,
                     ArtistName = s.Key.ArtistName,
@@ -546,12 +558,12 @@ namespace FMBot.Bot.Services
                 .ToList();
         }
 
-        public static List<ListArtist> GetGuildTopArtists(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType)
+        public static List<GuildArtist> GetGuildTopArtists(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType)
         {
             return plays
                 .Where(w => w.TimePlayed > startDateTime)
                 .GroupBy(x => x.ArtistName)
-                .Select(s => new ListArtist
+                .Select(s => new GuildArtist
                 {
                     ArtistName = s.Key,
                     ListenerCount = s.Select(se => se.UserId).Distinct().Count(),

@@ -437,7 +437,7 @@ namespace FMBot.Bot.Services
                         settingsModel.SessionKeyLastFm = foundLfmUser.SessionKeyLastFm;
                         settingsModel.UserType = foundLfmUser.UserType;
                         settingsModel.UserId = foundLfmUser.UserId;
-                        settingsModel.RegisteredLastFm = otherUser.RegisteredLastFm;
+                        settingsModel.RegisteredLastFm = foundLfmUser.RegisteredLastFm;
 
                         return settingsModel;
                     }
