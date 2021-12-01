@@ -715,7 +715,14 @@ namespace FMBot.Bot.Commands.LastFM
                 var description = new StringBuilder();
                 var fields = new List<EmbedFieldBuilder>();
 
-                description.AppendLine($"Your top genres, artists, albums and tracks for {year} compared to {year - 1}.");
+                if (yearOverview.PreviousTopArtists?.TopArtists is { Count: > 0 })
+                {
+                    description.AppendLine($"Your top genres, artists, albums and tracks for {year} compared to {year - 1}.");
+                }
+                else
+                {
+                    description.AppendLine($"Welcome to Last.fm and .fmbot. Here's your overview for {year}.");
+                }
 
                 this._embed.WithDescription(description.ToString());
 
