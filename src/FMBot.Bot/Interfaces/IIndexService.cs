@@ -21,6 +21,8 @@ namespace FMBot.Bot.Interfaces
 
         Task RemoveUserFromGuild(ulong discordUserId, ulong discordGuildId);
 
+        Task<DateTime?> AddUserRegisteredLfmDate(int userId);
+
         Task<(int, int?)> StoreGuildUsers(IGuild discordGuild, IReadOnlyCollection<IGuildUser> discordGuildUsers);
 
         Task<IReadOnlyList<User>> GetUsersToFullyUpdate(IReadOnlyCollection<IGuildUser> discordGuildUsers);

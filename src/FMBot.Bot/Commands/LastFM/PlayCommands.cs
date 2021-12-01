@@ -155,7 +155,7 @@ namespace FMBot.Bot.Commands.LastFM
                             if (secondsLeft <= existingFmCooldown.Value - 2)
                             {
                                 _ = this.Interactivity.DelayedDeleteMessageAsync(
-                                    await this.Context.Channel.SendMessageAsync($"This channel has a `{existingFmCooldown.Value}` second cooldown on `.fm`. Please wait for this to expire before using this command again."),
+                                    await this.Context.Channel.SendMessageAsync($"This channel has a `{existingFmCooldown.Value}` second cooldown on `{prfx}fm`. Please wait for this to expire before using this command again."),
                                     TimeSpan.FromSeconds(6));
                                 this.Context.LogCommandUsed(CommandResponse.Cooldown);
                             }
@@ -279,7 +279,7 @@ namespace FMBot.Bot.Commands.LastFM
                 if (!currentTrack.NowPlaying && currentTrack.TimePlayed.HasValue && currentTrack.TimePlayed < DateTime.UtcNow.AddHours(-1) && currentTrack.TimePlayed > DateTime.UtcNow.AddDays(-5))
                 {
                     footerText +=
-                        $"Using Spotify and fm lagging behind? Check '.outofsync'\n";
+                        $"Using Spotify and fm lagging behind? Check '{prfx}outofsync'\n";
                 }
 
                 if (currentTrack.Loved)
@@ -458,7 +458,7 @@ namespace FMBot.Bot.Commands.LastFM
                         {
                             this.Context.LogCommandException(e, "Could not add emote reactions");
                             await ReplyAsync(
-                                "Couldn't add emote reactions to `.fm`. If you have recently changed changed any of the configured emotes please use `.fmserverreactions` to reset the automatic emote reactions.");
+                                $"Couldn't add emote reactions to `{prfx}fm`. If you have recently changed changed any of the configured emotes please use `{prfx}serverreactions` to reset the automatic emote reactions.");
                         }
 
                         break;
@@ -677,11 +677,11 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
-        //[Command("year", RunMode = RunMode.Async)]
-        //[Summary("Shows an overview of your year")]
-        //[Alias("yr", "lastyear", "yearoverview", "yearov", "yov", "last.year")]
-        //[UsernameSetRequired]
-        //[CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
+        [Command("year", RunMode = RunMode.Async)]
+        [Summary("Shows an overview of your year")]
+        [Alias("yr", "lastyear", "yearoverview", "yearov", "yov", "last.year", "wrapped")]
+        [UsernameSetRequired]
+        [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
         public async Task YearAsync([Remainder] string extraOptions = null)
         {
             _ = this.Context.Channel.TriggerTypingAsync();
@@ -715,7 +715,14 @@ namespace FMBot.Bot.Commands.LastFM
                 var description = new StringBuilder();
                 var fields = new List<EmbedFieldBuilder>();
 
-                description.AppendLine($"Your top genres, artists, albums and tracks for {year} compared to {year - 1}.");
+                if (yearOverview.PreviousTopArtists?.TopArtists is { Count: > 0 })
+                {
+                    description.AppendLine($"Your top genres, artists, albums and tracks for {year} compared to {year - 1}.");
+                }
+                else
+                {
+                    description.AppendLine($"Welcome to Last.fm and .fmbot. Here's your overview for {year}.");
+                }
 
                 this._embed.WithDescription(description.ToString());
 
@@ -904,13 +911,12 @@ namespace FMBot.Bot.Commands.LastFM
             var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
 
             var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
-
-            var timeType = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
 
             long timeFrom;
-            if (timeType.TimePeriod != TimePeriod.AllTime && timeType.PlayDays != null)
+            if (timeSettings.TimePeriod != TimePeriod.AllTime && timeSettings.PlayDays != null)
             {
-                var dateAgo = DateTime.UtcNow.AddDays(-timeType.PlayDays.Value);
+                var dateAgo = DateTime.UtcNow.AddDays(-timeSettings.PlayDays.Value);
                 timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
             }
             else
@@ -922,7 +928,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (count == null || count == 0)
             {
-                var errorReply = $"<@{this.Context.User.Id}> No plays found in the {timeType.Description} time period.";
+                var errorReply = $"<@{this.Context.User.Id}> No plays found in the {timeSettings.Description} time period.";
 
                 await this.Context.Channel.SendMessageAsync(errorReply);
             }
@@ -951,7 +957,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             reply.AppendLine($" will reach **{goalAmount}** scrobbles on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
 
-            if (timeType.TimePeriod == TimePeriod.AllTime)
+            if (timeSettings.TimePeriod == TimePeriod.AllTime)
             {
                 reply.AppendLine(
                     $"This is based on {determiner} alltime avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day. ({count} in {Math.Round(totalDays, 0)} days)");
@@ -1214,7 +1220,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild?.Id);
                 var user = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-                var userPlays = await this._playService.GetGuildUsersTotalPlaytime(guild.GuildId);
+                var userPlays = await this._playService.GetGuildUsersPlaysForTimeLeaderBoard(guild.GuildId);
 
                 var userListeningTime =
                     await this._timeService.UserPlaysToGuildLeaderboard(this.Context, userPlays, guild.GuildUsers);

@@ -206,7 +206,7 @@ namespace FMBot.Bot.Commands
                 var currentMemoryUsage = currentProcess.WorkingSet64;
                 var reply = new StringBuilder();
 
-                reply.AppendLine("Purged user, channel, DM channel cache and ran garbage collector.");
+                reply.AppendLine("Purged user cache and ran garbage collector.");
                 reply.AppendLine($"Memory before purge: `{currentMemoryUsage.ToFormattedByteString()}`");
 
                 foreach (var socketClient in client.Shards)

@@ -30,7 +30,7 @@ namespace FMBot.Bot.Services.Guild
 
         public async Task<Persistence.Domain.Models.Guild> GetGuildAsync(ulong guildId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guildId);
@@ -43,7 +43,7 @@ namespace FMBot.Bot.Services.Guild
                 return null;
             }
 
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.Guilds
                 .AsNoTracking()
                 .Include(i => i.GuildBlockedUsers)

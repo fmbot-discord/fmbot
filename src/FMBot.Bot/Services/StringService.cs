@@ -53,7 +53,7 @@ namespace FMBot.Bot.Services
 
         public record BillboardLine(string Text, string Name, int PositionsMoved, int NewPosition, int? OldPosition);
 
-        public static BillboardLine GetBillboardLine(string name, int newPosition, int? oldPosition)
+        public static BillboardLine GetBillboardLine(string name, int newPosition, int? oldPosition, bool counter = true)
         {
             var line = new StringBuilder();
 
@@ -67,7 +67,7 @@ namespace FMBot.Bot.Services
                 {
                     if ((Math.Abs(oldPosition.Value - newPosition)) < 5)
                     {
-                        line.Append($"<:1_to_5_up:912085138245029888>");
+                        line.Append($"<:1_to_5_down:912085138245029888>");
 
                     }
                     else
@@ -79,7 +79,7 @@ namespace FMBot.Bot.Services
                 {
                     if ((Math.Abs(oldPosition.Value - newPosition)) < 5)
                     {
-                        line.Append($"<:1_to_5_down:912085138232442920>");
+                        line.Append($"<:1_to_5_up:912085138232442920>");
                     }
                     else
                     {
@@ -99,12 +99,18 @@ namespace FMBot.Bot.Services
                 line.Append($"<:new:912087988001980446> ");
             }
 
-            line.Append($"{newPosition + 1}. {name}");
+            if (counter)
+            {
+                line.Append($"{newPosition + 1}. ");
+            }
+
+            line.Append(name);
 
             return new BillboardLine(line.ToString(), name, positionsMoved, newPosition + 1, oldPosition + 1);
         }
 
-        public static string GetBillBoardSettingString(TimeSettingsModel timeSettings)
+        public static string GetBillBoardSettingString(TimeSettingsModel timeSettings,
+            DateTime? userSettingsRegisteredLastFm)
         {
             if (timeSettings.BillboardTimeDescription != null)
             {
@@ -112,13 +118,20 @@ namespace FMBot.Bot.Services
             }
             if (timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
             {
-                if (timeSettings.BillboardEndDateTime.Value.Year == DateTime.UtcNow.Year)
+                var startDateTime = timeSettings.BillboardStartDateTime.Value;
+
+                if (userSettingsRegisteredLastFm.HasValue && startDateTime < userSettingsRegisteredLastFm.Value)
                 {
-                    return $"Billboard mode enabled - Comparing to {timeSettings.BillboardStartDateTime.Value:MMM dd} til {timeSettings.BillboardEndDateTime.Value:MMM dd}";
+                    startDateTime = userSettingsRegisteredLastFm.Value;
+                }
+
+                if (timeSettings.BillboardStartDateTime.Value.Year == DateTime.UtcNow.Year)
+                {
+                    return $"Billboard mode enabled - Comparing to {startDateTime:MMM dd} til {timeSettings.BillboardEndDateTime.Value:MMM dd}";
 
                 }
 
-                return $"Billboard mode enabled - Comparing to {timeSettings.BillboardStartDateTime.Value:MMM dd yyyy} til {timeSettings.BillboardEndDateTime.Value:MMM dd yyyy}";
+                return $"Billboard mode enabled - Comparing to {startDateTime:MMM dd yyyy} til {timeSettings.BillboardEndDateTime.Value:MMM dd yyyy}";
             }
 
             return null;

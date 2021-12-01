@@ -20,6 +20,7 @@ namespace FMBot.Domain.Models
         public DateTime? BillboardEndDateTime { get; set; }
 
         public int? PlayDays { get; set; }
+        public int? PlayDaysWithBillboard { get; set; }
         public string NewSearchValue { get; set; }
     }
 
@@ -32,6 +33,7 @@ namespace FMBot.Domain.Models
         public string DiscordUserName { get; set; }
         public int UserId { get; set; }
         public UserType UserType { get; set; }
+        public DateTime? RegisteredLastFm { get; set; }
         public string NewSearchValue { get; set; }
     }
 }

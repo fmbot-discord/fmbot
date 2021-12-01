@@ -22,20 +22,11 @@ namespace FMBot.Bot.Services
             this._contextFactory = contextFactory;
         }
 
-        public static TimeSettingsModel GetTimePeriod(string[] options,
-            TimePeriod defaultTimePeriod = TimePeriod.Weekly)
-        {
-            var optionsAsString = "";
-            if (options.Any())
-            {
-                optionsAsString = string.Join(" ", options);
-            }
-
-            return GetTimePeriod(optionsAsString, defaultTimePeriod);
-        }
-
         public static TimeSettingsModel GetTimePeriod(string options,
-            TimePeriod defaultTimePeriod = TimePeriod.Weekly, DateTime? registeredLastFm = null)
+            TimePeriod defaultTimePeriod = TimePeriod.Weekly,
+            DateTime? registeredLastFm = null,
+            bool cachedOrAllTimeOnly = false,
+            bool dailyTimePeriods = true)
         {
             var settingsModel = new TimeSettingsModel();
             bool? customTimePeriod = null;
@@ -48,7 +39,7 @@ namespace FMBot.Bot.Services
             var year = GetYear(options);
             var month = GetMonth(options);
 
-            if (year != null || month != null)
+            if ((year != null || month != null) && !cachedOrAllTimeOnly)
             {
                 settingsModel.StartDateTime = new DateTime(
                     year.GetValueOrDefault(DateTime.Today.Year),
@@ -127,7 +118,7 @@ namespace FMBot.Bot.Services
                 settingsModel.ApiParameter = "1month";
                 settingsModel.PlayDays = 30;
             }
-            else if (Contains(options, quarterly))
+            else if (Contains(options, quarterly) && !cachedOrAllTimeOnly)
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, quarterly);
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Quarter;
@@ -138,7 +129,7 @@ namespace FMBot.Bot.Services
                 settingsModel.ApiParameter = "3month";
                 settingsModel.PlayDays = 90;
             }
-            else if (Contains(options, halfYearly))
+            else if (Contains(options, halfYearly) && !cachedOrAllTimeOnly)
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, halfYearly);
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Half;
@@ -149,7 +140,7 @@ namespace FMBot.Bot.Services
                 settingsModel.ApiParameter = "6month";
                 settingsModel.PlayDays = 180;
             }
-            else if (Contains(options, yearly))
+            else if (Contains(options, yearly) && !cachedOrAllTimeOnly)
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, yearly);
                 settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Year;
@@ -169,8 +160,13 @@ namespace FMBot.Bot.Services
                 settingsModel.AltDescription = "all-time";
                 settingsModel.UrlParameter = "date_preset=ALL";
                 settingsModel.ApiParameter = "overall";
+
+                if (registeredLastFm.HasValue)
+                {
+                    settingsModel.PlayDays = (int)(DateTime.UtcNow - registeredLastFm.Value).TotalDays + 1;
+                }
             }
-            else if (Contains(options, sixDays))
+            else if (Contains(options, sixDays) && dailyTimePeriods)
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, sixDays);
                 var dateString = DateTime.Today.AddDays(-6).ToString("yyyy-M-dd");
@@ -181,7 +177,7 @@ namespace FMBot.Bot.Services
                 settingsModel.PlayDays = 6;
                 settingsModel.StartDateTime = DateTime.Today.AddDays(-6);
             }
-            else if (Contains(options, fiveDays))
+            else if (Contains(options, fiveDays) && dailyTimePeriods)
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, fiveDays);
                 var dateString = DateTime.Today.AddDays(-5).ToString("yyyy-M-dd");
@@ -192,7 +188,7 @@ namespace FMBot.Bot.Services
                 settingsModel.PlayDays = 5;
                 settingsModel.StartDateTime = DateTime.Today.AddDays(-5);
             }
-            else if (Contains(options, fourDays))
+            else if (Contains(options, fourDays) && dailyTimePeriods)
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, fourDays);
                 var dateString = DateTime.Today.AddDays(-4).ToString("yyyy-M-dd");
@@ -203,7 +199,7 @@ namespace FMBot.Bot.Services
                 settingsModel.PlayDays = 4;
                 settingsModel.StartDateTime = DateTime.Today.AddDays(-4);
             }
-            else if (Contains(options, threeDays))
+            else if (Contains(options, threeDays) && dailyTimePeriods)
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, threeDays);
                 var dateString = DateTime.Today.AddDays(-3).ToString("yyyy-M-dd");
@@ -214,7 +210,7 @@ namespace FMBot.Bot.Services
                 settingsModel.PlayDays = 3;
                 settingsModel.StartDateTime = DateTime.Today.AddDays(-3);
             }
-            else if (Contains(options, twoDays))
+            else if (Contains(options, twoDays) && dailyTimePeriods)
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, twoDays);
                 var dateString = DateTime.Today.AddDays(-2).ToString("yyyy-M-dd");
@@ -225,7 +221,7 @@ namespace FMBot.Bot.Services
                 settingsModel.PlayDays = 2;
                 settingsModel.StartDateTime = DateTime.Today.AddDays(-2);
             }
-            else if (Contains(options, oneDay))
+            else if (Contains(options, oneDay) && dailyTimePeriods)
             {
                 settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, oneDay);
                 var dateString = DateTime.Today.AddDays(-1).ToString("yyyy-M-dd");
@@ -266,10 +262,14 @@ namespace FMBot.Bot.Services
 
             if (settingsModel.PlayDays.HasValue)
             {
+                var daysToGoBack = settingsModel.PlayDays.Value > 180 ? 180 : settingsModel.PlayDays.Value / (settingsModel.PlayDays.Value >= 90 ? 4 : 3);
+
                 settingsModel.BillboardStartDateTime =
-                    DateTime.UtcNow.AddDays(-(settingsModel.PlayDays.Value + settingsModel.PlayDays.Value / 3));
+                    DateTime.UtcNow.AddDays(-(settingsModel.PlayDays.Value + daysToGoBack));
                 settingsModel.BillboardEndDateTime =
-                    DateTime.UtcNow.AddDays(-(settingsModel.PlayDays.Value / 3));
+                    DateTime.UtcNow.AddDays(-daysToGoBack);
+
+                settingsModel.PlayDaysWithBillboard = settingsModel.PlayDays.Value + daysToGoBack;
             }
 
             return settingsModel;
@@ -358,6 +358,7 @@ namespace FMBot.Bot.Services
                 DiscordUserName = discordUserName,
                 UserId = user.UserId,
                 UserType = user.UserType,
+                RegisteredLastFm = user.RegisteredLastFm,
                 NewSearchValue = extraOptions
             };
 
@@ -383,6 +384,7 @@ namespace FMBot.Bot.Services
                     settingsModel.SessionKeyLastFm = otherUser.SessionKeyLastFm;
                     settingsModel.UserType = otherUser.UserType;
                     settingsModel.UserId = otherUser.UserId;
+                    settingsModel.RegisteredLastFm = otherUser.RegisteredLastFm;
 
                     return settingsModel;
                 }
@@ -394,7 +396,7 @@ namespace FMBot.Bot.Services
 
                 if (otherUser != null)
                 {
-                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { "<", "@", "!", ">", "&",
+                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { "<@&", "<", "@", "!", ">", "<@&",
                         otherUser.DiscordUserId.ToString(), $"<@!{otherUser.DiscordUserId}>", $"<@{otherUser.DiscordUserId}>", $"<@&{otherUser.DiscordUserId}>",
                         otherUser.UserNameLastFM.ToLower() }, true);
 
@@ -413,6 +415,7 @@ namespace FMBot.Bot.Services
                     settingsModel.UserNameLastFm = otherUser.UserNameLastFM;
                     settingsModel.UserType = otherUser.UserType;
                     settingsModel.UserId = otherUser.UserId;
+                    settingsModel.RegisteredLastFm = otherUser.RegisteredLastFm;
                 }
 
                 if (option.StartsWith("lfm:") && option.Length > 4)
@@ -434,6 +437,7 @@ namespace FMBot.Bot.Services
                         settingsModel.SessionKeyLastFm = foundLfmUser.SessionKeyLastFm;
                         settingsModel.UserType = foundLfmUser.UserType;
                         settingsModel.UserId = foundLfmUser.UserId;
+                        settingsModel.RegisteredLastFm = foundLfmUser.RegisteredLastFm;
 
                         return settingsModel;
                     }
@@ -441,6 +445,9 @@ namespace FMBot.Bot.Services
                     settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName }, true);
                     settingsModel.UserNameLastFm = lfmUserName;
                     settingsModel.DiscordUserName = lfmUserName;
+                    settingsModel.SessionKeyLastFm = null;
+                    settingsModel.RegisteredLastFm = null;
+                    settingsModel.UserId = 0;
                     settingsModel.DifferentUser = true;
 
                     return settingsModel;
@@ -721,6 +728,21 @@ namespace FMBot.Bot.Services
             }
 
             return setGuildRankingSettings;
+        }
+
+        public static GuildRankingSettings TimeSettingsToGuildRankingSettings(GuildRankingSettings guildRankingSettings, TimeSettingsModel timeSettings)
+        {
+            guildRankingSettings.ChartTimePeriod = timeSettings.TimePeriod;
+            guildRankingSettings.TimeDescription = timeSettings.Description;
+            guildRankingSettings.EndDateTime = timeSettings.EndDateTime.GetValueOrDefault();
+            guildRankingSettings.BillboardEndDateTime = timeSettings.BillboardEndDateTime.GetValueOrDefault();
+            guildRankingSettings.BillboardTimeDescription = timeSettings.BillboardTimeDescription;
+            guildRankingSettings.AmountOfDays = timeSettings.PlayDays.GetValueOrDefault();
+            guildRankingSettings.AmountOfDaysWithBillboard = timeSettings.PlayDaysWithBillboard.GetValueOrDefault();
+            guildRankingSettings.StartDateTime = timeSettings.StartDateTime.GetValueOrDefault(DateTime.UtcNow.AddDays(-guildRankingSettings.AmountOfDays));
+            guildRankingSettings.BillboardStartDateTime = timeSettings.BillboardStartDateTime.GetValueOrDefault(DateTime.UtcNow.AddDays(-guildRankingSettings.AmountOfDaysWithBillboard));
+
+            return guildRankingSettings;
         }
 
         public static CrownViewSettings SetCrownViewSettings(CrownViewSettings crownViewSettings, string extraOptions)

@@ -11,7 +11,15 @@ namespace FMBot.Bot.Models
 
         public string TimeDescription { get; set; }
 
+        public DateTime StartDateTime { get; set; }
+        public DateTime EndDateTime { get; set; }
+
+        public string BillboardTimeDescription { get; set; }
+        public DateTime BillboardStartDateTime { get; set; }
+        public DateTime BillboardEndDateTime { get; set; }
+
         public int AmountOfDays { get; set; }
+        public int AmountOfDaysWithBillboard { get; set; }
 
         public string NewSearchValue { get; set; }
     }
@@ -22,7 +30,7 @@ namespace FMBot.Bot.Models
         Listeners = 2
     }
 
-    public class ListArtist
+    public class GuildArtist
     {
         public string ArtistName { get; set; }
 

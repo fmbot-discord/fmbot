@@ -221,7 +221,7 @@ namespace FMBot.Bot.Services.WhoKnows
             });
         }
 
-        public async Task<IReadOnlyList<ListAlbum>> GetTopAllTimeAlbumsForGuild(int guildId,
+        public async Task<ICollection<GuildAlbum>> GetTopAllTimeAlbumsForGuild(int guildId,
             OrderType orderType, string artistName)
         {
             var sql = "SELECT ub.name AS album_name, ub.artist_name, " +
@@ -245,13 +245,13 @@ namespace FMBot.Bot.Services.WhoKnows
                 "ORDER BY total_playcount DESC, listener_count DESC " :
                 "ORDER BY listener_count DESC, total_playcount DESC ";
 
-            sql += "LIMIT 14";
+            sql += "LIMIT 120";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            return (await connection.QueryAsync<ListAlbum>(sql, new
+            return (await connection.QueryAsync<GuildAlbum>(sql, new
             {
                 guildId,
                 artistName

@@ -222,7 +222,7 @@ namespace FMBot.Bot.Services.WhoKnows
             });
         }
 
-        public async Task<IReadOnlyList<ListTrack>> GetTopAllTimeTracksForGuild(int guildId,
+        public async Task<ICollection<GuildTrack>> GetTopAllTimeTracksForGuild(int guildId,
             OrderType orderType, string artistName)
         {
             var dbArgs = new DynamicParameters();
@@ -250,13 +250,13 @@ namespace FMBot.Bot.Services.WhoKnows
                 "ORDER BY total_playcount DESC, listener_count DESC " :
                 "ORDER BY listener_count DESC, total_playcount DESC ";
 
-            sql += "LIMIT 14";
+            sql += "LIMIT 120";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            return (await connection.QueryAsync<ListTrack>(sql, dbArgs)).ToList();
+            return (await connection.QueryAsync<GuildTrack>(sql, dbArgs)).ToList();
         }
 
         public async Task<int> GetWeekTrackPlaycountForGuildAsync(IEnumerable<User> guildUsers, string trackName, string artistName)

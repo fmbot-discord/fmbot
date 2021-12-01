@@ -127,7 +127,7 @@ namespace FMBot.Bot.Services
 
         public async Task<List<TopGenre>> GetTopGenresForTopArtists(IEnumerable<TopArtist> topArtists)
         {
-            if (topArtists == null || !topArtists.Any())
+            if (topArtists == null)
             {
                 return new List<TopGenre>();
             }
@@ -142,14 +142,40 @@ namespace FMBot.Bot.Services
 
             return allGenres
                 .GroupBy(g => g.Name)
-                .OrderByDescending(o => o.Sum(s => s.Score))
+                .OrderByDescending(o => o.Sum(s => s.Playcount))
                 .Where(w => w.Key != null)
                 .Select(s => new TopGenre
                 {
-                    UserPlaycount = s.Count(),
+                    UserPlaycount = s.Sum(se => se.Playcount),
                     GenreName = s.Key
                 }).ToList();
         }
+
+        //public async Task<List<TopGenre>> GetTopGenresForGuildArtists(IEnumerable<GuildArtist> guildArtists)
+        //{
+        //    if (guildArtists == null)
+        //    {
+        //        return new List<TopGenre>();
+        //    }
+
+        //    await CacheAllArtistGenres();
+
+        //    var allGenres = new List<GuildGenre>();
+        //    foreach (var artist in guildArtists)
+        //    {
+        //        allGenres = GetGenreWithPlaycountsForArtist(allGenres, artist.ArtistName, artist.TotalPlaycount);
+        //    }
+
+        //    return allGenres
+        //        .GroupBy(g => g.Name)
+        //        .OrderByDescending(o => o.Sum(s => s.Playcount))
+        //        .Where(w => w.Key != null)
+        //        .Select(s => new TopGenre
+        //        {
+        //            UserPlaycount = s.Sum(se => se.Playcount),
+        //            GenreName = s.Key
+        //        }).ToList();
+        //}
 
         public async Task<ICollection<WhoKnowsObjectWithUser>> GetUsersWithGenreForUserArtists(
             IEnumerable<UserArtist> userArtists,
@@ -202,23 +228,10 @@ namespace FMBot.Bot.Services
                 foreach (var genre in foundGenres)
                 {
                     var playcount = artistPlaycount.GetValueOrDefault();
-                    var score = playcount switch
-                    {
-                        0 => 0,
-                        > 0 and < 24 => playcount * 0.25,
-                        >= 24 and < 40 => playcount * 0.2,
-                        >= 40 and < 80 => 10,
-                        >= 80 and < 150 => 15,
-                        >= 150 and < 300 => 20,
-                        >= 300 and < 600 => 30,
-                        >= 600 and < 1500 => 40,
-                        >= 1500 => 50,
-                        _ => 0.5
-                    };
 
-                    if (score > 0)
+                    if (playcount > 0)
                     {
-                        genres.Add(new GenreWithPlaycount(genre, score, playcount));
+                        genres.Add(new GenreWithPlaycount(genre, playcount));
                     }
                 }
             }
@@ -226,7 +239,8 @@ namespace FMBot.Bot.Services
             return genres;
         }
 
-        private record GenreWithPlaycount(string Name, double Score, long playcount);
+        private record GenreWithPlaycount(string Name, long Playcount);
+        private record GuildGenre(string Name, long TotalPlaycount, long Listeners);
 
         public async Task<List<string>> GetGenresForArtist(string artistName)
         {

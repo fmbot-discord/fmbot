@@ -301,7 +301,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
             }
 
-            await this.Context.Channel.SendMessageAsync(reply, allowedMentions:AllowedMentions.None);
+            await this.Context.Channel.SendMessageAsync(reply, allowedMentions: AllowedMentions.None);
             this.Context.LogCommandUsed();
         }
 
@@ -405,34 +405,35 @@ namespace FMBot.Bot.Commands.LastFM
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var timeSettings = SettingService.GetTimePeriod(extraOptions);
-            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-            var topListSettings = SettingService.SetTopListSettings(extraOptions);
-
-            var pages = new List<PageBuilder>();
-
-            string userTitle;
-            if (!userSettings.DifferentUser)
-            {
-                userTitle = await this._userService.GetUserTitleAsync(this.Context);
-            }
-            else
-            {
-                userTitle =
-                    $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
-            }
-
-            if (!userSettings.DifferentUser)
-            {
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            }
-            this._embedAuthor.WithName($"Top {timeSettings.Description.ToLower()} albums for {userTitle}");
-            this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?{timeSettings.UrlParameter}");
-
-            const int amount = 200;
-
             try
             {
+                var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+                var topListSettings = SettingService.SetTopListSettings(extraOptions);
+                userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+                var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm);
+
+                var pages = new List<PageBuilder>();
+
+                string userTitle;
+                if (!userSettings.DifferentUser)
+                {
+                    userTitle = await this._userService.GetUserTitleAsync(this.Context);
+                }
+                else
+                {
+                    userTitle =
+                        $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
+                }
+
+                if (!userSettings.DifferentUser)
+                {
+                    this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
+                }
+                this._embedAuthor.WithName($"Top {timeSettings.Description.ToLower()} albums for {userTitle}");
+                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?{timeSettings.UrlParameter}");
+
+                const int amount = 200;
+
                 var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount, userSessionKey: userSettings.SessionKeyLastFm);
                 if (!albums.Success || albums.Content == null)
                 {
@@ -466,6 +467,8 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var counter = 1;
                 var pageCounter = 1;
+                var rnd = new Random().Next(0, 4);
+
                 foreach (var albumPage in albumPages)
                 {
                     var albumPageString = new StringBuilder();
@@ -506,7 +509,13 @@ namespace FMBot.Bot.Commands.LastFM
                     if (topListSettings.Billboard)
                     {
                         footer.AppendLine();
-                        footer.Append(StringService.GetBillBoardSettingString(timeSettings));
+                        footer.Append(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
+                    }
+
+                    if (rnd == 1 && !topListSettings.Billboard)
+                    {
+                        footer.AppendLine();
+                        footer.Append("View this list as a billboard by adding 'billboard' or 'bb'");
                     }
 
                     pages.Add(new PageBuilder()
@@ -1031,7 +1040,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     var description = new StringBuilder();
                     var amountOfDiscs = albumTracks.Count(c => c.Rank == 1) == 0 ? 1 : albumTracks.Count(c => c.Rank == 1);
-                    bool maxTracksReached = false;
+                    var maxTracksReached = false;
 
                     var i = 0;
                     var tracksDisplayed = 0;
@@ -1070,7 +1079,7 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                     }
 
-                    this._embed.WithDescription(StringExtensions.TruncateLongString(description.ToString(), 2044));
+                    this._embed.WithDescription(StringExtensions.TruncateLongString(description.ToString(), 4000));
 
                     var footer = spotifySource ? "Album source: Spotify | " : "Album source: Last.fm | ";
 
@@ -1115,12 +1124,12 @@ namespace FMBot.Bot.Commands.LastFM
         [CommandCategories(CommandCategory.Albums)]
         public async Task GuildAlbumsAsync([Remainder] string guildAlbumsOptions = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var serverAlbumSettings = new GuildRankingSettings
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+            var guildListSettings = new GuildRankingSettings
             {
                 ChartTimePeriod = TimePeriod.Weekly,
                 TimeDescription = "weekly",
@@ -1131,86 +1140,101 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                serverAlbumSettings = SettingService.SetGuildRankingSettings(serverAlbumSettings, guildAlbumsOptions);
-                var foundTimePeriod = SettingService.GetTimePeriod(serverAlbumSettings.NewSearchValue, serverAlbumSettings.ChartTimePeriod);
-                var artistName = foundTimePeriod.NewSearchValue;
+                guildListSettings = SettingService.SetGuildRankingSettings(guildListSettings, guildAlbumsOptions);
+                var timeSettings = SettingService.GetTimePeriod(guildListSettings.NewSearchValue, guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
+                var artistName = timeSettings.NewSearchValue;
 
-                if (foundTimePeriod.UsePlays || foundTimePeriod.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
+                if (timeSettings.UsePlays || timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
                 {
-                    serverAlbumSettings.ChartTimePeriod = foundTimePeriod.TimePeriod;
-                    serverAlbumSettings.TimeDescription = foundTimePeriod.Description;
-                    serverAlbumSettings.AmountOfDays = foundTimePeriod.PlayDays.GetValueOrDefault();
+                    guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
                 }
 
-                var description = "";
-                var footer = "";
+                var footer = new StringBuilder();
 
-                if (guild.GuildUsers != null && guild.GuildUsers.Count > 500 && serverAlbumSettings.ChartTimePeriod == TimePeriod.Monthly)
+                ICollection<GuildAlbum> topGuildAlbums;
+                IList<GuildAlbum> previousTopGuildAlbums = null;
+                if (guildListSettings.ChartTimePeriod == TimePeriod.AllTime)
                 {
-                    serverAlbumSettings.AmountOfDays = 7;
-                    serverAlbumSettings.ChartTimePeriod = TimePeriod.Weekly;
-                    serverAlbumSettings.TimeDescription = "weekly";
-                    footer += "Sorry, monthly time period is not supported on large servers.\n";
-                }
-
-                IReadOnlyList<ListAlbum> topGuildAlbums;
-                if (serverAlbumSettings.ChartTimePeriod == TimePeriod.AllTime)
-                {
-                    topGuildAlbums = await this._whoKnowsAlbumService.GetTopAllTimeAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType, artistName);
+                    topGuildAlbums = await this._whoKnowsAlbumService.GetTopAllTimeAlbumsForGuild(guild.GuildId, guildListSettings.OrderType, artistName);
                 }
                 else
                 {
-                    topGuildAlbums = await this._whoKnowsPlayService.GetTopAlbumsForGuild(guild.GuildId, serverAlbumSettings.OrderType, serverAlbumSettings.AmountOfDays, artistName);
+                    var plays = await this._playService.GetGuildUsersPlays(guild.GuildId, guildListSettings.AmountOfDaysWithBillboard);
+
+                    topGuildAlbums = PlayService.GetGuildTopAlbums(plays, guildListSettings.StartDateTime, guildListSettings.OrderType, artistName);
+                    previousTopGuildAlbums = PlayService.GetGuildTopAlbums(plays, guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, artistName);
                 }
 
-                if (string.IsNullOrWhiteSpace(artistName))
+                var title = string.IsNullOrWhiteSpace(artistName) ?
+                    $"Top {guildListSettings.TimeDescription.ToLower()} albums in {this.Context.Guild.Name}" :
+                    $"Top {guildListSettings.TimeDescription.ToLower()} '{artistName}' albums in {this.Context.Guild.Name}";
+
+                footer.AppendLine(guildListSettings.OrderType == OrderType.Listeners
+                    ? " - Ordered by listeners"
+                    : " - Ordered by plays");
+
+                var randomHintNumber = new Random().Next(0, 5);
+                switch (randomHintNumber)
                 {
-                    this._embed.WithTitle($"Top {serverAlbumSettings.TimeDescription.ToLower()} albums in {this.Context.Guild.Name}");
-                }
-                else
-                {
-                    this._embed.WithTitle($"Top {serverAlbumSettings.TimeDescription.ToLower()} '{artistName}' albums in {this.Context.Guild.Name}");
+                    case 1:
+                        footer.AppendLine($"View specific track listeners with '{prfx}whoknowsalbum'");
+                        break;
+                    case 2:
+                        footer.AppendLine($"Available time periods: alltime, monthly, weekly and daily");
+                        break;
+                    case 3:
+                        footer.AppendLine($"Available sorting options: plays and listeners");
+                        break;
                 }
 
-                if (serverAlbumSettings.OrderType == OrderType.Listeners)
+                var albumPages = topGuildAlbums.Chunk(12).ToList();
+
+                var counter = 1;
+                var pageCounter = 1;
+                var pages = new List<PageBuilder>();
+                foreach (var page in albumPages)
                 {
-                    footer += "Listeners / Plays - Ordered by listeners\n";
-                }
-                else
-                {
-                    footer += "Listeners / Plays - Ordered by plays\n";
+                    var pageString = new StringBuilder();
+                    foreach (var album in page)
+                    {
+                        var name = guildListSettings.OrderType == OrderType.Listeners
+                            ? $"`{album.ListenerCount}` · **{album.ArtistName}** - **{album.AlbumName}** ({album.TotalPlaycount} {StringExtensions.GetPlaysString(album.TotalPlaycount)})"
+                            : $"`{album.TotalPlaycount}` · **{album.ArtistName}** - **{album.AlbumName}** ({album.ListenerCount} {StringExtensions.GetListenersString(album.ListenerCount)})";
+
+                        if (previousTopGuildAlbums != null && previousTopGuildAlbums.Any())
+                        {
+                            var previousTopAlbum = previousTopGuildAlbums.FirstOrDefault(f => f.ArtistName == album.ArtistName && f.AlbumName == album.AlbumName);
+                            int? previousPosition = previousTopAlbum == null ? null : previousTopGuildAlbums.IndexOf(previousTopAlbum);
+
+                            pageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition, false).Text);
+                        }
+                        else
+                        {
+                            pageString.AppendLine(name);
+                        }
+
+                        counter++;
+                    }
+
+                    var pageFooter = new StringBuilder();
+                    pageFooter.Append($"Page {pageCounter}/{albumPages.Count}");
+                    pageFooter.Append(footer);
+
+                    pages.Add(new PageBuilder()
+                        .WithTitle(title)
+                        .WithDescription(pageString.ToString())
+                        .WithAuthor(this._embedAuthor)
+                        .WithFooter(pageFooter.ToString()));
+                    pageCounter++;
                 }
 
-                foreach (var album in topGuildAlbums)
-                {
-                    description += $"`{album.ListenerCount}` / `{album.TotalPlaycount}` | **{album.AlbumName}** by **{album.ArtistName}**\n";
-                }
+                var paginator = StringService.BuildStaticPaginator(pages);
 
-                this._embed.WithDescription(description);
+                _ = this.Interactivity.SendPaginatorAsync(
+                    paginator,
+                    this.Context.Channel,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
-                var rnd = new Random();
-                var randomHintNumber = rnd.Next(0, 5);
-                if (randomHintNumber == 1)
-                {
-                    footer += $"View specific album listeners with {prfx}whoknowsalbum\n";
-                }
-                else if (randomHintNumber == 2)
-                {
-                    footer += $"Available time periods: alltime, weekly and daily\n";
-                }
-                else if (randomHintNumber == 3)
-                {
-                    footer += $"Available sorting options: plays and listeners\n";
-                }
-                if (guild.LastIndexed < DateTime.UtcNow.AddDays(-15) && randomHintNumber == 4)
-                {
-                    footer += $"Missing members? Update with {prfx}index\n";
-                }
-
-                this._embedFooter.WithText(footer);
-                this._embed.WithFooter(this._embedFooter);
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)
