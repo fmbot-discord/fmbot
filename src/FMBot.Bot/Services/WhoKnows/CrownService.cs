@@ -109,7 +109,7 @@ namespace FMBot.Bot.Services.WhoKnows
                     .FirstAsync(f => f.UserId == currentCrownHolder.UserId);
 
                 var currentPlaycountForCrownHolder =
-                    await GetCurrentPlaycountForUser(artistName, crownUser.UserNameLastFM, currentCrownHolder.UserId);
+                    await GetCurrentPlaycountForUser(artistName, crownUser.UserNameLastFM, currentCrownHolder.UserId) ?? currentCrownHolder.CurrentPlaycount;
 
                 if (PublicProperties.IssuesAtLastFm)
                 {
@@ -119,14 +119,7 @@ namespace FMBot.Bot.Services.WhoKnows
                         CrownResult = "*Crown stealing is currently disabled due to issues with the Last.fm API*"
                     };
                 }
-                if (currentPlaycountForCrownHolder == null)
-                {
-                    return new CrownModel
-                    {
-                        Crown = currentCrownHolder,
-                        CrownResult = "Could not confirm playcount for current crown holder."
-                    };
-                }
+
                 if (eligibleUsers.Select(s => s.UserId).Contains(currentCrownHolder.UserId) && currentPlaycountForCrownHolder >= topUser.Playcount)
                 {
                     currentCrownHolder.CurrentPlaycount = topUser.Playcount;
