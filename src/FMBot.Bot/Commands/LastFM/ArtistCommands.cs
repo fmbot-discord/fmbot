@@ -565,8 +565,11 @@ namespace FMBot.Bot.Commands.LastFM
                         $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
                 }
 
+                var userUrl =
+                    $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/artists?{timeSettings.UrlParameter}";
+
                 this._embedAuthor.WithName($"Top {timeSettings.Description.ToLower()} artists for {userTitle}");
-                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/artists?{timeSettings.UrlParameter}");
+                this._embedAuthor.WithUrl(userUrl);
 
                 var artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm,
                         timeSettings, 200, 1, userSettings.SessionKeyLastFm);
@@ -578,10 +581,11 @@ namespace FMBot.Bot.Commands.LastFM
                     await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
-                if (artists.Content.TopArtists == null)
+                if (artists.Content.TopArtists == null || !artists.Content.TopArtists.Any())
                 {
-                    this._embed.WithDescription("Sorry, you or the user you're searching for don't have any top artists in the selected time period.");
+                    this._embed.WithDescription($"Sorry, you or the user you're searching for don't have any top artists in the [selected time period]({userUrl}).");
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                    this._embed.WithColor(DiscordConstants.WarningColorOrange);
                     await ReplyAsync("", false, this._embed.Build());
                     return;
                 }

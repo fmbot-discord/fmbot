@@ -429,8 +429,12 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
                 }
+
+                var userUrl =
+                    $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?{timeSettings.UrlParameter}";
+
                 this._embedAuthor.WithName($"Top {timeSettings.Description.ToLower()} albums for {userTitle}");
-                this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?{timeSettings.UrlParameter}");
+                this._embedAuthor.WithUrl(userUrl);
 
                 const int amount = 200;
 
@@ -442,13 +446,15 @@ namespace FMBot.Bot.Commands.LastFM
                     await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
-                if (albums.Content.TopAlbums == null)
+                if (albums.Content?.TopAlbums == null || !albums.Content.TopAlbums.Any())
                 {
-                    this._embed.WithDescription("Sorry, you or the user you're searching for don't have any top albums in the selected time period.");
-                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                    this._embed.WithDescription($"Sorry, you or the user you're searching for don't have any top albums in the [selected time period]({userUrl}).");
+                    this._embed.WithColor(DiscordConstants.WarningColorOrange);
                     await ReplyAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     return;
                 }
+
 
                 var previousTopAlbums = new List<TopAlbum>();
                 if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
@@ -1163,6 +1169,17 @@ namespace FMBot.Bot.Commands.LastFM
 
                     topGuildAlbums = PlayService.GetGuildTopAlbums(plays, guildListSettings.StartDateTime, guildListSettings.OrderType, artistName);
                     previousTopGuildAlbums = PlayService.GetGuildTopAlbums(plays, guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, artistName);
+                }
+
+                if (!topGuildAlbums.Any())
+                {
+                    this._embed.WithDescription(artistName != null
+                        ? $"Sorry, there are no registered top albums for artist `{artistName}` on this server in the time period you selected."
+                        : $"Sorry, there are no registered top albums on this server in the time period you selected.");
+                    this._embed.WithColor(DiscordConstants.WarningColorOrange);
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
                 }
 
                 var title = string.IsNullOrWhiteSpace(artistName) ?

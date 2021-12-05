@@ -644,8 +644,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 if (topTracks.Content?.TopTracks == null || !topTracks.Content.TopTracks.Any())
                 {
-                    this._embed.WithDescription("No top tracks returned for selected time period.\n" +
-                                                $"View [track history here]({userUrl})");
+                    this._embed.WithDescription($"Sorry, you or the user you're searching for don't have any top tracks in the [selected time period]({userUrl}).");
                     this._embed.WithColor(DiscordConstants.WarningColorOrange);
                     await ReplyAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
@@ -1135,6 +1134,17 @@ namespace FMBot.Bot.Commands.LastFM
 
                     topGuildTracks = PlayService.GetGuildTopTracks(plays, guildListSettings.StartDateTime, guildListSettings.OrderType, artistName);
                     previousTopGuildTracks = PlayService.GetGuildTopTracks(plays, guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, artistName);
+                }
+
+                if (!topGuildTracks.Any())
+                {
+                    this._embed.WithDescription(artistName != null
+                        ? $"Sorry, there are no registered top tracks for artist `{artistName}` on this server in the time period you selected."
+                        : $"Sorry, there are no registered top tracks on this server in the time period you selected.");
+                    this._embed.WithColor(DiscordConstants.WarningColorOrange);
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NotFound);
+                    return;
                 }
 
                 var title = string.IsNullOrWhiteSpace(artistName) ?
