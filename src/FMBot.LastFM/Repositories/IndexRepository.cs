@@ -52,11 +52,11 @@ namespace FMBot.LastFM.Repositories
         public async Task IndexUser(IndexUserQueueItem queueItem)
         {
             var concurrencyCacheKey = $"index-started-{queueItem.UserId}";
-            this._cache.Set(concurrencyCacheKey, true);
+            this._cache.Set(concurrencyCacheKey, true, TimeSpan.FromMinutes(5));
 
             Thread.Sleep(queueItem.TimeoutMs);
 
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var user = await db.Users.FindAsync(queueItem.UserId);
 
 

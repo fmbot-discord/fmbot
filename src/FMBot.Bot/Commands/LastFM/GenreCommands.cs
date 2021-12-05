@@ -143,6 +143,16 @@ namespace FMBot.Bot.Commands.LastFM
                     };
                 }
 
+                if (artists.Content.TopArtists == null || !artists.Content.TopArtists.Any())
+                {
+                    this._embed.WithDescription($"Sorry, you or the user you're searching for don't have enough top artists in the selected time period.\n\n" +
+                                                $"Please try again later or try a different time period.");
+                    this._embed.WithColor(DiscordConstants.WarningColorOrange);
+                    await ReplyAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
+                    return;
+                }
+
                 if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
                 {
                     var previousArtistsCall = await this._lastFmRepository
@@ -152,15 +162,6 @@ namespace FMBot.Bot.Commands.LastFM
                     {
                         previousTopArtists.AddRange(previousArtistsCall.Content.TopArtists);
                     }
-                }
-
-                if (artists.Content.TopArtists.Count < 10)
-                {
-                    this._embed.WithDescription("Sorry, you don't have enough top artists yet to use this command.\n\n" +
-                                                "Please try again later.");
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                    this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                    return;
                 }
 
                 var genres = await this._genreService.GetTopGenresForTopArtists(artists.Content.TopArtists);

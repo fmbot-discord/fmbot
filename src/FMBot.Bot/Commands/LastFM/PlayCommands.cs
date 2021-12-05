@@ -827,19 +827,22 @@ namespace FMBot.Bot.Commands.LastFM
                 fields = new List<EmbedFieldBuilder>();
 
                 var albumDescription = new StringBuilder();
-                for (var i = 0; i < yearOverview.TopAlbums.TopAlbums.Take(8).Count(); i++)
+                if (yearOverview.TopAlbums.TopAlbums.Any())
                 {
-                    var topAlbum = yearOverview.TopAlbums.TopAlbums[i];
+                    for (var i = 0; i < yearOverview.TopAlbums.TopAlbums.Take(8).Count(); i++)
+                    {
+                        var topAlbum = yearOverview.TopAlbums.TopAlbums[i];
 
-                    var previousTopAlbum =
-                        yearOverview.PreviousTopAlbums?.TopAlbums?.FirstOrDefault(f =>
-                            f.ArtistName == topAlbum.ArtistName && f.AlbumName == topAlbum.AlbumName);
+                        var previousTopAlbum =
+                            yearOverview.PreviousTopAlbums?.TopAlbums?.FirstOrDefault(f =>
+                                f.ArtistName == topAlbum.ArtistName && f.AlbumName == topAlbum.AlbumName);
 
-                    var previousPosition = previousTopAlbum == null ? null : yearOverview.PreviousTopAlbums?.TopAlbums?.IndexOf(previousTopAlbum);
+                        var previousPosition = previousTopAlbum == null ? null : yearOverview.PreviousTopAlbums?.TopAlbums?.IndexOf(previousTopAlbum);
 
-                    albumDescription.AppendLine(StringService.GetBillboardLine($"**{topAlbum.ArtistName}** - **{topAlbum.AlbumName}**", i, previousPosition).Text);
+                        albumDescription.AppendLine(StringService.GetBillboardLine($"**{topAlbum.ArtistName}** - **{topAlbum.AlbumName}**", i, previousPosition).Text);
+                    }
+                    fields.Add(new EmbedFieldBuilder().WithName("Albums").WithValue(albumDescription.ToString()));
                 }
-                fields.Add(new EmbedFieldBuilder().WithName("Albums").WithValue(albumDescription.ToString()));
 
                 var trackDescription = new StringBuilder();
                 for (var i = 0; i < yearOverview.TopTracks.TopTracks.Take(8).Count(); i++)
