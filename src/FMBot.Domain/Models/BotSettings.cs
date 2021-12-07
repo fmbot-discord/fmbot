@@ -51,8 +51,9 @@ namespace FMBot.Domain.Models
         public ulong AnnouncementChannelId { get; set; }
 
         public ulong FeaturedChannelId { get; set; }
-
-        public ulong SuggestionChannelId { get; set; }
+        public bool? FeaturedMaster { get; set; }
+        public bool? MainInstance { get; set; }
+        public string FeaturedPreviewWebhookUrl { get; set; }
 
         public string ExceptionChannelWebhookUrl { get; set; }
 

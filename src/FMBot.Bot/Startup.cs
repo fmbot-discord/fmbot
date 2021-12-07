@@ -111,6 +111,7 @@ namespace FMBot.Bot
                 .AddSingleton<CrownService>()
                 .AddSingleton<ClientLogHandler>()
                 .AddSingleton<CommandHandler>()
+                .AddSingleton<FeaturedService>()
                 .AddSingleton<FriendsService>()
                 .AddSingleton<GeniusService>()
                 .AddSingleton<GenreService>()

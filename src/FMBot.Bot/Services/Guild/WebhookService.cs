@@ -11,6 +11,7 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace FMBot.Bot.Services.Guild
@@ -19,10 +20,12 @@ namespace FMBot.Bot.Services.Guild
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
         private readonly string _avatarImagePath;
+        private readonly BotSettings _botSettings;
 
-        public WebhookService(IDbContextFactory<FMBotDbContext> contextFactory)
+        public WebhookService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings)
         {
             this._contextFactory = contextFactory;
+            this._botSettings = botSettings.Value;
 
             this._avatarImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "default-avatar.png");
 
@@ -99,13 +102,13 @@ namespace FMBot.Bot.Services.Guild
             }
         }
 
-        public async Task SendFeaturedWebhooks(BotType botType, string trackString, int featuredUserId, string imageUrl)
+        public async Task SendFeaturedWebhooks(BotType botType, FeaturedLog featured)
         {
             var embed = new EmbedBuilder();
-            embed.WithThumbnailUrl(imageUrl);
-            embed.AddField("Featured:", trackString);
+            embed.WithThumbnailUrl(featured.ImageUrl);
+            embed.AddField("Featured:", featured.Description);
 
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var webhooks = await db.Webhooks
                 .AsQueryable()
                 .Where(w => w.BotType == botType)
@@ -113,29 +116,70 @@ namespace FMBot.Bot.Services.Guild
 
             foreach (var webhook in webhooks)
             {
-                await SendWebhookEmbed(webhook, embed, featuredUserId);
+                await SendWebhookEmbed(webhook, embed, featured.UserId);
             }
         }
 
-        private async Task<bool> SendWebhookEmbed(Webhook webhook, EmbedBuilder embed, int featuredUserId)
+        public async Task SendFeaturedPreview(FeaturedLog featured, string webhook)
+        {
+            var embed = new EmbedBuilder();
+            embed.WithThumbnailUrl(featured.ImageUrl);
+            embed.AddField("Featured:", featured.Description);
+
+            var dateValue = ((DateTimeOffset)featured.DateTime).ToUnixTimeSeconds();
+            embed.AddField("Time", $"<t:{dateValue}:F>");
+            embed.AddField("Id:", featured.FeaturedLogId);
+
+            embed.WithFooter($".resetfeatured {featured.FeaturedLogId}");
+
+            var webhookClient = new DiscordWebhookClient(webhook);
+            await webhookClient.SendMessageAsync(embeds: new[] { embed.Build() });
+        }
+
+        public async Task PostFeatured(FeaturedLog featuredLog, DiscordShardedClient client)
+        {
+            var builder = new EmbedBuilder();
+            builder.WithThumbnailUrl(featuredLog.ImageUrl);
+            builder.AddField("Featured:", featuredLog.Description);
+
+            if (this._botSettings.Bot.BaseServerId != 0 && this._botSettings.Bot.FeaturedChannelId != 0)
+            {
+                var guild = client.GetGuild(this._botSettings.Bot.BaseServerId);
+                var channel = guild?.GetTextChannel(this._botSettings.Bot.FeaturedChannelId);
+
+                if (channel != null)
+                {
+                    await channel.SendMessageAsync("", false, builder.Build());
+                }
+            }
+            else
+            {
+                Log.Warning("Featured channel not set, not sending featured message");
+            }
+        }
+
+        private async Task<bool> SendWebhookEmbed(Webhook webhook, EmbedBuilder embed, int? featuredUserId)
         {
             try
             {
                 var webhookClient = new DiscordWebhookClient(webhook.DiscordWebhookId, webhook.Token);
 
-                await using var db = this._contextFactory.CreateDbContext();
-                var guild = await db.Guilds
-                    .AsQueryable()
-                    .Include(i => i.GuildUsers)
-                    .FirstOrDefaultAsync(f => f.GuildId == webhook.GuildId);
-
-                if (guild?.GuildUsers != null && guild.GuildUsers.Any())
+                if (featuredUserId.HasValue)
                 {
-                    var guildUser = guild.GuildUsers.FirstOrDefault(f => f.UserId == featuredUserId);
+                    await using var db = this._contextFactory.CreateDbContext();
+                    var guild = await db.Guilds
+                        .AsQueryable()
+                        .Include(i => i.GuildUsers)
+                        .FirstOrDefaultAsync(f => f.GuildId == webhook.GuildId);
 
-                    if (guildUser != null)
+                    if (guild?.GuildUsers != null && guild.GuildUsers.Any())
                     {
-                        embed.WithFooter($"🥳 Congratulations! This user is in your server under the name {guildUser.UserName}.");
+                        var guildUser = guild.GuildUsers.FirstOrDefault(f => f.UserId == featuredUserId);
+
+                        if (guildUser != null)
+                        {
+                            embed.WithFooter($"🥳 Congratulations! This user is in your server under the name {guildUser.UserName}.");
+                        }
                     }
                 }
 

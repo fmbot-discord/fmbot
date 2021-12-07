@@ -121,27 +121,6 @@ namespace FMBot.Bot.Services
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
         }
 
-        public async Task LogFeatured(int userId, FeaturedMode mode, BotType botType, string description, string artistName, string albumName, string trackName = null)
-        {
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-
-            var featuredLog = new FeaturedLog
-            {
-                UserId = userId,
-                Description = description,
-                BotType = botType,
-                AlbumName = albumName,
-                TrackName = trackName,
-                ArtistName = artistName,
-                FeaturedMode = mode,
-                DateTime = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc)
-            };
-
-            await db.FeaturedLogs.AddAsync(featuredLog);
-
-            await db.SaveChangesAsync();
-        }
-
         public async Task<User> GetUserAsync(ulong discordUserId)
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -184,48 +163,6 @@ namespace FMBot.Bot.Services
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
 
             return user?.UserType ?? UserType.User;
-        }
-
-        // Random user
-        public async Task<User> GetUserToFeatureAsync()
-        {
-            await using var db = this._contextFactory.CreateDbContext();
-            var featuredUsers = await db.Users
-                .AsQueryable()
-                .Where(f => f.Featured == true)
-                .ToListAsync();
-
-            if (featuredUsers.Any())
-            {
-
-                foreach (var featuredUser in featuredUsers)
-                {
-                    featuredUser.Featured = false;
-                    db.Entry(featuredUser).State = EntityState.Modified;
-                }
-            }
-
-            var lastFmUsersToFilter = await db.BottedUsers
-                .AsQueryable()
-                .Where(w => w.BanActive)
-                .Select(s => s.UserNameLastFM.ToLower()).ToListAsync();
-
-            var filterDate = DateTime.UtcNow.AddDays(-3);
-            var users = db.Users
-                .AsQueryable()
-                .Where(w => w.Blocked != true &&
-                            !lastFmUsersToFilter.Contains(w.UserNameLastFM.ToLower()) &&
-                            w.LastUsed > filterDate).ToList();
-
-            var rand = new Random();
-            var user = users[rand.Next(users.Count)];
-
-            user.Featured = true;
-
-            db.Entry(user).State = EntityState.Modified;
-            await db.SaveChangesAsync();
-
-            return user;
         }
 
         // UserTitle

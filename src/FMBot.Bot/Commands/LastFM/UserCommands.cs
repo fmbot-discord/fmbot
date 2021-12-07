@@ -195,15 +195,22 @@ namespace FMBot.Bot.Commands.LastFM
         {
             try
             {
-                var socketCommandContext = (SocketCommandContext)this.Context;
-                var selfUser = socketCommandContext.Client.CurrentUser;
-                this._embed.WithThumbnailUrl(selfUser.GetAvatarUrl());
-                this._embed.AddField("Featured:", this._timer.GetTrackString());
+                if (this._timer._currentFeatured == null)
+                {
+                    await ReplyAsync(
+                        ".fmbot is still starting up, please try again in a bit..");
 
-                if (this.Context.Guild != null)
+                    this.Context.LogCommandUsed();
+                    return;
+                }
+
+                this._embed.WithThumbnailUrl(this._timer._currentFeatured.ImageUrl);
+                this._embed.AddField("Featured:", this._timer._currentFeatured.Description);
+
+                if (this.Context.Guild != null && this._timer._currentFeatured.UserId.HasValue)
                 {
                     var guildUser =
-                        await this._guildService.GetUserFromGuild(this.Context.Guild.Id, this._timer.GetUserId());
+                        await this._guildService.GetUserFromGuild(this.Context.Guild.Id, this._timer._currentFeatured.UserId.Value);
 
                     if (guildUser != null)
                     {

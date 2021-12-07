@@ -38,6 +38,8 @@ namespace FMBot.Domain
         public const int DefaultPageSize = 10;
         public const int DefaultExtraLargePageSize = 16;
 
+        public const int FeaturedMinute = 0;
+
         public static readonly int[] PlayCountBreakPoints = {
             100,
             420,

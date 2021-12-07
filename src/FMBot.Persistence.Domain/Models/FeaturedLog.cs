@@ -7,6 +7,9 @@ namespace FMBot.Persistence.Domain.Models
     {
         public int FeaturedLogId { get; set; }
 
+        public bool HasFeatured { get; set; }
+        public bool? NoUpdate { get; set; }
+
         public int? UserId { get; set; }
 
         public BotType BotType { get; set; }
@@ -14,6 +17,8 @@ namespace FMBot.Persistence.Domain.Models
         public FeaturedMode FeaturedMode { get; set; }
 
         public string Description { get; set; }
+
+        public string ImageUrl { get; set; }
 
         public string TrackName { get; set; }
 

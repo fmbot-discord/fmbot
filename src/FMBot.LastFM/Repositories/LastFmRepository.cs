@@ -163,7 +163,7 @@ namespace FMBot.LastFM.Repositories
                 AlbumCoverUrl = recentTrackLfm.Image?.FirstOrDefault(a => a.Size == "extralarge") != null &&
                                 !recentTrackLfm.Image.First(a => a.Size == "extralarge").Text
                                     .Contains(Constants.LastFmNonExistentImageName)
-                    ? recentTrackLfm.Image?.First(a => a.Size == "extralarge").Text
+                    ? recentTrackLfm.Image?.First(a => a.Size == "extralarge").Text.Replace("/u/300x300/", "/u/")
                     : null,
                 NowPlaying = recentTrackLfm.AttributesLfm != null && recentTrackLfm.AttributesLfm.Nowplaying,
                 TimePlayed = recentTrackLfm.Date?.Uts != null
@@ -484,8 +484,7 @@ namespace FMBot.LastFM.Repositories
             var queryParams = new Dictionary<string, string>
             {
                 {"artist", artistName },
-                {"album", albumName },
-                {"username", username }
+                {"album", albumName }
             };
 
             var authorizedCall = false;
@@ -494,6 +493,10 @@ namespace FMBot.LastFM.Repositories
             {
                 queryParams.Add("sk", sessionKey);
                 authorizedCall = true;
+            }
+            if (!string.IsNullOrEmpty(username))
+            {
+                queryParams.Add("username", username);
             }
 
             var albumCall = await this._lastFmApi.CallApiAsync<AlbumInfoLfmResponse>(queryParams, Call.AlbumInfo, authorizedCall);
@@ -639,7 +642,7 @@ namespace FMBot.LastFM.Repositories
                         AlbumName = s.Name,
                         AlbumCoverUrl = !string.IsNullOrWhiteSpace(s.Images?.ExtraLarge?.ToString()) &&
                                         !s.Images.ExtraLarge.AbsoluteUri.Contains(Constants.LastFmNonExistentImageName)
-                            ? s.Images?.ExtraLarge.ToString()
+                            ? s.Images?.ExtraLarge.ToString().Replace("/u/300x300/", "/u/")
                             : null,
                         AlbumUrl = s.Url.ToString(),
                         UserPlaycount = s.PlayCount,
