@@ -10,7 +10,6 @@ using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
 using FMBot.LastFM.Domain.Types;
-using IF.Lastfm.Core.Api.Enums;
 using Serilog;
 
 namespace FMBot.Bot.Services

@@ -178,7 +178,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var albumCoverUrl = album.AlbumCoverUrl;
-                if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
+                if (databaseAlbum.SpotifyImageUrl != null)
                 {
                     albumCoverUrl = databaseAlbum.SpotifyImageUrl;
                 }
@@ -331,7 +331,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
 
                 var albumCoverUrl = album.AlbumCoverUrl;
-                if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
+                if (databaseAlbum.SpotifyImageUrl != null)
                 {
                     albumCoverUrl = databaseAlbum.SpotifyImageUrl;
                 }
@@ -371,7 +371,6 @@ namespace FMBot.Bot.Commands.LastFM
                     $"Album cover requested by {await this._userService.GetUserTitleAsync(this.Context)}");
                 this._embed.WithFooter(this._embedFooter);
 
-
                 await this.Context.Channel.SendFileAsync(
                     image,
                     $"cover-{StringExtensions.ReplaceInvalidChars($"{album.ArtistName}_{album.AlbumName}")}.png",
@@ -380,7 +379,6 @@ namespace FMBot.Bot.Commands.LastFM
                     this._embed.Build());
 
                 await image.DisposeAsync();
-
                 this.Context.LogCommandUsed();
             }
             catch (Exception e)
@@ -454,7 +452,6 @@ namespace FMBot.Bot.Commands.LastFM
                     this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
                     return;
                 }
-
 
                 var previousTopAlbums = new List<TopAlbum>();
                 if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
@@ -668,7 +665,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithFooter(this._embedFooter);
 
                 var albumCoverUrl = album.AlbumCoverUrl;
-                if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
+                if (databaseAlbum.SpotifyImageUrl != null)
                 {
                     albumCoverUrl = databaseAlbum.SpotifyImageUrl;
                 }
@@ -819,7 +816,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithFooter(this._embedFooter);
 
                 var albumCoverUrl = album.AlbumCoverUrl;
-                if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
+                if (databaseAlbum.SpotifyImageUrl != null)
                 {
                     albumCoverUrl = databaseAlbum.SpotifyImageUrl;
                 }
@@ -945,7 +942,7 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithFooter(this._embedFooter);
 
                 var albumCoverUrl = album.AlbumCoverUrl;
-                if (albumCoverUrl == null && databaseAlbum.SpotifyImageUrl != null)
+                if (databaseAlbum.SpotifyImageUrl != null)
                 {
                     albumCoverUrl = databaseAlbum.SpotifyImageUrl;
                 }

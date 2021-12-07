@@ -160,7 +160,7 @@ namespace FMBot.Bot.Services
 
                                 var albums = await this._lastFmRepository.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 10);
 
-                                if (!albums.Success || !albums.Content.TopAlbums.Any())
+                                if (!albums.Success || albums.Content?.TopAlbums == null || !albums.Content.TopAlbums.Any())
                                 {
                                     Log.Information($"Featured: User {user.UserNameLastFM} had no albums, switching to different user.");
                                     user = await this._userService.GetUserToFeatureAsync();
