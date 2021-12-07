@@ -89,16 +89,13 @@ namespace FMBot.Bot.Services
                             this._cache.Set("avatar", newFeatured.ImageUrl, TimeSpan.FromMinutes(30));
                         }
 
-                        if (this._botSettings.Bot.FeaturedMaster == true && newFeatured.NoUpdate != true)
+                        if (this._botSettings.Bot.FeaturedMaster == true && !newFeatured.HasFeatured && newFeatured.NoUpdate != true)
                         {
                             Log.Warning("Featured: Posting new featured to webhooks");
 
-                            if (!newFeatured.HasFeatured)
-                            {
-                                var botType = BotTypeExtension.GetBotType(client.CurrentUser.Id);
-                                await this._webhookService.PostFeatured(newFeatured, client);
-                                await this._webhookService.SendFeaturedWebhooks(botType, newFeatured);
-                            }
+                            var botType = BotTypeExtension.GetBotType(client.CurrentUser.Id);
+                            await this._webhookService.PostFeatured(newFeatured, client);
+                            await this._webhookService.SendFeaturedWebhooks(botType, newFeatured);
 
                             if (newFeatured.FeaturedMode == FeaturedMode.RecentPlays)
                             {

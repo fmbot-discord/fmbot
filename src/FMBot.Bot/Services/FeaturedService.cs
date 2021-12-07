@@ -116,7 +116,6 @@ namespace FMBot.Bot.Services
                         featuredLog.AlbumName = trackToFeature.AlbumName;
                         featuredLog.ImageUrl = trackToFeature.AlbumCoverUrl;
 
-                        await ScrobbleTrack(botUserId, featuredLog);
                         return featuredLog;
                     case FeaturedMode.TopAlbumsWeekly:
                     case FeaturedMode.TopAlbumsMonthly:
