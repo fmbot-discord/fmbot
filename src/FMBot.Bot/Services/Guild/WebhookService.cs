@@ -111,7 +111,6 @@ namespace FMBot.Bot.Services.Guild
             await using var db = await this._contextFactory.CreateDbContextAsync();
             var webhooks = await db.Webhooks
                 .AsQueryable()
-                .Where(w => w.BotType == botType)
                 .ToListAsync();
 
             foreach (var webhook in webhooks)
