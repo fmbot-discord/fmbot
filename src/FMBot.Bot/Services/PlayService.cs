@@ -534,7 +534,7 @@ namespace FMBot.Bot.Services
                     TotalPlaycount = s.Count()
                 })
                 .OrderByDescending(o => orderType == OrderType.Listeners ? o.ListenerCount : o.TotalPlaycount)
-                .ThenBy(o => orderType == OrderType.Listeners ? o.TotalPlaycount : o.ListenerCount)
+                .ThenByDescending(o => orderType == OrderType.Listeners ? o.TotalPlaycount : o.ListenerCount)
                 .Take(120)
                 .ToList();
         }
@@ -553,7 +553,7 @@ namespace FMBot.Bot.Services
                     TotalPlaycount = s.Count()
                 })
                 .OrderByDescending(o => orderType == OrderType.Listeners ? o.ListenerCount : o.TotalPlaycount)
-                .ThenBy(o => orderType == OrderType.Listeners ? o.TotalPlaycount : o.ListenerCount)
+                .ThenByDescending(o => orderType == OrderType.Listeners ? o.TotalPlaycount : o.ListenerCount)
                 .Take(120)
                 .ToList();
         }
@@ -570,7 +570,7 @@ namespace FMBot.Bot.Services
                     TotalPlaycount = s.Count()
                 })
                 .OrderByDescending(o => orderType == OrderType.Listeners ? o.ListenerCount : o.TotalPlaycount)
-                .ThenBy(o => orderType == OrderType.Listeners ? o.TotalPlaycount : o.ListenerCount)
+                .ThenByDescending(o => orderType == OrderType.Listeners ? o.TotalPlaycount : o.ListenerCount)
                 .Take(120)
                 .ToList();
         }
