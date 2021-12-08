@@ -92,13 +92,16 @@ namespace FMBot.Bot.Services
                     { // check whether requester is "on" in hydra
                         description = description.Split(" ~ ")[0];
                     }
-                    string[] splitDesc = description.Split(" - ", 2);
+
+                    var splitDesc = description.Split(" - ", 2);
+
                     var artistName = splitDesc[0];
                     var trackName = splitDesc[1].Replace("\\", "");
+
                     var queryParams = new Dictionary<string, string>
-                {
-                    {"track", trackName }
-                };
+                    {
+                        {"track", trackName }
+                    };
 
                     var url = QueryHelpers.AddQueryString("https://metadata-filter.vercel.app/api/youtube", queryParams);
 
