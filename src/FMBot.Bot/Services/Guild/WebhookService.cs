@@ -120,7 +120,7 @@ namespace FMBot.Bot.Services.Guild
             }
         }
 
-        public async Task SendFeaturedPreview(FeaturedLog featured, string webhook)
+        public static async Task SendFeaturedPreview(FeaturedLog featured, string webhook)
         {
             var embed = new EmbedBuilder();
             embed.WithThumbnailUrl(featured.ImageUrl);
@@ -128,9 +128,7 @@ namespace FMBot.Bot.Services.Guild
 
             var dateValue = ((DateTimeOffset)featured.DateTime).ToUnixTimeSeconds();
             embed.AddField("Time", $"<t:{dateValue}:F>");
-            embed.AddField("Id:", featured.FeaturedLogId);
-
-            embed.WithFooter($".resetfeatured {featured.FeaturedLogId}");
+            embed.AddField("Resetting", $"`.resetfeatured {featured.FeaturedLogId}`");
 
             var webhookClient = new DiscordWebhookClient(webhook);
             await webhookClient.SendMessageAsync(embeds: new[] { embed.Build() });
@@ -149,6 +147,30 @@ namespace FMBot.Bot.Services.Guild
 
                 if (channel != null)
                 {
+                    if (featuredLog.UserId.HasValue)
+                    {
+                        await using var db = await this._contextFactory.CreateDbContextAsync();
+                        var dbGuild = await db.Guilds
+                            .AsQueryable()
+                            .Include(i => i.GuildUsers)
+                            .ThenInclude(i => i.User)
+                            .FirstOrDefaultAsync(f => f.DiscordGuildId == this._botSettings.Bot.BaseServerId);
+
+                        if (dbGuild?.GuildUsers != null && dbGuild.GuildUsers.Any())
+                        {
+                            var guildUser = dbGuild.GuildUsers.FirstOrDefault(f => f.UserId == featuredLog.UserId);
+
+                            if (guildUser != null)
+                            {
+                                await channel.SendMessageAsync(
+                                    $"🥳 Congratulations <@{guildUser.User.DiscordUserId}>! You've just been picked as the featured user for the next hour.",
+                                    false,
+                                    builder.Build());
+                                return;
+                            }
+                        }
+                    }
+
                     await channel.SendMessageAsync("", false, builder.Build());
                 }
             }
@@ -158,7 +180,7 @@ namespace FMBot.Bot.Services.Guild
             }
         }
 
-        private async Task<bool> SendWebhookEmbed(Webhook webhook, EmbedBuilder embed, int? featuredUserId)
+        private async Task SendWebhookEmbed(Webhook webhook, EmbedBuilder embed, int? featuredUserId)
         {
             try
             {
@@ -166,7 +188,7 @@ namespace FMBot.Bot.Services.Guild
 
                 if (featuredUserId.HasValue)
                 {
-                    await using var db = this._contextFactory.CreateDbContext();
+                    await using var db = await this._contextFactory.CreateDbContextAsync();
                     var guild = await db.Guilds
                         .AsQueryable()
                         .Include(i => i.GuildUsers)
@@ -184,14 +206,12 @@ namespace FMBot.Bot.Services.Guild
                 }
 
                 await webhookClient.SendMessageAsync(embeds: new[] { embed.Build() });
-
-                return true;
             }
             catch (Exception e)
             {
                 if (e.Message.Contains("Could not find"))
                 {
-                    await using var db = this._contextFactory.CreateDbContext();
+                    await using var db = await this._contextFactory.CreateDbContextAsync();
 
                     db.Webhooks.Remove(webhook);
                     await db.SaveChangesAsync();
@@ -202,8 +222,6 @@ namespace FMBot.Bot.Services.Guild
                 {
                     Log.Error(e, "Unknown error while testing webhook for {guildId}", webhook.GuildId);
                 }
-
-                return false;
             }
         }
     }

@@ -128,7 +128,7 @@ namespace FMBot.Bot.Services
                             return;
                         }
 
-                        for (var i = 0; i < 24; i++)
+                        for (var i = 0; i <= 28; i++)
                         {
                             var dateTime = DateTime.UtcNow.AddHours(i);
                             var featuredDateTime = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, Constants.FeaturedMinute, 0);
@@ -142,7 +142,7 @@ namespace FMBot.Bot.Services
 
                                 if (!string.IsNullOrWhiteSpace(this._botSettings.Bot.FeaturedPreviewWebhookUrl))
                                 {
-                                    await this._webhookService.SendFeaturedPreview(newFeatured, this._botSettings.Bot.FeaturedPreviewWebhookUrl);
+                                    await WebhookService.SendFeaturedPreview(newFeatured, this._botSettings.Bot.FeaturedPreviewWebhookUrl);
                                 }
                             }
                         }
@@ -155,7 +155,7 @@ namespace FMBot.Bot.Services
                 },
                 null,
                 TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds),
-                TimeSpan.FromHours(2));
+                TimeSpan.FromHours(12));
 
             this._internalStatsTimer = new Timer(async _ =>
                 {
