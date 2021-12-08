@@ -244,12 +244,12 @@ namespace FMBot.Bot.Commands.LastFM
                     this._embed.AddField("Tracks", tracks.ToString());
                 }
 
-                if (album.Tags != null && album.Tags.Any())
-                {
-                    var tags = LastFmRepository.TagsToLinkedString(album.Tags);
+                //if (album.Tags != null && album.Tags.Any())
+                //{
+                //    var tags = LastFmRepository.TagsToLinkedString(album.Tags);
 
-                    this._embed.AddField("Tags", tags);
-                }
+                //    this._embed.AddField("Tags", tags);
+                //}
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 

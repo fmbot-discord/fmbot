@@ -265,12 +265,12 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.AddField("Summary", artist.Description);
             }
 
-            if (artist.Tags != null && artist.Tags.Any() && (fullArtist.ArtistGenres == null || !fullArtist.ArtistGenres.Any()))
-            {
-                var tags = LastFmRepository.TagsToLinkedString(artist.Tags);
+            //if (artist.Tags != null && artist.Tags.Any() && (fullArtist.ArtistGenres == null || !fullArtist.ArtistGenres.Any()))
+            //{
+            //    var tags = LastFmRepository.TagsToLinkedString(artist.Tags);
 
-                this._embed.AddField("Tags", tags);
-            }
+            //    this._embed.AddField("Tags", tags);
+            //}
 
             if (fullArtist.ArtistGenres != null && fullArtist.ArtistGenres.Any())
             {
