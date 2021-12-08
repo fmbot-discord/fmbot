@@ -308,9 +308,10 @@ namespace FMBot.Bot.Commands.LastFM
                         description.AppendLine();
                     }
 
+                    var self = userSettings.DifferentUser ? "They" : "You";
                     this._embed.WithFooter(featuredHistory.Count == 1
-                        ? $"You have only been featured once. Every hour, that is a chance of 1 in {odds}!"
-                        : $"You have been featured {featuredHistory.Count} times");
+                        ? $"{self} have only been featured once. Every hour, that is a chance of 1 in {odds}!"
+                        : $"{self} have been featured {featuredHistory.Count} times");
                 }
 
                 this._embed.WithDescription(description.ToString());
