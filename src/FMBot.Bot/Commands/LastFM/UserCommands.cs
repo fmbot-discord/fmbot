@@ -271,7 +271,7 @@ namespace FMBot.Bot.Commands.LastFM
                         description.AppendLine("Sorry, you haven't been featured yet... <:404:882220605783560222>");
                         description.AppendLine();
                         description.AppendLine($"But don't give up hope just yet!");
-                        description.AppendLine($"Every hour the chance is 1 in {odds} that you might be picked.");
+                        description.AppendLine($"Every hour there is a 1 in {odds} chance that you might be picked.");
 
                         if (this.Context.Guild?.Id != this._botSettings.Bot.BaseServerId)
                         {
@@ -285,7 +285,7 @@ namespace FMBot.Bot.Commands.LastFM
                         description.AppendLine("Hmm, they haven't been featured yet... <:404:882220605783560222>");
                         description.AppendLine();
                         description.AppendLine($"But don't let them give up hope just yet!");
-                        description.AppendLine($"Every hour the chance is 1 in {odds} that they might be picked.");
+                        description.AppendLine($"Every hour there is a 1 in {odds} chance that they might be picked.");
                     }
                 }
                 else
