@@ -294,7 +294,7 @@ namespace FMBot.Bot.Services
                 return artists;
             }
 
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             artists = await db.ArtistAliases
                 .AsNoTracking()
                 .Include(i => i.Artist)
@@ -309,7 +309,7 @@ namespace FMBot.Bot.Services
 
         public async Task<List<UserTrack>> GetTopTracksForArtist(int userId, string artistName)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.UserTracks
                 .AsNoTracking()
                 .Where(w => w.ArtistName.ToLower() == artistName.ToLower()
@@ -320,7 +320,7 @@ namespace FMBot.Bot.Services
 
         public async Task<List<UserAlbum>> GetTopAlbumsForArtist(int userId, string artistName)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.UserAlbums
                 .AsNoTracking()
                 .Where(w => w.ArtistName.ToLower() == artistName.ToLower()
