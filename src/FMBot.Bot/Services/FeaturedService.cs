@@ -1,6 +1,6 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using FMBot.Bot.Extensions;
@@ -10,6 +10,7 @@ using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Serilog;
 
 namespace FMBot.Bot.Services
@@ -20,16 +21,18 @@ namespace FMBot.Bot.Services
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
         private readonly CensorService _censorService;
         private readonly UserService _userService;
+        private readonly IMemoryCache _cache;
 
         public FeaturedService(LastFmRepository lastFmRepository,
             IDbContextFactory<FMBotDbContext> contextFactory,
             CensorService censorService,
-            UserService userService)
+            UserService userService, IMemoryCache cache)
         {
             this._lastFmRepository = lastFmRepository;
             this._contextFactory = contextFactory;
             this._censorService = censorService;
             this._userService = userService;
+            this._cache = cache;
         }
 
         public async Task<FeaturedLog> NewFeatured(ulong botUserId, DateTime? dateTime = null)
@@ -205,6 +208,17 @@ namespace FMBot.Bot.Services
                 .FirstOrDefaultAsync(w => w.FeaturedLogId == id);
         }
 
+        public async Task<List<FeaturedLog>> GetFeaturedHistoryForUser(int id)
+        {
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+
+            return await db.FeaturedLogs
+                .AsQueryable()
+                .Where(w => w.UserId == id &&
+                            w.HasFeatured)
+                .ToListAsync();
+        }
+
         private async Task<bool> AlbumPopularEnough(string albumName, string artistName)
         {
             var album = await this._lastFmRepository.GetAlbumInfoAsync(artistName, albumName);
@@ -240,7 +254,7 @@ namespace FMBot.Bot.Services
                 .Where(w => w.BanActive)
                 .Select(s => s.UserNameLastFM.ToLower()).ToListAsync();
 
-            var filterDate = DateTime.UtcNow.AddDays(-3);
+            var filterDate = DateTime.UtcNow.AddDays(-Constants.DaysLastUsedForFeatured);
             var users = db.Users
                 .AsQueryable()
                 .Where(w => w.Blocked != true &&
@@ -256,6 +270,35 @@ namespace FMBot.Bot.Services
             await db.SaveChangesAsync();
 
             return user;
+        }
+
+        public async Task<int> GetFeaturedOddsAsync()
+        {
+            const string cacheKey = "featured-odds";
+            var cacheTime = TimeSpan.FromHours(1);
+
+            if (this._cache.TryGetValue(cacheKey, out int odds))
+            {
+                return odds;
+            }
+
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            var lastFmUsersToFilter = await db.BottedUsers
+                .AsQueryable()
+                .Where(w => w.BanActive)
+                .Select(s => s.UserNameLastFM.ToLower()).ToListAsync();
+
+            var filterDate = DateTime.UtcNow.AddDays(-Constants.DaysLastUsedForFeatured);
+            var users = db.Users
+                .AsQueryable()
+                .Where(w => w.Blocked != true &&
+                            !lastFmUsersToFilter.Contains(w.UserNameLastFM.ToLower()) &&
+                            w.LastUsed != null &&
+                            w.LastUsed > filterDate).ToList();
+
+            this._cache.Set(cacheKey, users.Count, cacheTime);
+
+            return users.Count;
         }
 
         private async Task<bool> AlbumNotFeaturedRecently(string albumName, string artistName)
