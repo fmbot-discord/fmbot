@@ -199,6 +199,8 @@ namespace FMBot.Bot.Commands.LastFM
         {
             try
             {
+                var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
                 if (this._timer._currentFeatured == null)
                 {
                     await ReplyAsync(
@@ -218,9 +220,11 @@ namespace FMBot.Bot.Commands.LastFM
 
                     if (guildUser != null)
                     {
-                        this._embed.WithFooter($"🥳 Congratulations! This user is in your server under the name {guildUser.UserName}.");
+                        this._embed.AddField("🥳 Congratulations!", $"This user is in your server under the name {guildUser.UserName}.");
                     }
                 }
+
+                this._embed.WithFooter($"View your featured history with '{prfx}featuredlog'");
 
                 if (PublicProperties.IssuesAtLastFm)
                 {
@@ -258,22 +262,30 @@ namespace FMBot.Bot.Commands.LastFM
                 var featuredHistory = await this._featuredService.GetFeaturedHistoryForUser(userSettings.UserId);
 
                 var description = new StringBuilder();
+                var odds = await this._featuredService.GetFeaturedOddsAsync();
+
                 if (!featuredHistory.Any())
                 {
-                    var odds = await this._featuredService.GetFeaturedOddsAsync();
                     if (!userSettings.DifferentUser)
                     {
                         description.AppendLine("Sorry, you haven't been featured yet... <:404:882220605783560222>");
                         description.AppendLine();
                         description.AppendLine($"But don't give up hope just yet!");
-                        description.AppendLine($"Every hour, the chance is 1 in {odds} that you might be picked.");
+                        description.AppendLine($"Every hour the chance is 1 in {odds} that you might be picked.");
+
+                        if (this.Context.Guild?.Id != this._botSettings.Bot.BaseServerId)
+                        {
+                            description.AppendLine();
+                            description.AppendLine($"Want to be notified when you get featured?");
+                            description.AppendLine($"Join [our server](https://discord.gg/6y3jJjtDqK) and you'll get a ping whenever it happens.");
+                        }
                     }
                     else
                     {
                         description.AppendLine("Hmm, they haven't been featured yet... <:404:882220605783560222>");
                         description.AppendLine();
                         description.AppendLine($"But don't let them give up hope just yet!");
-                        description.AppendLine($"Every hour, the chance is 1 in {odds} that they might be picked.");
+                        description.AppendLine($"Every hour the chance is 1 in {odds} that they might be picked.");
                     }
                 }
                 else
@@ -297,7 +309,7 @@ namespace FMBot.Bot.Commands.LastFM
                     }
 
                     this._embed.WithFooter(featuredHistory.Count == 1
-                        ? $"You have been featured just 1 time"
+                        ? $"You have only been featured once. Every hour, that is a chance of 1 in {odds}!"
                         : $"You have been featured {featuredHistory.Count} times");
                 }
 
