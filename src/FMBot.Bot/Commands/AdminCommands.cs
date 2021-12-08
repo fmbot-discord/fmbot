@@ -30,6 +30,7 @@ namespace FMBot.Bot.Commands
         private readonly SupporterService _supporterService;
         private readonly UserService _userService;
         private readonly SettingService _settingService;
+        private readonly FeaturedService _featuredService;
 
         public AdminCommands(
                 AdminService adminService,
@@ -40,7 +41,7 @@ namespace FMBot.Bot.Commands
                 SupporterService supporterService,
                 UserService userService,
                 IOptions<BotSettings> botSettings,
-                SettingService settingService) : base(botSettings)
+                SettingService settingService, FeaturedService featuredService) : base(botSettings)
         {
             this._adminService = adminService;
             this._censorService = censorService;
@@ -50,6 +51,7 @@ namespace FMBot.Bot.Commands
             this._supporterService = supporterService;
             this._userService = userService;
             this._settingService = settingService;
+            this._featuredService = featuredService;
         }
 
         //[Command("debug")]
@@ -489,7 +491,7 @@ namespace FMBot.Bot.Commands
                     }
                 }
 
-                
+
             }
             else
             {
@@ -606,23 +608,40 @@ namespace FMBot.Bot.Commands
             }
         }
 
-        [Command("fmfeaturedoverride"), Summary("Changes the avatar to be an album.")]
-        public async Task AlbumOverrideAsync(string url, bool stopTimer, string desc = "Custom featured event")
+        [Command("featuredoverride"), Summary("Changes the avatar to be an album.")]
+        [Examples("featuredoverride \"imageurl\" \"description\" true")]
+        public async Task FeaturedOverrideAsync(string url, string desc, bool stopTimer)
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Owner))
             {
-                if (url == "help")
-                {
-                    await ReplyAsync("fmfeaturedoverride <album name> <stoptimer 0 or 1> [message in quotation marks]");
-                    this.Context.LogCommandUsed(CommandResponse.Help);
-                    return;
-                }
-
                 try
                 {
-                    this._timer.SetFeatured(url, desc, stopTimer);
+                    _ = this.Context.Channel.TriggerTypingAsync();
 
-                    await ReplyAsync("Set avatar to '" + url + "' with description '" + desc + "'. Timer stopped: " + stopTimer);
+                    await this._featuredService.CustomFeatured(this._timer._currentFeatured, desc, url);
+
+                    if (stopTimer)
+                    {
+                        this._timer.Restart();
+                        await Task.Delay(5000);
+                        this._timer.Stop();
+                    }
+                    else
+                    {
+                        this._timer.Restart();
+                    }
+
+                    var description = new StringBuilder();
+                    description.AppendLine($"Avatar: {url}");
+                    description.AppendLine($"Description: {desc}");
+                    description.AppendLine($"Timer stopped: {stopTimer}");
+
+                    this._embed.WithTitle("Featured override");
+                    this._embed.WithDescription(description.ToString());
+                    this._embed.WithFooter(
+                        "You might also have to edit the next few hours in the database (with no update true)");
+
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed();
                 }
                 catch (Exception e)
@@ -699,14 +718,46 @@ namespace FMBot.Bot.Commands
         [Command("resetfeatured")]
         [Summary("Restarts the featured timer.")]
         [Alias("restarttimer", "timerstart", "timerrestart")]
-        public async Task RestartTimerAsync()
+        public async Task RestartTimerAsync([Remainder] int? id = null)
         {
             if (await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
             {
                 try
                 {
+                    _ = this.Context.Channel.TriggerTypingAsync();
+
+                    var feature = this._timer._currentFeatured;
+
+                    if (id.HasValue)
+                    {
+                        feature = await this._featuredService.GetFeaturedForId(id.Value);
+                    }
+
+                    var updateDescription = new StringBuilder();
+                    updateDescription.AppendLine("**Selected feature**");
+                    updateDescription.AppendLine(feature.FeaturedMode.ToString());
+                    updateDescription.AppendLine(feature.ArtistName);
+                    updateDescription.AppendLine(feature.AlbumName);
+                    updateDescription.AppendLine(feature.ImageUrl);
+                    updateDescription.AppendLine();
+
+                    var newFeature = await this._featuredService.ReplaceFeatured(feature, this.Context.User.Id);
                     this._timer.Restart();
-                    await ReplyAsync("Featured timer restarted (note: max 3 times / hour)");
+
+                    updateDescription.AppendLine("**New feature**");
+                    updateDescription.AppendLine(newFeature.FeaturedMode.ToString());
+                    updateDescription.AppendLine(newFeature.ArtistName);
+                    updateDescription.AppendLine(newFeature.AlbumName);
+                    updateDescription.AppendLine(newFeature.ImageUrl);
+                    updateDescription.AppendLine();
+
+                    updateDescription.AppendLine("Featured timer restarted. Can take up to two minutes to show, max 3 times / hour");
+
+                    var dateValue = ((DateTimeOffset)feature.DateTime).ToUnixTimeSeconds();
+                    this._embed.AddField("Time", $"<t:{dateValue}:F>");
+
+                    this._embed.WithDescription(updateDescription.ToString());
+                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed();
                 }
                 catch (Exception e)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,6 +28,7 @@ namespace FMBot.Bot.Commands.LastFM
     {
         private readonly CrownService _crownService;
         private readonly FriendsService _friendsService;
+        private readonly FeaturedService _featuredService;
         private readonly GuildService _guildService;
         private readonly IIndexService _indexService;
         private readonly IPrefixService _prefixService;
@@ -48,7 +50,8 @@ namespace FMBot.Bot.Commands.LastFM
                 TimerService timer,
                 UserService userService,
                 CrownService crownService,
-                IOptions<BotSettings> botSettings) : base(botSettings)
+                IOptions<BotSettings> botSettings,
+                FeaturedService featuredService) : base(botSettings)
         {
             this._friendsService = friendsService;
             this._guildService = guildService;
@@ -59,6 +62,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._timer = timer;
             this._userService = userService;
             this._crownService = crownService;
+            this._featuredService = featuredService;
         }
 
         [Command("stats", RunMode = RunMode.Async)]
@@ -191,25 +195,36 @@ namespace FMBot.Bot.Commands.LastFM
                  "This command will also show something special if the user is in your server")]
         [Alias("featuredavatar", "featureduser", "featuredalbum", "avatar")]
         [CommandCategories(CommandCategory.Other)]
-        public async Task FeaturedAsync()
+        public async Task FeaturedAsync([Remainder] string options = null)
         {
             try
             {
-                var socketCommandContext = (SocketCommandContext)this.Context;
-                var selfUser = socketCommandContext.Client.CurrentUser;
-                this._embed.WithThumbnailUrl(selfUser.GetAvatarUrl());
-                this._embed.AddField("Featured:", this._timer.GetTrackString());
+                var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-                if (this.Context.Guild != null)
+                if (this._timer._currentFeatured == null)
+                {
+                    await ReplyAsync(
+                        ".fmbot is still starting up, please try again in a bit..");
+
+                    this.Context.LogCommandUsed();
+                    return;
+                }
+
+                this._embed.WithThumbnailUrl(this._timer._currentFeatured.ImageUrl);
+                this._embed.AddField("Featured:", this._timer._currentFeatured.Description);
+
+                if (this.Context.Guild != null && this._timer._currentFeatured.UserId.HasValue)
                 {
                     var guildUser =
-                        await this._guildService.GetUserFromGuild(this.Context.Guild.Id, this._timer.GetUserId());
+                        await this._guildService.GetUserFromGuild(this.Context.Guild.Id, this._timer._currentFeatured.UserId.Value);
 
                     if (guildUser != null)
                     {
-                        this._embed.WithFooter($"🥳 Congratulations! This user is in your server under the name {guildUser.UserName}.");
+                        this._embed.AddField("🥳 Congratulations!", $"This user is in your server under the name {guildUser.UserName}.");
                     }
                 }
+
+                this._embed.WithFooter($"View your featured history with '{prfx}featuredlog'");
 
                 if (PublicProperties.IssuesAtLastFm)
                 {
@@ -229,11 +244,97 @@ namespace FMBot.Bot.Commands.LastFM
             }
         }
 
+        [Command("featuredlog", RunMode = RunMode.Async)]
+        [Summary("Shows you or someone else their featured history")]
+        [Alias("featuredhistory", "recentfeatured", "rf", "recentlyfeatured")]
+        [CommandCategories(CommandCategory.Other)]
+        [UsernameSetRequired]
+        public async Task FeaturedLogAsync([Remainder] string options = null)
+        {
+            try
+            {
+                var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+                var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
+
+                this._embed.WithTitle(
+                    $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}'s featured history");
+
+                var featuredHistory = await this._featuredService.GetFeaturedHistoryForUser(userSettings.UserId);
+
+                var description = new StringBuilder();
+                var odds = await this._featuredService.GetFeaturedOddsAsync();
+
+                if (!featuredHistory.Any())
+                {
+                    if (!userSettings.DifferentUser)
+                    {
+                        description.AppendLine("Sorry, you haven't been featured yet... <:404:882220605783560222>");
+                        description.AppendLine();
+                        description.AppendLine($"But don't give up hope just yet!");
+                        description.AppendLine($"Every hour there is a 1 in {odds} chance that you might be picked.");
+
+                        if (this.Context.Guild?.Id != this._botSettings.Bot.BaseServerId)
+                        {
+                            description.AppendLine();
+                            description.AppendLine($"Want to be notified when you get featured?");
+                            description.AppendLine($"Join [our server](https://discord.gg/6y3jJjtDqK) and you'll get a ping whenever it happens.");
+                        }
+                    }
+                    else
+                    {
+                        description.AppendLine("Hmm, they haven't been featured yet... <:404:882220605783560222>");
+                        description.AppendLine();
+                        description.AppendLine($"But don't let them give up hope just yet!");
+                        description.AppendLine($"Every hour there is a 1 in {odds} chance that they might be picked.");
+                    }
+                }
+                else
+                {
+                    foreach (var featured in featuredHistory.Take(12))
+                    {
+                        var dateValue = ((DateTimeOffset)featured.DateTime).ToUnixTimeSeconds();
+                        description.AppendLine($"Mode: `{featured.FeaturedMode}`");
+                        description.AppendLine($"<t:{dateValue}:F> (<t:{dateValue}:R>)");
+                        if (featured.TrackName != null)
+                        {
+                            description.AppendLine($"**{featured.TrackName}**");
+                            description.AppendLine($"**{featured.ArtistName}** | *{featured.AlbumName}*");
+                        }
+                        else
+                        {
+                            description.AppendLine($"**{featured.ArtistName}** - **{featured.AlbumName}**");
+                        }
+
+                        description.AppendLine();
+                    }
+
+                    var self = userSettings.DifferentUser ? "They" : "You";
+                    this._embed.WithFooter(featuredHistory.Count == 1
+                        ? $"{self} have only been featured once. Every hour, that is a chance of 1 in {odds}!"
+                        : $"{self} have been featured {featuredHistory.Count} times");
+                }
+
+                this._embed.WithDescription(description.ToString());
+
+                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync(
+                    "Unable to show the featured avatar on FMBot due to an internal error. \n" +
+                    "The bot might not have changed its avatar since its last startup. Please wait until a new featured user is chosen.");
+            }
+        }
+
         [Command("rateyourmusic", RunMode = RunMode.Async)]
         [Summary("Enables or disables the rateyourmusic links. This changes all album links in .fmbot to RYM links instead of Last.fm links.")]
         [Alias("rym")]
         [CommandCategories(CommandCategory.UserSettings)]
-        public async Task RateYourMusicAsync()
+        [UsernameSetRequired]
+        public async Task RateYourMusicAsync([Remainder] string options = null)
         {
             try
             {
@@ -273,6 +374,7 @@ namespace FMBot.Bot.Commands.LastFM
         [Summary("Enables or disables the bot scrobbling. For more info, use the command.")]
         [Alias("botscrobble", "bottrack", "bottracking")]
         [CommandCategories(CommandCategory.UserSettings)]
+        [UsernameSetRequired]
         public async Task BotTrackingAsync([Remainder] string option = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

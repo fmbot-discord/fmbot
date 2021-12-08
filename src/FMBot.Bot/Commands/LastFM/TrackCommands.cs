@@ -202,12 +202,12 @@ namespace FMBot.Bot.Commands.LastFM
                     this._embed.AddField("Summary", track.Description);
                 }
 
-                if (track.Tags != null && track.Tags.Any())
-                {
-                    var tags = LastFmRepository.TagsToLinkedString(track.Tags);
+                //if (track.Tags != null && track.Tags.Any())
+                //{
+                //    var tags = LastFmRepository.TagsToLinkedString(track.Tags);
 
-                    this._embed.AddField("Tags", tags);
-                }
+                //    this._embed.AddField("Tags", tags);
+                //}
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 

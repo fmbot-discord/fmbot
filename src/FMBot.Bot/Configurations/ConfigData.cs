@@ -39,6 +39,8 @@ namespace FMBot.Bot.Configurations
                         BotWarmupTimeInSeconds = 30,
                         FeaturedTimerStartupDelayInSeconds = 20,
                         FeaturedTimerRepeatInMinutes = 60,
+                        MainInstance = true,
+                        FeaturedMaster = true
                     }, 
                     BotLists = new BotListConfig(),
                     Discord = new DiscordConfig(),

@@ -115,25 +115,6 @@ namespace FMBot.Bot.Services
             this._cache.Remove("censored-music");
         }
 
-        public async Task<bool> AlbumNotFeaturedRecently(string albumName, string artistName)
-        {
-            await using var db = this._contextFactory.CreateDbContext();
-
-            var filterDate = DateTime.UtcNow.AddDays(-7);
-            var recentlyFeaturedAlbums = await db.FeaturedLogs
-                .AsQueryable()
-                .Where(w => w.DateTime > filterDate)
-                .ToListAsync();
-
-            if (recentlyFeaturedAlbums.Select(s => $"{s.ArtistName.ToLower()}{s.AlbumName.ToLower()}")
-                .Contains($"{artistName.ToLower()}{albumName.ToLower()}"))
-            {
-                return false;
-            }
-
-            return true;
-        }
-
         public async Task<CensorResult> AlbumIsAllowedInNsfw(string albumName, string artistName)
         {
             var censoredMusic = await GetCachedCensoredMusic();
