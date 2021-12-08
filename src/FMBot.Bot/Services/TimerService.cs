@@ -101,9 +101,9 @@ namespace FMBot.Bot.Services
                             {
                                 await this._featuredService.ScrobbleTrack(client.CurrentUser.Id, newFeatured);
                             }
-                        }
 
-                        await this._featuredService.SetFeatured(newFeatured);
+                            await this._featuredService.SetFeatured(newFeatured);
+                        }
 
                         this._currentFeatured = await this._featuredService.GetFeaturedForDateTime(DateTime.UtcNow);
                     }
