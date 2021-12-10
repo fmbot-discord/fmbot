@@ -61,6 +61,9 @@ namespace FMBot.Domain.Models
 
         public int BotWarmupTimeInSeconds { get; set; }
 
+        public string MetricsPusherEndpoint { get; set; }
+        public string MetricsPusherName { get; set; }
+
         public int FeaturedTimerStartupDelayInSeconds { get; set; }
 
         public int FeaturedTimerRepeatInMinutes { get; set; }
