@@ -115,7 +115,7 @@ namespace FMBot.Bot.Services
             Log.Information("Preparing cache folder");
             PrepareCacheFolder();
 
-            await this.StartMetricsServer();
+            await this.StartMetricsPusher();
             await this.StartBotSiteUpdater();
         }
 
@@ -142,30 +142,31 @@ namespace FMBot.Bot.Services
             }
         }
 
-        private Task StartMetricsServer()
+        private Task StartMetricsPusher()
         {
+            if (string.IsNullOrWhiteSpace(this._botSettings.Bot.MetricsPusherName) || string.IsNullOrWhiteSpace(this._botSettings.Bot.MetricsPusherEndpoint))
+            {
+                Log.Information("Metrics pusher config not set, not pushing");
+                return Task.CompletedTask;
+            }
+
             Thread.Sleep(TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds));
             if (this._client == null || this._client.CurrentUser == null)
             {
-                Log.Information("Delaying metric server startup");
+                Log.Information("Delaying metric pusher startup");
                 Thread.Sleep(TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds));
             }
 
-            Log.Information("Starting metrics server");
-
-            var prometheusPort = 4444;
-            if (!this._client.CurrentUser.Id.Equals(Constants.BotProductionId))
+            Log.Information("Starting metrics pusher");
+            var pusher = new MetricPusher(new MetricPusherOptions
             {
-                Log.Information("Prometheus port selected is non-production");
-                prometheusPort = 4422;
-            }
+                Endpoint = this._botSettings.Bot.MetricsPusherEndpoint,
+                Job = this._botSettings.Bot.MetricsPusherName
+            });
 
-            Log.Information($"Prometheus starting on port {prometheusPort}");
+            pusher.Start();
 
-            var server = new MetricServer("localhost", prometheusPort);
-            server.Start();
-
-            Log.Information($"Prometheus running on localhost:{prometheusPort}/metrics");
+            Log.Information("Metrics pusher pushing to {MetricsPusherEndpoint}, job name {MetricsPusherName}", this._botSettings.Bot.MetricsPusherEndpoint, this._botSettings.Bot.MetricsPusherName);
             return Task.CompletedTask;
         }
 
