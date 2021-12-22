@@ -74,6 +74,7 @@
     <ProjectReference Include="..\FMBot.Logger\FMBot.Logger.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="SlashCommands\" />
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>

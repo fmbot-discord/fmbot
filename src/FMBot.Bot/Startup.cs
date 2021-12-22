@@ -3,8 +3,10 @@ using System.IO;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using Discord.Interactions;
 using Discord.WebSocket;
 using Fergun.Interactive;
+using FMBot.Bot.Builders;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Handlers;
 using FMBot.Bot.Interfaces;
@@ -24,6 +26,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Exceptions;
+using RunMode = Discord.Commands.RunMode;
 
 namespace FMBot.Bot
 {
@@ -77,10 +80,12 @@ namespace FMBot.Bot
             var provider = services.BuildServiceProvider(); // Build the service provider
             //provider.GetRequiredService<LoggingService>();      // Start the logging service
             provider.GetRequiredService<CommandHandler>();
+            provider.GetRequiredService<InteractionHandler>();
             provider.GetRequiredService<ClientLogHandler>();
             provider.GetRequiredService<UserEventHandler>();
 
             await provider.GetRequiredService<StartupService>().StartAsync(); // Start the startup service
+
             await Task.Delay(-1); // Keep the program alive
         }
 
@@ -102,6 +107,7 @@ namespace FMBot.Bot
                     LogLevel = LogSeverity.Verbose,
                     DefaultRunMode = RunMode.Async,
                 }))
+                .AddSingleton<InteractionService>()
                 .AddSingleton<AlbumService>()
                 .AddSingleton<AlbumRepository>()
                 .AddSingleton<AdminService>()
@@ -125,6 +131,7 @@ namespace FMBot.Bot
                 .AddSingleton<IUserIndexQueue, UserIndexQueue>()
                 .AddSingleton<IUserUpdateQueue, UserUpdateQueue>()
                 .AddSingleton<PlayService>()
+                .AddSingleton<PlayBuilder>()
                 .AddSingleton<Random>()
                 .AddSingleton<SettingService>()
                 .AddSingleton<SpotifyService>()
@@ -150,7 +157,7 @@ namespace FMBot.Bot
 
             // These services can only be added after the config is loaded
             services
-                .AddSingleton<InteractiveService>()
+                .AddSingleton<InteractionHandler>()
                 .AddSingleton<IndexRepository>()
                 .AddSingleton<UpdateRepository>()
                 .AddSingleton<IUpdateService, UpdateService>()

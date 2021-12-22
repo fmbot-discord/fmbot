@@ -788,7 +788,7 @@ namespace FMBot.Bot.Services.Guild
 
         public async Task AddReactionsAsync(IUserMessage message, IGuild guild)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var dbGuild = await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);

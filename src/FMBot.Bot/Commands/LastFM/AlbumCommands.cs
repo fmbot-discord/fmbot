@@ -184,7 +184,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 if (albumCoverUrl != null)
                 {
-                    var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
+                    var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
                         album.AlbumName, album.ArtistName, album.AlbumUrl);
                     if (safeForChannel.Result)
                     {
@@ -357,7 +357,7 @@ namespace FMBot.Bot.Commands.LastFM
                     return;
                 }
 
-                var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
+                var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
                     album.AlbumName, album.ArtistName, album.AlbumUrl, this._embed);
                 if (!safeForChannel.Result)
                 {
@@ -671,7 +671,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 if (albumCoverUrl != null)
                 {
-                    var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
+                    var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
                         album.AlbumName, album.ArtistName, album.AlbumUrl);
                     if (safeForChannel.Result)
                     {
@@ -822,7 +822,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 if (albumCoverUrl != null)
                 {
-                    var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
+                    var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
                         album.AlbumName, album.ArtistName, album.AlbumUrl);
                     if (safeForChannel.Result)
                     {
@@ -948,7 +948,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 if (albumCoverUrl != null)
                 {
-                    var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
+                    var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
                         album.AlbumName, album.ArtistName, album.AlbumUrl);
                     if (safeForChannel.Result)
                     {

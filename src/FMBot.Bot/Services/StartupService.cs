@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using BotListAPI;
 using Discord;
 using Discord.Commands;
+using Discord.Interactions;
 using Discord.WebSocket;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Interfaces;
@@ -23,6 +24,7 @@ namespace FMBot.Bot.Services
     public class StartupService
     {
         private readonly CommandService _commands;
+        private readonly InteractionService _interactions;
         private readonly IGuildDisabledCommandService _guildDisabledCommands;
         private readonly IChannelDisabledCommandService _channelDisabledCommands;
         private readonly DiscordShardedClient _client;
@@ -30,6 +32,7 @@ namespace FMBot.Bot.Services
         private readonly IServiceProvider _provider;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
         private readonly BotSettings _botSettings;
+        private readonly InteractionService _interactionService;
 
 
         public StartupService(
@@ -40,7 +43,9 @@ namespace FMBot.Bot.Services
             IGuildDisabledCommandService guildDisabledCommands,
             IChannelDisabledCommandService channelDisabledCommands,
             IDbContextFactory<FMBotDbContext> contextFactory,
-            IOptions<BotSettings> botSettings)
+            IOptions<BotSettings> botSettings,
+            InteractionService interactionService,
+            InteractionService interactions)
         {
             this._provider = provider;
             this._client = discord;
@@ -49,6 +54,8 @@ namespace FMBot.Bot.Services
             this._guildDisabledCommands = guildDisabledCommands;
             this._channelDisabledCommands = channelDisabledCommands;
             this._contextFactory = contextFactory;
+            this._interactionService = interactionService;
+            this._interactions = interactions;
             this._botSettings = botSettings.Value;
         }
 
@@ -101,7 +108,14 @@ namespace FMBot.Bot.Services
             await this._commands
                 .AddModulesAsync(
                     Assembly.GetEntryAssembly(),
+                    this._provider);
+
+            Log.Information("Loading slash command modules");
+            await this._interactions
+                .AddModulesAsync(
+                    Assembly.GetEntryAssembly(),
                     this._provider); // Load commands and modules into the command service
+
 
             var shardTimeOut = 4500;
             foreach (var shard in this._client.Shards)
@@ -115,6 +129,7 @@ namespace FMBot.Bot.Services
             Log.Information("Preparing cache folder");
             PrepareCacheFolder();
 
+            await this.RegisterSlashCommands();
             await this.StartMetricsPusher();
             await this.StartBotSiteUpdater();
         }
@@ -168,6 +183,25 @@ namespace FMBot.Bot.Services
 
             Log.Information("Metrics pusher pushing to {MetricsPusherEndpoint}, job name {MetricsPusherName}", this._botSettings.Bot.MetricsPusherEndpoint, this._botSettings.Bot.MetricsPusherName);
             return Task.CompletedTask;
+        }
+
+        private async Task RegisterSlashCommands()
+        {
+            Thread.Sleep(TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds));
+            if (this._client == null || this._client.CurrentUser == null)
+            {
+                Log.Information("Delaying slash command registration");
+                Thread.Sleep(TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds));
+            }
+
+            Log.Information("Starting slash command registration");
+            await this._interactionService.RegisterCommandsToGuildAsync(821660544581763093);
+
+#if DEBUG
+            await this._interactionService.RegisterCommandsToGuildAsync(821660544581763093);
+#else
+            await this._interactionService.RegisterCommandsGloballyAsync();
+#endif
         }
 
         private Task StartBotSiteUpdater()

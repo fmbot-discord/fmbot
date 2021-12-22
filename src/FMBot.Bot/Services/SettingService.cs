@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Commands;
 using FMBot.Bot.Models;
 using FMBot.Domain;
@@ -338,15 +339,25 @@ namespace FMBot.Bot.Services
             ICommandContext context,
             bool firstOptionIsLfmUsername = false)
         {
+            return await GetUser(extraOptions, user, context.Guild, context.User, firstOptionIsLfmUsername);
+        }
+
+        public async Task<UserSettingsModel> GetUser(
+            string extraOptions,
+            User user,
+            IGuild discordGuild,
+            IUser discordUser,
+            bool firstOptionIsLfmUsername = false)
+        {
             string discordUserName;
-            if (context.Guild != null)
+            if (discordGuild != null)
             {
-                var discordGuildUser = await context.Guild.GetUserAsync(user.DiscordUserId);
-                discordUserName = discordGuildUser?.Nickname ?? context.User.Username;
+                var discordGuildUser = await discordGuild.GetUserAsync(user.DiscordUserId);
+                discordUserName = discordGuildUser?.Nickname ?? discordGuildUser?.Username ?? discordUser.Username;
             }
             else
             {
-                discordUserName = context.User.Username;
+                discordUserName = discordUser.Username;
             }
 
             var settingsModel = new UserSettingsModel
@@ -354,7 +365,7 @@ namespace FMBot.Bot.Services
                 DifferentUser = false,
                 UserNameLastFm = user.UserNameLastFM,
                 SessionKeyLastFm = user.SessionKeyLastFm,
-                DiscordUserId = context.User.Id,
+                DiscordUserId = discordUser.Id,
                 DiscordUserName = discordUserName,
                 UserId = user.UserId,
                 UserType = user.UserType,
@@ -400,9 +411,9 @@ namespace FMBot.Bot.Services
                         otherUser.DiscordUserId.ToString(), $"<@!{otherUser.DiscordUserId}>", $"<@{otherUser.DiscordUserId}>", $"<@&{otherUser.DiscordUserId}>",
                         otherUser.UserNameLastFM.ToLower() }, true);
 
-                    if (context.Guild != null)
+                    if (discordGuild != null)
                     {
-                        var discordGuildUser = await context.Guild.GetUserAsync(otherUser.DiscordUserId);
+                        var discordGuildUser = await discordGuild.GetUserAsync(otherUser.DiscordUserId);
                         settingsModel.DiscordUserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : otherUser.UserNameLastFM;
                     }
                     else
@@ -463,7 +474,7 @@ namespace FMBot.Bot.Services
 
             if (otherUser == null)
             {
-                await using var db = this._contextFactory.CreateDbContext();
+                await using var db = await this._contextFactory.CreateDbContextAsync();
 
                 searchValue = searchValue.ToLower().Replace("lfm:", "");
                 return await db.Users
@@ -489,7 +500,7 @@ namespace FMBot.Bot.Services
                 return null;
             }
 
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);

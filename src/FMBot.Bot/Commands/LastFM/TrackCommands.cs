@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using Discord.Interactions;
 using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -23,6 +24,7 @@ using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
+using RunMode = Discord.Commands.RunMode;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -87,7 +89,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("track", RunMode = RunMode.Async)]
-        [Summary("Track you're currently listening to or searching for.")]
+        [Discord.Commands.Summary("Track you're currently listening to or searching for.")]
         [Examples(
             "tr",
             "track",
@@ -223,8 +225,8 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("trackplays", RunMode = RunMode.Async)]
-        [Summary("Shows playcount for current track or the one you're searching for.\n\n" +
-                 "You can also mention another user to see their playcount.")]
+        [Discord.Commands.Summary("Shows playcount for current track or the one you're searching for.\n\n" +
+                                  "You can also mention another user to see their playcount.")]
         [Examples(
             "tp",
             "trackplays",
@@ -267,7 +269,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("love", RunMode = RunMode.Async)]
-        [Summary("Loves a track on Last.fm")]
+        [Discord.Commands.Summary("Loves a track on Last.fm")]
         [Examples("love", "l", "love Tame Impala Borderline")]
         [Alias("l", "heart", "favorite", "affection", "appreciation", "lust", "fuckyeah", "fukk", "unfuck")]
         [UserSessionRequired]
@@ -325,7 +327,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("unlove", RunMode = RunMode.Async)]
-        [Summary("Removes the track you're currently listening to or searching for from your last.fm loved tracks.")]
+        [Discord.Commands.Summary("Removes the track you're currently listening to or searching for from your last.fm loved tracks.")]
         [Examples("unlove", "ul", "unlove Lou Reed Brandenburg Gate")]
         [Alias("ul", "unheart", "hate", "fuck")]
         [UserSessionRequired]
@@ -382,7 +384,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("loved", RunMode = RunMode.Async)]
-        [Summary("Shows your Last.fm loved tracks.")]
+        [Discord.Commands.Summary("Shows your Last.fm loved tracks.")]
         [Examples("loved", "lt", "lovedtracks lfm:fm-bot", "lovedtracks @user")]
         [Alias("lovedtracks", "lt")]
         [UserSessionRequired]
@@ -497,7 +499,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("scrobble", RunMode = RunMode.Async)]
-        [Summary("Scrobbles a track on Last.fm.")]
+        [Discord.Commands.Summary("Scrobbles a track on Last.fm.")]
         [Examples("scrobble", "sb stronger Kanye West", "scrobble Loona Heart Attack", "scrobble Mac DeMarco | Chamber of Reflection")]
         [UserSessionRequired]
         [Alias("sb")]
@@ -595,7 +597,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("toptracks", RunMode = RunMode.Async)]
-        [Summary("Shows your or someone else their top tracks over a certain time period.")]
+        [Discord.Commands.Summary("Shows your or someone else their top tracks over a certain time period.")]
         [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
             Constants.BillboardExample, Constants.ExtraLargeExample)]
         [Examples("tt", "toptracks", "tt y 3", "toptracks weekly @user", "tt bb xl")]
@@ -736,7 +738,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("whoknowstrack", RunMode = RunMode.Async)]
-        [Summary("Shows what other users listen to a track in your server")]
+        [Discord.Commands.Summary("Shows what other users listen to a track in your server")]
         [Examples("wt", "whoknowstrack", "whoknowstrack Hothouse Flowers Don't Go", "whoknowstrack Natasha Bedingfield | Unwritten")]
         [Alias("wt", "wkt", "wktr", "wtr", "wktrack", "wk track", "whoknows track")]
         [UsernameSetRequired]
@@ -846,7 +848,7 @@ namespace FMBot.Bot.Commands.LastFM
 
 
         [Command("globalwhoknowstrack", RunMode = RunMode.Async)]
-        [Summary("Shows what other users listen to a track in .fmbot")]
+        [Discord.Commands.Summary("Shows what other users listen to a track in .fmbot")]
         [Examples("gwt", "globalwhoknowstrack", "globalwhoknowstrack Hothouse Flowers Don't Go", "globalwhoknowstrack Natasha Bedingfield | Unwritten")]
         [Alias("gwt", "gwkt", "gwtr", "gwktr", "globalwkt", "globalwktrack", "globalwhoknows track")]
         [UsernameSetRequired]
@@ -977,7 +979,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("friendwhoknowstrack", RunMode = RunMode.Async)]
-        [Summary("Shows who of your friends listen to an track in .fmbot")]
+        [Discord.Commands.Summary("Shows who of your friends listen to an track in .fmbot")]
         [Examples("fwt", "fwkt The Beatles Yesterday", "friendwhoknowstrack", "friendwhoknowstrack Hothouse Flowers Don't Go", "friendwhoknowstrack Mall Grab | Sunflower")]
         [Alias("fwt", "fwkt", "fwktr", "fwtrack", "friendwhoknows track", "friends whoknows track", "friend whoknows track")]
         [UsernameSetRequired]
@@ -1086,7 +1088,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("servertracks", RunMode = RunMode.Async)]
-        [Summary("Top tracks for your server, optionally for an artist")]
+        [Discord.Commands.Summary("Top tracks for your server, optionally for an artist")]
         [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`", "Artist name")]
         [Examples("st", "st a p", "servertracks", "servertracks alltime", "servertracks listeners weekly", "servertracks kanye west listeners")]
         [Alias("st", "stt", "servertoptracks", "servertrack", "server tracks", "billboard", "bb")]

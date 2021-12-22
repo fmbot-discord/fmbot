@@ -62,7 +62,7 @@ namespace FMBot.Bot.Services
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
-        public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus? responseStatus, string message, ICommandContext context, string expectedResultType = null)
+        public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus? responseStatus, string message, ICommandContext context = null, string expectedResultType = null)
         {
             embed.WithTitle("Error while attempting get Last.fm information");
             switch (responseStatus)
@@ -106,7 +106,7 @@ namespace FMBot.Bot.Services
             }
 
             embed.WithColor(DiscordConstants.WarningColorOrange);
-            Log.Information("Last.fm returned error: {message} | {responseStatus} | {discordUserName} / {discordUserId} | {messageContent}", message, responseStatus, context.User.Username, context.User.Id, context.Message.Content);
+            Log.Information("Last.fm returned error: {message} | {responseStatus} | {discordUserName} / {discordUserId} | {messageContent}", message, responseStatus, context?.User.Username, context?.User.Id, context?.Message.Content);
         }
 
         public static bool RecentScrobbleCallFailed(Response<RecentTrackList> recentScrobbles)
@@ -141,6 +141,24 @@ namespace FMBot.Bot.Services
             }
 
             return false;
+        }
+
+        public static EmbedBuilder RecentScrobbleCallFailedBuilder(Response<RecentTrackList> recentScrobbles, string lastFmUserName)
+        {
+            var embed = new EmbedBuilder();
+            if (!recentScrobbles.Content.RecentTracks.Any())
+            {
+                embed.NoScrobblesFoundErrorResponse(lastFmUserName);
+                return embed;
+            }
+
+            if (!recentScrobbles.Success || recentScrobbles.Content == null)
+            {
+                embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message);
+                return embed;
+            }
+
+            return null;
         }
 
         public static void HelpResponse(this EmbedBuilder embed, CommandInfo commandInfo, string prfx, string userName)

@@ -223,6 +223,11 @@ namespace FMBot.Bot.Services
         {
             try
             {
+                if (discordGuildUser == null)
+                {
+                    return;
+                }
+
                 var discordName = discordGuildUser.Nickname ?? discordGuildUser.Username;
 
                 await using var db = await this._contextFactory.CreateDbContextAsync();

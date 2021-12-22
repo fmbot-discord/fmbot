@@ -142,16 +142,16 @@ namespace FMBot.Bot.Services
         }
 
         // Discord nickname/username
-        public async Task<string> GetNameAsync(ICommandContext context)
+        public static async Task<string> GetNameAsync(IGuild guild, IUser user)
         {
-            if (context.Guild == null)
+            if (guild == null)
             {
-                return context.User.Username;
+                return user.Username;
             }
 
-            var guildUser = await context.Guild.GetUserAsync(context.User.Id);
+            var guildUser = await guild.GetUserAsync(user.Id);
 
-            return guildUser?.Nickname ?? context.User.Username;
+            return guildUser?.Nickname ?? user.Username;
         }
 
         // Rank
@@ -168,8 +168,21 @@ namespace FMBot.Bot.Services
         // UserTitle
         public async Task<string> GetUserTitleAsync(ICommandContext context)
         {
-            var name = await GetNameAsync(context);
+            var name = await GetNameAsync(context.Guild, context.User);
             var userType = await GetRankAsync(context.User);
+
+            var title = name;
+
+            title += $"{userType.UserTypeToIcon()}";
+
+            return title;
+        }
+
+        // UserTitle
+        public async Task<string> GetUserTitleAsync(IGuild guild, IUser user)
+        {
+            var name = await GetNameAsync(guild, user);
+            var userType = await GetRankAsync(user);
 
             var title = name;
 
