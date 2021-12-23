@@ -534,7 +534,12 @@ namespace FMBot.Bot.Commands.LastFM
                     {
                         if (track.AlbumCoverUrl != null)
                         {
-                            this._embed.WithThumbnailUrl(track.AlbumCoverUrl);
+                            var safeForChannel = await this._censorService.IsSafeForChannel(this.Context,
+                                track.AlbumName, track.ArtistName, track.AlbumCoverUrl);
+                            if (safeForChannel.Result)
+                            {
+                                this._embed.WithThumbnailUrl(track.AlbumCoverUrl);
+                            }
                         }
                     }
 
