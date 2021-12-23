@@ -250,7 +250,7 @@ public class CommandHandler
                 context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
             }
-            if (lastIndex < DateTime.UtcNow.AddDays(-100))
+            if (lastIndex < DateTime.UtcNow.AddDays(-120))
             {
                 var embed = new EmbedBuilder();
                 embed.WithDescription("Server index data is out of date, it was last updated over 100 days ago.\n" +
@@ -286,7 +286,7 @@ public class CommandHandler
         }
     }
 
-    private async Task<bool> CommandDisabled(ShardedCommandContext context, SearchResult searchResult)
+    private async Task<bool> CommandDisabled(SocketCommandContext context, SearchResult searchResult)
     {
         if (context.Guild != null)
         {
@@ -318,7 +318,7 @@ public class CommandHandler
         return true;
     }
 
-    private async Task UserBlockedResponse(ShardedCommandContext shardedCommandContext, string s)
+    private async Task UserBlockedResponse(SocketCommandContext shardedCommandContext, string s)
     {
         var embed = new EmbedBuilder()
             .WithColor(DiscordConstants.LastFmColorRed);

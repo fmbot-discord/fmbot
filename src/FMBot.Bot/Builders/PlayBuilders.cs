@@ -1,13 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
 using Fergun.Interactive;
-using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -23,7 +19,6 @@ using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 using Swan;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
-using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
 namespace FMBot.Bot.Builders;
 
@@ -46,10 +41,6 @@ public class PlayBuilder : BaseBuilder
     private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
     private readonly WhoKnowsTrackService _whoKnowsTrackService;
     private InteractiveService Interactivity { get; }
-
-    private static readonly List<DateTimeOffset> StackCooldownTimer = new();
-    private static readonly List<SocketUser> StackCooldownTarget = new();
-
 
     public PlayBuilder(
         GuildService guildService,
@@ -140,7 +131,7 @@ public class PlayBuilder : BaseBuilder
             var errorEmbed =
                 GenericEmbedService.RecentScrobbleCallFailedBuilder(recentTracks, userSettings.UserNameLastFm);
             response.Embed = errorEmbed.Build();
-            response.Error = true;
+            response.CommandResponse = CommandResponse.LastFmError;
             return response;
         }
 
@@ -367,6 +358,187 @@ public class PlayBuilder : BaseBuilder
                 break;
         }
 
+        return response;
+    }
+
+    public async Task<ResponseModel> RecentAsync(
+        IGuild discordGuild,
+        IUser discordUser,
+        User contextUser,
+        UserSettingsModel userSettings,
+        int amount)
+    {
+        this._embedAuthor = new EmbedAuthorBuilder();
+        this._embed = new EmbedBuilder()
+            .WithColor(DiscordConstants.LastFmColorRed);
+        this._embedFooter = new EmbedFooterBuilder();
+
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        string sessionKey = null;
+        if (!userSettings.DifferentUser && !string.IsNullOrEmpty(contextUser.SessionKeyLastFm))
+        {
+            sessionKey = contextUser.SessionKeyLastFm;
+        }
+
+        var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFm, amount, useCache: true, sessionKey: sessionKey);
+
+        if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
+        {
+            var errorEmbed =
+                GenericEmbedService.RecentScrobbleCallFailedBuilder(recentTracks, userSettings.UserNameLastFm);
+            response.Embed = errorEmbed.Build();
+            response.CommandResponse = CommandResponse.LastFmError;
+            return response;
+        }
+
+        var requesterUserTitle = await this._userService.GetUserTitleAsync(discordGuild, discordUser);
+        var embedTitle = !userSettings.DifferentUser
+            ? $"{requesterUserTitle}"
+            : $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
+
+        this._embedAuthor.WithName($"Latest tracks for {embedTitle}");
+
+        this._embedAuthor.WithIconUrl(discordUser.GetAvatarUrl());
+        this._embedAuthor.WithUrl(recentTracks.Content.UserRecentTracksUrl);
+        this._embed.WithAuthor(this._embedAuthor);
+
+        var fmRecentText = "";
+        var resultAmount = recentTracks.Content.RecentTracks.Count;
+        if (recentTracks.Content.RecentTracks.Any(a => a.NowPlaying))
+        {
+            resultAmount -= 1;
+        }
+        for (var i = 0; i < resultAmount; i++)
+        {
+            var track = recentTracks.Content.RecentTracks[i];
+
+            if (i == 0)
+            {
+                if (track.AlbumCoverUrl != null)
+                {
+                    this._embed.WithThumbnailUrl(track.AlbumCoverUrl);
+                }
+            }
+
+            var trackString = StringService.TrackToLinkedString(track, contextUser.RymEnabled);
+
+            if (track.NowPlaying)
+            {
+                fmRecentText += $"🎶 - {trackString}\n";
+            }
+            else
+            {
+                fmRecentText += $"`{i + 1}` - {trackString}\n";
+            }
+        }
+
+        this._embed.WithDescription(fmRecentText);
+
+        string footerText;
+        var firstTrack = recentTracks.Content.RecentTracks[0];
+        if (firstTrack.NowPlaying)
+        {
+            footerText =
+                $"{userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount} scrobbles | Now Playing";
+        }
+        else
+        {
+            footerText =
+                $"{userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount} scrobbles";
+
+            if (!firstTrack.NowPlaying && firstTrack.TimePlayed.HasValue)
+            {
+                footerText += " | Last scrobble:";
+                this._embed.WithTimestamp(firstTrack.TimePlayed.Value);
+            }
+        }
+
+        this._embedFooter.WithText(footerText);
+
+        this._embed.WithFooter(this._embedFooter);
+
+        response.Embed = this._embed.Build();
+        return response;
+    }
+
+    public async Task<ResponseModel> OverviewAsync(
+        IGuild discordGuild,
+        IUser discordUser,
+        User contextUser,
+        UserSettingsModel userSettings,
+        int amount)
+    {
+        this._embedAuthor = new EmbedAuthorBuilder();
+        this._embed = new EmbedBuilder()
+            .WithColor(DiscordConstants.LastFmColorRed);
+        this._embedFooter = new EmbedFooterBuilder();
+
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        await this._updateService.UpdateUser(contextUser);
+
+        var week = await this._playService.GetDailyOverview(userSettings.UserId, amount);
+
+        if (week == null)
+        {
+            response.ResponseType = ResponseType.Text;
+            response.Text = "Sorry, we don't have plays for you in the selected amount of days.";
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            return response;
+        }
+
+        foreach (var day in week.Days.OrderByDescending(o => o.Date))
+        {
+            var genreString = new StringBuilder();
+            if (day.TopGenres != null && day.TopGenres.Any())
+            {
+                for (var i = 0; i < day.TopGenres.Count; i++)
+                {
+                    if (i != 0)
+                    {
+                        genreString.Append(" - ");
+                    }
+
+                    var genre = day.TopGenres[i];
+                    genreString.Append($"{genre}");
+                }
+            }
+
+            this._embed.AddField(
+                $"{day.Playcount} plays - {StringExtensions.GetListeningTimeString(day.ListeningTime)} - <t:{day.Date.ToUnixEpochDate()}:D>",
+                $"{genreString}\n" +
+                $"{day.TopArtist}\n" +
+                $"{day.TopAlbum}\n" +
+                $"{day.TopTrack}"
+            );
+        }
+
+        var description = $"Top genres, artist, album and track for last {amount} days";
+
+        if (week.Days.Count < amount)
+        {
+            description += $"\n{amount - week.Days.Count} days not shown because of no plays.";
+        }
+
+        this._embed.WithDescription(description);
+
+        this._embedAuthor.WithName($"Daily overview for {userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}");
+
+        this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library?date_preset=LAST_7_DAYS");
+        this._embed.WithAuthor(this._embedAuthor);
+
+        this._embedFooter.WithText($"{week.Uniques} unique tracks - {week.Playcount} total plays - avg {Math.Round(week.AvgPerDay, 1)} per day");
+        this._embed.WithFooter(this._embedFooter);
+
+
+        response.Embed = this._embed.Build();
         return response;
     }
 }

@@ -430,7 +430,7 @@ namespace FMBot.Bot.Services.Guild
 
         public async Task<bool> UnBlockGuildUserAsync(IGuild guild, int userId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
@@ -459,7 +459,7 @@ namespace FMBot.Bot.Services.Guild
 
         public async Task SetGuildPrefixAsync(IGuild guild, string prefix)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
@@ -491,7 +491,7 @@ namespace FMBot.Bot.Services.Guild
 
         public async Task SetGuildWhoKnowsWhitelistRoleAsync(IGuild guild, ulong? roleId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
@@ -578,7 +578,7 @@ namespace FMBot.Bot.Services.Guild
 
         public async Task<string[]> RemoveGuildDisabledCommandAsync(IGuild guild, string command)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
@@ -596,7 +596,7 @@ namespace FMBot.Bot.Services.Guild
 
         public async Task<string[]> GetDisabledCommandsForChannel(IChannel channel)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingChannel = await db.Channels
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordChannelId == channel.Id);
@@ -606,7 +606,7 @@ namespace FMBot.Bot.Services.Guild
 
         public async Task<string[]> AddChannelDisabledCommandAsync(IChannel channel, int guildId, string command)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingChannel = await db.Channels
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordChannelId == channel.Id);
@@ -651,7 +651,7 @@ namespace FMBot.Bot.Services.Guild
 
         public async Task<string[]> RemoveChannelDisabledCommandAsync(IChannel channel, string command)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingChannel = await db.Channels
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordChannelId == channel.Id);
@@ -669,7 +669,7 @@ namespace FMBot.Bot.Services.Guild
 
         public async Task<int?> GetChannelCooldown(ulong discordChannelId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingChannel = await db.Channels
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannelId);
@@ -679,7 +679,7 @@ namespace FMBot.Bot.Services.Guild
 
         public async Task<int?> SetChannelCooldownAsync(IChannel channel, int guildId, int? cooldown)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingChannel = await db.Channels
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordChannelId == channel.Id);

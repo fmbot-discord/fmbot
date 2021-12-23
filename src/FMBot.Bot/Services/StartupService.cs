@@ -195,7 +195,6 @@ namespace FMBot.Bot.Services
             }
 
             Log.Information("Starting slash command registration");
-            await this._interactionService.RegisterCommandsToGuildAsync(821660544581763093);
 
 #if DEBUG
             await this._interactionService.RegisterCommandsToGuildAsync(821660544581763093);

@@ -729,7 +729,7 @@ namespace FMBot.Bot.Commands.LastFM
                 await this.Context.Channel.SendMessageAsync("", false, serverEmbed.Build());
             }
 
-            var success = await GetAndStoreAuthSession(this.Context.User, token.Content.Token);
+            var success = await this._userService.GetAndStoreAuthSession(this.Context.User, token.Content.Token);
 
             if (success)
             {
@@ -786,43 +786,6 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
             }
-        }
-
-        private async Task<bool> GetAndStoreAuthSession(IUser contextUser, string token)
-        {
-            var loginDelay = 7000;
-            for (var i = 0; i < 9; i++)
-            {
-                await Task.Delay(loginDelay);
-
-                var authSession = await this._lastFmRepository.GetAuthSession(token);
-
-                if (authSession.Success)
-                {
-                    var userSettings = new User
-                    {
-                        UserNameLastFM = authSession.Content.Session.Name,
-                        SessionKeyLastFm = authSession.Content.Session.Key
-                    };
-
-                    Log.Information("LastfmAuth: User {userName} logged in with auth session (discordUserId: {discordUserId})", authSession.Content.Session.Name, contextUser.Id);
-                    await this._userService.SetLastFm(contextUser, userSettings, true);
-                    return true;
-                }
-
-                if (!authSession.Success && i == 8)
-                {
-                    Log.Information("LastfmAuth: Login timed out or auth not successful (discordUserId: {discordUserId})", contextUser.Id);
-                    return false;
-                }
-                if (!authSession.Success)
-                {
-                    loginDelay += 2000;
-                    Log.Information("LastfmAuth: Login attempt {attempt} for {user} | {discordUserId} not succeeded yet ({errorCode}), delaying", i, contextUser.Username, contextUser.Id, authSession.Message);
-                }
-            }
-
-            return false;
         }
 
         [Command("remove", RunMode = RunMode.Async)]

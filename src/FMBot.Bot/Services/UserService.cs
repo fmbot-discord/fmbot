@@ -36,7 +36,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> UserRegisteredAsync(IUser discordUser)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var isRegistered = await db.Users
                 .AsNoTracking()
                 .AnyAsync(f => f.DiscordUserId == discordUser.Id);
@@ -240,6 +240,43 @@ namespace FMBot.Bot.Services
 
                 await db.SaveChangesAsync();
             }
+        }
+
+        public async Task<bool> GetAndStoreAuthSession(IUser contextUser, string token)
+        {
+            var loginDelay = 7000;
+            for (var i = 0; i < 9; i++)
+            {
+                await Task.Delay(loginDelay);
+
+                var authSession = await this._lastFmRepository.GetAuthSession(token);
+
+                if (authSession.Success)
+                {
+                    var userSettings = new User
+                    {
+                        UserNameLastFM = authSession.Content.Session.Name,
+                        SessionKeyLastFm = authSession.Content.Session.Key
+                    };
+
+                    Log.Information("LastfmAuth: User {userName} logged in with auth session (discordUserId: {discordUserId})", authSession.Content.Session.Name, contextUser.Id);
+                    await SetLastFm(contextUser, userSettings, true);
+                    return true;
+                }
+
+                if (!authSession.Success && i == 8)
+                {
+                    Log.Information("LastfmAuth: Login timed out or auth not successful (discordUserId: {discordUserId})", contextUser.Id);
+                    return false;
+                }
+                if (!authSession.Success)
+                {
+                    loginDelay += 2000;
+                    Log.Information("LastfmAuth: Login attempt {attempt} for {user} | {discordUserId} not succeeded yet ({errorCode}), delaying", i, contextUser.Username, contextUser.Id, authSession.Message);
+                }
+            }
+
+            return false;
         }
 
         // Set Privacy

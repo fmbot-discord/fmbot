@@ -193,7 +193,7 @@ public class PlayCommands : BaseCommandModule
 
             try
             {
-                if (message != null && !response.Error && !this._guildService.CheckIfDM(this.Context))
+                if (message != null && response.CommandResponse == CommandResponse.Ok && !this._guildService.CheckIfDM(this.Context))
                 {
                     await this._guildService.AddReactionsAsync(message, this.Context.Guild);
                 }
@@ -232,92 +232,18 @@ public class PlayCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Tracks)]
     public async Task RecentAsync([Remainder] string extraOptions = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
         _ = this.Context.Channel.TriggerTypingAsync();
 
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
         var amount = SettingService.GetAmount(extraOptions, 5, 10);
 
         try
         {
-            string sessionKey = null;
-            if (!userSettings.DifferentUser && !string.IsNullOrEmpty(contextUser.SessionKeyLastFm))
-            {
-                sessionKey = contextUser.SessionKeyLastFm;
-            }
+            var response = await this._playBuilder.RecentAsync(this.Context.Guild, this.Context.User, contextUser,
+                userSettings, amount);
 
-            var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFm, amount, useCache: true, sessionKey: sessionKey);
-
-            if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentTracks, userSettings.UserNameLastFm, this.Context))
-            {
-                return;
-            }
-
-            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-            var title = !userSettings.DifferentUser ? userTitle : $"{userSettings.UserNameLastFm}, requested by {userTitle}";
-            this._embedAuthor.WithName($"Latest tracks for {title}");
-
-            this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            this._embedAuthor.WithUrl(recentTracks.Content.UserRecentTracksUrl);
-            this._embed.WithAuthor(this._embedAuthor);
-
-            var fmRecentText = "";
-            var resultAmount = recentTracks.Content.RecentTracks.Count;
-            if (recentTracks.Content.RecentTracks.Any(a => a.NowPlaying))
-            {
-                resultAmount -= 1;
-            }
-            for (var i = 0; i < resultAmount; i++)
-            {
-                var track = recentTracks.Content.RecentTracks[i];
-
-                if (i == 0)
-                {
-                    if (track.AlbumCoverUrl != null)
-                    {
-                        this._embed.WithThumbnailUrl(track.AlbumCoverUrl);
-                    }
-                }
-
-                var trackString = StringService.TrackToLinkedString(track, contextUser.RymEnabled);
-
-                if (track.NowPlaying)
-                {
-                    fmRecentText += $"🎶 - {trackString}\n";
-                }
-                else
-                {
-                    fmRecentText += $"`{i + 1}` - {trackString}\n";
-                }
-            }
-
-            this._embed.WithDescription(fmRecentText);
-
-            string footerText;
-            var firstTrack = recentTracks.Content.RecentTracks[0];
-            if (firstTrack.NowPlaying)
-            {
-                footerText =
-                    $"{userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount} scrobbles | Now Playing";
-            }
-            else
-            {
-                footerText =
-                    $"{userSettings.UserNameLastFm} has {recentTracks.Content.TotalAmount} scrobbles";
-
-                if (!firstTrack.NowPlaying && firstTrack.TimePlayed.HasValue)
-                {
-                    footerText += " | Last scrobble:";
-                    this._embed.WithTimestamp(firstTrack.TimePlayed.Value);
-                }
-            }
-
-            this._embedFooter.WithText(footerText);
-
-            this._embed.WithFooter(this._embedFooter);
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            await this.Context.Channel.SendMessageAsync("", false, response.Embed);
 
             this.Context.LogCommandUsed();
         }
@@ -341,73 +267,16 @@ public class PlayCommands : BaseCommandModule
         _ = this.Context.Channel.TriggerTypingAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-
         var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
         var amountOfDays = SettingService.GetAmount(extraOptions, 4, 8);
 
-
-        await this._updateService.UpdateUser(contextUser);
-
         try
         {
-            var week = await this._playService.GetDailyOverview(userSettings.UserId, amountOfDays);
+            var response = await this._playBuilder.OverviewAsync(this.Context.Guild, this.Context.User, contextUser,
+                userSettings, amountOfDays);
 
-            if (week == null)
-            {
-                await ReplyAsync("Sorry, we don't have plays for you in the selected amount of days.");
-                this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                return;
-            }
+            await this.Context.Channel.SendMessageAsync("", false, response.Embed);
 
-            foreach (var day in week.Days.OrderByDescending(o => o.Date))
-            {
-                var genreString = new StringBuilder();
-                if (day.TopGenres != null && day.TopGenres.Any())
-                {
-                    for (var i = 0; i < day.TopGenres.Count; i++)
-                    {
-                        if (i != 0)
-                        {
-                            genreString.Append(" - ");
-                        }
-
-                        var genre = day.TopGenres[i];
-                        genreString.Append($"{genre}");
-                    }
-                }
-
-                this._embed.AddField(
-                    $"{day.Playcount} plays - {StringExtensions.GetListeningTimeString(day.ListeningTime)} - <t:{day.Date.ToUnixEpochDate()}:D>",
-                    $"{genreString}\n" +
-                    $"{day.TopArtist}\n" +
-                    $"{day.TopAlbum}\n" +
-                    $"{day.TopTrack}"
-                );
-            }
-
-            var description = $"Top genres, artist, album and track for last {amountOfDays} days";
-
-            if (week.Days.Count < amountOfDays)
-            {
-                description += $"\n{amountOfDays - week.Days.Count} days not shown because of no plays.";
-            }
-
-            this._embed.WithDescription(description);
-
-            this._embedAuthor.WithName($"Daily overview for {userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}");
-            if (!userSettings.DifferentUser)
-            {
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            }
-
-            this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library?date_preset=LAST_7_DAYS");
-            this._embed.WithAuthor(this._embedAuthor);
-
-            this._embedFooter.WithText($"{week.Uniques} unique tracks - {week.Playcount} total plays - avg {Math.Round(week.AvgPerDay, 1)} per day");
-            this._embed.WithFooter(this._embedFooter);
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
@@ -803,9 +672,6 @@ public class PlayCommands : BaseCommandModule
         var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom);
 
         var userTitle = $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}";
-
-        var reply =
-            $"**{userTitle}** has `{count}` total scrobbles";
 
         if (timeType.TimePeriod == TimePeriod.AllTime)
         {

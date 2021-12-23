@@ -253,6 +253,7 @@ namespace FMBot.Bot.Commands.Guild
         [Examples("prefix", "prefix !")]
         [GuildOnly]
         [CommandCategories(CommandCategory.ServerSettings)]
+        [RequiresIndex]
         public async Task SetPrefixAsync(string prefix = null)
         {
             var serverUser = (IGuildUser)this.Context.Message.Author;

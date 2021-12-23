@@ -7,7 +7,7 @@ public class ResponseModel
 {
     public ResponseModel()
     {
-        this.Error = false;
+        this.CommandResponse = CommandResponse.Ok;
     }
 
     public ResponseType ResponseType { get; set; }
@@ -16,6 +16,6 @@ public class ResponseModel
 
     public string Text { get; set; }
 
-    public bool Error { get; set; }
+    public CommandResponse CommandResponse { get; set; }
 }
 
