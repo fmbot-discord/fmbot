@@ -279,10 +279,9 @@ namespace FMBot.Bot.Services
             return false;
         }
 
-        // Set Privacy
         public async Task<PrivacyLevel> SetPrivacy(User userToUpdate, string[] extraOptions)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
 
             if (extraOptions.Contains("global") || extraOptions.Contains("Global"))
             {
@@ -292,6 +291,19 @@ namespace FMBot.Bot.Services
             {
                 userToUpdate.PrivacyLevel = PrivacyLevel.Server;
             }
+
+            db.Update(userToUpdate);
+
+            await db.SaveChangesAsync();
+
+            return userToUpdate.PrivacyLevel;
+        }
+
+        public async Task<PrivacyLevel> SetPrivacyLevel(User userToUpdate, PrivacyLevel privacyLevel)
+        {
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+
+            userToUpdate.PrivacyLevel = privacyLevel;
 
             db.Update(userToUpdate);
 

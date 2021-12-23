@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
+using FMBot.Bot.Attributes;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
@@ -123,6 +124,46 @@ public class UserSlashCommands : InteractionModuleBase
             this.Context.LogCommandException(e);
             await ReplyAsync(
                 "Unable to send you a login link. Please try again later or contact .fmbot support.");
+        }
+    }
+
+    [SlashCommand("mode", "Changes your visibility to other .fmbot users in Global WhoKnows")]
+    [UsernameSetRequired]
+    public async Task ModeAsync([Summary("mode", "Privacy mode for your .fmbot account")] PrivacyLevel privacyLevel)
+    {
+        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var newPrivacyLevel = await this._userService.SetPrivacyLevel(userSettings, privacyLevel);
+
+        var reply = new StringBuilder();
+        reply.AppendLine($"Your privacy mode has been set to **{newPrivacyLevel}**.");
+        reply.AppendLine();
+
+        if (newPrivacyLevel == PrivacyLevel.Global)
+        {
+            reply.AppendLine("You will now be visible in the global WhoKnows with your Last.fm username.");
+        }
+        if (newPrivacyLevel == PrivacyLevel.Server)
+        {
+            reply.AppendLine("You will not be visible in the global WhoKnows with your Last.fm username, but users you share a server with will still see it.");
+        }
+
+        var embed = new EmbedBuilder();
+        embed.WithColor(DiscordConstants.InformationColorBlue);
+        embed.WithDescription(reply.ToString());
+
+        try
+        {
+
+
+            await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+
+            this.Context.LogCommandUsed();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
         }
     }
 }
