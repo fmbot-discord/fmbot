@@ -305,7 +305,7 @@ namespace FMBot.Bot.Services
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();
 
-            var filterDate = DateTime.UtcNow.AddDays(-7);
+            var filterDate = DateTime.UtcNow.AddDays(-14);
             var recentlyFeaturedAlbums = await db.FeaturedLogs
                 .AsQueryable()
                 .Where(w => w.DateTime > filterDate)
