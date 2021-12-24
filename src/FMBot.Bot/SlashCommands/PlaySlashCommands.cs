@@ -9,6 +9,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Repositories;
 using SummaryAttribute = Discord.Interactions.SummaryAttribute;
 
 namespace FMBot.Bot.SlashCommands;
@@ -19,6 +20,7 @@ public class PlaySlashCommands : InteractionModuleBase
     private readonly SettingService _settingService;
     private readonly PlayBuilder _playBuilder;
     private readonly GuildService _guildService;
+    private readonly LastFmRepository _lastFmRepository;
 
     private static readonly List<DateTimeOffset> StackCooldownTimer = new();
     private static readonly List<ulong> StackCooldownTarget = new();
@@ -26,12 +28,13 @@ public class PlaySlashCommands : InteractionModuleBase
     public PlaySlashCommands(UserService userService,
         SettingService settingService,
         PlayBuilder playBuilder,
-        GuildService guildService)
+        GuildService guildService, LastFmRepository lastFmRepository)
     {
         this._userService = userService;
         this._settingService = settingService;
         this._playBuilder = playBuilder;
         this._guildService = guildService;
+        this._lastFmRepository = lastFmRepository;
     }
 
     [SlashCommand("fm", "Now Playing - Shows you or someone else their current track")]
@@ -134,7 +137,7 @@ public class PlaySlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("overview", "Shows you or someone else their recent tracks")]
+    [SlashCommand("overview", "Shows a daily overview")]
     [UsernameSetRequired]
     public async Task OverviewAsync(
         [Summary("User", "The user to show (defaults to self)")] string user = null,
@@ -164,6 +167,53 @@ public class PlaySlashCommands : InteractionModuleBase
             this.Context.LogCommandException(e);
             await FollowupAsync(
                 "Unable to show your overview due to an internal error. Please try again later or contact .fmbot support.",
+                ephemeral: true);
+        }
+    }
+
+    [SlashCommand("pace", "Shows estimated date you reach a scrobble goal based on average scrobbles per day")]
+    [UsernameSetRequired]
+    public async Task PaceAsync(
+        [Summary("Amount", "Goal scrobble amount")] int amount = 1,
+        [Summary("Time-period", "Time period to base average playcount on")] TimePeriod timePeriod = TimePeriod.AllTime,
+        [Summary("User", "The user to show (defaults to self)")] string user = null)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+
+        try
+        {
+            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
+
+            var goalAmount = SettingService.GetGoalAmount(amount.ToString(), userInfo.Playcount);
+
+            var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(TimePeriod), timePeriod), TimePeriod.AllTime);
+
+            long timeFrom;
+            if (timeSettings.TimePeriod != TimePeriod.AllTime && timeSettings.PlayDays != null)
+            {
+                var dateAgo = DateTime.UtcNow.AddDays(-timeSettings.PlayDays.Value);
+                timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
+            }
+            else
+            {
+                timeFrom = userInfo.Registered.Unixtime;
+            }
+
+            var response = await this._playBuilder.PaceAsync(this.Context.Guild, this.Context.User, contextUser,
+                userSettings, timeSettings, goalAmount, userInfo.Playcount, timeFrom);
+
+            await FollowupAsync(response.Text, allowedMentions: AllowedMentions.None);
+
+            this.Context.LogCommandUsed();
+        }
+        catch (Exception e)
+        {
+            this.Context.LogCommandException(e);
+            await FollowupAsync(
+                "Unable to show your pace due to an internal error. Please try again later or contact .fmbot support.",
                 ephemeral: true);
         }
     }

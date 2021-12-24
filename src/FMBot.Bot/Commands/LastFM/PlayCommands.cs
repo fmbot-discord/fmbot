@@ -516,11 +516,11 @@ public class PlayCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Other)]
     public async Task PaceAsync([Remainder] string extraOptions = null)
     {
-        var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
+        var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
         var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
 
         var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
@@ -537,52 +537,10 @@ public class PlayCommands : BaseCommandModule
             timeFrom = userInfo.Registered.Unixtime;
         }
 
-        var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom, userSettings.SessionKeyLastFm);
+        var response = await this._playBuilder.PaceAsync(this.Context.Guild, this.Context.User, contextUser,
+            userSettings, timeSettings, goalAmount, userInfo.Playcount, timeFrom);
 
-        if (count == null || count == 0)
-        {
-            var errorReply = $"<@{this.Context.User.Id}> No plays found in the {timeSettings.Description} time period.";
-
-            await this.Context.Channel.SendMessageAsync(errorReply);
-        }
-
-        var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
-        var totalDays = (DateTime.UtcNow - age).TotalDays;
-
-        var playsLeft = goalAmount - userInfo.Playcount;
-
-        var avgPerDay = count / totalDays;
-
-        var goalDate = (DateTime.UtcNow.AddDays(playsLeft / avgPerDay.Value));
-
-        var reply = new StringBuilder();
-
-        var determiner = "your";
-        if (userSettings.DifferentUser)
-        {
-            reply.Append($"<@{this.Context.User.Id}> My estimate is that the user '{userSettings.UserNameLastFm.FilterOutMentions()}'");
-            determiner = "their";
-        }
-        else
-        {
-            reply.Append($"<@{this.Context.User.Id}> My estimate is that you");
-        }
-
-        reply.AppendLine($" will reach **{goalAmount}** scrobbles on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
-
-        if (timeSettings.TimePeriod == TimePeriod.AllTime)
-        {
-            reply.AppendLine(
-                $"This is based on {determiner} alltime avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day. ({count} in {Math.Round(totalDays, 0)} days)");
-        }
-        else
-        {
-            reply.AppendLine(
-                $"This is based on {determiner} avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day in the last {Math.Round(totalDays, 0)} days ({count} total)");
-        }
-
-        await this.Context.Channel.SendMessageAsync(reply.ToString(), allowedMentions: AllowedMentions.None);
-
+        await this.Context.Channel.SendMessageAsync(response.Text, allowedMentions: AllowedMentions.None);
         this.Context.LogCommandUsed();
     }
 

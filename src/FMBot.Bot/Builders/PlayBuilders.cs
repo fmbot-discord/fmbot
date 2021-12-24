@@ -541,4 +541,72 @@ public class PlayBuilder : BaseBuilder
         response.Embed = this._embed.Build();
         return response;
     }
+
+    public async Task<ResponseModel> PaceAsync(
+        IGuild discordGuild,
+        IUser discordUser,
+        User contextUser,
+        UserSettingsModel userSettings,
+        TimeSettingsModel timeSettings,
+        long goalAmount,
+        long userTotalPlaycount,
+        long timeFrom)
+    {
+        this._embedAuthor = new EmbedAuthorBuilder();
+        this._embed = new EmbedBuilder()
+            .WithColor(DiscordConstants.LastFmColorRed);
+        this._embedFooter = new EmbedFooterBuilder();
+
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Text,
+        };
+
+        var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom, userSettings.SessionKeyLastFm);
+
+        if (count is null or 0)
+        {
+            response.Text = $"<@{discordUser.Id}> No plays found in the {timeSettings.Description} time period.";
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            return response;
+        }
+
+        var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
+        var totalDays = (DateTime.UtcNow - age).TotalDays;
+
+        var playsLeft = goalAmount - userTotalPlaycount;
+
+        var avgPerDay = count / totalDays;
+
+        var goalDate = (DateTime.UtcNow.AddDays(playsLeft / avgPerDay.Value));
+
+        var reply = new StringBuilder();
+
+        var determiner = "your";
+        if (userSettings.DifferentUser)
+        {
+            reply.Append($"<@{discordUser.Id}> My estimate is that the user '{userSettings.UserNameLastFm.FilterOutMentions()}'");
+            determiner = "their";
+        }
+        else
+        {
+            reply.Append($"<@{discordUser.Id}> My estimate is that you");
+        }
+
+        reply.AppendLine($" will reach **{goalAmount}** scrobbles on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
+
+        if (timeSettings.TimePeriod == TimePeriod.AllTime)
+        {
+            reply.AppendLine(
+                $"This is based on {determiner} alltime avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day. ({count} in {Math.Round(totalDays, 0)} days)");
+        }
+        else
+        {
+            reply.AppendLine(
+                $"This is based on {determiner} avg of {Math.Round(avgPerDay.GetValueOrDefault(0), 1)} per day in the last {Math.Round(totalDays, 0)} days ({count} total)");
+        }
+
+        response.Text = reply.ToString();
+        return response;
+    }
 }
