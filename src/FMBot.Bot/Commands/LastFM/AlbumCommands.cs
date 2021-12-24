@@ -439,7 +439,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount, userSessionKey: userSettings.SessionKeyLastFm);
                 if (!albums.Success || albums.Content == null)
                 {
-                    this._embed.ErrorResponse(albums.Error, albums.Message, this.Context);
+                    this._embed.ErrorResponse(albums.Error, albums.Message, this.Context.Message.Content, this.Context.User);
                     this.Context.LogCommandUsed(CommandResponse.LastFmError);
                     await ReplyAsync("", false, this._embed.Build());
                     return;
@@ -1284,7 +1284,7 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                     if (!albumInfo.Success || albumInfo.Content == null)
                     {
-                        this._embed.ErrorResponse(albumInfo.Error, albumInfo.Message, this.Context, "album");
+                        this._embed.ErrorResponse(albumInfo.Error, albumInfo.Message, this.Context.Message.Content, this.Context.User, "album");
                         await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                         this.Context.LogCommandUsed(CommandResponse.LastFmError);
                         return null;

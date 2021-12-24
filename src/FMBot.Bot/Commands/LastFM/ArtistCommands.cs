@@ -576,7 +576,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (!artists.Success || artists.Content == null)
                 {
-                    this._embed.ErrorResponse(artists.Error, artists.Message, this.Context);
+                    this._embed.ErrorResponse(artists.Error, artists.Message, this.Context.Message.Content, this.Context.User);
                     this.Context.LogCommandUsed(CommandResponse.LastFmError);
                     await ReplyAsync("", false, this._embed.Build());
                     return;
@@ -769,7 +769,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (!ownArtists.Success || ownArtists.Content == null || !otherArtists.Success || otherArtists.Content == null)
                 {
-                    this._embed.ErrorResponse(ownArtists.Error, ownArtists.Message, this.Context);
+                    this._embed.ErrorResponse(ownArtists.Error, ownArtists.Message, this.Context.Message.Content, this.Context.User);
                     this.Context.LogCommandUsed(CommandResponse.LastFmError);
                     await ReplyAsync("", false, this._embed.Build());
                     return;
@@ -1500,7 +1500,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
                 if (!artistCall.Success || artistCall.Content == null)
                 {
-                    this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context, "artist");
+                    this._embed.ErrorResponse(artistCall.Error, artistCall.Message, this.Context.Message.Content, this.Context.User, "artist");
                     await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.LastFmError);
                     return null;

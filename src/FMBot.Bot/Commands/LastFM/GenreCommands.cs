@@ -118,7 +118,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                     if (!artists.Success || artists.Content == null)
                     {
-                        this._embed.ErrorResponse(artists.Error, artists.Message, this.Context);
+                        this._embed.ErrorResponse(artists.Error, artists.Message, this.Context.Message.Content, this.Context.User);
                         this.Context.LogCommandUsed(CommandResponse.LastFmError);
                         await ReplyAsync("", false, this._embed.Build());
                         return;

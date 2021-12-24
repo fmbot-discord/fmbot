@@ -186,9 +186,7 @@ public class PlaySlashCommands : InteractionModuleBase
         try
         {
             var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
-
             var goalAmount = SettingService.GetGoalAmount(amount.ToString(), userInfo.Playcount);
-
             var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(TimePeriod), timePeriod), TimePeriod.AllTime);
 
             long timeFrom;
@@ -202,7 +200,7 @@ public class PlaySlashCommands : InteractionModuleBase
                 timeFrom = userInfo.Registered.Unixtime;
             }
 
-            var response = await this._playBuilder.PaceAsync(this.Context.Guild, this.Context.User, contextUser,
+            var response = await this._playBuilder.PaceAsync(this.Context.User,
                 userSettings, timeSettings, goalAmount, userInfo.Playcount, timeFrom);
 
             await FollowupAsync(response.Text, allowedMentions: AllowedMentions.None);
@@ -214,6 +212,38 @@ public class PlaySlashCommands : InteractionModuleBase
             this.Context.LogCommandException(e);
             await FollowupAsync(
                 "Unable to show your pace due to an internal error. Please try again later or contact .fmbot support.",
+                ephemeral: true);
+        }
+    }
+
+    [SlashCommand("milestone", "Shows a milestone scrobble")]
+    [UsernameSetRequired]
+    public async Task MileStoneAsync(
+        [Summary("Amount", "Milestone scrobble amount")] int amount = 99999999,
+        [Summary("User", "The user to show (defaults to self)")] string user = null)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+
+        try
+        {
+            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
+            var mileStoneAmount = SettingService.GetMilestoneAmount(amount.ToString(), userInfo.Playcount);
+
+            var response = await this._playBuilder.MileStoneAsync(this.Context.Guild, this.Context.Channel, this.Context.User,
+                userSettings, mileStoneAmount, userInfo.Playcount);
+
+            await FollowupAsync(null, new[] { response.Embed }, allowedMentions: AllowedMentions.None);
+
+            this.Context.LogCommandUsed();
+        }
+        catch (Exception e)
+        {
+            this.Context.LogCommandException(e);
+            await FollowupAsync(
+                "Unable to show your milestone due to an internal error. Please try again later or contact .fmbot support.",
                 ephemeral: true);
         }
     }

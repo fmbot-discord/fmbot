@@ -543,9 +543,7 @@ public class PlayBuilder : BaseBuilder
     }
 
     public async Task<ResponseModel> PaceAsync(
-        IGuild discordGuild,
         IUser discordUser,
-        User contextUser,
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
         long goalAmount,
@@ -607,6 +605,66 @@ public class PlayBuilder : BaseBuilder
         }
 
         response.Text = reply.ToString();
+        return response;
+    }
+
+    public async Task<ResponseModel> MileStoneAsync(
+        IGuild discordGuild,
+        IChannel discordChannel,
+        IUser discordUser,
+        UserSettingsModel userSettings,
+        long mileStoneAmount,
+        long userTotalPlaycount)
+    {
+        this._embedAuthor = new EmbedAuthorBuilder();
+        this._embed = new EmbedBuilder()
+            .WithColor(DiscordConstants.LastFmColorRed);
+        this._embedFooter = new EmbedFooterBuilder();
+
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var mileStonePlay = await this._lastFmRepository.GetMilestoneScrobbleAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm, userTotalPlaycount, mileStoneAmount);
+
+        if (!mileStonePlay.Success || mileStonePlay.Content == null)
+        {
+            this._embed.ErrorResponse(mileStonePlay.Error, mileStonePlay.Message, "milestone", discordUser);
+            response.Embed = this._embed.Build();
+            response.CommandResponse = CommandResponse.LastFmError;
+            return response;
+        }
+
+        var reply = new StringBuilder();
+
+        reply.AppendLine(StringService.TrackToLinkedString(mileStonePlay.Content));
+
+        var userTitle = $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}";
+
+        this._embed.WithTitle($"{mileStoneAmount}{StringExtensions.GetAmountEnd(mileStoneAmount)} scrobble from {userTitle}");
+
+        if (mileStonePlay.Content.AlbumCoverUrl != null)
+        {
+            var safeForChannel = await this._censorService.IsSafeForChannel(discordGuild, discordChannel,
+                mileStonePlay.Content.AlbumName, mileStonePlay.Content.ArtistName, mileStonePlay.Content.AlbumCoverUrl);
+            if (safeForChannel.Result)
+            {
+                this._embed.WithThumbnailUrl(mileStonePlay.Content.AlbumCoverUrl);
+            }
+        }
+
+        if (mileStonePlay.Content.TimePlayed.HasValue)
+        {
+            var dateString = mileStonePlay.Content.TimePlayed.Value.ToString("yyyy-M-dd");
+            this._embed.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library?from={dateString}&to={dateString}");
+
+            reply.AppendLine($"Date played: **<t:{mileStonePlay.Content.TimePlayed.Value.ToUnixEpochDate()}:D>**");
+        }
+
+        this._embed.WithDescription(reply.ToString());
+
+        response.Embed = this._embed.Build();
         return response;
     }
 }

@@ -537,7 +537,7 @@ public class PlayCommands : BaseCommandModule
             timeFrom = userInfo.Registered.Unixtime;
         }
 
-        var response = await this._playBuilder.PaceAsync(this.Context.Guild, this.Context.User, contextUser,
+        var response = await this._playBuilder.PaceAsync(this.Context.User,
             userSettings, timeSettings, goalAmount, userInfo.Playcount, timeFrom);
 
         await this.Context.Channel.SendMessageAsync(response.Text, allowedMentions: AllowedMentions.None);
@@ -558,49 +558,14 @@ public class PlayCommands : BaseCommandModule
         _ = this.Context.Channel.TriggerTypingAsync();
 
         var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
-        var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
 
+        var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
         var mileStoneAmount = SettingService.GetMilestoneAmount(extraOptions, userInfo.Playcount);
 
-        var mileStonePlay = await this._lastFmRepository.GetMilestoneScrobbleAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm, userInfo.Playcount, mileStoneAmount);
+        var response = await this._playBuilder.MileStoneAsync(this.Context.Guild, this.Context.Channel, this.Context.User,
+            userSettings, mileStoneAmount, userInfo.Playcount);
 
-        if (!mileStonePlay.Success || mileStonePlay.Content == null)
-        {
-            this._embed.ErrorResponse(mileStonePlay.Error, mileStonePlay.Message, this.Context, "artist");
-            await ReplyAsync("", false, this._embed.Build());
-            this.Context.LogCommandWithLastFmError(mileStonePlay.Error);
-            return;
-        }
-
-        var reply = new StringBuilder();
-
-        reply.AppendLine(StringService.TrackToLinkedString(mileStonePlay.Content));
-
-        var userTitle = $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}";
-
-        this._embed.WithTitle($"{mileStoneAmount}{StringExtensions.GetAmountEnd(mileStoneAmount)} scrobble from {userTitle}");
-
-        if (mileStonePlay.Content.AlbumCoverUrl != null)
-        {
-            var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
-                mileStonePlay.Content.AlbumName, mileStonePlay.Content.ArtistName, mileStonePlay.Content.AlbumCoverUrl);
-            if (safeForChannel.Result)
-            {
-                this._embed.WithThumbnailUrl(mileStonePlay.Content.AlbumCoverUrl);
-            }
-        }
-
-        if (mileStonePlay.Content.TimePlayed.HasValue)
-        {
-            var dateString = mileStonePlay.Content.TimePlayed.Value.ToString("yyyy-M-dd");
-            this._embed.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library?from={dateString}&to={dateString}");
-
-            reply.AppendLine($"Date played: **<t:{mileStonePlay.Content.TimePlayed.Value.ToUnixEpochDate()}:D>**");
-        }
-
-        this._embed.WithDescription(reply.ToString());
-
-        await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+        await this.Context.Channel.SendMessageAsync("", false, response.Embed);
         this.Context.LogCommandUsed();
     }
 
@@ -661,7 +626,6 @@ public class PlayCommands : BaseCommandModule
         try
         {
             var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
-
             var userWithStreak = await this._userService.GetUserAsync(userSettings.DiscordUserId);
 
             var recentTracks = await this._updateService.UpdateUserAndGetRecentTracks(userWithStreak);

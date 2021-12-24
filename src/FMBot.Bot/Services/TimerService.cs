@@ -206,7 +206,7 @@ namespace FMBot.Bot.Services
                 },
                 null,
                 TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds + 5),
-                TimeSpan.FromMinutes(2));
+                TimeSpan.FromMinutes(4));
 
             this._userUpdateTimer = new Timer(async _ =>
                 {

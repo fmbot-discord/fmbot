@@ -640,7 +640,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (!topTracks.Success)
                 {
-                    this._embed.ErrorResponse(topTracks.Error, topTracks.Message, this.Context);
+                    this._embed.ErrorResponse(topTracks.Error, topTracks.Message, this.Context.Message.Content, this.Context.User);
                     await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
@@ -1255,7 +1255,7 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                     if (!trackInfo.Success || trackInfo.Content == null)
                     {
-                        this._embed.ErrorResponse(trackInfo.Error, trackInfo.Message, this.Context, "track");
+                        this._embed.ErrorResponse(trackInfo.Error, trackInfo.Message, this.Context.Message.Content, this.Context.User, "track");
                         await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                         this.Context.LogCommandUsed(CommandResponse.LastFmError);
                         return null;
