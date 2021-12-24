@@ -197,8 +197,10 @@ namespace FMBot.Bot.Services
             Log.Information("Starting slash command registration");
 
 #if DEBUG
+            Log.Information("Registering slash commands to guild");
             await this._interactionService.RegisterCommandsToGuildAsync(821660544581763093);
 #else
+            Log.Information("Registering slash commands globally");
             await this._interactionService.RegisterCommandsGloballyAsync();
 #endif
         }
