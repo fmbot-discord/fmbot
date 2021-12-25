@@ -184,7 +184,7 @@ public class PlayCommands : BaseCommandModule
             IUserMessage message;
             if (response.ResponseType == ResponseType.Embed)
             {
-                message = await ReplyAsync("", false, response.Embed);
+                message = await ReplyAsync("", false, response.Embed.Build());
             }
             else
             {
@@ -243,7 +243,7 @@ public class PlayCommands : BaseCommandModule
             var response = await this._playBuilder.RecentAsync(this.Context.Guild, this.Context.User, contextUser,
                 userSettings, amount);
 
-            await this.Context.Channel.SendMessageAsync("", false, response.Embed);
+            await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
 
             this.Context.LogCommandUsed();
         }
@@ -275,7 +275,7 @@ public class PlayCommands : BaseCommandModule
             var response = await this._playBuilder.OverviewAsync(this.Context.Guild, this.Context.User, contextUser,
                 userSettings, amountOfDays);
 
-            await this.Context.Channel.SendMessageAsync("", false, response.Embed);
+            await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
 
             this.Context.LogCommandUsed();
         }
@@ -565,7 +565,7 @@ public class PlayCommands : BaseCommandModule
         var response = await this._playBuilder.MileStoneAsync(this.Context.Guild, this.Context.Channel, this.Context.User,
             userSettings, mileStoneAmount, userInfo.Playcount);
 
-        await this.Context.Channel.SendMessageAsync("", false, response.Embed);
+        await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
         this.Context.LogCommandUsed();
     }
 

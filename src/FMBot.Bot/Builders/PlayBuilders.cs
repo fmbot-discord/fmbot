@@ -22,7 +22,7 @@ using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.Builders;
 
-public class PlayBuilder : BaseBuilder
+public class PlayBuilder
 {
     private readonly CensorService _censorService;
     private readonly GuildService _guildService;
@@ -89,11 +89,6 @@ public class PlayBuilder : BaseBuilder
         User contextUser,
         UserSettingsModel userSettings)
     {
-        this._embedAuthor = new EmbedAuthorBuilder();
-        this._embed = new EmbedBuilder()
-            .WithColor(DiscordConstants.LastFmColorRed);
-        this._embedFooter = new EmbedFooterBuilder();
-
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
@@ -130,7 +125,7 @@ public class PlayBuilder : BaseBuilder
         {
             var errorEmbed =
                 GenericEmbedService.RecentScrobbleCallFailedBuilder(recentTracks, userSettings.UserNameLastFm);
-            response.Embed = errorEmbed.Build();
+            response.Embed = errorEmbed;
             response.CommandResponse = CommandResponse.LastFmError;
             return response;
         }
@@ -286,13 +281,13 @@ public class PlayBuilder : BaseBuilder
                 if (embedType == FmEmbedType.EmbedMini || embedType == FmEmbedType.EmbedTiny)
                 {
                     fmText += StringService.TrackToLinkedString(currentTrack, contextUser.RymEnabled);
-                    this._embed.WithDescription(fmText);
+                    response.Embed.WithDescription(fmText);
                 }
                 else if (previousTrack != null)
                 {
-                    this._embed.AddField("Current:",
+                    response.Embed.AddField("Current:",
                         StringService.TrackToLinkedString(currentTrack, contextUser.RymEnabled));
-                    this._embed.AddField("Previous:",
+                    response.Embed.AddField("Previous:",
                         StringService.TrackToLinkedString(previousTrack, contextUser.RymEnabled));
                 }
 
@@ -313,11 +308,11 @@ public class PlayBuilder : BaseBuilder
                 if (!currentTrack.NowPlaying && currentTrack.TimePlayed.HasValue)
                 {
                     footerText += " | Last scrobble:";
-                    this._embed.WithTimestamp(currentTrack.TimePlayed.Value);
+                    response.Embed.WithTimestamp(currentTrack.TimePlayed.Value);
                 }
 
-                this._embedAuthor.WithName(headerText);
-                this._embedAuthor.WithUrl(recentTracks.Content.UserUrl);
+                response.EmbedAuthor.WithName(headerText);
+                response.EmbedAuthor.WithUrl(recentTracks.Content.UserUrl);
 
                 if (discordGuild != null && !userSettings.DifferentUser)
                 {
@@ -333,15 +328,15 @@ public class PlayBuilder : BaseBuilder
 
                 if (!string.IsNullOrWhiteSpace(footerText))
                 {
-                    this._embedFooter.WithText(footerText);
-                    this._embed.WithFooter(this._embedFooter);
+                    response.EmbedFooter.WithText(footerText);
+                    response.Embed.WithFooter(response.EmbedFooter);
                 }
 
                 if (embedType != FmEmbedType.EmbedTiny)
                 {
-                    this._embedAuthor.WithIconUrl(discordUser.GetAvatarUrl());
-                    this._embed.WithAuthor(this._embedAuthor);
-                    this._embed.WithUrl(recentTracks.Content.UserUrl);
+                    response.EmbedAuthor.WithIconUrl(discordUser.GetAvatarUrl());
+                    response.Embed.WithAuthor(response.EmbedAuthor);
+                    response.Embed.WithUrl(recentTracks.Content.UserUrl);
                 }
 
                 if (currentTrack.AlbumCoverUrl != null && embedType != FmEmbedType.EmbedTiny)
@@ -350,11 +345,10 @@ public class PlayBuilder : BaseBuilder
                         currentTrack.AlbumName, currentTrack.ArtistName, currentTrack.AlbumCoverUrl);
                     if (safeForChannel.Result)
                     {
-                        this._embed.WithThumbnailUrl(currentTrack.AlbumCoverUrl);
+                        response.Embed.WithThumbnailUrl(currentTrack.AlbumCoverUrl);
                     }
                 }
 
-                response.Embed = this._embed.Build();
                 break;
         }
 
@@ -368,11 +362,6 @@ public class PlayBuilder : BaseBuilder
         UserSettingsModel userSettings,
         int amount)
     {
-        this._embedAuthor = new EmbedAuthorBuilder();
-        this._embed = new EmbedBuilder()
-            .WithColor(DiscordConstants.LastFmColorRed);
-        this._embedFooter = new EmbedFooterBuilder();
-
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
@@ -390,7 +379,6 @@ public class PlayBuilder : BaseBuilder
         {
             var errorEmbed =
                 GenericEmbedService.RecentScrobbleCallFailedBuilder(recentTracks, userSettings.UserNameLastFm);
-            response.Embed = errorEmbed.Build();
             response.CommandResponse = CommandResponse.LastFmError;
             return response;
         }
@@ -400,11 +388,11 @@ public class PlayBuilder : BaseBuilder
             ? $"{requesterUserTitle}"
             : $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
 
-        this._embedAuthor.WithName($"Latest tracks for {embedTitle}");
+        response.EmbedAuthor.WithName($"Latest tracks for {embedTitle}");
 
-        this._embedAuthor.WithIconUrl(discordUser.GetAvatarUrl());
-        this._embedAuthor.WithUrl(recentTracks.Content.UserRecentTracksUrl);
-        this._embed.WithAuthor(this._embedAuthor);
+        response.EmbedAuthor.WithIconUrl(discordUser.GetAvatarUrl());
+        response.EmbedAuthor.WithUrl(recentTracks.Content.UserRecentTracksUrl);
+        response.Embed.WithAuthor(response.EmbedAuthor);
 
         var fmRecentText = "";
         var resultAmount = recentTracks.Content.RecentTracks.Count;
@@ -420,7 +408,7 @@ public class PlayBuilder : BaseBuilder
             {
                 if (track.AlbumCoverUrl != null)
                 {
-                    this._embed.WithThumbnailUrl(track.AlbumCoverUrl);
+                    response.Embed.WithThumbnailUrl(track.AlbumCoverUrl);
                 }
             }
 
@@ -436,7 +424,7 @@ public class PlayBuilder : BaseBuilder
             }
         }
 
-        this._embed.WithDescription(fmRecentText);
+        response.Embed.WithDescription(fmRecentText);
 
         string footerText;
         var firstTrack = recentTracks.Content.RecentTracks[0];
@@ -453,15 +441,14 @@ public class PlayBuilder : BaseBuilder
             if (!firstTrack.NowPlaying && firstTrack.TimePlayed.HasValue)
             {
                 footerText += " | Last scrobble:";
-                this._embed.WithTimestamp(firstTrack.TimePlayed.Value);
+                response.Embed.WithTimestamp(firstTrack.TimePlayed.Value);
             }
         }
 
-        this._embedFooter.WithText(footerText);
+        response.EmbedFooter.WithText(footerText);
 
-        this._embed.WithFooter(this._embedFooter);
+        response.Embed.WithFooter(response.EmbedFooter);
 
-        response.Embed = this._embed.Build();
         return response;
     }
 
@@ -472,11 +459,6 @@ public class PlayBuilder : BaseBuilder
         UserSettingsModel userSettings,
         int amount)
     {
-        this._embedAuthor = new EmbedAuthorBuilder();
-        this._embed = new EmbedBuilder()
-            .WithColor(DiscordConstants.LastFmColorRed);
-        this._embedFooter = new EmbedFooterBuilder();
-
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
@@ -511,7 +493,7 @@ public class PlayBuilder : BaseBuilder
                 }
             }
 
-            this._embed.AddField(
+            response.Embed.AddField(
                 $"{day.Playcount} plays - {StringExtensions.GetListeningTimeString(day.ListeningTime)} - <t:{day.Date.ToUnixEpochDate()}:D>",
                 $"{genreString}\n" +
                 $"{day.TopArtist}\n" +
@@ -527,18 +509,16 @@ public class PlayBuilder : BaseBuilder
             description += $"\n{amount - week.Days.Count} days not shown because of no plays.";
         }
 
-        this._embed.WithDescription(description);
+        response.Embed.WithDescription(description);
 
-        this._embedAuthor.WithName($"Daily overview for {userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}");
+        response.EmbedAuthor.WithName($"Daily overview for {userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}");
 
-        this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library?date_preset=LAST_7_DAYS");
-        this._embed.WithAuthor(this._embedAuthor);
+        response.EmbedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library?date_preset=LAST_7_DAYS");
+        response.Embed.WithAuthor(response.EmbedAuthor);
 
-        this._embedFooter.WithText($"{week.Uniques} unique tracks - {week.Playcount} total plays - avg {Math.Round(week.AvgPerDay, 1)} per day");
-        this._embed.WithFooter(this._embedFooter);
+        response.EmbedFooter.WithText($"{week.Uniques} unique tracks - {week.Playcount} total plays - avg {Math.Round(week.AvgPerDay, 1)} per day");
+        response.Embed.WithFooter(response.EmbedFooter);
 
-
-        response.Embed = this._embed.Build();
         return response;
     }
 
@@ -550,11 +530,6 @@ public class PlayBuilder : BaseBuilder
         long userTotalPlaycount,
         long timeFrom)
     {
-        this._embedAuthor = new EmbedAuthorBuilder();
-        this._embed = new EmbedBuilder()
-            .WithColor(DiscordConstants.LastFmColorRed);
-        this._embedFooter = new EmbedFooterBuilder();
-
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Text,
@@ -616,11 +591,6 @@ public class PlayBuilder : BaseBuilder
         long mileStoneAmount,
         long userTotalPlaycount)
     {
-        this._embedAuthor = new EmbedAuthorBuilder();
-        this._embed = new EmbedBuilder()
-            .WithColor(DiscordConstants.LastFmColorRed);
-        this._embedFooter = new EmbedFooterBuilder();
-
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Embed,
@@ -630,8 +600,7 @@ public class PlayBuilder : BaseBuilder
 
         if (!mileStonePlay.Success || mileStonePlay.Content == null)
         {
-            this._embed.ErrorResponse(mileStonePlay.Error, mileStonePlay.Message, "milestone", discordUser);
-            response.Embed = this._embed.Build();
+            response.Embed.ErrorResponse(mileStonePlay.Error, mileStonePlay.Message, "milestone", discordUser);
             response.CommandResponse = CommandResponse.LastFmError;
             return response;
         }
@@ -642,7 +611,7 @@ public class PlayBuilder : BaseBuilder
 
         var userTitle = $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}";
 
-        this._embed.WithTitle($"{mileStoneAmount}{StringExtensions.GetAmountEnd(mileStoneAmount)} scrobble from {userTitle}");
+        response.Embed.WithTitle($"{mileStoneAmount}{StringExtensions.GetAmountEnd(mileStoneAmount)} scrobble from {userTitle}");
 
         if (mileStonePlay.Content.AlbumCoverUrl != null)
         {
@@ -650,21 +619,20 @@ public class PlayBuilder : BaseBuilder
                 mileStonePlay.Content.AlbumName, mileStonePlay.Content.ArtistName, mileStonePlay.Content.AlbumCoverUrl);
             if (safeForChannel.Result)
             {
-                this._embed.WithThumbnailUrl(mileStonePlay.Content.AlbumCoverUrl);
+                response.Embed.WithThumbnailUrl(mileStonePlay.Content.AlbumCoverUrl);
             }
         }
 
         if (mileStonePlay.Content.TimePlayed.HasValue)
         {
             var dateString = mileStonePlay.Content.TimePlayed.Value.ToString("yyyy-M-dd");
-            this._embed.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library?from={dateString}&to={dateString}");
+            response.Embed.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library?from={dateString}&to={dateString}");
 
             reply.AppendLine($"Date played: **<t:{mileStonePlay.Content.TimePlayed.Value.ToUnixEpochDate()}:D>**");
         }
 
-        this._embed.WithDescription(reply.ToString());
+        response.Embed.WithDescription(reply.ToString());
 
-        response.Embed = this._embed.Build();
         return response;
     }
 }

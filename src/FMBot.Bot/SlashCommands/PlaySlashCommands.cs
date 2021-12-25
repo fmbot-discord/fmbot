@@ -82,7 +82,7 @@ public class PlaySlashCommands : InteractionModuleBase
 
         if (response.ResponseType == ResponseType.Embed)
         {
-            await FollowupAsync(null, new[] { response.Embed });
+            await FollowupAsync(null, new[] { response.Embed.Build() });
         }
         else
         {
@@ -125,7 +125,7 @@ public class PlaySlashCommands : InteractionModuleBase
             var response = await this._playBuilder.RecentAsync(this.Context.Guild, this.Context.User, contextUser,
                 userSettings, amount);
 
-            await RespondAsync(null, new[] { response.Embed });
+            await RespondAsync(null, new[] { response.Embed.Build() });
 
             this.Context.LogCommandUsed();
         }
@@ -158,7 +158,7 @@ public class PlaySlashCommands : InteractionModuleBase
             var response = await this._playBuilder.OverviewAsync(this.Context.Guild, this.Context.User, contextUser,
                 userSettings, amount);
 
-            await FollowupAsync(null, new[] { response.Embed });
+            await FollowupAsync(null, new[] { response.Embed.Build() });
 
             this.Context.LogCommandUsed();
         }
@@ -235,7 +235,7 @@ public class PlaySlashCommands : InteractionModuleBase
             var response = await this._playBuilder.MileStoneAsync(this.Context.Guild, this.Context.Channel, this.Context.User,
                 userSettings, mileStoneAmount, userInfo.Playcount);
 
-            await FollowupAsync(null, new[] { response.Embed }, allowedMentions: AllowedMentions.None);
+            await FollowupAsync(null, new[] { response.Embed.Build() }, allowedMentions: AllowedMentions.None);
 
             this.Context.LogCommandUsed();
         }
