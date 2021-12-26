@@ -202,13 +202,12 @@ namespace FMBot.Bot.Commands.LastFM
 
                     if (topListSettings.Billboard)
                     {
-                        footer.Append(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
+                        footer.AppendLine(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
                     }
 
                     if (rnd == 1 && !topListSettings.Billboard)
                     {
-                        footer.AppendLine();
-                        footer.Append("View this list as a billboard by adding 'billboard' or 'bb'");
+                        footer.AppendLine("View this list as a billboard by adding 'billboard' or 'bb'");
                     }
 
                     pages.Add(new PageBuilder()
