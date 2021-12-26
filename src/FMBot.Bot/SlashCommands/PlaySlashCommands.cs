@@ -122,7 +122,7 @@ public class PlaySlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._playBuilder.RecentAsync(this.Context.Guild, this.Context.User, contextUser,
+            var response = await this._playBuilder.RecentAsync(this.Context.Guild, this.Context.Channel, this.Context.User, contextUser,
                 userSettings, amount);
 
             await RespondAsync(null, new[] { response.Embed.Build() });

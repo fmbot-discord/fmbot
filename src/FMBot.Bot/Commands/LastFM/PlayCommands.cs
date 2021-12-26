@@ -240,7 +240,7 @@ public class PlayCommands : BaseCommandModule
 
         try
         {
-            var response = await this._playBuilder.RecentAsync(this.Context.Guild, this.Context.User, contextUser,
+            var response = await this._playBuilder.RecentAsync(this.Context.Guild, this.Context.Channel, this.Context.User, contextUser,
                 userSettings, amount);
 
             await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());

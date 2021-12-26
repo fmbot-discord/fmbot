@@ -357,6 +357,7 @@ public class PlayBuilder
 
     public async Task<ResponseModel> RecentAsync(
         IGuild discordGuild,
+        IChannel discordChannel,
         IUser discordUser,
         User contextUser,
         UserSettingsModel userSettings,
@@ -408,7 +409,12 @@ public class PlayBuilder
             {
                 if (track.AlbumCoverUrl != null)
                 {
-                    response.Embed.WithThumbnailUrl(track.AlbumCoverUrl);
+                    var safeForChannel = await this._censorService.IsSafeForChannel(discordGuild, discordChannel,
+                        track.AlbumName, track.ArtistName, track.AlbumCoverUrl);
+                    if (safeForChannel.Result)
+                    {
+                        response.Embed.WithThumbnailUrl(track.AlbumCoverUrl);
+                    }
                 }
             }
 
