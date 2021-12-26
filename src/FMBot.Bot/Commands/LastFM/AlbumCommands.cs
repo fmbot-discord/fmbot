@@ -101,6 +101,7 @@ namespace FMBot.Bot.Commands.LastFM
             try
             {
                 var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+                var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
                 _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -172,7 +173,6 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                     else
                     {
-                        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
                         serverStats += $"Run `{prfx}index` to get server stats";
                     }
 
@@ -243,9 +243,9 @@ namespace FMBot.Bot.Commands.LastFM
                         }
                         tracks.AppendLine();
 
-                        if (tracks.Length > 970 && (album.AlbumTracks.Count - 2 - i) > 1)
+                        if (tracks.Length > 900 && (album.AlbumTracks.Count - 2 - i) > 1)
                         {
-                            tracks.Append($"*And {album.AlbumTracks.Count - 2 - i} more tracks..*");
+                            tracks.Append($"*And {album.AlbumTracks.Count - 2 - i} more tracks (view all with `{prfx}albumtracks`)*");
                             break;
                         }
                     }
@@ -1046,22 +1046,29 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                 }
 
-                var albumTracksPlaycounts = await this._trackService.GetAlbumTracksPlaycounts(albumTracks, userSettings.UserId, album.ArtistName);
+                var albumTracksWithPlaycount = await this._trackService.GetAlbumTracksPlaycounts(albumTracks, userSettings.UserId, album.ArtistName);
 
-                if (albumTracksPlaycounts.Count == 0)
-                {
-                    this._embed.WithDescription(
-                        $"{userSettings.DiscordUserName} has no scrobbles for this album, their scrobbles have no album associated with them or neither Spotify and Last.fm know what tracks are in this album.");
-                }
-                else
-                {
-                    var description = new StringBuilder();
-                    var amountOfDiscs = albumTracks.Count(c => c.Rank == 1) == 0 ? 1 : albumTracks.Count(c => c.Rank == 1);
-                    var maxTracksReached = false;
 
-                    var i = 0;
-                    var tracksDisplayed = 0;
-                    for (var disc = 1; disc < amountOfDiscs + 1; disc++)
+                var description = new StringBuilder();
+                var amountOfDiscs = albumTracks.Count(c => c.Rank == 1) == 0 ? 1 : albumTracks.Count(c => c.Rank == 1);
+                var maxTracksReached = false;
+
+                var i = 0;
+                var tracksDisplayed = 0;
+                for (var disc = 1; disc < amountOfDiscs + 1; disc++)
+                {
+                    if (tracksDisplayed >= 30)
+                    {
+                        maxTracksReached = true;
+                        break;
+                    }
+
+                    if (amountOfDiscs > 1)
+                    {
+                        description.AppendLine($"`Disc {disc}`");
+                    }
+
+                    for (; i < albumTracks.Count; i++)
                     {
                         if (tracksDisplayed >= 30)
                         {
@@ -1069,46 +1076,55 @@ namespace FMBot.Bot.Commands.LastFM
                             break;
                         }
 
-                        if (amountOfDiscs > 1)
+                        var albumTrack = albumTracks[i];
+
+                        var albumTrackWithPlaycount = albumTracksWithPlaycount
+                            .FirstOrDefault(f =>
+                                StringExtensions.SanitizeTrackNameForComparison(albumTrack.TrackName)
+                                .Equals(StringExtensions.SanitizeTrackNameForComparison(f.Name)));
+
+
+                        description.Append(
+                            $"{i + 1}.");
+
+                        description.Append(
+                            $" **{albumTrack.TrackName}**");
+
+                        if (albumTrackWithPlaycount != null)
                         {
-                            description.AppendLine($"`Disc {disc}`");
+                            description.Append(
+                                $" - {albumTrackWithPlaycount.Playcount} {StringExtensions.GetPlaysString(albumTrackWithPlaycount.Playcount)}");
                         }
 
-                        for (; i < albumTracks.Count; i++)
+                        if (albumTrack.Duration.HasValue)
                         {
-                            if (tracksDisplayed >= 30)
-                            {
-                                maxTracksReached = true;
-                                break;
-                            }
-
-                            var albumTrack = albumTracks[i];
-                            var albumTrackWithPlaycount =
-                                albumTracksPlaycounts.FirstOrDefault(f =>
-                                    f.Name.ToLower() == albumTrack.TrackName.ToLower());
-
-                            if (albumTrackWithPlaycount != null)
-                            {
-                                description.AppendLine(
-                                    $"{i + 1}. **{albumTrackWithPlaycount.Name}** ({albumTrackWithPlaycount.Playcount} plays)");
-                                tracksDisplayed++;
-                            }
+                            var duration = TimeSpan.FromSeconds(albumTrack.Duration.Value);
+                            var formattedTrackLength = string.Format("{0}{1}:{2:D2}",
+                                duration.Hours == 0 ? "" : $"{duration.Hours}:",
+                                duration.Minutes,
+                                duration.Seconds);
+                            description.Append($" - `{formattedTrackLength}`");
                         }
+
+                        description.AppendLine();
+
+                        tracksDisplayed++;
                     }
-
-                    this._embed.WithDescription(StringExtensions.TruncateLongString(description.ToString(), 4000));
-
-                    var footer = spotifySource ? "Album source: Spotify | " : "Album source: Last.fm | ";
-
-                    footer += $"{userSettings.DiscordUserName} has {album.UserPlaycount} total scrobbles on this album";
-
-                    if (maxTracksReached)
-                    {
-                        footer += "\nMax 30 tracks displayed, click on title to view all your tracks on this album.";
-                    }
-
-                    this._embed.WithFooter(footer);
                 }
+
+                this._embed.WithDescription(StringExtensions.TruncateLongString(description.ToString(), 4000));
+
+                var footer = spotifySource ? "Album source: Spotify | " : "Album source: Last.fm | ";
+
+                footer += $"{userSettings.DiscordUserName} has {album.UserPlaycount} total scrobbles on this album";
+
+                if (maxTracksReached)
+                {
+                    footer += "\nMax 30 tracks displayed, click on title to view all your tracks on this album.";
+                }
+
+                this._embed.WithFooter(footer);
+
 
                 this._embed.WithTitle($"Track playcounts for {albumName}");
 

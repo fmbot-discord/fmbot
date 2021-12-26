@@ -170,16 +170,11 @@ namespace FMBot.Bot.Services
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var userTracks = (await connection.QueryAsync<UserTrack>(sql, new
+            return (await connection.QueryAsync<UserTrack>(sql, new
             {
                 userId,
                 artistName
             })).ToList();
-
-            return userTracks
-                .Where(w => albumTracks.Select(s => s.TrackName.Replace("(", "").Replace("-", "").Replace(")", "").TrimEnd().TrimStart().ToLower())
-                    .Contains(w.Name.Replace("(", "").Replace("-", "").Replace(")", "").TrimEnd().TrimStart().ToLower()))
-                .ToList();
         }
 
         public record AudioFeaturesOverview(int Total, InternalTrackAudioFeatures Average);

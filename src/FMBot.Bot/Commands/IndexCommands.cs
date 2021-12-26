@@ -187,7 +187,7 @@ namespace FMBot.Bot.Commands
                 if (userSettings.UserType != UserType.User)
                 {
                     indexDescription += "\n\n" +
-                                        $"*As a thank you for being an .fmbot {userSettings.UserType.ToString().ToLower()} the bot will index all of your of your artists/albums/tracks (instead of top 4k/5k/6k).*";
+                                        $"*As a thank you for being an .fmbot {userSettings.UserType.ToString().ToLower()} the bot will store all of your of your artists/albums/tracks (instead of top 4k/5k/6k).*";
                 }
 
                 this._embed.WithDescription(indexDescription);

@@ -49,6 +49,20 @@ namespace FMBot.Bot.Extensions
             return string.Join("_", filename.Split(invalidChars));
         }
 
+        public static string SanitizeTrackNameForComparison(string trackName)
+        {
+            trackName = trackName.ToLower();
+            trackName = trackName.Replace("(", "");
+            trackName = trackName.Replace(")", "");
+            trackName = trackName.Replace("-", "");
+            trackName = trackName.Replace("'", "");
+            trackName = trackName.Replace(" ", "");
+            trackName = trackName.Replace("[", "");
+            trackName = trackName.Replace("]", "");
+
+            return trackName;
+        }
+
         public static string UserTypeToIcon(this UserType userType)
         {
             switch (userType)
