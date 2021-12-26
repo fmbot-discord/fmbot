@@ -127,16 +127,16 @@ public class UserSlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("mode", "Changes your visibility to other .fmbot users in Global WhoKnows")]
+    [SlashCommand("privacy", "Changes your visibility to other .fmbot users in Global WhoKnows")]
     [UsernameSetRequired]
-    public async Task ModeAsync([Summary("mode", "Privacy mode for your .fmbot account")] PrivacyLevel privacyLevel)
+    public async Task PrivacyAsync([Summary("level", "Privacy level for your .fmbot account")] PrivacyLevel privacyLevel)
     {
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         var newPrivacyLevel = await this._userService.SetPrivacyLevel(userSettings, privacyLevel);
 
         var reply = new StringBuilder();
-        reply.AppendLine($"Your privacy mode has been set to **{newPrivacyLevel}**.");
+        reply.AppendLine($"Your privacy level has been set to **{newPrivacyLevel}**.");
         reply.AppendLine();
 
         if (newPrivacyLevel == PrivacyLevel.Global)
@@ -152,18 +152,47 @@ public class UserSlashCommands : InteractionModuleBase
         embed.WithColor(DiscordConstants.InformationColorBlue);
         embed.WithDescription(reply.ToString());
 
-        try
+        await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+
+        this.Context.LogCommandUsed();
+    }
+
+    [SlashCommand("mode", "Changes your '/fm' layout")]
+    [UsernameSetRequired]
+    public async Task ModeAsync([Summary("mode", "Mode your fm command should use")] FmEmbedType embedType,
+        [Summary("playcount-type", "Extra playcount your fm command should show")] FmCountType countType = FmCountType.None)
+    {
+        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        var newUserSettings = await this._userService.SetSettings(userSettings, embedType, countType);
+
+        var reply = new StringBuilder();
+        reply.Append($"Your `.fm` mode has been set to **{newUserSettings.FmEmbedType}**");
+        if (newUserSettings.FmCountType != null)
         {
-
-
-            await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
-
-            this.Context.LogCommandUsed();
+            reply.Append($" with the **{newUserSettings.FmCountType.ToString().ToLower()} playcount**.");
         }
-        catch (Exception e)
+        else
         {
-            Console.WriteLine(e);
-            throw;
+            reply.Append($" with no extra playcount.");
         }
+
+        if (this.Context.Guild != null)
+        {
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+            if (guild?.FmEmbedType != null)
+            {
+                reply.Append($"\n\nNote that servers can force a specific mode which will override your own mode. " +
+                             $"\nThis server has the **{guild?.FmEmbedType}** mode set for everyone, which means your own setting will not apply here.");
+            }
+        }
+
+        var embed = new EmbedBuilder();
+        embed.WithColor(DiscordConstants.InformationColorBlue);
+        embed.WithDescription(reply.ToString());
+
+        await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+
+        this.Context.LogCommandUsed();
     }
 }

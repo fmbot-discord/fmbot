@@ -356,6 +356,21 @@ namespace FMBot.Bot.Services
             return userSettings;
         }
 
+        public async Task<User> SetSettings(User userToUpdate, FmEmbedType embedType, FmCountType? countType)
+        {
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
+
+            user.FmEmbedType = embedType;
+            user.FmCountType = countType == FmCountType.None ? null : countType;
+
+            db.Update(user);
+
+            await db.SaveChangesAsync();
+
+            return user;
+        }
+
         // Remove user
         public async Task DeleteUser(int userId)
         {
