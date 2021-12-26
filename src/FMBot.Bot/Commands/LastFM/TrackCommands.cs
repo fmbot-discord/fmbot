@@ -143,10 +143,8 @@ namespace FMBot.Bot.Commands.LastFM
                 if (duration is > 0)
                 {
                     var trackLength = TimeSpan.FromMilliseconds(duration.GetValueOrDefault());
-                    var formattedTrackLength = string.Format("{0}{1}:{2:D2}",
-                        trackLength.Hours == 0 ? "" : $"{trackLength.Hours}:",
-                        trackLength.Minutes,
-                        trackLength.Seconds);
+                    var formattedTrackLength =
+                        $"{(trackLength.Hours == 0 ? "" : $"{trackLength.Hours}:")}{trackLength.Minutes}:{trackLength.Seconds:D2}";
 
                     rightStats.AppendLine($"`{formattedTrackLength}` duration");
 

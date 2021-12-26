@@ -58,6 +58,35 @@ namespace FMBot.Bot.Services
             return avgArtistTrackLength ?? 210000;
         }
 
+        public async Task<TimeSpan> GetPlayTimeForAlbum(List<AlbumTrack> albumTracks, List<UserTrack> userTracks, long totalPlaycount)
+        {
+            await CacheAllTrackLengths();
+
+            long totalPlaytime = 0;
+            var playsLeft = totalPlaycount;
+
+            foreach (var track in albumTracks)
+            {
+                var albumTrackWithPlaycount = userTracks.FirstOrDefault(f =>
+                    StringExtensions.SanitizeTrackNameForComparison(track.TrackName)
+                        .Equals(StringExtensions.SanitizeTrackNameForComparison(f.Name)));
+
+                var trackLength = track.Duration ?? (GetTrackLengthForTrack(track.ArtistName, track.ArtistName) / 1000);
+                if (albumTrackWithPlaycount != null)
+                {
+                    totalPlaytime += (trackLength * albumTrackWithPlaycount.Playcount);
+                    playsLeft -= albumTrackWithPlaycount.Playcount;
+                }
+            }
+
+            if (playsLeft > 0)
+            {
+                var avgTrackLength = albumTracks.Average(a => a.Duration);
+                totalPlaytime += (playsLeft * (long)avgTrackLength);
+            }
+
+            return TimeSpan.FromSeconds(totalPlaytime);
+        }
 
         private async Task CacheAllTrackLengths()
         {

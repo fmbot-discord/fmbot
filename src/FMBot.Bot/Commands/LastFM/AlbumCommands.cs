@@ -42,6 +42,7 @@ namespace FMBot.Bot.Commands.LastFM
         private readonly SettingService _settingService;
         private readonly UserService _userService;
         private readonly TrackService _trackService;
+        private readonly TimeService _timeService;
         private readonly FriendsService _friendsService;
         private readonly WhoKnowsAlbumService _whoKnowsAlbumService;
         private readonly WhoKnowsPlayService _whoKnowsPlayService;
@@ -66,7 +67,7 @@ namespace FMBot.Bot.Commands.LastFM
                 TrackService trackService,
                 SpotifyService spotifyService,
                 IOptions<BotSettings> botSettings,
-                FriendsService friendsService) : base(botSettings)
+                FriendsService friendsService, TimeService timeService) : base(botSettings)
         {
             this._censorService = censorService;
             this._guildService = guildService;
@@ -84,6 +85,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._trackService = trackService;
             this._spotifyService = spotifyService;
             this._friendsService = friendsService;
+            this._timeService = timeService;
         }
 
         [Command("album", RunMode = RunMode.Async)]
@@ -127,18 +129,32 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithAuthor(this._embedAuthor);
 
-                var globalStats = "";
-                globalStats += $"`{album.TotalListeners}` {StringExtensions.GetListenersString(album.TotalListeners)}";
-                globalStats += $"\n`{album.TotalPlaycount}` global {StringExtensions.GetPlaysString(album.TotalPlaycount)}";
+                if (databaseAlbum.ReleaseDate != null)
+                {
+                    this._embed.WithDescription($"Release date: `{databaseAlbum.ReleaseDate}`");
+                }
+
+                var artistUserTracks = await this._trackService.GetArtistUserTracks(contextUser.UserId, album.ArtistName);
+
+                var globalStats = new StringBuilder();
+                globalStats.AppendLine($"`{album.TotalListeners}` {StringExtensions.GetListenersString(album.TotalListeners)}");
+                globalStats.AppendLine($"`{album.TotalPlaycount}` global {StringExtensions.GetPlaysString(album.TotalPlaycount)}");
                 if (album.UserPlaycount.HasValue)
                 {
-                    globalStats += $"\n`{album.UserPlaycount}` {StringExtensions.GetPlaysString(album.UserPlaycount)} by you";
-                    globalStats += $"\n`{await this._playService.GetWeekAlbumPlaycountAsync(contextUser.UserId, album.AlbumName, album.ArtistName)}` by you last week";
+                    globalStats.AppendLine($"`{album.UserPlaycount}` {StringExtensions.GetPlaysString(album.UserPlaycount)} by you");
+                    globalStats.AppendLine($"`{await this._playService.GetWeekAlbumPlaycountAsync(contextUser.UserId, album.AlbumName, album.ArtistName)}` by you last week");
                     await this._updateService.CorrectUserAlbumPlaycount(contextUser.UserId, album.ArtistName,
                         album.AlbumName, album.UserPlaycount.Value);
                 }
 
-                this._embed.AddField("Last.fm stats", globalStats, true);
+                if (album.UserPlaycount.HasValue && album.AlbumTracks != null && album.AlbumTracks.Any() && artistUserTracks.Any())
+                {
+                    var listeningTime = await this._timeService.GetPlayTimeForAlbum(album.AlbumTracks, artistUserTracks,
+                        album.UserPlaycount.Value);
+                    globalStats.AppendLine($"`{StringExtensions.GetListeningTimeString(listeningTime)}` spent listening");
+                }
+
+                this._embed.AddField("Statistics", globalStats.ToString(), true);
 
                 if (!this._guildService.CheckIfDM(this.Context))
                 {
@@ -218,38 +234,48 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (album.AlbumTracks != null && album.AlbumTracks.Any())
                 {
-                    var tracks = new StringBuilder();
-                    for (int i = 0; i < album.AlbumTracks.Count; i++)
+                    var trackDescription = new StringBuilder();
+
+                    for (var i = 0; i < album.AlbumTracks.Count; i++)
                     {
                         var track = album.AlbumTracks.OrderBy(o => o.Rank).ToList()[i];
 
-                        if (album.AlbumTracks.Count <= 10)
+                        var albumTrackWithPlaycount = artistUserTracks.FirstOrDefault(f =>
+                            StringExtensions.SanitizeTrackNameForComparison(track.TrackName)
+                                .Equals(StringExtensions.SanitizeTrackNameForComparison(f.Name)));
+
+                        trackDescription.Append(
+                            $"{i + 1}.");
+
+                        trackDescription.Append(
+                            $" **{track.TrackName}**");
+
+                        if (albumTrackWithPlaycount != null)
                         {
-                            tracks.Append($"{i + 1}. [{track.TrackName}]({track.TrackUrl})");
-                        }
-                        else
-                        {
-                            tracks.Append($"{i + 1}. **{track.TrackName}**");
+                            trackDescription.Append(
+                                $" - *{albumTrackWithPlaycount.Playcount} {StringExtensions.GetPlaysString(albumTrackWithPlaycount.Playcount)}*");
                         }
 
                         if (track.Duration.HasValue)
                         {
-                            var duration = TimeSpan.FromSeconds(track.Duration.Value);
-                            var formattedTrackLength = string.Format("{0}{1}:{2:D2}",
-                                duration.Hours == 0 ? "" : $"{duration.Hours}:",
-                                duration.Minutes,
-                                duration.Seconds);
-                            tracks.Append($" - `{formattedTrackLength}`");
-                        }
-                        tracks.AppendLine();
+                            trackDescription.Append(albumTrackWithPlaycount == null ? " — " : " - ");
 
-                        if (tracks.Length > 900 && (album.AlbumTracks.Count - 2 - i) > 1)
+                            var duration = TimeSpan.FromSeconds(track.Duration.Value);
+                            var formattedTrackLength =
+                                $"{(duration.Hours == 0 ? "" : $"{duration.Hours}:")}{duration.Minutes}:{duration.Seconds:D2}";
+                            trackDescription.Append($"`{formattedTrackLength}`");
+                        }
+
+                        trackDescription.AppendLine();
+
+
+                        if (trackDescription.Length > 900 && (album.AlbumTracks.Count - 2 - i) > 1)
                         {
-                            tracks.Append($"*And {album.AlbumTracks.Count - 2 - i} more tracks (view all with `{prfx}albumtracks`)*");
+                            trackDescription.Append($"*And {album.AlbumTracks.Count - 2 - i} more tracks (view all with `{prfx}albumtracks`)*");
                             break;
                         }
                     }
-                    this._embed.AddField("Tracks", tracks.ToString());
+                    this._embed.AddField("Tracks", trackDescription.ToString());
                 }
 
                 //if (album.Tags != null && album.Tags.Any())
@@ -1032,6 +1058,7 @@ namespace FMBot.Bot.Commands.LastFM
                         {
                             TrackName = s.Name,
                             ArtistName = album.ArtistName,
+                            Duration = s.DurationMs / 1000
                         }).ToList();
                         spotifySource = true;
                     }
@@ -1046,8 +1073,7 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                 }
 
-                var albumTracksWithPlaycount = await this._trackService.GetAlbumTracksPlaycounts(albumTracks, userSettings.UserId, album.ArtistName);
-
+                var artistUserTracks = await this._trackService.GetArtistUserTracks(userSettings.UserId, album.ArtistName);
 
                 var description = new StringBuilder();
                 var amountOfDiscs = albumTracks.Count(c => c.Rank == 1) == 0 ? 1 : albumTracks.Count(c => c.Rank == 1);
@@ -1078,11 +1104,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                         var albumTrack = albumTracks[i];
 
-                        var albumTrackWithPlaycount = albumTracksWithPlaycount
-                            .FirstOrDefault(f =>
+                        var albumTrackWithPlaycount = artistUserTracks.FirstOrDefault(f =>
                                 StringExtensions.SanitizeTrackNameForComparison(albumTrack.TrackName)
                                 .Equals(StringExtensions.SanitizeTrackNameForComparison(f.Name)));
-
 
                         description.Append(
                             $"{i + 1}.");
@@ -1093,17 +1117,17 @@ namespace FMBot.Bot.Commands.LastFM
                         if (albumTrackWithPlaycount != null)
                         {
                             description.Append(
-                                $" - {albumTrackWithPlaycount.Playcount} {StringExtensions.GetPlaysString(albumTrackWithPlaycount.Playcount)}");
+                                $" - *{albumTrackWithPlaycount.Playcount} {StringExtensions.GetPlaysString(albumTrackWithPlaycount.Playcount)}*");
                         }
 
                         if (albumTrack.Duration.HasValue)
                         {
+                            description.Append(albumTrackWithPlaycount == null ? " — " : " - ");
+
                             var duration = TimeSpan.FromSeconds(albumTrack.Duration.Value);
-                            var formattedTrackLength = string.Format("{0}{1}:{2:D2}",
-                                duration.Hours == 0 ? "" : $"{duration.Hours}:",
-                                duration.Minutes,
-                                duration.Seconds);
-                            description.Append($" - `{formattedTrackLength}`");
+                            var formattedTrackLength =
+                                $"{(duration.Hours == 0 ? "" : $"{duration.Hours}:")}{duration.Minutes}:{duration.Seconds:D2}";
+                            description.Append($"`{formattedTrackLength}`");
                         }
 
                         description.AppendLine();
