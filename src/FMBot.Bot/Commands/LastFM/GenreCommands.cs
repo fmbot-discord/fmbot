@@ -235,8 +235,8 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("genre", RunMode = RunMode.Async)]
-        [Summary("Shows your top artists for a specific genre")]
-        [Examples("genre", "genres hip hop, electronic", "g", "genre Indie Soul")]
+        [Summary("Shows genre information for an artist, or top artist for a specific genre")]
+        [Examples("genre", "genres hip hop, electronic", "g", "genre Indie Soul", "genre The Beatles")]
         [Alias("genreinfo", "genres", "gi", "g")]
         [UsernameSetRequired]
         [SupportsPagination]
@@ -310,10 +310,37 @@ namespace FMBot.Bot.Commands.LastFM
                 else
                 {
                     var foundGenre = await this._genreService.GetValidGenre(genreOptions);
+
                     if (foundGenre == null)
                     {
+                        var artist = await this._artistsService.GetArtistFromDatabase(genreOptions);
+
+                        if (artist != null)
+                        {
+                            this._embed.WithTitle($"Genre info for '{artist.Name}'");
+
+                            var genreDescription = new StringBuilder();
+                            foreach (var artistGenre in artist.ArtistGenres)
+                            {
+                                genreDescription.AppendLine($"- **{artistGenre.Name.Transform(To.TitleCase)}**");
+                            }
+
+                            if (artist?.SpotifyImageUrl != null)
+                            {
+                                this._embed.WithThumbnailUrl(artist.SpotifyImageUrl);
+                            }
+
+                            this._embed.WithDescription(genreDescription.ToString());
+
+                            this._embed.WithFooter($"Genre source: Spotify\n" +
+                                                   $"Add a genre to this command to see top artists");
+
+                            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                            return;
+                        }
+
                         this._embed.WithDescription(
-                            "Sorry, Spotify does not have the genre you're searching for.");
+                            "Sorry, the genre or artist you're searching for do not exist or do not have any stored genres.");
                         await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                         this.Context.LogCommandUsed(CommandResponse.NotFound);
                         return;
