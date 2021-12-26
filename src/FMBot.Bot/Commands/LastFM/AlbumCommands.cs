@@ -242,6 +242,12 @@ namespace FMBot.Bot.Commands.LastFM
                             tracks.Append($" - `{formattedTrackLength}`");
                         }
                         tracks.AppendLine();
+
+                        if (tracks.Length > 970 && (album.AlbumTracks.Count - 2 - i) > 1)
+                        {
+                            tracks.Append($"*And {album.AlbumTracks.Count - 2 - i} more tracks..*");
+                            break;
+                        }
                     }
                     this._embed.AddField("Tracks", tracks.ToString());
                 }
