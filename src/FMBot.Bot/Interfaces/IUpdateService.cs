@@ -18,5 +18,7 @@ namespace FMBot.Bot.Interfaces
         Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeAuthorizedLastUpdated, DateTime timeUnauthorizedFilter);
 
         Task CorrectUserArtistPlaycount(int userId, string artistName, long correctPlaycount);
+        Task CorrectUserAlbumPlaycount(int userId, string artistName, string albumName, long correctPlaycount);
+        Task CorrectUserTrackPlaycount(int userId, string artistName, string trackName, long correctPlaycount);
     }
 }

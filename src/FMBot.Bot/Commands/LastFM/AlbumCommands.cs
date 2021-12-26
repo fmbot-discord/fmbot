@@ -133,6 +133,8 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     globalStats += $"\n`{album.UserPlaycount}` {StringExtensions.GetPlaysString(album.UserPlaycount)} by you";
                     globalStats += $"\n`{await this._playService.GetWeekAlbumPlaycountAsync(contextUser.UserId, album.AlbumName, album.ArtistName)}` by you last week";
+                    await this._updateService.CorrectUserAlbumPlaycount(contextUser.UserId, album.ArtistName,
+                        album.AlbumName, album.UserPlaycount.Value);
                 }
 
                 this._embed.AddField("Last.fm stats", globalStats, true);
@@ -290,6 +292,12 @@ namespace FMBot.Bot.Commands.LastFM
             var reply =
                 $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has `{album.UserPlaycount}` {StringExtensions.GetPlaysString(album.UserPlaycount)} " +
                 $"for **{album.AlbumName.FilterOutMentions()}** by **{album.ArtistName.FilterOutMentions()}**";
+
+            if (album.UserPlaycount.HasValue && !userSettings.DifferentUser)
+            {
+                await this._updateService.CorrectUserAlbumPlaycount(contextUser.UserId, album.ArtistName,
+                    album.AlbumName, album.UserPlaycount.Value);
+            }
 
             if (!userSettings.DifferentUser && contextUser.LastUpdated != null)
             {
@@ -561,7 +569,7 @@ namespace FMBot.Bot.Commands.LastFM
         [CommandCategories(CommandCategory.Albums, CommandCategory.WhoKnows)]
         public async Task WhoKnowsAlbumAsync([Remainder] string albumValues = null)
         {
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             try
@@ -570,7 +578,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                var album = await this.SearchAlbum(albumValues, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
+                var album = await this.SearchAlbum(albumValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
                 if (album == null)
                 {
                     return;
@@ -583,14 +591,14 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var guild = await guildTask;
 
-                var currentUser = await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), userSettings);
+                var currentUser = await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId), contextUser);
 
-                if (!guild.GuildUsers.Select(s => s.UserId).Contains(userSettings.UserId))
+                if (!guild.GuildUsers.Select(s => s.UserId).Contains(contextUser.UserId))
                 {
                     guild.GuildUsers.Add(currentUser);
                 }
 
-                await this._indexService.UpdateGuildUser(await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), currentUser.UserId, guild);
+                await this._indexService.UpdateGuildUser(await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId), currentUser.UserId, guild);
 
                 var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(this.Context, guild.GuildId, album.ArtistName, album.AlbumName);
 
@@ -601,7 +609,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var filteredUsersWithAlbum = WhoKnowsService.FilterGuildUsersAsync(usersWithAlbum, guild);
 
-                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, userSettings.UserId, PrivacyLevel.Server);
+                var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, contextUser.UserId, PrivacyLevel.Server);
                 if (filteredUsersWithAlbum.Count == 0)
                 {
                     serverUsers = "Nobody in this server (not even you) has listened to this album.";
@@ -641,7 +649,7 @@ namespace FMBot.Bot.Commands.LastFM
                     footer += $"\nUsers with WhoKnows whitelisted role only";
                 }
 
-                var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingAlbum(userSettings.UserId,
+                var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingAlbum(contextUser.UserId,
                     this.Context.Guild.Id, album.ArtistName, album.AlbumName);
 
                 if (guildAlsoPlaying != null)
@@ -652,7 +660,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithTitle(StringExtensions.TruncateLongString($"{albumName} in {this.Context.Guild.Name}", 255));
 
-                var url = userSettings.RymEnabled == true
+                var url = contextUser.RymEnabled == true
                     ? StringExtensions.GetRymUrl(album.AlbumName, album.ArtistName)
                     : album.AlbumUrl;
 

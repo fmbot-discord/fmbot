@@ -133,6 +133,12 @@ namespace FMBot.Bot.Commands.LastFM
                 leftStats.AppendLine($"`{track.TotalPlaycount}` global {StringExtensions.GetPlaysString(track.TotalPlaycount)}");
                 leftStats.AppendLine($"`{track.UserPlaycount}` {StringExtensions.GetPlaysString(track.UserPlaycount)} by you");
 
+                if (track.UserPlaycount.HasValue)
+                {
+                    await this._updateService.CorrectUserTrackPlaycount(contextUser.UserId, track.ArtistName,
+                        track.TrackName, track.UserPlaycount.Value);
+                }
+
                 var duration = spotifyTrack?.DurationMs ?? track.Duration;
                 if (duration is > 0)
                 {
@@ -253,6 +259,12 @@ namespace FMBot.Bot.Commands.LastFM
             var reply =
                 $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has `{track.UserPlaycount}` {StringExtensions.GetPlaysString(track.UserPlaycount)} for **{track.TrackName.FilterOutMentions()}** " +
                 $"by **{track.ArtistName.FilterOutMentions()}**";
+
+            if (track.UserPlaycount.HasValue && !userSettings.DifferentUser)
+            {
+                await this._updateService.CorrectUserTrackPlaycount(contextUser.UserId, track.ArtistName,
+                    track.TrackName, track.UserPlaycount.Value);
+            }
 
             if (!userSettings.DifferentUser && contextUser.LastUpdated != null)
             {

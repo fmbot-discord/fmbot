@@ -81,5 +81,13 @@ namespace FMBot.Bot.Services
         {
             await this._updateRepository.CorrectUserArtistPlaycount(userId, artistName, correctPlaycount);
         }
+        public async Task CorrectUserAlbumPlaycount(int userId, string artistName, string albumName, long correctPlaycount)
+        {
+            await this._updateRepository.CorrectUserAlbumPlaycount(userId, artistName, albumName, correctPlaycount);
+        }
+        public async Task CorrectUserTrackPlaycount(int userId, string artistName, string trackName, long correctPlaycount)
+        {
+            await this._updateRepository.CorrectUserTrackPlaycount(userId, artistName, trackName, correctPlaycount);
+        }
     }
 }

@@ -374,7 +374,7 @@ namespace FMBot.Bot.Services
         // Remove user
         public async Task DeleteUser(int userId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
 
             try
             {
