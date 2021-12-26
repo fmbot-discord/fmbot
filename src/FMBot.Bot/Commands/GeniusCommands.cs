@@ -51,6 +51,7 @@ namespace FMBot.Bot.Commands
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             try
             {
@@ -84,14 +85,14 @@ namespace FMBot.Bot.Commands
                     currentTrackArtist = currentTrack.ArtistName;
                 }
 
-                var geniusResults = await this._geniusService.SearchGeniusAsync(querystring);
+                var geniusResults = await this._geniusService.SearchGeniusAsync(querystring, currentTrackName, currentTrackArtist);
 
                 if (geniusResults != null && geniusResults.Any())
                 {
                     var rnd = new Random();
                     if (rnd.Next(0, 7) == 1 && string.IsNullOrWhiteSpace(searchValue))
                     {
-                        this._embedFooter.WithText("Tip: Search for other songs by simply adding the searchvalue behind .fmgenius.");
+                        this._embedFooter.WithText($"Tip: Search for other songs by simply adding the searchvalue behind '{prfx}genius'.");
                         this._embed.WithFooter(this._embedFooter);
                     }
 
@@ -100,14 +101,15 @@ namespace FMBot.Bot.Commands
                         firstResult.PrimaryArtist.Name.Trim().ToLower().Equals(currentTrackArtist.Trim().ToLower()) ||
                         geniusResults.Count == 1)
                     {
-                        this._embed.WithTitle(firstResult.Url);
+                        this._embed.WithTitle(firstResult.TitleWithFeatured);
+                        this._embed.WithUrl(firstResult.Url);
                         this._embed.WithThumbnailUrl(firstResult.SongArtImageThumbnailUrl);
 
-                        this._embed.AddField(
-                            $"{firstResult.TitleWithFeatured}",
-                            $"By **[{firstResult.PrimaryArtist.Name}]({firstResult.PrimaryArtist.Url})**");
+                        this._embed.WithDescription($"By **[{firstResult.PrimaryArtist.Name}]({firstResult.PrimaryArtist.Url})**");
 
-                        await ReplyAsync("", false, this._embed.Build());
+                        var components = new ComponentBuilder().WithButton("View on Genius", style: ButtonStyle.Link, url: firstResult.Url);
+
+                        await ReplyAsync("", false, this._embed.Build(), component: components.Build());
                         this.Context.LogCommandUsed();
                         return;
                     }
