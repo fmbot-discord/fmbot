@@ -31,7 +31,8 @@ namespace FMBot.Bot.Services.ThirdParty
             }
 
             var results = result.Response.Hits
-                .Where(w => w.Result.PrimaryArtist.Name.ToLower() != "Spotify")
+                .Where(w => !w.Result.PrimaryArtist.Name.Contains("Spotify", StringComparison.CurrentCultureIgnoreCase) &&
+                            !w.Result.PrimaryArtist.Name.Contains("Genius", StringComparison.CurrentCultureIgnoreCase))
                 .OrderByDescending(o => o.Result.PyongsCount).ToList();
 
             if (currentTrackName != null && currentTrackArtist != null)
