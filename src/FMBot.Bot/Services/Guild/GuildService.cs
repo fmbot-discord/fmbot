@@ -785,7 +785,6 @@ namespace FMBot.Bot.Services.Guild
             return true;
         }
 
-
         public async Task AddReactionsAsync(IUserMessage message, IGuild guild)
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();

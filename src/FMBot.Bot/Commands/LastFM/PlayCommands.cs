@@ -193,7 +193,7 @@ public class PlayCommands : BaseCommandModule
 
             try
             {
-                if (message != null && response.CommandResponse == CommandResponse.Ok && !this._guildService.CheckIfDM(this.Context))
+                if (message != null && response.CommandResponse == CommandResponse.Ok && this.Context.Guild != null)
                 {
                     await this._guildService.AddReactionsAsync(message, this.Context.Guild);
                 }

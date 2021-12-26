@@ -231,7 +231,12 @@ namespace FMBot.Bot.Commands.LastFM
                     this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues");
                 }
 
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+                if (message != null && this.Context.Guild != null)
+                {
+                    await this._guildService.AddReactionsAsync(message, this.Context.Guild);
+                }
 
                 this.Context.LogCommandUsed();
             }

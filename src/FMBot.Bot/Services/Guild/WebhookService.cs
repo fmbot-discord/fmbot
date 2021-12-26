@@ -21,10 +21,12 @@ namespace FMBot.Bot.Services.Guild
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
         private readonly string _avatarImagePath;
         private readonly BotSettings _botSettings;
+        private readonly GuildService _guildService;
 
-        public WebhookService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings)
+        public WebhookService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, GuildService guildService)
         {
             this._contextFactory = contextFactory;
+            this._guildService = guildService;
             this._botSettings = botSettings.Value;
 
             this._avatarImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "default-avatar.png");
@@ -170,7 +172,12 @@ namespace FMBot.Bot.Services.Guild
                         }
                     }
 
-                    await channel.SendMessageAsync("", false, builder.Build());
+                    var message = await channel.SendMessageAsync("", false, builder.Build());
+
+                    if (message != null)
+                    {
+                        await this._guildService.AddReactionsAsync(message, guild);
+                    }
                 }
             }
             else
