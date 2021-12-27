@@ -1077,18 +1077,23 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var description = new StringBuilder();
                 var amountOfDiscs = albumTracks.Count(c => c.Rank == 1) == 0 ? 1 : albumTracks.Count(c => c.Rank == 1);
-                var maxTracksReached = false;
+
+                var pages = new List<PageBuilder>();
+
+                var footer = new StringBuilder();
+
+                footer.AppendLine($"{albumTracks.Count} total tracks");
+                footer.Append(spotifySource ? "Album source: Spotify | " : "Album source: Last.fm | ");
+                footer.Append($"{userSettings.DiscordUserName} has {album.UserPlaycount} total scrobbles on this album");
+
+                var url = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/music/" +
+                          $"{UrlEncoder.Default.Encode(album.ArtistName)}/" +
+                          $"{UrlEncoder.Default.Encode(album.AlbumName)}/";
 
                 var i = 0;
                 var tracksDisplayed = 0;
                 for (var disc = 1; disc < amountOfDiscs + 1; disc++)
                 {
-                    if (tracksDisplayed >= 30)
-                    {
-                        maxTracksReached = true;
-                        break;
-                    }
-
                     if (amountOfDiscs > 1)
                     {
                         description.AppendLine($"`Disc {disc}`");
@@ -1096,12 +1101,6 @@ namespace FMBot.Bot.Commands.LastFM
 
                     for (; i < albumTracks.Count; i++)
                     {
-                        if (tracksDisplayed >= 30)
-                        {
-                            maxTracksReached = true;
-                            break;
-                        }
-
                         var albumTrack = albumTracks[i];
 
                         var albumTrackWithPlaycount = artistUserTracks.FirstOrDefault(f =>
@@ -1133,36 +1132,32 @@ namespace FMBot.Bot.Commands.LastFM
                         description.AppendLine();
 
                         tracksDisplayed++;
+                        if (tracksDisplayed > 0 && tracksDisplayed % 12 == 0 || tracksDisplayed == albumTracks.Count)
+                        {
+                            var page = new PageBuilder()
+                                .WithDescription(description.ToString())
+                                .WithTitle($"Track playcounts for {albumName}")
+                                .WithFooter(footer.ToString());
+
+                            if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+                            {
+                                page.WithUrl(url);
+                            }
+
+                            pages.Add(page);
+                            description = new StringBuilder();
+                        }
                     }
                 }
 
-                this._embed.WithDescription(StringExtensions.TruncateLongString(description.ToString(), 4000));
+                var paginator = StringService.BuildStaticPaginator(pages);
 
-                var footer = spotifySource ? "Album source: Spotify | " : "Album source: Last.fm | ";
+                _ = this.Interactivity.SendPaginatorAsync(
+                    paginator,
+                    this.Context.Channel,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
-                footer += $"{userSettings.DiscordUserName} has {album.UserPlaycount} total scrobbles on this album";
-
-                if (maxTracksReached)
-                {
-                    footer += "\nMax 30 tracks displayed, click on title to view all your tracks on this album.";
-                }
-
-                this._embed.WithFooter(footer);
-
-
-                this._embed.WithTitle($"Track playcounts for {albumName}");
-
-                var url = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/music/" +
-                          $"{UrlEncoder.Default.Encode(album.ArtistName)}/" +
-                          $"{UrlEncoder.Default.Encode(album.AlbumName)}/";
-                if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
-                {
-                    this._embed.WithUrl(url);
-                }
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed();
-
             }
             catch (Exception e)
             {

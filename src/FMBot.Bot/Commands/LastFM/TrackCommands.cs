@@ -677,7 +677,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithAuthor(this._embedAuthor);
 
-                var trackPages = topTracks.Content.TopTracks.ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize); ;
+                var trackPages = topTracks.Content.TopTracks.ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
 
                 var counter = 1;
                 var pageCounter = 1;
