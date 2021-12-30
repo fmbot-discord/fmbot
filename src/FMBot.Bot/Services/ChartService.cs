@@ -175,13 +175,14 @@ namespace FMBot.Bot.Services
                 {
                     await chart.Artists.ParallelForEachAsync(async artist =>
                     {
-                        var encodedId = StringExtensions.ReplaceInvalidChars(artist.ArtistUrl.Replace("https://www.last.fm/music/", ""));
-                        var localAlbumId = StringExtensions.TruncateLongString($"artist_{encodedId}", 60);
+                        var encodedId = StringExtensions.ReplaceInvalidChars(
+                            artist.ArtistUrl.Replace("https://www.last.fm/music/", ""));
+                        var localArtistId = StringExtensions.TruncateLongString($"artist_{encodedId}", 60);
 
                         SKBitmap chartImage;
                         var validImage = true;
 
-                        var fileName = localAlbumId + ".png";
+                        var fileName = localArtistId + ".png";
                         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
 
                         if (File.Exists(localPath))
@@ -228,7 +229,7 @@ namespace FMBot.Bot.Services
                         }
 
                         AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, artist: artist);
-                    });
+                    }, maxDegreeOfParallelism: 3);
                 }
 
                 httpClient.Dispose();
