@@ -297,7 +297,7 @@ namespace FMBot.Bot.Commands.Guild
                 var builder = new ComponentBuilder()
                     .WithButton("Confirm", "id");
 
-                var msg = await ReplyAsync("", false, this._embed.Build(), component: builder.Build());
+                var msg = await ReplyAsync("", false, this._embed.Build(), components: builder.Build());
 
                 var result = await this.Interactivity.NextInteractionAsync(x => x is SocketMessageComponent c && c.Message.Id == msg.Id && x.User.Id == this.Context.User.Id,
                     timeout: TimeSpan.FromSeconds(30));

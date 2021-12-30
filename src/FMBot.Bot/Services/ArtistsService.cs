@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
@@ -14,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using NpgsqlTypes;
 using Serilog;
 
 namespace FMBot.Bot.Services
@@ -327,6 +329,152 @@ namespace FMBot.Bot.Services
                             && w.UserId == userId)
                 .OrderByDescending(o => o.Playcount)
                 .ToListAsync();
+        }
+
+        public async Task<List<string>> GetLatestArtists(ulong discordUserId, bool cacheEnabled = true)
+        {
+            try
+            {
+                var cacheKey = $"user-recent-artists-{discordUserId}";
+
+                var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<string> userArtists);
+                if (cacheAvailable && cacheEnabled)
+                {
+                    return userArtists;
+                }
+
+                await using var db = await this._contextFactory.CreateDbContextAsync();
+                var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+
+                if (user == null)
+                {
+                    return new List<string> { "Login to the bot first" };
+                }
+
+                const string sql = "SELECT * " +
+                                   "FROM public.user_plays " +
+                                   "WHERE user_id = @userId " +
+                                   "ORDER BY time_played desc " +
+                                   "LIMIT 50 ";
+
+                DefaultTypeMap.MatchNamesWithUnderscores = true;
+                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+                await connection.OpenAsync();
+
+                var userPlays = (await connection.QueryAsync<UserPlay>(sql, new
+                {
+                    userId = user.UserId
+                })).ToList();
+
+                var artists = userPlays
+                    .OrderByDescending(o => o.TimePlayed)
+                    .Select(s => s.ArtistName.ToString())
+                    .Distinct()
+                    .ToList();
+
+                this._cache.Set(cacheKey, artists, TimeSpan.FromSeconds(30));
+
+                return artists;
+            }
+            catch (Exception e)
+            {
+                Log.Error("Error in GetLatestArtists", e);
+                throw;
+            }
+        }
+
+        public async Task<List<string>> GetRecentTopArtists(ulong discordUserId, bool cacheEnabled = true)
+        {
+            try
+            {
+                var cacheKey = $"user-recent-top-artists-{discordUserId}";
+
+                var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<string> userArtists);
+                if (cacheAvailable && cacheEnabled)
+                {
+                    return userArtists;
+                }
+
+                await using var db = await this._contextFactory.CreateDbContextAsync();
+                var user = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
+
+                if (user == null)
+                {
+                    return new List<string> { "Login to the bot first" };
+                }
+
+                const string sql = "SELECT * " +
+                                   "FROM public.user_plays " +
+                                   "WHERE user_id = @userId " +
+                                   "ORDER BY time_played desc " +
+                                   "LIMIT 1500 ";
+
+                DefaultTypeMap.MatchNamesWithUnderscores = true;
+                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+                await connection.OpenAsync();
+
+                var userPlays = (await connection.QueryAsync<UserPlay>(sql, new
+                {
+                    userId = user.UserId
+                })).ToList();
+
+                var artists = userPlays
+                    .GroupBy(g => g.ArtistName)
+                    .OrderByDescending(o => o.Count())
+                    .Select(s => s.Key)
+                    .ToList();
+
+                this._cache.Set(cacheKey, artists, TimeSpan.FromSeconds(120));
+
+                return artists;
+            }
+            catch (Exception e)
+            {
+                Log.Error("Error in GetRecentTopArtists", e);
+                throw;
+            }
+        }
+
+        public async Task<List<Artist>> SearchThroughArtists(string searchValue, bool cacheEnabled = true)
+        {
+            try
+            {
+                const string cacheKey = "artists-all";
+
+                var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<Artist> artists);
+                if (!cacheAvailable && cacheEnabled)
+                {
+                    const string sql = "SELECT * " +
+                                       "FROM public.artists " +
+                                       "WHERE popularity is not null AND popularity > 1 ";
+
+                    DefaultTypeMap.MatchNamesWithUnderscores = true;
+                    await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+                    await connection.OpenAsync();
+
+                    artists = (await connection.QueryAsync<Artist>(sql)).ToList();
+
+                    this._cache.Set(cacheKey, artists, TimeSpan.FromMinutes(15));
+                }
+
+                searchValue = searchValue.ToLower();
+
+                var results = artists.Where(w =>
+                    w.Name.ToLower().StartsWith(searchValue))
+                    .OrderByDescending(o => o.Popularity)
+                    .ToList();
+
+                results.AddRange(artists.Where(w =>
+                        w.Name.ToLower().Contains(searchValue))
+                    .OrderByDescending(o => o.Popularity));
+
+                return results;
+            }
+            catch (Exception e)
+            {
+                Log.Error("Error in SearchThroughArtists", e);
+                throw;
+            }
         }
     }
 }

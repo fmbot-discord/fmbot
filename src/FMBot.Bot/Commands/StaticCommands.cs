@@ -149,7 +149,7 @@ namespace FMBot.Bot.Commands
             var components = new ComponentBuilder()
                 .WithButton("Last.fm settings", style: ButtonStyle.Link, url: "https://www.last.fm/settings/applications")
                 .WithButton("Full guide", style: ButtonStyle.Link, url: "https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184");
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build(), component: components.Build());
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build(), components: components.Build());
             this.Context.LogCommandUsed();
         }
 
@@ -164,16 +164,16 @@ namespace FMBot.Bot.Commands
 
             var embedDescription = new StringBuilder();
 
-            embedDescription.AppendLine(".fmbot is non-commercial and is hosted and maintained by volunteers.");
-            embedDescription.AppendLine("You can help us cover hosting and other costs on our [OpenCollective](https://opencollective.com/fmbot).");
+            embedDescription.AppendLine(".fmbot is non-commercial, open-source and non-profit. It is maintained by volunteers.");
+            embedDescription.AppendLine("You can help us fund hosting, development and other costs on our [OpenCollective](https://opencollective.com/fmbot).");
             embedDescription.AppendLine();
-            embedDescription.AppendLine("We use OpenCollective so we can be transparent about our expenses. If you decide to sponsor us, you can see exactly where your money goes.");
+            embedDescription.AppendLine("We use OpenCollective so we can be transparent about our expenses. If you decide to donate, you can see exactly where your money goes.");
             embedDescription.AppendLine();
             embedDescription.AppendLine($"Use `{prfx}supporters` to see everyone who has supported us so far!");
             embedDescription.AppendLine();
             embedDescription.AppendLine("**.fmbot supporter advantages include**:\n" +
                                         "- An emote behind their name (⭐)\n" +
-                                        "- Their name added to the list of supporters\n" +
+                                        "- Their name shown in the list of supporters\n" +
                                         "- A chance of sponsoring a chart\n" +
                                         "- Friend limit increased to 15 (up from 12)\n" +
                                         "- WhoKnows tracking increased to all your music (instead of top 4/5/6k artist/albums/tracks)");
@@ -189,7 +189,7 @@ namespace FMBot.Bot.Commands
 
             var components = new ComponentBuilder().WithButton("Get .fmbot supporter", style: ButtonStyle.Link, url: "https://opencollective.com/fmbot/contribute");
 
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build(), component: components.Build());
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build(), components: components.Build());
             this.Context.LogCommandUsed();
         }
 
@@ -463,6 +463,7 @@ namespace FMBot.Bot.Commands
                         if (searchResult.IsSuccess && searchResult.Commands != null && searchResult.Commands.Any())
                         {
                             var userName = (this.Context.Message.Author as SocketGuildUser)?.Nickname ?? this.Context.User.Username;
+                            this._embed.Fields = new List<EmbedFieldBuilder>();
                             this._embed.HelpResponse(searchResult.Commands[0].Command, prefix, userName);
                         }
                     }
@@ -475,7 +476,7 @@ namespace FMBot.Bot.Commands
                         .Build();
 
                     selectedResult =
-                        await this.Interactivity.SendSelectionAsync(multiSelection, this.Context.Channel, message: message, timeout: TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds * 2));
+                        await this.Interactivity.SendSelectionAsync(multiSelection, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds * 2), message);
                     message = selectedResult.Message;
                 }
 

@@ -109,7 +109,7 @@ namespace FMBot.Bot.Commands
 
                         var components = new ComponentBuilder().WithButton("View on Genius", style: ButtonStyle.Link, url: firstResult.Url);
 
-                        await ReplyAsync("", false, this._embed.Build(), component: components.Build());
+                        await ReplyAsync("", false, this._embed.Build(), components: components.Build());
                         this.Context.LogCommandUsed();
                         return;
                     }

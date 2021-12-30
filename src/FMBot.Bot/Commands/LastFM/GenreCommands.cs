@@ -284,6 +284,15 @@ namespace FMBot.Bot.Commands.LastFM
                     {
                         var artist = await this._artistsService.GetArtistFromDatabase(artistName);
 
+                        if (artist == null)
+                        {
+                            this._embed.WithDescription(
+                                "Sorry, the genre or artist you're searching for do not exist or do not have any stored genres.");
+                            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                            this.Context.LogCommandUsed(CommandResponse.NotFound);
+                            return;
+                        }
+
                         this._embed.WithTitle($"Genre info for '{artistName}'");
 
                         var genreDescription = new StringBuilder();

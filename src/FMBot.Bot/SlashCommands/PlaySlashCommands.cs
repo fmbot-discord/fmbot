@@ -28,7 +28,8 @@ public class PlaySlashCommands : InteractionModuleBase
     public PlaySlashCommands(UserService userService,
         SettingService settingService,
         PlayBuilder playBuilder,
-        GuildService guildService, LastFmRepository lastFmRepository)
+        GuildService guildService,
+        LastFmRepository lastFmRepository)
     {
         this._userService = userService;
         this._settingService = settingService;

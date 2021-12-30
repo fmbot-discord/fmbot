@@ -37,6 +37,8 @@ public class InteractionHandler
         this._guildDisabledCommandService = guildDisabledCommandService;
         this._channelDisabledCommandService = channelDisabledCommandService;
         this._client.SlashCommandExecuted += HandleInteractionAsync;
+        this._client.AutocompleteExecuted += AutoCompleteAsync;
+
     }
 
     private async Task HandleInteractionAsync(SocketInteraction socketInteraction)
@@ -128,6 +130,12 @@ public class InteractionHandler
 
         Statistics.SlashCommandsExecuted.Inc();
         _ = this._userService.UpdateUserLastUsedAsync(context.User.Id);
+    }
+
+    private async Task AutoCompleteAsync(SocketInteraction socketInteraction)
+    {
+        var context = new ShardedInteractionContext(this._client, socketInteraction);
+        await this._interactionService.ExecuteCommandAsync(context, this._provider);
     }
 
     private async Task<bool> CommandDisabled(ShardedInteractionContext context, SlashCommandInfo searchResult)

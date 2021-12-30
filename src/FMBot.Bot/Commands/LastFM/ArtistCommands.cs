@@ -9,6 +9,7 @@ using Discord;
 using Discord.Commands;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -30,6 +31,7 @@ namespace FMBot.Bot.Commands.LastFM
     [Name("Artists")]
     public class ArtistCommands : BaseCommandModule
     {
+        private readonly ArtistBuilders _artistBuilders;
         private readonly ArtistsService _artistsService;
         private readonly CrownService _crownService;
         private readonly GuildService _guildService;
@@ -68,7 +70,8 @@ namespace FMBot.Bot.Commands.LastFM
                 WhoKnowsService whoKnowsService,
                 IOptions<BotSettings> botSettings,
                 GenreService genreService,
-                FriendsService friendsService) : base(botSettings)
+                FriendsService friendsService,
+                ArtistBuilders artistBuilders) : base(botSettings)
         {
             this._artistsService = artistsService;
             this._crownService = crownService;
@@ -87,6 +90,7 @@ namespace FMBot.Bot.Commands.LastFM
             this._whoKnowsService = whoKnowsService;
             this._genreService = genreService;
             this._friendsService = friendsService;
+            this._artistBuilders = artistBuilders;
         }
 
         [Command("artist", RunMode = RunMode.Async)]
@@ -101,186 +105,16 @@ namespace FMBot.Bot.Commands.LastFM
         [CommandCategories(CommandCategory.Artists)]
         public async Task ArtistAsync([Remainder] string artistValues = null)
         {
-            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var artist = await GetArtist(artistValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
-            if (artist == null)
-            {
-                return;
-            }
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var spotifyArtistTask = this._spotifyService.GetOrStoreArtistAsync(artist, artistValues);
-
-            var fullArtist = await spotifyArtistTask;
-
-            var footer = new StringBuilder();
-            if (fullArtist.SpotifyImageUrl != null)
-            {
-                this._embed.WithThumbnailUrl(fullArtist.SpotifyImageUrl);
-                footer.AppendLine("Image source: Spotify");
-            }
-
-            if (contextUser.TotalPlaycount.HasValue && artist.UserPlaycount is >= 10)
-            {
-                footer.AppendLine($"{(decimal)artist.UserPlaycount.Value / contextUser.TotalPlaycount.Value:P} of all your scrobbles are on this artist");
-            }
-
-            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-
-            this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            this._embedAuthor.WithName($"Artist info about {artist.ArtistName} for {userTitle}");
-            this._embedAuthor.WithUrl(artist.ArtistUrl);
-            this._embed.WithAuthor(this._embedAuthor);
-
-            if (!string.IsNullOrWhiteSpace(fullArtist.Type))
-            {
-                var artistInfo = new StringBuilder();
-
-                if (!string.IsNullOrWhiteSpace(fullArtist.Disambiguation))
-                {
-                    if (fullArtist.Location != null)
-                    {
-                        artistInfo.Append($"**{fullArtist.Disambiguation}**");
-                        artistInfo.Append($" from **{fullArtist.Location}**");
-                        artistInfo.AppendLine();
-                    }
-                    else
-                    {
-                        artistInfo.AppendLine($"**{fullArtist.Disambiguation}**");
-                    }
-                }
-                if (fullArtist.Location != null && string.IsNullOrWhiteSpace(fullArtist.Disambiguation))
-                {
-                    artistInfo.AppendLine($"{fullArtist.Location}");
-                }
-                if (fullArtist.Type != null)
-                {
-                    artistInfo.Append($"{fullArtist.Type}");
-                    if (fullArtist.Gender != null)
-                    {
-                        artistInfo.Append($" - ");
-                        artistInfo.Append($"{fullArtist.Gender}");
-                    }
-
-                    artistInfo.AppendLine();
-                }
-                if (fullArtist.StartDate.HasValue && !fullArtist.EndDate.HasValue)
-                {
-                    var specifiedDateTime = DateTime.SpecifyKind(fullArtist.StartDate.Value, DateTimeKind.Utc);
-                    var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
-
-                    if (fullArtist.Type?.ToLower() == "person")
-                    {
-                        artistInfo.AppendLine($"Born: <t:{dateValue}:D>");
-                    }
-                    else
-                    {
-                        artistInfo.AppendLine($"Started: <t:{dateValue}:D>");
-                    }
-                }
-                if (fullArtist.StartDate.HasValue && fullArtist.EndDate.HasValue)
-                {
-                    var specifiedStartDateTime = DateTime.SpecifyKind(fullArtist.StartDate.Value, DateTimeKind.Utc);
-                    var startDateValue = ((DateTimeOffset)specifiedStartDateTime).ToUnixTimeSeconds();
-
-                    var specifiedEndDateTime = DateTime.SpecifyKind(fullArtist.EndDate.Value, DateTimeKind.Utc);
-                    var endDateValue = ((DateTimeOffset)specifiedEndDateTime).ToUnixTimeSeconds();
-
-                    if (fullArtist.Type?.ToLower() == "person")
-                    {
-                        artistInfo.AppendLine($"Born: <t:{startDateValue}:D>");
-                        artistInfo.AppendLine($"Died: <t:{endDateValue}:D>");
-                    }
-                    else
-                    {
-                        artistInfo.AppendLine($"Started: <t:{startDateValue}:D>");
-                        artistInfo.AppendLine($"Stopped: <t:{endDateValue}:D>");
-                    }
-                }
-
-                if (artistInfo.Length > 0)
-                {
-                    this._embed.WithDescription(artistInfo.ToString());
-                }
-            }
-
-            if (!this._guildService.CheckIfDM(this.Context))
-            {
-                var serverStats = "";
-                var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
-
-                if (guild?.LastIndexed != null)
-                {
-                    var usersWithArtist = await this._whoKnowArtistService.GetIndexedUsersForArtist(this.Context, guild.GuildId, artist.ArtistName);
-                    var filteredUsersWithArtist = WhoKnowsService.FilterGuildUsersAsync(usersWithArtist, guild);
-
-                    if (filteredUsersWithArtist.Count != 0)
-                    {
-                        var serverListeners = filteredUsersWithArtist.Count;
-                        var serverPlaycount = filteredUsersWithArtist.Sum(a => a.Playcount);
-                        var avgServerPlaycount = filteredUsersWithArtist.Average(a => a.Playcount);
-                        var serverPlaycountLastWeek = await this._whoKnowArtistService.GetWeekArtistPlaycountForGuildAsync(guild.GuildId, artist.ArtistName);
-
-                        serverStats += $"`{serverListeners}` {StringExtensions.GetListenersString(serverListeners)}";
-                        serverStats += $"\n`{serverPlaycount}` total {StringExtensions.GetPlaysString(serverPlaycount)}";
-                        serverStats += $"\n`{(int)avgServerPlaycount}` avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
-                        serverStats += $"\n`{serverPlaycountLastWeek}` {StringExtensions.GetPlaysString(serverPlaycountLastWeek)} last week";
-
-                        if (usersWithArtist.Count > filteredUsersWithArtist.Count)
-                        {
-                            var filteredAmount = usersWithArtist.Count - filteredUsersWithArtist.Count;
-                            serverStats += $"\n`{filteredAmount}` users filtered";
-                        }
-                    }
-                }
-                else
-                {
-                    var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-                    serverStats += $"Run `{prfx}index` to get server stats";
-                }
-
-                if (!string.IsNullOrWhiteSpace(serverStats))
-                {
-                    this._embed.AddField("Server stats", serverStats, true);
-                }
-            }
-
-            var globalStats = "";
-            globalStats += $"`{artist.TotalListeners}` {StringExtensions.GetListenersString(artist.TotalListeners)}";
-            globalStats += $"\n`{artist.TotalPlaycount}` global {StringExtensions.GetPlaysString(artist.TotalPlaycount)}";
-            if (artist.UserPlaycount.HasValue)
-            {
-                globalStats += $"\n`{artist.UserPlaycount}` {StringExtensions.GetPlaysString(artist.UserPlaycount)} by you";
-                globalStats += $"\n`{await this._playService.GetWeekArtistPlaycountAsync(contextUser.UserId, artist.ArtistName)}` by you last week";
-                await this._updateService.CorrectUserArtistPlaycount(contextUser.UserId, artist.ArtistName,
-                    artist.UserPlaycount.Value);
-            }
-
-            this._embed.AddField("Last.fm stats", globalStats, true);
-
-            if (artist.Description != null)
-            {
-                this._embed.AddField("Summary", artist.Description);
-            }
-
-            //if (artist.Tags != null && artist.Tags.Any() && (fullArtist.ArtistGenres == null || !fullArtist.ArtistGenres.Any()))
-            //{
-            //    var tags = LastFmRepository.TagsToLinkedString(artist.Tags);
-
-            //    this._embed.AddField("Tags", tags);
-            //}
-
-            if (fullArtist.ArtistGenres != null && fullArtist.ArtistGenres.Any())
-            {
-                footer.AppendLine(GenreService.GenresToString(fullArtist.ArtistGenres.ToList()));
-            }
-
-            this._embed.WithFooter(footer.ToString());
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-            this.Context.LogCommandUsed();
+            var response = await this._artistBuilders.ArtistAsync(prfx, this.Context.Guild, this.Context.User,
+                contextUser, artistValues);
+            
+            await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
 
         [Command("artisttracks", RunMode = RunMode.Async)]
@@ -307,8 +141,6 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var pages = new List<PageBuilder>();
-
             var timeDescription = timeSettings.Description.ToLower();
             List<UserTrack> topTracks;
             switch (timeSettings.TimePeriod)
@@ -325,6 +157,7 @@ namespace FMBot.Bot.Commands.LastFM
                     break;
             }
 
+            var pages = new List<PageBuilder>();
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
             if (topTracks.Count == 0)
@@ -882,7 +715,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 await this._indexService.UpdateGuildUser(await this.Context.Guild.GetUserAsync(user.DiscordUserId), currentUser.UserId, guild);
 
-                var usersWithArtist = await this._whoKnowArtistService.GetIndexedUsersForArtist(this.Context, guild.GuildId, artistName);
+                var usersWithArtist = await this._whoKnowArtistService.GetIndexedUsersForArtist(this.Context.Guild, guild.GuildId, artistName);
 
                 if (userPlaycount != 0)
                 {

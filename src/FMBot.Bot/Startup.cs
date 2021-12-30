@@ -109,6 +109,7 @@ namespace FMBot.Bot
                 }))
                 .AddSingleton<InteractionService>()
                 .AddSingleton<AlbumService>()
+                .AddSingleton<ArtistBuilders>()
                 .AddSingleton<AlbumRepository>()
                 .AddSingleton<AdminService>()
                 .AddSingleton<ArtistsService>()

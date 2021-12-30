@@ -245,7 +245,7 @@ public class PlayCommands : BaseCommandModule
 
             await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
 
-            this.Context.LogCommandUsed();
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
@@ -277,7 +277,7 @@ public class PlayCommands : BaseCommandModule
 
             await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
 
-            this.Context.LogCommandUsed();
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
@@ -541,7 +541,7 @@ public class PlayCommands : BaseCommandModule
             userSettings, timeSettings, goalAmount, userInfo.Playcount, timeFrom);
 
         await this.Context.Channel.SendMessageAsync(response.Text, allowedMentions: AllowedMentions.None);
-        this.Context.LogCommandUsed();
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("milestone", RunMode = RunMode.Async)]
@@ -566,7 +566,7 @@ public class PlayCommands : BaseCommandModule
             userSettings, mileStoneAmount, userInfo.Playcount);
 
         await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
-        this.Context.LogCommandUsed();
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("plays", RunMode = RunMode.Async)]

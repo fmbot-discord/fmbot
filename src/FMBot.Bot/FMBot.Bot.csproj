@@ -24,10 +24,10 @@
     <PackageReference Include="AsyncEnumerator" Version="4.0.2" />
     <PackageReference Include="BotListAPI" Version="5.5.2" />
     <PackageReference Include="Dapper" Version="2.0.123" />
-    <PackageReference Include="Discord.Net.Labs" Version="3.4.9" />
-    <PackageReference Include="Discord.Net.Labs.Core" Version="3.4.9" />
-    <PackageReference Include="Discord.Net.Labs.Rest" Version="3.4.9" />
-    <PackageReference Include="Discord.Net.Labs.WebSocket" Version="3.4.9" />
+    <PackageReference Include="Discord.Net.Labs" Version="3.6.1" />
+    <PackageReference Include="Discord.Net.Labs.Core" Version="3.6.1" />
+    <PackageReference Include="Discord.Net.Labs.Rest" Version="3.6.1" />
+    <PackageReference Include="Discord.Net.Labs.WebSocket" Version="3.6.1" />
     <PackageReference Include="Fergun.Interactive.Labs" Version="1.3.0-dev3" />
     <PackageReference Include="Genius.NET" Version="4.0.1" />
     <PackageReference Include="Google.Apis" Version="1.55.0" />
@@ -74,6 +74,7 @@
     <ProjectReference Include="..\FMBot.Logger\FMBot.Logger.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="AutoCompleteHandlers\" />
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>

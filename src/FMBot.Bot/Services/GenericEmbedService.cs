@@ -96,7 +96,7 @@ namespace FMBot.Bot.Services
                     }
                     break;
                 default:
-                    embed.WithDescription(message);
+                    embed.WithDescription(message ?? "Unknown error");
                     break;
             }
 
@@ -146,15 +146,15 @@ namespace FMBot.Bot.Services
         public static EmbedBuilder RecentScrobbleCallFailedBuilder(Response<RecentTrackList> recentScrobbles, string lastFmUserName)
         {
             var embed = new EmbedBuilder();
-            if (!recentScrobbles.Content.RecentTracks.Any())
+            if (recentScrobbles.Content?.RecentTracks == null || !recentScrobbles.Success)
             {
-                embed.NoScrobblesFoundErrorResponse(lastFmUserName);
+                embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, null);
                 return embed;
             }
 
-            if (!recentScrobbles.Success || recentScrobbles.Content == null)
+            if (!recentScrobbles.Content.RecentTracks.Any())
             {
-                embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, null);
+                embed.NoScrobblesFoundErrorResponse(lastFmUserName);
                 return embed;
             }
 
