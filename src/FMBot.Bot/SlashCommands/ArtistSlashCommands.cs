@@ -28,7 +28,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     public async Task ArtistAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
-        [Autocomplete(typeof(ArtistAutoComplete))] string artist = null)
+        [Autocomplete(typeof(ArtistAutoComplete))] string name = null)
     {
         _ = DeferAsync();
 
@@ -37,7 +37,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         try
         {
             var response = await this._artistBuilders.ArtistAsync("/", this.Context.Guild, this.Context.User,
-                contextUser, artist);
+                contextUser, name);
 
             await FollowupAsync(null, new[] { response.Embed.Build() });
 
