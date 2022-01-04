@@ -742,7 +742,6 @@ namespace FMBot.Bot.Commands
                     updateDescription.AppendLine();
 
                     var newFeature = await this._featuredService.ReplaceFeatured(feature, this.Context.User.Id);
-                    this._timer.Restart();
 
                     updateDescription.AppendLine("**New feature**");
                     updateDescription.AppendLine(newFeature.FeaturedMode.ToString());

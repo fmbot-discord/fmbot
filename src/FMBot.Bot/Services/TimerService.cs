@@ -296,10 +296,8 @@ namespace FMBot.Bot.Services
 
         public void Restart()
         {
-            this._featuredTimer.Change(TimeSpan.FromSeconds(0),
-                TimeSpan.FromMinutes(Convert.ToDouble(this._botSettings.Bot.FeaturedTimerRepeatInMinutes)));
-            this._pickNewFeaturedTimer.Change(TimeSpan.FromSeconds(0),
-                TimeSpan.FromMinutes(Convert.ToDouble(this._botSettings.Bot.FeaturedTimerRepeatInMinutes)));
+            this._featuredTimer.Change(TimeSpan.FromSeconds(0), TimeSpan.FromMinutes(1));
+            this._pickNewFeaturedTimer.Change(TimeSpan.FromSeconds(0), TimeSpan.FromHours(12));
             this._timerEnabled = true;
         }
 

@@ -65,8 +65,6 @@ namespace FMBot.Domain.Models
         public string MetricsPusherName { get; set; }
 
         public int FeaturedTimerStartupDelayInSeconds { get; set; }
-
-        public int FeaturedTimerRepeatInMinutes { get; set; }
     }
 
     public class LastFmConfig
