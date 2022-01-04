@@ -70,7 +70,22 @@ namespace FMBot.Bot.Services.Guild
             return guild;
         }
 
-        public async Task RemoveGuildFromCache(ulong discordGuildId)
+        public async Task<Persistence.Domain.Models.Guild> GetGuildForWhoKnows(ulong? discordGuildId = null)
+        {
+            if (discordGuildId == null)
+            {
+                return null;
+            }
+
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            return await db.Guilds
+                .AsNoTracking()
+                .Include(i => i.GuildBlockedUsers)
+                .Include(i => i.GuildUsers.Where(w => w.Bot != true))
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
+        }
+
+        private async Task RemoveGuildFromCache(ulong discordGuildId)
         {
             this._cache.Remove(CacheKeyForGuild(discordGuildId));
         }
@@ -104,7 +119,7 @@ namespace FMBot.Bot.Services.Guild
 
         public static async Task<GuildPermissions> GetGuildPermissionsAsync(ICommandContext context)
         {
-            var socketCommandContext = (SocketCommandContext) context;
+            var socketCommandContext = (SocketCommandContext)context;
             var guildUser = await context.Guild.GetUserAsync(socketCommandContext.Client.CurrentUser.Id);
             return guildUser.GuildPermissions;
         }

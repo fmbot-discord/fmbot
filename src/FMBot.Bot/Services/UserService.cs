@@ -129,6 +129,14 @@ namespace FMBot.Bot.Services
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
         }
 
+        public async Task<User> GetUserForIdAsync(int userId)
+        {
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            return await db.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.UserId == userId);
+        }
+
         // User settings
         public async Task<User> GetFullUserAsync(ulong discordUserId)
         {

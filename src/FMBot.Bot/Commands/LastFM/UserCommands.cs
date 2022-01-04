@@ -512,7 +512,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+                var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
                 if (guild != null)
                 {
                     await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(this.Context.User.Id), newUserSettings);
@@ -768,7 +768,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (!this._guildService.CheckIfDM(this.Context))
                 {
-                    var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+                    var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
                     if (guild != null)
                     {
                         await this._indexService.GetOrAddUserToGuild(guild,

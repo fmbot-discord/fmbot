@@ -72,7 +72,7 @@ namespace FMBot.Bot.Commands
 
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+                var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
 
                 var embedFooterText = "Amount of scrobbles of all your friends together: ";
                 string embedTitle;
@@ -107,7 +107,8 @@ namespace FMBot.Bot.Commands
                         {
                             friendNameToDisplay = guildUser.UserName;
 
-                            var discordUser = await this.Context.Guild.GetUserAsync(guildUser.User.DiscordUserId);
+                            var user = await this._userService.GetUserForIdAsync(guildUser.UserId);
+                            var discordUser = await this.Context.Guild.GetUserAsync(user.DiscordUserId);
                             if (discordUser?.Username != null)
                             {
                                 friendNameToDisplay = discordUser.Nickname ?? discordUser.Username;

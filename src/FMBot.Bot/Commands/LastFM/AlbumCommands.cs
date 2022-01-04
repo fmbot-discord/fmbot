@@ -159,7 +159,7 @@ namespace FMBot.Bot.Commands.LastFM
                 if (!this._guildService.CheckIfDM(this.Context))
                 {
                     var serverStats = "";
-                    var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+                    var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
 
                     if (guild?.LastIndexed != null)
                     {
@@ -606,7 +606,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+                var guildTask = this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
 
                 _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -619,7 +619,6 @@ namespace FMBot.Bot.Commands.LastFM
                 var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
 
                 var albumName = $"{album.AlbumName} by {album.ArtistName}";
-
 
                 var guild = await guildTask;
 
@@ -742,7 +741,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild?.Id);
+                var guildTask = this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
                 _ = this.Context.Channel.TriggerTypingAsync();
 
                 var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);

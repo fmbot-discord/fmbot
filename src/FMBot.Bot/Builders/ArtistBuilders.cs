@@ -168,7 +168,7 @@ public class ArtistBuilders
         if (discordGuild != null)
         {
             var serverStats = "";
-            var guild = await this._guildService.GetFullGuildAsync(discordGuild.Id);
+            var guild = await this._guildService.GetGuildForWhoKnows(discordGuild.Id);
 
             if (guild?.LastIndexed != null)
             {

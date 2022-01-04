@@ -99,7 +99,7 @@ public class UserSlashCommands : InteractionModuleBase
 
                 if (this.Context.Guild != null)
                 {
-                    var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+                    var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
                     if (guild != null)
                     {
                         await this._indexService.GetOrAddUserToGuild(guild,

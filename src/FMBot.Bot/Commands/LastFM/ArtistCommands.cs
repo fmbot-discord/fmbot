@@ -597,7 +597,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+                var guildTask = this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
 
                 _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -767,7 +767,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             try
             {
-                var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild?.Id);
+                var guildTask = this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
                 _ = this.Context.Channel.TriggerTypingAsync();
 
                 var user = await this._userService.GetUserSettingsAsync(this.Context.User);

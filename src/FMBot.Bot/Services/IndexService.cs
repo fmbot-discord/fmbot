@@ -212,11 +212,16 @@ namespace FMBot.Bot.Services
                 {
                     GuildId = guild.GuildId,
                     UserId = user.UserId,
+                    User = user,
                     UserName = discordGuildUser.Nickname ?? discordGuildUser.Username ?? user.UserNameLastFM
                 };
             }
 
-            return guild.GuildUsers.First(f => f.UserId == user.UserId);
+            var userToReturn = guild.GuildUsers.First(f => f.UserId == user.UserId);
+
+            userToReturn.User = user;
+
+            return userToReturn;
         }
 
         public async Task UpdateGuildUser(IGuildUser discordGuildUser, int userId, Persistence.Domain.Models.Guild guild)
