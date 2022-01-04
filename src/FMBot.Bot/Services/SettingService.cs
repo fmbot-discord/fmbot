@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -689,6 +690,13 @@ namespace FMBot.Bot.Services
                     else if (int.TryParse(option, out var result) && result < currentPlaycount)
                     {
                         goalAmount = result;
+                        ownGoalSet = true;
+                        break;
+                    }
+
+                    if (option.ToLower().Contains("random"))
+                    {
+                        goalAmount = RandomNumberGenerator.GetInt32(1, (int)currentPlaycount);
                         ownGoalSet = true;
                         break;
                     }
