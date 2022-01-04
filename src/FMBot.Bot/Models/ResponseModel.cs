@@ -1,4 +1,5 @@
 using Discord;
+using Fergun.Interactive.Pagination;
 using FMBot.Bot.Resources;
 using FMBot.Domain.Models;
 
@@ -23,6 +24,8 @@ public class ResponseModel
 
 
     public string Text { get; set; }
+
+    public StaticPaginator StaticPaginator { get; set; }
 
     public CommandResponse CommandResponse { get; set; }
 }

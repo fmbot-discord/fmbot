@@ -1,15 +1,20 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Discord;
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
 using FMBot.LastFM.Domain.Types;
@@ -32,7 +37,11 @@ public class ArtistBuilders
     public ArtistBuilders(ArtistsService artistsService,
         LastFmRepository lastFmRepository,
         GuildService guildService,
-        SpotifyService spotifyService, UserService userService, WhoKnowsArtistService whoKnowsArtistService, PlayService playService, IUpdateService updateService)
+        SpotifyService spotifyService,
+        UserService userService,
+        WhoKnowsArtistService whoKnowsArtistService,
+        PlayService playService,
+        IUpdateService updateService)
     {
         this._artistsService = artistsService;
         this._lastFmRepository = lastFmRepository;
@@ -230,6 +239,104 @@ public class ArtistBuilders
         return response;
     }
 
+    public async Task<ResponseModel> ArtistTracksAsync(
+        IGuild discordGuild,
+        IUser discordUser,
+        User contextUser,
+        TimeSettingsModel timeSettings,
+        UserSettingsModel userSettings,
+        string searchValue)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var artistSearch = await GetArtist(response, discordUser, searchValue, contextUser.UserNameLastFM,
+            contextUser.SessionKeyLastFm);
+        if (artistSearch.artist == null)
+        {
+            return artistSearch.response;
+        }
+
+        var timeDescription = timeSettings.Description.ToLower();
+        List<UserTrack> topTracks;
+        switch (timeSettings.TimePeriod)
+        {
+            case TimePeriod.Weekly:
+                topTracks = await this._playService.GetTopTracksForArtist(userSettings.UserId, 7, artistSearch.artist.ArtistName);
+                break;
+            case TimePeriod.Monthly:
+                topTracks = await this._playService.GetTopTracksForArtist(userSettings.UserId, 31, artistSearch.artist.ArtistName);
+                break;
+            default:
+                timeDescription = "alltime";
+                topTracks = await this._artistsService.GetTopTracksForArtist(userSettings.UserId, artistSearch.artist.ArtistName);
+                break;
+        }
+
+        var pages = new List<PageBuilder>();
+        var userTitle = await this._userService.GetUserTitleAsync(discordGuild, discordUser);
+
+        if (topTracks.Count == 0)
+        {
+            response.Embed.WithDescription(
+                $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()} has no registered tracks for the artist **{artistSearch.artist.ArtistName}** in .fmbot.");
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            return response;
+        }
+
+        var url = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/music/{UrlEncoder.Default.Encode(artistSearch.artist.ArtistName)}";
+        if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+        {
+            response.EmbedAuthor.WithUrl(url);
+        }
+
+        var topTrackPages = topTracks.ChunkBy(10);
+
+        var counter = 1;
+        var pageCounter = 1;
+        foreach (var topTrackPage in topTrackPages)
+        {
+            var albumPageString = new StringBuilder();
+            foreach (var track in topTrackPage)
+            {
+                albumPageString.AppendLine($"{counter}. **{track.Name}** ({track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)})");
+                counter++;
+            }
+
+            var footer = new StringBuilder();
+            footer.Append($"Page {pageCounter}/{topTrackPages.Count}");
+            var title = new StringBuilder();
+
+            if (userSettings.DifferentUser && userSettings.UserId != contextUser.UserId)
+            {
+                footer.AppendLine($" - {userSettings.UserNameLastFm} has {artistSearch.artist.UserPlaycount} total scrobbles on this artist");
+                footer.AppendLine($"Requested by {userTitle}");
+                title.Append($"{userSettings.DiscordUserName} their top tracks for '{artistSearch.artist.ArtistName}'");
+            }
+            else
+            {
+                footer.Append($" - {userTitle} has {artistSearch.artist.UserPlaycount} total scrobbles on this artist");
+                title.Append($"Your top tracks for '{artistSearch.artist.ArtistName}'");
+
+                response.EmbedAuthor.WithIconUrl(discordUser.GetAvatarUrl());
+            }
+
+            response.EmbedAuthor.WithName(title.ToString());
+
+            pages.Add(new PageBuilder()
+                .WithDescription(albumPageString.ToString())
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(footer.ToString()));
+            pageCounter++;
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ResponseType = ResponseType.Paginator;
+        return response;
+    }
+
 
     private async Task<(ArtistInfo artist, ResponseModel response)> GetArtist(ResponseModel response, IUser discordUser, string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null)
     {
@@ -245,12 +352,14 @@ public class ArtistBuilders
             {
                 response.Embed.WithDescription($"Artist `{artistValues}` could not be found, please check your search values and try again.");
                 response.CommandResponse = CommandResponse.NotFound;
+                response.ResponseType = ResponseType.Embed;
                 return (null, response);
             }
             if (!artistCall.Success || artistCall.Content == null)
             {
                 response.Embed.ErrorResponse(artistCall.Error, artistCall.Message, null, discordUser, "artist");
                 response.CommandResponse = CommandResponse.LastFmError;
+                response.ResponseType = ResponseType.Embed;
                 return (null, response);
             }
 
@@ -263,6 +372,7 @@ public class ArtistBuilders
             if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
             {
                 response.Embed = GenericEmbedService.RecentScrobbleCallFailedBuilder(recentScrobbles, lastFmUserName);
+                response.ResponseType = ResponseType.Embed;
                 return (null, response);
             }
 
@@ -278,6 +388,7 @@ public class ArtistBuilders
             {
                 response.Embed.WithDescription($"Last.fm did not return a result for **{lastPlayedTrack.ArtistName}**.");
                 response.CommandResponse = CommandResponse.NotFound;
+                response.ResponseType = ResponseType.Embed;
                 return (null, response);
             }
 

@@ -112,7 +112,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             var response = await this._artistBuilders.ArtistAsync(prfx, this.Context.Guild, this.Context.User,
                 contextUser, artistValues);
-            
+
             await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
             this.Context.LogCommandUsed(response.CommandResponse);
         }
@@ -141,87 +141,22 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var timeDescription = timeSettings.Description.ToLower();
-            List<UserTrack> topTracks;
-            switch (timeSettings.TimePeriod)
+            var response = await this._artistBuilders.ArtistTracksAsync(this.Context.Guild, this.Context.User, contextUser, timeSettings,
+                userSettings, artistValues);
+
+            if (response.ResponseType == ResponseType.Embed)
             {
-                case TimePeriod.Weekly:
-                    topTracks = await this._playService.GetTopTracksForArtist(userSettings.UserId, 7, artist.ArtistName);
-                    break;
-                case TimePeriod.Monthly:
-                    topTracks = await this._playService.GetTopTracksForArtist(userSettings.UserId, 31, artist.ArtistName);
-                    break;
-                default:
-                    timeDescription = "alltime";
-                    topTracks = await this._artistsService.GetTopTracksForArtist(userSettings.UserId, artist.ArtistName);
-                    break;
+                await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
+            }
+            else
+            {
+                _ = this.Interactivity.SendPaginatorAsync(
+                    response.StaticPaginator,
+                    this.Context.Channel,
+                    TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
             }
 
-            var pages = new List<PageBuilder>();
-            var userTitle = await this._userService.GetUserTitleAsync(this.Context);
-
-            if (topTracks.Count == 0)
-            {
-                this._embed.WithDescription(
-                    $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()} has no registered tracks for the artist **{artist.ArtistName}** in .fmbot.");
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                return;
-            }
-
-            var url = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/music/{UrlEncoder.Default.Encode(artist.ArtistName)}";
-            if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
-            {
-                this._embedAuthor.WithUrl(url);
-            }
-
-            var topTrackPages = topTracks.ChunkBy(10);
-
-            var counter = 1;
-            var pageCounter = 1;
-            foreach (var topTrackPage in topTrackPages)
-            {
-                var albumPageString = new StringBuilder();
-                foreach (var track in topTrackPage)
-                {
-                    albumPageString.AppendLine($"{counter}. **{track.Name}** ({track.Playcount} {StringExtensions.GetPlaysString(track.Playcount)})");
-                    counter++;
-                }
-
-                var footer = new StringBuilder();
-                footer.Append($"Page {pageCounter}/{topTrackPages.Count}");
-                var title = new StringBuilder();
-
-                if (userSettings.DifferentUser && userSettings.UserId != contextUser.UserId)
-                {
-                    footer.AppendLine($" - {userSettings.UserNameLastFm} has {artist.UserPlaycount} total scrobbles on this artist");
-                    footer.AppendLine($"Requested by {userTitle}");
-                    title.Append($"{userSettings.DiscordUserName} their top tracks for '{artist.ArtistName}'");
-                }
-                else
-                {
-                    footer.Append($" - {userTitle} has {artist.UserPlaycount} total scrobbles on this artist");
-                    title.Append($"Your top tracks for '{artist.ArtistName}'");
-
-                    this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                }
-
-                this._embedAuthor.WithName(title.ToString());
-
-                pages.Add(new PageBuilder()
-                    .WithDescription(albumPageString.ToString())
-                    .WithAuthor(this._embedAuthor)
-                    .WithFooter(footer.ToString()));
-                pageCounter++;
-            }
-
-            var paginator = StringService.BuildStaticPaginator(pages);
-
-            _ = this.Interactivity.SendPaginatorAsync(
-                paginator,
-                this.Context.Channel,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-
-            this.Context.LogCommandUsed();
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
 
         [Command("artistalbums", RunMode = RunMode.Async)]
