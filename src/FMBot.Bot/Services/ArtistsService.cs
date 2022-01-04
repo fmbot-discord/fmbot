@@ -446,7 +446,7 @@ namespace FMBot.Bot.Services
                 {
                     const string sql = "SELECT * " +
                                        "FROM public.artists " +
-                                       "WHERE popularity is not null AND popularity > 5 ";
+                                       "WHERE popularity is not null AND popularity > 9 ";
 
                     DefaultTypeMap.MatchNamesWithUnderscores = true;
                     await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
