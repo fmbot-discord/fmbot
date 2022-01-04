@@ -124,7 +124,7 @@ namespace FMBot.Bot.Services.Guild
         public static async Task SendFeaturedPreview(FeaturedLog featured, string webhook)
         {
             var embed = new EmbedBuilder();
-            embed.WithThumbnailUrl(featured.ImageUrl);
+            embed.WithImageUrl(featured.ImageUrl);
             embed.AddField("Featured:", featured.Description);
 
             var dateValue = ((DateTimeOffset)featured.DateTime).ToUnixTimeSeconds();
