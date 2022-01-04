@@ -54,7 +54,6 @@ namespace FMBot.Bot.Commands.LastFM
             this.Interactivity = interactivity;
         }
 
-
         [Command("crowns", RunMode = RunMode.Async)]
         [Summary("Shows you your crowns for this server.")]
         [Alias("cws")]
@@ -67,7 +66,7 @@ namespace FMBot.Bot.Commands.LastFM
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
             if (guild.CrownsDisabled == true)
             {
@@ -132,14 +131,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                     footer.AppendLine($"Page {pageCounter}/{crownPages.Count} - {userCrowns.Count} total crowns");
 
-                    if (crownViewSettings.CrownOrderType == CrownOrderType.Playcount)
-                    {
-                        footer.AppendLine("Ordered by playcount - Available options: playcount and recent");
-                    }
-                    else
-                    {
-                        footer.AppendLine("Ordered by recent crowns - Available options: playcount and recent");
-                    }
+                    footer.AppendLine(crownViewSettings.CrownOrderType == CrownOrderType.Playcount
+                        ? "Ordered by playcount - Available options: playcount and recent"
+                        : "Ordered by recent crowns - Available options: playcount and recent");
 
                     pages.Add(new PageBuilder()
                         .WithDescription(crownPageString.ToString())
@@ -205,7 +199,7 @@ namespace FMBot.Bot.Commands.LastFM
                 artist = currentTrack.ArtistName;
             }
 
-            var artistCrowns = await this._crownService.GetCrownsForArtist(guild, artist);
+            var artistCrowns = await this._crownService.GetCrownsForArtist(guild.GuildId, artist);
 
             if (!artistCrowns.Any(a => a.Active))
             {
@@ -292,8 +286,8 @@ namespace FMBot.Bot.Commands.LastFM
                 return;
             }
 
-            var topCrownUsers = await this._crownService.GetTopCrownUsersForGuild(guild);
-            var guildCrownCount = await this._crownService.GetTotalCrownCountForGuild(guild);
+            var topCrownUsers = await this._crownService.GetTopCrownUsersForGuild(guild.GuildId);
+            var guildCrownCount = await this._crownService.GetTotalCrownCountForGuild(guild.GuildId);
 
             if (!topCrownUsers.Any())
             {
