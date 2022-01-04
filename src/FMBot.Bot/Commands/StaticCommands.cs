@@ -476,8 +476,7 @@ namespace FMBot.Bot.Commands
                         .Build();
 
                     selectedResult =
-                        await this.Interactivity.SendSelectionAsync(multiSelection, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds * 2), message);
-                    message = selectedResult.Message;
+                        await this.Interactivity.SendSelectionAsync(multiSelection, this.Context.Channel, TimeSpan.FromSeconds(DiscordConstants.PaginationTimeoutInSeconds * 2));
                 }
 
                 this.Context.LogCommandUsed();

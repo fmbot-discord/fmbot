@@ -61,7 +61,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         }
     }
 
-    [SlashCommand("artisttracks", "Shows artist info for the artist you're currently listening to or searching for")]
+    [SlashCommand("artisttracks", "Shows your top tracks for an artist")]
     [UsernameSetRequired]
     public async Task ArtistTracksAsync(
         [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
@@ -83,13 +83,9 @@ public class ArtistSlashCommands : InteractionModuleBase
         }
         else
         {
-            await DeferAsync();
-
-            var socketInteraction = this.Context.Interaction as SocketInteraction;
-
             _ = this.Interactivity.SendPaginatorAsync(
                 response.StaticPaginator,
-                socketInteraction,
+                (SocketInteraction)this.Context.Interaction,
                 TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
         }
 
