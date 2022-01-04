@@ -694,7 +694,7 @@ namespace FMBot.Bot.Services
                         break;
                     }
 
-                    if (option.ToLower().Contains("random"))
+                    if (option.ToLower().Contains("random") || option.ToLower().Contains("rnd"))
                     {
                         goalAmount = RandomNumberGenerator.GetInt32(1, (int)currentPlaycount);
                         ownGoalSet = true;
