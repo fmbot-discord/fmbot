@@ -106,7 +106,7 @@ namespace FMBot.Bot.Services
             }
 
             embed.WithColor(DiscordConstants.WarningColorOrange);
-            Log.Information("Last.fm returned error: {message} | {responseStatus} | {discordUserName} / {discordUserId} | {messageContent}", message, responseStatus, contextUser.Username, contextUser.Id, commandContent);
+            Log.Information("Last.fm returned error: {message} | {responseStatus} | {discordUserName} / {discordUserId} | {messageContent}", message, responseStatus, contextUser?.Username, contextUser?.Id, commandContent);
         }
 
         public static bool RecentScrobbleCallFailed(Response<RecentTrackList> recentScrobbles)
