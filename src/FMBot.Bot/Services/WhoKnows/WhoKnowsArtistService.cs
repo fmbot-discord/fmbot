@@ -37,6 +37,7 @@ namespace FMBot.Bot.Services.WhoKnows
                                "ua.playcount, " +
                                "u.user_name_last_fm, " +
                                "u.discord_user_id, " +
+                               "u.last_used, " +
                                "gu.user_name, " +
                                "gu.who_knows_whitelisted " +
                                "FROM user_artists AS ua " +
@@ -79,6 +80,7 @@ namespace FMBot.Bot.Services.WhoKnows
                     Playcount = userArtist.Playcount,
                     LastFMUsername = userArtist.UserNameLastFm,
                     UserId = userArtist.UserId,
+                    LastUsed = userArtist.LastUsed,
                     WhoKnowsWhitelisted = userArtist.WhoKnowsWhitelisted,
                 });
             }

@@ -40,9 +40,13 @@ namespace FMBot.Bot.Services.WhoKnows
 
             if (guild.CrownsActivityThresholdDays.HasValue)
             {
-                eligibleUsers = eligibleUsers.Where(w =>
-                        w.User.LastUsed != null &&
-                        w.User.LastUsed >= DateTime.UtcNow.AddDays(-guild.CrownsActivityThresholdDays.Value))
+                users = users.Where(w =>
+                        w.LastUsed != null &&
+                        w.LastUsed >= DateTime.UtcNow.AddDays(-guild.CrownsActivityThresholdDays.Value))
+                    .ToList();
+
+                eligibleUsers = eligibleUsers
+                    .Where(w => users.Select(s => s.UserId).Contains(w.UserId))
                     .ToList();
             }
             if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromCrowns))

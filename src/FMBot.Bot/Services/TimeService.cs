@@ -165,6 +165,7 @@ namespace FMBot.Bot.Services
                         LastFMUsername = guildUser.User.UserNameLastFM,
                         UserId = user.Key,
                         WhoKnowsWhitelisted = guildUser.WhoKnowsWhitelisted,
+                        LastUsed = guildUser.User.LastUsed,
                         Name = StringExtensions.GetListeningTimeString(timeListened)
                     });
                 }

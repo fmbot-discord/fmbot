@@ -581,6 +581,7 @@ namespace FMBot.Bot.Services
                                "u.user_id, " +
                                "u.user_name_last_fm, " +
                                "u.discord_user_id, " +
+                               "u.last_used, " +
                                "gu.user_name, " +
                                "gu.who_knows_whitelisted " +
                                "FROM users AS u " +
@@ -620,6 +621,7 @@ namespace FMBot.Bot.Services
                     Playcount = userAlbum.Playcount,
                     LastFMUsername = userAlbum.UserNameLastFm,
                     UserId = userAlbum.UserId,
+                    LastUsed = userAlbum.LastUsed,
                     WhoKnowsWhitelisted = userAlbum.WhoKnowsWhitelisted,
                 });
             }
