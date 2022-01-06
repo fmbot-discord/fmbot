@@ -306,18 +306,18 @@ public class ArtistBuilders
             }
 
             var footer = new StringBuilder();
-            footer.Append($"Page {pageCounter}/{topTrackPages.Count}");
+            footer.AppendLine($"Page {pageCounter}/{topTrackPages.Count} - {topTracks.Count} different tracks");
             var title = new StringBuilder();
 
             if (userSettings.DifferentUser && userSettings.UserId != contextUser.UserId)
             {
-                footer.AppendLine($" - {userSettings.UserNameLastFm} has {artistSearch.artist.UserPlaycount} total scrobbles on this artist");
+                footer.AppendLine($"{userSettings.UserNameLastFm} has {artistSearch.artist.UserPlaycount} total scrobbles on this artist");
                 footer.AppendLine($"Requested by {userTitle}");
                 title.Append($"{userSettings.DiscordUserName} their top tracks for '{artistSearch.artist.ArtistName}'");
             }
             else
             {
-                footer.Append($" - {userTitle} has {artistSearch.artist.UserPlaycount} total scrobbles on this artist");
+                footer.Append($"{userTitle} has {artistSearch.artist.UserPlaycount} total scrobbles on this artist");
                 title.Append($"Your top tracks for '{artistSearch.artist.ArtistName}'");
 
                 response.EmbedAuthor.WithIconUrl(discordUser.GetAvatarUrl());
