@@ -161,7 +161,7 @@ namespace FMBot.Bot.Services
             public CleanedUpResponseTrack data { get; set; }
         }
 
-        public async Task<List<UserTrack>> GetAlbumTracksPlaycounts(List<AlbumTrack> albumTracks, int userId, string artistName)
+        public async Task<List<UserTrack>> GetArtistUserTracks(int userId, string artistName)
         {
             const string sql = "SELECT user_track_id, user_id, name, artist_name, playcount" +
                " FROM public.user_tracks where user_id = @userId AND UPPER(artist_name) = UPPER(CAST(@artistName AS CITEXT));";
@@ -170,16 +170,11 @@ namespace FMBot.Bot.Services
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            var userTracks = (await connection.QueryAsync<UserTrack>(sql, new
+            return (await connection.QueryAsync<UserTrack>(sql, new
             {
                 userId,
                 artistName
             })).ToList();
-
-            return userTracks
-                .Where(w => albumTracks.Select(s => s.TrackName.Replace("(", "").Replace("-", "").Replace(")", "").TrimEnd().TrimStart().ToLower())
-                    .Contains(w.Name.Replace("(", "").Replace("-", "").Replace(")", "").TrimEnd().TrimStart().ToLower()))
-                .ToList();
         }
 
         public record AudioFeaturesOverview(int Total, InternalTrackAudioFeatures Average);

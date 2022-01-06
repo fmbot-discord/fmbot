@@ -209,6 +209,7 @@ namespace FMBot.Bot.Services
                         Name = guildUser.UserName,
                         PrivacyLevel = guildUser.User.PrivacyLevel,
                         RegisteredLastFm = guildUser.User.RegisteredLastFm,
+                        LastUsed = guildUser.User.LastUsed,
                         WhoKnowsWhitelisted = guildUser.WhoKnowsWhitelisted
                     });
                 }

@@ -9,6 +9,7 @@ using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Serilog;
 
 namespace FMBot.Bot.Services.Guild
@@ -16,10 +17,12 @@ namespace FMBot.Bot.Services.Guild
     public class GuildService
     {
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
+        private readonly IMemoryCache _cache;
 
-        public GuildService(IDbContextFactory<FMBotDbContext> contextFactory)
+        public GuildService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache)
         {
             this._contextFactory = contextFactory;
+            this._cache = cache;
         }
 
         // Message is in dm?
@@ -36,9 +39,40 @@ namespace FMBot.Bot.Services.Guild
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guildId);
         }
 
-        public async Task<Persistence.Domain.Models.Guild> GetFullGuildAsync(ulong? guildId = null, bool filterBots = true)
+        public async Task<Persistence.Domain.Models.Guild> GetFullGuildAsync(ulong? discordGuildId = null, bool filterBots = true, bool enableCache = true)
         {
-            if (guildId == null)
+            if (discordGuildId == null)
+            {
+                return null;
+            }
+
+            var cacheKey = CacheKeyForGuild(discordGuildId.Value);
+
+            var cachedGuildAvailable = this._cache.TryGetValue(cacheKey, out Persistence.Domain.Models.Guild guild);
+            if (cachedGuildAvailable && enableCache)
+            {
+                return guild;
+            }
+
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            guild = await db.Guilds
+                .AsNoTracking()
+                .Include(i => i.GuildBlockedUsers)
+                    .ThenInclude(t => t.User)
+                .Include(i => i.GuildUsers.Where(w => filterBots ? w.Bot != true : w.UserId != null))
+                    .ThenInclude(t => t.User)
+                .Include(i => i.Channels)
+                .Include(i => i.Webhooks)
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
+
+            this._cache.Set(cacheKey, guild, TimeSpan.FromMinutes(5));
+
+            return guild;
+        }
+
+        public async Task<Persistence.Domain.Models.Guild> GetGuildForWhoKnows(ulong? discordGuildId = null)
+        {
+            if (discordGuildId == null)
             {
                 return null;
             }
@@ -47,12 +81,18 @@ namespace FMBot.Bot.Services.Guild
             return await db.Guilds
                 .AsNoTracking()
                 .Include(i => i.GuildBlockedUsers)
-                    .ThenInclude(t => t.User)
-                .Include(i => i.GuildUsers.Where(w => filterBots ? w.Bot != true : w.UserId != null))
-                    .ThenInclude(t => t.User)
-                .Include(i => i.Channels)
-                .Include(i => i.Webhooks)
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == guildId);
+                .Include(i => i.GuildUsers.Where(w => w.Bot != true))
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
+        }
+
+        private async Task RemoveGuildFromCache(ulong discordGuildId)
+        {
+            this._cache.Remove(CacheKeyForGuild(discordGuildId));
+        }
+
+        private static string CacheKeyForGuild(ulong discordGuildId)
+        {
+            return $"guild-full-{discordGuildId}";
         }
 
         public static IEnumerable<GuildUser> FilterGuildUsersAsync(Persistence.Domain.Models.Guild guild)
@@ -79,7 +119,7 @@ namespace FMBot.Bot.Services.Guild
 
         public static async Task<GuildPermissions> GetGuildPermissionsAsync(ICommandContext context)
         {
-            var socketCommandContext = (SocketCommandContext) context;
+            var socketCommandContext = (SocketCommandContext)context;
             var guildUser = await context.Guild.GetUserAsync(socketCommandContext.Client.CurrentUser.Id);
             return guildUser.GuildPermissions;
         }
@@ -92,7 +132,7 @@ namespace FMBot.Bot.Services.Guild
 
         public async Task<GuildUser> GetUserFromGuild(ulong discordGuildId, int userId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var guild = await db.Guilds
                 .AsQueryable()
                 .Include(i => i.GuildUsers)
@@ -107,13 +147,13 @@ namespace FMBot.Bot.Services.Guild
         }
 
         // Get all guild users
-        public async Task<List<UserExportModel>> FindAllUsersFromGuildAsync(ICommandContext context)
+        public async Task<List<UserExportModel>> FindAllUsersFromGuildAsync(IGuild discordGuild)
         {
-            var users = await context.Guild.GetUsersAsync();
+            var users = await discordGuild.GetUsersAsync();
 
             var userIds = users.Select(s => s.Id).ToList();
 
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var usersObject = db.Users
                 .AsNoTracking()
                 .Where(w => userIds.Contains(w.DiscordUserId))
@@ -125,34 +165,36 @@ namespace FMBot.Bot.Services.Guild
             return usersObject.ToList();
         }
 
-        public async Task StaleGuildLastIndexedAsync(IGuild guild)
+        public async Task StaleGuildLastIndexedAsync(IGuild discordGuild)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
-                .FirstAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstAsync(f => f.DiscordGuildId == discordGuild.Id);
 
-            existingGuild.Name = guild.Name;
+            existingGuild.Name = discordGuild.Name;
             existingGuild.LastIndexed = null;
 
             db.Entry(existingGuild).State = EntityState.Modified;
 
             await db.SaveChangesAsync();
+
+            await RemoveGuildFromCache(discordGuild.Id);
         }
 
-        public async Task ChangeGuildSettingAsync(IGuild guild, Persistence.Domain.Models.Guild newGuildSettings)
+        public async Task ChangeGuildSettingAsync(IGuild discordGuild, Persistence.Domain.Models.Guild newGuildSettings)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
             if (existingGuild == null)
             {
                 var newGuild = new Persistence.Domain.Models.Guild
                 {
-                    DiscordGuildId = guild.Id,
-                    Name = guild.Name,
+                    DiscordGuildId = discordGuild.Id,
+                    Name = discordGuild.Name,
                     TitlesEnabled = true
                 };
 
@@ -162,61 +204,64 @@ namespace FMBot.Bot.Services.Guild
             }
             else
             {
-                existingGuild.Name = guild.Name;
+                existingGuild.Name = discordGuild.Name;
                 existingGuild.FmEmbedType = newGuildSettings.FmEmbedType;
 
                 db.Entry(existingGuild).State = EntityState.Modified;
 
                 await db.SaveChangesAsync();
             }
+
+            await RemoveGuildFromCache(discordGuild.Id);
         }
 
-        public async Task SetGuildReactionsAsync(IGuild guild, string[] reactions)
+        public async Task SetGuildReactionsAsync(IGuild discordGuild, string[] reactions)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
             if (existingGuild == null)
             {
                 var newGuild = new Persistence.Domain.Models.Guild
                 {
-                    DiscordGuildId = guild.Id,
+                    DiscordGuildId = discordGuild.Id,
                     TitlesEnabled = true,
                     EmoteReactions = reactions,
-                    Name = guild.Name
+                    Name = discordGuild.Name
                 };
 
                 await db.Guilds.AddAsync(newGuild);
-
-                await db.SaveChangesAsync();
             }
             else
             {
                 existingGuild.EmoteReactions = reactions;
-                existingGuild.Name = guild.Name;
+                existingGuild.Name = discordGuild.Name;
 
                 db.Entry(existingGuild).State = EntityState.Modified;
-
-                await db.SaveChangesAsync();
             }
+
+            await db.SaveChangesAsync();
+
+            await RemoveGuildFromCache(discordGuild.Id);
+
         }
 
-        public async Task<bool?> ToggleSupporterMessagesAsync(IGuild guild)
+        public async Task<bool?> ToggleSupporterMessagesAsync(IGuild discordGuild)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
             if (existingGuild == null)
             {
                 var newGuild = new Persistence.Domain.Models.Guild
                 {
-                    DiscordGuildId = guild.Id,
+                    DiscordGuildId = discordGuild.Id,
                     TitlesEnabled = true,
-                    Name = guild.Name,
+                    Name = discordGuild.Name,
                     DisableSupporterMessages = true
                 };
 
@@ -224,11 +269,13 @@ namespace FMBot.Bot.Services.Guild
 
                 await db.SaveChangesAsync();
 
+                await RemoveGuildFromCache(discordGuild.Id);
+
                 return true;
             }
             else
             {
-                existingGuild.Name = guild.Name;
+                existingGuild.Name = discordGuild.Name;
                 if (existingGuild.DisableSupporterMessages == true)
                 {
                     existingGuild.DisableSupporterMessages = false;
@@ -242,18 +289,20 @@ namespace FMBot.Bot.Services.Guild
 
                 await db.SaveChangesAsync();
 
+                await RemoveGuildFromCache(discordGuild.Id);
+
                 return existingGuild.DisableSupporterMessages;
             }
         }
 
-        public async Task<bool?> ToggleCrownsAsync(IGuild guild)
+        public async Task<bool?> ToggleCrownsAsync(IGuild discordGuild)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
-                .FirstAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstAsync(f => f.DiscordGuildId == discordGuild.Id);
 
-            existingGuild.Name = guild.Name;
+            existingGuild.Name = discordGuild.Name;
 
             if (existingGuild.CrownsDisabled == true)
             {
@@ -268,22 +317,24 @@ namespace FMBot.Bot.Services.Guild
 
             await db.SaveChangesAsync();
 
+            await RemoveGuildFromCache(discordGuild.Id);
+
             return existingGuild.CrownsDisabled;
         }
 
-        public async Task<bool> SetWhoKnowsActivityThresholdDaysAsync(IGuild guild, int? days)
+        public async Task<bool> SetWhoKnowsActivityThresholdDaysAsync(IGuild discordGuild, int? days)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
             if (existingGuild == null)
             {
                 return false;
             }
 
-            existingGuild.Name = guild.Name;
+            existingGuild.Name = discordGuild.Name;
             existingGuild.ActivityThresholdDays = days;
             existingGuild.CrownsActivityThresholdDays = days;
 
@@ -291,59 +342,65 @@ namespace FMBot.Bot.Services.Guild
 
             await db.SaveChangesAsync();
 
+            await RemoveGuildFromCache(discordGuild.Id);
+
             return true;
         }
 
-        public async Task<bool> SetCrownActivityThresholdDaysAsync(IGuild guild, int? days)
+        public async Task<bool> SetCrownActivityThresholdDaysAsync(IGuild discordGuild, int? days)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
             if (existingGuild == null)
             {
                 return false;
             }
 
-            existingGuild.Name = guild.Name;
+            existingGuild.Name = discordGuild.Name;
             existingGuild.CrownsActivityThresholdDays = days;
 
             db.Entry(existingGuild).State = EntityState.Modified;
 
             await db.SaveChangesAsync();
 
+            await RemoveGuildFromCache(discordGuild.Id);
+
             return true;
         }
 
-        public async Task<bool> SetMinimumCrownPlaycountThresholdAsync(IGuild guild, int? playcount)
+        public async Task<bool> SetMinimumCrownPlaycountThresholdAsync(IGuild discordGuild, int? playcount)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
             if (existingGuild == null)
             {
                 return false;
             }
 
-            existingGuild.Name = guild.Name;
+            existingGuild.Name = discordGuild.Name;
             existingGuild.CrownsMinimumPlaycountThreshold = playcount;
 
             db.Entry(existingGuild).State = EntityState.Modified;
 
             await db.SaveChangesAsync();
 
+            await RemoveGuildFromCache(discordGuild.Id);
+
             return true;
         }
 
-        public async Task<bool> BlockGuildUserAsync(IGuild guild, int userId)
+        public async Task<bool> BlockGuildUserAsync(IGuild discordGuild, int userId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
             if (existingGuild == null)
             {
@@ -363,6 +420,8 @@ namespace FMBot.Bot.Services.Guild
 
                 await db.SaveChangesAsync();
 
+                await RemoveGuildFromCache(discordGuild.Id);
+
                 return true;
             }
 
@@ -377,19 +436,21 @@ namespace FMBot.Bot.Services.Guild
             await db.GuildBlockedUsers.AddAsync(blockedGuildUserToAdd);
             await db.SaveChangesAsync();
 
+            await RemoveGuildFromCache(discordGuild.Id);
+
             db.Entry(blockedGuildUserToAdd).State = EntityState.Detached;
 
-            Log.Information("Added blocked user {userId} to guild {guildName}", userId, guild.Name);
+            Log.Information("Added blocked user {userId} to guild {guildName}", userId, discordGuild.Name);
 
             return true;
         }
 
-        public async Task<bool> CrownBlockGuildUserAsync(IGuild guild, int userId)
+        public async Task<bool> CrownBlockGuildUserAsync(IGuild discordGuild, int userId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
             if (existingGuild == null)
             {
@@ -408,6 +469,8 @@ namespace FMBot.Bot.Services.Guild
 
                 await db.SaveChangesAsync();
 
+                await RemoveGuildFromCache(discordGuild.Id);
+
                 return true;
             }
 
@@ -421,19 +484,21 @@ namespace FMBot.Bot.Services.Guild
             await db.GuildBlockedUsers.AddAsync(blockedGuildUserToAdd);
             await db.SaveChangesAsync();
 
+            await RemoveGuildFromCache(discordGuild.Id);
+
             db.Entry(blockedGuildUserToAdd).State = EntityState.Detached;
 
-            Log.Information("Added crownblocked user {userId} to guild {guildName}", userId, guild.Name);
+            Log.Information("Added crownblocked user {userId} to guild {guildName}", userId, discordGuild.Name);
 
             return true;
         }
 
-        public async Task<bool> UnBlockGuildUserAsync(IGuild guild, int userId)
+        public async Task<bool> UnBlockGuildUserAsync(IGuild discordGuild, int userId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
             if (existingGuild == null)
             {
@@ -452,105 +517,117 @@ namespace FMBot.Bot.Services.Guild
             db.GuildBlockedUsers.Remove(existingBlockedUser);
             await db.SaveChangesAsync();
 
-            Log.Information("Removed blocked user {userId} from guild {guildName}", userId, guild.Name);
+            await RemoveGuildFromCache(discordGuild.Id);
+
+            Log.Information("Removed blocked user {userId} from guild {guildName}", userId, discordGuild.Name);
 
             return true;
         }
 
-        public async Task SetGuildPrefixAsync(IGuild guild, string prefix)
+        public async Task SetGuildPrefixAsync(IGuild discordGuild, string prefix)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
             if (existingGuild == null)
             {
                 var newGuild = new Persistence.Domain.Models.Guild
                 {
-                    DiscordGuildId = guild.Id,
+                    DiscordGuildId = discordGuild.Id,
                     TitlesEnabled = true,
-                    Name = guild.Name,
+                    Name = discordGuild.Name,
                     Prefix = prefix
                 };
 
                 await db.Guilds.AddAsync(newGuild);
 
                 await db.SaveChangesAsync();
+
+                await RemoveGuildFromCache(discordGuild.Id);
             }
             else
             {
                 existingGuild.Prefix = prefix;
-                existingGuild.Name = guild.Name;
+                existingGuild.Name = discordGuild.Name;
 
                 db.Entry(existingGuild).State = EntityState.Modified;
 
                 await db.SaveChangesAsync();
+
+                await RemoveGuildFromCache(discordGuild.Id);
             }
         }
 
-        public async Task SetGuildWhoKnowsWhitelistRoleAsync(IGuild guild, ulong? roleId)
+        public async Task SetGuildWhoKnowsWhitelistRoleAsync(IGuild discordGuild, ulong? roleId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
             if (existingGuild == null)
             {
                 var newGuild = new Persistence.Domain.Models.Guild
                 {
-                    DiscordGuildId = guild.Id,
+                    DiscordGuildId = discordGuild.Id,
                     TitlesEnabled = true,
-                    Name = guild.Name,
+                    Name = discordGuild.Name,
                     WhoKnowsWhitelistRoleId = roleId,
                 };
 
                 await db.Guilds.AddAsync(newGuild);
 
                 await db.SaveChangesAsync();
+
+                await RemoveGuildFromCache(discordGuild.Id);
             }
             else
             {
                 existingGuild.WhoKnowsWhitelistRoleId = roleId;
-                existingGuild.Name = guild.Name;
+                existingGuild.Name = discordGuild.Name;
 
                 db.Entry(existingGuild).State = EntityState.Modified;
 
                 await db.SaveChangesAsync();
+
+                await RemoveGuildFromCache(discordGuild.Id);
             }
         }
 
-        public async Task<string[]> GetDisabledCommandsForGuild(IGuild guild)
+        public async Task<string[]> GetDisabledCommandsForGuild(IGuild discordGuild)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
             return existingGuild?.DisabledCommands;
         }
 
-        public async Task<string[]> AddGuildDisabledCommandAsync(IGuild guild, string command)
+        public async Task<string[]> AddGuildDisabledCommandAsync(IGuild discordGuild, string command)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
             if (existingGuild == null)
             {
                 var newGuild = new Persistence.Domain.Models.Guild
                 {
-                    DiscordGuildId = guild.Id,
+                    DiscordGuildId = discordGuild.Id,
                     TitlesEnabled = true,
-                    Name = guild.Name,
+                    Name = discordGuild.Name,
                     DisabledCommands = new[] { command }
                 };
 
                 await db.Guilds.AddAsync(newGuild);
 
                 await db.SaveChangesAsync();
+
+                await RemoveGuildFromCache(discordGuild.Id);
 
                 return newGuild.DisabledCommands;
             }
@@ -567,56 +644,60 @@ namespace FMBot.Bot.Services.Guild
                 existingGuild.DisabledCommands = new[] { command };
             }
 
-            existingGuild.Name = guild.Name;
+            existingGuild.Name = discordGuild.Name;
 
             db.Entry(existingGuild).State = EntityState.Modified;
 
             await db.SaveChangesAsync();
 
+            await RemoveGuildFromCache(discordGuild.Id);
+
             return existingGuild.DisabledCommands;
         }
 
-        public async Task<string[]> RemoveGuildDisabledCommandAsync(IGuild guild, string command)
+        public async Task<string[]> RemoveGuildDisabledCommandAsync(IGuild discordGuild, string command)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
             existingGuild.DisabledCommands = existingGuild.DisabledCommands.Where(w => !w.Contains(command)).ToArray();
 
-            existingGuild.Name = guild.Name;
+            existingGuild.Name = discordGuild.Name;
 
             db.Entry(existingGuild).State = EntityState.Modified;
 
             await db.SaveChangesAsync();
 
+            await RemoveGuildFromCache(discordGuild.Id);
+
             return existingGuild.DisabledCommands;
         }
 
-        public async Task<string[]> GetDisabledCommandsForChannel(IChannel channel)
+        public async Task<string[]> GetDisabledCommandsForChannel(IChannel discordChannel)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingChannel = await db.Channels
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordChannelId == channel.Id);
+                .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannel.Id);
 
             return existingChannel?.DisabledCommands;
         }
 
-        public async Task<string[]> AddChannelDisabledCommandAsync(IChannel channel, int guildId, string command)
+        public async Task<string[]> AddChannelDisabledCommandAsync(IChannel discordChannel, int guildId, string command, ulong discordGuildId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingChannel = await db.Channels
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordChannelId == channel.Id);
+                .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannel.Id);
 
             if (existingChannel == null)
             {
                 var newChannel = new Channel
                 {
-                    DiscordChannelId = channel.Id,
-                    Name = channel.Name,
+                    DiscordChannelId = discordChannel.Id,
+                    Name = discordChannel.Name,
                     GuildId = guildId,
                     DisabledCommands = new[] { command }
                 };
@@ -624,6 +705,8 @@ namespace FMBot.Bot.Services.Guild
                 await db.Channels.AddAsync(newChannel);
 
                 await db.SaveChangesAsync();
+
+                await RemoveGuildFromCache(discordGuildId);
 
                 return newChannel.DisabledCommands;
             }
@@ -644,32 +727,36 @@ namespace FMBot.Bot.Services.Guild
 
             db.Entry(existingChannel).State = EntityState.Modified;
 
+            await RemoveGuildFromCache(discordGuildId);
+
             await db.SaveChangesAsync();
 
             return existingChannel.DisabledCommands;
         }
 
-        public async Task<string[]> RemoveChannelDisabledCommandAsync(IChannel channel, string command)
+        public async Task<string[]> RemoveChannelDisabledCommandAsync(IChannel discordChannel, string command, ulong discordGuildId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingChannel = await db.Channels
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordChannelId == channel.Id);
+                .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannel.Id);
 
             existingChannel.DisabledCommands = existingChannel.DisabledCommands.Where(w => !w.Contains(command)).ToArray();
 
-            existingChannel.Name = channel.Name;
+            existingChannel.Name = discordChannel.Name;
 
             db.Entry(existingChannel).State = EntityState.Modified;
 
             await db.SaveChangesAsync();
+
+            await RemoveGuildFromCache(discordGuildId);
 
             return existingChannel.DisabledCommands;
         }
 
         public async Task<int?> GetChannelCooldown(ulong discordChannelId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingChannel = await db.Channels
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannelId);
@@ -677,19 +764,19 @@ namespace FMBot.Bot.Services.Guild
             return existingChannel?.FmCooldown;
         }
 
-        public async Task<int?> SetChannelCooldownAsync(IChannel channel, int guildId, int? cooldown)
+        public async Task<int?> SetChannelCooldownAsync(IChannel discordChannel, int guildId, int? cooldown, ulong discordGuildId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingChannel = await db.Channels
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordChannelId == channel.Id);
+                .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannel.Id);
 
             if (existingChannel == null)
             {
                 var newChannel = new Channel
                 {
-                    DiscordChannelId = channel.Id,
-                    Name = channel.Name,
+                    DiscordChannelId = discordChannel.Id,
+                    Name = discordChannel.Name,
                     GuildId = guildId,
                     FmCooldown = cooldown
                 };
@@ -697,6 +784,8 @@ namespace FMBot.Bot.Services.Guild
                 await db.Channels.AddAsync(newChannel);
 
                 await db.SaveChangesAsync();
+
+                await RemoveGuildFromCache(discordGuildId);
 
                 return newChannel.FmCooldown;
             }
@@ -709,48 +798,54 @@ namespace FMBot.Bot.Services.Guild
 
             await db.SaveChangesAsync();
 
+            await RemoveGuildFromCache(discordGuildId);
+
             return existingChannel.FmCooldown;
         }
 
-        public async Task<DateTime?> GetGuildIndexTimestampAsync(IGuild guild)
+        public async Task<DateTime?> GetGuildIndexTimestampAsync(IGuild discordGuild)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsNoTracking()
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
             return existingGuild?.LastIndexed;
         }
 
-        public async Task UpdateGuildIndexTimestampAsync(IGuild guild, DateTime? timestamp = null)
+        public async Task UpdateGuildIndexTimestampAsync(IGuild discordGuild, DateTime? timestamp = null)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingGuild = await db.Guilds
                 .AsQueryable()
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuild.Id);
 
             if (existingGuild == null)
             {
                 var newGuild = new Persistence.Domain.Models.Guild
                 {
-                    DiscordGuildId = guild.Id,
-                    Name = guild.Name,
+                    DiscordGuildId = discordGuild.Id,
+                    Name = discordGuild.Name,
                     TitlesEnabled = true,
                     LastIndexed = timestamp ?? DateTime.UtcNow
                 };
 
                 await db.Guilds.AddAsync(newGuild);
 
+                await RemoveGuildFromCache(discordGuild.Id);
+
                 await db.SaveChangesAsync();
             }
             else
             {
                 existingGuild.LastIndexed = timestamp ?? DateTime.UtcNow;
-                existingGuild.Name = guild.Name;
+                existingGuild.Name = discordGuild.Name;
 
                 db.Entry(existingGuild).State = EntityState.Modified;
 
                 await db.SaveChangesAsync();
+
+                await RemoveGuildFromCache(discordGuild.Id);
             }
         }
 
@@ -785,10 +880,9 @@ namespace FMBot.Bot.Services.Guild
             return true;
         }
 
-
         public async Task AddReactionsAsync(IUserMessage message, IGuild guild)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var dbGuild = await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
@@ -815,19 +909,20 @@ namespace FMBot.Bot.Services.Guild
 
         public async Task RemoveGuildAsync(ulong discordGuildId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var guild = await db.Guilds.AsQueryable().FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
 
             if (guild != null)
             {
                 db.Guilds.Remove(guild);
                 await db.SaveChangesAsync();
+                await RemoveGuildFromCache(discordGuildId);
             }
         }
 
         public async Task<int> GetTotalGuildCountAsync()
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.Guilds
                 .AsNoTracking()
                 .CountAsync();

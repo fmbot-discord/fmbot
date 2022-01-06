@@ -21,10 +21,12 @@ namespace FMBot.Bot.Services.Guild
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
         private readonly string _avatarImagePath;
         private readonly BotSettings _botSettings;
+        private readonly GuildService _guildService;
 
-        public WebhookService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings)
+        public WebhookService(IDbContextFactory<FMBotDbContext> contextFactory, IOptions<BotSettings> botSettings, GuildService guildService)
         {
             this._contextFactory = contextFactory;
+            this._guildService = guildService;
             this._botSettings = botSettings.Value;
 
             this._avatarImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "default-avatar.png");
@@ -122,7 +124,7 @@ namespace FMBot.Bot.Services.Guild
         public static async Task SendFeaturedPreview(FeaturedLog featured, string webhook)
         {
             var embed = new EmbedBuilder();
-            embed.WithThumbnailUrl(featured.ImageUrl);
+            embed.WithImageUrl(featured.ImageUrl);
             embed.AddField("Featured:", featured.Description);
 
             var dateValue = ((DateTimeOffset)featured.DateTime).ToUnixTimeSeconds();
@@ -170,7 +172,12 @@ namespace FMBot.Bot.Services.Guild
                         }
                     }
 
-                    await channel.SendMessageAsync("", false, builder.Build());
+                    var message = await channel.SendMessageAsync("", false, builder.Build());
+
+                    if (message != null)
+                    {
+                        await this._guildService.AddReactionsAsync(message, guild);
+                    }
                 }
             }
             else

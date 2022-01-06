@@ -19,8 +19,16 @@ Feel free to join our Discord server: http://server.fmbot.xyz/
 
 [Click here to add the bot to your server](http://invite.fmbot.xyz/).
 
+<h3>Funding</h3>
+
+You can help us cover hosting, development and other costs on [our OpenCollective](https://opencollective.com/fmbot/contribute). 
+
+If you decide to donate you also get .fmbot Supporter, which gives you some small advantages in the hosted bot.
+
 <h3>Download Binaries</h3>
-Get them from https://github.com/fmbot-discord/fmbot/releases (Stable) or https://ci.appveyor.com/project/fmbotdiscord/fmbot/build/artifacts (Latest).
+Get them from https://github.com/fmbot-discord/fmbot/releases (Not actively updated) or https://ci.appveyor.com/project/fmbotdiscord/fmbot/build/artifacts (Latest).
+
+Or see our docker package on [Github Packages](https://github.com/fmbot-discord/fmbot/pkgs/container/fmbot).
 
 <h3>Selfhosting</h3>
 

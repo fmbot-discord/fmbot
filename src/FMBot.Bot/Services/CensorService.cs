@@ -31,7 +31,7 @@ namespace FMBot.Bot.Services
 
         public record CensorResult(bool Result, string AlternativeCover = null);
 
-        public async Task<CensorResult> IsSafeForChannel(ICommandContext context, string albumName, string artistName, string url, EmbedBuilder embed = null)
+        public async Task<CensorResult> IsSafeForChannel(IGuild guild, IChannel channel, string albumName, string artistName, string url, EmbedBuilder embed = null)
         {
             if (!await AlbumIsSafe(albumName, artistName))
             {
@@ -42,7 +42,7 @@ namespace FMBot.Bot.Services
                                            $"You can view the [album cover here]({url}).");
                     return new CensorResult(false);
                 }
-                if (context.Guild != null && !((SocketTextChannel)context.Channel).IsNsfw)
+                if (guild != null && !((SocketTextChannel)channel).IsNsfw)
                 {
                     embed?.WithDescription("Sorry, this album cover can only be posted in NSFW channels.\n" +
                                                 $"You can mark this channel as NSFW or view the [album cover here]({url}).");

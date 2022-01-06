@@ -36,7 +36,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> UserRegisteredAsync(IUser discordUser)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var isRegistered = await db.Users
                 .AsNoTracking()
                 .AnyAsync(f => f.DiscordUserId == discordUser.Id);
@@ -129,6 +129,14 @@ namespace FMBot.Bot.Services
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUserId);
         }
 
+        public async Task<User> GetUserForIdAsync(int userId)
+        {
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            return await db.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.UserId == userId);
+        }
+
         // User settings
         public async Task<User> GetFullUserAsync(ulong discordUserId)
         {
@@ -142,16 +150,16 @@ namespace FMBot.Bot.Services
         }
 
         // Discord nickname/username
-        public async Task<string> GetNameAsync(ICommandContext context)
+        public static async Task<string> GetNameAsync(IGuild guild, IUser user)
         {
-            if (context.Guild == null)
+            if (guild == null)
             {
-                return context.User.Username;
+                return user.Username;
             }
 
-            var guildUser = await context.Guild.GetUserAsync(context.User.Id);
+            var guildUser = await guild.GetUserAsync(user.Id);
 
-            return guildUser?.Nickname ?? context.User.Username;
+            return guildUser?.Nickname ?? user.Username;
         }
 
         // Rank
@@ -168,8 +176,21 @@ namespace FMBot.Bot.Services
         // UserTitle
         public async Task<string> GetUserTitleAsync(ICommandContext context)
         {
-            var name = await GetNameAsync(context);
+            var name = await GetNameAsync(context.Guild, context.User);
             var userType = await GetRankAsync(context.User);
+
+            var title = name;
+
+            title += $"{userType.UserTypeToIcon()}";
+
+            return title;
+        }
+
+        // UserTitle
+        public async Task<string> GetUserTitleAsync(IGuild guild, IUser user)
+        {
+            var name = await GetNameAsync(guild, user);
+            var userType = await GetRankAsync(user);
 
             var title = name;
 
@@ -229,10 +250,46 @@ namespace FMBot.Bot.Services
             }
         }
 
-        // Set Privacy
+        public async Task<bool> GetAndStoreAuthSession(IUser contextUser, string token)
+        {
+            var loginDelay = 7000;
+            for (var i = 0; i < 9; i++)
+            {
+                await Task.Delay(loginDelay);
+
+                var authSession = await this._lastFmRepository.GetAuthSession(token);
+
+                if (authSession.Success)
+                {
+                    var userSettings = new User
+                    {
+                        UserNameLastFM = authSession.Content.Session.Name,
+                        SessionKeyLastFm = authSession.Content.Session.Key
+                    };
+
+                    Log.Information("LastfmAuth: User {userName} logged in with auth session (discordUserId: {discordUserId})", authSession.Content.Session.Name, contextUser.Id);
+                    await SetLastFm(contextUser, userSettings, true);
+                    return true;
+                }
+
+                if (!authSession.Success && i == 8)
+                {
+                    Log.Information("LastfmAuth: Login timed out or auth not successful (discordUserId: {discordUserId})", contextUser.Id);
+                    return false;
+                }
+                if (!authSession.Success)
+                {
+                    loginDelay += 2000;
+                    Log.Information("LastfmAuth: Login attempt {attempt} for {user} | {discordUserId} not succeeded yet ({errorCode}), delaying", i, contextUser.Username, contextUser.Id, authSession.Message);
+                }
+            }
+
+            return false;
+        }
+
         public async Task<PrivacyLevel> SetPrivacy(User userToUpdate, string[] extraOptions)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
 
             if (extraOptions.Contains("global") || extraOptions.Contains("Global"))
             {
@@ -242,6 +299,19 @@ namespace FMBot.Bot.Services
             {
                 userToUpdate.PrivacyLevel = PrivacyLevel.Server;
             }
+
+            db.Update(userToUpdate);
+
+            await db.SaveChangesAsync();
+
+            return userToUpdate.PrivacyLevel;
+        }
+
+        public async Task<PrivacyLevel> SetPrivacyLevel(User userToUpdate, PrivacyLevel privacyLevel)
+        {
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+
+            userToUpdate.PrivacyLevel = privacyLevel;
 
             db.Update(userToUpdate);
 
@@ -294,10 +364,25 @@ namespace FMBot.Bot.Services
             return userSettings;
         }
 
+        public async Task<User> SetSettings(User userToUpdate, FmEmbedType embedType, FmCountType? countType)
+        {
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            var user = await db.Users.FirstAsync(f => f.UserId == userToUpdate.UserId);
+
+            user.FmEmbedType = embedType;
+            user.FmCountType = countType == FmCountType.None ? null : countType;
+
+            db.Update(user);
+
+            await db.SaveChangesAsync();
+
+            return user;
+        }
+
         // Remove user
         public async Task DeleteUser(int userId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
 
             try
             {

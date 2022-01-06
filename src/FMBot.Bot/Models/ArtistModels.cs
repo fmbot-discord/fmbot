@@ -48,6 +48,7 @@ namespace FMBot.Bot.Models
         public int Playcount { get; set; }
 
         public string UserNameLastFm { get; set; }
+        public DateTime? LastUsed { get; set; }
 
         public ulong DiscordUserId { get; set; }
 

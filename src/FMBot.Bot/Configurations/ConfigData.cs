@@ -38,7 +38,6 @@ namespace FMBot.Bot.Configurations
                         Prefix = ".fm",
                         BotWarmupTimeInSeconds = 30,
                         FeaturedTimerStartupDelayInSeconds = 20,
-                        FeaturedTimerRepeatInMinutes = 60,
                         MainInstance = true,
                         FeaturedMaster = true
                     }, 

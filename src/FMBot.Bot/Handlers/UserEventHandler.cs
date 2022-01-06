@@ -28,11 +28,14 @@ namespace FMBot.Bot.Handlers
             Log.Information($"GuildUserUpdated {oldGuildUser.Nickname} - {newGuildUser.Nickname}");
             _ = this._indexService.UpdateGuildUserEvent(newGuildUser);
         }
-        
-        private async Task UserLeftGuild(SocketGuildUser guildUser)
+
+        private async Task UserLeftGuild(SocketGuild socketGuild, SocketUser socketUser)
         {
-            _ = this._indexService.RemoveUserFromGuild(guildUser.Id, guildUser.Guild.Id);
-            _ = this._crownService.RemoveAllCrownsFromDiscordUser(guildUser.Id, guildUser.Guild.Id);
+            if (socketGuild != null && socketUser != null)
+            {
+                _ = this._indexService.RemoveUserFromGuild(socketUser.Id, socketGuild.Id);
+                _ = this._crownService.RemoveAllCrownsFromDiscordUser(socketUser.Id, socketGuild.Id);
+            }
         }
 
         private async Task UserBanned(SocketUser guildUser, SocketGuild guild)

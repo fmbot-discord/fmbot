@@ -86,7 +86,7 @@ namespace FMBot.Bot.Commands
                         return;
                     }
 
-                    var name = await this._userService.GetNameAsync(this.Context);
+                    var name = await UserService.GetNameAsync(this.Context.Guild, this.Context.User);
 
                     var reply = $"{name.FilterOutMentions()} searched for: `{querystring.FilterOutMentions()}`";
 

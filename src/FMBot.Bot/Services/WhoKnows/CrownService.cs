@@ -40,9 +40,13 @@ namespace FMBot.Bot.Services.WhoKnows
 
             if (guild.CrownsActivityThresholdDays.HasValue)
             {
-                eligibleUsers = eligibleUsers.Where(w =>
-                        w.User.LastUsed != null &&
-                        w.User.LastUsed >= DateTime.UtcNow.AddDays(-guild.CrownsActivityThresholdDays.Value))
+                users = users.Where(w =>
+                        w.LastUsed != null &&
+                        w.LastUsed >= DateTime.UtcNow.AddDays(-guild.CrownsActivityThresholdDays.Value))
+                    .ToList();
+
+                eligibleUsers = eligibleUsers
+                    .Where(w => users.Select(s => s.UserId).Contains(w.UserId))
                     .ToList();
             }
             if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromCrowns))
@@ -346,14 +350,14 @@ namespace FMBot.Bot.Services.WhoKnows
             return artist.Content.UserPlaycount;
         }
 
-        public async Task<IList<UserCrown>> GetCrownsForArtist(Persistence.Domain.Models.Guild guild, string artistName)
+        public async Task<IList<UserCrown>> GetCrownsForArtist(int guildId, string artistName)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.UserCrowns
                 .AsQueryable()
                 .Include(i => i.User)
                 .OrderByDescending(o => o.CurrentPlaycount)
-                .Where(f => f.GuildId == guild.GuildId &&
+                .Where(f => f.GuildId == guildId &&
                             f.ArtistName.ToLower() == artistName.ToLower())
                 .ToListAsync();
         }
@@ -390,13 +394,13 @@ namespace FMBot.Bot.Services.WhoKnows
             return await query.ToListAsync();
         }
 
-        public async Task<List<IGrouping<int, UserCrown>>> GetTopCrownUsersForGuild(Persistence.Domain.Models.Guild guild)
+        public async Task<List<IGrouping<int, UserCrown>>> GetTopCrownUsersForGuild(int guildId)
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();
             var guildCrowns = await db.UserCrowns
                 .AsQueryable()
                 .Include(i => i.User)
-                .Where(f => f.GuildId == guild.GuildId &&
+                .Where(f => f.GuildId == guildId &&
                             f.Active)
                 .ToListAsync();
 
@@ -406,20 +410,20 @@ namespace FMBot.Bot.Services.WhoKnows
                 .ToList();
         }
 
-        public async Task<int> GetTotalCrownCountForGuild(Persistence.Domain.Models.Guild guild)
+        public async Task<int> GetTotalCrownCountForGuild(int guildId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.UserCrowns
                 .AsQueryable()
                 .Include(i => i.User)
-                .Where(f => f.GuildId == guild.GuildId &&
+                .Where(f => f.GuildId == guildId &&
                             f.Active)
                 .CountAsync();
         }
 
         public async Task<IList<UserCrown>> GetAllCrownsForGuild(int guildId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.UserCrowns
                 .AsQueryable()
                 .Include(i => i.User)
@@ -427,12 +431,12 @@ namespace FMBot.Bot.Services.WhoKnows
                 .ToListAsync();
         }
 
-        public async Task RemoveAllCrownsFromGuild(Persistence.Domain.Models.Guild guild)
+        public async Task RemoveAllCrownsFromGuild(int guildId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var guildCrowns = await db.UserCrowns
                 .AsQueryable()
-                .Where(w => w.GuildId == guild.GuildId)
+                .Where(w => w.GuildId == guildId)
                 .ToListAsync();
 
             db.UserCrowns.RemoveRange(guildCrowns);

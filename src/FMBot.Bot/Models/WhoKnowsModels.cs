@@ -21,6 +21,8 @@ namespace FMBot.Bot.Models
 
         public bool? WhoKnowsWhitelisted { get; set; }
 
+        public DateTime? LastUsed { get; set; }
+
         public bool? Botter { get; set; }
     }
 

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,7 +18,6 @@ using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
-using Serilog;
 
 namespace FMBot.Bot.Commands.LastFM
 {
@@ -231,7 +229,12 @@ namespace FMBot.Bot.Commands.LastFM
                     this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues");
                 }
 
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+                var message = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+
+                if (message != null && this.Context.Guild != null)
+                {
+                    await this._guildService.AddReactionsAsync(message, this.Context.Guild);
+                }
 
                 this.Context.LogCommandUsed();
             }
@@ -509,7 +512,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             if (!this._guildService.CheckIfDM(this.Context))
             {
-                var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+                var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
                 if (guild != null)
                 {
                     await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(this.Context.User.Id), newUserSettings);
@@ -729,7 +732,7 @@ namespace FMBot.Bot.Commands.LastFM
                 await this.Context.Channel.SendMessageAsync("", false, serverEmbed.Build());
             }
 
-            var success = await GetAndStoreAuthSession(this.Context.User, token.Content.Token);
+            var success = await this._userService.GetAndStoreAuthSession(this.Context.User, token.Content.Token);
 
             if (success)
             {
@@ -765,7 +768,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (!this._guildService.CheckIfDM(this.Context))
                 {
-                    var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+                    var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
                     if (guild != null)
                     {
                         await this._indexService.GetOrAddUserToGuild(guild,
@@ -786,43 +789,6 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this.Context.LogCommandUsed(CommandResponse.WrongInput);
             }
-        }
-
-        private async Task<bool> GetAndStoreAuthSession(IUser contextUser, string token)
-        {
-            var loginDelay = 7000;
-            for (var i = 0; i < 9; i++)
-            {
-                await Task.Delay(loginDelay);
-
-                var authSession = await this._lastFmRepository.GetAuthSession(token);
-
-                if (authSession.Success)
-                {
-                    var userSettings = new User
-                    {
-                        UserNameLastFM = authSession.Content.Session.Name,
-                        SessionKeyLastFm = authSession.Content.Session.Key
-                    };
-
-                    Log.Information("LastfmAuth: User {userName} logged in with auth session (discordUserId: {discordUserId})", authSession.Content.Session.Name, contextUser.Id);
-                    await this._userService.SetLastFm(contextUser, userSettings, true);
-                    return true;
-                }
-
-                if (!authSession.Success && i == 8)
-                {
-                    Log.Information("LastfmAuth: Login timed out or auth not successful (discordUserId: {discordUserId})", contextUser.Id);
-                    return false;
-                }
-                if (!authSession.Success)
-                {
-                    loginDelay += 2000;
-                    Log.Information("LastfmAuth: Login attempt {attempt} for {user} | {discordUserId} not succeeded yet ({errorCode}), delaying", i, contextUser.Username, contextUser.Id, authSession.Message);
-                }
-            }
-
-            return false;
         }
 
         [Command("remove", RunMode = RunMode.Async)]

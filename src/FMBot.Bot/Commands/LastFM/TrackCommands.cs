@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
+using Discord.Interactions;
 using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
@@ -23,6 +24,7 @@ using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
+using RunMode = Discord.Commands.RunMode;
 using TimePeriod = FMBot.Domain.Models.TimePeriod;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -87,7 +89,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("track", RunMode = RunMode.Async)]
-        [Summary("Track you're currently listening to or searching for.")]
+        [Discord.Commands.Summary("Track you're currently listening to or searching for.")]
         [Examples(
             "tr",
             "track",
@@ -131,14 +133,18 @@ namespace FMBot.Bot.Commands.LastFM
                 leftStats.AppendLine($"`{track.TotalPlaycount}` global {StringExtensions.GetPlaysString(track.TotalPlaycount)}");
                 leftStats.AppendLine($"`{track.UserPlaycount}` {StringExtensions.GetPlaysString(track.UserPlaycount)} by you");
 
+                if (track.UserPlaycount.HasValue)
+                {
+                    await this._updateService.CorrectUserTrackPlaycount(contextUser.UserId, track.ArtistName,
+                        track.TrackName, track.UserPlaycount.Value);
+                }
+
                 var duration = spotifyTrack?.DurationMs ?? track.Duration;
                 if (duration is > 0)
                 {
                     var trackLength = TimeSpan.FromMilliseconds(duration.GetValueOrDefault());
-                    var formattedTrackLength = string.Format("{0}{1}:{2:D2}",
-                        trackLength.Hours == 0 ? "" : $"{trackLength.Hours}:",
-                        trackLength.Minutes,
-                        trackLength.Seconds);
+                    var formattedTrackLength =
+                        $"{(trackLength.Hours == 0 ? "" : $"{trackLength.Hours}:")}{trackLength.Minutes}:{trackLength.Seconds:D2}";
 
                     rightStats.AppendLine($"`{formattedTrackLength}` duration");
 
@@ -223,8 +229,8 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("trackplays", RunMode = RunMode.Async)]
-        [Summary("Shows playcount for current track or the one you're searching for.\n\n" +
-                 "You can also mention another user to see their playcount.")]
+        [Discord.Commands.Summary("Shows playcount for current track or the one you're searching for.\n\n" +
+                                  "You can also mention another user to see their playcount.")]
         [Examples(
             "tp",
             "trackplays",
@@ -252,6 +258,12 @@ namespace FMBot.Bot.Commands.LastFM
                 $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has `{track.UserPlaycount}` {StringExtensions.GetPlaysString(track.UserPlaycount)} for **{track.TrackName.FilterOutMentions()}** " +
                 $"by **{track.ArtistName.FilterOutMentions()}**";
 
+            if (track.UserPlaycount.HasValue && !userSettings.DifferentUser)
+            {
+                await this._updateService.CorrectUserTrackPlaycount(contextUser.UserId, track.ArtistName,
+                    track.TrackName, track.UserPlaycount.Value);
+            }
+
             if (!userSettings.DifferentUser && contextUser.LastUpdated != null)
             {
                 var playsLastWeek =
@@ -267,7 +279,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("love", RunMode = RunMode.Async)]
-        [Summary("Loves a track on Last.fm")]
+        [Discord.Commands.Summary("Loves a track on Last.fm")]
         [Examples("love", "l", "love Tame Impala Borderline")]
         [Alias("l", "heart", "favorite", "affection", "appreciation", "lust", "fuckyeah", "fukk", "unfuck")]
         [UserSessionRequired]
@@ -325,7 +337,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("unlove", RunMode = RunMode.Async)]
-        [Summary("Removes the track you're currently listening to or searching for from your last.fm loved tracks.")]
+        [Discord.Commands.Summary("Removes the track you're currently listening to or searching for from your last.fm loved tracks.")]
         [Examples("unlove", "ul", "unlove Lou Reed Brandenburg Gate")]
         [Alias("ul", "unheart", "hate", "fuck")]
         [UserSessionRequired]
@@ -382,7 +394,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("loved", RunMode = RunMode.Async)]
-        [Summary("Shows your Last.fm loved tracks.")]
+        [Discord.Commands.Summary("Shows your Last.fm loved tracks.")]
         [Examples("loved", "lt", "lovedtracks lfm:fm-bot", "lovedtracks @user")]
         [Alias("lovedtracks", "lt")]
         [UserSessionRequired]
@@ -497,7 +509,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("scrobble", RunMode = RunMode.Async)]
-        [Summary("Scrobbles a track on Last.fm.")]
+        [Discord.Commands.Summary("Scrobbles a track on Last.fm.")]
         [Examples("scrobble", "sb stronger Kanye West", "scrobble Loona Heart Attack", "scrobble Mac DeMarco | Chamber of Reflection")]
         [UserSessionRequired]
         [Alias("sb")]
@@ -595,7 +607,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("toptracks", RunMode = RunMode.Async)]
-        [Summary("Shows your or someone else their top tracks over a certain time period.")]
+        [Discord.Commands.Summary("Shows your or someone else their top tracks over a certain time period.")]
         [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample,
             Constants.BillboardExample, Constants.ExtraLargeExample)]
         [Examples("tt", "toptracks", "tt y 3", "toptracks weekly @user", "tt bb xl")]
@@ -638,7 +650,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (!topTracks.Success)
                 {
-                    this._embed.ErrorResponse(topTracks.Error, topTracks.Message, this.Context);
+                    this._embed.ErrorResponse(topTracks.Error, topTracks.Message, this.Context.Message.Content, this.Context.User);
                     await ReplyAsync("", false, this._embed.Build());
                     return;
                 }
@@ -665,7 +677,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 this._embed.WithAuthor(this._embedAuthor);
 
-                var trackPages = topTracks.Content.TopTracks.ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize); ;
+                var trackPages = topTracks.Content.TopTracks.ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
 
                 var counter = 1;
                 var pageCounter = 1;
@@ -736,7 +748,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("whoknowstrack", RunMode = RunMode.Async)]
-        [Summary("Shows what other users listen to a track in your server")]
+        [Discord.Commands.Summary("Shows what other users listen to a track in your server")]
         [Examples("wt", "whoknowstrack", "whoknowstrack Hothouse Flowers Don't Go", "whoknowstrack Natasha Bedingfield | Unwritten")]
         [Alias("wt", "wkt", "wktr", "wtr", "wktrack", "wk track", "whoknows track")]
         [UsernameSetRequired]
@@ -748,7 +760,7 @@ namespace FMBot.Bot.Commands.LastFM
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+            var guildTask = this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -846,7 +858,7 @@ namespace FMBot.Bot.Commands.LastFM
 
 
         [Command("globalwhoknowstrack", RunMode = RunMode.Async)]
-        [Summary("Shows what other users listen to a track in .fmbot")]
+        [Discord.Commands.Summary("Shows what other users listen to a track in .fmbot")]
         [Examples("gwt", "globalwhoknowstrack", "globalwhoknowstrack Hothouse Flowers Don't Go", "globalwhoknowstrack Natasha Bedingfield | Unwritten")]
         [Alias("gwt", "gwkt", "gwtr", "gwktr", "globalwkt", "globalwktrack", "globalwhoknows track")]
         [UsernameSetRequired]
@@ -855,7 +867,7 @@ namespace FMBot.Bot.Commands.LastFM
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var guildTask = this._guildService.GetFullGuildAsync(this.Context.Guild?.Id);
+            var guildTask = this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -977,7 +989,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("friendwhoknowstrack", RunMode = RunMode.Async)]
-        [Summary("Shows who of your friends listen to an track in .fmbot")]
+        [Discord.Commands.Summary("Shows who of your friends listen to an track in .fmbot")]
         [Examples("fwt", "fwkt The Beatles Yesterday", "friendwhoknowstrack", "friendwhoknowstrack Hothouse Flowers Don't Go", "friendwhoknowstrack Mall Grab | Sunflower")]
         [Alias("fwt", "fwkt", "fwktr", "fwtrack", "friendwhoknows track", "friends whoknows track", "friend whoknows track")]
         [UsernameSetRequired]
@@ -1086,7 +1098,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("servertracks", RunMode = RunMode.Async)]
-        [Summary("Top tracks for your server, optionally for an artist")]
+        [Discord.Commands.Summary("Top tracks for your server, optionally for an artist")]
         [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`", "Artist name")]
         [Examples("st", "st a p", "servertracks", "servertracks alltime", "servertracks listeners weekly", "servertracks kanye west listeners")]
         [Alias("st", "stt", "servertoptracks", "servertrack", "server tracks", "billboard", "bb")]
@@ -1253,7 +1265,7 @@ namespace FMBot.Bot.Commands.LastFM
                     }
                     if (!trackInfo.Success || trackInfo.Content == null)
                     {
-                        this._embed.ErrorResponse(trackInfo.Error, trackInfo.Message, this.Context, "track");
+                        this._embed.ErrorResponse(trackInfo.Error, trackInfo.Message, this.Context.Message.Content, this.Context.User, "track");
                         await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                         this.Context.LogCommandUsed(CommandResponse.LastFmError);
                         return null;

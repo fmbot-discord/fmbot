@@ -62,7 +62,7 @@ namespace FMBot.Bot.Services
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
-        public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus? responseStatus, string message, ICommandContext context, string expectedResultType = null)
+        public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus? responseStatus, string message, string commandContent, IUser contextUser = null, string expectedResultType = null)
         {
             embed.WithTitle("Error while attempting get Last.fm information");
             switch (responseStatus)
@@ -96,7 +96,7 @@ namespace FMBot.Bot.Services
                     }
                     break;
                 default:
-                    embed.WithDescription(message);
+                    embed.WithDescription(message ?? "Unknown error");
                     break;
             }
 
@@ -106,7 +106,7 @@ namespace FMBot.Bot.Services
             }
 
             embed.WithColor(DiscordConstants.WarningColorOrange);
-            Log.Information("Last.fm returned error: {message} | {responseStatus} | {discordUserName} / {discordUserId} | {messageContent}", message, responseStatus, context.User.Username, context.User.Id, context.Message.Content);
+            Log.Information("Last.fm returned error: {message} | {responseStatus} | {discordUserName} / {discordUserId} | {messageContent}", message, responseStatus, contextUser?.Username, contextUser?.Id, commandContent);
         }
 
         public static bool RecentScrobbleCallFailed(Response<RecentTrackList> recentScrobbles)
@@ -124,7 +124,7 @@ namespace FMBot.Bot.Services
             var embed = new EmbedBuilder();
             if (!recentScrobbles.Success || recentScrobbles.Content == null)
             {
-                embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, context);
+                embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, context.Message.Content, context.User);
                 context.LogCommandUsed(CommandResponse.LastFmError);
 
                 await context.Channel.SendMessageAsync("", false, embed.Build());
@@ -141,6 +141,24 @@ namespace FMBot.Bot.Services
             }
 
             return false;
+        }
+
+        public static EmbedBuilder RecentScrobbleCallFailedBuilder(Response<RecentTrackList> recentScrobbles, string lastFmUserName)
+        {
+            var embed = new EmbedBuilder();
+            if (recentScrobbles.Content?.RecentTracks == null || !recentScrobbles.Success)
+            {
+                embed.ErrorResponse(recentScrobbles.Error, recentScrobbles.Message, null);
+                return embed;
+            }
+
+            if (!recentScrobbles.Content.RecentTracks.Any())
+            {
+                embed.NoScrobblesFoundErrorResponse(lastFmUserName);
+                return embed;
+            }
+
+            return null;
         }
 
         public static void HelpResponse(this EmbedBuilder embed, CommandInfo commandInfo, string prfx, string userName)

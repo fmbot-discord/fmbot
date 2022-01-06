@@ -59,6 +59,8 @@ namespace FMBot.Bot.Commands.Guild
         [CommandCategories(CommandCategory.ServerSettings)]
         public async Task SetServerModeAsync(params string[] otherSettings)
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -123,6 +125,8 @@ namespace FMBot.Bot.Commands.Guild
         [CommandCategories(CommandCategory.ServerSettings)]
         public async Task SetGuildReactionsAsync(params string[] emotes)
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -173,6 +177,8 @@ namespace FMBot.Bot.Commands.Guild
         [CommandCategories(CommandCategory.ServerSettings)]
         public async Task ToggleSupportMessagesAsync()
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
@@ -205,6 +211,8 @@ namespace FMBot.Bot.Commands.Guild
         [CommandCategories(CommandCategory.ServerSettings)]
         public async Task GetMembersAsync()
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -217,7 +225,7 @@ namespace FMBot.Bot.Commands.Guild
 
             try
             {
-                var serverUsers = await this._guildService.FindAllUsersFromGuildAsync(this.Context);
+                var serverUsers = await this._guildService.FindAllUsersFromGuildAsync(this.Context.Guild);
 
                 if (serverUsers.Count == 0)
                 {
@@ -253,8 +261,11 @@ namespace FMBot.Bot.Commands.Guild
         [Examples("prefix", "prefix !")]
         [GuildOnly]
         [CommandCategories(CommandCategory.ServerSettings)]
+        [RequiresIndex]
         public async Task SetPrefixAsync(string prefix = null)
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
                 !await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
@@ -314,6 +325,8 @@ namespace FMBot.Bot.Commands.Guild
         [CommandCategories(CommandCategory.ServerSettings)]
         public async Task ToggleGuildCommand(string command = null)
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var disabledCommandsForGuild = await this._guildService.GetDisabledCommandsForGuild(this.Context.Guild);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
@@ -397,8 +410,10 @@ namespace FMBot.Bot.Commands.Guild
         [CommandCategories(CommandCategory.ServerSettings)]
         public async Task ToggleChannelCommand(string command = null)
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
             var disabledCommands = await this._guildService.GetDisabledCommandsForChannel(this.Context.Channel);
 
@@ -471,7 +486,7 @@ namespace FMBot.Bot.Commands.Guild
 
             if (disabledCommands != null && disabledCommands.Any(a => a.Equals(foundCommand.Name.ToLower())))
             {
-                var newDisabledCommands = await this._guildService.RemoveChannelDisabledCommandAsync(this.Context.Channel, foundCommand.Name.ToLower());
+                var newDisabledCommands = await this._guildService.RemoveChannelDisabledCommandAsync(this.Context.Channel, foundCommand.Name.ToLower(), this.Context.Guild.Id);
 
                 this._channelDisabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Channel.Id);
 
@@ -479,7 +494,7 @@ namespace FMBot.Bot.Commands.Guild
             }
             else
             {
-                var newDisabledCommands = await this._guildService.AddChannelDisabledCommandAsync(this.Context.Channel, guild.GuildId, foundCommand.Name.ToLower());
+                var newDisabledCommands = await this._guildService.AddChannelDisabledCommandAsync(this.Context.Channel, guild.GuildId, foundCommand.Name.ToLower(), this.Context.Guild.Id);
 
                 this._channelDisabledCommandService.StoreDisabledCommands(newDisabledCommands, this.Context.Channel.Id);
 
@@ -499,8 +514,10 @@ namespace FMBot.Bot.Commands.Guild
         [CommandCategories(CommandCategory.ServerSettings)]
         public async Task FmSetFmCooldownCommand(string command = null)
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
             int? newCooldown = null;
 
@@ -527,7 +544,7 @@ namespace FMBot.Bot.Commands.Guild
             this._embed.AddField("Previous .fm cooldown",
                 existingFmCooldown.HasValue ? $"{existingFmCooldown.Value} seconds" : "No cooldown");
 
-            var newFmCooldown = await this._guildService.SetChannelCooldownAsync(this.Context.Channel, guild.GuildId, newCooldown);
+            var newFmCooldown = await this._guildService.SetChannelCooldownAsync(this.Context.Channel, guild.GuildId, newCooldown, this.Context.Guild.Id);
 
             this._embed.AddField("New .fm cooldown",
                 newFmCooldown.HasValue ? $"{newFmCooldown.Value} seconds" : "No cooldown");

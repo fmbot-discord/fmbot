@@ -180,7 +180,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, false);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, false, false);
 
             if (user == null)
             {
@@ -268,7 +268,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
             if (user == null)
             {
@@ -297,7 +297,7 @@ namespace FMBot.Bot.Commands.Guild
                 var builder = new ComponentBuilder()
                     .WithButton("Confirm", "id");
 
-                var msg = await ReplyAsync("", false, this._embed.Build(), component: builder.Build());
+                var msg = await ReplyAsync("", false, this._embed.Build(), components: builder.Build());
 
                 var result = await this.Interactivity.NextInteractionAsync(x => x is SocketMessageComponent c && c.Message.Id == msg.Id && x.User.Id == this.Context.User.Id,
                     timeout: TimeSpan.FromSeconds(30));
@@ -355,7 +355,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
             if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(w => w.BlockedFromCrowns))
             {
@@ -390,7 +390,7 @@ namespace FMBot.Bot.Commands.Guild
         public async Task ToggleCrownsAsync([Remainder] string confirmation = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
             var serverUser = (IGuildUser)this.Context.Message.Author;
             if (!serverUser.GuildPermissions.BanMembers && !serverUser.GuildPermissions.Administrator &&
@@ -414,7 +414,7 @@ namespace FMBot.Bot.Commands.Guild
 
             if (crownsDisabled == true)
             {
-                await this._crownService.RemoveAllCrownsFromGuild(guild);
+                await this._crownService.RemoveAllCrownsFromGuild(guild.GuildId);
                 await ReplyAsync("All crowns have been removed and crowns have been disabled for this server.");
             }
             else
@@ -434,7 +434,7 @@ namespace FMBot.Bot.Commands.Guild
         public async Task KillCrownAsync([Remainder] string killCrownValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
             if (!string.IsNullOrWhiteSpace(killCrownValues) && killCrownValues.ToLower() == "help")
             {
@@ -474,7 +474,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            var artistCrowns = await this._crownService.GetCrownsForArtist(guild, killCrownValues);
+            var artistCrowns = await this._crownService.GetCrownsForArtist(guild.GuildId, killCrownValues);
 
             if (!artistCrowns.Any())
             {
@@ -499,7 +499,7 @@ namespace FMBot.Bot.Commands.Guild
         public async Task SeedCrownsAsync([Remainder] string helpValues = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
             if (!string.IsNullOrWhiteSpace(helpValues) && helpValues.ToLower() == "help")
             {
@@ -568,7 +568,7 @@ namespace FMBot.Bot.Commands.Guild
         public async Task KillAllCrownsAsync([Remainder] string confirmation = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
             if (!string.IsNullOrWhiteSpace(confirmation) && confirmation.ToLower() == "help")
             {
@@ -620,7 +620,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
-            await this._crownService.RemoveAllCrownsFromGuild(guild);
+            await this._crownService.RemoveAllCrownsFromGuild(guild.GuildId);
 
             this._embed.WithDescription("Removed all crowns for your server.");
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
@@ -636,7 +636,7 @@ namespace FMBot.Bot.Commands.Guild
         public async Task KillAllSeededCrownsAsync([Remainder] string confirmation = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
+            var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
             if (!string.IsNullOrWhiteSpace(confirmation) && confirmation.ToLower() == "help")
             {

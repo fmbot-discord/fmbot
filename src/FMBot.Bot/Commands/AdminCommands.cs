@@ -110,7 +110,7 @@ namespace FMBot.Bot.Commands
         public async Task DebugGuildAsync(ulong? guildId = null)
         {
             var chosenGuild = guildId ?? this.Context.Guild.Id;
-            var guild = await this._guildService.GetFullGuildAsync(chosenGuild);
+            var guild = await this._guildService.GetFullGuildAsync(chosenGuild, enableCache: false);
 
             if (guild == null)
             {
@@ -742,7 +742,6 @@ namespace FMBot.Bot.Commands
                     updateDescription.AppendLine();
 
                     var newFeature = await this._featuredService.ReplaceFeatured(feature, this.Context.User.Id);
-                    this._timer.Restart();
 
                     updateDescription.AppendLine("**New feature**");
                     updateDescription.AppendLine(newFeature.FeaturedMode.ToString());

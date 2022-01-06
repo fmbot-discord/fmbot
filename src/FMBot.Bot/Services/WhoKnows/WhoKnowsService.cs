@@ -41,6 +41,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 Name = name,
                 Playcount = userPlaycount,
                 LastFMUsername = guildUser.User.UserNameLastFM,
+                LastUsed = guildUser.User.LastUsed,
                 DiscordName = guildUser.UserName,
                 PrivacyLevel = PrivacyLevel.Global
             });
@@ -52,13 +53,9 @@ namespace FMBot.Bot.Services.WhoKnows
         {
             if (guild.ActivityThresholdDays.HasValue)
             {
-                var usersToFilter = guild.GuildUsers.Where(w =>
-                        w.User.LastUsed == null ||
-                        w.User.LastUsed < DateTime.UtcNow.AddDays(-guild.ActivityThresholdDays.Value))
-                    .ToList();
-
-                users = users
-                    .Where(w => !usersToFilter.Select(s => s.UserId).Contains(w.UserId))
+                users = users.Where(w =>
+                        w.LastUsed != null &&
+                        w.LastUsed >= DateTime.UtcNow.AddDays(-guild.ActivityThresholdDays.Value))
                     .ToList();
             }
             if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromWhoKnows))
