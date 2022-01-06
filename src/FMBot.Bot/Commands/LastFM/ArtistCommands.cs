@@ -142,7 +142,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var response = await this._artistBuilders.ArtistTracksAsync(this.Context.Guild, this.Context.User, contextUser, timeSettings,
-                userSettings, artistValues);
+                userSettings, userSettings.NewSearchValue);
 
             if (response.ResponseType == ResponseType.Embed)
             {
