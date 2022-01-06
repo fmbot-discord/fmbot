@@ -48,6 +48,12 @@ namespace FMBot.Bot.Services
                     month.GetValueOrDefault(1),
                     1);
 
+                if (month.HasValue && month.Value > DateTime.UtcNow.Month && !year.HasValue)
+                {
+                    settingsModel.StartDateTime = settingsModel.StartDateTime.Value.AddYears(-1);
+                    year = settingsModel.StartDateTime.Value.Year;
+                }
+
                 if (year.HasValue && !month.HasValue)
                 {
                     settingsModel.Description = $"{year}";
