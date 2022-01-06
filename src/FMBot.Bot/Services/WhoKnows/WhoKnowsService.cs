@@ -68,7 +68,8 @@ namespace FMBot.Bot.Services.WhoKnows
                     .Where(w => !usersToFilter.Select(s => s.UserId).Contains(w.UserId))
                     .ToList();
             }
-            if (guild.WhoKnowsWhitelistRoleId.HasValue) {
+            if (guild.WhoKnowsWhitelistRoleId.HasValue)
+            {
                 users = users
                     .Where(w => w.WhoKnowsWhitelisted != false)
                     .ToList();
@@ -92,9 +93,9 @@ namespace FMBot.Bot.Services.WhoKnows
                         .Contains(w.LastFMUsername.ToLower())
                     &&
                     !bottedUsers
-                        .Where(w => w.LastFmRegistered != null)
+                        .Where(we => we.LastFmRegistered != null)
                         .Select(s => s.LastFmRegistered)
-                        .Equals(w.RegisteredLastFm))
+                        .Contains(w.RegisteredLastFm))
                 .ToList();
         }
 
