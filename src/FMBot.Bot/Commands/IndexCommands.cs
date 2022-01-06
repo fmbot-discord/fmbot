@@ -48,7 +48,7 @@ namespace FMBot.Bot.Commands
 
         [Command("refreshmembers", RunMode = RunMode.Async)]
         [Summary("Refreshed the cached member list that .fmbot has for your server.")]
-        [Alias("i", "index", "refresh", "cachemembers", "refreshserver")]
+        [Alias("i", "index", "refresh", "cachemembers", "refreshserver", "serverset")]
         [GuildOnly]
         [CommandCategories(CommandCategory.ServerSettings)]
         public async Task IndexGuildAsync()
