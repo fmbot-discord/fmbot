@@ -1091,6 +1091,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var i = 0;
                 var tracksDisplayed = 0;
+                var pageNumber = 1;
                 for (var disc = 1; disc < amountOfDiscs + 1; disc++)
                 {
                     if (amountOfDiscs > 1)
@@ -1130,13 +1131,15 @@ namespace FMBot.Bot.Commands.LastFM
 
                         description.AppendLine();
 
+                        var pageNumberDesc = $"Page {pageNumber}/{albumTracks.Count / 12 + 1} - ";
+
                         tracksDisplayed++;
                         if (tracksDisplayed > 0 && tracksDisplayed % 12 == 0 || tracksDisplayed == albumTracks.Count)
                         {
                             var page = new PageBuilder()
                                 .WithDescription(description.ToString())
                                 .WithTitle($"Track playcounts for {albumName}")
-                                .WithFooter(footer.ToString());
+                                .WithFooter(pageNumberDesc + footer);
 
                             if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
                             {
@@ -1145,6 +1148,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                             pages.Add(page);
                             description = new StringBuilder();
+                            pageNumber++;
                         }
                     }
                 }
