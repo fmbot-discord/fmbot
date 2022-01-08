@@ -163,10 +163,16 @@ namespace FMBot.Bot.Services.Guild
 
                             if (guildUser != null)
                             {
-                                await channel.SendMessageAsync(
+                                var localFeaturedMsg = await channel.SendMessageAsync(
                                     $"🥳 Congratulations <@{guildUser.User.DiscordUserId}>! You've just been picked as the featured user for the next hour.",
                                     false,
                                     builder.Build());
+
+                                if(localFeaturedMsg != null)
+                                {
+                                    await this._guildService.AddReactionsAsync(localFeaturedMsg, guild);
+                                }
+
                                 return;
                             }
                         }
