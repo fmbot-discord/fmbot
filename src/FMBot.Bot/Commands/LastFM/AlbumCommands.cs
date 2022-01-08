@@ -1363,13 +1363,13 @@ namespace FMBot.Bot.Commands.LastFM
                 if (string.IsNullOrWhiteSpace(lastPlayedTrack.AlbumName))
                 {
                     this._embed.WithDescription($"The track you're scrobbling (**{lastPlayedTrack.TrackName}** by **{lastPlayedTrack.ArtistName}**) does not have an album associated with it according to Last.fm.\n" +
-                                                $"Please not that .fmbot is not associated with Last.fm.");
+                                                $"Please note that .fmbot is not associated with Last.fm.");
 
                     await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
                     return null;
                 }
-
+                
                 var albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(lastPlayedTrack.ArtistName, lastPlayedTrack.AlbumName,
                     lastFmUserName);
 
@@ -1377,7 +1377,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     this._embed.WithDescription($"Last.fm did not return a result for **{lastPlayedTrack.AlbumName}** by **{lastPlayedTrack.ArtistName}**.\n" +
                                                 $"This usually happens on recently released albums or on albums by smaller artists. Please try again later.\n\n" +
-                                                $"Please not that .fmbot is not associated with Last.fm.");
+                                                $"Please note that .fmbot is not associated with Last.fm.");
 
                     await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
