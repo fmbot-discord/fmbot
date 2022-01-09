@@ -185,7 +185,7 @@ namespace FMBot.Bot.Services
                 {
                     GenreName = s.Key,
                     TotalPlaycount = s.Sum(se => se.Playcount),
-                    ListenerCount = s.Select(se => se.UserIds).Distinct().Count()
+                    ListenerCount = s.SelectMany(se => se.UserIds).Distinct().Count()
                 })
                 .OrderByDescending(o => orderType == OrderType.Listeners ? o.ListenerCount : o.TotalPlaycount)
                 .Take(120)

@@ -263,7 +263,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 {
                     ArtistName = s.Key,
                     ListenerCount = s.Select(se => se.UserId).Distinct().Count(),
-                    TotalPlaycount = s.Sum(s => s.Playcount),
+                    TotalPlaycount = s.Sum(se => se.Playcount),
                     ListenerUserIds = s.Select(se => se.UserId).ToList()
                 });
 
