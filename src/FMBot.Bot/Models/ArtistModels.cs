@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using FMBot.Domain.Models;
 
 namespace FMBot.Bot.Models
@@ -37,6 +38,8 @@ namespace FMBot.Bot.Models
         public int TotalPlaycount { get; set; }
 
         public int ListenerCount { get; set; }
+
+        public List<int> ListenerUserIds{ get; set; }
     }
 
     public class WhoKnowsArtistDto

@@ -234,6 +234,44 @@ namespace FMBot.Bot.Services.WhoKnows
             })).ToList();
         }
 
+        public async Task<ICollection<GuildArtist>> GetTopAllTimeArtistsForGuildWithListeners(int guildId,
+            OrderType orderType)
+        {
+            const string sql = "SELECT * " +
+                               "FROM user_artists AS ua " +
+                               "INNER JOIN users AS u ON ua.user_id = u.user_id " +
+                               "INNER JOIN guild_users AS gu ON gu.user_id = u.user_id " +
+                               "WHERE gu.guild_id = @guildId  AND gu.bot != true  " +
+                               "AND NOT ua.user_id = ANY(SELECT user_id FROM guild_blocked_users WHERE blocked_from_who_knows = true AND guild_id = @guildId) " +
+                               "AND (gu.who_knows_whitelisted OR gu.who_knows_whitelisted IS NULL) " +
+                               "AND LOWER(ua.name) = ANY(SELECT LOWER(artists.name) AS artist_name " +
+                               "FROM public.artist_genres AS ag " +
+                               "INNER JOIN artists ON artists.id = ag.artist_id) ";
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var userArtists = await connection.QueryAsync<UserArtist>(sql, new
+            {
+                guildId
+            });
+
+            var guildArtists = userArtists
+                .GroupBy(g => g.Name)
+                .Select(s => new GuildArtist
+                {
+                    ArtistName = s.Key,
+                    ListenerCount = s.Select(se => se.UserId).Distinct().Count(),
+                    TotalPlaycount = s.Sum(s => s.Playcount),
+                    ListenerUserIds = s.Select(se => se.UserId).ToList()
+                });
+
+            return guildArtists
+                .OrderByDescending(o => orderType == OrderType.Listeners ? o.ListenerCount : o.TotalPlaycount)
+                .ToList();
+        }
+
         public async Task<int?> GetArtistPlayCountForUser(string artistName, int userId)
         {
             const string sql = "SELECT ua.playcount " +
@@ -293,7 +331,7 @@ namespace FMBot.Bot.Services.WhoKnows
                 }
                 else
                 {
-                    await using var db = this._contextFactory.CreateDbContext();
+                    await using var db = await this._contextFactory.CreateDbContextAsync();
 
                     var topArtist = await db.UserArtists
                         .AsQueryable()

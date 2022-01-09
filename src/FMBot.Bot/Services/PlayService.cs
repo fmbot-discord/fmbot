@@ -558,7 +558,7 @@ namespace FMBot.Bot.Services
                 .ToList();
         }
 
-        public static List<GuildArtist> GetGuildTopArtists(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType)
+        public static List<GuildArtist> GetGuildTopArtists(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType, int limit  = 120, bool includeListeners = false)
         {
             return plays
                 .Where(w => w.TimePlayed > startDateTime)
@@ -567,11 +567,12 @@ namespace FMBot.Bot.Services
                 {
                     ArtistName = s.Key,
                     ListenerCount = s.Select(se => se.UserId).Distinct().Count(),
-                    TotalPlaycount = s.Count()
+                    TotalPlaycount = s.Count(),
+                    ListenerUserIds = includeListeners ? s.Select(se => se.UserId).ToList() : null
                 })
                 .OrderByDescending(o => orderType == OrderType.Listeners ? o.ListenerCount : o.TotalPlaycount)
                 .ThenByDescending(o => orderType == OrderType.Listeners ? o.TotalPlaycount : o.ListenerCount)
-                .Take(120)
+                .Take(limit)
                 .ToList();
         }
 

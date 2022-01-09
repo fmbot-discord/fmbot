@@ -1163,7 +1163,7 @@ namespace FMBot.Bot.Commands.LastFM
                     {
                         var name = guildListSettings.OrderType == OrderType.Listeners
                             ? $"`{track.ListenerCount}` · **{track.ArtistName}** ({track.TotalPlaycount} {StringExtensions.GetPlaysString(track.TotalPlaycount)})"
-                            : $"`{track.TotalPlaycount}` · **{track.ArtistName}** - ({track.ListenerCount} {StringExtensions.GetListenersString(track.ListenerCount)})";
+                            : $"`{track.TotalPlaycount}` · **{track.ArtistName}** ({track.ListenerCount} {StringExtensions.GetListenersString(track.ListenerCount)})";
 
                         if (previousTopGuildArtists != null && previousTopGuildArtists.Any())
                         {
