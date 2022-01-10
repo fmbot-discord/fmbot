@@ -337,6 +337,100 @@ public class ArtistBuilders
         return response;
     }
 
+    public async Task<ResponseModel> GuildArtistsAsync(
+        string prfx,
+        IGuild discordGuild,
+        Guild guild,
+        GuildRankingSettings guildListSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        ICollection<GuildArtist> topGuildArtists;
+        IList<GuildArtist> previousTopGuildArtists = null;
+        if (guildListSettings.ChartTimePeriod == TimePeriod.AllTime)
+        {
+            topGuildArtists = await this._whoKnowsArtistService.GetTopAllTimeArtistsForGuild(guild.GuildId, guildListSettings.OrderType);
+        }
+        else
+        {
+            var plays = await this._playService.GetGuildUsersPlays(guild.GuildId,
+                guildListSettings.AmountOfDaysWithBillboard);
+
+            topGuildArtists = PlayService.GetGuildTopArtists(plays, guildListSettings.StartDateTime, guildListSettings.OrderType);
+            previousTopGuildArtists = PlayService.GetGuildTopArtists(plays, guildListSettings.BillboardStartDateTime, guildListSettings.OrderType);
+        }
+
+        var title = $"Top {guildListSettings.TimeDescription.ToLower()} artists in {discordGuild.Name}";
+
+        var footer = new StringBuilder();
+        footer.AppendLine(guildListSettings.OrderType == OrderType.Listeners
+            ? " - Ordered by listeners"
+            : " - Ordered by plays");
+
+        var rnd = new Random();
+        var randomHintNumber = rnd.Next(0, 5);
+        switch (randomHintNumber)
+        {
+            case 1:
+                footer.AppendLine($"View specific track listeners with '{prfx}whoknows'");
+                break;
+            case 2:
+                footer.AppendLine($"Available time periods: alltime, monthly, weekly and daily");
+                break;
+            case 3:
+                footer.AppendLine($"Available sorting options: plays and listeners");
+                break;
+        }
+
+        var artistPages = topGuildArtists.Chunk(12).ToList();
+
+        var counter = 1;
+        var pageCounter = 1;
+        var pages = new List<PageBuilder>();
+        foreach (var page in artistPages)
+        {
+            var pageString = new StringBuilder();
+            foreach (var track in page)
+            {
+                var name = guildListSettings.OrderType == OrderType.Listeners
+                    ? $"`{track.ListenerCount}` · **{track.ArtistName}** ({track.TotalPlaycount} {StringExtensions.GetPlaysString(track.TotalPlaycount)})"
+                    : $"`{track.TotalPlaycount}` · **{track.ArtistName}** ({track.ListenerCount} {StringExtensions.GetListenersString(track.ListenerCount)})";
+
+                if (previousTopGuildArtists != null && previousTopGuildArtists.Any())
+                {
+                    var previousTopArtist = previousTopGuildArtists.FirstOrDefault(f => f.ArtistName == track.ArtistName);
+                    int? previousPosition = previousTopArtist == null ? null : previousTopGuildArtists.IndexOf(previousTopArtist);
+
+                    pageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition, false).Text);
+                }
+                else
+                {
+                    pageString.AppendLine(name);
+                }
+
+                counter++;
+            }
+
+            var pageFooter = new StringBuilder();
+            pageFooter.Append($"Page {pageCounter}/{artistPages.Count}");
+            pageFooter.Append(footer);
+
+            pages.Add(new PageBuilder()
+                .WithTitle(title)
+                .WithDescription(pageString.ToString())
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(pageFooter.ToString()));
+            pageCounter++;
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ResponseType = ResponseType.Paginator;
+        return response;
+    }
+
 
     private async Task<(ArtistInfo artist, ResponseModel response)> GetArtist(ResponseModel response, IUser discordUser, string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null)
     {

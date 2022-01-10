@@ -145,7 +145,7 @@ namespace FMBot.Bot.Services
             }
             catch (Exception e)
             {
-                Log.Error("Getting while getting track for description: {description}", description, e);
+                Log.Error("BotScrobbling: Error while getting track for description: {description}", description, e);
                 return null;
             }
         }

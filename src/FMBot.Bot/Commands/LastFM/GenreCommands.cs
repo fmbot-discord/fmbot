@@ -657,8 +657,8 @@ namespace FMBot.Bot.Commands.LastFM
                     var plays = await this._playService.GetGuildUsersPlays(guild.GuildId,
                         guildListSettings.AmountOfDaysWithBillboard);
 
-                    topGuildArtists = PlayService.GetGuildTopArtists(plays, guildListSettings.StartDateTime, guildListSettings.OrderType, 5000, true);
-                    var previousTopGuildArtists = PlayService.GetGuildTopArtists(plays, guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, 5000, true);
+                    topGuildArtists = PlayService.GetGuildTopArtists(plays, guildListSettings.StartDateTime, guildListSettings.OrderType, 8000, true);
+                    var previousTopGuildArtists = PlayService.GetGuildTopArtists(plays, guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, 8000, true);
 
                     previousTopGuildGenres = await this._genreService.GetTopGenresForGuildArtists(previousTopGuildArtists, guildListSettings.OrderType);
                 }
@@ -686,7 +686,7 @@ namespace FMBot.Bot.Commands.LastFM
                         break;
                 }
 
-                var genrePages = topGuildGenres.Chunk(12).ToList();
+                var genrePages = topGuildGenres.Chunk(24).ToList();
 
                 var counter = 1;
                 var pageCounter = 1;

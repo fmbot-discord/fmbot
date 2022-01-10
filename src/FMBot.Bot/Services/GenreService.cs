@@ -188,7 +188,7 @@ namespace FMBot.Bot.Services
                     ListenerCount = s.SelectMany(se => se.UserIds).Distinct().Count()
                 })
                 .OrderByDescending(o => orderType == OrderType.Listeners ? o.ListenerCount : o.TotalPlaycount)
-                .Take(120)
+                .Take(240)
                 .ToList();
         }
 
