@@ -315,7 +315,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
                 var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
 
-                var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.Monthly, cachedOrAllTimeOnly: true);
+                var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.Monthly, cachedOrAllTimeOnly: true);
 
                 if (timeSettings.TimePeriod == TimePeriod.AllTime)
                 {
@@ -334,9 +334,17 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var response = await this._artistBuilders.ArtistPaceAsync(this.Context.User, contextUser,
-                    userSettings, timeSettings, extraOptions, timeFrom, null);
+                    userSettings, timeSettings, timeSettings.NewSearchValue, timeFrom, null);
 
-                await this.Context.Channel.SendMessageAsync(response.Text, allowedMentions: AllowedMentions.None);
+                if (response.ResponseType == ResponseType.Embed)
+                {
+                    await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
+                }
+                else
+                {
+                    await this.Context.Channel.SendMessageAsync(response.Text, allowedMentions: AllowedMentions.None);
+                }
+
                 this.Context.LogCommandUsed(response.CommandResponse);
             }
             catch (Exception e)
