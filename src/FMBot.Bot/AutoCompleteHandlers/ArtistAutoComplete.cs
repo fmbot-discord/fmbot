@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Services;
 
 namespace FMBot.Bot.AutoCompleteHandlers;
@@ -38,64 +39,52 @@ public class ArtistAutoComplete : AutocompleteHandler
             }
 
             results
-                .AddRange(recentlyPlayedArtists
-                    .Where(w => !results.Contains(w))
-                    .Take(4)
-                );
+                .ReplaceOrAddToList(recentlyPlayedArtists.Take(4));
 
             results
-                .AddRange(recentTopArtists
-                    .Where(w => !results.Contains(w))
-                    .Take(4)
-                );
+                .ReplaceOrAddToList(recentTopArtists.Take(4));
         }
         else
         {
             var searchValue = autocompleteInteraction.Data.Current.Value.ToString();
             results = new List<string>
-                {
-                    searchValue
-                };
+            {
+                searchValue
+            };
 
             var artistResults =
                 await this._artistsService.SearchThroughArtists(searchValue);
 
-            results.AddRange(recentlyPlayedArtists
-                .Where(w => w.ToLower().StartsWith(searchValue.ToLower()) &&
-                            !results.Contains(w))
+            results.ReplaceOrAddToList(recentlyPlayedArtists
+                .Where(w => w.ToLower().StartsWith(searchValue.ToLower()))
                 .Take(4));
 
-            results.AddRange(recentTopArtists
-                .Where(w => w.ToLower().StartsWith(searchValue.ToLower()) &&
-                            !results.Contains(w))
+            results.ReplaceOrAddToList(recentTopArtists
+                .Where(w => w.ToLower().StartsWith(searchValue.ToLower()))
                 .Take(4));
 
-            results.AddRange(recentlyPlayedArtists
-                .Where(w => w.ToLower().Contains(searchValue.ToLower()) &&
-                            !results.Contains(w))
+            results.ReplaceOrAddToList(recentlyPlayedArtists
+                .Where(w => w.ToLower().Contains(searchValue.ToLower()))
                 .Take(2));
 
-            results.AddRange(recentTopArtists
-                .Where(w => w.ToLower().Contains(searchValue.ToLower()) &&
-                            !results.Contains(w))
+            results.ReplaceOrAddToList(recentTopArtists
+                .Where(w => w.ToLower().Contains(searchValue.ToLower()))
                 .Take(3));
 
-            results.AddRange(artistResults
+            results.ReplaceOrAddToList(artistResults
                 .Where(w => w.Popularity > 60 &&
-                    w.Name.ToLower().Contains(searchValue.ToLower()) &&
-                            !results.Contains(w.Name))
+                            w.Name.ToLower().Contains(searchValue.ToLower()))
                 .Take(2)
                 .Select(s => s.Name));
 
-            results.AddRange(artistResults
-                .Where(w => w.Name.ToLower().StartsWith(searchValue.ToLower()) &&
-                            !results.Contains(w.Name))
+            results.ReplaceOrAddToList(artistResults
+                .Where(w => w.Name.ToLower().StartsWith(searchValue.ToLower()))
                 .Take(4)
                 .Select(s => s.Name));
 
-            results.AddRange(artistResults
-                .Where(w => w.Name.ToLower().Contains(searchValue.ToLower()) &&
-                            !results.Contains(w.Name))
+
+            results.ReplaceOrAddToList(artistResults
+                .Where(w => w.Name.ToLower().Contains(searchValue.ToLower()))
                 .Take(2)
                 .Select(s => s.Name));
         }
