@@ -456,7 +456,7 @@ public class ArtistBuilders
                 .TrimStart();
         }
 
-        var artistSearch = await GetArtist(response, discordUser, artistName, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
+        var artistSearch = await GetArtist(response, discordUser, artistName, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm, userSettings.UserNameLastFm);
         if (artistSearch.artist == null)
         {
             return artistSearch.response;
