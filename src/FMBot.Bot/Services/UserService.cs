@@ -418,7 +418,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool?> ToggleRymAsync(User user)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
 
             if (user.RymEnabled != true)
             {
@@ -438,7 +438,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool?> ToggleBotScrobblingAsync(User user, string option)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
 
             if (option != null && (option.ToLower() == "on" || option.ToLower() == "true" || option.ToLower() == "yes"))
             {
@@ -458,7 +458,7 @@ namespace FMBot.Bot.Services
 
         public async Task<int> GetTotalUserCountAsync()
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.Users
                 .AsQueryable()
                 .CountAsync();
@@ -466,7 +466,7 @@ namespace FMBot.Bot.Services
 
         public async Task<int> GetTotalAuthorizedUserCountAsync()
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.Users
                 .AsQueryable()
                 .Where(w => w.SessionKeyLastFm != null)
@@ -477,7 +477,7 @@ namespace FMBot.Bot.Services
         {
             var deletedInactiveUsers = 0;
 
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var inactiveUsers = await db.InactiveUsers
                 .AsQueryable()
                 .Where(w => w.MissingParametersErrorCount >= 1 && w.Updated > DateTime.UtcNow.AddDays(-3))
