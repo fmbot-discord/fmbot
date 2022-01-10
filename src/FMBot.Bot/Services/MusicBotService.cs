@@ -59,7 +59,6 @@ namespace FMBot.Bot.Services
 
                 if (usersInChannel == null || usersInChannel.Count == 0)
                 {
-                    Log.Information("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found listeners", context.Guild.Name, context.Guild.Id);
                     return;
                 }
 
@@ -128,8 +127,8 @@ namespace FMBot.Bot.Services
                 await this._lastFmRepository.ScrobbleAsync(user, result.ArtistName, result.TrackName, result.AlbumName);
                 Statistics.LastfmScrobbles.Inc();
             }
-        }
 
+        }
         private async Task<List<User>> GetUsersInVoice(ICommandContext context, ulong botId)
         {
             try
@@ -141,8 +140,8 @@ namespace FMBot.Bot.Services
                 }
 
                 var targetChannel = channels.FirstOrDefault(f => f.Users != null &&
-                                                        f.Users.Any() &&
-                                                        f.Users.Select(s => s.Id).Contains(botId));
+                                                        f.Users.Any(a => a.Id == botId));
+
                 if (targetChannel == null)
                 {
                     Log.Information("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found voice channel with botId {botId} (did see some voice channels though)", context.Guild.Name, context.Guild.Id, botId);
