@@ -41,86 +41,6 @@ namespace FMBot.Bot.Services
             this._prefixService = prefixService;
         }
 
-        public async Task ScrobbleGroovy(SocketUserMessage msg, ICommandContext context)
-        {
-            try
-            {
-                if (context.Guild == null ||
-                    msg.Embeds == null ||
-                    !msg.Embeds.Any() ||
-                    msg.Embeds.Any(a => a.Title == null) ||
-                    msg.Embeds.Any(a => a.Title != "Now playing") ||
-                    msg.Embeds.Any(a => a.Description == null))
-                {
-                    return;
-                }
-
-                var usersInChannel = await GetUsersInVoice(context, msg.Author.Id);
-
-                if (usersInChannel == null || usersInChannel.Count == 0)
-                {
-                    Log.Information("Skipped scrobble for {guildName} / {guildId} because no found listeners", context.Guild.Name, context.Guild.Id);
-                    return;
-                }
-
-                var trackResult = await this._trackService.GetTrackFromLink(msg.Embeds.First().Description);
-
-                if (trackResult == null)
-                {
-                    Log.Information("Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
-                    return;
-                }
-
-                _ = RegisterTrack(usersInChannel, trackResult);
-
-                _ = SendScrobbleMessage(context, trackResult, usersInChannel.Count);
-            }
-            catch (Exception e)
-            {
-                Log.Error("Error in music bot scrobbler (groovy)", e);
-            }
-        }
-
-        public async Task ScrobbleRythm(SocketUserMessage msg, ICommandContext context)
-        {
-            try
-            {
-                if (context.Guild == null ||
-                    msg.Embeds == null ||
-                    !msg.Embeds.Any() ||
-                    msg.Embeds.Any(a => a.Title == null) ||
-                    msg.Embeds.Any(a => a.Title != "Now Playing 🎵") ||
-                    msg.Embeds.Any(a => a.Description == null))
-                {
-                    return;
-                }
-
-                var usersInChannel = await GetUsersInVoice(context, msg.Author.Id);
-
-                if (usersInChannel == null || usersInChannel.Count == 0)
-                {
-                    Log.Information("Skipped scrobble for {guildName} / {guildId} because no found listeners", context.Guild.Name, context.Guild.Id);
-                    return;
-                }
-
-                var trackResult = await this._trackService.GetTrackFromLink(msg.Embeds.First().Description);
-
-                if (trackResult == null)
-                {
-                    Log.Information("Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
-                    return;
-                }
-
-                _ = RegisterTrack(usersInChannel, trackResult);
-
-                _ = SendScrobbleMessage(context, trackResult, usersInChannel.Count);
-            }
-            catch (Exception e)
-            {
-                Log.Error("Error in music bot scrobbler (rythm)", e);
-            }
-        }
-
         public async Task ScrobbleHydra(SocketUserMessage msg, ICommandContext context)
         {
             try
@@ -139,7 +59,7 @@ namespace FMBot.Bot.Services
 
                 if (usersInChannel == null || usersInChannel.Count == 0)
                 {
-                    Log.Information("Skipped scrobble for {guildName} / {guildId} because no found listeners", context.Guild.Name, context.Guild.Id);
+                    Log.Information("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found listeners", context.Guild.Name, context.Guild.Id);
                     return;
                 }
 
@@ -147,7 +67,7 @@ namespace FMBot.Bot.Services
 
                 if (trackResult == null)
                 {
-                    Log.Information("Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
+                    Log.Information("BotScrobbling: Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
                     return;
                 }
 
@@ -157,7 +77,7 @@ namespace FMBot.Bot.Services
             }
             catch (Exception e)
             {
-                Log.Error("Error in music bot scrobbler (hydra)", e);
+                Log.Error("BotScrobbling: Error in music bot scrobbler (hydra)", e);
             }
         }
 
@@ -175,7 +95,7 @@ namespace FMBot.Bot.Services
                 await context.Channel.SendMessageAsync(embed: embed.Build()),
                 TimeSpan.FromSeconds(90));
 
-            Log.Information("Scrobbled {trackName} by {artistName} for {listenerCount} users in {guildName} / {guildId}", trackResult.TrackName, trackResult.ArtistName, listenerCount, context.Guild.Name, context.Guild.Id);
+            Log.Information("BotScrobbling: Scrobbled {trackName} by {artistName} for {listenerCount} users in {guildName} / {guildId}", trackResult.TrackName, trackResult.ArtistName, listenerCount, context.Guild.Name, context.Guild.Id);
         }
 
 
@@ -195,7 +115,7 @@ namespace FMBot.Bot.Services
             }
             catch (Exception e)
             {
-                Log.Error("Error while setting now playing for bot scrobbling", e);
+                Log.Error("BotScrobbling: Error while setting now playing for bot scrobbling", e);
                 throw;
             }
             Statistics.LastfmNowPlayingUpdates.Inc();
@@ -214,8 +134,9 @@ namespace FMBot.Bot.Services
         {
             try
             {
-                if (!(await context.Guild.GetVoiceChannelsAsync() is ImmutableArray<SocketVoiceChannel> channels) || !channels.Any())
+                if (await context.Guild.GetVoiceChannelsAsync() is not ImmutableArray<SocketVoiceChannel> channels || !channels.Any())
                 {
+                    Log.Information("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found voice channels", context.Guild.Name, context.Guild.Id);
                     return null;
                 }
 
@@ -224,23 +145,28 @@ namespace FMBot.Bot.Services
                                                         f.Users.Select(s => s.Id).Contains(botId));
                 if (targetChannel == null)
                 {
+                    Log.Information("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found voice channel with botId {botId} (did see some voice channels though)", context.Guild.Name, context.Guild.Id, botId);
                     return null;
                 }
 
-                await using var db = this._contextFactory.CreateDbContext();
+                await using var db = await this._contextFactory.CreateDbContextAsync();
 
                 var userIds = targetChannel.Users.Select(s => s.Id);
 
-                return await db.Users
+                var users = await db.Users
                     .AsQueryable()
                     .Where(w => userIds.Contains(w.DiscordUserId) &&
                                 w.MusicBotTrackingDisabled != true &&
                                 w.SessionKeyLastFm != null)
                     .ToListAsync();
+
+                Log.Information("BotScrobbling: Found voice channel {channelName} / {channelId} in {guildName} / {guildId} with {listenerCount} .fmbot listeners", targetChannel.Name, targetChannel.Id, context.Guild.Name, context.Guild.Id, users.Count);
+
+                return users;
             }
             catch (Exception e)
             {
-                Log.Error("Error while getting users in voice", e);
+                Log.Error("BotScrobbling: Error while getting users in voice", e);
                 return null;
             }
         }
