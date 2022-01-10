@@ -9,7 +9,6 @@ using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
-using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
@@ -17,9 +16,10 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
-using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using Swan;
+using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.Builders;
 
@@ -211,7 +211,7 @@ public class ArtistBuilders
         if (artistSearch.artist.UserPlaycount.HasValue)
         {
             globalStats += $"\n`{artistSearch.artist.UserPlaycount}` {StringExtensions.GetPlaysString(artistSearch.artist.UserPlaycount)} by you";
-            globalStats += $"\n`{await this._playService.GetWeekArtistPlaycountAsync(contextUser.UserId, artistSearch.artist.ArtistName)}` by you last week";
+            globalStats += $"\n`{await this._playService.GetArtistPlaycountForTimePeriodAsync(contextUser.UserId, artistSearch.artist.ArtistName)}` by you last week";
             await this._updateService.CorrectUserArtistPlaycount(contextUser.UserId, artistSearch.artist.ArtistName,
                 artistSearch.artist.UserPlaycount.Value);
         }
@@ -428,6 +428,91 @@ public class ArtistBuilders
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
         response.ResponseType = ResponseType.Paginator;
+        return response;
+    }
+
+    public async Task<ResponseModel> ArtistPaceAsync(
+        IUser discordUser,
+        User contextUser,
+        UserSettingsModel userSettings,
+        TimeSettingsModel timeSettings,
+        string amount,
+        long timeFrom,
+        string artistName)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Text,
+        };
+
+        var goalAmount = SettingService.GetGoalAmount(amount, 0);
+
+        if (artistName == null && amount != null)
+        {
+            artistName = amount
+                .Replace(goalAmount.ToString(), "")
+                .Replace($"{(int)Math.Floor((double)(goalAmount / 1000))}k", "")
+                .TrimEnd()
+                .TrimStart();
+        }
+
+        var artistSearch = await GetArtist(response, discordUser, artistName, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
+        if (artistSearch.artist == null)
+        {
+            return artistSearch.response;
+        }
+
+        goalAmount = SettingService.GetGoalAmount(amount, artistSearch.artist.UserPlaycount.GetValueOrDefault(0));
+
+        var regularPlayCount = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom, userSettings.SessionKeyLastFm);
+
+        if (regularPlayCount is null or 0)
+        {
+            response.Text = $"<@{discordUser.Id}> No plays found in the {timeSettings.Description} time period.";
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            return response;
+        }
+
+        var artistPlayCount =
+            await this._playService.GetArtistPlaycountForTimePeriodAsync(userSettings.UserId, artistSearch.artist.ArtistName,
+                timeSettings.PlayDays.GetValueOrDefault(30));
+
+        if (artistPlayCount is 0)
+        {
+            response.Text = $"<@{discordUser.Id}> No plays found on **{artistSearch.artist.ArtistName}** in the last {timeSettings.PlayDays} days.";
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            return response;
+        }
+
+        var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
+        var totalDays = (DateTime.UtcNow - age).TotalDays;
+
+        var playsLeft = goalAmount - artistSearch.artist.UserPlaycount.GetValueOrDefault(0);
+
+        var avgPerDay = artistPlayCount / totalDays;
+
+        var goalDate = DateTime.UtcNow.AddDays(playsLeft / avgPerDay);
+
+        var reply = new StringBuilder();
+
+        var determiner = "your";
+        if (userSettings.DifferentUser)
+        {
+            reply.Append($"<@{discordUser.Id}> My estimate is that the user '{userSettings.UserNameLastFm.FilterOutMentions()}'");
+            determiner = "their";
+        }
+        else
+        {
+            reply.Append($"<@{discordUser.Id}> My estimate is that you");
+        }
+
+        reply.AppendLine($" will reach **{goalAmount}** plays on **{artistSearch.artist.ArtistName}** on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
+
+
+        reply.AppendLine(
+            $"This is based on {determiner} avg of {Math.Round(avgPerDay, 1)} per day in the last {Math.Round(totalDays, 0)} days ({artistPlayCount} total - {artistSearch.artist.UserPlaycount} alltime)");
+
+        response.Text = reply.ToString();
         return response;
     }
 

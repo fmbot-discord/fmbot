@@ -286,7 +286,7 @@ namespace FMBot.Bot.Commands.LastFM
             if (!userSettings.DifferentUser && contextUser.LastUpdated != null)
             {
                 var playsLastWeek =
-                    await this._playService.GetWeekArtistPlaycountAsync(userSettings.UserId, artist.ArtistName);
+                    await this._playService.GetArtistPlaycountForTimePeriodAsync(userSettings.UserId, artist.ArtistName);
                 if (playsLastWeek != 0)
                 {
                     reply += $" (`{playsLastWeek}` last week)";
@@ -295,6 +295,55 @@ namespace FMBot.Bot.Commands.LastFM
 
             await this.Context.Channel.SendMessageAsync(reply, allowedMentions: AllowedMentions.None);
             this.Context.LogCommandUsed();
+        }
+
+        [Command("artistpace", RunMode = RunMode.Async)]
+        [Summary("Shows estimated date you reach a certain amount of plays on an artist")]
+        [Options("weekly/monthly", "Optional goal amount: For example `500` or `2k`", Constants.UserMentionExample)]
+        [Examples("apc", "apc 1k q", "apc 400 h @user", "artistpace", "artistpace weekly @user 2500")]
+        [UsernameSetRequired]
+        [Alias("apc")]
+        [CommandCategories(CommandCategory.Other)]
+        public async Task ArtistPaceAsync([Remainder] string extraOptions = null)
+        {
+            try
+            {
+                var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+                var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
+
+                var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.Monthly, cachedOrAllTimeOnly: true);
+
+                if (timeSettings.TimePeriod == TimePeriod.AllTime)
+                {
+                    timeSettings = SettingService.GetTimePeriod("monthly", TimePeriod.Monthly);
+                }
+
+                long timeFrom;
+                if (timeSettings.TimePeriod != TimePeriod.AllTime && timeSettings.PlayDays != null)
+                {
+                    var dateAgo = DateTime.UtcNow.AddDays(-timeSettings.PlayDays.Value);
+                    timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
+                }
+                else
+                {
+                    timeFrom = userInfo.Registered.Unixtime;
+                }
+
+                var response = await this._artistBuilders.ArtistPaceAsync(this.Context.User, contextUser,
+                    userSettings, timeSettings, extraOptions, timeFrom, null);
+
+                await this.Context.Channel.SendMessageAsync(response.Text, allowedMentions: AllowedMentions.None);
+                this.Context.LogCommandUsed(response.CommandResponse);
+            }
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync("Unable to show artist pace due to an internal error.");
+            }
         }
 
         [Command("topartists", RunMode = RunMode.Async)]

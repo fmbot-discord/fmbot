@@ -256,6 +256,16 @@ namespace FMBot.Bot.Services
                     settingsModel.UrlParameter = "date_preset=ALL";
                     settingsModel.ApiParameter = "overall";
                 }
+                else if (defaultTimePeriod == TimePeriod.Monthly)
+                {
+                    settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Month;
+                    settingsModel.TimePeriod = TimePeriod.Monthly;
+                    settingsModel.Description = "Monthly";
+                    settingsModel.AltDescription = "last month";
+                    settingsModel.UrlParameter = "date_preset=LAST_30_DAYS";
+                    settingsModel.ApiParameter = "1month";
+                    settingsModel.PlayDays = 30;
+                }
                 else
                 {
                     settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Week;

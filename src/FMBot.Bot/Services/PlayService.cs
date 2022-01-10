@@ -259,7 +259,7 @@ namespace FMBot.Bot.Services
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-7);
 
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.UserPlays
                 .AsQueryable()
                 .CountAsync(t => t.TimePlayed.Date <= now.Date &&
@@ -274,7 +274,7 @@ namespace FMBot.Bot.Services
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-7);
 
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.UserPlays
                 .AsQueryable()
                 .CountAsync(ab => ab.TimePlayed.Date <= now.Date &&
@@ -284,12 +284,12 @@ namespace FMBot.Bot.Services
                                  ab.UserId == userId);
         }
 
-        public async Task<int> GetWeekArtistPlaycountAsync(int userId, string artistName)
+        public async Task<int> GetArtistPlaycountForTimePeriodAsync(int userId, string artistName, int daysToGoBack = 7)
         {
             var now = DateTime.UtcNow;
-            var minDate = DateTime.UtcNow.AddDays(-7);
+            var minDate = DateTime.UtcNow.AddDays(-daysToGoBack);
 
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.UserPlays
                 .AsQueryable()
                 .CountAsync(a => a.TimePlayed.Date <= now.Date &&
@@ -300,7 +300,7 @@ namespace FMBot.Bot.Services
 
         public async Task<string> GetStreak(int userId, Response<RecentTrackList> recentTracks)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var lastPlays = await db.UserPlays
                 .AsQueryable()
                 .Where(w => w.UserId == userId)
