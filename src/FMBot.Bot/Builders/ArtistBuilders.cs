@@ -253,7 +253,7 @@ public class ArtistBuilders
         };
 
         var artistSearch = await GetArtist(response, discordUser, searchValue, contextUser.UserNameLastFM,
-            contextUser.SessionKeyLastFm);
+            contextUser.SessionKeyLastFm, userSettings.UserNameLastFm);
         if (artistSearch.artist == null)
         {
             return artistSearch.response;
@@ -430,7 +430,6 @@ public class ArtistBuilders
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
-
 
     private async Task<(ArtistInfo artist, ResponseModel response)> GetArtist(ResponseModel response, IUser discordUser, string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null)
     {
