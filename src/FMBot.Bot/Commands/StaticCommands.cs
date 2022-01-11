@@ -77,7 +77,7 @@ namespace FMBot.Bot.Commands
                 "- Join the [.fmbot server](http://server.fmbot.xyz/) for support and updates.");
 
             embedDescription.AppendLine(
-                "- Help us cover hosting and other costs on our [OpenCollective](https://opencollective.com/fmbot)");
+                "- Help us cover hosting and other costs on our [OpenCollective](https://opencollective.com/fmbot) and get .fmbot supporter");
 
             embedDescription.AppendLine(
                 "- Check our [website](https://fmbot.xyz/) for more information.");
@@ -174,8 +174,9 @@ namespace FMBot.Bot.Commands
             embedDescription.AppendLine("**.fmbot supporter advantages include**:\n" +
                                         "- An emote behind their name (⭐)\n" +
                                         "- Their name shown in the list of supporters\n" +
+                                        "- Exclusive role and channel on [our server](https://discord.gg/6y3jJjtDqK)\n" +
                                         "- A chance of sponsoring a chart\n" +
-                                        "- Friend limit increased to 15 (up from 12)\n" +
+                                        "- Friend limit increased to 16 (up from 12)\n" +
                                         "- WhoKnows tracking increased to all your music (instead of top 4/5/6k artist/albums/tracks)");
 
             var socketCommandContext = (SocketCommandContext)this.Context;
