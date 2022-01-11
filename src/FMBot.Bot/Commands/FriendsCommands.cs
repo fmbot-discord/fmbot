@@ -221,7 +221,7 @@ namespace FMBot.Bot.Commands
                 foreach (var enteredFriendParameter in enteredFriends)
                 {
                     if (contextUser.UserType == UserType.User && existingFriends.Count >= 12 ||
-                        contextUser.UserType != UserType.User && existingFriends.Count >= 15)
+                        contextUser.UserType != UserType.User && existingFriends.Count >= 16)
                     {
                         friendLimitReached = true;
                         break;
@@ -272,12 +272,12 @@ namespace FMBot.Bot.Commands
                     {
                         this._embed.AddField("Friend limit reached",
                             "Sorry, but you can't have more than 12 friends. \n\n" +
-                            $"Did you know that .fmbot supporters can add up to 15 friends? For more information, check out `{prfx}donate`.");
+                            $"Did you know that .fmbot supporters can add up to 16 friends? For more information, check out `{prfx}donate`.");
                     }
                     else
                     {
                         this._embed.AddField("Friend limit reached",
-                            "Sorry, but you can't have more than 15 friends.");
+                            "Sorry, but you can't have more than 16 friends.");
                     }
                 }
 
@@ -314,7 +314,7 @@ namespace FMBot.Bot.Commands
                 if (contextUser.UserType != UserType.User && !friendLimitReached)
                 {
                     var userType = contextUser.UserType.ToString().ToLower();
-                    this._embed.WithFooter($"Thank you for being an .fmbot {userType}! You can now add up to 15 friends.");
+                    this._embed.WithFooter($"Thank you for being an .fmbot {userType}! You can now add up to 16 friends.");
                 }
 
                 await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
