@@ -686,7 +686,7 @@ namespace FMBot.Bot.Commands.LastFM
                         break;
                 }
 
-                var genrePages = topGuildGenres.Chunk(24).ToList();
+                var genrePages = topGuildGenres.Chunk(12).ToList();
 
                 var counter = 1;
                 var pageCounter = 1;
