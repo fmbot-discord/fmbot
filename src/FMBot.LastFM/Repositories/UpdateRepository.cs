@@ -174,7 +174,7 @@ namespace FMBot.LastFM.Repositories
 
                 recentTracks.Content.TotalAmount = await SetOrUpdateUserPlaycount(user, newScrobbles.Count, connection, transaction, totalPlaycountCorrect ? recentTracks.Content.TotalAmount : null);
 
-                await UpdatePlaysForUser(user, newScrobbles, connection);
+                await UpdatePlaysForUser(user, newScrobbles, lastStoredPlay, connection);
 
                 var userArtists = await GetUserArtists(user.UserId, connection);
                 var userAlbums = await GetUserAlbums(user.UserId, connection);
@@ -247,6 +247,7 @@ namespace FMBot.LastFM.Repositories
 
         private async Task UpdatePlaysForUser(User user,
             IEnumerable<RecentTrack> newScrobbles,
+            UserPlay lastPlay,
             NpgsqlConnection connection)
         {
             Log.Verbose("Update: Updating plays for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
@@ -258,8 +259,6 @@ namespace FMBot.LastFM.Repositories
             deleteOldPlays.Parameters.AddWithValue("playExpirationDate", DateTime.UtcNow.AddDays(-Constants.DaysToStorePlays));
 
             await deleteOldPlays.ExecuteNonQueryAsync();
-
-            var lastPlay = await GetLastStoredPlay(user);
 
             var userPlays = newScrobbles
                 .Where(w => !w.NowPlaying &&

@@ -270,7 +270,7 @@ namespace FMBot.Bot.Services
                     var timeToIndex = DateTime.UtcNow.AddDays(-this._botSettings.LastFm.UserIndexFrequencyInDays.Value);
 
                     var usersToUpdate = (await this._indexService.GetOutdatedUsers(timeToIndex))
-                        .Take(400)
+                        .Take(500)
                         .ToList();
 
                     Log.Information($"Found {usersToUpdate.Count} outdated users, adding them to index queue");

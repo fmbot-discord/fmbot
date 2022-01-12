@@ -66,11 +66,12 @@ namespace FMBot.Bot.Services
 
         public async Task<IReadOnlyList<User>> GetOutdatedUsers(DateTime timeAuthorizedLastUpdated, DateTime timeUnauthorizedFilter)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.Users
                     .AsQueryable()
                     .Where(f => f.LastIndexed != null &&
                                 f.LastUpdated != null &&
+                                f.LastUsed != null &&
                                 (f.SessionKeyLastFm != null && f.LastUpdated <= timeAuthorizedLastUpdated ||
                                  f.SessionKeyLastFm == null && f.LastUpdated <= timeUnauthorizedFilter))
                     .OrderBy(o => o.LastUpdated)
