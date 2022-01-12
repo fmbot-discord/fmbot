@@ -42,10 +42,14 @@ namespace FMBot.Domain
         public const int DaysLastUsedForFeatured = 3;
 
         public static readonly int[] PlayCountBreakPoints = {
+            50,
             100,
+            250,
             420,
+            500,
             1000,
             1337,
+            2500,
             5000,
             10000,
             25000,

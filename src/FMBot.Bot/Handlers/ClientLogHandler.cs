@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -15,18 +17,20 @@ namespace FMBot.Bot.Handlers
         private readonly IGuildDisabledCommandService _guildDisabledCommandService;
         private readonly IPrefixService _prefixService;
         private readonly GuildService _guildService;
+        private readonly IIndexService _indexService;
 
         public ClientLogHandler(DiscordShardedClient client,
             IChannelDisabledCommandService channelDisabledCommandService,
             IGuildDisabledCommandService guildDisabledCommandService,
             GuildService guildService,
-            IPrefixService prefixService)
+            IPrefixService prefixService, IIndexService indexService)
         {
             this._client = client;
             this._channelDisabledCommandService = channelDisabledCommandService;
             this._guildDisabledCommandService = guildDisabledCommandService;
             this._guildService = guildService;
             this._prefixService = prefixService;
+            this._indexService = indexService;
             this._client.Log += LogEvent;
             this._client.ShardLatencyUpdated += ShardLatencyEvent;
             this._client.ShardDisconnected += ShardDisconnectedEvent;
@@ -66,7 +70,7 @@ namespace FMBot.Bot.Handlers
                         Log.Debug(logMessage.Exception, "{logMessageSource} | {logMessage}", logMessage.Source, logMessage.Message);
                         break;
                 }
-                    
+
             });
             return Task.CompletedTask;
         }
@@ -117,6 +121,32 @@ namespace FMBot.Bot.Handlers
             _ = this._channelDisabledCommandService.ReloadDisabledCommands(guild.Id);
             _ = this._guildDisabledCommandService.ReloadDisabledCommands(guild.Id);
             _ = this._prefixService.ReloadPrefix(guild.Id);
+
+            _ = IndexServer(guild);
+        }
+
+        private async Task IndexServer(SocketGuild guild)
+        {
+            try
+            {
+                var users = new List<IGuildUser>();
+                await foreach (var awaitedUsers in guild.GetUsersAsync())
+                {
+                    users.AddRange(awaitedUsers);
+                }
+
+                Log.Information(
+                    "JoinedGuild: {guildName} / {guildId} | downloaded {userDownloadedCount} members for indexing", guild.Name, guild.Id, users.Count);
+
+                if (users.Any())
+                {
+                    await this._indexService.StoreGuildUsers(guild, users);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Error("Error in JoinedGuild / IndexServer", e);
+            }
         }
 
         private async Task ClientLeftGuild(SocketGuild guild)

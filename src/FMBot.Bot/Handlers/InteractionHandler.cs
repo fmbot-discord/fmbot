@@ -107,8 +107,8 @@ public class InteractionHandler
                 if (lastIndex == null)
                 {
                     var embed = new EmbedBuilder();
-                    embed.WithDescription("To use .fmbot commands with server-wide statistics you need to index the server first.\n\n" +
-                                          $"Please run `/index` to index this server.\n" +
+                    embed.WithDescription("To use .fmbot commands with server-wide statistics you need to create a memberlist cache first.\n\n" +
+                                          $"Please run `/refreshmembers` to create this.\n" +
                                           $"Note that this can take some time on large servers.");
                     await context.Interaction.RespondAsync(null, new[] { embed.Build() });
                     context.LogCommandUsed(CommandResponse.IndexRequired);
@@ -117,7 +117,7 @@ public class InteractionHandler
                 if (lastIndex < DateTime.UtcNow.AddDays(-120))
                 {
                     var embed = new EmbedBuilder();
-                    embed.WithDescription("Server index data is out of date, it was last updated over 100 days ago.\n" +
+                    embed.WithDescription("Server index data is out of date, it was last updated over 120 days ago.\n" +
                                           $"Please run `/index` to re-index this server.");
                     await context.Interaction.RespondAsync(null, new[] { embed.Build() });
                     context.LogCommandUsed(CommandResponse.IndexRequired);

@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Bot.Attributes;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Resources;
@@ -46,9 +46,9 @@ namespace FMBot.Bot.Commands
             this._userService = userService;
         }
 
-        [Command("index", RunMode = RunMode.Async)]
+        [Command("refreshmembers", RunMode = RunMode.Async)]
         [Summary("Refreshed the cached member list that .fmbot has for your server.")]
-        [Alias("i")]
+        [Alias("i", "index", "refresh", "cachemembers", "refreshserver", "serverset")]
         [GuildOnly]
         [CommandCategories(CommandCategory.ServerSettings)]
         public async Task IndexGuildAsync()
@@ -57,7 +57,7 @@ namespace FMBot.Bot.Commands
 
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
-            this._embed.WithDescription("<a:loading:821676038102056991> Server index started, this can take a while on larger servers...");
+            this._embed.WithDescription("<a:loading:821676038102056991> Updating memberlist, this can take a while on larger servers...");
             var indexMessage = await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
 
             try
@@ -70,38 +70,37 @@ namespace FMBot.Bot.Commands
                 var usersToFullyUpdate = await this._indexService.GetUsersToFullyUpdate(guildUsers);
                 int registeredUserCount;
                 int? whoKnowsWhitelistedUserCount;
-                var reply = "";
+                var reply = new StringBuilder();
 
                 (registeredUserCount, whoKnowsWhitelistedUserCount) = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
 
                 await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
                 if (usersToFullyUpdate != null && usersToFullyUpdate.Count == 0 && lastIndex != null)
                 {
-                    reply += $"✅ Server index has been updated.";
+                    reply.AppendLine($"✅ Cached memberlist for server has been updated.");
                 }
                 else if (usersToFullyUpdate == null || usersToFullyUpdate.Count == 0 && lastIndex == null)
                 {
-                    reply += "✅ Server has been indexed successfully.";
+                    reply.AppendLine("✅ Memberlist for this server has been cached.");
                 }
                 else
                 {
-                    reply += $"✅ Server index has been updated.";
+                    reply.AppendLine($"✅ Cached memberlist for server has been updated.");
                 }
 
-                reply += $"\n\nThis server has a total of {registeredUserCount} registered .fmbot members";
+                reply.AppendLine();
+                reply.AppendLine($"This server has a total of {registeredUserCount} registered .fmbot members.");
 
                 if (whoKnowsWhitelistedUserCount.HasValue)
                 {
                     var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-                    reply += $" ({whoKnowsWhitelistedUserCount.Value} members whitelisted on WhoKnows, see `{prfx}whoknowswhitelist` to configure)";
+                    reply.AppendLine($" ({whoKnowsWhitelistedUserCount.Value} members whitelisted on WhoKnows, see `{prfx}whoknowswhitelist` to configure)");
                 }
-
-                reply += ".";
 
                 await indexMessage.ModifyAsync(m =>
                 {
                     m.Embed = new EmbedBuilder()
-                        .WithDescription(reply)
+                        .WithDescription(reply.ToString())
                         .WithColor(DiscordConstants.SuccessColorGreen)
                         .Build();
                 });
@@ -117,7 +116,7 @@ namespace FMBot.Bot.Commands
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync(
-                    "Something went wrong while indexing users. Please report this issue.");
+                    "Something went wrong while updating memberlist. Please report this issue.");
                 await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
             }
         }

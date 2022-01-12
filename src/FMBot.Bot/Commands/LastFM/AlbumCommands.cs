@@ -1091,6 +1091,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var i = 0;
                 var tracksDisplayed = 0;
+                var pageNumber = 1;
                 for (var disc = 1; disc < amountOfDiscs + 1; disc++)
                 {
                     if (amountOfDiscs > 1)
@@ -1130,13 +1131,15 @@ namespace FMBot.Bot.Commands.LastFM
 
                         description.AppendLine();
 
+                        var pageNumberDesc = $"Page {pageNumber}/{albumTracks.Count / 12 + 1} - ";
+
                         tracksDisplayed++;
                         if (tracksDisplayed > 0 && tracksDisplayed % 12 == 0 || tracksDisplayed == albumTracks.Count)
                         {
                             var page = new PageBuilder()
                                 .WithDescription(description.ToString())
                                 .WithTitle($"Track playcounts for {albumName}")
-                                .WithFooter(footer.ToString());
+                                .WithFooter(pageNumberDesc + footer);
 
                             if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
                             {
@@ -1145,6 +1148,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                             pages.Add(page);
                             description = new StringBuilder();
+                            pageNumber++;
                         }
                     }
                 }
@@ -1359,13 +1363,13 @@ namespace FMBot.Bot.Commands.LastFM
                 if (string.IsNullOrWhiteSpace(lastPlayedTrack.AlbumName))
                 {
                     this._embed.WithDescription($"The track you're scrobbling (**{lastPlayedTrack.TrackName}** by **{lastPlayedTrack.ArtistName}**) does not have an album associated with it according to Last.fm.\n" +
-                                                $"Please not that .fmbot is not associated with Last.fm.");
+                                                $"Please note that .fmbot is not associated with Last.fm.");
 
                     await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
                     return null;
                 }
-
+                
                 var albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(lastPlayedTrack.ArtistName, lastPlayedTrack.AlbumName,
                     lastFmUserName);
 
@@ -1373,7 +1377,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     this._embed.WithDescription($"Last.fm did not return a result for **{lastPlayedTrack.AlbumName}** by **{lastPlayedTrack.ArtistName}**.\n" +
                                                 $"This usually happens on recently released albums or on albums by smaller artists. Please try again later.\n\n" +
-                                                $"Please not that .fmbot is not associated with Last.fm.");
+                                                $"Please note that .fmbot is not associated with Last.fm.");
 
                     await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.NotFound);

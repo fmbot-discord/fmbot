@@ -9,7 +9,6 @@ using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
-using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
@@ -17,9 +16,10 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
-using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using Swan;
+using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.Builders;
 
@@ -211,7 +211,7 @@ public class ArtistBuilders
         if (artistSearch.artist.UserPlaycount.HasValue)
         {
             globalStats += $"\n`{artistSearch.artist.UserPlaycount}` {StringExtensions.GetPlaysString(artistSearch.artist.UserPlaycount)} by you";
-            globalStats += $"\n`{await this._playService.GetWeekArtistPlaycountAsync(contextUser.UserId, artistSearch.artist.ArtistName)}` by you last week";
+            globalStats += $"\n`{await this._playService.GetArtistPlaycountForTimePeriodAsync(contextUser.UserId, artistSearch.artist.ArtistName)}` by you last week";
             await this._updateService.CorrectUserArtistPlaycount(contextUser.UserId, artistSearch.artist.ArtistName,
                 artistSearch.artist.UserPlaycount.Value);
         }
@@ -253,7 +253,7 @@ public class ArtistBuilders
         };
 
         var artistSearch = await GetArtist(response, discordUser, searchValue, contextUser.UserNameLastFM,
-            contextUser.SessionKeyLastFm);
+            contextUser.SessionKeyLastFm, userSettings.UserNameLastFm);
         if (artistSearch.artist == null)
         {
             return artistSearch.response;
@@ -306,18 +306,18 @@ public class ArtistBuilders
             }
 
             var footer = new StringBuilder();
-            footer.Append($"Page {pageCounter}/{topTrackPages.Count}");
+            footer.AppendLine($"Page {pageCounter}/{topTrackPages.Count} - {topTracks.Count} different tracks");
             var title = new StringBuilder();
 
             if (userSettings.DifferentUser && userSettings.UserId != contextUser.UserId)
             {
-                footer.AppendLine($" - {userSettings.UserNameLastFm} has {artistSearch.artist.UserPlaycount} total scrobbles on this artist");
+                footer.AppendLine($"{userSettings.UserNameLastFm} has {artistSearch.artist.UserPlaycount} total scrobbles on this artist");
                 footer.AppendLine($"Requested by {userTitle}");
                 title.Append($"{userSettings.DiscordUserName} their top tracks for '{artistSearch.artist.ArtistName}'");
             }
             else
             {
-                footer.Append($" - {userTitle} has {artistSearch.artist.UserPlaycount} total scrobbles on this artist");
+                footer.Append($"{userTitle} has {artistSearch.artist.UserPlaycount} total scrobbles on this artist");
                 title.Append($"Your top tracks for '{artistSearch.artist.ArtistName}'");
 
                 response.EmbedAuthor.WithIconUrl(discordUser.GetAvatarUrl());
@@ -337,6 +337,184 @@ public class ArtistBuilders
         return response;
     }
 
+    public async Task<ResponseModel> GuildArtistsAsync(
+        string prfx,
+        IGuild discordGuild,
+        Guild guild,
+        GuildRankingSettings guildListSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        ICollection<GuildArtist> topGuildArtists;
+        IList<GuildArtist> previousTopGuildArtists = null;
+        if (guildListSettings.ChartTimePeriod == TimePeriod.AllTime)
+        {
+            topGuildArtists = await this._whoKnowsArtistService.GetTopAllTimeArtistsForGuild(guild.GuildId, guildListSettings.OrderType);
+        }
+        else
+        {
+            var plays = await this._playService.GetGuildUsersPlays(guild.GuildId,
+                guildListSettings.AmountOfDaysWithBillboard);
+
+            topGuildArtists = PlayService.GetGuildTopArtists(plays, guildListSettings.StartDateTime, guildListSettings.OrderType);
+            previousTopGuildArtists = PlayService.GetGuildTopArtists(plays, guildListSettings.BillboardStartDateTime, guildListSettings.OrderType);
+        }
+
+        var title = $"Top {guildListSettings.TimeDescription.ToLower()} artists in {discordGuild.Name}";
+
+        var footer = new StringBuilder();
+        footer.AppendLine(guildListSettings.OrderType == OrderType.Listeners
+            ? " - Ordered by listeners"
+            : " - Ordered by plays");
+
+        var rnd = new Random();
+        var randomHintNumber = rnd.Next(0, 5);
+        switch (randomHintNumber)
+        {
+            case 1:
+                footer.AppendLine($"View specific track listeners with '{prfx}whoknows'");
+                break;
+            case 2:
+                footer.AppendLine($"Available time periods: alltime, monthly, weekly and daily");
+                break;
+            case 3:
+                footer.AppendLine($"Available sorting options: plays and listeners");
+                break;
+        }
+
+        var artistPages = topGuildArtists.Chunk(12).ToList();
+
+        var counter = 1;
+        var pageCounter = 1;
+        var pages = new List<PageBuilder>();
+        foreach (var page in artistPages)
+        {
+            var pageString = new StringBuilder();
+            foreach (var track in page)
+            {
+                var name = guildListSettings.OrderType == OrderType.Listeners
+                    ? $"`{track.ListenerCount}` · **{track.ArtistName}** ({track.TotalPlaycount} {StringExtensions.GetPlaysString(track.TotalPlaycount)})"
+                    : $"`{track.TotalPlaycount}` · **{track.ArtistName}** ({track.ListenerCount} {StringExtensions.GetListenersString(track.ListenerCount)})";
+
+                if (previousTopGuildArtists != null && previousTopGuildArtists.Any())
+                {
+                    var previousTopArtist = previousTopGuildArtists.FirstOrDefault(f => f.ArtistName == track.ArtistName);
+                    int? previousPosition = previousTopArtist == null ? null : previousTopGuildArtists.IndexOf(previousTopArtist);
+
+                    pageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition, false).Text);
+                }
+                else
+                {
+                    pageString.AppendLine(name);
+                }
+
+                counter++;
+            }
+
+            var pageFooter = new StringBuilder();
+            pageFooter.Append($"Page {pageCounter}/{artistPages.Count}");
+            pageFooter.Append(footer);
+
+            pages.Add(new PageBuilder()
+                .WithTitle(title)
+                .WithDescription(pageString.ToString())
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(pageFooter.ToString()));
+            pageCounter++;
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ResponseType = ResponseType.Paginator;
+        return response;
+    }
+
+    public async Task<ResponseModel> ArtistPaceAsync(
+        IUser discordUser,
+        User contextUser,
+        UserSettingsModel userSettings,
+        TimeSettingsModel timeSettings,
+        string amount,
+        long timeFrom,
+        string artistName)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Text,
+        };
+
+        var goalAmount = SettingService.GetGoalAmount(amount, 0);
+
+        if (artistName == null && amount != null)
+        {
+            artistName = amount
+                .Replace(goalAmount.ToString(), "")
+                .Replace($"{(int)Math.Floor((double)(goalAmount / 1000))}k", "")
+                .TrimEnd()
+                .TrimStart();
+        }
+
+        var artistSearch = await GetArtist(response, discordUser, artistName, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm, userSettings.UserNameLastFm);
+        if (artistSearch.artist == null)
+        {
+            return artistSearch.response;
+        }
+
+        goalAmount = SettingService.GetGoalAmount(amount, artistSearch.artist.UserPlaycount.GetValueOrDefault(0));
+
+        var regularPlayCount = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom, userSettings.SessionKeyLastFm);
+
+        if (regularPlayCount is null or 0)
+        {
+            response.Text = $"<@{discordUser.Id}> No plays found in the {timeSettings.Description} time period.";
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            return response;
+        }
+
+        var artistPlayCount =
+            await this._playService.GetArtistPlaycountForTimePeriodAsync(userSettings.UserId, artistSearch.artist.ArtistName,
+                timeSettings.PlayDays.GetValueOrDefault(30));
+
+        if (artistPlayCount is 0)
+        {
+            response.Text = $"<@{discordUser.Id}> No plays found on **{artistSearch.artist.ArtistName}** in the last {timeSettings.PlayDays} days.";
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            return response;
+        }
+
+        var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
+        var totalDays = (DateTime.UtcNow - age).TotalDays;
+
+        var playsLeft = goalAmount - artistSearch.artist.UserPlaycount.GetValueOrDefault(0);
+
+        var avgPerDay = artistPlayCount / totalDays;
+
+        var goalDate = DateTime.UtcNow.AddDays(playsLeft / avgPerDay);
+
+        var reply = new StringBuilder();
+
+        var determiner = "your";
+        if (userSettings.DifferentUser)
+        {
+            reply.Append($"<@{discordUser.Id}> My estimate is that the user '{userSettings.UserNameLastFm.FilterOutMentions()}'");
+            determiner = "their";
+        }
+        else
+        {
+            reply.Append($"<@{discordUser.Id}> My estimate is that you");
+        }
+
+        reply.AppendLine($" will reach **{goalAmount}** plays on **{artistSearch.artist.ArtistName}** on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
+
+
+        reply.AppendLine(
+            $"This is based on {determiner} avg of {Math.Round(avgPerDay, 1)} per day in the last {Math.Round(totalDays, 0)} days ({artistPlayCount} total - {artistSearch.artist.UserPlaycount} alltime)");
+
+        response.Text = reply.ToString();
+        return response;
+    }
 
     private async Task<(ArtistInfo artist, ResponseModel response)> GetArtist(ResponseModel response, IUser discordUser, string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null)
     {

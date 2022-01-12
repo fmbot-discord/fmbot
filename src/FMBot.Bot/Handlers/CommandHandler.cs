@@ -82,14 +82,6 @@ public class CommandHandler
             {
                 return;
             }
-            if (msg.Author.Username.StartsWith("Groovy"))
-            {
-                await this._musicBotService.ScrobbleGroovy(msg, context);
-            }
-            if (msg.Author.Username.StartsWith("Rythm"))
-            {
-                await this._musicBotService.ScrobbleRythm(msg, context);
-            }
             if (msg.Author.Username.StartsWith("Hydra"))
             {
                 await this._musicBotService.ScrobbleHydra(msg, context);
@@ -243,8 +235,8 @@ public class CommandHandler
             if (lastIndex == null)
             {
                 var embed = new EmbedBuilder();
-                embed.WithDescription("To use .fmbot commands with server-wide statistics you need to index the server first.\n\n" +
-                                      $"Please run `{prfx}index` to index this server.\n" +
+                embed.WithDescription("To use .fmbot commands with server-wide statistics you need to create a memberlist cache first.\n\n" +
+                                      $"Please run `{prfx}refreshmembers` to create this.\n" +
                                       $"Note that this can take some time on large servers.");
                 await context.Channel.SendMessageAsync("", false, embed.Build());
                 context.LogCommandUsed(CommandResponse.IndexRequired);
@@ -253,7 +245,7 @@ public class CommandHandler
             if (lastIndex < DateTime.UtcNow.AddDays(-120))
             {
                 var embed = new EmbedBuilder();
-                embed.WithDescription("Server index data is out of date, it was last updated over 100 days ago.\n" +
+                embed.WithDescription("Server index data is out of date, it was last updated over 120 days ago.\n" +
                                       $"Please run `{prfx}index` to re-index this server.");
                 await context.Channel.SendMessageAsync("", false, embed.Build());
                 context.LogCommandUsed(CommandResponse.IndexRequired);

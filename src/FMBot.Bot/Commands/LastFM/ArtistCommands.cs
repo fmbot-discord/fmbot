@@ -142,7 +142,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
 
             var response = await this._artistBuilders.ArtistTracksAsync(this.Context.Guild, this.Context.User, contextUser, timeSettings,
-                userSettings, artistValues);
+                userSettings, userSettings.NewSearchValue);
 
             if (response.ResponseType == ResponseType.Embed)
             {
@@ -286,7 +286,7 @@ namespace FMBot.Bot.Commands.LastFM
             if (!userSettings.DifferentUser && contextUser.LastUpdated != null)
             {
                 var playsLastWeek =
-                    await this._playService.GetWeekArtistPlaycountAsync(userSettings.UserId, artist.ArtistName);
+                    await this._playService.GetArtistPlaycountForTimePeriodAsync(userSettings.UserId, artist.ArtistName);
                 if (playsLastWeek != 0)
                 {
                     reply += $" (`{playsLastWeek}` last week)";
@@ -295,6 +295,63 @@ namespace FMBot.Bot.Commands.LastFM
 
             await this.Context.Channel.SendMessageAsync(reply, allowedMentions: AllowedMentions.None);
             this.Context.LogCommandUsed();
+        }
+
+        [Command("artistpace", RunMode = RunMode.Async)]
+        [Summary("Shows estimated date you reach a certain amount of plays on an artist")]
+        [Options("weekly/monthly", "Optional goal amount: For example `500` or `2k`", Constants.UserMentionExample)]
+        [Examples("apc", "apc 1k q", "apc 400 h @user", "artistpace", "artistpace weekly @user 2500")]
+        [UsernameSetRequired]
+        [Alias("apc")]
+        [CommandCategories(CommandCategory.Other)]
+        public async Task ArtistPaceAsync([Remainder] string extraOptions = null)
+        {
+            try
+            {
+                var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+                _ = this.Context.Channel.TriggerTypingAsync();
+
+                var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+                var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
+
+                var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.Monthly, cachedOrAllTimeOnly: true);
+
+                if (timeSettings.TimePeriod == TimePeriod.AllTime)
+                {
+                    timeSettings = SettingService.GetTimePeriod("monthly", TimePeriod.Monthly);
+                }
+
+                long timeFrom;
+                if (timeSettings.TimePeriod != TimePeriod.AllTime && timeSettings.PlayDays != null)
+                {
+                    var dateAgo = DateTime.UtcNow.AddDays(-timeSettings.PlayDays.Value);
+                    timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
+                }
+                else
+                {
+                    timeFrom = userInfo.Registered.Unixtime;
+                }
+
+                var response = await this._artistBuilders.ArtistPaceAsync(this.Context.User, contextUser,
+                    userSettings, timeSettings, timeSettings.NewSearchValue, timeFrom, null);
+
+                if (response.ResponseType == ResponseType.Embed)
+                {
+                    await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
+                }
+                else
+                {
+                    await this.Context.Channel.SendMessageAsync(response.Text, allowedMentions: AllowedMentions.None);
+                }
+
+                this.Context.LogCommandUsed(response.CommandResponse);
+            }
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync("Unable to show artist pace due to an internal error.");
+            }
         }
 
         [Command("topartists", RunMode = RunMode.Async)]
@@ -1080,7 +1137,7 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("serverartists", RunMode = RunMode.Async)]
-        [Summary("Top albums for your server")]
+        [Summary("Top artists for your server")]
         [Options("Time periods: `weekly`, `monthly` and `alltime`", "Order options: `plays` and `listeners`")]
         [Examples("sa", "sa a p", "serverartists", "serverartists alltime", "serverartists listeners weekly")]
         [Alias("sa", "sta", "servertopartists", "server artists", "serverartist")]
@@ -1111,91 +1168,12 @@ namespace FMBot.Bot.Commands.LastFM
                 guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
             }
 
-            var footer = new StringBuilder();
-
             try
             {
-                ICollection<GuildArtist> topGuildArtists;
-                IList<GuildArtist> previousTopGuildArtists = null;
-                if (guildListSettings.ChartTimePeriod == TimePeriod.AllTime)
-                {
-                    topGuildArtists = await this._whoKnowArtistService.GetTopAllTimeArtistsForGuild(guild.GuildId, guildListSettings.OrderType);
-                }
-                else
-                {
-                    var plays = await this._playService.GetGuildUsersPlays(guild.GuildId,
-                        guildListSettings.AmountOfDaysWithBillboard);
-
-                    topGuildArtists = PlayService.GetGuildTopArtists(plays, guildListSettings.StartDateTime, guildListSettings.OrderType);
-                    previousTopGuildArtists = PlayService.GetGuildTopArtists(plays, guildListSettings.BillboardStartDateTime, guildListSettings.OrderType);
-                }
-
-                var title = $"Top {guildListSettings.TimeDescription.ToLower()} artists in {this.Context.Guild.Name}";
-
-                footer.AppendLine(guildListSettings.OrderType == OrderType.Listeners
-                    ? " - Ordered by listeners"
-                    : " - Ordered by plays");
-
-                var rnd = new Random();
-                var randomHintNumber = rnd.Next(0, 5);
-                switch (randomHintNumber)
-                {
-                    case 1:
-                        footer.AppendLine($"View specific track listeners with '{prfx}whoknows'");
-                        break;
-                    case 2:
-                        footer.AppendLine($"Available time periods: alltime, monthly, weekly and daily");
-                        break;
-                    case 3:
-                        footer.AppendLine($"Available sorting options: plays and listeners");
-                        break;
-                }
-
-                var artistPages = topGuildArtists.Chunk(12).ToList();
-
-                var counter = 1;
-                var pageCounter = 1;
-                var pages = new List<PageBuilder>();
-                foreach (var page in artistPages)
-                {
-                    var pageString = new StringBuilder();
-                    foreach (var track in page)
-                    {
-                        var name = guildListSettings.OrderType == OrderType.Listeners
-                            ? $"`{track.ListenerCount}` · **{track.ArtistName}** ({track.TotalPlaycount} {StringExtensions.GetPlaysString(track.TotalPlaycount)})"
-                            : $"`{track.TotalPlaycount}` · **{track.ArtistName}** - ({track.ListenerCount} {StringExtensions.GetListenersString(track.ListenerCount)})";
-
-                        if (previousTopGuildArtists != null && previousTopGuildArtists.Any())
-                        {
-                            var previousTopArtist = previousTopGuildArtists.FirstOrDefault(f => f.ArtistName == track.ArtistName);
-                            int? previousPosition = previousTopArtist == null ? null : previousTopGuildArtists.IndexOf(previousTopArtist);
-
-                            pageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition, false).Text);
-                        }
-                        else
-                        {
-                            pageString.AppendLine(name);
-                        }
-
-                        counter++;
-                    }
-
-                    var pageFooter = new StringBuilder();
-                    pageFooter.Append($"Page {pageCounter}/{artistPages.Count}");
-                    pageFooter.Append(footer);
-
-                    pages.Add(new PageBuilder()
-                        .WithTitle(title)
-                        .WithDescription(pageString.ToString())
-                        .WithAuthor(this._embedAuthor)
-                        .WithFooter(pageFooter.ToString()));
-                    pageCounter++;
-                }
-
-                var paginator = StringService.BuildStaticPaginator(pages);
+                var response = await this._artistBuilders.GuildArtistsAsync("/", this.Context.Guild, guild, guildListSettings);
 
                 _ = this.Interactivity.SendPaginatorAsync(
-                    paginator,
+                    response.StaticPaginator,
                     this.Context.Channel,
                     TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
