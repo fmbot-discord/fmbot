@@ -337,7 +337,7 @@ namespace FMBot.Bot.Services.WhoKnows
         {
             var artist = await this._lastFmRepository.GetArtistInfoAsync(artistName, lastFmUserName);
 
-            await this._updateRepository.UpdateUser(new UpdateUserQueueItem(userId, 0));
+            await this._updateRepository.UpdateUser(new UpdateUserQueueItem(userId));
 
             if (!artist.Success || !artist.Content.UserPlaycount.HasValue)
             {
