@@ -227,7 +227,7 @@ namespace FMBot.Bot.Services
                     this._updateService.AddUsersToUpdateQueue(usersToUpdate);
                 },
                 null,
-                TimeSpan.FromMinutes(5),
+                TimeSpan.FromMinutes(3),
                 TimeSpan.FromHours(8));
 
             this._purgeCacheTimer = new Timer(async _ =>

@@ -100,6 +100,11 @@ namespace FMBot.LastFM.Repositories
                 sessionKey,
                 timeFrom);
 
+            await using var connection = new NpgsqlConnection(this._connectionString);
+
+            await connection.OpenAsync();
+            var transaction = await connection.BeginTransactionAsync();
+
             if (!recentTracks.Success)
             {
                 Log.Information("Update: Something went wrong getting tracks for {userId} | {userNameLastFm} | {responseStatus}", user.UserId, user.UserNameLastFM, recentTracks.Error);
@@ -113,6 +118,8 @@ namespace FMBot.LastFM.Repositories
                     await AddOrUpdatePrivateUserMissingParameterError(user);
                 }
 
+                await SetUserUpdateTime(user, DateTime.UtcNow.AddHours(-2), connection, transaction);
+
                 recentTracks.Content = new RecentTrackList
                 {
                     NewRecentTracksAmount = 0
@@ -121,11 +128,6 @@ namespace FMBot.LastFM.Repositories
             }
 
             _ = RemoveInactiveUserIfExists(user);
-
-            await using var connection = new NpgsqlConnection(this._connectionString);
-
-            await connection.OpenAsync();
-            var transaction = await connection.BeginTransactionAsync();
 
             if (!recentTracks.Content.RecentTracks.Any())
             {
