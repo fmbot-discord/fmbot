@@ -41,10 +41,22 @@ namespace FMBot.LastFM.Repositories
 
         public async Task<Response<RecentTrackList>> UpdateUser(UpdateUserQueueItem queueItem)
         {
-            Thread.Sleep(queueItem.TimeoutMs);
+            if (queueItem.UpdateQueue)
+            {
+                Thread.Sleep(1200);
+            }
 
             await using var db = await this._contextFactory.CreateDbContextAsync();
             var user = await db.Users.FindAsync(queueItem.UserId);
+
+            if (queueItem.UpdateQueue)
+            {
+                if (user.LastUpdated > DateTime.UtcNow.AddHours(-32))
+                {
+                    Log.Information("Update: Skipped for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+                    return null;
+                }
+            }
 
             Log.Information("Update: Started on {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
 
@@ -88,6 +100,11 @@ namespace FMBot.LastFM.Repositories
                 sessionKey,
                 timeFrom);
 
+            await using var connection = new NpgsqlConnection(this._connectionString);
+
+            await connection.OpenAsync();
+            var transaction = await connection.BeginTransactionAsync();
+
             if (!recentTracks.Success)
             {
                 Log.Information("Update: Something went wrong getting tracks for {userId} | {userNameLastFm} | {responseStatus}", user.UserId, user.UserNameLastFM, recentTracks.Error);
@@ -101,6 +118,11 @@ namespace FMBot.LastFM.Repositories
                     await AddOrUpdatePrivateUserMissingParameterError(user);
                 }
 
+                await SetUserUpdateTime(user, DateTime.UtcNow.AddHours(-2), connection, transaction);
+
+                await transaction.CommitAsync();
+                await connection.CloseAsync();
+
                 recentTracks.Content = new RecentTrackList
                 {
                     NewRecentTracksAmount = 0
@@ -109,11 +131,6 @@ namespace FMBot.LastFM.Repositories
             }
 
             _ = RemoveInactiveUserIfExists(user);
-
-            await using var connection = new NpgsqlConnection(this._connectionString);
-
-            await connection.OpenAsync();
-            var transaction = await connection.BeginTransactionAsync();
 
             if (!recentTracks.Content.RecentTracks.Any())
             {
