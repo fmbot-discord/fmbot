@@ -21,6 +21,7 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
+using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -661,13 +662,31 @@ namespace FMBot.Bot.Commands.LastFM
                 var user = await this._userService.GetUserSettingsAsync(this.Context.User);
 
                 string artistName;
+                string searchName;
                 string artistUrl;
                 string spotifyImageUrl;
                 long? userPlaycount;
 
-                var cachedArtist = await this._artistsService.GetArtistFromDatabase(artistValues);
+                if (artistValues == null)
+                {
+                    var recentScrobbles = await this._updateService.UpdateUserAndGetRecentTracks(user);
 
-                if (user.LastUpdated > DateTime.UtcNow.AddHours(-1) && cachedArtist != null)
+                    if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, user.UserNameLastFM, this.Context))
+                    {
+                        return;
+                    }
+
+                    var lastPlayedTrack = recentScrobbles.Content.RecentTracks[0];
+                    searchName = lastPlayedTrack.ArtistName;
+                }
+                else
+                {
+                    searchName = artistValues;
+                }
+
+                var cachedArtist = await this._artistsService.GetArtistFromDatabase(searchName);
+
+                if (user.LastUpdated > DateTime.UtcNow.AddHours(-2) && cachedArtist != null && new Random().Next(1, 5) != 1)
                 {
                     artistName = cachedArtist.Name;
                     artistUrl = cachedArtist.LastFmUrl;
@@ -836,16 +855,35 @@ namespace FMBot.Bot.Commands.LastFM
                     AdminView = false,
                     NewSearchValue = artistValues
                 };
+
                 var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, user.UserType);
 
                 string artistName;
+                string searchName;
                 string artistUrl;
                 string spotifyImageUrl;
                 long? userPlaycount;
 
-                var cachedArtist = await this._artistsService.GetArtistFromDatabase(settings.NewSearchValue);
+                if (settings.NewSearchValue == null)
+                {
+                    var recentScrobbles = await this._updateService.UpdateUserAndGetRecentTracks(user);
 
-                if (user.LastUpdated > DateTime.UtcNow.AddHours(-1) && cachedArtist != null)
+                    if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, user.UserNameLastFM, this.Context))
+                    {
+                        return;
+                    }
+
+                    var lastPlayedTrack = recentScrobbles.Content.RecentTracks[0];
+                    searchName = lastPlayedTrack.ArtistName;
+                }
+                else
+                {
+                    searchName = settings.NewSearchValue;
+                }
+
+                var cachedArtist = await this._artistsService.GetArtistFromDatabase(searchName);
+
+                if (user.LastUpdated > DateTime.UtcNow.AddHours(-1) && cachedArtist != null && new Random().Next(1, 5) != 1)
                 {
                     artistName = cachedArtist.Name;
                     artistUrl = cachedArtist.LastFmUrl;
@@ -1227,7 +1265,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         }
 
-        private async Task<ArtistInfo> GetArtist(string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null)
+        private async Task<ArtistInfo> GetArtist(string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null, User user = null)
         {
             if (!string.IsNullOrWhiteSpace(artistValues) && artistValues.Length != 0)
             {
@@ -1256,7 +1294,16 @@ namespace FMBot.Bot.Commands.LastFM
             }
             else
             {
-                var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
+                Response<RecentTrackList> recentScrobbles;
+
+                if (user != null)
+                {
+                    recentScrobbles = await this._updateService.UpdateUserAndGetRecentTracks(user);
+                }
+                else
+                {
+                    recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
+                }
 
                 if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentScrobbles, lastFmUserName, this.Context))
                 {
@@ -1269,6 +1316,7 @@ namespace FMBot.Bot.Commands.LastFM
                 }
 
                 var lastPlayedTrack = recentScrobbles.Content.RecentTracks[0];
+
                 var artistCall = await this._lastFmRepository.GetArtistInfoAsync(lastPlayedTrack.ArtistName, lastFmUserName);
 
                 if (artistCall.Content == null || !artistCall.Success)

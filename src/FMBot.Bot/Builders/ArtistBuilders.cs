@@ -259,6 +259,12 @@ public class ArtistBuilders
             return artistSearch.response;
         }
 
+        if (artistSearch.artist.UserPlaycount.HasValue && !userSettings.DifferentUser)
+        {
+            await this._updateService.CorrectUserArtistPlaycount(userSettings.UserId, artistSearch.artist.ArtistName,
+                artistSearch.artist.UserPlaycount.Value);
+        }
+
         var timeDescription = timeSettings.Description.ToLower();
         List<UserTrack> topTracks;
         switch (timeSettings.TimePeriod)
