@@ -41,6 +41,11 @@ namespace FMBot.LastFM.Repositories
 
         public async Task<Response<RecentTrackList>> UpdateUser(UpdateUserQueueItem queueItem)
         {
+            if (queueItem.UpdateQueue)
+            {
+                Thread.Sleep(1200);
+            }
+
             await using var db = await this._contextFactory.CreateDbContextAsync();
             var user = await db.Users.FindAsync(queueItem.UserId);
 
@@ -51,8 +56,6 @@ namespace FMBot.LastFM.Repositories
                     Log.Information("Update: Skipped for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
                     return null;
                 }
-
-                Thread.Sleep(1200);
             }
 
             Log.Information("Update: Started on {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
