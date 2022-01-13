@@ -301,8 +301,6 @@ namespace FMBot.Bot.Extensions
 
                 if (existingOption != null && existingOption != optionToAdd)
                 {
-                    existingOption = Regex.Replace(existingOption, existingOption.ToLower(), optionToAdd, RegexOptions.IgnoreCase);
-
                     var index = currentList.IndexOf(existingOption);
                     if (index != -1)
                     {

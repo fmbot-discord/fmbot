@@ -2,14 +2,14 @@ namespace FMBot.Domain.Models
 {
     public class UpdateUserQueueItem
     {
-        public UpdateUserQueueItem(int userId, int timeoutMs = 0)
+        public UpdateUserQueueItem(int userId, bool updateQueue = false)
         {
             this.UserId = userId;
-            this.TimeoutMs = timeoutMs;
+            this.UpdateQueue = updateQueue;
         }
 
         public int UserId { get; }
 
-        public int TimeoutMs { get; }
+        public bool UpdateQueue { get; }
     }
 }
