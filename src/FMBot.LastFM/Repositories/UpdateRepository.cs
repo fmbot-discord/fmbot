@@ -120,6 +120,9 @@ namespace FMBot.LastFM.Repositories
 
                 await SetUserUpdateTime(user, DateTime.UtcNow.AddHours(-2), connection, transaction);
 
+                await transaction.CommitAsync();
+                await connection.CloseAsync();
+
                 recentTracks.Content = new RecentTrackList
                 {
                     NewRecentTracksAmount = 0
