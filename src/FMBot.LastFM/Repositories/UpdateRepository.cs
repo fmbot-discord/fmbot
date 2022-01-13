@@ -48,6 +48,7 @@ namespace FMBot.LastFM.Repositories
             {
                 if (user.LastUpdated > DateTime.UtcNow.AddHours(-32))
                 {
+                    Log.Information("Update: Skipped for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
                     return null;
                 }
 
