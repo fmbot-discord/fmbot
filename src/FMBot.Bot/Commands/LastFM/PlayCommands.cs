@@ -275,7 +275,14 @@ public class PlayCommands : BaseCommandModule
             var response = await this._playBuilder.OverviewAsync(this.Context.Guild, this.Context.User, contextUser,
                 userSettings, amountOfDays);
 
-            await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
+            if (response.ResponseType == ResponseType.Text)
+            {
+                await ReplyAsync(response.Text, allowedMentions: AllowedMentions.None);
+            }
+            else
+            {
+                await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
+            }
 
             this.Context.LogCommandUsed(response.CommandResponse);
         }

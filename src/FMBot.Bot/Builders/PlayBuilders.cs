@@ -477,7 +477,7 @@ public class PlayBuilder
         if (week == null)
         {
             response.ResponseType = ResponseType.Text;
-            response.Text = "Sorry, we don't have plays for you in the selected amount of days.";
+            response.Text = "Sorry, we don't have plays for this user in the selected amount of days.";
             response.CommandResponse = CommandResponse.NoScrobbles;
             return response;
         }
