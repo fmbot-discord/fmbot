@@ -88,7 +88,7 @@ namespace FMBot.Bot.Services.WhoKnows
             return whoKnowsArtistList;
         }
 
-        public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForArtists(ICommandContext context, string artistName)
+        public async Task<IList<WhoKnowsObjectWithUser>> GetGlobalUsersForArtists(IGuild discordGuild, string artistName)
         {
             const string sql = "SELECT * " +
                                "FROM (SELECT DISTINCT ON(UPPER(u.user_name_last_fm)) " +
@@ -124,9 +124,9 @@ namespace FMBot.Bot.Services.WhoKnows
 
                 if (i < 15)
                 {
-                    if (context.Guild != null)
+                    if (discordGuild != null)
                     {
-                        var discordUser = await context.Guild.GetUserAsync(userArtist.DiscordUserId);
+                        var discordUser = await discordGuild.GetUserAsync(userArtist.DiscordUserId);
                         if (discordUser != null)
                         {
                             userName = discordUser.Nickname ?? discordUser.Username;

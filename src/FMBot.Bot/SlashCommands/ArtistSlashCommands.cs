@@ -11,6 +11,7 @@ using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
+using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 
@@ -22,6 +23,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     private readonly ArtistBuilders _artistBuilders;
     private readonly SettingService _settingService;
     private readonly LastFmRepository _lastFmRepository;
+    private readonly GuildService _guildService;
 
     private InteractiveService Interactivity { get; }
 
@@ -29,13 +31,15 @@ public class ArtistSlashCommands : InteractionModuleBase
         ArtistBuilders artistBuilders,
         SettingService settingService,
         InteractiveService interactivity,
-        LastFmRepository lastFmRepository)
+        LastFmRepository lastFmRepository,
+        GuildService guildService)
     {
         this._userService = userService;
         this._artistBuilders = artistBuilders;
         this._settingService = settingService;
         this.Interactivity = interactivity;
         this._lastFmRepository = lastFmRepository;
+        this._guildService = guildService;
     }
 
     [SlashCommand("artist", "Shows artist info for the artist you're currently listening to or searching for")]
@@ -53,8 +57,7 @@ public class ArtistSlashCommands : InteractionModuleBase
             var response = await this._artistBuilders.ArtistAsync("/", this.Context.Guild, this.Context.User,
                 contextUser, name);
 
-            await FollowupAsync(null, new[] { response.Embed.Build() });
-
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -82,18 +85,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         var response = await this._artistBuilders.ArtistTracksAsync(this.Context.Guild, this.Context.User, contextUser, timeSettings,
             userSettings, name);
 
-        if (response.ResponseType == ResponseType.Embed)
-        {
-            await RespondAsync(null, new[] { response.Embed.Build() });
-        }
-        else
-        {
-            _ = this.Interactivity.SendPaginatorAsync(
-                response.StaticPaginator,
-                (SocketInteraction)this.Context.Interaction,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-        }
-
+        await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
@@ -130,8 +122,7 @@ public class ArtistSlashCommands : InteractionModuleBase
             var response = await this._artistBuilders.ArtistPaceAsync(this.Context.User, contextUser,
                 userSettings, timeSettings, amount.ToString(), timeFrom, name);
 
-            await FollowupAsync(response.Text, allowedMentions: AllowedMentions.None);
-
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
@@ -147,5 +138,72 @@ public class ArtistSlashCommands : InteractionModuleBase
     {
         Weekly = 1,
         Monthly = 2
+    }
+
+    [SlashCommand("whoknows", "Shows what other users listen to an artist in your server")]
+    [UsernameSetRequired]
+    [RequiresIndex]
+    public async Task WhoKnowsAsync(
+        [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(ArtistAutoComplete))] string name = null)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
+
+        try
+        {
+            var response = await this._artistBuilders.WhoKnowsArtistAsync("/", this.Context.Guild, this.Context.User,
+                guild, contextUser, name);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            this.Context.LogCommandException(e);
+            await FollowupAsync(
+                "Unable to show your artist on Last.fm due to an internal error. Please try again later or contact .fmbot support.",
+                ephemeral: true);
+        }
+    }
+
+    [SlashCommand("globalwhoknows", "Shows what other users listen to an artist in .fmbot")]
+    [UsernameSetRequired]
+    [RequiresIndex]
+    public async Task GlobalWhoKnowsAsync(
+        [Summary("Artist", "The artist your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(ArtistAutoComplete))] string name = null,
+        [Summary("Hide-private", "Hide or show private users")] bool hidePrivate = false)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
+
+        var currentSettings = new WhoKnowsSettings
+        {
+            HidePrivateUsers = hidePrivate,
+            ShowBotters = false,
+            AdminView = false,
+            NewSearchValue = name
+        };
+
+        try
+        {
+            var response = await this._artistBuilders.GlobalWhoKnowsArtistAsync("/", this.Context.Guild, this.Context.User,
+                guild, contextUser, currentSettings);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            this.Context.LogCommandException(e);
+            await FollowupAsync(
+                "Unable to show your artist on Last.fm due to an internal error. Please try again later or contact .fmbot support.",
+                ephemeral: true);
+        }
     }
 }

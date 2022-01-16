@@ -680,8 +680,8 @@ public class AlbumCommands : BaseCommandModule
                 footer += $"\nUsers with WhoKnows whitelisted role only";
             }
 
-            var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingAlbum(contextUser.UserId,
-                this.Context.Guild.Id, album.ArtistName, album.AlbumName);
+            var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(contextUser.UserId,
+                guild, album.ArtistName, album.AlbumName);
 
             if (guildAlsoPlaying != null)
             {
@@ -817,8 +817,8 @@ public class AlbumCommands : BaseCommandModule
                 footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
             }
 
-            var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingAlbum(userSettings.UserId,
-                this.Context.Guild?.Id, album.ArtistName, album.AlbumName);
+            var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(userSettings.UserId,
+                guild, album.ArtistName, album.AlbumName);
 
             if (guildAlsoPlaying != null)
             {

@@ -243,8 +243,7 @@ public class PlayCommands : BaseCommandModule
             var response = await this._playBuilder.RecentAsync(this.Context.Guild, this.Context.Channel, this.Context.User, contextUser,
                 userSettings, amount);
 
-            await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
-
+            await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -275,15 +274,7 @@ public class PlayCommands : BaseCommandModule
             var response = await this._playBuilder.OverviewAsync(this.Context.Guild, this.Context.User, contextUser,
                 userSettings, amountOfDays);
 
-            if (response.ResponseType == ResponseType.Text)
-            {
-                await ReplyAsync(response.Text, allowedMentions: AllowedMentions.None);
-            }
-            else
-            {
-                await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
-            }
-
+            await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -547,7 +538,7 @@ public class PlayCommands : BaseCommandModule
         var response = await this._playBuilder.PaceAsync(this.Context.User,
             userSettings, timeSettings, goalAmount, userInfo.Playcount, timeFrom);
 
-        await this.Context.Channel.SendMessageAsync(response.Text, allowedMentions: AllowedMentions.None);
+        await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
@@ -572,7 +563,7 @@ public class PlayCommands : BaseCommandModule
         var response = await this._playBuilder.MileStoneAsync(this.Context.Guild, this.Context.Channel, this.Context.User,
             userSettings, mileStoneAmount, userInfo.Playcount);
 
-        await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
+        await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
