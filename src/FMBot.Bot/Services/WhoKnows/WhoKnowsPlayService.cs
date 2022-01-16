@@ -48,7 +48,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
         public string GuildAlsoPlayingTrack(int userId, Persistence.Domain.Models.Guild guild, string artistName, string trackName)
         {
-            if (guild == null || !guild.GuildUsers.Any())
+            if (guild?.GuildUsers == null || !guild.GuildUsers.Any())
             {
                 return null;
             }
@@ -88,7 +88,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
         public string GuildAlsoPlayingAlbum(int userId, Persistence.Domain.Models.Guild guild, string artistName, string albumName)
         {
-            if (guild == null || !guild.GuildUsers.Any())
+            if (guild?.GuildUsers == null || !guild.GuildUsers.Any())
             {
                 return null;
             }
@@ -128,7 +128,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
         public string GuildAlsoPlayingArtist(int userId, Persistence.Domain.Models.Guild guild, string artistName)
         {
-            if (guild == null || !guild.GuildUsers.Any())
+            if (guild?.GuildUsers == null || !guild.GuildUsers.Any())
             {
                 return null;
             }
