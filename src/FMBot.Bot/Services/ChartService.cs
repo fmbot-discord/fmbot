@@ -480,7 +480,7 @@ namespace FMBot.Bot.Services
 
             foreach (var option in extraOptions.Where(w => !string.IsNullOrWhiteSpace(w) && w.Length is >= 3 and <= 5))
             {
-                var matchFound = Regex.IsMatch(option, "^([1-9]|10)x([1-9]|10)$", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(300));
+                var matchFound = Regex.IsMatch(option, "^([1-9]|[1-4][0-9]|50)x([1-9]|[1-9]|[1-4][0-9]|50)$", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(300));
                 if (matchFound)
                 {
                     var dimensions = option.ToLower().Split('x').Select(value =>
