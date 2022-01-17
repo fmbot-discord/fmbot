@@ -283,10 +283,10 @@ public class ArtistBuilders
         switch (timeSettings.TimePeriod)
         {
             case TimePeriod.Weekly:
-                topTracks = await this._playService.GetTopTracksForArtist(userSettings.UserId, 7, artistSearch.artist.ArtistName);
+                topTracks = await this._playService.GetUserTopTracksForArtist(userSettings.UserId, 7, artistSearch.artist.ArtistName);
                 break;
             case TimePeriod.Monthly:
-                topTracks = await this._playService.GetTopTracksForArtist(userSettings.UserId, 31, artistSearch.artist.ArtistName);
+                topTracks = await this._playService.GetUserTopTracksForArtist(userSettings.UserId, 31, artistSearch.artist.ArtistName);
                 break;
             default:
                 timeDescription = "alltime";
