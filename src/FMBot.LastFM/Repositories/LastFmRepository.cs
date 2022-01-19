@@ -33,7 +33,7 @@ namespace FMBot.LastFM.Repositories
         public LastFmRepository(IConfiguration configuration, ILastfmApi lastFmApi, IMemoryCache cache, IHttpClientFactory httpClientFactory)
         {
             this._lastFmClient =
-                new LastfmClient(configuration.GetSection("LastFm:PrivateKey").Value, configuration.GetSection("LastFm:PrivateSecret").Value);
+                new LastfmClient(configuration.GetSection("LastFm:PrivateKey").Value, configuration.GetSection("LastFm:PrivateKeySecret").Value);
             this._lastFmApi = lastFmApi;
             this._cache = cache;
             this._client = httpClientFactory.CreateClient();

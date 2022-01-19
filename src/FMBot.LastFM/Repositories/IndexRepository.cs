@@ -43,8 +43,8 @@ namespace FMBot.LastFM.Repositories
             this._lastFmRepository = lastFmRepository;
             this._contextFactory = contextFactory;
             this._cache = cache;
-            this._key = configuration.GetSection("LastFm:Key").Value;
-            this._secret = configuration.GetSection("LastFm:Secret").Value;
+            this._key = configuration.GetSection("LastFm:PrivateKey").Value;
+            this._secret = configuration.GetSection("LastFm:PrivateKeySecret").Value;
             this._connectionString = configuration.GetSection("Database:ConnectionString").Value;
             this._lastFMClient = new LastfmClient(this._key, this._secret);
         }
@@ -150,7 +150,7 @@ namespace FMBot.LastFM.Repositories
             var recentPlays = await this._lastFMClient.User.GetRecentScrobbles(
                 user.UserNameLastFM,
                 count: 1000,
-                @from: DateTime.UtcNow.AddDays(-14));
+                @from: DateTime.UtcNow.AddDays(-24));
 
             if (!recentPlays.Success || recentPlays.Content.Count == 0)
             {
