@@ -137,7 +137,7 @@ namespace FMBot.Bot.Services
 
         private async Task TestLastFmApi()
         {
-            var fmClient = new LastfmClient(this._botSettings.LastFm.Key, this._botSettings.LastFm.Secret);
+            var fmClient = new LastfmClient(this._botSettings.LastFm.PublicKey, this._botSettings.LastFm.PublicKeySecret);
 
             Log.Information("Testing Last.fm API");
             var lastFMUser = await fmClient.User.GetInfoAsync("Lastfmsupport");

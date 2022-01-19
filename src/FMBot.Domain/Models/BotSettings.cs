@@ -69,9 +69,11 @@ namespace FMBot.Domain.Models
 
     public class LastFmConfig
     {
-        public string Key { get; set; }
+        public string PrivateKey { get; set; }
 
-        public string Secret { get; set; }
+        public string PublicKey { get; set; }
+
+        public string PublicKeySecret { get; set; }
 
         public int? UserUpdateFrequencyInHours { get; set; }
 

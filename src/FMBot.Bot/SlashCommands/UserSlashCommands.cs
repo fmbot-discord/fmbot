@@ -48,7 +48,7 @@ public class UserSlashCommands : InteractionModuleBase
         {
             var reply = new StringBuilder();
             var link =
-                $"http://www.last.fm/api/auth/?api_key={this._botSettings.LastFm.Key}&token={token.Content.Token}";
+                $"http://www.last.fm/api/auth/?api_key={this._botSettings.LastFm.PublicKey}&token={token.Content.Token}";
 
             if (contextUser == null)
             {

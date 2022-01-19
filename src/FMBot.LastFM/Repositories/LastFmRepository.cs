@@ -949,7 +949,7 @@ namespace FMBot.LastFM.Repositories
         {
             var queryParams = new Dictionary<string, string>();
 
-            var tokenCall = await this._lastFmApi.CallApiAsync<TokenResponse>(queryParams, Call.GetToken);
+            var tokenCall = await this._lastFmApi.CallApiAsync<TokenResponse>(queryParams, Call.GetToken, usePrivateKey: true);
 
             return tokenCall;
         }

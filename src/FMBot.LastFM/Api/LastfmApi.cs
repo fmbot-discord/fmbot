@@ -24,28 +24,33 @@ namespace FMBot.LastFM.Api
 
         private readonly HttpClient _client;
 
-        private readonly string _key;
-        private readonly string _secret;
+        private readonly string _privateKey;
+        private readonly string _publicKey;
+        private readonly string _publicKeySecret;
 
         public LastfmApi(IConfiguration configuration, IHttpClientFactory httpClientFactory)
         {
-            this._key = configuration.GetSection("LastFm:Key").Value;
-            this._secret = configuration.GetSection("LastFm:Secret").Value;
+            // Use a public key and a private key for talking to the Last.fm API
+            // This is because the public key is visible when a user authenticates
+            // This has been abused for triggering our ratelimit, which is why we use this setup
+            this._privateKey = configuration.GetSection("LastFm:PrivateKey").Value;
+            this._publicKey = configuration.GetSection("LastFm:PublicKey").Value;
+            this._publicKeySecret = configuration.GetSection("LastFm:PublicKeySecret").Value;
             this._client = httpClientFactory.CreateClient();
         }
 
-        public async Task<Response<T>> CallApiAsync<T>(Dictionary<string, string> parameters, string call, bool generateSignature = false)
+        public async Task<Response<T>> CallApiAsync<T>(Dictionary<string, string> parameters, string call, bool generateSignature = false, bool usePrivateKey = false)
         {
             var queryParams = new Dictionary<string, string>
             {
-                {"api_key", this._key },
-                {"format", "json" },
-                {"method", call }
+                { "api_key", generateSignature || usePrivateKey ? this._publicKey : this._privateKey },
+                { "format", "json" },
+                { "method", call }
             };
 
             foreach (var (key, value) in queryParams
-                .OrderBy(o => o.Key)
-                .Where(w => !parameters.ContainsKey(w.Key.ToLower())))
+                         .OrderBy(o => o.Key)
+                         .Where(w => !parameters.ContainsKey(w.Key.ToLower())))
             {
                 parameters.Add(key, value);
             }
@@ -60,7 +65,7 @@ namespace FMBot.LastFM.Api
                     signature.Append(value);
                 }
 
-                signature.Append(this._secret);
+                signature.Append(this._publicKeySecret);
                 parameters.Add("api_sig", CreateMd5(signature.ToString()));
 
                 if (call == Call.RecentTracks)

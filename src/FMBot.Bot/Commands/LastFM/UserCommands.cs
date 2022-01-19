@@ -591,7 +591,7 @@ namespace FMBot.Bot.Commands.LastFM
 
             // TODO: When our Discord library supports follow up messages for interactions, add slash command support.
             var replyString =
-                $"[Click here add your Last.fm account to .fmbot](http://www.last.fm/api/auth/?api_key={this._botSettings.LastFm.Key}&token={token.Content.Token})";
+                $"[Click here add your Last.fm account to .fmbot](http://www.last.fm/api/auth/?api_key={this._botSettings.LastFm.PublicKey}&token={token.Content.Token})";
 
             this._embed.WithTitle("Logging into .fmbot...");
             this._embed.WithDescription(replyString);
