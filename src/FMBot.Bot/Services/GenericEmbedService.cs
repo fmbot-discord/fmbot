@@ -27,6 +27,13 @@ namespace FMBot.Bot.Services
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
+        public static void RateLimitedResponse(this EmbedBuilder embed)
+        {
+            embed.WithDescription($"Sorry, you're being ratelimited. Please slow down a bit with using commands.");
+
+            embed.WithColor(DiscordConstants.WarningColorOrange);
+        }
+
         public static void UserBlockedResponse(this EmbedBuilder embed, string prfx)
         {
             embed.WithDescription("You're banned from using .fmbot.");
