@@ -423,6 +423,7 @@ namespace FMBot.Bot.Services.ThirdParty
             return result;
         }
 
+
         public async Task<Album> GetOrStoreSpotifyAlbumAsync(AlbumInfo albumInfo)
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();

@@ -20,6 +20,7 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
+using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
@@ -47,6 +48,7 @@ public class AlbumCommands : BaseCommandModule
     private readonly WhoKnowsPlayService _whoKnowsPlayService;
     private readonly WhoKnowsService _whoKnowsService;
     private readonly TimerService _timer;
+    private readonly AlbumService _albumService;
 
     private InteractiveService Interactivity { get; }
 
@@ -69,7 +71,7 @@ public class AlbumCommands : BaseCommandModule
         IOptions<BotSettings> botSettings,
         FriendsService friendsService,
         TimerService timer,
-        TimeService timeService) : base(botSettings)
+        TimeService timeService, AlbumService albumService) : base(botSettings)
     {
         this._censorService = censorService;
         this._guildService = guildService;
@@ -89,6 +91,7 @@ public class AlbumCommands : BaseCommandModule
         this._friendsService = friendsService;
         this._timer = timer;
         this._timeService = timeService;
+        this._albumService = albumService;
     }
 
     [Command("album", RunMode = RunMode.Async)]
@@ -365,7 +368,8 @@ public class AlbumCommands : BaseCommandModule
 
         try
         {
-            var album = await this.SearchAlbum(albumValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
+            var album = await this.SearchAlbum(albumValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm,
+                useCachedAlbums: true, userId: contextUser.UserId);
             if (album == null)
             {
                 return;
@@ -613,7 +617,8 @@ public class AlbumCommands : BaseCommandModule
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var album = await this.SearchAlbum(albumValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
+            var album = await this.SearchAlbum(albumValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm,
+                useCachedAlbums: true, userId: contextUser.UserId);
             if (album == null)
             {
                 return;
@@ -621,7 +626,7 @@ public class AlbumCommands : BaseCommandModule
 
             var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
 
-            var albumName = $"{album.AlbumName} by {album.ArtistName}";
+            var fullAlbumName = $"{album.AlbumName} by {album.ArtistName}";
 
             var guild = await guildTask;
 
@@ -638,7 +643,7 @@ public class AlbumCommands : BaseCommandModule
 
             if (album.UserPlaycount.HasValue)
             {
-                usersWithAlbum = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, currentUser, albumName, album.UserPlaycount);
+                usersWithAlbum = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, currentUser, fullAlbumName, album.UserPlaycount);
             }
 
             var filteredUsersWithAlbum = WhoKnowsService.FilterGuildUsersAsync(usersWithAlbum, guild);
@@ -692,7 +697,7 @@ public class AlbumCommands : BaseCommandModule
                 footer += guildAlsoPlaying;
             }
 
-            this._embed.WithTitle(StringExtensions.TruncateLongString($"{albumName} in {this.Context.Guild.Name}", 255));
+            this._embed.WithTitle(StringExtensions.TruncateLongString($"{fullAlbumName} in {this.Context.Guild.Name}", 255));
 
             var url = contextUser.RymEnabled == true
                 ? StringExtensions.GetRymUrl(album.AlbumName, album.ArtistName)
@@ -747,7 +752,7 @@ public class AlbumCommands : BaseCommandModule
             var guildTask = this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             var currentSettings = new WhoKnowsSettings
             {
@@ -757,9 +762,10 @@ public class AlbumCommands : BaseCommandModule
                 NewSearchValue = albumValues
             };
 
-            var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues, userSettings.UserType);
+            var settings = this._settingService.SetWhoKnowsSettings(currentSettings, albumValues, contextUser.UserType);
 
-            var album = await this.SearchAlbum(settings.NewSearchValue, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
+            var album = await this.SearchAlbum(settings.NewSearchValue, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm,
+                useCachedAlbums: true, userId: contextUser.UserId);
             if (album == null)
             {
                 return;
@@ -773,11 +779,11 @@ public class AlbumCommands : BaseCommandModule
 
             if (album.UserPlaycount.HasValue && this.Context.Guild != null)
             {
-                var discordGuildUser = await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId);
+                var discordGuildUser = await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId);
                 var guildUser = new GuildUser
                 {
-                    UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : userSettings.UserNameLastFM,
-                    User = userSettings
+                    UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : contextUser.UserNameLastFM,
+                    User = contextUser
                 };
                 usersWithAlbum = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, guildUser, albumName, album.UserPlaycount);
             }
@@ -798,7 +804,7 @@ public class AlbumCommands : BaseCommandModule
                 }
             }
 
-            var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, userSettings.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
+            var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, contextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
             if (filteredUsersWithAlbum.Count == 0)
             {
                 serverUsers = "Nobody that uses .fmbot has listened to this album.";
@@ -820,7 +826,7 @@ public class AlbumCommands : BaseCommandModule
                 footer += $"{(int)avgServerPlaycount} avg {StringExtensions.GetPlaysString((int)avgServerPlaycount)}";
             }
 
-            var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(userSettings.UserId,
+            var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingAlbum(contextUser.UserId,
                 guild, album.ArtistName, album.AlbumName);
 
             if (guildAlsoPlaying != null)
@@ -833,7 +839,7 @@ public class AlbumCommands : BaseCommandModule
             {
                 footer += "\nAdmin view enabled - not for public channels";
             }
-            if (userSettings.PrivacyLevel != PrivacyLevel.Global)
+            if (contextUser.PrivacyLevel != PrivacyLevel.Global)
             {
                 footer += $"\nYou are currently not globally visible - use " +
                           $"'{prfx}privacy global' to enable.";
@@ -845,7 +851,7 @@ public class AlbumCommands : BaseCommandModule
 
             this._embed.WithTitle($"{albumName} globally");
 
-            var url = userSettings.RymEnabled == true
+            var url = contextUser.RymEnabled == true
                 ? StringExtensions.GetRymUrl(album.AlbumName, album.ArtistName)
                 : album.AlbumUrl;
 
@@ -908,9 +914,9 @@ public class AlbumCommands : BaseCommandModule
         {
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var user = await this._userService.GetUserWithFriendsAsync(this.Context.User);
+            var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
 
-            if (user.Friends?.Any() != true)
+            if (contextUser.Friends?.Any() != true)
             {
                 await ReplyAsync("We couldn't find any friends. To add friends:\n" +
                                  $"`{prfx}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`");
@@ -920,7 +926,8 @@ public class AlbumCommands : BaseCommandModule
 
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-            var album = await this.SearchAlbum(albumValues, user.UserNameLastFM, user.SessionKeyLastFm);
+            var album = await this.SearchAlbum(albumValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm,
+                useCachedAlbums: true, userId: contextUser.UserId);
             if (album == null)
             {
                 return;
@@ -930,20 +937,20 @@ public class AlbumCommands : BaseCommandModule
 
             var albumName = $"{album.AlbumName} by {album.ArtistName}";
 
-            var usersWithAlbum = await this._whoKnowsAlbumService.GetFriendUsersForAlbum(this.Context, guild.GuildId, user.UserId, album.ArtistName, album.AlbumName);
+            var usersWithAlbum = await this._whoKnowsAlbumService.GetFriendUsersForAlbum(this.Context, guild.GuildId, contextUser.UserId, album.ArtistName, album.AlbumName);
 
             if (album.UserPlaycount.HasValue && this.Context.Guild != null)
             {
-                var discordGuildUser = await this.Context.Guild.GetUserAsync(user.DiscordUserId);
+                var discordGuildUser = await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId);
                 var guildUser = new GuildUser
                 {
-                    UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : user.UserNameLastFM,
-                    User = user
+                    UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : contextUser.UserNameLastFM,
+                    User = contextUser
                 };
                 usersWithAlbum = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithAlbum, guildUser, albumName, album.UserPlaycount);
             }
 
-            var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithAlbum, user.UserId, PrivacyLevel.Server);
+            var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithAlbum, contextUser.UserId, PrivacyLevel.Server);
             if (usersWithAlbum.Count == 0)
             {
                 serverUsers = "None of your friends have listened to this album.";
@@ -953,7 +960,7 @@ public class AlbumCommands : BaseCommandModule
 
             var footer = "";
 
-            var amountOfHiddenFriends = user.Friends.Count(c => !c.FriendUserId.HasValue);
+            var amountOfHiddenFriends = contextUser.Friends.Count(c => !c.FriendUserId.HasValue);
             if (amountOfHiddenFriends > 0)
             {
                 footer += $"\n{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible";
@@ -1314,7 +1321,7 @@ public class AlbumCommands : BaseCommandModule
         }
     }
 
-    private async Task<AlbumInfo> SearchAlbum(string albumValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null)
+    private async Task<AlbumInfo> SearchAlbum(string albumValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null, bool useCachedAlbums = false, int? userId = null)
     {
         string searchValue;
         if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.Length != 0)
@@ -1331,11 +1338,23 @@ public class AlbumCommands : BaseCommandModule
                     lastFmUserName = otherUserUsername;
                 }
 
-                var albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(searchValue.Split(" | ")[0], searchValue.Split(" | ")[1],
-                    lastFmUserName);
+                var searchArtistName = searchValue.Split(" | ")[0];
+                var searchAlbumName = searchValue.Split(" | ")[1];
+
+                Response<AlbumInfo> albumInfo;
+                if (useCachedAlbums)
+                {
+                    albumInfo = await GetCachedAlbum(searchArtistName, searchAlbumName, lastFmUserName, userId);
+                }
+                else
+                {
+                    albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(searchArtistName, searchAlbumName,
+                        lastFmUserName);
+                }
+
                 if (!albumInfo.Success && albumInfo.Error == ResponseStatus.MissingParameters)
                 {
-                    this._embed.WithDescription($"Album `{searchValue.Split(" | ")[1]}` by `{searchValue.Split(" | ")[0]}`could not be found, please check your search values and try again.");
+                    this._embed.WithDescription($"Album `{searchAlbumName}` by `{searchArtistName}`could not be found, please check your search values and try again.");
                     await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
                     return null;
@@ -1375,9 +1394,17 @@ public class AlbumCommands : BaseCommandModule
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return null;
             }
-                
-            var albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(lastPlayedTrack.ArtistName, lastPlayedTrack.AlbumName,
-                lastFmUserName);
+
+            Response<AlbumInfo> albumInfo;
+            if (useCachedAlbums)
+            {
+                albumInfo = await GetCachedAlbum(lastPlayedTrack.ArtistName, lastPlayedTrack.AlbumName, lastFmUserName, userId);
+            }
+            else
+            {
+                albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(lastPlayedTrack.ArtistName, lastPlayedTrack.AlbumName,
+                    lastFmUserName);
+            }
 
             if (albumInfo?.Content == null || !albumInfo.Success)
             {
@@ -1403,8 +1430,17 @@ public class AlbumCommands : BaseCommandModule
                 lastFmUserName = otherUserUsername;
             }
 
-            var albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(album.ArtistName, album.Name,
-                lastFmUserName);
+            Response<AlbumInfo> albumInfo;
+            if (useCachedAlbums)
+            {
+                albumInfo = await GetCachedAlbum(album.ArtistName, album.Name, lastFmUserName, userId);
+            }
+            else
+            {
+                albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(album.ArtistName, album.Name,
+                    lastFmUserName);
+            }
+
             return albumInfo.Content;
         }
 
@@ -1420,5 +1456,33 @@ public class AlbumCommands : BaseCommandModule
         await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
         this.Context.LogCommandUsed(CommandResponse.LastFmError);
         return null;
+    }
+
+    private async Task<Response<AlbumInfo>> GetCachedAlbum(string artistName, string albumName, string lastFmUserName, int? userId = null)
+    {
+        Response<AlbumInfo> albumInfo;
+        var cachedAlbum = await this._albumService.GetAlbumFromDatabase(artistName, albumName);
+        if (cachedAlbum != null)
+        {
+            albumInfo = new Response<AlbumInfo>
+            {
+                Content = this._albumService.CachedAlbumToAlbumInfo(cachedAlbum),
+                Success = true
+            };
+
+            if (userId.HasValue)
+            {
+                var userPlaycount = await this._whoKnowsAlbumService.GetAlbumPlayCountForUser(cachedAlbum.ArtistName,
+                        cachedAlbum.Name, userId.Value);
+                albumInfo.Content.UserPlaycount = userPlaycount;
+            }
+        }
+        else
+        {
+            albumInfo = await this._lastFmRepository.GetAlbumInfoAsync(artistName, albumName,
+                lastFmUserName);
+        }
+
+        return albumInfo;
     }
 }

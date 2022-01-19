@@ -14,6 +14,7 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.Repositories;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -29,12 +30,14 @@ namespace FMBot.Bot.Services
         private readonly HttpClient _client;
         private readonly BotSettings _botSettings;
         private readonly IMemoryCache _cache;
+        private readonly TrackRepository _trackRepository;
 
-        public TrackService(IHttpClientFactory httpClientFactory, LastFmRepository lastFmRepository, IOptions<BotSettings> botSettings, SpotifyService spotifyService, IMemoryCache memoryCache)
+        public TrackService(IHttpClientFactory httpClientFactory, LastFmRepository lastFmRepository, IOptions<BotSettings> botSettings, SpotifyService spotifyService, IMemoryCache memoryCache, TrackRepository trackRepository)
         {
             this._lastFmRepository = lastFmRepository;
             this._spotifyService = spotifyService;
             this._cache = memoryCache;
+            this._trackRepository = trackRepository;
             this._client = httpClientFactory.CreateClient();
             this._botSettings = botSettings.Value;
         }
@@ -323,6 +326,33 @@ namespace FMBot.Bot.Services
         public static string CacheKeyForAudioFeature(string trackName, string artistName)
         {
             return $"audio-features-{trackName.ToLower()}-{artistName.ToLower()}";
+        }
+
+        public async Task<Track> GetTrackFromDatabase(string artistName, string trackName)
+        {
+            if (string.IsNullOrWhiteSpace(artistName) || string.IsNullOrWhiteSpace(trackName))
+            {
+                return null;
+            }
+
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var album = await this._trackRepository.GetTrackForName(artistName, trackName, connection);
+
+            await connection.CloseAsync();
+
+            return album;
+        }
+
+        public TrackInfo CachedTrackToTrackInfo(Track track)
+        {
+            return new TrackInfo
+            {
+                AlbumName = track.Name,
+                ArtistName = track.ArtistName,
+                Mbid = track.Mbid
+            };
         }
     }
 }

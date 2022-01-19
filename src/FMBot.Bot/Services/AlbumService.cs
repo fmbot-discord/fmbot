@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Dapper;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
+using FMBot.Persistence.Repositories;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -15,10 +17,12 @@ namespace FMBot.Bot.Services
     {
         private readonly IMemoryCache _cache;
         private readonly BotSettings _botSettings;
+        private readonly AlbumRepository _albumRepository;
 
-        public AlbumService(IMemoryCache cache, IOptions<BotSettings> botSettings)
+        public AlbumService(IMemoryCache cache, IOptions<BotSettings> botSettings, AlbumRepository albumRepository)
         {
             this._cache = cache;
+            this._albumRepository = albumRepository;
             this._botSettings = botSettings.Value;
         }
 
@@ -75,6 +79,34 @@ namespace FMBot.Bot.Services
         public static string CacheKeyForAlbumCover(string lastFmUrl)
         {
             return $"album-spotify-cover-{lastFmUrl.ToLower()}";
+        }
+
+        public async Task<Album> GetAlbumFromDatabase(string artistName, string albumName)
+        {
+            if (string.IsNullOrWhiteSpace(artistName) || string.IsNullOrWhiteSpace(albumName))
+            {
+                return null;
+            }
+
+            await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+            await connection.OpenAsync();
+
+            var album = await this._albumRepository.GetAlbumForName(artistName, albumName, connection);
+
+            await connection.CloseAsync();
+
+            return album;
+        }
+
+        public AlbumInfo CachedAlbumToAlbumInfo (Album album)
+        {
+            return new AlbumInfo
+            {
+                AlbumCoverUrl = album.SpotifyImageUrl ?? album.LastfmImageUrl,
+                AlbumName = album.Name,
+                ArtistName = album.ArtistName,
+                Mbid = album.Mbid
+            };
         }
     }
 }
