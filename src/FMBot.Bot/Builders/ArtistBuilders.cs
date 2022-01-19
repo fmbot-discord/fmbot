@@ -145,7 +145,7 @@ public class ArtistBuilders
 
                 if (fullArtist.Type?.ToLower() == "person")
                 {
-                    artistInfo.AppendLine($"Born: <t:{dateValue}:D>");
+                    artistInfo.AppendLine($"Born: <t:{dateValue}:D> {ArtistsService.IsArtistBirthday(fullArtist.StartDate)}");
                 }
                 else
                 {
@@ -162,12 +162,12 @@ public class ArtistBuilders
 
                 if (fullArtist.Type?.ToLower() == "person")
                 {
-                    artistInfo.AppendLine($"Born: <t:{startDateValue}:D>");
+                    artistInfo.AppendLine($"Born: <t:{startDateValue}:D> {ArtistsService.IsArtistBirthday(fullArtist.StartDate)}");
                     artistInfo.AppendLine($"Died: <t:{endDateValue}:D>");
                 }
                 else
                 {
-                    artistInfo.AppendLine($"Started: <t:{startDateValue}:D>");
+                    artistInfo.AppendLine($"Started: <t:{startDateValue}:D> {ArtistsService.IsArtistBirthday(fullArtist.StartDate)}");
                     artistInfo.AppendLine($"Stopped: <t:{endDateValue}:D>");
                 }
             }
@@ -634,7 +634,7 @@ public class ArtistBuilders
             footer.AppendLine($"Users with WhoKnows whitelisted role only");
         }
 
-        response.Embed.WithTitle($"{artistSearch.artist.ArtistName} in {discordGuild.Name}");
+        response.Embed.WithTitle($"{artistSearch.artist.ArtistName}{ArtistsService.IsArtistBirthday(cachedArtist?.StartDate)} in {discordGuild.Name}");
 
         if (artistSearch.artist.ArtistUrl != null && Uri.IsWellFormedUriString(artistSearch.artist.ArtistUrl, UriKind.Absolute))
         {
@@ -710,7 +710,7 @@ public class ArtistBuilders
         response.Embed.WithDescription(serverUsers);
 
         var footer = new StringBuilder();
-        if (cachedArtist.ArtistGenres != null && cachedArtist.ArtistGenres.Any())
+        if (cachedArtist?.ArtistGenres != null && cachedArtist.ArtistGenres.Any())
         {
             footer.AppendLine($"{GenreService.GenresToString(cachedArtist.ArtistGenres.ToList())}");
         }
@@ -751,7 +751,7 @@ public class ArtistBuilders
             footer.AppendLine("All private users are hidden from results");
         }
 
-        response.Embed.WithTitle($"{artistSearch.artist.ArtistName} globally");
+        response.Embed.WithTitle($"{artistSearch.artist.ArtistName}{ArtistsService.IsArtistBirthday(cachedArtist?.StartDate)} globally");
 
         if (Uri.IsWellFormedUriString(artistSearch.artist.ArtistUrl, UriKind.Absolute))
         {
@@ -761,7 +761,7 @@ public class ArtistBuilders
         response.EmbedFooter.WithText(footer.ToString());
         response.Embed.WithFooter(response.EmbedFooter);
 
-        if (cachedArtist.SpotifyImageUrl != null)
+        if (cachedArtist?.SpotifyImageUrl != null)
         {
             response.Embed.WithThumbnailUrl(cachedArtist.SpotifyImageUrl);
         }

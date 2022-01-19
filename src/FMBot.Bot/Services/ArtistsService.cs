@@ -597,5 +597,18 @@ namespace FMBot.Bot.Services
                 throw;
             }
         }
+
+        public static string IsArtistBirthday(DateTime? startDateTime = null)
+        {
+            if (!startDateTime.HasValue ||
+                startDateTime.Value.Day == 1 && startDateTime.Value.Month == 1 ||
+                startDateTime.Value.Day != DateTime.UtcNow.Day ||
+                startDateTime.Value.Month != DateTime.UtcNow.Month)
+            {
+                return null;
+            }
+
+            return " 🎂";
+        }
     }
 }
