@@ -43,7 +43,7 @@ namespace FMBot.LastFM.Repositories
         {
             if (queueItem.UpdateQueue)
             {
-                Thread.Sleep(1200);
+                Thread.Sleep(1400);
             }
 
             await using var db = await this._contextFactory.CreateDbContextAsync();
@@ -51,7 +51,7 @@ namespace FMBot.LastFM.Repositories
 
             if (queueItem.UpdateQueue)
             {
-                if (user.LastUpdated > DateTime.UtcNow.AddHours(-32))
+                if (user.LastUpdated > DateTime.UtcNow.AddHours(-44))
                 {
                     Log.Information("Update: Skipped for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
                     return null;

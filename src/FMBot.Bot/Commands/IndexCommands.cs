@@ -144,7 +144,7 @@ namespace FMBot.Bot.Commands
                     return;
                 }
 
-                if (userSettings.LastIndexed > DateTime.UtcNow.AddHours(-1))
+                if (userSettings.LastIndexed > DateTime.UtcNow.AddHours(-10))
                 {
                     await ReplyAsync(
                         "You can't do a full index too often. Please remember that this command should only be used in case you edited your scrobble history.\n" +

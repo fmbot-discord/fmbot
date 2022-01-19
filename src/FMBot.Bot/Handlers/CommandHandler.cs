@@ -172,7 +172,7 @@ public class CommandHandler
 
             if (commandPrefixResult.IsSuccess)
             {
-                Statistics.CommandsExecuted.Inc();
+                Statistics.CommandsExecuted.WithLabels("fm").Inc();
             }
             else
             {
@@ -269,7 +269,7 @@ public class CommandHandler
 
         if (result.IsSuccess)
         {
-            Statistics.CommandsExecuted.Inc();
+            Statistics.CommandsExecuted.WithLabels("fm").Inc();
             _ = this._userService.UpdateUserLastUsedAsync(context.User.Id);
         }
         else

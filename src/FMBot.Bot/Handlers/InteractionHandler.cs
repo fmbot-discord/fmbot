@@ -48,7 +48,8 @@ public class InteractionHandler
 
         if (socketInteraction is SocketSlashCommand socketSlashCommand)
         {
-            var command = this._interactionService.SlashCommands.FirstOrDefault(f => f.Name == socketSlashCommand.CommandName);
+            var command = this._interactionService.SlashCommands
+                .FirstOrDefault(f => f.Name == socketSlashCommand.CommandName);
 
             if (command == null)
             {
