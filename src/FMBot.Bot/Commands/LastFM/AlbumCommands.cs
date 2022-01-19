@@ -67,7 +67,9 @@ public class AlbumCommands : BaseCommandModule
         TrackService trackService,
         SpotifyService spotifyService,
         IOptions<BotSettings> botSettings,
-        FriendsService friendsService, TimerService timer) : base(botSettings)
+        FriendsService friendsService,
+        TimerService timer,
+        TimeService timeService) : base(botSettings)
     {
         this._censorService = censorService;
         this._guildService = guildService;
@@ -86,6 +88,7 @@ public class AlbumCommands : BaseCommandModule
         this._spotifyService = spotifyService;
         this._friendsService = friendsService;
         this._timer = timer;
+        this._timeService = timeService;
     }
 
     [Command("album", RunMode = RunMode.Async)]
