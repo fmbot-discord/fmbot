@@ -1321,7 +1321,8 @@ public class AlbumCommands : BaseCommandModule
         }
     }
 
-    private async Task<AlbumInfo> SearchAlbum(string albumValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null, bool useCachedAlbums = false, int? userId = null)
+    private async Task<AlbumInfo> SearchAlbum(string albumValues, string lastFmUserName, string sessionKey = null,
+        string otherUserUsername = null, bool useCachedAlbums = false, int? userId = null)
     {
         string searchValue;
         if (!string.IsNullOrWhiteSpace(albumValues) && albumValues.Length != 0)

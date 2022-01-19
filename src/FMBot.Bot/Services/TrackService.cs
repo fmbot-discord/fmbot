@@ -349,8 +349,9 @@ namespace FMBot.Bot.Services
         {
             return new TrackInfo
             {
-                AlbumName = track.Name,
+                AlbumName = track.AlbumName,
                 ArtistName = track.ArtistName,
+                TrackName = track.Name,
                 Mbid = track.Mbid
             };
         }

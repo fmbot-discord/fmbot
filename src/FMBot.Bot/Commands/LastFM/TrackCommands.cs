@@ -47,6 +47,7 @@ public class TrackCommands : BaseCommandModule
     private readonly WhoKnowsPlayService _whoKnowsPlayService;
     private readonly WhoKnowsService _whoKnowsService;
     private readonly TrackService _trackService;
+    private readonly AlbumService _albumService;
 
     private InteractiveService Interactivity { get; }
 
@@ -71,7 +72,8 @@ public class TrackCommands : BaseCommandModule
         IOptions<BotSettings> botSettings,
         FriendsService friendsService,
         TimeService timeService,
-        TrackService trackService) : base(botSettings)
+        TrackService trackService,
+        AlbumService albumService) : base(botSettings)
     {
         this._guildService = guildService;
         this._indexService = indexService;
@@ -89,6 +91,7 @@ public class TrackCommands : BaseCommandModule
         this._friendsService = friendsService;
         this._timeService = timeService;
         this._trackService = trackService;
+        this._albumService = albumService;
     }
 
     [Command("track", RunMode = RunMode.Async)]
@@ -760,14 +763,14 @@ public class TrackCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Tracks, CommandCategory.WhoKnows)]
     public async Task WhoKnowsTrackAsync([Remainder] string trackValues = null)
     {
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var guildTask = this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
 
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        var track = await this.SearchTrack(trackValues, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
+        var track = await this.SearchTrack(trackValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm, useCachedTracks: true, userId: contextUser.UserId);
         if (track == null)
         {
             return;
@@ -781,14 +784,14 @@ public class TrackCommands : BaseCommandModule
         {
             var guild = await guildTask;
 
-            var currentUser = await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), userSettings);
+            var currentUser = await this._indexService.GetOrAddUserToGuild(guild, await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId), contextUser);
 
-            if (!guild.GuildUsers.Select(s => s.UserId).Contains(userSettings.UserId))
+            if (!guild.GuildUsers.Select(s => s.UserId).Contains(contextUser.UserId))
             {
                 guild.GuildUsers.Add(currentUser);
             }
 
-            await this._indexService.UpdateGuildUser(await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId), currentUser.UserId, guild);
+            await this._indexService.UpdateGuildUser(await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId), currentUser.UserId, guild);
 
             var usersWithTrack = await this._whoKnowsTrackService.GetIndexedUsersForTrack(this.Context, guild.GuildId, track.ArtistName, track.TrackName);
 
@@ -799,7 +802,7 @@ public class TrackCommands : BaseCommandModule
 
             var filteredUsersWithTrack = WhoKnowsService.FilterGuildUsersAsync(usersWithTrack, guild);
 
-            var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, userSettings.UserId, PrivacyLevel.Server);
+            var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithTrack, contextUser.UserId, PrivacyLevel.Server);
             if (filteredUsersWithTrack.Count == 0)
             {
                 serverUsers = "Nobody in this server (not even you) has listened to this track.";
@@ -873,7 +876,7 @@ public class TrackCommands : BaseCommandModule
         var guildTask = this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         var currentSettings = new WhoKnowsSettings
         {
@@ -882,9 +885,9 @@ public class TrackCommands : BaseCommandModule
             AdminView = false,
             NewSearchValue = trackValues
         };
-        var settings = this._settingService.SetWhoKnowsSettings(currentSettings, trackValues, userSettings.UserType);
+        var settings = this._settingService.SetWhoKnowsSettings(currentSettings, trackValues, contextUser.UserType);
 
-        var track = await this.SearchTrack(settings.NewSearchValue, userSettings.UserNameLastFM, userSettings.SessionKeyLastFm);
+        var track = await this.SearchTrack(settings.NewSearchValue, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm, useCachedTracks: true, userId: contextUser.UserId);
         if (track == null)
         {
             return;
@@ -900,11 +903,11 @@ public class TrackCommands : BaseCommandModule
 
             if (track.UserPlaycount != 0 && this.Context.Guild != null)
             {
-                var discordGuildUser = await this.Context.Guild.GetUserAsync(userSettings.DiscordUserId);
+                var discordGuildUser = await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId);
                 var guildUser = new GuildUser
                 {
-                    UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : userSettings.UserNameLastFM,
-                    User = userSettings
+                    UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : contextUser.UserNameLastFM,
+                    User = contextUser
                 };
                 usersWithArtist = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithArtist, guildUser, trackName, track.UserPlaycount);
             }
@@ -925,7 +928,7 @@ public class TrackCommands : BaseCommandModule
                 }
             }
 
-            var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, userSettings.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
+            var serverUsers = WhoKnowsService.WhoKnowsListToString(filteredUsersWithAlbum, contextUser.UserId, privacyLevel, hidePrivateUsers: settings.HidePrivateUsers);
             if (!filteredUsersWithAlbum.Any())
             {
                 serverUsers = "Nobody that uses .fmbot has listened to this track.";
@@ -951,7 +954,7 @@ public class TrackCommands : BaseCommandModule
             {
                 footer += "\nAdmin view enabled - not for public channels";
             }
-            if (userSettings.PrivacyLevel != PrivacyLevel.Global)
+            if (contextUser.PrivacyLevel != PrivacyLevel.Global)
             {
                 footer += $"\nYou are currently not globally visible - use '{prfx}privacy global' to enable.";
             }
@@ -1007,9 +1010,9 @@ public class TrackCommands : BaseCommandModule
         {
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var user = await this._userService.GetUserWithFriendsAsync(this.Context.User);
+            var contextUser = await this._userService.GetUserWithFriendsAsync(this.Context.User);
 
-            if (user.Friends?.Any() != true)
+            if (contextUser.Friends?.Any() != true)
             {
                 await ReplyAsync("We couldn't find any friends. To add friends:\n" +
                                  $"`{prfx}addfriends {Constants.UserMentionOrLfmUserNameExample.Replace("`", "")}`");
@@ -1019,7 +1022,7 @@ public class TrackCommands : BaseCommandModule
 
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
-            var track = await this.SearchTrack(albumValues, user.UserNameLastFM, user.SessionKeyLastFm);
+            var track = await this.SearchTrack(albumValues, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm, useCachedTracks: true, userId: contextUser.UserId);
             if (track == null)
             {
                 return;
@@ -1027,20 +1030,20 @@ public class TrackCommands : BaseCommandModule
 
             var trackName = $"{track.TrackName} by {track.ArtistName}";
 
-            var usersWithTrack = await this._whoKnowsTrackService.GetFriendUsersForTrack(this.Context, guild.GuildId, user.UserId, track.ArtistName, track.TrackName);
+            var usersWithTrack = await this._whoKnowsTrackService.GetFriendUsersForTrack(this.Context, guild.GuildId, contextUser.UserId, track.ArtistName, track.TrackName);
 
             if (track.UserPlaycount.HasValue && this.Context.Guild != null)
             {
-                var discordGuildUser = await this.Context.Guild.GetUserAsync(user.DiscordUserId);
+                var discordGuildUser = await this.Context.Guild.GetUserAsync(contextUser.DiscordUserId);
                 var guildUser = new GuildUser
                 {
-                    UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : user.UserNameLastFM,
-                    User = user
+                    UserName = discordGuildUser != null ? discordGuildUser.Nickname ?? discordGuildUser.Username : contextUser.UserNameLastFM,
+                    User = contextUser
                 };
                 usersWithTrack = WhoKnowsService.AddOrReplaceUserToIndexList(usersWithTrack, guildUser, trackName, track.UserPlaycount);
             }
 
-            var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithTrack, user.UserId, PrivacyLevel.Server);
+            var serverUsers = WhoKnowsService.WhoKnowsListToString(usersWithTrack, contextUser.UserId, PrivacyLevel.Server);
             if (usersWithTrack.Count == 0)
             {
                 serverUsers = "None of your friends have listened to this track.";
@@ -1050,7 +1053,7 @@ public class TrackCommands : BaseCommandModule
 
             var footer = "";
 
-            var amountOfHiddenFriends = user.Friends.Count(c => !c.FriendUserId.HasValue);
+            var amountOfHiddenFriends = contextUser.Friends.Count(c => !c.FriendUserId.HasValue);
             if (amountOfHiddenFriends > 0)
             {
                 footer += $"\n{amountOfHiddenFriends} non-fmbot {StringExtensions.GetFriendsString(amountOfHiddenFriends)} not visible";
@@ -1243,7 +1246,8 @@ public class TrackCommands : BaseCommandModule
         }
     }
 
-    private async Task<TrackInfo> SearchTrack(string trackValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null)
+    private async Task<TrackInfo> SearchTrack(string trackValues, string lastFmUserName, string sessionKey = null,
+        string otherUserUsername = null, bool useCachedTracks = false, int? userId = null)
     {
         string searchValue;
         if (!string.IsNullOrWhiteSpace(trackValues) && trackValues.Length != 0)
@@ -1257,11 +1261,23 @@ public class TrackCommands : BaseCommandModule
                     lastFmUserName = otherUserUsername;
                 }
 
-                var trackInfo = await this._lastFmRepository.GetTrackInfoAsync(searchValue.Split(" | ")[1], searchValue.Split(" | ")[0],
-                    lastFmUserName);
+                var trackName = searchValue.Split(" | ")[1];
+                var trackArtist = searchValue.Split(" | ")[0];
+
+                Response<TrackInfo> trackInfo;
+                if (useCachedTracks)
+                {
+                    trackInfo = await GetCachedTrack(trackArtist, trackName, lastFmUserName, userId);
+                }
+                else
+                {
+                    trackInfo = await this._lastFmRepository.GetTrackInfoAsync(trackName, trackArtist,
+                        lastFmUserName);
+                }
+
                 if (!trackInfo.Success && trackInfo.Error == ResponseStatus.MissingParameters)
                 {
-                    this._embed.WithDescription($"Track `{searchValue.Split(" | ")[1]}` by `{searchValue.Split(" | ")[0]}` could not be found, please check your search values and try again.");
+                    this._embed.WithDescription($"Track `{trackName}` by `{trackArtist}` could not be found, please check your search values and try again.");
                     await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
                     this.Context.LogCommandUsed(CommandResponse.NotFound);
                     return null;
@@ -1291,8 +1307,17 @@ public class TrackCommands : BaseCommandModule
             }
 
             var lastPlayedTrack = recentScrobbles.Content.RecentTracks[0];
-            var trackInfo = await this._lastFmRepository.GetTrackInfoAsync(lastPlayedTrack.TrackName, lastPlayedTrack.ArtistName,
-                lastFmUserName);
+
+            Response<TrackInfo> trackInfo;
+            if (useCachedTracks)
+            {
+                trackInfo = await GetCachedTrack(lastPlayedTrack.ArtistName, lastPlayedTrack.TrackName, lastFmUserName, userId);
+            }
+            else
+            {
+                trackInfo = await this._lastFmRepository.GetTrackInfoAsync(lastPlayedTrack.TrackName, lastPlayedTrack.ArtistName,
+                    lastFmUserName);
+            }
 
             if (trackInfo?.Content == null)
             {
@@ -1316,8 +1341,16 @@ public class TrackCommands : BaseCommandModule
                 lastFmUserName = otherUserUsername;
             }
 
-            var trackInfo = await this._lastFmRepository.GetTrackInfoAsync(result.Content.TrackName, result.Content.ArtistName,
-                lastFmUserName);
+            Response<TrackInfo> trackInfo;
+            if (useCachedTracks)
+            {
+                trackInfo = await GetCachedTrack(result.Content.ArtistName, result.Content.TrackName, lastFmUserName, userId);
+            }
+            else
+            {
+                trackInfo = await this._lastFmRepository.GetTrackInfoAsync(result.Content.TrackName, result.Content.ArtistName,
+                    lastFmUserName);
+            }
 
             if (trackInfo.Content == null || !trackInfo.Success)
             {
@@ -1363,6 +1396,14 @@ public class TrackCommands : BaseCommandModule
                 var userPlaycount = await this._whoKnowsTrackService.GetTrackPlayCountForUser(cachedTrack.ArtistName,
                     cachedTrack.Name, userId.Value);
                 trackInfo.Content.UserPlaycount = userPlaycount;
+            }
+
+            var cachedAlbum = await this._albumService.GetAlbumFromDatabase(cachedTrack.ArtistName, cachedTrack.AlbumName);
+            if (cachedAlbum != null)
+            {
+                trackInfo.Content.AlbumCoverUrl = cachedAlbum.SpotifyImageUrl ?? cachedAlbum.SpotifyImageUrl;
+                trackInfo.Content.AlbumUrl = cachedAlbum.LastFmUrl;
+                trackInfo.Content.TrackUrl = cachedAlbum.LastFmUrl;
             }
         }
         else
