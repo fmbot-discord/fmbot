@@ -448,12 +448,12 @@ namespace FMBot.Bot.Services
             };
         }
 
-        public async Task<IReadOnlyList<UserAlbum>> GetTopAlbums(int userId, int days)
+        public async Task<IReadOnlyList<UserAlbum>> GetUserTopAlbums(int userId, int days)
         {
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-days);
 
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.UserPlays
                 .AsQueryable()
                 .Where(t => t.TimePlayed.Date <= now.Date &&
@@ -470,12 +470,12 @@ namespace FMBot.Bot.Services
                 .ToListAsync();
         }
 
-        public async Task<TopArtistList> GetTopArtists(int userId, int days)
+        public async Task<TopArtistList> GetUserTopArtists(int userId, int days)
         {
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-days);
 
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var topArtists = await db.UserPlays
                 .AsQueryable()
                 .Where(t => t.TimePlayed.Date <= now.Date &&
@@ -497,7 +497,7 @@ namespace FMBot.Bot.Services
             };
         }
 
-        public async Task<List<UserTrack>> GetTopTracksForArtist(int userId, int days, string artistName)
+        public async Task<List<UserTrack>> GetUserTopTracksForArtist(int userId, int days, string artistName)
         {
             var now = DateTime.UtcNow;
             var minDate = DateTime.UtcNow.AddDays(-days);
@@ -634,8 +634,8 @@ namespace FMBot.Bot.Services
         {
             var cacheKey = $"guild-user-plays-{guildId}-{amountOfDays}";
 
-            var cachedYearAvailable = this._cache.TryGetValue(cacheKey, out List<UserPlay> userPlays);
-            if (cachedYearAvailable)
+            var cachedPlaysAvailable = this._cache.TryGetValue(cacheKey, out List<UserPlay> userPlays);
+            if (cachedPlaysAvailable)
             {
                 return userPlays;
             }
@@ -657,7 +657,7 @@ namespace FMBot.Bot.Services
                 guildId
             })).ToList();
 
-            this._cache.Set(cacheKey, userPlays, TimeSpan.FromMinutes(2));
+            this._cache.Set(cacheKey, userPlays, TimeSpan.FromMinutes(10));
 
             return userPlays;
         }

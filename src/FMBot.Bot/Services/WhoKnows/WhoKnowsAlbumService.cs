@@ -259,23 +259,5 @@ namespace FMBot.Bot.Services.WhoKnows
                 artistName
             })).ToList();
         }
-
-        public async Task<int> GetWeekAlbumPlaycountForGuildAsync(IEnumerable<User> guildUsers, string albumName, string artistName)
-        {
-            var now = DateTime.UtcNow;
-            var minDate = DateTime.UtcNow.AddDays(-7);
-
-            var userIds = guildUsers.Select(s => s.UserId);
-
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-            return await db.UserPlays
-                .AsQueryable()
-                .CountAsync(ab =>
-                                userIds.Contains(ab.UserId) &&
-                                ab.TimePlayed.Date <= now.Date &&
-                                ab.TimePlayed.Date > minDate.Date &&
-                                ab.AlbumName.ToLower() == albumName.ToLower() &&
-                                ab.ArtistName.ToLower() == artistName.ToLower());
-        }
     }
 }

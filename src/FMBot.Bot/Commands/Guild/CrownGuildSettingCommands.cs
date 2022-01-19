@@ -248,9 +248,9 @@ namespace FMBot.Bot.Commands.Guild
         }
 
         [Command("removeusercrowns", RunMode = RunMode.Async)]
-        [Summary("Block a user from gaining any crowns in your server")]
+        [Summary("Removes crowns from a user")]
         [Options(Constants.UserMentionExample)]
-        [Alias("deleteusercrowns", "deleteusercrown", "removeusercrowns", "removeusercws", "deleteusercws", "usercrownsdelete", "usercrownsremove")]
+        [Alias("deleteusercrowns", "deleteusercrown", "removeusercrown", "removeusercws", "deleteusercws", "usercrownsdelete", "usercrownsremove")]
         [GuildOnly]
         [RequiresIndex]
         [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]

@@ -132,9 +132,10 @@ public class PlayBuilder
 
         var embedType = contextUser.FmEmbedType;
 
+        Guild guild = null;
         if (discordGuild != null)
         {
-            var guild = await this._guildService.GetGuildAsync(discordGuild.Id);
+            guild = await this._guildService.GetGuildAsync(discordGuild.Id);
             if (guild?.FmEmbedType != null)
             {
                 embedType = guild.FmEmbedType.Value;
@@ -314,10 +315,10 @@ public class PlayBuilder
                 response.EmbedAuthor.WithName(headerText);
                 response.EmbedAuthor.WithUrl(recentTracks.Content.UserUrl);
 
-                if (discordGuild != null && !userSettings.DifferentUser)
+                if (guild != null && !userSettings.DifferentUser)
                 {
-                    var guildAlsoPlaying = await this._whoKnowsPlayService.GuildAlsoPlayingTrack(contextUser.UserId,
-                        discordGuild.Id, currentTrack.ArtistName, currentTrack.TrackName);
+                    var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(contextUser.UserId,
+                        guild, currentTrack.ArtistName, currentTrack.TrackName);
 
                     if (guildAlsoPlaying != null)
                     {
@@ -477,7 +478,7 @@ public class PlayBuilder
         if (week == null)
         {
             response.ResponseType = ResponseType.Text;
-            response.Text = "Sorry, we don't have plays for you in the selected amount of days.";
+            response.Text = "Sorry, we don't have plays for this user in the selected amount of days.";
             response.CommandResponse = CommandResponse.NoScrobbles;
             return response;
         }

@@ -243,8 +243,7 @@ public class PlayCommands : BaseCommandModule
             var response = await this._playBuilder.RecentAsync(this.Context.Guild, this.Context.Channel, this.Context.User, contextUser,
                 userSettings, amount);
 
-            await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
-
+            await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -275,8 +274,7 @@ public class PlayCommands : BaseCommandModule
             var response = await this._playBuilder.OverviewAsync(this.Context.Guild, this.Context.User, contextUser,
                 userSettings, amountOfDays);
 
-            await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
-
+            await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
@@ -294,6 +292,11 @@ public class PlayCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
     public async Task YearAsync([Remainder] string extraOptions = null)
     {
+        await ReplyAsync(
+            "This command has temporarily been disabled due to issues communicating with Last.fm. It will most likely be disabled for a while.\n" +
+            "Sorry for the inconvenience.");
+        return;
+
         _ = this.Context.Channel.TriggerTypingAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
@@ -540,7 +543,7 @@ public class PlayCommands : BaseCommandModule
         var response = await this._playBuilder.PaceAsync(this.Context.User,
             userSettings, timeSettings, goalAmount, userInfo.Playcount, timeFrom);
 
-        await this.Context.Channel.SendMessageAsync(response.Text, allowedMentions: AllowedMentions.None);
+        await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 
@@ -565,7 +568,7 @@ public class PlayCommands : BaseCommandModule
         var response = await this._playBuilder.MileStoneAsync(this.Context.Guild, this.Context.Channel, this.Context.User,
             userSettings, mileStoneAmount, userInfo.Playcount);
 
-        await this.Context.Channel.SendMessageAsync("", false, response.Embed.Build());
+        await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
     }
 

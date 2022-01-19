@@ -193,20 +193,18 @@ namespace FMBot.Bot.Extensions
 
         public static string GetAmountEnd(long amount)
         {
-            if (amount.ToString().EndsWith("1"))
-            {
-                return "st";
-            }
-            if (amount.ToString().EndsWith("2"))
-            {
-                return "nd";
-            }
-            if (amount.ToString().EndsWith("3"))
-            {
-                return "rd";
-            }
+            var amountString = amount.ToString();
 
-            return "th";
+            return amountString switch
+            {
+                { } a when a.EndsWith("11") => "th",
+                { } a when a.EndsWith("12") => "th",
+                { } a when a.EndsWith("13") => "th",
+                { } a when a.EndsWith("1") => "st",
+                { } a when a.EndsWith("2") => "nd",
+                { } a when a.EndsWith("3") => "rd",
+                _ => "th"
+            };
         }
 
         public static string GetTimeAgo(DateTime timeAgo)

@@ -4,10 +4,13 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
+using Discord;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Domain.Enums;
+using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using FMBot.Persistence.Repositories;
@@ -26,13 +29,73 @@ namespace FMBot.Bot.Services
         private readonly IMemoryCache _cache;
         private readonly BotSettings _botSettings;
         private readonly ArtistRepository _artistRepository;
+        private readonly LastFmRepository _lastFmRepository;
 
-        public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings, ArtistRepository artistRepository)
+        public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings, ArtistRepository artistRepository, LastFmRepository lastFmRepository)
         {
             this._contextFactory = contextFactory;
             this._cache = cache;
             this._artistRepository = artistRepository;
+            this._lastFmRepository = lastFmRepository;
             this._botSettings = botSettings.Value;
+        }
+
+        public async Task<(ArtistInfo artist, ResponseModel response)> GetArtist(ResponseModel response, IUser discordUser, string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null)
+        {
+            if (!string.IsNullOrWhiteSpace(artistValues) && artistValues.Length != 0)
+            {
+                if (otherUserUsername != null)
+                {
+                    lastFmUserName = otherUserUsername;
+                }
+
+                var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistValues, lastFmUserName, otherUserUsername == null ? null : sessionKey);
+                if (!artistCall.Success && artistCall.Error == ResponseStatus.MissingParameters)
+                {
+                    response.Embed.WithDescription($"Artist `{artistValues}` could not be found, please check your search values and try again.");
+                    response.CommandResponse = CommandResponse.NotFound;
+                    response.ResponseType = ResponseType.Embed;
+                    return (null, response);
+                }
+                if (!artistCall.Success || artistCall.Content == null)
+                {
+                    response.Embed.ErrorResponse(artistCall.Error, artistCall.Message, null, discordUser, "artist");
+                    response.CommandResponse = CommandResponse.LastFmError;
+                    response.ResponseType = ResponseType.Embed;
+                    return (null, response);
+                }
+
+                return (artistCall.Content, response);
+            }
+            else
+            {
+                var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
+
+                if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
+                {
+                    response.Embed = GenericEmbedService.RecentScrobbleCallFailedBuilder(recentScrobbles, lastFmUserName);
+                    response.ResponseType = ResponseType.Embed;
+                    return (null, response);
+                }
+
+                if (otherUserUsername != null)
+                {
+                    lastFmUserName = otherUserUsername;
+                }
+
+                var lastPlayedTrack = recentScrobbles.Content.RecentTracks[0];
+                var artistCall = await this._lastFmRepository.GetArtistInfoAsync(lastPlayedTrack.ArtistName, lastFmUserName);
+
+                if (artistCall.Content == null || !artistCall.Success)
+                {
+                    response.Embed.WithDescription($"Last.fm did not return a result for **{lastPlayedTrack.ArtistName}**.");
+                    response.CommandResponse = CommandResponse.NotFound;
+                    response.ResponseType = ResponseType.Embed;
+                    return (null, response);
+                }
+
+                return (artistCall.Content, response);
+            }
         }
 
         public async Task<List<TopArtist>> FillArtistImages(List<TopArtist> topArtists)

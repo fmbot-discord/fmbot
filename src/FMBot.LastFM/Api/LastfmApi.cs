@@ -62,12 +62,19 @@ namespace FMBot.LastFM.Api
 
                 signature.Append(this._secret);
                 parameters.Add("api_sig", CreateMd5(signature.ToString()));
-                
-                Statistics.LastfmAuthorizedApiCalls.Inc();
+
+                if (call == Call.RecentTracks)
+                {
+                    Statistics.LastfmAuthorizedApiCalls.WithLabels(call).Inc();
+                }
+                else
+                {
+                    Statistics.LastfmApiCalls.WithLabels(call).Inc();
+                }
             }
             else
             {
-                Statistics.LastfmApiCalls.Inc();
+                Statistics.LastfmApiCalls.WithLabels(call).Inc();
             }
 
             var url = QueryHelpers.AddQueryString(apiUrl, parameters);

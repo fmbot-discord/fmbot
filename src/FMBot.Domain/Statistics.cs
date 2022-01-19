@@ -9,10 +9,18 @@ namespace FMBot.Domain
 
 
         public static readonly Counter LastfmApiCalls = Metrics
-            .CreateCounter("lastfm_api_calls", "Amount of last.fm API calls");
+            .CreateCounter("lastfm_api_calls", "Amount of last.fm API calls",
+                new CounterConfiguration
+                {
+                    LabelNames = new[] { "method" }
+                });
 
         public static readonly Counter LastfmAuthorizedApiCalls = Metrics 
-            .CreateCounter("lastfm_authorized_api_calls", "Amount of authorized last.fm API calls");
+            .CreateCounter("lastfm_authorized_api_calls", "Amount of authorized last.fm API calls",
+                new CounterConfiguration
+                {
+                    LabelNames = new[] { "method" }
+                });
 
         public static readonly Counter LastfmImageCalls = Metrics
             .CreateCounter("lastfm_image_cdn_calls", "Amount of calls to the last.fm image cdn");
@@ -50,7 +58,11 @@ namespace FMBot.Domain
 
 
         public static readonly Counter CommandsExecuted = Metrics
-            .CreateCounter("bot_commands_executed", "Amount of commands executed");
+            .CreateCounter("bot_commands_executed", "Amount of commands executed",
+                new CounterConfiguration
+                {
+                    LabelNames = new[] { "name" }
+                });
 
         public static readonly Counter SlashCommandsExecuted = Metrics
             .CreateCounter("bot_slash_commands_executed", "Amount of slash commands executed");

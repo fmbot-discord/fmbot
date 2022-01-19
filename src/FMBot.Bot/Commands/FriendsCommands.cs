@@ -357,16 +357,7 @@ namespace FMBot.Bot.Commands
                 {
                     var foundFriend = await this._settingService.GetUser(enteredFriendParameter, contextUser, this.Context, true);
 
-                    string friendUsername;
-
-                    if (foundFriend.DifferentUser)
-                    {
-                        friendUsername = foundFriend.UserNameLastFm;
-                    }
-                    else
-                    {
-                        friendUsername = enteredFriendParameter;
-                    }
+                    var friendUsername = foundFriend.DifferentUser ? foundFriend.UserNameLastFm : enteredFriendParameter;
 
                     if (existingFriends.Where(w => w.LastFMUserName != null).Select(s => s.LastFMUserName.ToLower()).Contains(friendUsername.ToLower()) ||
                         existingFriends.Where(w => w.FriendUser != null).Select(s => s.FriendUser.UserNameLastFM.ToLower()).Contains(friendUsername.ToLower()))
@@ -401,6 +392,10 @@ namespace FMBot.Bot.Commands
                         reply += $"- *[{failedRemovedFriend}]({Constants.LastFMUserUrl}{failedRemovedFriend})*\n";
                     }
                     reply += "\n";
+                }
+                if (removedFriendsList.Count == 0 || failedRemoveFriends.Count == 0)
+                {
+                    reply += $"Could not find any friends to remove. Please enter their Last.fm username, mention them or use their Discord id.";
                 }
 
                 this._embed.WithDescription(reply);

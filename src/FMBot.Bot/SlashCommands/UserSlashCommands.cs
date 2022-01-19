@@ -192,7 +192,6 @@ public class UserSlashCommands : InteractionModuleBase
         embed.WithDescription(reply.ToString());
 
         await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
-
         this.Context.LogCommandUsed();
     }
 }

@@ -202,7 +202,7 @@ namespace FMBot.Bot.Services
         // Set LastFM Name
         public async Task SetLastFm(IUser discordUser, User newUserSettings, bool updateSessionKey = false)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var user = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);

@@ -43,7 +43,7 @@ public class ServerSlashCommands : InteractionModuleBase
         [Summary("Artist", "The artist you want to filter on")]
         [Autocomplete(typeof(ArtistAutoComplete))]string artist = null)
     {
-        _ = DeferAsync();
+        await DeferAsync();
 
         var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
@@ -65,18 +65,7 @@ public class ServerSlashCommands : InteractionModuleBase
 
         var response = await this._artistBuilders.GuildArtistsAsync("/", this.Context.Guild, guild, guildListSettings);
 
-        if (response.ResponseType == ResponseType.Embed)
-        {
-            await FollowupAsync(null, new[] { response.Embed.Build() });
-        }
-        else
-        {
-            _ = this.Interactivity.SendPaginatorAsync(
-                response.StaticPaginator,
-                (SocketInteraction)this.Context.Interaction,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
-                InteractionResponseType.DeferredChannelMessageWithSource);
-        }
+        await this.Context.SendFollowUpResponse(this.Interactivity, response);
 
         this.Context.LogCommandUsed(response.CommandResponse);
     }

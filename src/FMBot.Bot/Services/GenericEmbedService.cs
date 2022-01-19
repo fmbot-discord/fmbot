@@ -27,15 +27,16 @@ namespace FMBot.Bot.Services
             embed.WithColor(DiscordConstants.WarningColorOrange);
         }
 
+        public static void RateLimitedResponse(this EmbedBuilder embed)
+        {
+            embed.WithDescription($"Sorry, you're being ratelimited. Please slow down a bit with using commands.");
+
+            embed.WithColor(DiscordConstants.WarningColorOrange);
+        }
+
         public static void UserBlockedResponse(this EmbedBuilder embed, string prfx)
         {
-            embed.WithTitle("You are not allowed to use .fmbot.");
-            embed.WithDescription("You have been blocked from using .fmbot.\n\n" +
-                                  "This is probably for a good reason, but if you think this is a mistake you can try contacting us on our support server.\n\n" +
-                                  "If you happen to be banned from our support server as well you won't get unblocked. " +
-                                  "Maybe host .fmbot yourself since its open-source and maintained by volunteers? " +
-                                  "Or consider looking for an alternative.");
-
+            embed.WithDescription("You're banned from using .fmbot.");
             embed.WithThumbnailUrl("https://i.imgur.com/wNmcoR5.jpg");
 
             embed.WithColor(DiscordConstants.WarningColorOrange);
@@ -59,7 +60,7 @@ namespace FMBot.Bot.Services
                                   $"Usually it takes a few minutes before Last.fm starts working with Spotify after connecting.\n\n" +
                                   $"Please note that .fmbot is **not** affiliated with Last.fm or Spotify.");
 
-            embed.WithColor(DiscordConstants.WarningColorOrange);
+            embed.WithColor(DiscordConstants.InformationColorBlue);
         }
 
         public static void ErrorResponse(this EmbedBuilder embed, ResponseStatus? responseStatus, string message, string commandContent, IUser contextUser = null, string expectedResultType = null)
@@ -73,16 +74,16 @@ namespace FMBot.Bot.Services
                     break;
                 case ResponseStatus.LoginRequired:
                     embed.WithDescription("Can't retrieve data because your recent tracks are marked as private in your [Last.fm privacy settings](https://www.last.fm/settings/privacy).\n\n" +
-                                          "You can either change this setting or authorize .fmbot to access your private scrobbles with `.fmlogin`.\n\n" +
+                                          "You can either change this setting or authorize .fmbot to access your private scrobbles with `/login`.\n\n" +
                                           "Please note that .fmbot isn't affiliated with Last.fm.");
                     break;
                 case ResponseStatus.BadAuth:
                     embed.WithDescription("Can't retrieve data because your Last.fm session is expired, invalid or Last.fm is having issues.\n" +
-                                          "Please try a re-login to the bot with `.fmlogin`.");
+                                          "Please try a re-login to the bot with `/login`.");
                     break;
                 case ResponseStatus.SessionExpired:
                     embed.WithDescription("Can't retrieve data because your Last.fm session is expired or invalid.\n" +
-                                          "Please re-login to the bot with `.fmlogin`.");
+                                          "Please re-login to the bot with `/login`.");
                     break;
                 case ResponseStatus.MissingParameters:
                     if (expectedResultType != null)

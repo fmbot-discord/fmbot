@@ -136,6 +136,16 @@ namespace FMBot.Bot.Commands.LastFM
 
                 chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, this.Context);
 
+                if (chartSettings.ImagesNeeded > 100)
+                {
+                    const string reply = $"You can't create a chart with more then 100 images (10x10).\n" +
+                                         $"Please try a smaller size.";
+
+                    await ReplyAsync(reply);
+                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                    return;
+                }
+
                 var extraAlbums = 0;
                 if (chartSettings.SkipWithoutImage)
                 {

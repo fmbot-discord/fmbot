@@ -124,7 +124,7 @@ namespace FMBot.Bot.Commands
         [Summary("Info for what to do when now playing track is lagging behind")]
         [Alias("broken", "sync", "fix", "lagging", "stuck")]
         [CommandCategories(CommandCategory.Other)]
-        public async Task OutOfSyncAsync()
+        public async Task OutOfSyncAsync([Remainder]string options = null)
         {
             var embedDescription = new StringBuilder();
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);

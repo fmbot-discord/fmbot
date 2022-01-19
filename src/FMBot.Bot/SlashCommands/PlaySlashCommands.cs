@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
@@ -22,6 +23,8 @@ public class PlaySlashCommands : InteractionModuleBase
     private readonly GuildService _guildService;
     private readonly LastFmRepository _lastFmRepository;
 
+    private InteractiveService Interactivity { get; }
+
     private static readonly List<DateTimeOffset> StackCooldownTimer = new();
     private static readonly List<ulong> StackCooldownTarget = new();
 
@@ -29,13 +32,15 @@ public class PlaySlashCommands : InteractionModuleBase
         SettingService settingService,
         PlayBuilder playBuilder,
         GuildService guildService,
-        LastFmRepository lastFmRepository)
+        LastFmRepository lastFmRepository,
+        InteractiveService interactivity)
     {
         this._userService = userService;
         this._settingService = settingService;
         this._playBuilder = playBuilder;
         this._guildService = guildService;
         this._lastFmRepository = lastFmRepository;
+        this.Interactivity = interactivity;
     }
 
     [SlashCommand("fm", "Now Playing - Shows you or someone else their current track")]
@@ -79,16 +84,8 @@ public class PlaySlashCommands : InteractionModuleBase
         var response = await this._playBuilder.NowPlayingAsync("/", this.Context.Guild, this.Context.Channel,
             this.Context.User, contextUser, userSettings);
 
+        await this.Context.SendFollowUpResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
-
-        if (response.ResponseType == ResponseType.Embed)
-        {
-            await FollowupAsync(null, new[] { response.Embed.Build() });
-        }
-        else
-        {
-            await FollowupAsync(response.Text, allowedMentions: AllowedMentions.None);
-        }
 
         var message = await this.Context.Interaction.GetOriginalResponseAsync();
 
@@ -126,8 +123,7 @@ public class PlaySlashCommands : InteractionModuleBase
             var response = await this._playBuilder.RecentAsync(this.Context.Guild, this.Context.Channel, this.Context.User, contextUser,
                 userSettings, amount);
 
-            await RespondAsync(null, new[] { response.Embed.Build() });
-
+            await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
@@ -159,8 +155,7 @@ public class PlaySlashCommands : InteractionModuleBase
             var response = await this._playBuilder.OverviewAsync(this.Context.Guild, this.Context.User, contextUser,
                 userSettings, amount);
 
-            await FollowupAsync(null, new[] { response.Embed.Build() });
-
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
@@ -204,8 +199,7 @@ public class PlaySlashCommands : InteractionModuleBase
             var response = await this._playBuilder.PaceAsync(this.Context.User,
                 userSettings, timeSettings, goalAmount, userInfo.Playcount, timeFrom);
 
-            await FollowupAsync(response.Text, allowedMentions: AllowedMentions.None);
-
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
@@ -236,8 +230,7 @@ public class PlaySlashCommands : InteractionModuleBase
             var response = await this._playBuilder.MileStoneAsync(this.Context.Guild, this.Context.Channel, this.Context.User,
                 userSettings, mileStoneAmount, userInfo.Playcount);
 
-            await FollowupAsync(null, new[] { response.Embed.Build() }, allowedMentions: AllowedMentions.None);
-
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed();
         }
         catch (Exception e)

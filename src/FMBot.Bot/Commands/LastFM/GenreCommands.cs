@@ -138,7 +138,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     artists = new Response<TopArtistList>
                     {
-                        Content = await this._playService.GetTopArtists(userSettings.UserId,
+                        Content = await this._playService.GetUserTopArtists(userSettings.UserId,
                             timeSettings.PlayDays.GetValueOrDefault())
                     };
                 }

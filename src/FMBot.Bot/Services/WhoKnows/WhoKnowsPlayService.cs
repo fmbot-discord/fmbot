@@ -46,19 +46,9 @@ namespace FMBot.Bot.Services.WhoKnows
             }
         }
 
-        public async Task<string> GuildAlsoPlayingTrack(int userId, ulong? discordGuildId, string artistName, string trackName)
+        public string GuildAlsoPlayingTrack(int userId, Persistence.Domain.Models.Guild guild, string artistName, string trackName)
         {
-            if (!discordGuildId.HasValue)
-            {
-                return null;
-            }
-
-            await using var db = this._contextFactory.CreateDbContext();
-            var guild = await db.Guilds
-                .Include(i => i.GuildUsers.Where(w => w.UserId != userId))
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId.Value);
-
-            if (guild == null || !guild.GuildUsers.Any())
+            if (guild?.GuildUsers == null || !guild.GuildUsers.Any())
             {
                 return null;
             }
@@ -66,7 +56,7 @@ namespace FMBot.Bot.Services.WhoKnows
             var foundUsers = new List<GuildUser>();
             var userPlays = new List<UserPlay>();
 
-            foreach (var user in guild.GuildUsers)
+            foreach (var user in guild.GuildUsers.Where(w => w.UserId != userId))
             {
                 var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlay userPlay);
 
@@ -82,39 +72,23 @@ namespace FMBot.Bot.Services.WhoKnows
                 return null;
             }
 
-            if (foundUsers.Count == 1)
+            return foundUsers.Count switch
             {
-                return $"{foundUsers.First().UserName} was also listening to this track {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!";
-            }
-            if (foundUsers.Count == 2)
-            {
-                return $"{foundUsers[0].UserName} and {foundUsers[1].UserName} were also recently listening to this track!";
-            }
-            if (foundUsers.Count == 3)
-            {
-                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName} and {foundUsers[2].UserName} were also recently listening to this track!";
-            }
-            if (foundUsers.Count > 3)
-            {
-                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this track!";
-            }
-
-            return null;
+                1 =>
+                    $"{foundUsers.First().UserName} was also listening to this track {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!",
+                2 =>
+                    $"{foundUsers[0].UserName} and {foundUsers[1].UserName} were also recently listening to this track!",
+                3 =>
+                    $"{foundUsers[0].UserName}, {foundUsers[1].UserName} and {foundUsers[2].UserName} were also recently listening to this track!",
+                > 3 =>
+                    $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this track!",
+                _ => null
+            };
         }
 
-        public async Task<string> GuildAlsoPlayingAlbum(int userId, ulong? discordGuildId, string artistName, string albumName)
+        public string GuildAlsoPlayingAlbum(int userId, Persistence.Domain.Models.Guild guild, string artistName, string albumName)
         {
-            if (!discordGuildId.HasValue)
-            {
-                return null;
-            }
-
-            await using var db = this._contextFactory.CreateDbContext();
-            var guild = await db.Guilds
-                .Include(i => i.GuildUsers.Where(w => w.UserId != userId))
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId.Value);
-
-            if (guild == null || !guild.GuildUsers.Any())
+            if (guild?.GuildUsers == null || !guild.GuildUsers.Any())
             {
                 return null;
             }
@@ -122,7 +96,7 @@ namespace FMBot.Bot.Services.WhoKnows
             var foundUsers = new List<GuildUser>();
             var userPlays = new List<UserPlay>();
 
-            foreach (var user in guild.GuildUsers)
+            foreach (var user in guild.GuildUsers.Where(w => w.UserId != userId))
             {
                 var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlay userPlay);
 
@@ -138,39 +112,23 @@ namespace FMBot.Bot.Services.WhoKnows
                 return null;
             }
 
-            if (foundUsers.Count == 1)
+            return foundUsers.Count switch
             {
-                return $"{foundUsers.First().UserName} was also listening to this album {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!";
-            }
-            if (foundUsers.Count == 2)
-            {
-                return $"{foundUsers[0].UserName} and {foundUsers[1].UserName} were also recently listening to this album!";
-            }
-            if (foundUsers.Count == 3)
-            {
-                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName} and {foundUsers[2].UserName} were also recently listening to this album!";
-            }
-            if (foundUsers.Count > 3)
-            {
-                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this album!";
-            }
-
-            return null;
+                1 =>
+                    $"{foundUsers.First().UserName} was also listening to this album {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!",
+                2 =>
+                    $"{foundUsers[0].UserName} and {foundUsers[1].UserName} were also recently listening to this album!",
+                3 =>
+                    $"{foundUsers[0].UserName}, {foundUsers[1].UserName} and {foundUsers[2].UserName} were also recently listening to this album!",
+                > 3 =>
+                    $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this album!",
+                _ => null
+            };
         }
 
-        public async Task<string> GuildAlsoPlayingArtist(int userId, ulong? discordGuildId, string artistName)
+        public string GuildAlsoPlayingArtist(int userId, Persistence.Domain.Models.Guild guild, string artistName)
         {
-            if (!discordGuildId.HasValue)
-            {
-                return null;
-            }
-
-            await using var db = this._contextFactory.CreateDbContext();
-            var guild = await db.Guilds
-                .Include(i => i.GuildUsers.Where(w => w.UserId != userId))
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId.Value);
-
-            if (guild == null || !guild.GuildUsers.Any())
+            if (guild?.GuildUsers == null || !guild.GuildUsers.Any())
             {
                 return null;
             }
@@ -178,7 +136,7 @@ namespace FMBot.Bot.Services.WhoKnows
             var foundUsers = new List<GuildUser>();
             var userPlays = new List<UserPlay>();
 
-            foreach (var user in guild.GuildUsers)
+            foreach (var user in guild.GuildUsers.Where(w => w.UserId != userId))
             {
                 var userFound = this._cache.TryGetValue($"{user.UserId}-last-play", out UserPlay userPlay);
 
@@ -194,24 +152,18 @@ namespace FMBot.Bot.Services.WhoKnows
                 return null;
             }
 
-            if (foundUsers.Count == 1)
+            return foundUsers.Count switch
             {
-                return $"{foundUsers.First().UserName} was also listening to this artist {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!";
-            }
-            if (foundUsers.Count == 2)
-            {
-                return $"{foundUsers[0].UserName} and {foundUsers[1].UserName} were also recently listening to this artist!";
-            }
-            if (foundUsers.Count == 3)
-            {
-                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName} and {foundUsers[2].UserName} were also recently listening to this artist!";
-            }
-            if (foundUsers.Count > 3)
-            {
-                return $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this artist!";
-            }
-
-            return null;
+                1 =>
+                    $"{foundUsers.First().UserName} was also listening to this artist {StringExtensions.GetTimeAgo(userPlays.First().TimePlayed)}!",
+                2 =>
+                    $"{foundUsers[0].UserName} and {foundUsers[1].UserName} were also recently listening to this artist!",
+                3 =>
+                    $"{foundUsers[0].UserName}, {foundUsers[1].UserName} and {foundUsers[2].UserName} were also recently listening to this artist!",
+                > 3 =>
+                    $"{foundUsers[0].UserName}, {foundUsers[1].UserName}, {foundUsers[2].UserName} and {foundUsers.Count - 3} others were also recently listening to this artist!",
+                _ => null
+            };
         }
     }
 }

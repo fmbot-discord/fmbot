@@ -13,6 +13,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Serilog;
 
@@ -31,6 +32,7 @@ public class CommandHandler
     private readonly IChannelDisabledCommandService _channelDisabledCommandService;
     private readonly IServiceProvider _provider;
     private readonly BotSettings _botSettings;
+    private readonly IMemoryCache _cache;
 
     // DiscordSocketClient, CommandService, IConfigurationRoot, and IServiceProvider are injected automatically from the IServiceProvider
     public CommandHandler(
@@ -44,7 +46,8 @@ public class CommandHandler
         MusicBotService musicBotService,
         IOptions<BotSettings> botSettings,
         GuildService guildService,
-        InteractiveService interactiveService)
+        InteractiveService interactiveService,
+        IMemoryCache cache)
     {
         this._discord = discord;
         this._commands = commands;
@@ -56,6 +59,7 @@ public class CommandHandler
         this._musicBotService = musicBotService;
         this._guildService = guildService;
         this._interactiveService = interactiveService;
+        this._cache = cache;
         this._botSettings = botSettings.Value;
         this._discord.MessageReceived += OnMessageReceivedAsync;
     }
@@ -172,7 +176,7 @@ public class CommandHandler
 
             if (commandPrefixResult.IsSuccess)
             {
-                Statistics.CommandsExecuted.Inc();
+                Statistics.CommandsExecuted.WithLabels("fm").Inc();
             }
             else
             {
@@ -204,6 +208,17 @@ public class CommandHandler
                 embed.UsernameNotSetErrorResponse(prfx ?? this._botSettings.Bot.Prefix, userNickname ?? context.User.Username);
                 await context.Channel.SendMessageAsync("", false, embed.Build());
                 context.LogCommandUsed(CommandResponse.UsernameNotSet);
+                return;
+            }
+
+            var rateLimit = CheckUserRateLimit(context.User.Id);
+            if (!rateLimit)
+            {
+                var embed = new EmbedBuilder()
+                    .WithColor(DiscordConstants.WarningColorOrange);
+                embed.RateLimitedResponse();
+                await context.Channel.SendMessageAsync("", false, embed.Build());
+                context.LogCommandUsed(CommandResponse.RateLimited);
                 return;
             }
         }
@@ -269,7 +284,7 @@ public class CommandHandler
 
         if (result.IsSuccess)
         {
-            Statistics.CommandsExecuted.Inc();
+            Statistics.CommandsExecuted.WithLabels("fm").Inc();
             _ = this._userService.UpdateUserLastUsedAsync(context.User.Id);
         }
         else
@@ -277,6 +292,28 @@ public class CommandHandler
             Log.Error(result.ToString(), context.Message.Content);
         }
     }
+
+    private bool CheckUserRateLimit(ulong discordUserId)
+    {
+        var cacheKey = $"{discordUserId}-ratelimit";
+        if (this._cache.TryGetValue(cacheKey, out int requestsInLastMinute))
+        {
+            if (requestsInLastMinute > 25)
+            {
+                return false;
+            }
+
+            requestsInLastMinute++;
+            this._cache.Set(cacheKey, requestsInLastMinute, TimeSpan.FromSeconds(60 - requestsInLastMinute));
+        }
+        else
+        {
+            this._cache.Set(cacheKey, 1, TimeSpan.FromMinutes(1));
+        }
+
+        return true;
+    }
+
 
     private async Task<bool> CommandDisabled(SocketCommandContext context, SearchResult searchResult)
     {
