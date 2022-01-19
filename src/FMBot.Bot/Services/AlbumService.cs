@@ -105,7 +105,8 @@ namespace FMBot.Bot.Services
                 AlbumCoverUrl = album.SpotifyImageUrl ?? album.LastfmImageUrl,
                 AlbumName = album.Name,
                 ArtistName = album.ArtistName,
-                Mbid = album.Mbid
+                Mbid = album.Mbid,
+                AlbumUrl = album.LastFmUrl
             };
         }
     }
