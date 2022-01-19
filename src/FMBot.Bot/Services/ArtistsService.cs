@@ -8,8 +8,10 @@ using Discord;
 using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Domain.Enums;
+using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -30,17 +32,20 @@ namespace FMBot.Bot.Services
         private readonly BotSettings _botSettings;
         private readonly ArtistRepository _artistRepository;
         private readonly LastFmRepository _lastFmRepository;
+        private readonly WhoKnowsArtistService _whoKnowsArtistService;
 
-        public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings, ArtistRepository artistRepository, LastFmRepository lastFmRepository)
+        public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings, ArtistRepository artistRepository, LastFmRepository lastFmRepository, WhoKnowsArtistService whoKnowsArtistService)
         {
             this._contextFactory = contextFactory;
             this._cache = cache;
             this._artistRepository = artistRepository;
             this._lastFmRepository = lastFmRepository;
+            this._whoKnowsArtistService = whoKnowsArtistService;
             this._botSettings = botSettings.Value;
         }
 
-        public async Task<(ArtistInfo artist, ResponseModel response)> GetArtist(ResponseModel response, IUser discordUser, string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null)
+        public async Task<(ArtistInfo artist, ResponseModel response)> GetArtist(ResponseModel response, IUser discordUser, string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
+            bool useCachedArtists = false, int? userId = null)
         {
             if (!string.IsNullOrWhiteSpace(artistValues) && artistValues.Length != 0)
             {
@@ -49,7 +54,16 @@ namespace FMBot.Bot.Services
                     lastFmUserName = otherUserUsername;
                 }
 
-                var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistValues, lastFmUserName, otherUserUsername == null ? null : sessionKey);
+                Response<ArtistInfo> artistCall;
+                if (useCachedArtists)
+                {
+                    artistCall = await GetCachedArtist(artistValues, lastFmUserName, userId);
+                }
+                else
+                {
+                    artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistValues, lastFmUserName, otherUserUsername == null ? null : sessionKey);
+                }
+
                 if (!artistCall.Success && artistCall.Error == ResponseStatus.MissingParameters)
                 {
                     response.Embed.WithDescription($"Artist `{artistValues}` could not be found, please check your search values and try again.");
@@ -84,7 +98,15 @@ namespace FMBot.Bot.Services
                 }
 
                 var lastPlayedTrack = recentScrobbles.Content.RecentTracks[0];
-                var artistCall = await this._lastFmRepository.GetArtistInfoAsync(lastPlayedTrack.ArtistName, lastFmUserName);
+                Response<ArtistInfo> artistCall;
+                if (useCachedArtists)
+                {
+                    artistCall = await GetCachedArtist(lastPlayedTrack.ArtistName, lastFmUserName, userId);
+                }
+                else
+                {
+                    artistCall = await this._lastFmRepository.GetArtistInfoAsync(lastPlayedTrack.ArtistName, lastFmUserName, otherUserUsername == null ? null : sessionKey);
+                }
 
                 if (artistCall.Content == null || !artistCall.Success)
                 {
@@ -96,6 +118,42 @@ namespace FMBot.Bot.Services
 
                 return (artistCall.Content, response);
             }
+        }
+
+        private async Task<Response<ArtistInfo>> GetCachedArtist(string artistName, string lastFmUserName, int? userId = null)
+        {
+            Response<ArtistInfo> artistInfo;
+            var cachedArtist = await GetArtistFromDatabase(artistName);
+            if (cachedArtist != null)
+            {
+                artistInfo = new Response<ArtistInfo>
+                {
+                    Content = CachedArtistToArtistInfo(cachedArtist),
+                    Success = true
+                };
+
+                if (userId.HasValue)
+                {
+                    var userPlaycount = await this._whoKnowsArtistService.GetArtistPlayCountForUser(cachedArtist.Name, userId.Value);
+                    artistInfo.Content.UserPlaycount = userPlaycount;
+                }
+            }
+            else
+            {
+                artistInfo = await this._lastFmRepository.GetArtistInfoAsync(artistName, lastFmUserName);
+            }
+
+            return artistInfo;
+        }
+
+        private ArtistInfo CachedArtistToArtistInfo(Artist artist)
+        {
+            return new ArtistInfo
+            {
+                ArtistName = artist.Name,
+                ArtistUrl = artist.LastFmUrl,
+                Mbid = artist.Mbid
+            };
         }
 
         public async Task<List<TopArtist>> FillArtistImages(List<TopArtist> topArtists)
