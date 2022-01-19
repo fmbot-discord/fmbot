@@ -185,7 +185,7 @@ namespace FMBot.Bot.Commands.LastFM
                 for (var i = 0; i < amountToFetch; i++)
                 {
                     var albumWithoutImage = albumsWithoutImage[i];
-                    var albumCall = await this._lastFmRepository.GetAlbumInfoAsync(albumWithoutImage.ArtistName, albumWithoutImage.AlbumName, userSettings.UserNameLastFm, userSettings.DifferentUser ? null : userSettings.SessionKeyLastFm);
+                    var albumCall = await this._lastFmRepository.GetAlbumInfoAsync(albumWithoutImage.ArtistName, albumWithoutImage.AlbumName, userSettings.UserNameLastFm);
                     if (albumCall.Success && albumCall.Content?.AlbumUrl != null)
                     {
                         var spotifyArtistImage = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumCall.Content);
@@ -379,7 +379,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     var artistWithoutImage = artistsWithoutImages[i];
 
-                    var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistWithoutImage.ArtistName, userSettings.UserNameLastFm, userSettings.DifferentUser ? null : userSettings.SessionKeyLastFm);
+                    var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistWithoutImage.ArtistName, userSettings.UserNameLastFm);
                     if (artistCall.Success && artistCall.Content?.ArtistUrl != null)
                     {
                         var spotifyArtistImage = await this._spotifyService.GetOrStoreArtistAsync(artistCall.Content);

@@ -114,7 +114,7 @@ namespace FMBot.Bot.Commands.LastFM
                 if (!timeSettings.UsePlays && timeSettings.TimePeriod != TimePeriod.AllTime)
                 {
                     artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm,
-                        timeSettings, 1000, userSessionKey: userSettings.SessionKeyLastFm);
+                        timeSettings, 1000);
 
                     if (!artists.Success || artists.Content == null)
                     {
@@ -156,7 +156,7 @@ namespace FMBot.Bot.Commands.LastFM
                 if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
                 {
                     var previousArtistsCall = await this._lastFmRepository
-                        .GetTopArtistsForCustomTimePeriodAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200, userSettings.SessionKeyLastFm);
+                        .GetTopArtistsForCustomTimePeriodAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200);
 
                     if (previousArtistsCall.Success)
                     {

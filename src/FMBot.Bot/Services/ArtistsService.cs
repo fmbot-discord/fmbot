@@ -61,7 +61,7 @@ namespace FMBot.Bot.Services
                 }
                 else
                 {
-                    artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistValues, lastFmUserName, otherUserUsername == null ? null : sessionKey);
+                    artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistValues, lastFmUserName);
                 }
 
                 if (!artistCall.Success && artistCall.Error == ResponseStatus.MissingParameters)
@@ -105,7 +105,7 @@ namespace FMBot.Bot.Services
                 }
                 else
                 {
-                    artistCall = await this._lastFmRepository.GetArtistInfoAsync(lastPlayedTrack.ArtistName, lastFmUserName, otherUserUsername == null ? null : sessionKey);
+                    artistCall = await this._lastFmRepository.GetArtistInfoAsync(lastPlayedTrack.ArtistName, lastFmUserName);
                 }
 
                 if (artistCall.Content == null || !artistCall.Success)

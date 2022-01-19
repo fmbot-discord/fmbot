@@ -135,12 +135,6 @@ public class ArtistCommands : BaseCommandModule
 
         var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.AllTime, cachedOrAllTimeOnly: true, dailyTimePeriods: false);
 
-        var artist = await GetArtist(timeSettings.NewSearchValue, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm, userSettings.UserNameLastFm);
-        if (artist == null)
-        {
-            return;
-        }
-
         var response = await this._artistBuilders.ArtistTracksAsync(this.Context.Guild, this.Context.User, contextUser, timeSettings,
             userSettings, userSettings.NewSearchValue);
 
@@ -164,13 +158,23 @@ public class ArtistCommands : BaseCommandModule
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
 
-        var artist = await GetArtist(userSettings.NewSearchValue, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm, userSettings.UserNameLastFm);
-        if (artist == null)
+        var response = new ResponseModel();
+        var artist = await this._artistsService.GetArtist(response,
+            this.Context.User,
+            userSettings.NewSearchValue,
+            contextUser.UserNameLastFM,
+            contextUser.SessionKeyLastFm,
+            userSettings.UserNameLastFm,
+            true,
+            userSettings.UserId);
+        if (artist.artist == null)
         {
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
             return;
         }
 
-        var topAlbums = await this._artistsService.GetTopAlbumsForArtist(userSettings.UserId, artist.ArtistName);
+        var topAlbums = await this._artistsService.GetTopAlbumsForArtist(userSettings.UserId, artist.artist.ArtistName);
         var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
         if (topAlbums.Count == 0)
@@ -178,10 +182,11 @@ public class ArtistCommands : BaseCommandModule
             this._embed.WithDescription(
                 $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()} has no scrobbles for this artist or their scrobbles have no album associated with them.");
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
             return;
         }
 
-        var url = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/music/{UrlEncoder.Default.Encode(artist.ArtistName)}";
+        var url = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/music/{UrlEncoder.Default.Encode(artist.artist.ArtistName)}";
         if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
         {
             this._embedAuthor.WithUrl(url);
@@ -207,14 +212,14 @@ public class ArtistCommands : BaseCommandModule
 
             if (userSettings.DifferentUser && userSettings.UserId != contextUser.UserId)
             {
-                footer.AppendLine($" - {userSettings.UserNameLastFm} has {artist.UserPlaycount} total scrobbles on this artist");
+                footer.AppendLine($" - {userSettings.UserNameLastFm} has {artist.artist.UserPlaycount} total scrobbles on this artist");
                 footer.AppendLine($"Requested by {userTitle}");
-                title.Append($"{userSettings.DiscordUserName} their top albums for '{artist.ArtistName}'");
+                title.Append($"{userSettings.DiscordUserName} their top albums for '{artist.artist.ArtistName}'");
             }
             else
             {
-                footer.Append($" - {userTitle} has {artist.UserPlaycount} total scrobbles on this artist");
-                title.Append($"Your top albums for '{artist.ArtistName}'");
+                footer.Append($" - {userTitle} has {artist.artist.UserPlaycount} total scrobbles on this artist");
+                title.Append($"Your top albums for '{artist.artist.ArtistName}'");
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
             }
@@ -302,7 +307,7 @@ public class ArtistCommands : BaseCommandModule
             _ = this.Context.Channel.TriggerTypingAsync();
 
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
+            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
 
             var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.Monthly, cachedOrAllTimeOnly: true);
 
@@ -378,7 +383,7 @@ public class ArtistCommands : BaseCommandModule
             this._embedAuthor.WithUrl(userUrl);
 
             var artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm,
-                timeSettings, 200, 1, userSettings.SessionKeyLastFm);
+                timeSettings, 200, 1);
 
             if (!artists.Success || artists.Content == null)
             {
@@ -400,7 +405,7 @@ public class ArtistCommands : BaseCommandModule
             if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
             {
                 var previousArtistsCall = await this._lastFmRepository
-                    .GetTopArtistsForCustomTimePeriodAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200, userSettings.SessionKeyLastFm);
+                    .GetTopArtistsForCustomTimePeriodAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200);
 
                 if (previousArtistsCall.Success)
                 {
@@ -956,7 +961,7 @@ public class ArtistCommands : BaseCommandModule
                 lastFmUserName = otherUserUsername;
             }
 
-            var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistValues, lastFmUserName, otherUserUsername == null ? null : sessionKey);
+            var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistValues, lastFmUserName);
             if (!artistCall.Success && artistCall.Error == ResponseStatus.MissingParameters)
             {
                 this._embed.WithDescription($"Artist `{artistValues}` could not be found, please check your search values and try again.");

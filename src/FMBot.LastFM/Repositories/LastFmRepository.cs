@@ -293,22 +293,14 @@ namespace FMBot.LastFM.Repositories
         }
 
         // User
-        public async Task<UserLfm> GetLfmUserInfoAsync(string lastFmUserName, string sessionKey = null)
+        public async Task<UserLfm> GetLfmUserInfoAsync(string lastFmUserName)
         {
             var queryParams = new Dictionary<string, string>
             {
                 {"user", lastFmUserName }
             };
 
-            var authorizedCall = false;
-
-            if (!string.IsNullOrEmpty(sessionKey))
-            {
-                queryParams.Add("sk", sessionKey);
-                authorizedCall = true;
-            }
-
-            var userCall = await this._lastFmApi.CallApiAsync<UserResponseLfm>(queryParams, Call.UserInfo, authorizedCall);
+            var userCall = await this._lastFmApi.CallApiAsync<UserResponseLfm>(queryParams, Call.UserInfo);
 
             return !userCall.Success ? null : userCall.Content.User;
         }
@@ -420,7 +412,7 @@ namespace FMBot.LastFM.Repositories
 
         }
 
-        public async Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username, string sessionKey = null)
+        public async Task<Response<ArtistInfo>> GetArtistInfoAsync(string artistName, string username)
         {
             var queryParams = new Dictionary<string, string>
             {
@@ -429,15 +421,7 @@ namespace FMBot.LastFM.Repositories
                 {"autocorrect", "1"}
             };
 
-            var authorizedCall = false;
-
-            if (!string.IsNullOrEmpty(sessionKey))
-            {
-                queryParams.Add("sk", sessionKey);
-                authorizedCall = true;
-            }
-
-            var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo, authorizedCall);
+            var artistCall = await this._lastFmApi.CallApiAsync<ArtistInfoLfmResponse>(queryParams, Call.ArtistInfo);
 
             if (artistCall.Success)
             {
@@ -479,7 +463,7 @@ namespace FMBot.LastFM.Repositories
             };
         }
 
-        public async Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, string username = null, string sessionKey = null)
+        public async Task<Response<AlbumInfo>> GetAlbumInfoAsync(string artistName, string albumName, string username = null)
         {
             var queryParams = new Dictionary<string, string>
             {
@@ -487,19 +471,12 @@ namespace FMBot.LastFM.Repositories
                 {"album", albumName }
             };
 
-            var authorizedCall = false;
-
-            if (!string.IsNullOrEmpty(sessionKey))
-            {
-                queryParams.Add("sk", sessionKey);
-                authorizedCall = true;
-            }
             if (!string.IsNullOrEmpty(username))
             {
                 queryParams.Add("username", username);
             }
 
-            var albumCall = await this._lastFmApi.CallApiAsync<AlbumInfoLfmResponse>(queryParams, Call.AlbumInfo, authorizedCall);
+            var albumCall = await this._lastFmApi.CallApiAsync<AlbumInfoLfmResponse>(queryParams, Call.AlbumInfo);
             if (albumCall.Success)
             {
                 var linkToFilter = $"<a href=\"{albumCall.Content.Album.Url}\">Read more on Last.fm</a>";
@@ -591,7 +568,7 @@ namespace FMBot.LastFM.Repositories
         }
 
         public async Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName,
-            TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1, string userSessionKey = null)
+            TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1)
         {
             if (!timeSettings.StartDateTime.HasValue || !timeSettings.EndDateTime.HasValue)
             {
@@ -599,7 +576,7 @@ namespace FMBot.LastFM.Repositories
             }
 
             return await GetTopAlbumsForCustomTimePeriodAsyncAsync(lastFmUserName, timeSettings.StartDateTime.Value,
-                timeSettings.EndDateTime.Value, (int)count, userSessionKey);
+                timeSettings.EndDateTime.Value, (int)count);
         }
 
         // Top albums
@@ -655,7 +632,7 @@ namespace FMBot.LastFM.Repositories
         }
 
         public async Task<Response<TopAlbumList>> GetTopAlbumsForCustomTimePeriodAsyncAsync(string lastFmUserName,
-            DateTime startDateTime, DateTime endDateTime, int count, string userSessionKey = null)
+            DateTime startDateTime, DateTime endDateTime, int count)
         {
             var start = ((DateTimeOffset)startDateTime).ToUnixTimeSeconds();
             var end = ((DateTimeOffset)endDateTime).ToUnixTimeSeconds();
@@ -667,14 +644,7 @@ namespace FMBot.LastFM.Repositories
                 {"to", end.ToString() },
             };
 
-            var authorizedCall = false;
-            if (!string.IsNullOrEmpty(userSessionKey))
-            {
-                queryParams.Add("sk", userSessionKey);
-                authorizedCall = true;
-            }
-
-            var artistCall = await this._lastFmApi.CallApiAsync<WeeklyAlbumChartsResponse>(queryParams, Call.GetWeeklyAlbumChart, authorizedCall);
+            var artistCall = await this._lastFmApi.CallApiAsync<WeeklyAlbumChartsResponse>(queryParams, Call.GetWeeklyAlbumChart);
             if (artistCall.Success)
             {
                 return new Response<TopAlbumList>
@@ -707,7 +677,7 @@ namespace FMBot.LastFM.Repositories
         }
 
         public async Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName,
-            TimeSettingsModel timeSettings, long count = 2, long amountOfPages = 1, string userSessionKey = null)
+            TimeSettingsModel timeSettings, long count = 2, long amountOfPages = 1)
         {
             if (!timeSettings.StartDateTime.HasValue || !timeSettings.EndDateTime.HasValue)
             {
@@ -715,7 +685,7 @@ namespace FMBot.LastFM.Repositories
             }
 
             return await GetTopArtistsForCustomTimePeriodAsync(lastFmUserName, timeSettings.StartDateTime.Value,
-                timeSettings.EndDateTime.Value, (int)count, userSessionKey);
+                timeSettings.EndDateTime.Value, (int)count);
         }
 
         // Top artists
@@ -768,7 +738,7 @@ namespace FMBot.LastFM.Repositories
 
         // Top artists custom time period
         public async Task<Response<TopArtistList>> GetTopArtistsForCustomTimePeriodAsync(string lastFmUserName,
-            DateTime startDateTime, DateTime endDateTime, int count, string userSessionKey = null)
+            DateTime startDateTime, DateTime endDateTime, int count)
         {
             var start = ((DateTimeOffset)startDateTime).ToUnixTimeSeconds();
             var end = ((DateTimeOffset)endDateTime).ToUnixTimeSeconds();
@@ -781,14 +751,7 @@ namespace FMBot.LastFM.Repositories
                 {"to", end.ToString() },
             };
 
-            var authorizedCall = false;
-            if (!string.IsNullOrEmpty(userSessionKey))
-            {
-                queryParams.Add("sk", userSessionKey);
-                authorizedCall = true;
-            }
-
-            var artistCall = await this._lastFmApi.CallApiAsync<WeeklyArtistChartsResponse>(queryParams, Call.GetWeeklyArtistChart, authorizedCall);
+            var artistCall = await this._lastFmApi.CallApiAsync<WeeklyArtistChartsResponse>(queryParams, Call.GetWeeklyArtistChart);
             if (artistCall.Success)
             {
                 return new Response<TopArtistList>
@@ -823,7 +786,7 @@ namespace FMBot.LastFM.Repositories
         }
 
         public async Task<Response<TopTrackList>> GetTopTracksAsync(string lastFmUserName,
-            TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1, string userSessionKey = null)
+            TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1)
         {
             if (!timeSettings.StartDateTime.HasValue || !timeSettings.EndDateTime.HasValue)
             {
@@ -831,7 +794,7 @@ namespace FMBot.LastFM.Repositories
             }
 
             return await GetTopTracksForCustomTimePeriodAsyncAsync(lastFmUserName, timeSettings.StartDateTime.Value,
-                timeSettings.EndDateTime.Value, count, userSessionKey);
+                timeSettings.EndDateTime.Value, count);
         }
 
         // Top tracks
@@ -913,7 +876,7 @@ namespace FMBot.LastFM.Repositories
         }
 
         public async Task<Response<TopTrackList>> GetTopTracksForCustomTimePeriodAsyncAsync(string lastFmUserName,
-            DateTime startDateTime, DateTime endDateTime, int count, string userSessionKey = null)
+            DateTime startDateTime, DateTime endDateTime, int count)
         {
             var start = ((DateTimeOffset)startDateTime).ToUnixTimeSeconds();
             var end = ((DateTimeOffset)endDateTime).ToUnixTimeSeconds();
@@ -925,14 +888,7 @@ namespace FMBot.LastFM.Repositories
                 {"to", end.ToString() },
             };
 
-            var authorizedCall = false;
-            if (!string.IsNullOrEmpty(userSessionKey))
-            {
-                queryParams.Add("sk", userSessionKey);
-                authorizedCall = true;
-            }
-
-            var artistCall = await this._lastFmApi.CallApiAsync<WeeklyTrackChartsResponse>(queryParams, Call.GetWeeklyTrackChart, authorizedCall);
+            var artistCall = await this._lastFmApi.CallApiAsync<WeeklyTrackChartsResponse>(queryParams, Call.GetWeeklyTrackChart);
             if (artistCall.Success)
             {
                 return new Response<TopTrackList>
@@ -984,7 +940,7 @@ namespace FMBot.LastFM.Repositories
         // Check if Last.fm user exists
         public async Task<bool> LastFmUserExistsAsync(string lastFmUserName)
         {
-            var lastFmUser = await this.GetLfmUserInfoAsync(lastFmUserName, null);
+            var lastFmUser = await this.GetLfmUserInfoAsync(lastFmUserName);
 
             return lastFmUser != null;
         }

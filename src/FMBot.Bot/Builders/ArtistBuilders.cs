@@ -266,7 +266,7 @@ public class ArtistBuilders
         };
 
         var artistSearch = await this._artistsService.GetArtist(response, discordUser, searchValue, contextUser.UserNameLastFM,
-            contextUser.SessionKeyLastFm, userSettings.UserNameLastFm);
+            contextUser.SessionKeyLastFm, userSettings.UserNameLastFm, true, userSettings.UserId);
         if (artistSearch.artist == null)
         {
             return artistSearch.response;

@@ -66,7 +66,7 @@ namespace FMBot.LastFM.Repositories
             await using var connection = new NpgsqlConnection(this._connectionString);
             await connection.OpenAsync();
 
-            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user.UserNameLastFM, user.SessionKeyLastFm);
+            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user.UserNameLastFM);
             if (userInfo?.Registered?.Text != null)
             {
                 await SetUserSignUpTime(user.UserId, userInfo.Registered.Text, connection);
@@ -99,7 +99,7 @@ namespace FMBot.LastFM.Repositories
             await using var connection = new NpgsqlConnection(this._connectionString);
             await connection.OpenAsync();
 
-            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user.UserNameLastFM, user.SessionKeyLastFm);
+            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user.UserNameLastFM);
             if (userInfo?.Registered?.Text != null)
             {
                 return await SetUserSignUpTime(user.UserId, userInfo.Registered.Text, connection);

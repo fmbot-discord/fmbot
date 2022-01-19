@@ -483,7 +483,7 @@ public class AlbumCommands : BaseCommandModule
 
             const int amount = 200;
 
-            var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount, userSessionKey: userSettings.SessionKeyLastFm);
+            var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount);
             if (!albums.Success || albums.Content == null)
             {
                 this._embed.ErrorResponse(albums.Error, albums.Message, this.Context.Message.Content, this.Context.User);
@@ -504,7 +504,7 @@ public class AlbumCommands : BaseCommandModule
             if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
             {
                 var previousAlbumsCall = await this._lastFmRepository
-                    .GetTopAlbumsForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, amount, userSettings.SessionKeyLastFm);
+                    .GetTopAlbumsForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, amount);
 
                 if (previousAlbumsCall.Success)
                 {

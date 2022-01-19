@@ -673,7 +673,7 @@ public class TrackCommands : BaseCommandModule
             if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
             {
                 var previousTopTracksCall = await this._lastFmRepository
-                    .GetTopTracksForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200, userSettings.SessionKeyLastFm);
+                    .GetTopTracksForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200);
 
                 if (previousTopTracksCall.Success)
                 {

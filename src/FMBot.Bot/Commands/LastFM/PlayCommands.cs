@@ -524,7 +524,7 @@ public class PlayCommands : BaseCommandModule
         _ = this.Context.Channel.TriggerTypingAsync();
 
         var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
-        var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
+        var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
 
         var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
         var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
@@ -562,7 +562,7 @@ public class PlayCommands : BaseCommandModule
 
         var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
 
-        var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
+        var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
         var mileStoneAmount = SettingService.GetMilestoneAmount(extraOptions, userInfo.Playcount);
 
         var response = await this._playBuilder.MileStoneAsync(this.Context.Guild, this.Context.Channel, this.Context.User,

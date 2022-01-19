@@ -181,7 +181,7 @@ public class PlaySlashCommands : InteractionModuleBase
 
         try
         {
-            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
+            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
             var goalAmount = SettingService.GetGoalAmount(amount.ToString(), userInfo.Playcount);
             var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(TimePeriod), timePeriod), TimePeriod.AllTime);
 
@@ -224,7 +224,7 @@ public class PlaySlashCommands : InteractionModuleBase
 
         try
         {
-            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm, userSettings.SessionKeyLastFm);
+            var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
             var mileStoneAmount = SettingService.GetMilestoneAmount(amount.ToString(), userInfo.Playcount);
 
             var response = await this._playBuilder.MileStoneAsync(this.Context.Guild, this.Context.Channel, this.Context.User,
