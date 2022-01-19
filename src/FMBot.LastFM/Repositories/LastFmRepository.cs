@@ -33,7 +33,7 @@ namespace FMBot.LastFM.Repositories
         public LastFmRepository(IConfiguration configuration, ILastfmApi lastFmApi, IMemoryCache cache, IHttpClientFactory httpClientFactory)
         {
             this._lastFmClient =
-                new LastfmClient(configuration.GetSection("LastFm:Key").Value, configuration.GetSection("LastFm:Secret").Value);
+                new LastfmClient(configuration.GetSection("LastFm:PrivateKey").Value, configuration.GetSection("LastFm:PrivateSecret").Value);
             this._lastFmApi = lastFmApi;
             this._cache = cache;
             this._client = httpClientFactory.CreateClient();
@@ -538,15 +538,6 @@ namespace FMBot.LastFM.Repositories
             Statistics.LastfmApiCalls.Inc();
 
             return albumSearch;
-        }
-
-        // Album images
-        public async Task<LastImageSet> GetAlbumImagesAsync(string artistName, string albumName)
-        {
-            var album = await this._lastFmClient.Album.GetInfoAsync(artistName, albumName);
-            Statistics.LastfmApiCalls.Inc();
-
-            return album?.Content?.Images;
         }
 
         public async Task<MemoryStream> GetAlbumImageAsStreamAsync(string imageUrl)
