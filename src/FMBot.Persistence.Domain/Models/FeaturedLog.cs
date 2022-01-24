@@ -28,6 +28,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public DateTime DateTime { get; set; }
 
+        public bool SupporterDay { get; set; }
+
         public User User { get; set; }
     }
 }

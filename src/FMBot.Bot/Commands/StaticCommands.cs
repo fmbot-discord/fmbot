@@ -164,7 +164,7 @@ namespace FMBot.Bot.Commands
 
             var embedDescription = new StringBuilder();
 
-            embedDescription.AppendLine(".fmbot is non-commercial, open-source and non-profit. It is maintained by volunteers.");
+            embedDescription.Append(".fmbot is non-commercial, open-source and non-profit. It is maintained by volunteers.");
             embedDescription.AppendLine("You can help us fund hosting, development and other costs on our [OpenCollective](https://opencollective.com/fmbot).");
             embedDescription.AppendLine();
             embedDescription.AppendLine("We use OpenCollective so we can be transparent about our expenses. If you decide to donate, you can see exactly where your money goes.");
@@ -173,6 +173,7 @@ namespace FMBot.Bot.Commands
             embedDescription.AppendLine();
             embedDescription.AppendLine("**.fmbot supporter advantages include**:\n" +
                                         "- An emote behind their name (⭐)\n" +
+                                        "- Higher chance of being featured on Supporter Sunday\n" +
                                         "- Their name shown in the list of supporters\n" +
                                         "- Exclusive role and channel on [our server](https://discord.gg/6y3jJjtDqK)\n" +
                                         "- A chance of sponsoring a chart\n" +

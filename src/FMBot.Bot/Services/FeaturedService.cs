@@ -62,19 +62,22 @@ namespace FMBot.Bot.Services
                     break;
             }
 
+            var supporterDay = dateTime is { DayOfWeek: DayOfWeek.Sunday, Day: <= 7 };
+
             var featuredLog = new FeaturedLog
             {
                 FeaturedMode = featuredMode,
                 BotType = BotTypeExtension.GetBotType(botUserId),
                 DateTime = DateTime.SpecifyKind(dateTime ?? DateTime.UtcNow, DateTimeKind.Utc),
-                HasFeatured = false
+                HasFeatured = false,
+                SupporterDay = supporterDay
             };
 
             Log.Information($"Featured: Picked mode {randomAvatarMode} - {randomAvatarModeDesc}");
 
             try
             {
-                var user = await GetUserToFeatureAsync();
+                var user = await GetUserToFeatureAsync(Constants.DaysLastUsedForFeatured + (supporterDay ? 6 : 0), supporterDay);
                 Log.Information($"Featured: Picked user {user.UserId} / {user.UserNameLastFM}");
 
                 switch (featuredMode)
@@ -109,15 +112,27 @@ namespace FMBot.Bot.Services
                             goto case FeaturedMode.TopAlbumsMonthly;
                         }
 
-                        featuredLog.Description = $"[{trackToFeature.AlbumName}]({trackToFeature.TrackUrl}) \n" +
-                                           $"by [{trackToFeature.ArtistName}]({trackToFeature.ArtistUrl}) \n\n" +
-                                           $"{randomAvatarModeDesc} from {user.UserNameLastFM}";
+                        if (supporterDay)
+                        {
+                            featuredLog.Description = $"[{trackToFeature.AlbumName}]({trackToFeature.TrackUrl}) \n" +
+                                                      $"by [{trackToFeature.ArtistName}]({trackToFeature.ArtistUrl}) \n\n" +
+                                                      $"{randomAvatarModeDesc}\n" +
+                                                      $"⭐ Supporter Sunday - Thanks {user.UserNameLastFM} for supporting .fmbot!";
+                        }
+                        else
+                        {
+                            featuredLog.Description = $"[{trackToFeature.AlbumName}]({trackToFeature.TrackUrl}) \n" +
+                                                      $"by [{trackToFeature.ArtistName}]({trackToFeature.ArtistUrl}) \n\n" +
+                                                      $"{randomAvatarModeDesc} from {user.UserNameLastFM}";
+                        }
+                        
                         featuredLog.UserId = user.UserId;
 
                         featuredLog.ArtistName = trackToFeature.ArtistName;
                         featuredLog.TrackName = trackToFeature.TrackName;
                         featuredLog.AlbumName = trackToFeature.AlbumName;
                         featuredLog.ImageUrl = trackToFeature.AlbumCoverUrl;
+                        featuredLog.SupporterDay = false;
 
                         return featuredLog;
                     case FeaturedMode.TopAlbumsWeekly:
@@ -139,7 +154,7 @@ namespace FMBot.Bot.Services
                         if (!albums.Success || albums.Content?.TopAlbums == null || !albums.Content.TopAlbums.Any())
                         {
                             Log.Information($"Featured: User {user.UserNameLastFM} had no albums, switching to different user.");
-                            user = await GetUserToFeatureAsync();
+                            user = await GetUserToFeatureAsync(Constants.DaysLastUsedForFeatured + (supporterDay ? 6 : 0), supporterDay);
                             albums = await this._lastFmRepository.GetTopAlbumsAsync(user.UserNameLastFM, timespan, 30);
                         }
 
@@ -158,9 +173,20 @@ namespace FMBot.Bot.Services
                                 await AlbumNotFeaturedRecently(currentAlbum.AlbumName, currentAlbum.ArtistName) &&
                                 await AlbumPopularEnough(currentAlbum.AlbumName, currentAlbum.ArtistName))
                             {
-                                featuredLog.Description = $"[{currentAlbum.AlbumName}]({currentAlbum.AlbumUrl}) \n" +
-                                                          $"by {currentAlbum.ArtistName} \n\n" +
-                                                          $"{randomAvatarModeDesc} from {user.UserNameLastFM}";
+                                if (supporterDay)
+                                {
+                                    featuredLog.Description = $"[{currentAlbum.AlbumName}]({currentAlbum.AlbumUrl}) \n" +
+                                                              $"by {currentAlbum.ArtistName} \n\n" +
+                                                              $"{randomAvatarModeDesc}\n" +
+                                                              $"⭐ Supporter Sunday - Thanks {user.UserNameLastFM} for supporting .fmbot!";
+                                }
+                                else
+                                {
+                                    featuredLog.Description = $"[{currentAlbum.AlbumName}]({currentAlbum.AlbumUrl}) \n" +
+                                                              $"by {currentAlbum.ArtistName} \n\n" +
+                                                              $"{randomAvatarModeDesc} from {user.UserNameLastFM}";
+                                }
+
                                 featuredLog.UserId = user.UserId;
 
                                 featuredLog.AlbumName = currentAlbum.AlbumName;
@@ -232,7 +258,7 @@ namespace FMBot.Bot.Services
             return true;
         }
 
-        private async Task<User> GetUserToFeatureAsync()
+        private async Task<User> GetUserToFeatureAsync(int lastUsedFilter, bool supportersOnly = false)
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();
             var featuredUsers = await db.Users
@@ -254,11 +280,12 @@ namespace FMBot.Bot.Services
                 .Where(w => w.BanActive)
                 .Select(s => s.UserNameLastFM.ToLower()).ToListAsync();
 
-            var filterDate = DateTime.UtcNow.AddDays(-Constants.DaysLastUsedForFeatured);
+            var filterDate = DateTime.UtcNow.AddDays(-lastUsedFilter);
             var users = db.Users
                 .AsQueryable()
                 .Where(w => w.Blocked != true &&
                             !lastFmUsersToFilter.Contains(w.UserNameLastFM.ToLower()) &&
+                            (!supportersOnly || w.UserType == UserType.Supporter) &&
                             w.LastUsed != null &&
                             w.LastUsed > filterDate).ToList();
 

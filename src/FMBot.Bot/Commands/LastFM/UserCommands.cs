@@ -16,7 +16,6 @@ using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.LastFM.Repositories;
-using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Options;
 
 namespace FMBot.Bot.Commands.LastFM
@@ -256,6 +255,7 @@ namespace FMBot.Bot.Commands.LastFM
         {
             try
             {
+                var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
                 var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
                 var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
 
@@ -275,6 +275,16 @@ namespace FMBot.Bot.Commands.LastFM
                         description.AppendLine();
                         description.AppendLine($"But don't give up hope just yet!");
                         description.AppendLine($"Every hour there is a 1 in {odds} chance that you might be picked.");
+
+                        if (contextUser.UserType == UserType.Supporter)
+                        {
+                            description.AppendLine();
+                            description.AppendLine($"Also, as a thank you for being a supporter you have a higher chance of becoming featured every first Sunday of the month on Supporter Sunday.");
+                        }
+                        else
+                        {
+                            description.AppendLine($"Or become an [.fmbot supporter](https://opencollective.com/fmbot/contribute) and get a higher chance every Supporter Sunday.");
+                        }
 
                         if (this.Context.Guild?.Id != this._botSettings.Bot.BaseServerId)
                         {
@@ -308,13 +318,31 @@ namespace FMBot.Bot.Commands.LastFM
                             description.AppendLine($"**{featured.ArtistName}** - **{featured.AlbumName}**");
                         }
 
+                        if (featured.SupporterDay)
+                        {
+                            description.AppendLine($"⭐ On supporter Sunday");
+                        }
+
                         description.AppendLine();
                     }
 
                     var self = userSettings.DifferentUser ? "They" : "You";
-                    this._embed.WithFooter(featuredHistory.Count == 1
+                    var footer = new StringBuilder();
+
+                    footer.AppendLine(featuredHistory.Count == 1
                         ? $"{self} have only been featured once. Every hour, that is a chance of 1 in {odds}!"
                         : $"{self} have been featured {featuredHistory.Count} times");
+
+                    if (contextUser.UserType == UserType.Supporter)
+                    {
+                        footer.AppendLine($"As a thank you for supporting, you have better odds every first Sunday of the month.");
+                    }
+                    else
+                    {
+                        footer.AppendLine($"Every first Sunday of the month is Supporter Sunday. Check '{prfx}donate' for info.");
+                    }
+
+                    this._embed.WithFooter(footer.ToString());
                 }
 
                 this._embed.WithDescription(description.ToString());

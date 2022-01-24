@@ -14,6 +14,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public Guid? Mbid { get; set; }
 
+        public string LastFmUrl { get; set; }
+        public DateTime? LastfmDate { get; set; }
 
         public string ArtistName { get; set; }
 
