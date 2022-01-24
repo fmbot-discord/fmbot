@@ -39,7 +39,7 @@ namespace FMBot.Bot.Models
 
         public int ListenerCount { get; set; }
 
-        public List<int> ListenerUserIds{ get; set; }
+        public List<int> ListenerUserIds { get; set; }
     }
 
     public class WhoKnowsArtistDto
@@ -84,15 +84,6 @@ namespace FMBot.Bot.Models
         public string SpotifyImageUrl { get; set; }
     }
 
-    public class TopGuildArtistsDto
-    {
-        public string Name { get; set; }
-
-        public int TotalPlaycount { get; set; }
-
-        public int TotalUsers { get; set; }
-    }
-
     public class AffinityArtist
     {
         public int UserId { get; set; }
@@ -115,5 +106,24 @@ namespace FMBot.Bot.Models
         public ulong DiscordUserId { get; set; }
 
         public int UserId { get; set; }
+    }
+
+    public class ArtistSearch
+    {
+        public ArtistSearch(ArtistInfo artist, ResponseModel response, int? randomArtistPosition = null, long? randomArtistPlaycount = null)
+        {
+            this.Artist = artist;
+            this.Response = response;
+            this.IsRandom = randomArtistPosition.HasValue && randomArtistPlaycount.HasValue;
+            this.RandomArtistPosition = randomArtistPosition + 1;
+            this.RandomArtistPlaycount = randomArtistPlaycount;
+        }
+
+        public ArtistInfo Artist { get; set; }
+        public ResponseModel Response { get; set; }
+
+        public bool IsRandom { get; set; }
+        public int? RandomArtistPosition { get; set; }
+        public long? RandomArtistPlaycount { get; set; }
     }
 }

@@ -96,16 +96,5 @@ namespace FMBot.Persistence.Repositories
                 userId
             })).ToList();
         }
-
-        public static async Task<UserArtist> GetUserArtist(int userId, string artistName, NpgsqlConnection connection)
-        {
-            const string sql = "SELECT * FROM public.user_artists where user_id = @userId AND UPPER(name) = UPPER(CAST(@artistName AS CITEXT))";
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
-            return await connection.QueryFirstOrDefaultAsync<UserArtist>(sql, new
-            {
-                userId,
-                artistName
-            });
-        }
     }
 }

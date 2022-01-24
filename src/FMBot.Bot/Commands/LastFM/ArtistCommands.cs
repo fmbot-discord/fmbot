@@ -167,14 +167,14 @@ public class ArtistCommands : BaseCommandModule
             userSettings.UserNameLastFm,
             true,
             userSettings.UserId);
-        if (artist.artist == null)
+        if (artist.Artist == null)
         {
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
             return;
         }
 
-        var topAlbums = await this._artistsService.GetTopAlbumsForArtist(userSettings.UserId, artist.artist.ArtistName);
+        var topAlbums = await this._artistsService.GetTopAlbumsForArtist(userSettings.UserId, artist.Artist.ArtistName);
         var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
         if (topAlbums.Count == 0)
@@ -186,7 +186,7 @@ public class ArtistCommands : BaseCommandModule
             return;
         }
 
-        var url = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/music/{UrlEncoder.Default.Encode(artist.artist.ArtistName)}";
+        var url = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/music/{UrlEncoder.Default.Encode(artist.Artist.ArtistName)}";
         if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
         {
             this._embedAuthor.WithUrl(url);
@@ -212,14 +212,14 @@ public class ArtistCommands : BaseCommandModule
 
             if (userSettings.DifferentUser && userSettings.UserId != contextUser.UserId)
             {
-                footer.AppendLine($" - {userSettings.UserNameLastFm} has {artist.artist.UserPlaycount} total scrobbles on this artist");
+                footer.AppendLine($" - {userSettings.UserNameLastFm} has {artist.Artist.UserPlaycount} total scrobbles on this artist");
                 footer.AppendLine($"Requested by {userTitle}");
-                title.Append($"{userSettings.DiscordUserName} their top albums for '{artist.artist.ArtistName}'");
+                title.Append($"{userSettings.DiscordUserName} their top albums for '{artist.Artist.ArtistName}'");
             }
             else
             {
-                footer.Append($" - {userTitle} has {artist.artist.UserPlaycount} total scrobbles on this artist");
-                title.Append($"Your top albums for '{artist.artist.ArtistName}'");
+                footer.Append($" - {userTitle} has {artist.Artist.UserPlaycount} total scrobbles on this artist");
+                title.Append($"Your top albums for '{artist.Artist.ArtistName}'");
 
                 this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
             }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
@@ -44,7 +45,7 @@ namespace FMBot.Bot.Services
             this._botSettings = botSettings.Value;
         }
 
-        public async Task<(ArtistInfo artist, ResponseModel response)> GetArtist(ResponseModel response, IUser discordUser, string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
+        public async Task<ArtistSearch> GetArtist(ResponseModel response, IUser discordUser, string artistValues, string lastFmUserName, string sessionKey = null, string otherUserUsername = null,
             bool useCachedArtists = false, int? userId = null)
         {
             if (!string.IsNullOrWhiteSpace(artistValues) && artistValues.Length != 0)
@@ -52,6 +53,23 @@ namespace FMBot.Bot.Services
                 if (otherUserUsername != null)
                 {
                     lastFmUserName = otherUserUsername;
+                }
+
+                int? rndPosition = null;
+                long? rndPlaycount = null;
+                if (userId.HasValue && (artistValues.ToLower() == "rnd" || artistValues.ToLower() == "random"))
+                {
+                    var topArtists = await this.GetUserAllTimeTopArtists(userId.Value, true);
+                    if (topArtists.Count > 0)
+                    {
+                        var rnd = RandomNumberGenerator.GetInt32(0, topArtists.Count);
+
+                        var artist = topArtists[rnd];
+
+                        rndPosition = rnd;
+                        rndPlaycount = artist.UserPlaycount;
+                        artistValues = artist.ArtistName;
+                    }
                 }
 
                 Response<ArtistInfo> artistCall;
@@ -69,17 +87,17 @@ namespace FMBot.Bot.Services
                     response.Embed.WithDescription($"Artist `{artistValues}` could not be found, please check your search values and try again.");
                     response.CommandResponse = CommandResponse.NotFound;
                     response.ResponseType = ResponseType.Embed;
-                    return (null, response);
+                    return new ArtistSearch(null, response);
                 }
                 if (!artistCall.Success || artistCall.Content == null)
                 {
                     response.Embed.ErrorResponse(artistCall.Error, artistCall.Message, null, discordUser, "artist");
                     response.CommandResponse = CommandResponse.LastFmError;
                     response.ResponseType = ResponseType.Embed;
-                    return (null, response);
+                    return new ArtistSearch(null, response);
                 }
 
-                return (artistCall.Content, response);
+                return new ArtistSearch(artistCall.Content, response, rndPosition, rndPlaycount);
             }
             else
             {
@@ -89,7 +107,7 @@ namespace FMBot.Bot.Services
                 {
                     response.Embed = GenericEmbedService.RecentScrobbleCallFailedBuilder(recentScrobbles, lastFmUserName);
                     response.ResponseType = ResponseType.Embed;
-                    return (null, response);
+                    return new ArtistSearch(null, response);
                 }
 
                 if (otherUserUsername != null)
@@ -113,10 +131,10 @@ namespace FMBot.Bot.Services
                     response.Embed.WithDescription($"Last.fm did not return a result for **{lastPlayedTrack.ArtistName}**.");
                     response.CommandResponse = CommandResponse.NotFound;
                     response.ResponseType = ResponseType.Embed;
-                    return (null, response);
+                    return new ArtistSearch(null, response);
                 }
 
-                return (artistCall.Content, response);
+                return new ArtistSearch(artistCall.Content, response);
             }
         }
 
