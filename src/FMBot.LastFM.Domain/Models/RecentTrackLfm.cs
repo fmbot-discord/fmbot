@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 
@@ -19,7 +20,7 @@ namespace FMBot.LastFM.Domain.Models
         [JsonPropertyName("@attr")]
         public AttributesLfm AttributesLfm { get; set; }
 
-        public RecentTrackLfm[] Track { get; set; }
+        public List<RecentTrackLfm> Track { get; set; }
     }
 
     public class AttributesLfm

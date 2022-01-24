@@ -52,7 +52,7 @@ namespace FMBot.LastFM.Repositories
         public async Task IndexUser(IndexUserQueueItem queueItem)
         {
             var concurrencyCacheKey = $"index-started-{queueItem.UserId}";
-            this._cache.Set(concurrencyCacheKey, true, TimeSpan.FromMinutes(5));
+            this._cache.Set(concurrencyCacheKey, true, TimeSpan.FromMinutes(3));
 
             Thread.Sleep(queueItem.TimeoutMs);
 
@@ -147,24 +147,22 @@ namespace FMBot.LastFM.Repositories
         {
             Log.Information($"Getting plays for user {user.UserNameLastFM}");
 
-            var recentPlays = await this._lastFMClient.User.GetRecentScrobbles(
-                user.UserNameLastFM,
-                count: 1000,
-                @from: DateTime.UtcNow.AddDays(-24));
+            var recentPlays = await this._lastFmRepository.GetRecentTracksAsync(user.UserNameLastFM, 1000,
+                sessionKey: user.SessionKeyLastFm, amountOfPages: 5);
 
-            if (!recentPlays.Success || recentPlays.Content.Count == 0)
+            if (!recentPlays.Success || recentPlays.Content.RecentTracks.Count == 0)
             {
                 return new List<UserPlay>();
             }
 
-            return recentPlays
-                .Where(w => w.TimePlayed.HasValue && w.TimePlayed.Value.DateTime > DateTime.UtcNow.AddDays(-Constants.DaysToStorePlays))
+            return recentPlays.Content.RecentTracks
+                .Where(w => !w.NowPlaying && w.TimePlayed.HasValue && w.TimePlayed > DateTime.UtcNow.AddDays(-40))
                 .Select(t => new UserPlay
                 {
-                    TrackName = t.Name,
+                    TrackName = t.TrackName,
                     AlbumName = t.AlbumName,
                     ArtistName = t.ArtistName,
-                    TimePlayed = t.TimePlayed.Value.DateTime,
+                    TimePlayed = t.TimePlayed.Value,
                     UserId = user.UserId
                 }).ToList();
         }

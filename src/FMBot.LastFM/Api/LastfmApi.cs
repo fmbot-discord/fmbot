@@ -57,6 +57,8 @@ namespace FMBot.LastFM.Api
 
             if (generateSignature)
             {
+                parameters.Remove("api_sig");
+
                 var signature = new StringBuilder();
 
                 foreach (var (key, value) in parameters.OrderBy(o => o.Key).Where(w => !w.Key.Contains("format")))

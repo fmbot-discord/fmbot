@@ -40,7 +40,7 @@ namespace FMBot.LastFM.Repositories
         }
 
         // Recent scrobbles
-        public async Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false, string sessionKey = null, long? fromUnixTimestamp = null)
+        public async Task<Response<RecentTrackList>> GetRecentTracksAsync(string lastFmUserName, int count = 2, bool useCache = false, string sessionKey = null, long? fromUnixTimestamp = null, int amountOfPages = 1)
         {
             var cacheKey = $"{lastFmUserName}-lastfm-recent-tracks";
             var queryParams = new Dictionary<string, string>
@@ -74,33 +74,72 @@ namespace FMBot.LastFM.Repositories
                 }
             }
 
-            var recentTracksCall = await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams, Call.RecentTracks, authorizedCall);
-
-            if (recentTracksCall.Success)
+            try
             {
-                var response = new Response<RecentTrackList>
+                Response<RecentTracksListLfmResponseModel> recentTracksCall;
+                if (amountOfPages == 1)
                 {
-                    Content = new RecentTrackList
+                    recentTracksCall = await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams, Call.RecentTracks, authorizedCall);
+                }
+                else
+                {
+                    recentTracksCall = await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams, Call.RecentTracks, authorizedCall);
+                    if (recentTracksCall.Success && recentTracksCall.Content.RecentTracks.Track.Count > 998)
                     {
-                        TotalAmount = recentTracksCall.Content.RecentTracks.AttributesLfm.Total,
-                        UserUrl = $"https://www.last.fm/user/{lastFmUserName}",
-                        UserRecentTracksUrl = $"https://www.last.fm/user/{lastFmUserName}/library",
-                        RecentTracks = recentTracksCall.Content.RecentTracks.Track.Select(LastfmTrackToRecentTrack).ToList()
-                    },
-                    Success = true
+                        for (var i = 1; i < amountOfPages; i++)
+                        {
+                            queryParams.Remove("page");
+                            queryParams.Add("page", (i + 1).ToString());
+                            var pageResponse = await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams, Call.RecentTracks, authorizedCall);
+
+                            if (pageResponse.Success)
+                            {
+                                recentTracksCall.Content.RecentTracks.Track.AddRange(pageResponse.Content.RecentTracks.Track);
+                                if (pageResponse.Content.RecentTracks.Track.Count < 1000)
+                                {
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (recentTracksCall.Success)
+                {
+                    var response = new Response<RecentTrackList>
+                    {
+                        Content = new RecentTrackList
+                        {
+                            TotalAmount = recentTracksCall.Content.RecentTracks.AttributesLfm.Total,
+                            UserUrl = $"https://www.last.fm/user/{lastFmUserName}",
+                            UserRecentTracksUrl = $"https://www.last.fm/user/{lastFmUserName}/library",
+                            RecentTracks = recentTracksCall.Content.RecentTracks.Track.Select(LastfmTrackToRecentTrack).ToList()
+                        },
+                        Success = true
+                    };
+
+                    this._cache.Set(cacheKey, response, TimeSpan.FromSeconds(14));
+
+                    return response;
+                }
+
+                return new Response<RecentTrackList>
+                {
+                    Success = false,
+                    Error = recentTracksCall.Error,
+                    Message = recentTracksCall.Message
                 };
 
-                this._cache.Set(cacheKey, response, TimeSpan.FromSeconds(14));
-
-                return response;
             }
-
-            return new Response<RecentTrackList>
+            catch (Exception e)
             {
-                Success = false,
-                Error = recentTracksCall.Error,
-                Message = recentTracksCall.Message
-            };
+                Console.WriteLine(e);
+                throw;
+            }
         }
 
         public async Task<Response<RecentTrackList>> GetLovedTracksAsync(string lastFmUserName, int count = 2, string sessionKey = null, long? fromUnixTimestamp = null)
@@ -646,15 +685,15 @@ namespace FMBot.LastFM.Repositories
                         TopAlbums = artistCall.Content.WeeklyAlbumChart.Album
                             .OrderByDescending(o => o.Playcount)
                             .Select(s => new TopAlbum
-                        {
-                            ArtistName = s.Artist.Text,
-                            AlbumName = s.Name,
-                            Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
+                            {
+                                ArtistName = s.Artist.Text,
+                                AlbumName = s.Name,
+                                Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
                                 ? Guid.Parse(s.Mbid)
                                 : null,
-                            AlbumUrl = s.Url,
-                            UserPlaycount = s.Playcount
-                        }).ToList()
+                                AlbumUrl = s.Url,
+                                UserPlaycount = s.Playcount
+                            }).ToList()
                     }
                 };
             }
@@ -753,17 +792,17 @@ namespace FMBot.LastFM.Repositories
                         TopArtists = artistCall.Content.WeeklyArtistChart.Artist
                             .OrderByDescending(o => o.Playcount)
                             .Select(s => new TopArtist
-                        {
-                            ArtistUrl = s.Url,
-                            ArtistName = s.Name,
-                            Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
+                            {
+                                ArtistUrl = s.Url,
+                                ArtistName = s.Name,
+                                Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
                                 ? Guid.Parse(s.Mbid)
                                 : null,
-                            ArtistImageUrl = Uri.IsWellFormedUriString(s.Url, UriKind.Absolute)
+                                ArtistImageUrl = Uri.IsWellFormedUriString(s.Url, UriKind.Absolute)
                                 ? s.Url
                                 : null,
-                            UserPlaycount = s.Playcount
-                        }).ToList()
+                                UserPlaycount = s.Playcount
+                            }).ToList()
                     }
                 };
             }
@@ -842,7 +881,7 @@ namespace FMBot.LastFM.Repositories
                         TopTracks = topTracksCall.Content.TopTracks.Track.Select(s => new TopTrack
                         {
                             AlbumCoverUrl = !string.IsNullOrWhiteSpace(s.Image?.FirstOrDefault(f => f.Size != null && f.Size.ToLower() == "extralarge")?.Text)
-                                ? s.Image.FirstOrDefault(f => f.Size != null && f.Size.ToLower() == "extralarge").Text
+                                ? s.Image.First(f => f.Size.ToLower() == "extralarge").Text
                                 : null,
                             TrackName = s.Name,
                             ArtistName = s.Artist.Name,
@@ -890,18 +929,18 @@ namespace FMBot.LastFM.Repositories
                         TopTracks = artistCall.Content.WeeklyTrackChart.Track
                             .OrderByDescending(o => o.Playcount)
                             .Select(s => new TopTrack
-                        {
-                            ArtistUrl = s.Url,
-                            ArtistName = s.Artist.Text,
-                            TrackName = s.Name,
-                            Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
+                            {
+                                ArtistUrl = s.Url,
+                                ArtistName = s.Artist.Text,
+                                TrackName = s.Name,
+                                Mbid = !string.IsNullOrWhiteSpace(s.Mbid)
                                 ? Guid.Parse(s.Mbid)
                                 : null,
-                            TrackUrl = Uri.IsWellFormedUriString(s.Url, UriKind.Absolute)
+                                TrackUrl = Uri.IsWellFormedUriString(s.Url, UriKind.Absolute)
                                 ? s.Url
                                 : null,
-                            UserPlaycount = s.Playcount
-                        }).ToList()
+                                UserPlaycount = s.Playcount
+                            }).ToList()
                     }
                 };
             }
