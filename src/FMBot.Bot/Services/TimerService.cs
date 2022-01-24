@@ -85,8 +85,15 @@ namespace FMBot.Bot.Services
 
                         if (this._botSettings.Bot.MainInstance == true && cached != newFeatured.ImageUrl)
                         {
-                            await ChangeToNewAvatar(client, newFeatured.ImageUrl);
-                            this._cache.Set("avatar", newFeatured.ImageUrl, TimeSpan.FromMinutes(30));
+                            try
+                            {
+                                await ChangeToNewAvatar(client, newFeatured.ImageUrl);
+                                this._cache.Set("avatar", newFeatured.ImageUrl, TimeSpan.FromMinutes(30));
+                            }
+                            catch
+                            {
+                                // ignored
+                            }
                         }
 
                         if (this._botSettings.Bot.FeaturedMaster == true && !newFeatured.HasFeatured && newFeatured.NoUpdate != true)
@@ -330,12 +337,11 @@ namespace FMBot.Bot.Services
                 }
 
                 await Task.Delay(5000);
-
-
             }
             catch (Exception exception)
             {
-                Log.Error(exception, nameof(ChangeToNewAvatar));
+                Log.Error(exception, "Featured: Error while attempting to change avatar");
+                throw;
             }
         }
 
