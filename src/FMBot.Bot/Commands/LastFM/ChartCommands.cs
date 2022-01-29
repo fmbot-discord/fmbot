@@ -138,7 +138,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (chartSettings.ImagesNeeded > 100)
                 {
-                    const string reply = $"You can't create a chart with more then 100 images (10x10).\n" +
+                    const string reply = $"You can't create a chart with more than 100 images (10x10).\n" +
                                          $"Please try a smaller size.";
 
                     await ReplyAsync(reply);

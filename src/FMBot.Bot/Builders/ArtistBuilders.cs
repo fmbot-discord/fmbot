@@ -15,10 +15,8 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Domain.Enums;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Swan;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
