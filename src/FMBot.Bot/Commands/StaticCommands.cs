@@ -124,7 +124,7 @@ namespace FMBot.Bot.Commands
         [Summary("Info for what to do when now playing track is lagging behind")]
         [Alias("broken", "sync", "fix", "lagging", "stuck")]
         [CommandCategories(CommandCategory.Other)]
-        public async Task OutOfSyncAsync([Remainder]string options = null)
+        public async Task OutOfSyncAsync([Remainder] string options = null)
         {
             var embedDescription = new StringBuilder();
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
@@ -230,8 +230,6 @@ namespace FMBot.Bot.Commands
             description += $"**Usercount:** `{await this._userService.GetTotalUserCountAsync()}`  (Authorized: `{await this._userService.GetTotalAuthorizedUserCountAsync()}` | Discord: `{client.Guilds.Select(s => s.MemberCount).Sum()}`)\n";
             description += $"**Friendcount:** `{await this._friendService.GetTotalFriendCountAsync()}`\n";
             description += $"**Servercount:** `{client.Guilds.Count}`  (Shards: `{client.Shards.Count}` (`{client.GetShardIdFor(this.Context.Guild)}`))\n";
-            description += $"**Commands used:** `{Statistics.CommandsExecuted.Value}`\n";
-            description += $"**Last.fm API calls:** `{Statistics.LastfmApiCalls.Value}`  (Ex. authorized: `{Statistics.LastfmAuthorizedApiCalls.Value}`)\n";
             description += $"**MusicBrainz API calls:** `{Statistics.MusicBrainzApiCalls.Value}`\n";
             description += $"**Botscrobbles:** `{Statistics.LastfmScrobbles.Value}`  (Now playing updates: `{Statistics.LastfmNowPlayingUpdates.Value}`)\n";
             description += $"**Memory usage:** `{currentMemoryUsage.ToFormattedByteString()}`  (Peak: `{peakMemoryUsage.ToFormattedByteString()}`)\n";
@@ -283,6 +281,7 @@ namespace FMBot.Bot.Commands
         [GuildOnly]
         [ExcludeFromHelp]
         [Alias("shardinfo")]
+        [Examples("shard 0", "shard 821660544581763093")]
         public async Task ShardInfoAsync(ulong? guildId = null)
         {
             if (!guildId.HasValue)
@@ -294,24 +293,31 @@ namespace FMBot.Bot.Commands
 
             var client = this.Context.Client as DiscordShardedClient;
 
-            var guild = client.GetGuild(guildId.Value);
+            DiscordSocketClient shard;
 
-            if (guild != null)
+            if (guildId is < 1000 and >= 0)
             {
-                var shard = client.GetShardFor(guild);
+                shard = client.GetShard(int.Parse(guildId.Value.ToString()));
+            }
+            else
+            {
+                var guild = client.GetGuild(guildId.Value);
+                shard = client.GetShardFor(guild);
+                this._embed.WithFooter($"{guild.Name} - {guild.MemberCount} members");
+            }
 
-
-                this._embed.WithDescription($"Guild `{guildId}` is on the following shard:\n\n" +
+            if (shard != null)
+            {
+                this._embed.WithDescription($"Guild/shard `{guildId}` info:\n\n" +
                                             $"Shard id: `{shard.ShardId}`\n" +
                                             $"Latency: `{shard.Latency}ms`\n" +
                                             $"Guilds: `{shard.Guilds.Count}`\n" +
                                             $"Connection state: `{shard.ConnectionState}`");
 
-                this._embed.WithFooter($"{guild.Name} - {guild.MemberCount} members");
             }
             else
             {
-                await this.Context.Channel.SendMessageAsync("Server could not be found. \n" +
+                await this.Context.Channel.SendMessageAsync("Server or shard could not be found. \n" +
                                                             "This either means the bot is not connected to that server or that the bot is not in this server.");
                 this.Context.LogCommandUsed(CommandResponse.NotFound);
                 return;

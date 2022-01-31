@@ -284,7 +284,7 @@ public class CommandHandler
 
         if (result.IsSuccess)
         {
-            Statistics.CommandsExecuted.WithLabels("fm").Inc();
+            Statistics.CommandsExecuted.WithLabels(commandName).Inc();
             _ = this._userService.UpdateUserLastUsedAsync(context.User.Id);
         }
         else

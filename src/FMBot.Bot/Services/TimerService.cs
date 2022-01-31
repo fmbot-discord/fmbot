@@ -1,17 +1,16 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
-using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -172,10 +171,18 @@ namespace FMBot.Bot.Services
                     }
 
                     Log.Information("Updating metrics");
-                    Statistics.DiscordServerCount.Set(client.Guilds.Count);
 
                     try
                     {
+                        var ticks = Stopwatch.GetTimestamp();
+                        var upTime = (double)ticks / Stopwatch.Frequency;
+                        var upTimeTimeSpan = TimeSpan.FromSeconds(upTime);
+
+                        if (upTimeTimeSpan.Minutes > 10)
+                        {
+                            Statistics.DiscordServerCount.Set(client.Guilds.Count);
+                        }
+
                         Statistics.RegisteredUserCount.Set(await this._userService.GetTotalUserCountAsync());
                         Statistics.AuthorizedUserCount.Set(await this._userService.GetTotalAuthorizedUserCountAsync());
                         Statistics.RegisteredGuildCount.Set(await this._guildService.GetTotalGuildCountAsync());
@@ -212,8 +219,8 @@ namespace FMBot.Bot.Services
 
                 },
                 null,
-                TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds + 5),
-                TimeSpan.FromMinutes(4));
+                TimeSpan.FromSeconds(10),
+                TimeSpan.FromMinutes(3));
 
             this._userUpdateTimer = new Timer(async _ =>
                 {

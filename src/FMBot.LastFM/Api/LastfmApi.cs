@@ -70,14 +70,7 @@ namespace FMBot.LastFM.Api
                 signature.Append(this._publicKeySecret);
                 parameters.Add("api_sig", CreateMd5(signature.ToString()));
 
-                if (call == Call.RecentTracks)
-                {
-                    Statistics.LastfmAuthorizedApiCalls.WithLabels(call).Inc();
-                }
-                else
-                {
-                    Statistics.LastfmApiCalls.WithLabels(call).Inc();
-                }
+                Statistics.LastfmAuthorizedApiCalls.WithLabels(call).Inc();
             }
             else
             {

@@ -114,16 +114,15 @@ namespace FMBot.Bot.Services
             await this._interactions
                 .AddModulesAsync(
                     Assembly.GetEntryAssembly(),
-                    this._provider); // Load commands and modules into the command service
+                    this._provider); 
 
 
-            var shardTimeOut = 4500;
+            const int shardTimeOut = 5000;
             foreach (var shard in this._client.Shards)
             {
                 Log.Information("ShardStartConnection: shard {shardId}", shard.ShardId);
                 await shard.StartAsync();
                 await Task.Delay(shardTimeOut);
-                shardTimeOut += 100;
             }
 
             Log.Information("Preparing cache folder");
@@ -163,13 +162,6 @@ namespace FMBot.Bot.Services
             {
                 Log.Information("Metrics pusher config not set, not pushing");
                 return Task.CompletedTask;
-            }
-
-            Thread.Sleep(TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds));
-            if (this._client == null || this._client.CurrentUser == null)
-            {
-                Log.Information("Delaying metric pusher startup");
-                Thread.Sleep(TimeSpan.FromSeconds(this._botSettings.Bot.BotWarmupTimeInSeconds));
             }
 
             Log.Information("Starting metrics pusher");

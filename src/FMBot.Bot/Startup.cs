@@ -91,14 +91,20 @@ namespace FMBot.Bot
 
         private void ConfigureServices(IServiceCollection services)
         {
+            services.Configure<BotSettings>(this.Configuration);
+
+            var shardAmount = this.Configuration.GetSection("Bot:TotalShards")?.Value;
+            var shardCount = shardAmount != null ? int.Parse(shardAmount) : 1;
+
+            Log.Information("Total shard count set to {totalShards}", shardCount);
+
             var discordClient = new DiscordShardedClient(new DiscordSocketConfig
             {
                 LogLevel = LogSeverity.Verbose,
                 MessageCacheSize = 0,
-                ConnectionTimeout = 240000
+                ConnectionTimeout = 240000,
+                TotalShards = shardCount
             });
-
-            services.Configure<BotSettings>(this.Configuration);
 
             services
                 .AddSingleton(discordClient)
