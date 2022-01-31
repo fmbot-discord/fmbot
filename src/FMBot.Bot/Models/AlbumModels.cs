@@ -88,4 +88,23 @@ namespace FMBot.Bot.Models
 
         public PrivacyLevel PrivacyLevel { get; set; }
     }
+
+    public class AlbumSearch
+    {
+        public AlbumSearch(AlbumInfo album, ResponseModel response, int? randomAlbumPosition = null, long? randomAlbumPlaycount = null)
+        {
+            this.Album = album;
+            this.Response = response;
+            this.IsRandom = randomAlbumPosition.HasValue && randomAlbumPlaycount.HasValue;
+            this.RandomAlbumPosition = randomAlbumPosition + 1;
+            this.RandomAlbumPlaycount = randomAlbumPlaycount;
+        }
+
+        public AlbumInfo Album { get; set; }
+        public ResponseModel Response { get; set; }
+
+        public bool IsRandom { get; set; }
+        public int? RandomAlbumPosition { get; set; }
+        public long? RandomAlbumPlaycount { get; set; }
+    }
 }

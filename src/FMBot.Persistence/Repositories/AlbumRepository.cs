@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using FMBot.Domain.Models;
@@ -28,6 +30,16 @@ namespace FMBot.Persistence.Repositories
                 artistName,
                 albumName
             });
+        }
+
+        public async Task<IReadOnlyCollection<UserAlbum>> GetUserAlbums(int userId, NpgsqlConnection connection)
+        {
+            const string sql = "SELECT * FROM public.user_albums where user_id = @userId";
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            return (await connection.QueryAsync<UserAlbum>(sql, new
+            {
+                userId
+            })).ToList();
         }
     }
 }

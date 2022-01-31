@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
+using Discord;
 using Discord.Commands;
 using FMBot.Bot.Models;
 using FMBot.Domain.Models;
@@ -25,7 +26,7 @@ namespace FMBot.Bot.Services.WhoKnows
             this._botSettings = botSettings.Value;
         }
 
-        public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForAlbum(ICommandContext context, int guildId, string artistName, string albumName)
+        public async Task<IList<WhoKnowsObjectWithUser>> GetIndexedUsersForAlbum(IGuild discordGuild, int guildId, string artistName, string albumName)
         {
             const string sql = "SELECT ub.user_id, " +
                                "ub.name, " +
@@ -63,7 +64,7 @@ namespace FMBot.Bot.Services.WhoKnows
 
                 if (i < 15)
                 {
-                    var discordUser = await context.Guild.GetUserAsync(userAlbum.DiscordUserId);
+                    var discordUser = await discordGuild.GetUserAsync(userAlbum.DiscordUserId);
                     if (discordUser != null)
                     {
                         userName = discordUser.Nickname ?? discordUser.Username;

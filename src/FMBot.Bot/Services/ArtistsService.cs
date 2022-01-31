@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
-using FMBot.Bot.Configurations;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Services.WhoKnows;
@@ -21,7 +19,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
-using NpgsqlTypes;
 using Serilog;
 
 namespace FMBot.Bot.Services
@@ -34,14 +31,16 @@ namespace FMBot.Bot.Services
         private readonly ArtistRepository _artistRepository;
         private readonly LastFmRepository _lastFmRepository;
         private readonly WhoKnowsArtistService _whoKnowsArtistService;
+        private readonly TimerService _timer;
 
-        public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings, ArtistRepository artistRepository, LastFmRepository lastFmRepository, WhoKnowsArtistService whoKnowsArtistService)
+        public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings, ArtistRepository artistRepository, LastFmRepository lastFmRepository, WhoKnowsArtistService whoKnowsArtistService, TimerService timer)
         {
             this._contextFactory = contextFactory;
             this._cache = cache;
             this._artistRepository = artistRepository;
             this._lastFmRepository = lastFmRepository;
             this._whoKnowsArtistService = whoKnowsArtistService;
+            this._timer = timer;
             this._botSettings = botSettings.Value;
         }
 
@@ -53,6 +52,11 @@ namespace FMBot.Bot.Services
                 if (otherUserUsername != null)
                 {
                     lastFmUserName = otherUserUsername;
+                }
+
+                if (artistValues.ToLower() == "featured")
+                {
+                    artistValues = this._timer._currentFeatured.ArtistName;
                 }
 
                 int? rndPosition = null;
@@ -305,7 +309,9 @@ namespace FMBot.Bot.Services
                 {
                     ArtistName = s.Name,
                     UserPlaycount = s.Playcount
-                }).ToList();
+                })
+                .OrderByDescending(o => o.UserPlaycount)
+                .ToList();
 
             if (freshTopArtists.Count > 100)
             {
