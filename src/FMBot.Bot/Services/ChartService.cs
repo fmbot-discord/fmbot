@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Dasync.Collections;
@@ -26,7 +27,10 @@ namespace FMBot.Bot.Services
         private readonly string _unknownImagePath;
         private readonly string _unknownArtistImagePath;
         private readonly string _censoredImagePath;
-        public ChartService(CensorService censorService)
+
+        private readonly HttpClient _client;
+
+        public ChartService(CensorService censorService, IHttpClientFactory httpClientFactory)
         {
             this._censorService = censorService;
 
@@ -49,6 +53,8 @@ namespace FMBot.Bot.Services
                     wc.DownloadFile("https://fmbot.xyz/img/bot/censored.png", this._censoredImagePath);
                     wc.Dispose();
                 }
+
+                this._client = httpClientFactory.CreateClient();
             }
             catch (Exception e)
             {
@@ -70,8 +76,6 @@ namespace FMBot.Bot.Services
                     chartImageHeight = 180;
                     chartImageWidth = 180;
                 }
-
-                var httpClient = new System.Net.Http.HttpClient();
 
                 if (!chart.ArtistChart)
                 {
@@ -118,7 +122,7 @@ namespace FMBot.Bot.Services
                             {
                                 try
                                 {
-                                    var bytes = await httpClient.GetByteArrayAsync(album.AlbumCoverUrl);
+                                    var bytes = await this._client.GetByteArrayAsync(album.AlbumCoverUrl);
 
                                     Statistics.LastfmImageCalls.Inc();
 
@@ -195,7 +199,7 @@ namespace FMBot.Bot.Services
                             {
                                 try
                                 {
-                                    var bytes = await httpClient.GetByteArrayAsync(artist.ArtistImageUrl);
+                                    var bytes = await this._client.GetByteArrayAsync(artist.ArtistImageUrl);
                                     await using var stream = new MemoryStream(bytes);
                                     chartImage = SKBitmap.Decode(stream);
                                 }
@@ -231,8 +235,6 @@ namespace FMBot.Bot.Services
                         AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, artist: artist);
                     }, maxDegreeOfParallelism: 3);
                 }
-
-                httpClient.Dispose();
 
                 SKImage finalImage = null;
 
@@ -545,7 +547,7 @@ namespace FMBot.Bot.Services
             var rnd = new Random();
             if (chartSettings.ImagesNeeded == 1 && rnd.Next(0, 3) == 1 && !chartSettings.ArtistChart)
             {
-                embedDescription += "*Linus Tech Tip: If you want the cover of the album you're currently listening to, use `.fmcover` or `.fmco`.*\n";
+                embedDescription += "*Linus Tech Tip: If you want the cover of the album you're currently listening to, use `.cover` or `.co`.*\n";
             }
 
             if (chartSettings.UsePlays)
