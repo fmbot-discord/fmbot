@@ -272,7 +272,7 @@ namespace FMBot.Bot.Commands
                     {
                         this._embed.AddField("Friend limit reached",
                             "Sorry, but you can't have more than 12 friends. \n\n" +
-                            $"Did you know that .fmbot supporters can add up to 16 friends? For more information, check out `{prfx}donate`.");
+                            $"Did you know that .fmbot supporters can add up to 16 friends? [Get supporter here](https://opencollective.com/fmbot/contribute) or use `{prfx}donate` for more info.");
                     }
                     else
                     {

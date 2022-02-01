@@ -201,7 +201,7 @@ namespace FMBot.Bot.Commands
                 if (rnd.Next(0, 4) == 1 && userSettings.UserType == UserType.User)
                 {
                     updatedDescription += "\n\n" +
-                                          $"*Did you know that .fmbot stores all artists/albums/tracks for supporters instead of just the top 4k/5k/6k? See `{prfx}donate` on how to become an .fmbot supporter.*";
+                                          $"*Did you know that .fmbot stores all artists/albums/tracks for supporters instead of just the top 4k/5k/6k? [Get .fmbot supporter here](https://opencollective.com/fmbot/contribute) or use `{prfx}donate` for more info.*";
                 }
 
                 await message.ModifyAsync(m =>

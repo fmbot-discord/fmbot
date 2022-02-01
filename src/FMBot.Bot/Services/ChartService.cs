@@ -559,7 +559,7 @@ namespace FMBot.Bot.Services
             if (!string.IsNullOrEmpty(randomSupporter))
             {
                 embedDescription +=
-                    $"*This chart was brought to you by .fmbot supporter {randomSupporter}. Also want to support .fmbot? Check out `{prfx}donate`.*\n";
+                    $"*This chart was brought to you by .fmbot supporter {randomSupporter}. Also want to help .fmbot and get some small perks? [Get .fmbot supporter here.](https://opencollective.com/fmbot/contribute)*\n";
             }
 
             return embedDescription;
