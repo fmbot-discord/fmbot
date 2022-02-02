@@ -47,6 +47,8 @@ namespace FMBot.Bot.Services
                 else
                 {
                     var musicBrainzResults = await api.FindArtistsAsync(artist.Name, simple: true);
+                    Statistics.MusicBrainzApiCalls.Inc();
+
                     var musicBrainzArtist =
                         musicBrainzResults.Results.Select(s => s.Item).FirstOrDefault(f => f.Name?.ToLower() == artist.Name.ToLower());
 
