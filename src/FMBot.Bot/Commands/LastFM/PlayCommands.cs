@@ -292,11 +292,6 @@ public class PlayCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Tracks, CommandCategory.Albums, CommandCategory.Artists)]
     public async Task YearAsync([Remainder] string extraOptions = null)
     {
-        await ReplyAsync(
-            "This command has temporarily been disabled due to issues communicating with Last.fm. It will most likely be disabled for a while.\n" +
-            "Sorry for the inconvenience.");
-        return;
-
         _ = this.Context.Channel.TriggerTypingAsync();
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
