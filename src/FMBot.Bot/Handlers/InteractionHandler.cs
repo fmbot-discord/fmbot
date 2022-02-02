@@ -36,94 +36,97 @@ public class InteractionHandler
         this._guildService = guildService;
         this._guildDisabledCommandService = guildDisabledCommandService;
         this._channelDisabledCommandService = channelDisabledCommandService;
-        this._client.SlashCommandExecuted += HandleInteractionAsync;
+        this._client.SlashCommandExecuted += SlashCommandAsync;
         this._client.AutocompleteExecuted += AutoCompleteAsync;
 
     }
 
-    private async Task HandleInteractionAsync(SocketInteraction socketInteraction)
+    private async Task SlashCommandAsync(SocketInteraction socketInteraction)
     {
+        if (socketInteraction is not SocketSlashCommand socketSlashCommand)
+        {
+            return;
+        }
+
         var context = new ShardedInteractionContext(this._client, socketInteraction);
         var contextUser = await this._userService.GetUserAsync(context.User.Id);
 
-        if (socketInteraction is SocketSlashCommand socketSlashCommand)
+        var commandSearch = this._interactionService.SearchSlashCommand(socketSlashCommand);
+
+        if (!commandSearch.IsSuccess)
         {
-            var command = this._interactionService.SlashCommands
-                .FirstOrDefault(f => f.Name == socketSlashCommand.CommandName);
+            Log.Error("Someone tried to execute a non-existent slash command! {slashCommand}", socketSlashCommand.CommandName);
+            return;
+        }
 
-            if (command == null)
+        var command = commandSearch.Command;
+
+        if (contextUser?.Blocked == true)
+        {
+            await UserBlockedResponse(context);
+            return;
+        }
+
+        if (!await CommandDisabled(context, command))
+        {
+            return;
+        }
+
+        if (command.Attributes.OfType<UsernameSetRequired>().Any())
+        {
+            if (contextUser == null)
             {
-                Log.Error("Someone tried to execute a non-existent slash command! {slashCommand}", socketSlashCommand.CommandName);
+                var embed = new EmbedBuilder()
+                    .WithColor(DiscordConstants.LastFmColorRed);
+                var userNickname = (context.User as SocketGuildUser)?.Nickname;
+                embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username);
+                await context.Interaction.RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+                context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return;
             }
-
-            if (contextUser?.Blocked == true)
+        }
+        if (command.Attributes.OfType<UserSessionRequired>().Any())
+        {
+            if (contextUser?.SessionKeyLastFm == null)
             {
-                await UserBlockedResponse(context);
+                var embed = new EmbedBuilder()
+                    .WithColor(DiscordConstants.LastFmColorRed);
+                embed.SessionRequiredResponse("/");
+                await context.Interaction.RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
+                context.LogCommandUsed(CommandResponse.UsernameNotSet);
                 return;
             }
-
-            if (!await CommandDisabled(context, command))
+        }
+        if (command.Attributes.OfType<GuildOnly>().Any())
+        {
+            if (context.Guild == null)
             {
+                await context.Interaction.RespondAsync("This command is not supported in DMs.");
+                context.LogCommandUsed(CommandResponse.NotSupportedInDm);
                 return;
             }
-
-            if (command.Attributes.OfType<UsernameSetRequired>().Any())
+        }
+        if (command.Attributes.OfType<RequiresIndex>().Any() && context.Guild != null)
+        {
+            var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.Guild);
+            if (lastIndex == null)
             {
-                if (contextUser == null)
-                {
-                    var embed = new EmbedBuilder()
-                        .WithColor(DiscordConstants.LastFmColorRed);
-                    var userNickname = (context.User as SocketGuildUser)?.Nickname;
-                    embed.UsernameNotSetErrorResponse("/", userNickname ?? context.User.Username);
-                    await context.Interaction.RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
-                    context.LogCommandUsed(CommandResponse.UsernameNotSet);
-                    return;
-                }
+                var embed = new EmbedBuilder();
+                embed.WithDescription("To use .fmbot commands with server-wide statistics you need to create a memberlist cache first.\n\n" +
+                                      $"Please run `/refreshmembers` to create this.\n" +
+                                      $"Note that this can take some time on large servers.");
+                await context.Interaction.RespondAsync(null, new[] { embed.Build() });
+                context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
             }
-            if (command.Attributes.OfType<UserSessionRequired>().Any())
+            if (lastIndex < DateTime.UtcNow.AddDays(-120))
             {
-                if (contextUser?.SessionKeyLastFm == null)
-                {
-                    var embed = new EmbedBuilder()
-                        .WithColor(DiscordConstants.LastFmColorRed);
-                    embed.SessionRequiredResponse("/");
-                    await context.Interaction.RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
-                    context.LogCommandUsed(CommandResponse.UsernameNotSet);
-                    return;
-                }
-            }
-            if (command.Attributes.OfType<GuildOnly>().Any())
-            {
-                if (context.Guild == null)
-                {
-                    await context.Interaction.RespondAsync("This command is not supported in DMs.");
-                    context.LogCommandUsed(CommandResponse.NotSupportedInDm);
-                    return;
-                }
-            }
-            if (command.Attributes.OfType<RequiresIndex>().Any() && context.Guild != null)
-            {
-                var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(context.Guild);
-                if (lastIndex == null)
-                {
-                    var embed = new EmbedBuilder();
-                    embed.WithDescription("To use .fmbot commands with server-wide statistics you need to create a memberlist cache first.\n\n" +
-                                          $"Please run `/refreshmembers` to create this.\n" +
-                                          $"Note that this can take some time on large servers.");
-                    await context.Interaction.RespondAsync(null, new[] { embed.Build() });
-                    context.LogCommandUsed(CommandResponse.IndexRequired);
-                    return;
-                }
-                if (lastIndex < DateTime.UtcNow.AddDays(-120))
-                {
-                    var embed = new EmbedBuilder();
-                    embed.WithDescription("Server index data is out of date, it was last updated over 120 days ago.\n" +
-                                          $"Please run `/index` to re-index this server.");
-                    await context.Interaction.RespondAsync(null, new[] { embed.Build() });
-                    context.LogCommandUsed(CommandResponse.IndexRequired);
-                    return;
-                }
+                var embed = new EmbedBuilder();
+                embed.WithDescription("Server member data is out of date, it was last updated over 120 days ago.\n" +
+                                      $"Please run `/refreshmembers` to update this server.");
+                await context.Interaction.RespondAsync(null, new[] { embed.Build() });
+                context.LogCommandUsed(CommandResponse.IndexRequired);
+                return;
             }
         }
 
