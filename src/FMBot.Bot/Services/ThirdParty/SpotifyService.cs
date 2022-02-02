@@ -73,7 +73,8 @@ namespace FMBot.Bot.Services.ThirdParty
                     {
                         Name = artistInfo.ArtistName,
                         LastFmUrl = artistInfo.ArtistUrl,
-                        Mbid = artistInfo.Mbid
+                        Mbid = artistInfo.Mbid,
+                        LastfmDate = DateTime.UtcNow
                     };
 
                     var musicBrainzUpdated = await MusicBrainzService.AddMusicBrainzDataToArtistAsync(artistToAdd);
@@ -247,7 +248,9 @@ namespace FMBot.Bot.Services.ThirdParty
                         Name = trackInfo.TrackName,
                         AlbumName = trackInfo.AlbumName,
                         ArtistName = trackInfo.ArtistName,
-                        DurationMs = (int)trackInfo.Duration
+                        DurationMs = (int)trackInfo.Duration,
+                        LastFmUrl = trackInfo.TrackUrl,
+                        LastfmDate = DateTime.UtcNow
                     };
 
                     var artist = await this._artistRepository.GetArtistForName(trackInfo.ArtistName, connection);
@@ -441,7 +444,8 @@ namespace FMBot.Bot.Services.ThirdParty
                     ArtistName = albumInfo.ArtistName,
                     LastFmUrl = albumInfo.AlbumUrl,
                     Mbid = albumInfo.Mbid,
-                    LastfmImageUrl = albumInfo.AlbumCoverUrl
+                    LastfmImageUrl = albumInfo.AlbumCoverUrl,
+                    LastfmDate = DateTime.UtcNow
                 };
 
                 var artist = await this._artistRepository.GetArtistForName(albumInfo.ArtistName, connection);
