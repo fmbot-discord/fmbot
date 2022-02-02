@@ -68,27 +68,16 @@ namespace FMBot.LastFM.Repositories
 
             var lastStoredPlay = await GetLastStoredPlay(user);
 
-            var dateAgo = lastStoredPlay?.TimePlayed.AddMinutes(-10) ?? DateTime.UtcNow.AddDays(-14);
-            var timeFrom = (long?)((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
+            var dateFromFilter = lastStoredPlay?.TimePlayed.AddMinutes(-2) ?? DateTime.UtcNow.AddDays(-14);
+            var timeFrom = (long?)((DateTimeOffset)dateFromFilter).ToUnixTimeSeconds();
 
             var count = 900;
             var totalPlaycountCorrect = false;
             var now = DateTime.UtcNow;
-            if (dateAgo > now.AddHours(-1) && dateAgo < now.AddMinutes(-30))
+            if (dateFromFilter > now.AddHours(-18))
             {
-                count = 60;
-                timeFrom = null;
-                totalPlaycountCorrect = true;
-            }
-            else if (dateAgo > now.AddHours(-2) && dateAgo < now.AddMinutes(-30))
-            {
-                count = 120;
-                timeFrom = null;
-                totalPlaycountCorrect = true;
-            }
-            else if (dateAgo > now.AddHours(-12) && dateAgo < now.AddMinutes(-30))
-            {
-                count = 500;
+                var playsToGet = (int)((DateTime.UtcNow - dateFromFilter).TotalMinutes / 4);
+                count = 12 + playsToGet;
                 timeFrom = null;
                 totalPlaycountCorrect = true;
             }

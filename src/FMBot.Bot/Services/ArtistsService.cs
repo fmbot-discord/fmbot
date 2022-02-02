@@ -32,8 +32,16 @@ namespace FMBot.Bot.Services
         private readonly LastFmRepository _lastFmRepository;
         private readonly WhoKnowsArtistService _whoKnowsArtistService;
         private readonly TimerService _timer;
+        private readonly UpdateRepository _updateRepository;
 
-        public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings, ArtistRepository artistRepository, LastFmRepository lastFmRepository, WhoKnowsArtistService whoKnowsArtistService, TimerService timer)
+        public ArtistsService(IDbContextFactory<FMBotDbContext> contextFactory,
+            IMemoryCache cache,
+            IOptions<BotSettings> botSettings,
+            ArtistRepository artistRepository,
+            LastFmRepository lastFmRepository,
+            WhoKnowsArtistService whoKnowsArtistService,
+            TimerService timer,
+            UpdateRepository updateRepository)
         {
             this._contextFactory = contextFactory;
             this._cache = cache;
@@ -41,6 +49,7 @@ namespace FMBot.Bot.Services
             this._lastFmRepository = lastFmRepository;
             this._whoKnowsArtistService = whoKnowsArtistService;
             this._timer = timer;
+            this._updateRepository = updateRepository;
             this._botSettings = botSettings.Value;
         }
 
@@ -105,7 +114,16 @@ namespace FMBot.Bot.Services
             }
             else
             {
-                var recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
+                Response<RecentTrackList> recentScrobbles;
+
+                if (userId.HasValue && otherUserUsername == null)
+                {
+                    recentScrobbles = await this._updateRepository.UpdateUser(new UpdateUserQueueItem(userId.Value));
+                }
+                else
+                {
+                    recentScrobbles = await this._lastFmRepository.GetRecentTracksAsync(lastFmUserName, 1, true, sessionKey);
+                }
 
                 if (GenericEmbedService.RecentScrobbleCallFailed(recentScrobbles))
                 {
