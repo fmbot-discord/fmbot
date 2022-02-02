@@ -895,14 +895,14 @@ public class ArtistCommands : BaseCommandModule
 
         try
         {
-            var response = await this._artistBuilders.GuildArtistsAsync("/", this.Context.Guild, guild, guildListSettings);
+            var response = await this._artistBuilders.GuildArtistsAsync(prfx, this.Context.Guild, guild, guildListSettings);
 
             _ = this.Interactivity.SendPaginatorAsync(
                 response.StaticPaginator,
                 this.Context.Channel,
                 TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
-            this.Context.LogCommandUsed();
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {

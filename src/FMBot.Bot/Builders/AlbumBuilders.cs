@@ -1,11 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Discord;
+using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
@@ -232,6 +235,110 @@ public class AlbumBuilders
         //}
 
         response.Embed.WithFooter(footer.ToString());
+        return response;
+    }
+
+    public async Task<ResponseModel> GuildAlbumsAsync(
+        string prfx,
+        IGuild discordGuild,
+        Guild guild,
+        GuildRankingSettings guildListSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        ICollection<GuildAlbum> topGuildAlbums;
+        IList<GuildAlbum> previousTopGuildAlbums = null;
+        if (guildListSettings.ChartTimePeriod == TimePeriod.AllTime)
+        {
+            topGuildAlbums = await this._whoKnowsAlbumService.GetTopAllTimeAlbumsForGuild(guild.GuildId, guildListSettings.OrderType, guildListSettings.NewSearchValue);
+        }
+        else
+        {
+            var plays = await this._playService.GetGuildUsersPlays(guild.GuildId, guildListSettings.AmountOfDaysWithBillboard);
+
+            topGuildAlbums = PlayService.GetGuildTopAlbums(plays, guildListSettings.StartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue);
+            previousTopGuildAlbums = PlayService.GetGuildTopAlbums(plays, guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, guildListSettings.NewSearchValue);
+        }
+
+        if (!topGuildAlbums.Any())
+        {
+            response.Embed.WithDescription(guildListSettings.NewSearchValue != null
+                ? $"Sorry, there are no registered top albums for artist `{guildListSettings.NewSearchValue}` on this server in the time period you selected."
+                : $"Sorry, there are no registered top albums on this server in the time period you selected.");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
+
+        var title = string.IsNullOrWhiteSpace(guildListSettings.NewSearchValue) ?
+            $"Top {guildListSettings.TimeDescription.ToLower()} albums in {discordGuild.Name}" :
+            $"Top {guildListSettings.TimeDescription.ToLower()} '{guildListSettings.NewSearchValue}' albums in {discordGuild.Name}";
+
+        var footer = new StringBuilder();
+        footer.AppendLine(guildListSettings.OrderType == OrderType.Listeners
+            ? " - Ordered by listeners"
+            : " - Ordered by plays");
+
+        var randomHintNumber = new Random().Next(0, 5);
+        switch (randomHintNumber)
+        {
+            case 1:
+                footer.AppendLine($"View specific track listeners with '{prfx}whoknowsalbum'");
+                break;
+            case 2:
+                footer.AppendLine($"Available time periods: alltime, monthly, weekly and daily");
+                break;
+            case 3:
+                footer.AppendLine($"Available sorting options: plays and listeners");
+                break;
+        }
+
+        var albumPages = topGuildAlbums.Chunk(12).ToList();
+
+        var counter = 1;
+        var pageCounter = 1;
+        var pages = new List<PageBuilder>();
+        foreach (var page in albumPages)
+        {
+            var pageString = new StringBuilder();
+            foreach (var album in page)
+            {
+                var name = guildListSettings.OrderType == OrderType.Listeners
+                    ? $"`{album.ListenerCount}` · **{album.ArtistName}** - **{album.AlbumName}** ({album.TotalPlaycount} {StringExtensions.GetPlaysString(album.TotalPlaycount)})"
+                    : $"`{album.TotalPlaycount}` · **{album.ArtistName}** - **{album.AlbumName}** ({album.ListenerCount} {StringExtensions.GetListenersString(album.ListenerCount)})";
+
+                if (previousTopGuildAlbums != null && previousTopGuildAlbums.Any())
+                {
+                    var previousTopAlbum = previousTopGuildAlbums.FirstOrDefault(f => f.ArtistName == album.ArtistName && f.AlbumName == album.AlbumName);
+                    int? previousPosition = previousTopAlbum == null ? null : previousTopGuildAlbums.IndexOf(previousTopAlbum);
+
+                    pageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition, false).Text);
+                }
+                else
+                {
+                    pageString.AppendLine(name);
+                }
+
+                counter++;
+            }
+
+            var pageFooter = new StringBuilder();
+            pageFooter.Append($"Page {pageCounter}/{albumPages.Count}");
+            pageFooter.Append(footer);
+
+            pages.Add(new PageBuilder()
+                .WithTitle(title)
+                .WithDescription(pageString.ToString())
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(pageFooter.ToString()));
+            pageCounter++;
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ResponseType = ResponseType.Paginator;
         return response;
     }
 }
