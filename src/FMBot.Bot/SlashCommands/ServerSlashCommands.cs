@@ -19,12 +19,13 @@ public class ServerSlashCommands : InteractionModuleBase
     private readonly UserService _userService;
     private readonly ArtistBuilders _artistBuilders;
     private readonly AlbumBuilders _albumBuilders;
+    private readonly TrackBuilders _trackBuilders;
     private readonly SettingService _settingService;
     private readonly GuildService _guildService;
 
     private InteractiveService Interactivity { get; }
 
-    public ServerSlashCommands(UserService userService, ArtistBuilders artistBuilders, InteractiveService interactivity, SettingService settingService, GuildService guildService, AlbumBuilders albumBuilders)
+    public ServerSlashCommands(UserService userService, ArtistBuilders artistBuilders, InteractiveService interactivity, SettingService settingService, GuildService guildService, AlbumBuilders albumBuilders, TrackBuilders trackBuilders)
     {
         this._userService = userService;
         this._artistBuilders = artistBuilders;
@@ -32,6 +33,7 @@ public class ServerSlashCommands : InteractionModuleBase
         this._settingService = settingService;
         this._guildService = guildService;
         this._albumBuilders = albumBuilders;
+        this._trackBuilders = trackBuilders;
     }
 
     [SlashCommand("artists", "Top artists for your server")]
@@ -97,6 +99,42 @@ public class ServerSlashCommands : InteractionModuleBase
         }
 
         var response = await this._albumBuilders.GuildAlbumsAsync("/", this.Context.Guild, guild, guildListSettings);
+
+        await this.Context.SendFollowUpResponse(this.Interactivity, response);
+
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
+    [SlashCommand("tracks", "Top tracks for your server")]
+    [UsernameSetRequired]
+    [RequiresIndex]
+    public async Task GuildTracksAsync(
+        [Summary("Time-period", "Time period")] PlayTimePeriod timePeriod = PlayTimePeriod.Weekly,
+        [Summary("Order", "Order for chart (defaults to listeners)")] OrderType orderType = OrderType.Listeners,
+        [Summary("Artist", "The artist you want to filter on")]
+        [Autocomplete(typeof(ArtistAutoComplete))]string artist = null)
+    {
+        await DeferAsync();
+
+        var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+
+        var guildListSettings = new GuildRankingSettings
+        {
+            ChartTimePeriod = TimePeriod.Weekly,
+            TimeDescription = "weekly",
+            OrderType = orderType,
+            AmountOfDays = 7,
+            NewSearchValue = artist
+        };
+
+        var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(PlayTimePeriod), timePeriod), TimePeriod.AllTime);
+
+        if (timeSettings.UsePlays || timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
+        {
+            guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
+        }
+
+        var response = await this._trackBuilders.GuildTracksAsync("/", this.Context.Guild, guild, guildListSettings);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response);
 

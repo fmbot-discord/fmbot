@@ -9,6 +9,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -47,6 +48,7 @@ public class TrackCommands : BaseCommandModule
     private readonly WhoKnowsPlayService _whoKnowsPlayService;
     private readonly WhoKnowsService _whoKnowsService;
     private readonly TrackService _trackService;
+    private readonly TrackBuilders _trackBuilders;
     private readonly AlbumService _albumService;
 
     private InteractiveService Interactivity { get; }
@@ -73,7 +75,8 @@ public class TrackCommands : BaseCommandModule
         FriendsService friendsService,
         TimeService timeService,
         TrackService trackService,
-        AlbumService albumService) : base(botSettings)
+        AlbumService albumService,
+        TrackBuilders trackBuilders) : base(botSettings)
     {
         this._guildService = guildService;
         this._indexService = indexService;
@@ -92,6 +95,7 @@ public class TrackCommands : BaseCommandModule
         this._timeService = timeService;
         this._trackService = trackService;
         this._albumService = albumService;
+        this._trackBuilders = trackBuilders;
     }
 
     [Command("track", RunMode = RunMode.Async)]
@@ -1135,107 +1139,17 @@ public class TrackCommands : BaseCommandModule
             guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
         }
 
-        var footer = new StringBuilder();
-
         try
         {
-            ICollection<GuildTrack> topGuildTracks;
-            IList<GuildTrack> previousTopGuildTracks = null;
-            if (guildListSettings.ChartTimePeriod == TimePeriod.AllTime)
-            {
-                topGuildTracks = await this._whoKnowsTrackService.GetTopAllTimeTracksForGuild(guild.GuildId, guildListSettings.OrderType, artistName);
-            }
-            else
-            {
-                var plays = await this._playService.GetGuildUsersPlays(guild.GuildId, guildListSettings.AmountOfDaysWithBillboard);
-
-                topGuildTracks = PlayService.GetGuildTopTracks(plays, guildListSettings.StartDateTime, guildListSettings.OrderType, artistName);
-                previousTopGuildTracks = PlayService.GetGuildTopTracks(plays, guildListSettings.BillboardStartDateTime, guildListSettings.OrderType, artistName);
-            }
-
-            if (!topGuildTracks.Any())
-            {
-                this._embed.WithDescription(artistName != null
-                    ? $"Sorry, there are no registered top tracks for artist `{artistName}` on this server in the time period you selected."
-                    : $"Sorry, there are no registered top tracks on this server in the time period you selected.");
-                this._embed.WithColor(DiscordConstants.WarningColorOrange);
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return;
-            }
-
-            var title = string.IsNullOrWhiteSpace(artistName) ?
-                $"Top {guildListSettings.TimeDescription.ToLower()} tracks in {this.Context.Guild.Name}" :
-                $"Top {guildListSettings.TimeDescription.ToLower()} '{artistName}' tracks in {this.Context.Guild.Name}";
-
-            footer.AppendLine(guildListSettings.OrderType == OrderType.Listeners
-                ? " - Ordered by listeners"
-                : " - Ordered by plays");
-
-            var rnd = new Random();
-            var randomHintNumber = rnd.Next(0, 5);
-            switch (randomHintNumber)
-            {
-                case 1:
-                    footer.AppendLine($"View specific track listeners with '{prfx}whoknowstrack'");
-                    break;
-                case 2:
-                    footer.AppendLine($"Available time periods: alltime, monthly, weekly and daily");
-                    break;
-                case 3:
-                    footer.AppendLine($"Available sorting options: plays and listeners");
-                    break;
-            }
-
-            var trackPages = topGuildTracks.Chunk(12).ToList();
-
-            var counter = 1;
-            var pageCounter = 1;
-            var pages = new List<PageBuilder>();
-            foreach (var page in trackPages)
-            {
-                var pageString = new StringBuilder();
-                foreach (var track in page)
-                {
-                    var name = guildListSettings.OrderType == OrderType.Listeners
-                        ? $"`{track.ListenerCount}` · **{track.ArtistName}** - **{track.TrackName}** ({track.TotalPlaycount} {StringExtensions.GetPlaysString(track.TotalPlaycount)})"
-                        : $"`{track.TotalPlaycount}` · **{track.ArtistName}** - **{track.TrackName}** ({track.ListenerCount} {StringExtensions.GetListenersString(track.ListenerCount)})";
-
-                    if (previousTopGuildTracks != null && previousTopGuildTracks.Any())
-                    {
-                        var previousTopTrack = previousTopGuildTracks.FirstOrDefault(f => f.ArtistName == track.ArtistName && f.TrackName == track.TrackName);
-                        int? previousPosition = previousTopTrack == null ? null : previousTopGuildTracks.IndexOf(previousTopTrack);
-
-                        pageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition, false).Text);
-                    }
-                    else
-                    {
-                        pageString.AppendLine(name);
-                    }
-
-                    counter++;
-                }
-
-                var pageFooter = new StringBuilder();
-                pageFooter.Append($"Page {pageCounter}/{trackPages.Count}");
-                pageFooter.Append(footer);
-
-                pages.Add(new PageBuilder()
-                    .WithTitle(title)
-                    .WithDescription(pageString.ToString())
-                    .WithAuthor(this._embedAuthor)
-                    .WithFooter(pageFooter.ToString()));
-                pageCounter++;
-            }
-
-            var paginator = StringService.BuildStaticPaginator(pages);
+            var response =
+                await this._trackBuilders.GuildTracksAsync(prfx, this.Context.Guild, guild, guildListSettings);
 
             _ = this.Interactivity.SendPaginatorAsync(
-                paginator,
+                response.StaticPaginator,
                 this.Context.Channel,
                 TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
-            this.Context.LogCommandUsed();
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {

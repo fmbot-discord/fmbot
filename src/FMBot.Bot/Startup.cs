@@ -149,6 +149,7 @@ namespace FMBot.Bot
                 .AddSingleton<TimeService>()
                 .AddSingleton<MusicBotService>()
                 .AddSingleton<MusicBrainzService>()
+                .AddSingleton<TrackBuilders>()
                 .AddSingleton<TrackService>()
                 .AddSingleton<TrackRepository>()
                 .AddSingleton<UserEventHandler>()
