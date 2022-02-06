@@ -117,12 +117,13 @@ namespace FMBot.Bot.Services
                     this._provider); 
 
 
-            const int shardTimeOut = 7500;
+            var shardTimeOut = 4800;
             foreach (var shard in this._client.Shards)
             {
                 Log.Information("ShardStartConnection: shard {shardId}", shard.ShardId);
                 await shard.StartAsync();
                 await Task.Delay(shardTimeOut);
+                shardTimeOut += 100;
             }
 
             Log.Information("Preparing cache folder");
