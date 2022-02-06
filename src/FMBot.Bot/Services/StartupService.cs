@@ -117,7 +117,7 @@ namespace FMBot.Bot.Services
                     this._provider); 
 
 
-            const int shardTimeOut = 5500;
+            const int shardTimeOut = 7500;
             foreach (var shard in this._client.Shards)
             {
                 Log.Information("ShardStartConnection: shard {shardId}", shard.ShardId);
