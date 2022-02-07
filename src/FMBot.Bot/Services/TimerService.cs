@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Discord;
 using Discord.WebSocket;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -24,6 +25,7 @@ namespace FMBot.Bot.Services
         private readonly Timer _featuredTimer;
         private readonly Timer _pickNewFeaturedTimer;
         private readonly Timer _internalStatsTimer;
+        private readonly Timer _shardReconnectTimer;
         private readonly Timer _userUpdateTimer;
         private readonly Timer _purgeCacheTimer;
         private readonly Timer _userIndexTimer;
@@ -220,7 +222,42 @@ namespace FMBot.Bot.Services
                 },
                 null,
                 TimeSpan.FromSeconds(10),
-                TimeSpan.FromMinutes(3));
+                TimeSpan.FromMinutes(2));
+
+            this._shardReconnectTimer = new Timer(async _ =>
+                {
+                    Log.Information("ShardReconnectTimer: Running shard reconnect timer");
+
+                    var shards = this._client.Shards;
+
+                    foreach (var shard in shards.Where(w => w.ConnectionState == ConnectionState.Disconnected))
+                    {
+                        var cacheKey = $"{shard.ShardId}-shard-disconnected";
+                        if (this._cache.TryGetValue(cacheKey, out int shardDisconnected))
+                        {
+                            if (shardDisconnected > 7)
+                            {
+                                Log.Information("ShardReconnectTimer: Reconnecting shard #{shardId}", shard.ShardId);
+                                _ = shard.StartAsync();
+                                this._cache.Remove(cacheKey);
+                            }
+                            else
+                            {
+                                shardDisconnected++;
+                                this._cache.Set(cacheKey, shardDisconnected, TimeSpan.FromMinutes(20 - shardDisconnected));
+                                Log.Information("ShardReconnectTimer: Shard #{shardId} has been disconnected {shardDisconnected} times", shard.ShardId, shardDisconnected);
+                            }
+                        }
+                        else
+                        {
+                            Log.Information("ShardReconnectTimer: Shard #{shardId} has been disconnected one time", shard.ShardId);
+                            this._cache.Set(cacheKey, 1, TimeSpan.FromMinutes(20));
+                        }
+                    }
+                },
+                null,
+                TimeSpan.FromMinutes(15),
+                TimeSpan.FromMinutes(2));
 
             this._userUpdateTimer = new Timer(async _ =>
                 {

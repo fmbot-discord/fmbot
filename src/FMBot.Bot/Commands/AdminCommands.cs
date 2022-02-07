@@ -657,6 +657,68 @@ namespace FMBot.Bot.Commands
             }
         }
 
+        [Command("reconnectshard", RunMode = RunMode.Async)]
+        [Summary("Reconnects a shard")]
+        [GuildOnly]
+        [ExcludeFromHelp]
+        [Alias("reconnectshards")]
+        [Examples("shard 0", "shard 821660544581763093")]
+        public async Task ShardInfoAsync(ulong? guildId = null)
+        {
+            if (!await this._adminService.HasCommandAccessAsync(this.Context.User, UserType.Admin))
+            {
+                await this.Context.Channel.SendMessageAsync($"No permissions mate");
+                this.Context.LogCommandUsed(CommandResponse.NoPermission);
+                return;
+            }
+
+            if (!guildId.HasValue)
+            {
+                await this.Context.Channel.SendMessageAsync($"Enter a server id please (this server is `{this.Context.Guild.Id}`)");
+                this.Context.LogCommandUsed(CommandResponse.WrongInput);
+                return;
+            }
+
+            var client = this.Context.Client as DiscordShardedClient;
+
+            DiscordSocketClient shard;
+
+            if (guildId is < 1000 and >= 0)
+            {
+                shard = client.GetShard(int.Parse(guildId.Value.ToString()));
+            }
+            else
+            {
+                var guild = client.GetGuild(guildId.Value);
+                shard = client.GetShardFor(guild);
+                this._embed.WithFooter($"{guild.Name} - {guild.MemberCount} members");
+            }
+
+            if (shard != null)
+            {
+                if (shard.ConnectionState == ConnectionState.Disconnected)
+                {
+                    await this.Context.Channel.SendMessageAsync($"Connecting Shard #{shard.ShardId}");
+                    await shard.StartAsync();
+                    await this.Context.Channel.SendMessageAsync($"Connected Shard #{shard.ShardId}");
+                }
+                else
+                {
+                    await this.Context.Channel.SendMessageAsync($"Shard #{shard.ShardId} is not in a disconnected state.");
+                }
+            }
+            else
+            {
+                await this.Context.Channel.SendMessageAsync("Server or shard could not be found. \n" +
+                                                            "This either means the bot is not connected to that server or that the bot is not in this server.");
+                this.Context.LogCommandUsed(CommandResponse.NotFound);
+                return;
+            }
+
+            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
+        }
+
         //[Command("fmavataroverride"), Summary("Changes the avatar to be a image from a link.")]
         //[Alias("fmsetavatar")]
         //public async Task fmavataroverrideAsync(string link, string desc = "Custom FMBot Avatar", int ievent = 0)
