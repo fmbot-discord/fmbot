@@ -28,9 +28,8 @@ namespace FMBot.Bot.Services
         private readonly string _unknownArtistImagePath;
         private readonly string _censoredImagePath;
 
-        private readonly HttpClient _client;
 
-        public ChartService(CensorService censorService, IHttpClientFactory httpClientFactory)
+        public ChartService(CensorService censorService)
         {
             this._censorService = censorService;
 
@@ -53,8 +52,6 @@ namespace FMBot.Bot.Services
                     wc.DownloadFile("https://fmbot.xyz/img/bot/censored.png", this._censoredImagePath);
                     wc.Dispose();
                 }
-
-                this._client = httpClientFactory.CreateClient();
             }
             catch (Exception e)
             {
@@ -70,12 +67,14 @@ namespace FMBot.Bot.Services
                 var chartImageHeight = 300;
                 var chartImageWidth = 300;
 
-                if (chart.Width > 6 || chart.Height > 6)
+                if (chart.ImagesNeeded > 40)
                 {
                     largerImages = false;
                     chartImageHeight = 180;
                     chartImageWidth = 180;
                 }
+
+                var httpClient = new HttpClient();
 
                 if (!chart.ArtistChart)
                 {
@@ -122,7 +121,7 @@ namespace FMBot.Bot.Services
                             {
                                 try
                                 {
-                                    var bytes = await this._client.GetByteArrayAsync(album.AlbumCoverUrl);
+                                    var bytes = await httpClient.GetByteArrayAsync(album.AlbumCoverUrl);
 
                                     Statistics.LastfmImageCalls.Inc();
 
@@ -199,7 +198,7 @@ namespace FMBot.Bot.Services
                             {
                                 try
                                 {
-                                    var bytes = await this._client.GetByteArrayAsync(artist.ArtistImageUrl);
+                                    var bytes = await httpClient.GetByteArrayAsync(artist.ArtistImageUrl);
                                     await using var stream = new MemoryStream(bytes);
                                     chartImage = SKBitmap.Decode(stream);
                                 }
