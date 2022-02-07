@@ -95,13 +95,13 @@ namespace FMBot.Bot.Handlers
 
         private void ShardDisconnected(Exception exception, DiscordSocketClient shard)
         {
-            Log.Warning("ShardDisconnected: shard {shardId} Disconnected",
+            Log.Warning("ShardDisconnected: shard #{shardId} Disconnected",
                 shard.ShardId, exception);
         }
 
         private void ShardConnected(DiscordSocketClient shard)
         {
-            Log.Information("ShardConnected: shard {shardId} with {shardLatency} ms",
+            Log.Information("ShardConnected: shard #{shardId} with {shardLatency} ms",
                 shard.ShardId, shard.Latency);
         }
 
@@ -109,7 +109,7 @@ namespace FMBot.Bot.Handlers
         {
             // If new or old latency if lager then 500ms.
             if (updatePing < 500 && oldPing < 500) return;
-            Log.Information("Shard: {shardId} Latency update from {oldPing} ms to {updatePing} ms",
+            Log.Information("Shard: #{shardId} Latency update from {oldPing} ms to {updatePing} ms",
                 shard.ShardId, oldPing, updatePing);
         }
 

@@ -298,7 +298,7 @@ public class CommandHandler
         var cacheKey = $"{discordUserId}-ratelimit";
         if (this._cache.TryGetValue(cacheKey, out int requestsInLastMinute))
         {
-            if (requestsInLastMinute > 25)
+            if (requestsInLastMinute > 35)
             {
                 return false;
             }
