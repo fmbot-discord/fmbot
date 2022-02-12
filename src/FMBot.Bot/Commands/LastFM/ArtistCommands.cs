@@ -110,8 +110,7 @@ public class ArtistCommands : BaseCommandModule
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var response = await this._artistBuilders.ArtistAsync(prfx, this.Context.Guild, this.Context.User,
-            contextUser, artistValues);
+        var response = await this._artistBuilders.ArtistAsync(new ContextModel(this.Context, prfx, contextUser), artistValues);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -132,10 +131,11 @@ public class ArtistCommands : BaseCommandModule
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(artistValues, contextUser, this.Context);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.AllTime, cachedOrAllTimeOnly: true, dailyTimePeriods: false);
 
-        var response = await this._artistBuilders.ArtistTracksAsync(this.Context.Guild, this.Context.User, contextUser, timeSettings,
+        var response = await this._artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, prfx, contextUser), timeSettings,
             userSettings, userSettings.NewSearchValue);
 
         await this.Context.SendResponse(this.Interactivity, response);
@@ -308,6 +308,7 @@ public class ArtistCommands : BaseCommandModule
 
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
             var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
             var timeSettings = SettingService.GetTimePeriod(userSettings.NewSearchValue, TimePeriod.Monthly, cachedOrAllTimeOnly: true);
 
@@ -327,7 +328,7 @@ public class ArtistCommands : BaseCommandModule
                 timeFrom = userInfo.Registered.Unixtime;
             }
 
-            var response = await this._artistBuilders.ArtistPaceAsync(this.Context.User, contextUser,
+            var response = await this._artistBuilders.ArtistPaceAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings, timeSettings.NewSearchValue, timeFrom, null);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -642,10 +643,10 @@ public class ArtistCommands : BaseCommandModule
         try
         {
             var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild.Id);
-            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            var response = await this._artistBuilders.WhoKnowsArtistAsync(prfx, this.Context.Guild, this.Context.User,
-                guild, user, artistValues);
+            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, prfx, contextUser),
+                guild, artistValues);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed();
@@ -680,7 +681,7 @@ public class ArtistCommands : BaseCommandModule
         try
         {
             var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
-            var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
             var currentSettings = new WhoKnowsSettings
             {
@@ -690,10 +691,10 @@ public class ArtistCommands : BaseCommandModule
                 NewSearchValue = artistValues
             };
 
-            var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, user.UserType);
+            var settings = this._settingService.SetWhoKnowsSettings(currentSettings, artistValues, contextUser.UserType);
 
             var response = await this._artistBuilders
-                .GlobalWhoKnowsArtistAsync(prfx, this.Context.Guild, this.Context.User, guild, user, settings);
+                .GlobalWhoKnowsArtistAsync(new ContextModel(this.Context, prfx, contextUser), guild, settings);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed();
@@ -895,7 +896,7 @@ public class ArtistCommands : BaseCommandModule
 
         try
         {
-            var response = await this._artistBuilders.GuildArtistsAsync(prfx, this.Context.Guild, guild, guildListSettings);
+            var response = await this._artistBuilders.GuildArtistsAsync(new ContextModel(this.Context, prfx), guild, guildListSettings);
 
             _ = this.Interactivity.SendPaginatorAsync(
                 response.StaticPaginator,

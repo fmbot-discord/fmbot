@@ -46,11 +46,7 @@ public class AlbumBuilders
     }
 
     public async Task<ResponseModel> AlbumAsync(
-        string prfx,
-        IGuild discordGuild,
-        IChannel discordChannel,
-        IUser discordUser,
-        User contextUser,
+        ContextModel context,
         string searchValue)
     {
         var response = new ResponseModel
@@ -58,7 +54,7 @@ public class AlbumBuilders
             ResponseType = ResponseType.Embed,
         };
 
-        var albumSearch = await this._albumService.SearchAlbum(response, discordUser, searchValue, contextUser.UserNameLastFM, contextUser.SessionKeyLastFm);
+        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm);
         if (albumSearch.Album == null)
         {
             return albumSearch.Response;
@@ -67,7 +63,7 @@ public class AlbumBuilders
         var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumSearch.Album);
         databaseAlbum.Tracks = await this._spotifyService.GetExistingAlbumTracks(databaseAlbum.Id);
 
-        var userTitle = await this._userService.GetUserTitleAsync(discordGuild, discordUser);
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         response.EmbedAuthor.WithName(
             StringExtensions.TruncateLongString($"Info about {albumSearch.Album.ArtistName} - {albumSearch.Album.AlbumName} for {userTitle}", 255));
 
@@ -83,7 +79,7 @@ public class AlbumBuilders
             response.Embed.WithDescription($"Release date: `{databaseAlbum.ReleaseDate}`");
         }
 
-        var artistUserTracks = await this._trackService.GetArtistUserTracks(contextUser.UserId, albumSearch.Album.ArtistName);
+        var artistUserTracks = await this._trackService.GetArtistUserTracks(context.ContextUser.UserId, albumSearch.Album.ArtistName);
 
         var globalStats = new StringBuilder();
         globalStats.AppendLine($"`{albumSearch.Album.TotalListeners}` {StringExtensions.GetListenersString(albumSearch.Album.TotalListeners)}");
@@ -91,8 +87,8 @@ public class AlbumBuilders
         if (albumSearch.Album.UserPlaycount.HasValue)
         {
             globalStats.AppendLine($"`{albumSearch.Album.UserPlaycount}` {StringExtensions.GetPlaysString(albumSearch.Album.UserPlaycount)} by you");
-            globalStats.AppendLine($"`{await this._playService.GetWeekAlbumPlaycountAsync(contextUser.UserId, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName)}` by you last week");
-            await this._updateService.CorrectUserAlbumPlaycount(contextUser.UserId, albumSearch.Album.ArtistName,
+            globalStats.AppendLine($"`{await this._playService.GetWeekAlbumPlaycountAsync(context.ContextUser.UserId, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName)}` by you last week");
+            await this._updateService.CorrectUserAlbumPlaycount(context.ContextUser.UserId, albumSearch.Album.ArtistName,
                 albumSearch.Album.AlbumName, albumSearch.Album.UserPlaycount.Value);
         }
 
@@ -105,14 +101,14 @@ public class AlbumBuilders
 
         response.Embed.AddField("Statistics", globalStats.ToString(), true);
 
-        if (discordGuild != null)
+        if (context.DiscordGuild != null)
         {
             var serverStats = "";
-            var guild = await this._guildService.GetGuildForWhoKnows(discordGuild.Id);
+            var guild = await this._guildService.GetGuildForWhoKnows(context.DiscordGuild.Id);
 
             if (guild?.LastIndexed != null)
             {
-                var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(discordGuild, guild.GuildId, albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
+                var usersWithAlbum = await this._whoKnowsAlbumService.GetIndexedUsersForAlbum(context.DiscordGuild, guild.GuildId, albumSearch.Album.ArtistName, albumSearch.Album.AlbumName);
                 var filteredUsersWithAlbum = WhoKnowsService.FilterGuildUsersAsync(usersWithAlbum, guild);
 
                 if (filteredUsersWithAlbum.Count != 0)
@@ -138,7 +134,7 @@ public class AlbumBuilders
             }
             else
             {
-                serverStats += $"Run `{prfx}index` to get server stats";
+                serverStats += $"Run `{context.Prefix}index` to get server stats";
             }
 
             response.Embed.AddField("Server stats", serverStats, true);
@@ -151,7 +147,7 @@ public class AlbumBuilders
         }
         if (albumCoverUrl != null)
         {
-            var safeForChannel = await this._censorService.IsSafeForChannel(discordGuild, discordChannel,
+            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
                 albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, albumSearch.Album.AlbumUrl);
             if (safeForChannel.Result)
             {
@@ -161,9 +157,9 @@ public class AlbumBuilders
 
         var footer = new StringBuilder();
 
-        if (contextUser.TotalPlaycount.HasValue && albumSearch.Album.UserPlaycount is >= 10)
+        if (context.ContextUser.TotalPlaycount.HasValue && albumSearch.Album.UserPlaycount is >= 10)
         {
-            footer.AppendLine($"{(decimal)albumSearch.Album.UserPlaycount.Value / contextUser.TotalPlaycount.Value:P} of all your scrobbles are on this album");
+            footer.AppendLine($"{(decimal)albumSearch.Album.UserPlaycount.Value / context.ContextUser.TotalPlaycount.Value:P} of all your scrobbles are on this album");
         }
 
         if (databaseAlbum?.Label != null)
@@ -220,7 +216,7 @@ public class AlbumBuilders
 
                 if (trackDescription.Length > 900 && (albumSearch.Album.AlbumTracks.Count - 2 - i) > 1)
                 {
-                    trackDescription.Append($"*And {albumSearch.Album.AlbumTracks.Count - 2 - i} more tracks (view all with `{prfx}albumtracks`)*");
+                    trackDescription.Append($"*And {albumSearch.Album.AlbumTracks.Count - 2 - i} more tracks (view all with `{context.Prefix}albumtracks`)*");
                     break;
                 }
             }
@@ -239,8 +235,7 @@ public class AlbumBuilders
     }
 
     public async Task<ResponseModel> GuildAlbumsAsync(
-        string prfx,
-        IGuild discordGuild,
+        ContextModel context,
         Guild guild,
         GuildRankingSettings guildListSettings)
     {
@@ -274,8 +269,8 @@ public class AlbumBuilders
         }
 
         var title = string.IsNullOrWhiteSpace(guildListSettings.NewSearchValue) ?
-            $"Top {guildListSettings.TimeDescription.ToLower()} albums in {discordGuild.Name}" :
-            $"Top {guildListSettings.TimeDescription.ToLower()} '{guildListSettings.NewSearchValue}' albums in {discordGuild.Name}";
+            $"Top {guildListSettings.TimeDescription.ToLower()} albums in {context.DiscordGuild.Name}" :
+            $"Top {guildListSettings.TimeDescription.ToLower()} '{guildListSettings.NewSearchValue}' albums in {context.DiscordGuild.Name}";
 
         var footer = new StringBuilder();
         footer.AppendLine(guildListSettings.OrderType == OrderType.Listeners
@@ -286,7 +281,7 @@ public class AlbumBuilders
         switch (randomHintNumber)
         {
             case 1:
-                footer.AppendLine($"View specific track listeners with '{prfx}whoknowsalbum'");
+                footer.AppendLine($"View specific track listeners with '{context.Prefix}whoknowsalbum'");
                 break;
             case 2:
                 footer.AppendLine($"Available time periods: alltime, monthly, weekly and daily");

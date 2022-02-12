@@ -54,8 +54,7 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._artistBuilders.ArtistAsync("/", this.Context.Guild, this.Context.User,
-                contextUser, name);
+            var response = await this._artistBuilders.ArtistAsync(new ContextModel(this.Context, contextUser), name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -82,7 +81,7 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(PlayTimePeriod), timePeriod), TimePeriod.AllTime);
 
-        var response = await this._artistBuilders.ArtistTracksAsync(this.Context.Guild, this.Context.User, contextUser, timeSettings,
+        var response = await this._artistBuilders.ArtistTracksAsync(new ContextModel(this.Context, contextUser), timeSettings,
             userSettings, name);
 
         await this.Context.SendResponse(this.Interactivity, response);
@@ -119,7 +118,7 @@ public class ArtistSlashCommands : InteractionModuleBase
                 timeFrom = userInfo.Registered.Unixtime;
             }
 
-            var response = await this._artistBuilders.ArtistPaceAsync(this.Context.User, contextUser,
+            var response = await this._artistBuilders.ArtistPaceAsync(new ContextModel(this.Context, contextUser),
                 userSettings, timeSettings, amount.ToString(), timeFrom, name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
@@ -154,8 +153,8 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._artistBuilders.WhoKnowsArtistAsync("/", this.Context.Guild, this.Context.User,
-                guild, contextUser, name);
+            var response = await this._artistBuilders.WhoKnowsArtistAsync(new ContextModel(this.Context, contextUser),
+                guild, name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -192,8 +191,8 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._artistBuilders.GlobalWhoKnowsArtistAsync("/", this.Context.Guild, this.Context.User,
-                guild, contextUser, currentSettings);
+            var response = await this._artistBuilders.GlobalWhoKnowsArtistAsync(new ContextModel(this.Context, contextUser),
+                guild, currentSettings);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

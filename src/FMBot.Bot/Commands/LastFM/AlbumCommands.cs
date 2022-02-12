@@ -116,9 +116,7 @@ public class AlbumCommands : BaseCommandModule
 
             _ = this.Context.Channel.TriggerTypingAsync();
 
-            var response = await this._albumBuilders.AlbumAsync(prfx, this.Context.Guild, this.Context.Channel,
-                this.Context.User,
-                contextUser, albumValues);
+            var response = await this._albumBuilders.AlbumAsync(new ContextModel(this.Context, prfx, contextUser), albumValues);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
@@ -1042,7 +1040,7 @@ public class AlbumCommands : BaseCommandModule
             }
 
             var response =
-                await this._albumBuilders.GuildAlbumsAsync(prfx, this.Context.Guild, guild, guildListSettings);
+                await this._albumBuilders.GuildAlbumsAsync(new ContextModel(this.Context, prfx), guild, guildListSettings);
 
             _ = this.Interactivity.SendPaginatorAsync(
                 response.StaticPaginator,

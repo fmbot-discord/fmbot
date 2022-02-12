@@ -62,7 +62,7 @@ public class ServerSlashCommands : InteractionModuleBase
             guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
         }
 
-        var response = await this._artistBuilders.GuildArtistsAsync("/", this.Context.Guild, guild, guildListSettings);
+        var response = await this._artistBuilders.GuildArtistsAsync(new ContextModel(this.Context), guild, guildListSettings);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response);
 
@@ -98,7 +98,7 @@ public class ServerSlashCommands : InteractionModuleBase
             guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
         }
 
-        var response = await this._albumBuilders.GuildAlbumsAsync("/", this.Context.Guild, guild, guildListSettings);
+        var response = await this._albumBuilders.GuildAlbumsAsync(new ContextModel(this.Context), guild, guildListSettings);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response);
 

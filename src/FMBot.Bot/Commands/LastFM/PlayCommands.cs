@@ -11,6 +11,7 @@ using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
@@ -178,8 +179,7 @@ public class PlayCommands : BaseCommandModule
             _ = this.Context.Channel.TriggerTypingAsync();
             var userSettings = await this._settingService.GetUser(options, contextUser, this.Context);
 
-            var response = await this._playBuilder.NowPlayingAsync(prfx, this.Context.Guild, this.Context.Channel,
-                this.Context.User, contextUser, userSettings);
+            var response = await this._playBuilder.NowPlayingAsync(new ContextModel(this.Context, prfx, contextUser), userSettings);
 
             IUserMessage message;
             if (response.ResponseType == ResponseType.Embed)
@@ -236,11 +236,12 @@ public class PlayCommands : BaseCommandModule
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var amount = SettingService.GetAmount(extraOptions, 5, 10);
 
         try
         {
-            var response = await this._playBuilder.RecentAsync(this.Context.Guild, this.Context.Channel, this.Context.User, contextUser,
+            var response = await this._playBuilder.RecentAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, amount);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -267,11 +268,12 @@ public class PlayCommands : BaseCommandModule
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
         var amountOfDays = SettingService.GetAmount(extraOptions, 4, 8);
 
         try
         {
-            var response = await this._playBuilder.OverviewAsync(this.Context.Guild, this.Context.User, contextUser,
+            var response = await this._playBuilder.OverviewAsync(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, amountOfDays);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -523,6 +525,7 @@ public class PlayCommands : BaseCommandModule
 
         var goalAmount = SettingService.GetGoalAmount(extraOptions, userInfo.Playcount);
         var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         long timeFrom;
         if (timeSettings.TimePeriod != TimePeriod.AllTime && timeSettings.PlayDays != null)
@@ -535,7 +538,7 @@ public class PlayCommands : BaseCommandModule
             timeFrom = userInfo.Registered.Unixtime;
         }
 
-        var response = await this._playBuilder.PaceAsync(this.Context.User,
+        var response = await this._playBuilder.PaceAsync(new ContextModel(this.Context, prfx, contextUser),
             userSettings, timeSettings, goalAmount, userInfo.Playcount, timeFrom);
 
         await this.Context.SendResponse(this.Interactivity, response);
@@ -551,17 +554,17 @@ public class PlayCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Other)]
     public async Task MilestoneAsync([Remainder] string extraOptions = null)
     {
-        var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
+        var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
 
         var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
         var mileStoneAmount = SettingService.GetMilestoneAmount(extraOptions, userInfo.Playcount);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var response = await this._playBuilder.MileStoneAsync(this.Context.Guild, this.Context.Channel, this.Context.User,
-            userSettings, mileStoneAmount, userInfo.Playcount);
+        var response = await this._playBuilder.MileStoneAsync(new ContextModel(this.Context, prfx, contextUser), userSettings, mileStoneAmount, userInfo.Playcount);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);

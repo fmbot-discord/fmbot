@@ -82,11 +82,7 @@ public class PlayBuilder
     }
 
     public async Task<ResponseModel> NowPlayingAsync(
-        string prfx,
-        IGuild discordGuild,
-        IChannel discordChannel,
-        IUser discordUser,
-        User contextUser,
+        ContextModel context,
         UserSettingsModel userSettings)
     {
         var response = new ResponseModel
@@ -95,24 +91,24 @@ public class PlayBuilder
         };
 
         string sessionKey = null;
-        if (!userSettings.DifferentUser && !string.IsNullOrEmpty(contextUser.SessionKeyLastFm))
+        if (!userSettings.DifferentUser && !string.IsNullOrEmpty(context.ContextUser.SessionKeyLastFm))
         {
-            sessionKey = contextUser.SessionKeyLastFm;
+            sessionKey = context.ContextUser.SessionKeyLastFm;
         }
 
         Response<RecentTrackList> recentTracks;
 
         if (!userSettings.DifferentUser)
         {
-            if (contextUser.LastIndexed == null)
+            if (context.ContextUser.LastIndexed == null)
             {
-                _ = this._indexService.IndexUser(contextUser);
+                _ = this._indexService.IndexUser(context.ContextUser);
                 recentTracks = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFm,
                     useCache: true, sessionKey: sessionKey);
             }
             else
             {
-                recentTracks = await this._updateService.UpdateUserAndGetRecentTracks(contextUser);
+                recentTracks = await this._updateService.UpdateUserAndGetRecentTracks(context.ContextUser);
             }
         }
         else
@@ -130,12 +126,12 @@ public class PlayBuilder
             return response;
         }
 
-        var embedType = contextUser.FmEmbedType;
+        var embedType = context.ContextUser.FmEmbedType;
 
         Guild guild = null;
-        if (discordGuild != null)
+        if (context.DiscordGuild != null)
         {
-            guild = await this._guildService.GetGuildAsync(discordGuild.Id);
+            guild = await this._guildService.GetGuildAsync(context.DiscordGuild.Id);
             if (guild?.FmEmbedType != null)
             {
                 embedType = guild.FmEmbedType.Value;
@@ -143,8 +139,8 @@ public class PlayBuilder
 
             if (guild != null)
             {
-                await this._indexService.UpdateGuildUser(await discordGuild.GetUserAsync(contextUser.DiscordUserId),
-                    contextUser.UserId, guild);
+                await this._indexService.UpdateGuildUser(await context.DiscordGuild.GetUserAsync(context.ContextUser.DiscordUserId),
+                    context.ContextUser.UserId, guild);
             }
         }
 
@@ -159,10 +155,10 @@ public class PlayBuilder
 
         if (!userSettings.DifferentUser)
         {
-            this._whoKnowsPlayService.AddRecentPlayToCache(contextUser.UserId, currentTrack);
+            this._whoKnowsPlayService.AddRecentPlayToCache(context.ContextUser.UserId, currentTrack);
         }
 
-        var requesterUserTitle = await this._userService.GetUserTitleAsync(discordGuild, discordUser);
+        var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var embedTitle = !userSettings.DifferentUser
             ? $"{requesterUserTitle}"
             : $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
@@ -177,7 +173,7 @@ public class PlayBuilder
             currentTrack.TimePlayed > DateTime.UtcNow.AddDays(-5))
         {
             footerText +=
-                $"Using Spotify and fm lagging behind? Check '{prfx}outofsync'\n";
+                $"Using Spotify and fm lagging behind? Check '{context.Prefix}outofsync'\n";
         }
 
         if (currentTrack.Loved)
@@ -208,12 +204,12 @@ public class PlayBuilder
 
         if (!userSettings.DifferentUser)
         {
-            switch (contextUser.FmCountType)
+            switch (context.ContextUser.FmCountType)
             {
                 case FmCountType.Track:
                     var trackPlaycount =
                         await this._whoKnowsTrackService.GetTrackPlayCountForUser(currentTrack.ArtistName,
-                            currentTrack.TrackName, contextUser.UserId);
+                            currentTrack.TrackName, context.ContextUser.UserId);
                     if (trackPlaycount.HasValue)
                     {
                         footerText += $"{trackPlaycount} scrobbles on this track | ";
@@ -225,7 +221,7 @@ public class PlayBuilder
                     {
                         var albumPlaycount =
                             await this._whoKnowsAlbumService.GetAlbumPlayCountForUser(currentTrack.ArtistName,
-                                currentTrack.AlbumName, contextUser.UserId);
+                                currentTrack.AlbumName, context.ContextUser.UserId);
                         if (albumPlaycount.HasValue)
                         {
                             footerText += $"{albumPlaycount} scrobbles on this album | ";
@@ -236,7 +232,7 @@ public class PlayBuilder
                 case FmCountType.Artist:
                     var artistPlaycount =
                         await this._whoKnowsArtistService.GetArtistPlayCountForUser(currentTrack.ArtistName,
-                            contextUser.UserId);
+                            context.ContextUser.UserId);
                     if (artistPlaycount.HasValue)
                     {
                         footerText += $"{artistPlaycount} scrobbles on this artist | ";
@@ -281,15 +277,15 @@ public class PlayBuilder
             default:
                 if (embedType == FmEmbedType.EmbedMini || embedType == FmEmbedType.EmbedTiny)
                 {
-                    fmText += StringService.TrackToLinkedString(currentTrack, contextUser.RymEnabled);
+                    fmText += StringService.TrackToLinkedString(currentTrack, context.ContextUser.RymEnabled);
                     response.Embed.WithDescription(fmText);
                 }
                 else if (previousTrack != null)
                 {
                     response.Embed.AddField("Current:",
-                        StringService.TrackToLinkedString(currentTrack, contextUser.RymEnabled));
+                        StringService.TrackToLinkedString(currentTrack, context.ContextUser.RymEnabled));
                     response.Embed.AddField("Previous:",
-                        StringService.TrackToLinkedString(previousTrack, contextUser.RymEnabled));
+                        StringService.TrackToLinkedString(previousTrack, context.ContextUser.RymEnabled));
                 }
 
                 string headerText;
@@ -317,7 +313,7 @@ public class PlayBuilder
 
                 if (guild != null && !userSettings.DifferentUser)
                 {
-                    var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(contextUser.UserId,
+                    var guildAlsoPlaying = this._whoKnowsPlayService.GuildAlsoPlayingTrack(context.ContextUser.UserId,
                         guild, currentTrack.ArtistName, currentTrack.TrackName);
 
                     if (guildAlsoPlaying != null)
@@ -335,14 +331,14 @@ public class PlayBuilder
 
                 if (embedType != FmEmbedType.EmbedTiny)
                 {
-                    response.EmbedAuthor.WithIconUrl(discordUser.GetAvatarUrl());
+                    response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
                     response.Embed.WithAuthor(response.EmbedAuthor);
                     response.Embed.WithUrl(recentTracks.Content.UserUrl);
                 }
 
                 if (currentTrack.AlbumCoverUrl != null && embedType != FmEmbedType.EmbedTiny)
                 {
-                    var safeForChannel = await this._censorService.IsSafeForChannel(discordGuild, discordChannel,
+                    var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
                         currentTrack.AlbumName, currentTrack.ArtistName, currentTrack.AlbumCoverUrl);
                     if (safeForChannel.Result)
                     {
@@ -357,10 +353,7 @@ public class PlayBuilder
     }
 
     public async Task<ResponseModel> RecentAsync(
-        IGuild discordGuild,
-        IChannel discordChannel,
-        IUser discordUser,
-        User contextUser,
+        ContextModel context,
         UserSettingsModel userSettings,
         int amount)
     {
@@ -370,9 +363,9 @@ public class PlayBuilder
         };
 
         string sessionKey = null;
-        if (!userSettings.DifferentUser && !string.IsNullOrEmpty(contextUser.SessionKeyLastFm))
+        if (!userSettings.DifferentUser && !string.IsNullOrEmpty(context.ContextUser.SessionKeyLastFm))
         {
-            sessionKey = contextUser.SessionKeyLastFm;
+            sessionKey = context.ContextUser.SessionKeyLastFm;
         }
 
         var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(userSettings.UserNameLastFm, amount, useCache: true, sessionKey: sessionKey);
@@ -385,14 +378,14 @@ public class PlayBuilder
             return response;
         }
 
-        var requesterUserTitle = await this._userService.GetUserTitleAsync(discordGuild, discordUser);
+        var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var embedTitle = !userSettings.DifferentUser
             ? $"{requesterUserTitle}"
             : $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}, requested by {requesterUserTitle}";
 
         response.EmbedAuthor.WithName($"Latest tracks for {embedTitle}");
 
-        response.EmbedAuthor.WithIconUrl(discordUser.GetAvatarUrl());
+        response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
         response.EmbedAuthor.WithUrl(recentTracks.Content.UserRecentTracksUrl);
         response.Embed.WithAuthor(response.EmbedAuthor);
 
@@ -410,7 +403,7 @@ public class PlayBuilder
             {
                 if (track.AlbumCoverUrl != null)
                 {
-                    var safeForChannel = await this._censorService.IsSafeForChannel(discordGuild, discordChannel,
+                    var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
                         track.AlbumName, track.ArtistName, track.AlbumCoverUrl);
                     if (safeForChannel.Result)
                     {
@@ -419,7 +412,7 @@ public class PlayBuilder
                 }
             }
 
-            var trackString = StringService.TrackToLinkedString(track, contextUser.RymEnabled);
+            var trackString = StringService.TrackToLinkedString(track, context.ContextUser.RymEnabled);
 
             if (track.NowPlaying)
             {
@@ -460,9 +453,7 @@ public class PlayBuilder
     }
 
     public async Task<ResponseModel> OverviewAsync(
-        IGuild discordGuild,
-        IUser discordUser,
-        User contextUser,
+        ContextModel context,
         UserSettingsModel userSettings,
         int amount)
     {
@@ -471,7 +462,7 @@ public class PlayBuilder
             ResponseType = ResponseType.Embed,
         };
 
-        await this._updateService.UpdateUser(contextUser);
+        await this._updateService.UpdateUser(context.ContextUser);
 
         var week = await this._playService.GetDailyOverview(userSettings.UserId, amount);
 
@@ -530,7 +521,7 @@ public class PlayBuilder
     }
 
     public async Task<ResponseModel> PaceAsync(
-        IUser discordUser,
+        ContextModel context,
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
         long goalAmount,
@@ -546,7 +537,7 @@ public class PlayBuilder
 
         if (count is null or 0)
         {
-            response.Text = $"<@{discordUser.Id}> No plays found in the {timeSettings.Description} time period.";
+            response.Text = $"<@{context.DiscordUser.Id}> No plays found in the {timeSettings.Description} time period.";
             response.CommandResponse = CommandResponse.NoScrobbles;
             return response;
         }
@@ -565,12 +556,12 @@ public class PlayBuilder
         var determiner = "your";
         if (userSettings.DifferentUser)
         {
-            reply.Append($"<@{discordUser.Id}> My estimate is that the user '{userSettings.UserNameLastFm.FilterOutMentions()}'");
+            reply.Append($"<@{context.DiscordUser.Id}> My estimate is that the user '{userSettings.UserNameLastFm.FilterOutMentions()}'");
             determiner = "their";
         }
         else
         {
-            reply.Append($"<@{discordUser.Id}> My estimate is that you");
+            reply.Append($"<@{context.DiscordUser.Id}> My estimate is that you");
         }
 
         reply.AppendLine($" will reach **{goalAmount}** scrobbles on **<t:{goalDate.ToUnixEpochDate()}:D>**.");
@@ -591,9 +582,7 @@ public class PlayBuilder
     }
 
     public async Task<ResponseModel> MileStoneAsync(
-        IGuild discordGuild,
-        IChannel discordChannel,
-        IUser discordUser,
+        ContextModel context,
         UserSettingsModel userSettings,
         long mileStoneAmount,
         long userTotalPlaycount)
@@ -607,7 +596,7 @@ public class PlayBuilder
 
         if (!mileStonePlay.Success || mileStonePlay.Content == null)
         {
-            response.Embed.ErrorResponse(mileStonePlay.Error, mileStonePlay.Message, "milestone", discordUser);
+            response.Embed.ErrorResponse(mileStonePlay.Error, mileStonePlay.Message, "milestone", context.DiscordUser);
             response.CommandResponse = CommandResponse.LastFmError;
             return response;
         }
@@ -622,7 +611,7 @@ public class PlayBuilder
 
         if (mileStonePlay.Content.AlbumCoverUrl != null)
         {
-            var safeForChannel = await this._censorService.IsSafeForChannel(discordGuild, discordChannel,
+            var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
                 mileStonePlay.Content.AlbumName, mileStonePlay.Content.ArtistName, mileStonePlay.Content.AlbumCoverUrl);
             if (safeForChannel.Result)
             {

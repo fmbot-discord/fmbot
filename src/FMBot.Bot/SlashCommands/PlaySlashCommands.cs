@@ -7,6 +7,7 @@ using Fergun.Interactive;
 using FMBot.Bot.Attributes;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
+using FMBot.Bot.Models;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain.Models;
@@ -81,8 +82,7 @@ public class PlaySlashCommands : InteractionModuleBase
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var response = await this._playBuilder.NowPlayingAsync("/", this.Context.Guild, this.Context.Channel,
-            this.Context.User, contextUser, userSettings);
+        var response = await this._playBuilder.NowPlayingAsync(new ContextModel(this.Context, contextUser), userSettings);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -120,7 +120,7 @@ public class PlaySlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._playBuilder.RecentAsync(this.Context.Guild, this.Context.Channel, this.Context.User, contextUser,
+            var response = await this._playBuilder.RecentAsync(new ContextModel(this.Context, contextUser),
                 userSettings, amount);
 
             await this.Context.SendResponse(this.Interactivity, response);
@@ -152,7 +152,7 @@ public class PlaySlashCommands : InteractionModuleBase
 
         try
         {
-            var response = await this._playBuilder.OverviewAsync(this.Context.Guild, this.Context.User, contextUser,
+            var response = await this._playBuilder.OverviewAsync(new ContextModel(this.Context, contextUser),
                 userSettings, amount);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
@@ -196,7 +196,7 @@ public class PlaySlashCommands : InteractionModuleBase
                 timeFrom = userInfo.Registered.Unixtime;
             }
 
-            var response = await this._playBuilder.PaceAsync(this.Context.User,
+            var response = await this._playBuilder.PaceAsync(new ContextModel(this.Context, contextUser),
                 userSettings, timeSettings, goalAmount, userInfo.Playcount, timeFrom);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
@@ -227,7 +227,7 @@ public class PlaySlashCommands : InteractionModuleBase
             var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
             var mileStoneAmount = SettingService.GetMilestoneAmount(amount.ToString(), userInfo.Playcount);
 
-            var response = await this._playBuilder.MileStoneAsync(this.Context.Guild, this.Context.Channel, this.Context.User,
+            var response = await this._playBuilder.MileStoneAsync(new ContextModel(this.Context, contextUser),
                 userSettings, mileStoneAmount, userInfo.Playcount);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
