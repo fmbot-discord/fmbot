@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -114,16 +117,49 @@ namespace FMBot.Bot.Services
             await this._interactions
                 .AddModulesAsync(
                     Assembly.GetEntryAssembly(),
-                    this._provider); 
+                    this._provider);
 
+            var botGateway = await this._client.GetBotGatewayAsync();
 
-            var shardTimeOut = 4800;
+            var shardBuckets = new List<ShardBucket>();
+
+            Log.Information("Max concurrency is {maxConcurrency}", botGateway.SessionStartLimit.MaxConcurrency);
+
+            var lastRateLimitKey = 0;
+            var currentBucketId = 0;
             foreach (var shard in this._client.Shards)
             {
-                Log.Information("ShardStartConnection: shard {shardId}", shard.ShardId);
-                await shard.StartAsync();
-                await Task.Delay(shardTimeOut);
-                shardTimeOut += 100;
+                var rateLimitKey = shard.ShardId % botGateway.SessionStartLimit.MaxConcurrency;
+
+                if (rateLimitKey <= lastRateLimitKey)
+                {
+                    currentBucketId++;
+                }
+
+                var currentShardBucket = shardBuckets.FirstOrDefault(a => a.BucketId == currentBucketId);
+                if (currentShardBucket != null)
+                {
+                    currentShardBucket.Shards.Add(shard);
+                }
+                else
+                {
+                    shardBuckets.Add(new ShardBucket(currentBucketId, new List<DiscordSocketClient> { shard }));
+                }
+
+                lastRateLimitKey = rateLimitKey;
+            }
+
+            var shardTimeout = 5000;
+            foreach (var shardBucket in shardBuckets)
+            {
+                foreach (var shard in shardBucket.Shards)
+                {
+                    Log.Information("ShardStartConnection: bucket {bucketId}, shard {shardId}", shardBucket.BucketId, shard.ShardId);
+                    _ = shard.StartAsync();
+                }
+
+                await Task.Delay(shardTimeout);
+                shardTimeout += 100;
             }
 
             Log.Information("Preparing cache folder");
@@ -134,6 +170,7 @@ namespace FMBot.Bot.Services
             await this.StartBotSiteUpdater();
         }
 
+        private record ShardBucket(int BucketId, List<DiscordSocketClient> Shards);
 
         private async Task TestLastFmApi()
         {
