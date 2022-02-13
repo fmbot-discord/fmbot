@@ -90,6 +90,8 @@ namespace FMBot.LastFM.Repositories
 
             await SetUserIndexTime(user.UserId, now, latestScrobbleDate, connection);
 
+            await connection.CloseAsync();
+
             Statistics.IndexedUsers.Inc();
             this._cache.Remove(concurrencyCacheKey);
         }

@@ -74,6 +74,7 @@ namespace FMBot.LastFM.Repositories
             await SetUserSmallIndexTime(user, DateTime.UtcNow, connection, transaction);
 
             await transaction.CommitAsync();
+            await connection.CloseAsync();
 
             Statistics.SmallIndexedUsers.Inc();
 
