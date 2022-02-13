@@ -525,11 +525,15 @@ namespace FMBot.Bot.Services
             return plays
                 .Where(w => w.TimePlayed > startDateTime)
                 .Where(w => string.IsNullOrWhiteSpace(artistName) || w.ArtistName.ToLower() == artistName.ToLower())
-                .GroupBy(x => new { x.ArtistName, x.TrackName })
+                .GroupBy(x => new
+                {
+                    ArtistName = x.ArtistName.ToLower(),
+                    TrackName = x.TrackName.ToLower()
+                })
                 .Select(s => new GuildTrack
                 {
-                    TrackName = s.Key.TrackName,
-                    ArtistName = s.Key.ArtistName,
+                    TrackName = s.First().TrackName,
+                    ArtistName = s.First().ArtistName,
                     ListenerCount = s.Select(se => se.UserId).Distinct().Count(),
                     TotalPlaycount = s.Count()
                 })
@@ -544,11 +548,14 @@ namespace FMBot.Bot.Services
             return plays
                 .Where(w => w.TimePlayed > startDateTime && w.AlbumName != null)
                 .Where(w => string.IsNullOrWhiteSpace(artistName) || w.ArtistName.ToLower() == artistName.ToLower())
-                .GroupBy(x => new { x.ArtistName, x.AlbumName })
-                .Select(s => new GuildAlbum
+                .GroupBy(x => new
                 {
-                    AlbumName = s.Key.AlbumName,
-                    ArtistName = s.Key.ArtistName,
+                    ArtistName = x.ArtistName.ToLower(),
+                    AlbumName = x.AlbumName.ToLower()
+                }).Select(s => new GuildAlbum
+                {
+                    AlbumName = s.First().AlbumName,
+                    ArtistName = s.First().ArtistName,
                     ListenerCount = s.Select(se => se.UserId).Distinct().Count(),
                     TotalPlaycount = s.Count()
                 })
@@ -558,14 +565,14 @@ namespace FMBot.Bot.Services
                 .ToList();
         }
 
-        public static List<GuildArtist> GetGuildTopArtists(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType, int limit  = 120, bool includeListeners = false)
+        public static List<GuildArtist> GetGuildTopArtists(IEnumerable<UserPlay> plays, DateTime startDateTime, OrderType orderType, int limit = 120, bool includeListeners = false)
         {
             return plays
                 .Where(w => w.TimePlayed > startDateTime)
-                .GroupBy(x => x.ArtistName)
+                .GroupBy(x => x.ArtistName.ToLower())
                 .Select(s => new GuildArtist
                 {
-                    ArtistName = s.Key,
+                    ArtistName = s.First().ArtistName,
                     ListenerCount = s.Select(se => se.UserId).Distinct().Count(),
                     TotalPlaycount = s.Count(),
                     ListenerUserIds = includeListeners ? s.Select(se => se.UserId).ToList() : null
