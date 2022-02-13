@@ -57,7 +57,6 @@ namespace FMBot.LastFM.Repositories
 
             await using var connection = new NpgsqlConnection(this._connectionString);
             await connection.OpenAsync();
-            var transaction = await connection.BeginTransactionAsync();
 
             try
             {
@@ -66,17 +65,16 @@ namespace FMBot.LastFM.Repositories
                 var userTracks = await GetUserTracks(user.UserId, connection);
 
                 var artists = await GetArtistsForUserFromLastFm(user);
-                await UpdateArtistsForUser(user, userArtists, artists, connection, transaction);
+                await UpdateArtistsForUser(user, userArtists, artists, connection);
 
                 var albums = await GetAlbumsForUserFromLastFm(user);
-                await UpdateAlbumsForUser(user, userAlbums, albums, connection, transaction);
+                await UpdateAlbumsForUser(user, userAlbums, albums, connection);
 
                 var tracks = await GetTracksForUserFromLastFm(user);
-                await UpdateTracksForUser(user, userTracks, tracks, connection, transaction);
+                await UpdateTracksForUser(user, userTracks, tracks, connection);
 
-                await SetUserSmallIndexTime(user, DateTime.UtcNow, connection, transaction);
+                await SetUserSmallIndexTime(user, DateTime.UtcNow, connection);
 
-                await transaction.CommitAsync();
                 await connection.CloseAsync();
             }
             catch (Exception e)
@@ -106,7 +104,6 @@ namespace FMBot.LastFM.Repositories
 
             await using var connection = new NpgsqlConnection(this._connectionString);
             await connection.OpenAsync();
-            var transaction = await connection.BeginTransactionAsync();
 
             var userArtists = await GetUserArtists(user.UserId, connection);
 
@@ -116,17 +113,15 @@ namespace FMBot.LastFM.Repositories
                 Playcount = (int)s.UserPlaycount
             }).ToList();
 
-            await UpdateArtistsForUser(user, userArtists, currentTopArtists, connection, transaction);
+            await UpdateArtistsForUser(user, userArtists, currentTopArtists, connection);
 
-            await transaction.CommitAsync();
             await connection.CloseAsync();
         }
 
         private async Task UpdateArtistsForUser(User user,
             IReadOnlyCollection<UserArtist> existingUserArtists,
             IReadOnlyCollection<UserArtist> currentUserArtists,
-            NpgsqlConnection connection,
-            NpgsqlTransaction transaction)
+            NpgsqlConnection connection)
         {
             var query = new StringBuilder();
 
@@ -153,7 +148,7 @@ namespace FMBot.LastFM.Repositories
             if (query.Length > 0)
             {
                 await using var updateUserArtist =
-                    new NpgsqlCommand(query.ToString(), connection, transaction);
+                    new NpgsqlCommand(query.ToString(), connection);
 
                 await updateUserArtist.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
@@ -164,8 +159,7 @@ namespace FMBot.LastFM.Repositories
         private async Task UpdateAlbumsForUser(User user,
             IReadOnlyCollection<UserAlbum> existingUserAlbums,
             IReadOnlyCollection<UserAlbum> currentUserAlbums,
-            NpgsqlConnection connection,
-            NpgsqlTransaction transaction)
+            NpgsqlConnection connection)
         {
             var query = new StringBuilder();
 
@@ -193,7 +187,7 @@ namespace FMBot.LastFM.Repositories
             if (query.Length > 0)
             {
                 await using var updateUserArtist =
-                    new NpgsqlCommand(query.ToString(), connection, transaction);
+                    new NpgsqlCommand(query.ToString(), connection);
 
                 await updateUserArtist.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
@@ -204,8 +198,7 @@ namespace FMBot.LastFM.Repositories
         private async Task UpdateTracksForUser(User user,
             IReadOnlyCollection<UserTrack> existingUserTracks,
             IReadOnlyCollection<UserTrack> currentUserTracks,
-            NpgsqlConnection connection,
-            NpgsqlTransaction transaction)
+            NpgsqlConnection connection)
         {
             var query = new StringBuilder();
 
@@ -233,7 +226,7 @@ namespace FMBot.LastFM.Repositories
             if (query.Length > 0)
             {
                 await using var updateUserArtist =
-                    new NpgsqlCommand(query.ToString(), connection, transaction);
+                    new NpgsqlCommand(query.ToString(), connection);
 
                 await updateUserArtist.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
@@ -324,12 +317,11 @@ namespace FMBot.LastFM.Repositories
             })).ToList();
         }
 
-        private async Task SetUserSmallIndexTime(User user, DateTime updateTime, NpgsqlConnection connection,
-            NpgsqlTransaction transaction)
+        private async Task SetUserSmallIndexTime(User user, DateTime updateTime, NpgsqlConnection connection)
         {
             user.LastUpdated = updateTime;
             await using var setUpdateTime =
-                new NpgsqlCommand($"UPDATE public.users SET last_small_indexed = '{updateTime:u}' WHERE user_id = {user.UserId};", connection, transaction);
+                new NpgsqlCommand($"UPDATE public.users SET last_small_indexed = '{updateTime:u}' WHERE user_id = {user.UserId};", connection);
             await setUpdateTime.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
