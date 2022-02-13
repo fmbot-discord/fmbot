@@ -218,7 +218,7 @@ namespace FMBot.LastFM.Repositories
                 return;
             }
 
-            if (RandomNumberGenerator.GetInt32(1,10) != 4)
+            if (RandomNumberGenerator.GetInt32(1,3) != 2)
             {
                 return;
             }
