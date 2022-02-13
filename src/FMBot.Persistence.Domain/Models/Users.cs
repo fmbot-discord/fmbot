@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection.Metadata;
 using FMBot.Domain.Models;
 
 namespace FMBot.Persistence.Domain.Models
@@ -25,6 +24,8 @@ namespace FMBot.Persistence.Domain.Models
 
         public string SessionKeyLastFm { get; set; }
 
+        public bool? LastfmPro { get; set; }
+
         public DateTime? RegisteredLastFm { get; set; }
 
         public long? TotalPlaycount { get; set; }
@@ -44,6 +45,8 @@ namespace FMBot.Persistence.Domain.Models
         public DateTime? LastGeneratedChartDateTimeUtc { get; set; }
 
         public DateTime? LastIndexed { get; set; }
+
+        public DateTime? LastSmallIndexed { get; set; }
 
         public DateTime? LastUpdated { get; set; }
 

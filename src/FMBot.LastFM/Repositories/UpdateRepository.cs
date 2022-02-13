@@ -24,18 +24,17 @@ namespace FMBot.LastFM.Repositories
 
     {
         private readonly LastFmRepository _lastFmRepository;
-
+        private readonly SmallIndexRepository _smallIndexRepository;
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-
         private readonly string _connectionString;
-
         private readonly IMemoryCache _cache;
 
-        public UpdateRepository(IConfiguration configuration, IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository)
+        public UpdateRepository(IConfiguration configuration, IMemoryCache cache, IDbContextFactory<FMBotDbContext> contextFactory, LastFmRepository lastFmRepository, SmallIndexRepository smallIndexRepository)
         {
             this._cache = cache;
             this._contextFactory = contextFactory;
             this._lastFmRepository = lastFmRepository;
+            this._smallIndexRepository = smallIndexRepository;
             this._connectionString = configuration.GetSection("Database:ConnectionString").Value;
         }
 
@@ -210,8 +209,20 @@ namespace FMBot.LastFM.Repositories
             await transaction.CommitAsync();
             await connection.CloseAsync();
 
+            _ = SmallIndex(user);
+
             recentTracks.Content.NewRecentTracksAmount = newScrobbles.Count;
             return recentTracks;
+        }
+
+        private async Task SmallIndex(User user)
+        {
+            if (user.LastSmallIndexed > DateTime.UtcNow.AddDays(-4) || user.LastIndexed == null)
+            {
+                return;
+            }
+
+            await this._smallIndexRepository.SmallIndexUser(user);
         }
 
         private async Task CacheArtistAliases()
@@ -314,8 +325,6 @@ namespace FMBot.LastFM.Repositories
             NpgsqlTransaction transaction,
             IReadOnlyCollection<UserArtist> userArtists)
         {
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-
             var updateExistingArtists = new StringBuilder();
 
             foreach (var artist in newScrobbles.GroupBy(g => g.ArtistName.ToLower()))
@@ -383,8 +392,6 @@ namespace FMBot.LastFM.Repositories
             NpgsqlTransaction transaction,
             IReadOnlyCollection<UserAlbum> userAlbums)
         {
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-
             var updateExistingAlbums = new StringBuilder();
 
             foreach (var album in newScrobbles
@@ -459,8 +466,6 @@ namespace FMBot.LastFM.Repositories
             NpgsqlTransaction transaction,
             IReadOnlyCollection<UserTrack> userTracks)
         {
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-
             var updateExistingTracks = new StringBuilder();
 
             foreach (var track in newScrobbles.GroupBy(x => new

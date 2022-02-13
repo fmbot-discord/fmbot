@@ -69,7 +69,7 @@ namespace FMBot.LastFM.Repositories
             var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user.UserNameLastFM);
             if (userInfo?.Registered?.Text != null)
             {
-                await SetUserSignUpTime(user.UserId, userInfo.Registered.Text, connection);
+                await SetUserSignUpTime(user.UserId, userInfo.Registered.Text, connection, userInfo.Subscriber);
             }
 
             await SetUserPlaycount(user, connection);
@@ -102,7 +102,7 @@ namespace FMBot.LastFM.Repositories
             var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(user.UserNameLastFM);
             if (userInfo?.Registered?.Text != null)
             {
-                return await SetUserSignUpTime(user.UserId, userInfo.Registered.Text, connection);
+                return await SetUserSignUpTime(user.UserId, userInfo.Registered.Text, connection, userInfo.Subscriber);
             }
 
             return null;
@@ -306,13 +306,14 @@ namespace FMBot.LastFM.Repositories
             await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
 
-        private async Task<DateTime> SetUserSignUpTime(int userId, long signUpDateTimeLong, NpgsqlConnection connection)
+        private async Task<DateTime> SetUserSignUpTime(int userId, long signUpDateTimeLong, NpgsqlConnection connection,
+            long lastfmPro)
         {
             var signUpDateTime = DateTime.UnixEpoch.AddSeconds(signUpDateTimeLong).ToUniversalTime();
 
             Log.Information($"Setting user index signup time ({signUpDateTime}) for user {userId}");
 
-            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET registered_last_fm='{signUpDateTime:u}' WHERE user_id = {userId};", connection);
+            await using var setIndexTime = new NpgsqlCommand($"UPDATE public.users SET registered_last_fm='{signUpDateTime:u}', lastfm_pro = '{lastfmPro}' WHERE user_id = {userId};", connection);
             await setIndexTime.ExecuteNonQueryAsync().ConfigureAwait(false);
 
             return signUpDateTime;
@@ -347,23 +348,17 @@ namespace FMBot.LastFM.Repositories
             }
         }
 
-        private bool UserHasHigherIndexLimit(User user)
+        private static bool UserHasHigherIndexLimit(User user)
         {
-            switch (user.UserType)
+            return user.UserType switch
             {
-                case UserType.Supporter:
-                    return true;
-                case UserType.Contributor:
-                    return true;
-                case UserType.Admin:
-                    return true;
-                case UserType.Owner:
-                    return true;
-                case UserType.User:
-                    return false;
-                default:
-                    return false;
-            }
+                UserType.Supporter => true,
+                UserType.Contributor => true,
+                UserType.Admin => true,
+                UserType.Owner => true,
+                UserType.User => false,
+                _ => false
+            };
         }
     }
 }

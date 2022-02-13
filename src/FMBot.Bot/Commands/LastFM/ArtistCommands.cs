@@ -49,6 +49,7 @@ public class ArtistCommands : BaseCommandModule
     private readonly WhoKnowsService _whoKnowsService;
     private readonly WhoKnowsArtistService _whoKnowArtistService;
     private readonly WhoKnowsPlayService _whoKnowsPlayService;
+    private readonly SmallIndexRepository _smallIndexRepository;
 
     private InteractiveService Interactivity { get; }
 
@@ -71,7 +72,7 @@ public class ArtistCommands : BaseCommandModule
         IOptions<BotSettings> botSettings,
         GenreService genreService,
         FriendsService friendsService,
-        ArtistBuilders artistBuilders) : base(botSettings)
+        ArtistBuilders artistBuilders, SmallIndexRepository smallIndexRepository) : base(botSettings)
     {
         this._artistsService = artistsService;
         this._crownService = crownService;
@@ -91,6 +92,7 @@ public class ArtistCommands : BaseCommandModule
         this._genreService = genreService;
         this._friendsService = friendsService;
         this._artistBuilders = artistBuilders;
+        this._smallIndexRepository = smallIndexRepository;
     }
 
     [Command("artist", RunMode = RunMode.Async)]
@@ -479,6 +481,11 @@ public class ArtistCommands : BaseCommandModule
                 TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
 
             this.Context.LogCommandUsed();
+
+            if (!userSettings.DifferentUser && timeSettings.TimePeriod == TimePeriod.AllTime)
+            {
+                await this._smallIndexRepository.UpdateUserArtists(contextUser, artists.Content.TopArtists);
+            }
         }
         catch (Exception e)
         {

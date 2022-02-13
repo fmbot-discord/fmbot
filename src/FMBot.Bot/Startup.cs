@@ -168,6 +168,7 @@ namespace FMBot.Bot
             services
                 .AddSingleton<InteractionHandler>()
                 .AddSingleton<IndexRepository>()
+                .AddSingleton<SmallIndexRepository>()
                 .AddSingleton<UpdateRepository>()
                 .AddSingleton<IUpdateService, UpdateService>()
                 .AddTransient<ILastfmApi, LastfmApi>()
