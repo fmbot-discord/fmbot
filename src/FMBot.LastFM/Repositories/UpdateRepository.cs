@@ -223,6 +223,11 @@ namespace FMBot.LastFM.Repositories
                 return;
             }
 
+            if (RandomNumberGenerator.GetInt32(1,5) != 5)
+            {
+                return;
+            }
+
             await this._smallIndexRepository.SmallIndexUser(user);
         }
 

@@ -40,6 +40,7 @@ namespace FMBot.LastFM.Repositories
 
         public async Task SmallIndexUser(User indexUser)
         {
+
             var concurrencyCacheKey = $"small-index-started-{indexUser.UserId}";
             this._cache.Set(concurrencyCacheKey, true, TimeSpan.FromMinutes(1));
 
@@ -58,27 +59,36 @@ namespace FMBot.LastFM.Repositories
             await connection.OpenAsync();
             var transaction = await connection.BeginTransactionAsync();
 
-            var userArtists = await GetUserArtists(user.UserId, connection);
-            var userAlbums = await GetUserAlbums(user.UserId, connection);
-            var userTracks = await GetUserTracks(user.UserId, connection);
+            try
+            {
+                var userArtists = await GetUserArtists(user.UserId, connection);
+                var userAlbums = await GetUserAlbums(user.UserId, connection);
+                var userTracks = await GetUserTracks(user.UserId, connection);
 
-            var artists = await GetArtistsForUserFromLastFm(user);
-            await UpdateArtistsForUser(user, userArtists, artists, connection, transaction);
+                var artists = await GetArtistsForUserFromLastFm(user);
+                await UpdateArtistsForUser(user, userArtists, artists, connection, transaction);
 
-            var albums = await GetAlbumsForUserFromLastFm(user);
-            await UpdateAlbumsForUser(user, userAlbums, albums, connection, transaction);
+                var albums = await GetAlbumsForUserFromLastFm(user);
+                await UpdateAlbumsForUser(user, userAlbums, albums, connection, transaction);
 
-            var tracks = await GetTracksForUserFromLastFm(user);
-            await UpdateTracksForUser(user, userTracks, tracks, connection, transaction);
+                var tracks = await GetTracksForUserFromLastFm(user);
+                await UpdateTracksForUser(user, userTracks, tracks, connection, transaction);
 
-            await SetUserSmallIndexTime(user, DateTime.UtcNow, connection, transaction);
+                await SetUserSmallIndexTime(user, DateTime.UtcNow, connection, transaction);
 
-            await transaction.CommitAsync();
-            await connection.CloseAsync();
-
-            Statistics.SmallIndexedUsers.Inc();
+                await transaction.CommitAsync();
+                await connection.CloseAsync();
+            }
+            catch (Exception e)
+            {
+                await connection.CloseAsync();
+                Log.Error("Error in smallindexuser", e);
+                throw;
+            }
 
             this._cache.Remove(concurrencyCacheKey);
+
+            Statistics.SmallIndexedUsers.Inc();
         }
 
         public async Task UpdateUserArtists(User indexUser, List<TopArtist> artists)
