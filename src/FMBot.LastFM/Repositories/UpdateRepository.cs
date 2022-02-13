@@ -205,8 +205,6 @@ namespace FMBot.LastFM.Repositories
 
             await connection.CloseAsync();
 
-            _ = SmallIndex(user);
-
             recentTracks.Content.NewRecentTracksAmount = newScrobbles.Count;
             return recentTracks;
         }
