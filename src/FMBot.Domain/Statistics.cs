@@ -83,5 +83,8 @@ namespace FMBot.Domain
 
         public static readonly Counter UpdatedUsers = Metrics
             .CreateCounter("bot_updated_users", "Amount of updated users");
+
+        public static readonly Counter SmallIndexedUsers = Metrics
+            .CreateCounter("bot_updated_users", "Amount of small indexed users");
     }
 }

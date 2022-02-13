@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
@@ -73,6 +74,8 @@ namespace FMBot.LastFM.Repositories
             await SetUserSmallIndexTime(user, DateTime.UtcNow, connection, transaction);
 
             await transaction.CommitAsync();
+
+            Statistics.SmallIndexedUsers.Inc();
 
             this._cache.Remove(concurrencyCacheKey);
         }
