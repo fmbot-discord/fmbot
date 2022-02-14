@@ -1132,7 +1132,6 @@ public class TrackCommands : BaseCommandModule
 
         guildListSettings = SettingService.SetGuildRankingSettings(guildListSettings, guildTracksOptions);
         var timeSettings = SettingService.GetTimePeriod(guildListSettings.NewSearchValue, guildListSettings.ChartTimePeriod, cachedOrAllTimeOnly: true);
-        var artistName = timeSettings.NewSearchValue;
 
         if (timeSettings.UsePlays || timeSettings.TimePeriod is TimePeriod.AllTime or TimePeriod.Monthly or TimePeriod.Weekly)
         {
@@ -1142,12 +1141,9 @@ public class TrackCommands : BaseCommandModule
         try
         {
             var response =
-                await this._trackBuilders.GuildTracksAsync(prfx, this.Context.Guild, guild, guildListSettings);
+                await this._trackBuilders.GuildTracksAsync(new ContextModel(this.Context, prfx), guild, guildListSettings);
 
-            _ = this.Interactivity.SendPaginatorAsync(
-                response.StaticPaginator,
-                this.Context.Channel,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+            await this.Context.SendResponse(this.Interactivity, response);
 
             this.Context.LogCommandUsed(response.CommandResponse);
         }

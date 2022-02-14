@@ -776,6 +776,7 @@ namespace FMBot.Bot.Services
             guildRankingSettings.AmountOfDaysWithBillboard = timeSettings.PlayDaysWithBillboard.GetValueOrDefault();
             guildRankingSettings.StartDateTime = timeSettings.StartDateTime.GetValueOrDefault(DateTime.UtcNow.AddDays(-guildRankingSettings.AmountOfDays));
             guildRankingSettings.BillboardStartDateTime = timeSettings.BillboardStartDateTime.GetValueOrDefault(DateTime.UtcNow.AddDays(-guildRankingSettings.AmountOfDaysWithBillboard));
+            guildRankingSettings.NewSearchValue = timeSettings.NewSearchValue;
 
             return guildRankingSettings;
         }
