@@ -39,8 +39,7 @@ public class TrackBuilders
     }
 
     public async Task<ResponseModel> GuildTracksAsync(
-        string prfx,
-        IGuild discordGuild,
+        ContextModel context,
         Guild guild,
         GuildRankingSettings guildListSettings)
     {
@@ -74,8 +73,8 @@ public class TrackBuilders
         }
 
         var title = string.IsNullOrWhiteSpace(guildListSettings.NewSearchValue) ?
-            $"Top {guildListSettings.TimeDescription.ToLower()} tracks in {discordGuild.Name}" :
-            $"Top {guildListSettings.TimeDescription.ToLower()} '{guildListSettings.NewSearchValue}' tracks in {discordGuild.Name}";
+            $"Top {guildListSettings.TimeDescription.ToLower()} tracks in {context.DiscordGuild.Name}" :
+            $"Top {guildListSettings.TimeDescription.ToLower()} '{guildListSettings.NewSearchValue}' tracks in {context.DiscordGuild.Name}";
 
         var footer = new StringBuilder();
         footer.AppendLine(guildListSettings.OrderType == OrderType.Listeners
@@ -87,7 +86,7 @@ public class TrackBuilders
         switch (randomHintNumber)
         {
             case 1:
-                footer.AppendLine($"View specific track listeners with '{prfx}whoknowstrack'");
+                footer.AppendLine($"View specific track listeners with '{context.Prefix}whoknowstrack'");
                 break;
             case 2:
                 footer.AppendLine($"Available time periods: alltime, monthly, weekly and daily");

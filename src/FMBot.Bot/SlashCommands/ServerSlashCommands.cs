@@ -134,7 +134,7 @@ public class ServerSlashCommands : InteractionModuleBase
             guildListSettings = SettingService.TimeSettingsToGuildRankingSettings(guildListSettings, timeSettings);
         }
 
-        var response = await this._trackBuilders.GuildTracksAsync("/", this.Context.Guild, guild, guildListSettings);
+        var response = await this._trackBuilders.GuildTracksAsync(new ContextModel(this.Context), guild, guildListSettings);
 
         await this.Context.SendFollowUpResponse(this.Interactivity, response);
 
