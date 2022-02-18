@@ -4,11 +4,7 @@ namespace FMBot.Bot.Models
 {
     public class TasteSettings
     {
-        public string OtherUserLastFmUsername { get; set; }
-
         public TasteType TasteType { get; set; }
-
-        public TimePeriod ChartTimePeriod { get; set; }
     }
 
     public class TasteModels

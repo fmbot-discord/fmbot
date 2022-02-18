@@ -205,4 +205,36 @@ public class ArtistSlashCommands : InteractionModuleBase
                 ephemeral: true);
         }
     }
+
+
+    [SlashCommand("taste", "Compares your top artists to another users top artists.")]
+    [UsernameSetRequired]
+    public async Task TasteAsync(
+        [Summary("User", "The user to compare your taste with")] string user,
+        [Summary("Time-period", "Time period")] TimePeriod timePeriod = TimePeriod.AllTime,
+        [Summary("Type", "Taste view type")] TasteType tasteType = TasteType.Table)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+
+        try
+        {
+            var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(TimePeriod), timePeriod), TimePeriod.AllTime);
+
+            var response = await this._artistBuilders.TasteAsync(new ContextModel(this.Context, contextUser),
+                new TasteSettings { TasteType = tasteType }, timeSettings, userSettings);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed();
+        }
+        catch (Exception e)
+        {
+            this.Context.LogCommandException(e);
+            await FollowupAsync(
+                "Unable to show your taste due to an internal error. Please try again later or contact .fmbot support.",
+                ephemeral: true);
+        }
+    }
 }

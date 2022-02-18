@@ -675,17 +675,17 @@ namespace FMBot.Bot.Services.Guild
             return existingGuild.DisabledCommands;
         }
 
-        public async Task<string[]> GetDisabledCommandsForChannel(IChannel discordChannel)
+        public async Task<List<string>> GetDisabledCommandsForChannel(IChannel discordChannel)
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingChannel = await db.Channels
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannel.Id);
 
-            return existingChannel?.DisabledCommands;
+            return existingChannel?.DisabledCommands.ToList();
         }
 
-        public async Task<string[]> AddChannelDisabledCommandAsync(IChannel discordChannel, int guildId, string command, ulong discordGuildId)
+        public async Task DisableChannelCommandsAsync(IChannel discordChannel, int guildId, List<string> commands, ulong discordGuildId)
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingChannel = await db.Channels
@@ -699,7 +699,7 @@ namespace FMBot.Bot.Services.Guild
                     DiscordChannelId = discordChannel.Id,
                     Name = discordChannel.Name,
                     GuildId = guildId,
-                    DisabledCommands = new[] { command }
+                    DisabledCommands = commands.ToArray()
                 };
 
                 await db.Channels.AddAsync(newChannel);
@@ -708,19 +708,24 @@ namespace FMBot.Bot.Services.Guild
 
                 await RemoveGuildFromCache(discordGuildId);
 
-                return newChannel.DisabledCommands;
+                return;
             }
 
             if (existingChannel.DisabledCommands != null && existingChannel.DisabledCommands.Length > 0)
             {
                 var newDisabledCommands = existingChannel.DisabledCommands;
-                Array.Resize(ref newDisabledCommands, newDisabledCommands.Length + 1);
-                newDisabledCommands[^1] = command;
+                Array.Resize(ref newDisabledCommands, newDisabledCommands.Length + commands.Count);
+                for (var index = 0; index < commands.Count; index++)
+                {
+                    var command = commands[index];
+                    newDisabledCommands[^(index + 1)] = command;
+                }
+
                 existingChannel.DisabledCommands = newDisabledCommands;
             }
             else
             {
-                existingChannel.DisabledCommands = new[] { command };
+                existingChannel.DisabledCommands = commands.ToArray();
             }
 
             existingChannel.Name = existingChannel.Name;
@@ -730,18 +735,16 @@ namespace FMBot.Bot.Services.Guild
             await RemoveGuildFromCache(discordGuildId);
 
             await db.SaveChangesAsync();
-
-            return existingChannel.DisabledCommands;
         }
 
-        public async Task<string[]> RemoveChannelDisabledCommandAsync(IChannel discordChannel, string command, ulong discordGuildId)
+        public async Task<string[]> EnableChannelCommandsAsync(IChannel discordChannel, List<string> commands, ulong discordGuildId)
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();
             var existingChannel = await db.Channels
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordChannelId == discordChannel.Id);
 
-            existingChannel.DisabledCommands = existingChannel.DisabledCommands.Where(w => !w.Contains(command)).ToArray();
+            existingChannel.DisabledCommands = existingChannel.DisabledCommands.Where(w => !commands.Contains(w)).ToArray();
 
             existingChannel.Name = discordChannel.Name;
 

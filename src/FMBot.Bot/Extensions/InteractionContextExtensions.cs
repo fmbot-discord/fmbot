@@ -15,20 +15,38 @@ namespace FMBot.Bot.Extensions
     {
         public static void LogCommandUsed(this IInteractionContext context, CommandResponse commandResponse = CommandResponse.Ok)
         {
+            string commandName = null;
+            if (context.Interaction is SocketSlashCommand socketSlashCommand)
+            {
+                commandName = socketSlashCommand.CommandName;
+            }
+
             Log.Information("SlashCommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent}",
-                context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse, context.Interaction.ToString());
+                context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse, commandName);
         }
 
         public static void LogCommandException(this IInteractionContext context, Exception exception, string message = null)
         {
+            string commandName = null;
+            if (context.Interaction is SocketSlashCommand socketSlashCommand)
+            {
+                commandName = socketSlashCommand.CommandName;
+            }
+
             Log.Error(exception, "SlashCommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} ({message}) | {messageContent}",
-                context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, CommandResponse.Error, message, context.Interaction.ToString());
+                context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, CommandResponse.Error, message, commandName);
         }
 
         public static void LogCommandWithLastFmError(this IInteractionContext context, ResponseStatus? responseStatus)
         {
+            string commandName = null;
+            if (context.Interaction is SocketSlashCommand socketSlashCommand)
+            {
+                commandName = socketSlashCommand.CommandName;
+            }
+
             Log.Error("SlashCommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} | {messageContent} | Last.fm error: {responseStatus}",
-                context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, CommandResponse.LastFmError, context.Interaction.ToString());
+                context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, CommandResponse.LastFmError, commandName);
         }
 
         public static async Task SendResponse(this IInteractionContext context, InteractiveService interactiveService, ResponseModel response)

@@ -122,6 +122,7 @@ namespace FMBot.Bot
                 .AddSingleton<FeaturedService>()
                 .AddSingleton<FriendsService>()
                 .AddSingleton<GeniusService>()
+                .AddSingleton<GenreBuilders>()
                 .AddSingleton<GenreService>()
                 .AddSingleton<GuildService>()
                 .AddSingleton<ChartService>()

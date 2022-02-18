@@ -132,7 +132,7 @@ public class InteractionHandler
 
         await this._interactionService.ExecuteCommandAsync(context, this._provider);
 
-        Statistics.SlashCommandsExecuted.Inc();
+        Statistics.SlashCommandsExecuted.WithLabels(command.Name).Inc();
         _ = this._userService.UpdateUserLastUsedAsync(context.User.Id);
     }
 

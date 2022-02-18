@@ -65,7 +65,11 @@ namespace FMBot.Domain
                 });
 
         public static readonly Counter SlashCommandsExecuted = Metrics
-            .CreateCounter("bot_slash_commands_executed", "Amount of slash commands executed");
+            .CreateCounter("bot_slash_commands_executed", "Amount of slash commands executed",
+                new CounterConfiguration
+                {
+                    LabelNames = new[] { "name" }
+                });
         
 
         public static readonly Gauge RegisteredUserCount = Metrics

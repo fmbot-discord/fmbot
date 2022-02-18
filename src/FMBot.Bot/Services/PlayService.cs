@@ -64,7 +64,7 @@ namespace FMBot.Bot.Services
             {
                 Days = plays
                     .OrderByDescending(o => o.TimePlayed)
-                    .GroupBy(g => g.TimePlayed.Date)
+                    .GroupBy(g => g.TimePlayed.Date.AddHours(5))
                     .Select(s => new DayOverview
                     {
                         Date = s.Key,
