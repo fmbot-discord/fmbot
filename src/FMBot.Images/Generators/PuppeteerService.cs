@@ -99,12 +99,15 @@ public class PuppeteerService
     {
         var textSize = 35;
 
+        var typeface = SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "arial-unicode-ms.ttf"));
+
         using var textPaint = new SKPaint
         {
             TextSize = textSize,
             IsAntialias = true,
             TextAlign = SKTextAlign.Center,
             Color = SKColors.Black,
+            Typeface = typeface
         };
 
         using var promoTextPaint = new SKPaint
@@ -113,6 +116,7 @@ public class PuppeteerService
             IsAntialias = true,
             TextAlign = SKTextAlign.Center,
             Color = SKColors.Black,
+            Typeface = typeface
         };
 
         textPaint.TextSize = textSize;
