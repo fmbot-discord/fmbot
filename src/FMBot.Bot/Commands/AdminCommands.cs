@@ -12,6 +12,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.Images.Generators;
 using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
 
@@ -979,6 +980,39 @@ namespace FMBot.Bot.Commands
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync("Unable to remove " + user.Username + " from the blacklist due to an internal error.", allowedMentions: AllowedMentions.None);
+            }
+        }
+
+        [Command("test", RunMode = RunMode.Async)]
+        public async Task TestAsync([Remainder] string albumValues = null)
+        {
+            var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+            _ = this.Context.Channel.TriggerTypingAsync();
+
+            try
+            {
+                var image = await PuppeteerService.GetPage();
+
+
+                this._embedFooter.WithText(
+                    $"test");
+                this._embed.WithFooter(this._embedFooter);
+
+                await this.Context.Channel.SendFileAsync(
+                    image,
+                    $"test.png",
+                    null,
+                    false,
+                    this._embed.Build());
+
+                await image.DisposeAsync();
+                this.Context.LogCommandUsed();
+            }
+            catch (Exception e)
+            {
+                this.Context.LogCommandException(e);
+                await ReplyAsync("Unable to show album cover due to an internal error.");
             }
         }
     }
