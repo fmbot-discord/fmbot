@@ -37,6 +37,7 @@ public class ArtistBuilders
     private readonly CrownService _crownService;
     private readonly WhoKnowsService _whoKnowsService;
     private readonly SettingService _settingService;
+    private readonly SmallIndexRepository _smallIndexRepository;
 
     public ArtistBuilders(ArtistsService artistsService,
         LastFmRepository lastFmRepository,
@@ -50,7 +51,8 @@ public class ArtistBuilders
         WhoKnowsPlayService whoKnowsPlayService,
         CrownService crownService,
         WhoKnowsService whoKnowsService,
-        SettingService settingService)
+        SettingService settingService,
+        SmallIndexRepository smallIndexRepository)
     {
         this._artistsService = artistsService;
         this._lastFmRepository = lastFmRepository;
@@ -65,6 +67,7 @@ public class ArtistBuilders
         this._crownService = crownService;
         this._whoKnowsService = whoKnowsService;
         this._settingService = settingService;
+        this._smallIndexRepository = smallIndexRepository;
     }
 
     public async Task<ResponseModel> ArtistAsync(
@@ -854,6 +857,11 @@ public class ArtistBuilders
             var taste = this._artistsService.GetTableTaste(ownArtists.Content, otherArtists.Content, amount, timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare);
 
             response.Embed.WithDescription(taste);
+        }
+
+        if (timeSettings.TimePeriod == TimePeriod.AllTime)
+        {
+            await this._smallIndexRepository.UpdateUserArtists(context.ContextUser, ownArtists.Content.TopArtists);
         }
 
         return response;
