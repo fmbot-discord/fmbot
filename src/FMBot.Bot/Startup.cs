@@ -16,6 +16,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Models;
+using FMBot.Images.Generators;
 using FMBot.LastFM.Api;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.EntityFrameWork;
@@ -117,6 +118,8 @@ namespace FMBot.Bot
                 .AddSingleton<ArtistRepository>()
                 .AddSingleton<CensorService>()
                 .AddSingleton<CrownService>()
+                .AddSingleton<CountryService>()
+                .AddSingleton<CountryBuilders>()
                 .AddSingleton<ClientLogHandler>()
                 .AddSingleton<CommandHandler>()
                 .AddSingleton<FeaturedService>()
@@ -135,6 +138,7 @@ namespace FMBot.Bot
                 .AddSingleton<IUserUpdateQueue, UserUpdateQueue>()
                 .AddSingleton<PlayService>()
                 .AddSingleton<PlayBuilder>()
+                .AddSingleton<PuppeteerService>()
                 .AddSingleton<Random>()
                 .AddSingleton<SettingService>()
                 .AddSingleton<SpotifyService>()

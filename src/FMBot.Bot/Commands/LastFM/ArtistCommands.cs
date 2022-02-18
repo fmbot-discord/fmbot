@@ -72,7 +72,8 @@ public class ArtistCommands : BaseCommandModule
         IOptions<BotSettings> botSettings,
         GenreService genreService,
         FriendsService friendsService,
-        ArtistBuilders artistBuilders, SmallIndexRepository smallIndexRepository) : base(botSettings)
+        ArtistBuilders artistBuilders,
+        SmallIndexRepository smallIndexRepository) : base(botSettings)
     {
         this._artistsService = artistsService;
         this._crownService = crownService;

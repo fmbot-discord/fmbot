@@ -1,3 +1,4 @@
+using System.IO;
 using Discord;
 using Fergun.Interactive.Pagination;
 using FMBot.Bot.Resources;
@@ -22,6 +23,7 @@ public class ResponseModel
 
     public ResponseType ResponseType { get; set; }
 
+    public Stream Stream { get; set; }
 
     public string Text { get; set; }
 
