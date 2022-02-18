@@ -36,6 +36,7 @@ public class ArtistBuilders
     private readonly IIndexService _indexService;
     private readonly CrownService _crownService;
     private readonly WhoKnowsService _whoKnowsService;
+    private readonly SettingService _settingService;
 
     public ArtistBuilders(ArtistsService artistsService,
         LastFmRepository lastFmRepository,
@@ -48,7 +49,8 @@ public class ArtistBuilders
         IIndexService indexService,
         WhoKnowsPlayService whoKnowsPlayService,
         CrownService crownService,
-        WhoKnowsService whoKnowsService)
+        WhoKnowsService whoKnowsService,
+        SettingService settingService)
     {
         this._artistsService = artistsService;
         this._lastFmRepository = lastFmRepository;
@@ -62,6 +64,7 @@ public class ArtistBuilders
         this._whoKnowsPlayService = whoKnowsPlayService;
         this._crownService = crownService;
         this._whoKnowsService = whoKnowsService;
+        this._settingService = settingService;
     }
 
     public async Task<ResponseModel> ArtistAsync(
@@ -763,6 +766,94 @@ public class ArtistBuilders
         if (cachedArtist?.SpotifyImageUrl != null)
         {
             response.Embed.WithThumbnailUrl(cachedArtist.SpotifyImageUrl);
+        }
+
+        return response;
+    }
+
+    public async Task<ResponseModel> TasteAsync(
+        ContextModel context,
+        TasteSettings tasteSettings,
+        TimeSettingsModel timeSettings,
+        UserSettingsModel userSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var ownLastFmUsername = context.ContextUser.UserNameLastFM;
+        string lastfmToCompare = null;
+
+        if (userSettings.DifferentUser)
+        {
+            lastfmToCompare = userSettings.UserNameLastFm;
+        }
+
+        if (lastfmToCompare == null)
+        {
+            response.Embed.WithDescription($"Please enter a valid Last.fm username or mention someone to compare yourself to.\n" +
+                                        $"Examples:\n" +
+                                        $"- `{context.Prefix}taste fm-bot`\n" +
+                                        $"- `{context.Prefix}taste @.fmbot`");
+            response.CommandResponse = CommandResponse.WrongInput;
+            return response;
+        }
+        if (lastfmToCompare.ToLower() == ownLastFmUsername)
+        {
+            response.Embed.WithDescription($"You can't compare your own taste with yourself. For viewing your top artists, use `{context.Prefix}topartists`.\n\n" +
+                                        $"Please enter a Last.fm username or mention someone to compare yourself to.\n" +
+                                        $"Examples:\n" +
+                                        $"- `{context.Prefix}taste fm-bot`\n" +
+                                        $"- `{context.Prefix}taste @.fmbot`");
+            response.CommandResponse = CommandResponse.WrongInput;
+            return response;
+        }
+
+        var ownArtistsTask = this._lastFmRepository.GetTopArtistsAsync(ownLastFmUsername, timeSettings, 1000);
+        var otherArtistsTask = this._lastFmRepository.GetTopArtistsAsync(lastfmToCompare, timeSettings, 1000);
+
+        var ownArtists = await ownArtistsTask;
+        var otherArtists = await otherArtistsTask;
+
+
+        if (!ownArtists.Success || ownArtists.Content == null || !otherArtists.Success || otherArtists.Content == null)
+        {
+            response.Embed.ErrorResponse(ownArtists.Error, ownArtists.Message, "taste", context.DiscordUser);
+            response.CommandResponse = CommandResponse.LastFmError;
+            return response;
+        }
+
+        if (ownArtists.Content.TopArtists == null || ownArtists.Content.TopArtists.Count == 0 || otherArtists.Content.TopArtists == null || otherArtists.Content.TopArtists.Count == 0)
+        {
+            response.Text = "Sorry, you or the other user don't have any artist plays in the selected time period.";
+            response.ResponseType = ResponseType.Text;
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            return response;
+        }
+
+        if (!context.SlashCommand)
+        {
+            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+        }
+        response.EmbedAuthor.WithName($"Top artist comparison - {ownLastFmUsername} vs {lastfmToCompare}");
+        response.EmbedAuthor.WithUrl($"{Constants.LastFMUserUrl}{lastfmToCompare}/library/artists?{timeSettings.UrlParameter}");
+        response.Embed.WithAuthor(response.EmbedAuthor);
+
+        const int amount = 14;
+        if (tasteSettings.TasteType == TasteType.FullEmbed)
+        {
+            var taste = this._artistsService.GetEmbedTaste(ownArtists.Content, otherArtists.Content, amount, timeSettings.TimePeriod);
+
+            response.Embed.WithDescription(taste.Description);
+            response.Embed.AddField("Artist", taste.LeftDescription, true);
+            response.Embed.AddField("Plays", taste.RightDescription, true);
+        }
+        else
+        {
+            var taste = this._artistsService.GetTableTaste(ownArtists.Content, otherArtists.Content, amount, timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare);
+
+            response.Embed.WithDescription(taste);
         }
 
         return response;

@@ -352,14 +352,14 @@ namespace FMBot.Bot.Services
 
                 return new TasteTwoUserModel
                 {
-                    Artist = !string.IsNullOrWhiteSpace(s.ArtistName) && s.ArtistName.Length > AllowedCharacterCount(s.ArtistName) ? $"{s.ArtistName.Substring(0, AllowedCharacterCount(s.ArtistName) - 2)}…" : s.ArtistName,
+                    Artist = !string.IsNullOrWhiteSpace(s.ArtistName) && s.ArtistName.Length > AllowedCharacterCount(s.ArtistName) ? $"{s.ArtistName.Substring(0, AllowedCharacterCount(s.ArtistName) - 2)}.." : s.ArtistName,
                     OwnPlaycount = ownPlaycount,
                     OtherPlaycount = otherPlaycount
                 };
 
                 static int AllowedCharacterCount(string name)
                 {
-                    return (StringExtensions.ContainsUnicodeCharacter(name) ? 9 : 16);
+                    return (StringExtensions.ContainsUnicodeCharacter(name) ? 10 : 18);
                 }
             }).ToList();
 

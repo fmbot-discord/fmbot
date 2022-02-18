@@ -501,136 +501,34 @@ public class ArtistCommands : BaseCommandModule
     [UsernameSetRequired]
     [Alias("t")]
     [CommandCategories(CommandCategory.Artists)]
-    public async Task TasteAsync(string user = null, [Remainder] string extraOptions = null)
+    public async Task TasteAsync([Remainder] string extraOptions = null)
     {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        if (user == "help")
-        {
-            await ReplyAsync(
-                $"Usage: `{prfx}taste 'last.fm username/ discord mention' '{Constants.CompactTimePeriodList}' 'table/embed'`");
-            this.Context.LogCommandUsed(CommandResponse.Help);
-            return;
-        }
-
-        _ = this.Context.Channel.TriggerTypingAsync();
+        var otherUser = await this._settingService.GetUser(extraOptions, userSettings, this.Context, firstOptionIsLfmUsername: true);
 
         var timeSettings = SettingService.GetTimePeriod(
-            extraOptions,
+            otherUser.NewSearchValue,
             TimePeriod.AllTime);
 
-        var tasteSettings = new TasteSettings
-        {
-            ChartTimePeriod = timeSettings.TimePeriod
-        };
-
-        tasteSettings = this._artistsService.SetTasteSettings(tasteSettings, extraOptions);
+        var tasteSettings = new TasteSettings();
+        tasteSettings = this._artistsService.SetTasteSettings(tasteSettings, timeSettings.NewSearchValue);
 
         try
         {
-            var ownLastFmUsername = userSettings.UserNameLastFM;
-            string lastfmToCompare = null;
+            var response = await this._artistBuilders.TasteAsync(new ContextModel(this.Context, prfx, userSettings),
+                tasteSettings, timeSettings, otherUser);
 
-            if (user != null)
-            {
-                string alternativeLastFmUserName;
-
-                if (await this._lastFmRepository.LastFmUserExistsAsync(user))
-                {
-                    alternativeLastFmUserName = user;
-                }
-                else
-                {
-                    var otherUser = await this._settingService.StringWithDiscordIdForUser(user);
-
-                    alternativeLastFmUserName = otherUser?.UserNameLastFM;
-                }
-
-                if (!string.IsNullOrEmpty(alternativeLastFmUserName))
-                {
-                    lastfmToCompare = alternativeLastFmUserName;
-                }
-            }
-
-            if (lastfmToCompare == null)
-            {
-                this._embed.WithDescription($"Please enter a Last.fm username or mention someone to compare yourself to.\n" +
-                                            $"Examples:\n" +
-                                            $"- `{prfx}taste fm-bot`\n" +
-                                            $"- `{prfx}taste @.fmbot`");
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                return;
-            }
-            if (lastfmToCompare.ToLower() == userSettings.UserNameLastFM.ToLower())
-            {
-                this._embed.WithDescription($"You can't compare your own taste with yourself. For viewing your top artists, use `{prfx}topartists`.\n\n" +
-                                            $"Please enter a Last.fm username or mention someone to compare yourself to.\n" +
-                                            $"Examples:\n" +
-                                            $"- `{prfx}taste fm-bot`\n" +
-                                            $"- `{prfx}taste @.fmbot`");
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-                this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                return;
-            }
-
-            tasteSettings.OtherUserLastFmUsername = lastfmToCompare;
-
-            var ownArtistsTask = this._lastFmRepository.GetTopArtistsAsync(ownLastFmUsername, timeSettings, 1000);
-            var otherArtistsTask = this._lastFmRepository.GetTopArtistsAsync(lastfmToCompare, timeSettings, 1000);
-
-            var ownArtists = await ownArtistsTask;
-            var otherArtists = await otherArtistsTask;
-
-
-            if (!ownArtists.Success || ownArtists.Content == null || !otherArtists.Success || otherArtists.Content == null)
-            {
-                this._embed.ErrorResponse(ownArtists.Error, ownArtists.Message, this.Context.Message.Content, this.Context.User);
-                this.Context.LogCommandUsed(CommandResponse.LastFmError);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
-
-            if (ownArtists.Content.TopArtists == null || ownArtists.Content.TopArtists.Count == 0 || otherArtists.Content.TopArtists == null || otherArtists.Content.TopArtists.Count == 0)
-            {
-                await ReplyAsync(
-                    $"Sorry, you or the other user don't have any artist plays in the selected time period.");
-                this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                return;
-            }
-
-            this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            this._embedAuthor.WithName($"Top artist comparison - {ownLastFmUsername} vs {lastfmToCompare}");
-            this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{lastfmToCompare}/library/artists?{timeSettings.UrlParameter}");
-            this._embed.WithAuthor(this._embedAuthor);
-
-            int amount = 14;
-            if (tasteSettings.TasteType == TasteType.FullEmbed)
-            {
-                var taste = this._artistsService.GetEmbedTaste(ownArtists.Content, otherArtists.Content, amount, timeSettings.TimePeriod);
-
-                this._embed.WithDescription(taste.Description);
-                this._embed.AddField("Artist", taste.LeftDescription, true);
-                this._embed.AddField("Plays", taste.RightDescription, true);
-            }
-            else
-            {
-                var taste = this._artistsService.GetTableTaste(ownArtists.Content, otherArtists.Content, amount, timeSettings.TimePeriod, ownLastFmUsername, lastfmToCompare);
-
-                this._embed.WithDescription(taste);
-            }
-
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-
-            this.Context.LogCommandUsed();
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
             this.Context.LogCommandException(e);
-            await ReplyAsync("Unable to show Last.fm info due to an internal error.");
+            await ReplyAsync("Unable to show taste due to an internal error.");
         }
     }
 
@@ -656,7 +554,7 @@ public class ArtistCommands : BaseCommandModule
                 guild, artistValues);
 
             await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed();
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
