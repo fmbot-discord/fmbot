@@ -24,7 +24,11 @@ public class PuppeteerService
         Console.WriteLine("Starting browser");
         this._browser = await Puppeteer.LaunchAsync(new LaunchOptions()
         {
-            Headless = true
+            Headless = true,
+            Args = new[]
+            {
+                "--no-sandbox"
+            }
         });
     }
 

@@ -127,8 +127,8 @@ public class CountryBuilders
             }
         }
 
-        var countries = await this._countryService.GetTopCountriesForTopArtists(artists.Content.TopArtists);
-        var previousTopCountries = await this._countryService.GetTopCountriesForTopArtists(previousTopArtists);
+        var countries = await this._countryService.GetTopCountriesForTopArtists(artists.Content.TopArtists, true);
+        var previousTopCountries = await this._countryService.GetTopCountriesForTopArtists(previousTopArtists, true);
 
         var countryPages = countries.ChunkBy(topListSettings.ExtraLarge
             ? Constants.DefaultExtraLargePageSize
@@ -140,7 +140,7 @@ public class CountryBuilders
 
         foreach (var countryPage in countryPages)
         {
-            var genrePageString = new StringBuilder();
+            var countryPageString = new StringBuilder();
             foreach (var country in countryPage)
             {
                 var name =
@@ -153,13 +153,12 @@ public class CountryBuilders
                     int? previousPosition =
                         previousTopGenre == null ? null : previousTopCountries.IndexOf(previousTopGenre);
 
-                    genrePageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition)
-                        .Text);
+                    countryPageString.AppendLine(StringService.GetBillboardLine($"`{country.Artists.Count}` · {name}", counter - 1, previousPosition, false).Text);
                 }
                 else
                 {
-                    genrePageString.Append($"{counter}. ");
-                    genrePageString.AppendLine(name);
+                    countryPageString.Append($"`{country.Artists.Count}` · ");
+                    countryPageString.AppendLine(name);
                 }
 
                 counter++;
@@ -167,6 +166,7 @@ public class CountryBuilders
 
             var footer = new StringBuilder();
             footer.AppendLine("Country source: Musicbrainz");
+            footer.AppendLine($"Ordered by artists per country");
             footer.AppendLine($"Page {pageCounter}/{countryPages.Count} - {countries.Count} total countries");
 
             if (topListSettings.Billboard)
@@ -180,7 +180,7 @@ public class CountryBuilders
             }
 
             pages.Add(new PageBuilder()
-                .WithDescription(genrePageString.ToString())
+                .WithDescription(countryPageString.ToString())
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter(footer.ToString()));
             pageCounter++;

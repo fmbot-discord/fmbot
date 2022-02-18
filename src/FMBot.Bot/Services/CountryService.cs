@@ -122,7 +122,9 @@ public class CountryService
             }
         }
 
-        return countries;
+        return countries
+            .OrderByDescending(o => o.Artists.Count)
+            .ToList();
     }
 
     private List<CountryWithPlaycount> GetGenreWithPlaycountsForArtist(List<CountryWithPlaycount> countries, string artistName, long? artistPlaycount)
