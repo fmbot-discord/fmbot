@@ -408,10 +408,11 @@ namespace FMBot.Bot.Commands.Guild
 
         [Command("togglecommand", RunMode = RunMode.Async)]
         [Summary("Enables or disables a command in this channel. Make sure to enter the command you want to disable without the `{{prfx}}` prefix.")]
-        [Examples("togglecommand chart", "togglecommand whoknows")]
+        [Examples("togglecommand chart", "togglecommand whoknows chart taste", "togglecommand all")]
         [Alias("togglecommands", "channeltoggle", "togglechannel", "togglechannelcommand", "togglechannelcommands")]
         [GuildOnly]
         [RequiresIndex]
+        [Options("All - Replaces your input with all commands to toggle them all at once")]
         [CommandCategories(CommandCategory.ServerSettings)]
         public async Task ToggleChannelCommand(params string[] commands)
         {
