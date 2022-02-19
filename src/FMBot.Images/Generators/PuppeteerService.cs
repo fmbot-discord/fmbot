@@ -55,7 +55,7 @@ public class PuppeteerService
         {
             foreach (var country in groupedCountry.CountryCodes)
             {
-                cssToAdd.Append($".{country.ToLower()}{{fill:#4949ff; fill-opacity: {groupedCountry.Opacity.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)}}} ");
+                cssToAdd.Append($".{country.ToLower()}{{fill:#497dff; fill-opacity: {groupedCountry.Opacity.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)}}} ");
             }
         }
 
@@ -87,7 +87,7 @@ public class PuppeteerService
                 artistGroup.Min(m => m.Artists.Count),
                 artistGroup.Max(m => m.Artists.Count),
                 alpha));
-            alpha -= 0.13;
+            alpha -= 0.14;
         }
 
         return list;
@@ -150,20 +150,21 @@ public class PuppeteerService
             using var colorRectanglePaint = new SKPaint
             {
                 TextAlign = SKTextAlign.Center,
-                Color = new SKColor(73, 63, 255, (byte)(line.Opacity * 255)),
+                Color = new SKColor(73, 125, 255, (byte)(line.Opacity * 255)),
                 IsAntialias = true
             };
             using var colorRectanglePaintBackground = new SKPaint
             {
                 TextAlign = SKTextAlign.Center,
-                Color = new SKColor(0, 0, 24),
+                Color = new SKColor(0, 0, 15),
                 IsAntialias = true
             };
             var colorRectangle = new SKRect(rectangleLeft + 25, rectangleTop + 100 + (index * lineHeight), rectangleLeft + 90, rectangleTop + 132 + (index * lineHeight));
             bitmapCanvas.DrawRoundRect(colorRectangle, 8, 8, colorRectanglePaintBackground);
             bitmapCanvas.DrawRoundRect(colorRectangle, 8, 8, colorRectanglePaint);
 
-            bitmapCanvas.DrawText($"{line.MinAmount} - {line.MaxAmount}", rectangleLeft + 200, rectangleTop + 129 + (index * 65), textPaint);
+            var text = line.MinAmount == line.MaxAmount ? $"{line.MinAmount}" : $"{line.MinAmount} - {line.MaxAmount}";
+            bitmapCanvas.DrawText(text, rectangleLeft + 200, rectangleTop + 129 + (index * 65), textPaint);
         }
 
         bitmapCanvas.DrawText($"{lines.SelectMany(s => s.CountryCodes).Count()} countries", rectangleLeft + 170, rectangleTop + 140 + ((lines.Count) * lineHeight), textPaint);
