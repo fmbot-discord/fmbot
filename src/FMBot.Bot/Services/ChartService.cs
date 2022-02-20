@@ -172,7 +172,7 @@ namespace FMBot.Bot.Services
                         }
 
                         AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, album);
-                    }, maxDegreeOfParallelism: 3);
+                    }, maxDegreeOfParallelism: 2);
                 }
                 else
                 {
@@ -232,7 +232,7 @@ namespace FMBot.Bot.Services
                         }
 
                         AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, artist: artist);
-                    }, maxDegreeOfParallelism: 3);
+                    }, maxDegreeOfParallelism: 2);
                 }
 
                 SKImage finalImage = null;
