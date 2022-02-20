@@ -55,7 +55,8 @@ namespace FMBot.Domain.Models
         public bool? MainInstance { get; set; }
         public string FeaturedPreviewWebhookUrl { get; set; }
 
-        public string ExceptionChannelWebhookUrl { get; set; }
+        public ulong ExceptionChannelWebhookId { get; set; }
+        public string ExceptionChannelWebhookToken { get; set; }
 
         public string Status { get; set; }
 
