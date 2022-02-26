@@ -133,6 +133,11 @@ public class CountryService
 
         var countryArtists = (List<string>)this._cache.Get(CacheKeyForCountryArtists(country.ToLower()));
 
+        if (!countryArtists.Any())
+        {
+            return new List<TopArtist>();
+        }
+
         return topArtists.Where(w => countryArtists.Contains(w.ArtistName.ToLower())).ToList();
     }
 
