@@ -111,7 +111,7 @@ public class CountryBuilders
                 foundCountry = this._countryService.GetValidCountry(artist.CountryCode);
 
                 description.AppendLine(
-                    $"**{artist.Name}** originates from **{foundCountry.Name}** :flag_{foundCountry.Code.ToLower()}:");
+                    $"**{artist.Name}** is from **{foundCountry.Name}** :flag_{foundCountry.Code.ToLower()}:");
 
 
                 response.Embed.WithDescription(description.ToString());
@@ -143,7 +143,7 @@ public class CountryBuilders
                     foundCountry = this._countryService.GetValidCountry(artist.CountryCode);
 
                     description.AppendLine(
-                        $"**{artist.Name}** originates from **{foundCountry.Name}** :flag_{foundCountry.Code.ToLower()}:");
+                        $"**{artist.Name}** is from **{foundCountry.Name}** :flag_{foundCountry.Code.ToLower()}:");
 
                     response.Embed.WithDescription(description.ToString());
 
