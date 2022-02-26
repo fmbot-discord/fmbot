@@ -114,4 +114,29 @@ public class CountryCommands : BaseCommandModule
             await ReplyAsync("Unable to show country chart due to an internal error.");
         }
     }
+
+    [Command("country", RunMode = RunMode.Async)]
+    [Summary("Shows country information for an artist, or top artists for a specific country")]
+    [Alias("countries", "from")]
+    [UsernameSetRequired]
+    [SupportsPagination]
+    public async Task CountryInfoAsync([Remainder] string countryOptions = null)
+    {
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        try
+        {
+            var response = await this._countryBuilders.CountryAsync(new ContextModel(this.Context, prfx, contextUser), countryOptions);
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            this.Context.LogCommandException(e);
+            await ReplyAsync("Unable to show genre info due to an internal error. Please contact .fmbot staff.");
+        }
+    }
 }

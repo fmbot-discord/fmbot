@@ -17,16 +17,16 @@ public class CountryService
 {
     private readonly IMemoryCache _cache;
     private readonly BotSettings _botSettings;
-    private readonly List<CountryInfo> Countries;
+    private readonly List<CountryInfo> _countries;
 
     public CountryService(IMemoryCache cache, IOptions<BotSettings> botSettings)
     {
         this._cache = cache;
         this._botSettings = botSettings.Value;
 
-        var countryJsonPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "timezones.json");
+        var countryJsonPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "countries.json");
         var countryJson = File.ReadAllBytes(countryJsonPath);
-        this.Countries = JsonSerializer.Deserialize<List<CountryInfo>>(countryJson);
+        this._countries = JsonSerializer.Deserialize<List<CountryInfo>>(countryJson);
     }
 
     private static string CacheKeyForArtistCountry(string artistName)
@@ -80,9 +80,9 @@ public class CountryService
 
         var searchQuery = countryValues.ToLower().Replace(" ", "").Replace("-", "");
 
-        var foundCountry = this.Countries
-            .FirstOrDefault(f => f.CountryName.Replace(" ", "").Replace("-", "") == searchQuery ||
-                                 f.IsoAlpha2.ToLower() == searchQuery);
+        var foundCountry = this._countries
+            .FirstOrDefault(f => f.Name.Replace(" ", "").Replace("-", "").ToLower() == searchQuery ||
+                                 f.Code.ToLower() == searchQuery);
 
         return foundCountry;
     }
@@ -99,7 +99,7 @@ public class CountryService
         var allCountries = new List<CountryWithPlaycount>();
         foreach (var artist in topArtists)
         {
-            allCountries = GetGenreWithPlaycountsForArtist(allCountries, artist.ArtistName, artist.UserPlaycount);
+            allCountries = GetCountryWithPlaycountsForArtist(allCountries, artist.ArtistName, artist.UserPlaycount);
         }
 
         var countries = allCountries
@@ -109,7 +109,7 @@ public class CountryService
             .Select(s => new TopCountry
             {
                 UserPlaycount = s.Sum(se => se.Playcount),
-                CountryName = this.Countries.FirstOrDefault(f => f.IsoAlpha2.ToLower() == s.Key.ToLower())?.CountryName,
+                CountryName = this._countries.FirstOrDefault(f => f.Code.ToLower() == s.Key.ToLower())?.Name,
                 CountryCode = s.Key,
             }).ToList();
 
@@ -127,7 +127,16 @@ public class CountryService
             .ToList();
     }
 
-    private List<CountryWithPlaycount> GetGenreWithPlaycountsForArtist(List<CountryWithPlaycount> countries, string artistName, long? artistPlaycount)
+    public async Task<List<TopArtist>> GetTopArtistsForCountry(string country, IEnumerable<TopArtist> topArtists)
+    {
+        await CacheAllArtistCountries();
+
+        var countryArtists = (List<string>)this._cache.Get(CacheKeyForCountryArtists(country.ToLower()));
+
+        return topArtists.Where(w => countryArtists.Contains(w.ArtistName.ToLower())).ToList();
+    }
+
+    private List<CountryWithPlaycount> GetCountryWithPlaycountsForArtist(List<CountryWithPlaycount> countries, string artistName, long? artistPlaycount)
     {
         var foundCountry = (string)this._cache.Get(CacheKeyForArtistCountry(artistName.ToLower()));
 
