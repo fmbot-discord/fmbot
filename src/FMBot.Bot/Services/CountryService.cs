@@ -133,7 +133,7 @@ public class CountryService
 
         var countryArtists = (List<string>)this._cache.Get(CacheKeyForCountryArtists(country.ToLower()));
 
-        if (!countryArtists.Any())
+        if (countryArtists == null || !countryArtists.Any())
         {
             return new List<TopArtist>();
         }
