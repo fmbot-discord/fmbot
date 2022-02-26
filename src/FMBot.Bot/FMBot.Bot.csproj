@@ -76,7 +76,6 @@
     <ProjectReference Include="..\FMBot.Logger\FMBot.Logger.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="AutoCompleteHandlers\" />
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>

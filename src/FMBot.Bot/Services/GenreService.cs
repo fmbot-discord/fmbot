@@ -10,6 +10,7 @@ using FMBot.Persistence.Domain.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using Serilog;
 
 namespace FMBot.Bot.Services;
 
@@ -120,6 +121,42 @@ public class GenreService
         return foundGenre?.Genre;
     }
 
+    public async Task<List<string>> SearchThroughGenres(string searchValue, bool cacheEnabled = true)
+    {
+        try
+        {
+            const string cacheKey = "genres-all";
+
+            var cacheAvailable = this._cache.TryGetValue(cacheKey, out List<string> genres);
+            if (!cacheAvailable && cacheEnabled)
+            {
+                const string sql = "SELECT name " +
+                                   "FROM public.artist_genres ";
+
+                DefaultTypeMap.MatchNamesWithUnderscores = true;
+                await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
+                await connection.OpenAsync();
+
+                genres = (await connection.QueryAsync<string>(sql)).ToList();
+
+                this._cache.Set(cacheKey, genres, TimeSpan.FromMinutes(15));
+            }
+
+            searchValue = searchValue.ToLower();
+
+            var results = genres.Where(w => w.StartsWith(searchValue)).ToList();
+
+            results.AddRange(genres.Where(w => w.Contains(searchValue)));
+
+            return results;
+        }
+        catch (Exception e)
+        {
+            Log.Error("Error in SearchThroughGenres", e);
+            throw;
+        }
+    }
+
     public async Task<List<TopGenre>> GetTopGenresForTopArtists(IEnumerable<TopArtist> topArtists)
     {
         if (topArtists == null)
@@ -144,6 +181,33 @@ public class GenreService
                 UserPlaycount = s.Sum(se => se.Playcount),
                 GenreName = s.Key
             }).ToList();
+    }
+
+    public async Task<List<string>> GetTopGenresForTopArtistsString(IEnumerable<string> topArtists)
+    {
+        var topGenres = new List<string>();
+        if (topArtists == null)
+        {
+            return topGenres;
+        }
+
+        await CacheAllArtistGenres();
+
+        foreach (var artist in topArtists)
+        {
+            var genres = await GetGenresForArtist(artist);
+            if (genres.Any())
+            {
+                topGenres.AddRange(genres);
+            }
+        }
+
+        return topGenres
+            .GroupBy(g => g)
+            .OrderByDescending(o => o.Count())
+            .Where(w => w.Key != null)
+            .Select(s => s.Key)
+            .ToList();
     }
 
     public async Task<List<GuildGenre>> GetTopGenresForGuildArtists(IEnumerable<GuildArtist> guildArtists, OrderType orderType)
