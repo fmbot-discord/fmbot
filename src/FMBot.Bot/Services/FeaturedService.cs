@@ -125,7 +125,7 @@ namespace FMBot.Bot.Services
                                                       $"by [{trackToFeature.ArtistName}]({trackToFeature.ArtistUrl}) \n\n" +
                                                       $"{randomAvatarModeDesc} from {user.UserNameLastFM}";
                         }
-                        
+
                         featuredLog.UserId = user.UserId;
 
                         featuredLog.ArtistName = trackToFeature.ArtistName;
@@ -288,6 +288,22 @@ namespace FMBot.Bot.Services
                             (!supportersOnly || w.UserType == UserType.Supporter) &&
                             w.LastUsed != null &&
                             w.LastUsed > filterDate).ToList();
+
+            // Great coding for staff that also has supporter
+            if (supportersOnly)
+            {
+                var voaz = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == 119517941820686338);
+                if (voaz != null)
+                {
+                    users.Add(voaz);
+                }
+
+                var rndl = await db.Users.FirstOrDefaultAsync(f => f.DiscordUserId == 546055787835949077);
+                if (rndl != null)
+                {
+                    users.Add(rndl);
+                }
+            }
 
             var user = users[RandomNumberGenerator.GetInt32(0, users.Count)];
 

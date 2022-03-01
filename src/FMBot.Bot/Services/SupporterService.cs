@@ -34,7 +34,7 @@ namespace FMBot.Bot.Services
                 return null;
             }
 
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var guildSettings = await db.Guilds
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordGuildId == guild.Id);
@@ -70,7 +70,7 @@ namespace FMBot.Bot.Services
 
         public async Task<Supporter> AddSupporter(ulong id, string name, string notes)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var user = await db.Users
                 .AsQueryable()
                 .FirstOrDefaultAsync(f => f.DiscordUserId == id);
@@ -97,7 +97,7 @@ namespace FMBot.Bot.Services
 
         public async Task<IReadOnlyList<Supporter>> GetAllVisibleSupporters()
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
 
             return await db.Supporters
                 .AsQueryable()
