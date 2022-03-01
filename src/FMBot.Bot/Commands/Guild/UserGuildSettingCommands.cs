@@ -114,6 +114,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, false, enableCache: false);
 
             if (user == null)
@@ -203,6 +204,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
             if (user == null)
@@ -269,6 +271,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
             if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(a => a.BlockedFromWhoKnows))
@@ -310,6 +313,7 @@ namespace FMBot.Bot.Commands.Guild
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             if (string.IsNullOrWhiteSpace(roleQuery))
             {
+                _ = this.Context.Channel.TriggerTypingAsync();
                 var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
                 this._embed.WithTitle($"WhoKnows whitelist settings for {this.Context.Guild.Name}");
 

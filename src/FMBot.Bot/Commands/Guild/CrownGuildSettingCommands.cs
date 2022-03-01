@@ -180,6 +180,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, false, false);
 
             if (user == null)
@@ -268,6 +269,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
             if (user == null)
@@ -355,6 +357,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
             if (guild.GuildBlockedUsers != null && guild.GuildBlockedUsers.Any(w => w.BlockedFromCrowns))
@@ -390,6 +393,7 @@ namespace FMBot.Bot.Commands.Guild
         public async Task ToggleCrownsAsync([Remainder] string confirmation = null)
         {
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+            _ = this.Context.Channel.TriggerTypingAsync();
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
             var serverUser = (IGuildUser)this.Context.Message.Author;
@@ -433,6 +437,7 @@ namespace FMBot.Bot.Commands.Guild
         [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
         public async Task KillCrownAsync([Remainder] string killCrownValues = null)
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
@@ -498,6 +503,7 @@ namespace FMBot.Bot.Commands.Guild
         [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
         public async Task SeedCrownsAsync([Remainder] string helpValues = null)
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
@@ -567,6 +573,7 @@ namespace FMBot.Bot.Commands.Guild
         [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
         public async Task KillAllCrownsAsync([Remainder] string confirmation = null)
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
@@ -635,6 +642,7 @@ namespace FMBot.Bot.Commands.Guild
         [CommandCategories(CommandCategory.Crowns, CommandCategory.ServerSettings)]
         public async Task KillAllSeededCrownsAsync([Remainder] string confirmation = null)
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
 
