@@ -77,7 +77,7 @@ public class PuppeteerService
     {
         var list = new List<GroupedCountries>();
 
-        var ceilings = new[] { 5, 10, 35, 80, 200, 500, 10000 };
+        var ceilings = new[] { 5, 30, 80, 200, 500, 10000 };
         var groupings = artists.GroupBy(item => ceilings.FirstOrDefault(ceiling => ceiling >= item.Artists.Count));
 
         double alpha = 1;
@@ -87,7 +87,7 @@ public class PuppeteerService
                 artistGroup.Min(m => m.Artists.Count),
                 artistGroup.Max(m => m.Artists.Count),
                 alpha));
-            alpha -= 0.14;
+            alpha -= 0.16;
         }
 
         return list;

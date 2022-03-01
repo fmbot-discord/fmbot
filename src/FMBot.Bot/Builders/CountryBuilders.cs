@@ -212,9 +212,13 @@ public class CountryBuilders
                 counter++;
             }
 
-            var ukraine = country.Code == "UA" ? "💛💙\n" : "";
+            if (country.Code == "UA")
+            {
+                genrePageString.AppendLine();
+                genrePageString.AppendLine("<:ukraine:948301778464694272> [Stand For Ukraine](https://standforukraine.com/)");
+            }
 
-            var footer = $"{ukraine}Country source: MusicBrainz\n" +
+            var footer = $"Country source: MusicBrainz\n" +
                          $"Page {pageCounter}/{genrePages.Count} - {countryArtists.Count} total artists";
 
             pages.Add(new PageBuilder()
