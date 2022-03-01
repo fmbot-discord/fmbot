@@ -12,8 +12,10 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.Images.Generators;
 using FMBot.LastFM.Repositories;
 using Microsoft.Extensions.Options;
+using SkiaSharp;
 
 namespace FMBot.Bot.Commands
 {

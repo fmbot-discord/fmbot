@@ -16,6 +16,7 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain.Models;
+using FMBot.Images.Generators;
 using FMBot.LastFM.Api;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.EntityFrameWork;
@@ -25,7 +26,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using Serilog.Events;
 using Serilog.Exceptions;
+using Serilog.Sinks.Discord;
 using RunMode = Discord.Commands.RunMode;
 
 namespace FMBot.Bot
@@ -58,20 +61,24 @@ namespace FMBot.Bot
         {
             var botUserId = long.Parse(this.Configuration.GetSection("Discord:BotUserId")?.Value ?? "0");
 
+            var consoleLevel = LogEventLevel.Warning;
+#if DEBUG
+            consoleLevel = LogEventLevel.Verbose;
+#endif
+
             Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Is(consoleLevel)
                 .Enrich.WithExceptionDetails()
                 .Enrich.WithProperty("Environment", !string.IsNullOrEmpty(this.Configuration.GetSection("Environment")?.Value) ? this.Configuration.GetSection("Environment").Value : "unknown")
                 .Enrich.WithProperty("BotUserId", botUserId)
-                .WriteTo.Console()
-                .WriteTo.Seq(this.Configuration.GetSection("Logging:SeqServerUrl")?.Value, apiKey: this.Configuration.GetSection("Logging:SeqApiKey")?.Value)
-                // https://github.com/CXuesong/Serilog.Sinks.Discord/issues/3
-                //.WriteTo.Conditional(evt =>
-                //        !string.IsNullOrEmpty(ConfigData.Data.Bot.ExceptionChannelWebhookUrl),
-                //        wt => wt.Discord(new DiscordWebhookMessenger(ConfigData.Data.Bot.ExceptionChannelWebhookUrl), LogEventLevel.Warning))
+                .WriteTo.Console(consoleLevel)
+                .WriteTo.Seq(this.Configuration.GetSection("Logging:SeqServerUrl")?.Value, LogEventLevel.Information, apiKey: this.Configuration.GetSection("Logging:SeqApiKey")?.Value)
+                .WriteTo.Conditional(c => ConfigData.Data.Bot.ExceptionChannelWebhookId != 0,
+                    wt => wt.Discord(ConfigData.Data.Bot.ExceptionChannelWebhookId, ConfigData.Data.Bot.ExceptionChannelWebhookToken, null, LogEventLevel.Fatal))
                 .CreateLogger();
 
             AppDomain.CurrentDomain.UnhandledException += AppUnhandledException;
-
+             
             Log.Information(".fmbot starting up...");
 
             var services = new ServiceCollection(); // Create a new instance of a service collection
@@ -95,7 +102,7 @@ namespace FMBot.Bot
 
             var discordClient = new DiscordShardedClient(new DiscordSocketConfig
             {
-                LogLevel = LogSeverity.Verbose,
+                LogLevel = LogSeverity.Info,
                 MessageCacheSize = 0,
                 ConnectionTimeout = 240000
             });
@@ -104,7 +111,7 @@ namespace FMBot.Bot
                 .AddSingleton(discordClient)
                 .AddSingleton(new CommandService(new CommandServiceConfig
                 {
-                    LogLevel = LogSeverity.Verbose,
+                    LogLevel = LogSeverity.Info,
                     DefaultRunMode = RunMode.Async,
                 }))
                 .AddSingleton<InteractionService>()
@@ -117,6 +124,8 @@ namespace FMBot.Bot
                 .AddSingleton<ArtistRepository>()
                 .AddSingleton<CensorService>()
                 .AddSingleton<CrownService>()
+                .AddSingleton<CountryService>()
+                .AddSingleton<CountryBuilders>()
                 .AddSingleton<ClientLogHandler>()
                 .AddSingleton<CommandHandler>()
                 .AddSingleton<FeaturedService>()
@@ -135,6 +144,7 @@ namespace FMBot.Bot
                 .AddSingleton<IUserUpdateQueue, UserUpdateQueue>()
                 .AddSingleton<PlayService>()
                 .AddSingleton<PlayBuilder>()
+                .AddSingleton<PuppeteerService>()
                 .AddSingleton<Random>()
                 .AddSingleton<SettingService>()
                 .AddSingleton<SpotifyService>()

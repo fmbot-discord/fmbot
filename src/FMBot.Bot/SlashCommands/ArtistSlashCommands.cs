@@ -206,7 +206,6 @@ public class ArtistSlashCommands : InteractionModuleBase
         }
     }
 
-
     [SlashCommand("taste", "Compares your top artists to another users top artists.")]
     [UsernameSetRequired]
     public async Task TasteAsync(

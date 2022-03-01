@@ -53,12 +53,12 @@ namespace FMBot.LastFM.Repositories
             {
                 if (user.LastUpdated > DateTime.UtcNow.AddHours(-44))
                 {
-                    Log.Information("Update: Skipped for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+                    Log.Debug("Update: Skipped for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
                     return null;
                 }
             }
 
-            Log.Information("Update: Started on {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+            Log.Debug("Update: Started on {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
 
             string sessionKey = null;
             if (!string.IsNullOrEmpty(user.SessionKeyLastFm))
@@ -121,7 +121,7 @@ namespace FMBot.LastFM.Repositories
 
             if (!recentTracks.Content.RecentTracks.Any())
             {
-                Log.Information("Update: No new tracks for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+                Log.Debug("Update: No new tracks for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
                 await SetUserUpdateTime(user, DateTime.UtcNow, connection);
 
                 await connection.CloseAsync();
@@ -140,7 +140,7 @@ namespace FMBot.LastFM.Repositories
 
             if (!newScrobbles.Any())
             {
-                Log.Information("Update: After local filter no new tracks for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+                Log.Debug("Update: After local filter no new tracks for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
                 await SetUserUpdateTime(user, DateTime.UtcNow, connection);
 
                 if (!user.TotalPlaycount.HasValue)
@@ -303,9 +303,7 @@ namespace FMBot.LastFM.Repositories
 
             await copyHelper.SaveAllAsync(connection, userPlays);
 
-#if DEBUG
-            Log.Information($"Added {userPlays.Count} plays to database for {user.UserNameLastFM}");
-#endif
+            Log.Debug($"Added {userPlays.Count} plays to database for {user.UserNameLastFM}");
         }
 
         private async Task<IReadOnlyCollection<UserArtist>> GetUserArtists(int userId, NpgsqlConnection connection)
@@ -339,9 +337,7 @@ namespace FMBot.LastFM.Repositories
                     updateExistingArtists.Append($"UPDATE public.user_artists SET playcount = {existingUserArtist.Playcount + artist.Count()} " +
                                                  $"WHERE user_artist_id = {existingUserArtist.UserArtistId}; ");
 
-#if DEBUG
-                    Log.Information($"Updated artist {artistName} for {user.UserNameLastFM}");
-#endif
+                    Log.Debug($"Updated artist {artistName} for {user.UserNameLastFM}");
                 }
                 else
                 {
@@ -354,9 +350,7 @@ namespace FMBot.LastFM.Repositories
                     addUserArtist.Parameters.AddWithValue("artistName", artistName);
                     addUserArtist.Parameters.AddWithValue("artistPlaycount", artist.Count());
 
-#if DEBUG
-                    Log.Information($"Added artist {artistName} for {user.UserNameLastFM}");
-#endif
+                    Log.Debug($"Added artist {artistName} for {user.UserNameLastFM}");
 
                     await addUserArtist.ExecuteNonQueryAsync().ConfigureAwait(false);
                 }
@@ -370,7 +364,7 @@ namespace FMBot.LastFM.Repositories
                 await updateUserArtist.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
 
-            Log.Verbose("Update: Updated artists for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+            Log.Debug("Update: Updated artists for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
 
         }
 
@@ -412,9 +406,7 @@ namespace FMBot.LastFM.Repositories
                     updateExistingAlbums.Append($"UPDATE public.user_albums SET playcount = {existingUserAlbum.Playcount + album.Count()} " +
                                                 $"WHERE user_album_id = {existingUserAlbum.UserAlbumId}; ");
 
-#if DEBUG
-                    Log.Information($"Updated album {album.Key.AlbumName} for {user.UserNameLastFM} (+{album.Count()} plays)");
-#endif
+                    Log.Debug($"Updated album {album.Key.AlbumName} for {user.UserNameLastFM} (+{album.Count()} plays)");
                 }
                 else
                 {
@@ -428,9 +420,7 @@ namespace FMBot.LastFM.Repositories
                     addUserAlbum.Parameters.AddWithValue("artistName", artistName);
                     addUserAlbum.Parameters.AddWithValue("albumPlaycount", album.Count());
 
-#if DEBUG
-                    Log.Information($"Added album {album.Key.ArtistName} - {album.Key.AlbumName} for {user.UserNameLastFM}");
-#endif
+                    Log.Debug($"Added album {album.Key.ArtistName} - {album.Key.AlbumName} for {user.UserNameLastFM}");
 
                     await addUserAlbum.ExecuteNonQueryAsync().ConfigureAwait(false);
                 }
@@ -444,7 +434,7 @@ namespace FMBot.LastFM.Repositories
                 await updateUserAlbum.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
 
-            Log.Verbose("Update: Updated albums for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+            Log.Debug("Update: Updated albums for user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
         }
 
         private async Task<IReadOnlyCollection<UserTrack>> GetUserTracks(int userId, NpgsqlConnection connection)
@@ -484,9 +474,7 @@ namespace FMBot.LastFM.Repositories
                         $"UPDATE public.user_tracks SET playcount = {existingUserTrack.Playcount + track.Count()} " +
                         $"WHERE user_track_id = {existingUserTrack.UserTrackId}; ");
 
-#if DEBUG
-                    Log.Information($"Updated track {track.Key.TrackName} for {user.UserNameLastFM} (+{track.Count()} plays)");
-#endif
+                    Log.Debug($"Updated track {track.Key.TrackName} for {user.UserNameLastFM} (+{track.Count()} plays)");
                 }
                 else
                 {
@@ -500,9 +488,7 @@ namespace FMBot.LastFM.Repositories
                     addUserTrack.Parameters.AddWithValue("artistName", artistName);
                     addUserTrack.Parameters.AddWithValue("trackPlaycount", track.Count());
 
-#if DEBUG
-                    Log.Information($"Added track {track.Key.ArtistName} - {track.Key.TrackName} for {user.UserNameLastFM}");
-#endif
+                    Log.Debug($"Added track {track.Key.ArtistName} - {track.Key.TrackName} for {user.UserNameLastFM}");
 
                     await addUserTrack.ExecuteNonQueryAsync().ConfigureAwait(false);
                 }
@@ -606,7 +592,7 @@ namespace FMBot.LastFM.Repositories
 
                 await db.InactiveUsers.AddAsync(inactiveUser);
 
-                Log.Verbose("InactiveUsers: Added user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+                Log.Information("InactiveUsers: Added user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
             }
             else
             {
@@ -615,7 +601,7 @@ namespace FMBot.LastFM.Repositories
 
                 db.Entry(existingInactiveUser).State = EntityState.Modified;
 
-                Log.Verbose("InactiveUsers: Updated user {userId} | {userNameLastFm} (missingparameter +1)", user.UserId, user.UserNameLastFM);
+                Log.Information("InactiveUsers: Updated user {userId} | {userNameLastFm} (missingparameter +1)", user.UserId, user.UserNameLastFM);
             }
 
             await db.SaveChangesAsync();
@@ -644,7 +630,7 @@ namespace FMBot.LastFM.Repositories
 
                 await db.InactiveUsers.AddAsync(inactiveUser);
 
-                Log.Verbose("InactiveUsers: Added private user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+                Log.Information("InactiveUsers: Added private user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
             }
             else
             {
@@ -653,7 +639,7 @@ namespace FMBot.LastFM.Repositories
 
                 db.Entry(existingPrivateUser).State = EntityState.Modified;
 
-                Log.Verbose("InactiveUsers: Updated private user {userId} | {userNameLastFm} (RecentTracksPrivateCount +1)", user.UserId, user.UserNameLastFM);
+                Log.Information("InactiveUsers: Updated private user {userId} | {userNameLastFm} (RecentTracksPrivateCount +1)", user.UserId, user.UserNameLastFM);
             }
 
             await db.SaveChangesAsync();
@@ -669,7 +655,7 @@ namespace FMBot.LastFM.Repositories
             {
                 db.InactiveUsers.Remove(existingInactiveUser);
 
-                Log.Verbose("InactiveUsers: Removed user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
+                Log.Information("InactiveUsers: Removed user {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
 
                 await db.SaveChangesAsync();
             }
@@ -709,7 +695,7 @@ namespace FMBot.LastFM.Repositories
                 return;
             }
 
-            Log.Information("Corrected artist playcount for user {userId} | {lastFmUserName} for artist {artistName} from {oldPlaycount} to {newPlaycount}",
+            Log.Debug("Corrected artist playcount for user {userId} | {lastFmUserName} for artist {artistName} from {oldPlaycount} to {newPlaycount}",
                 user.UserId, user.UserNameLastFM, userArtist.Name, userArtist.Playcount, correctPlaycount);
 
             userArtist.Playcount = (int)correctPlaycount;
@@ -754,7 +740,7 @@ namespace FMBot.LastFM.Repositories
                 return;
             }
 
-            Log.Information("Corrected album playcount for user {userId} | {lastFmUserName} for album {artistName} - {albumName} from {oldPlaycount} to {newPlaycount}",
+            Log.Debug("Corrected album playcount for user {userId} | {lastFmUserName} for album {artistName} - {albumName} from {oldPlaycount} to {newPlaycount}",
                 user.UserId, user.UserNameLastFM, userAlbum.ArtistName, userAlbum.Name, userAlbum.Playcount, correctPlaycount);
 
             userAlbum.Playcount = (int)correctPlaycount;
@@ -799,7 +785,7 @@ namespace FMBot.LastFM.Repositories
                 return;
             }
 
-            Log.Information("Corrected track playcount for user {userId} | {lastFmUserName} for track {artistName} - {trackName} from {oldPlaycount} to {newPlaycount}",
+            Log.Debug("Corrected track playcount for user {userId} | {lastFmUserName} for track {artistName} - {trackName} from {oldPlaycount} to {newPlaycount}",
                 user.UserId, user.UserNameLastFM, userTrack.ArtistName, userTrack.Name, userTrack.Playcount, correctPlaycount);
 
             userTrack.Playcount = (int)correctPlaycount;

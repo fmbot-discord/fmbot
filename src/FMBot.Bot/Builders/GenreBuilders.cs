@@ -4,11 +4,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Fergun.Interactive;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
+using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Domain.Types;
+using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 using Humanizer;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
@@ -22,14 +28,20 @@ public class GenreBuilders
     private readonly GenreService _genreService;
     private readonly WhoKnowsArtistService _whoKnowsArtistService;
     private readonly PlayService _playService;
+    private readonly ArtistsService _artistsService;
+    private readonly LastFmRepository _lastFmRepository;
+    private readonly SpotifyService _spotifyService;
 
-    public GenreBuilders(UserService userService, GuildService guildService, GenreService genreService, WhoKnowsArtistService whoKnowsArtistService, PlayService playService)
+    public GenreBuilders(UserService userService, GuildService guildService, GenreService genreService, WhoKnowsArtistService whoKnowsArtistService, PlayService playService, ArtistsService artistsService, LastFmRepository lastFmRepository, SpotifyService spotifyService)
     {
         this._userService = userService;
         this._guildService = guildService;
         this._genreService = genreService;
         this._whoKnowsArtistService = whoKnowsArtistService;
         this._playService = playService;
+        this._artistsService = artistsService;
+        this._lastFmRepository = lastFmRepository;
+        this._spotifyService = spotifyService;
     }
 
     public async Task<ResponseModel> GetGuildGenres(ContextModel context, Guild guild, GuildRankingSettings guildListSettings)
@@ -123,6 +135,350 @@ public class GenreBuilders
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
 
+        return response;
+    }
+
+    public async Task<ResponseModel> GetTopGenres(
+        ContextModel context,
+        UserSettingsModel userSettings,
+        TimeSettingsModel timeSettings,
+        TopListSettings topListSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Paginator
+        };
+
+        var pages = new List<PageBuilder>();
+
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+
+        if (!userSettings.DifferentUser)
+        {
+            if (!context.SlashCommand)
+            {
+                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+            }
+        }
+        else
+        {
+            userTitle =
+                $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
+        }
+
+        response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} artist genres for {userTitle}");
+        response.EmbedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/artists?{timeSettings.UrlParameter}");
+
+        Response<TopArtistList> artists;
+        var previousTopArtists = new List<TopArtist>();
+
+        if (!timeSettings.UsePlays && timeSettings.TimePeriod != TimePeriod.AllTime)
+        {
+            artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm,
+                timeSettings, 1000);
+
+            if (!artists.Success || artists.Content == null)
+            {
+                response.Embed.ErrorResponse(artists.Error, artists.Message, "topgenres", context.DiscordUser);
+                response.CommandResponse = CommandResponse.LastFmError;
+                return response;
+            }
+        }
+        else if (timeSettings.TimePeriod == TimePeriod.AllTime)
+        {
+            artists = new Response<TopArtistList>
+            {
+                Content = new TopArtistList
+                {
+                    TopArtists = await this._artistsService.GetUserAllTimeTopArtists(userSettings.UserId, true)
+                }
+            };
+        }
+        else
+        {
+            artists = new Response<TopArtistList>
+            {
+                Content = await this._playService.GetUserTopArtists(userSettings.UserId,
+                    timeSettings.PlayDays.GetValueOrDefault())
+            };
+        }
+
+        if (artists.Content.TopArtists == null || !artists.Content.TopArtists.Any())
+        {
+            response.Embed.WithDescription($"Sorry, you or the user you're searching for don't have enough top artists in the selected time period.\n\n" +
+                                        $"Please try again later or try a different time period.");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            return response;
+        }
+
+        if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
+        {
+            var previousArtistsCall = await this._lastFmRepository
+                .GetTopArtistsForCustomTimePeriodAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200);
+
+            if (previousArtistsCall.Success)
+            {
+                previousTopArtists.AddRange(previousArtistsCall.Content.TopArtists);
+            }
+        }
+
+        var genres = await this._genreService.GetTopGenresForTopArtists(artists.Content.TopArtists);
+        var previousTopGenres = await this._genreService.GetTopGenresForTopArtists(previousTopArtists);
+
+        var genrePages = genres.ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
+
+        var counter = 1;
+        var pageCounter = 1;
+        var rnd = new Random().Next(0, 4);
+
+        foreach (var genrePage in genrePages)
+        {
+            var genrePageString = new StringBuilder();
+            foreach (var genre in genrePage)
+            {
+                var name = $"**{genre.GenreName.Transform(To.TitleCase)}** ({genre.UserPlaycount} {StringExtensions.GetPlaysString(genre.UserPlaycount)})";
+
+                if (topListSettings.Billboard && previousTopGenres.Any())
+                {
+                    var previousTopGenre = previousTopGenres.FirstOrDefault(f => f.GenreName == genre.GenreName);
+                    int? previousPosition = previousTopGenre == null ? null : previousTopGenres.IndexOf(previousTopGenre);
+
+                    genrePageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition).Text);
+                }
+                else
+                {
+                    genrePageString.Append($"{counter}. ");
+                    genrePageString.AppendLine(name);
+                }
+
+                counter++;
+            }
+
+            var footer = new StringBuilder();
+            footer.AppendLine("Genre source: Spotify");
+            footer.AppendLine($"Page {pageCounter}/{genrePages.Count} - {genres.Count} total genres");
+
+            if (topListSettings.Billboard)
+            {
+                footer.AppendLine(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
+            }
+
+            if (rnd == 1 && !topListSettings.Billboard)
+            {
+                footer.AppendLine("View this list as a billboard by adding 'billboard' or 'bb'");
+            }
+
+            pages.Add(new PageBuilder()
+                .WithDescription(genrePageString.ToString())
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(footer.ToString()));
+            pageCounter++;
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+
+        return response;
+    }
+
+    public async Task<ResponseModel> GenreAsync(
+        ContextModel context,
+        string genreOptions)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        var genres = new List<string>();
+        if (string.IsNullOrWhiteSpace(genreOptions))
+        {
+            var recentTracks = await this._lastFmRepository.GetRecentTracksAsync(context.ContextUser.UserNameLastFM, 1, true, context.ContextUser.SessionKeyLastFm);
+
+            if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
+            {
+                var errorEmbed =
+                    GenericEmbedService.RecentScrobbleCallFailedBuilder(recentTracks, context.ContextUser.UserNameLastFM);
+                response.Embed = errorEmbed;
+                response.CommandResponse = CommandResponse.LastFmError;
+                return response;
+            }
+
+            var artistName = recentTracks.Content.RecentTracks.First().ArtistName;
+
+            var foundGenres = await this._genreService.GetGenresForArtist(artistName);
+
+            if (foundGenres == null)
+            {
+                var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistName, context.ContextUser.UserNameLastFM);
+                if (artistCall.Success)
+                {
+                    var cachedArtist = await this._spotifyService.GetOrStoreArtistAsync(artistCall.Content);
+
+                    if (cachedArtist.ArtistGenres != null && cachedArtist.ArtistGenres.Any())
+                    {
+                        genres.AddRange(cachedArtist.ArtistGenres.Select(s => s.Name));
+                    }
+                }
+            }
+            else
+            {
+                genres.AddRange(foundGenres);
+            }
+
+            if (genres.Any())
+            {
+                var artist = await this._artistsService.GetArtistFromDatabase(artistName);
+
+                if (artist == null)
+                {
+                    response.Embed.WithDescription(
+                        "Sorry, the genre or artist you're searching for do not exist or do not have any stored genres.");
+
+                    response.CommandResponse = CommandResponse.NotFound;
+                    response.ResponseType = ResponseType.Embed;
+                    return response;
+                }
+
+                response.Embed.WithTitle($"Genre info for '{artistName}'");
+
+                var genreDescription = new StringBuilder();
+                foreach (var artistGenre in artist.ArtistGenres)
+                {
+                    genreDescription.AppendLine($"- **{artistGenre.Name.Transform(To.TitleCase)}**");
+                }
+
+                if (artist?.SpotifyImageUrl != null)
+                {
+                    response.Embed.WithThumbnailUrl(artist.SpotifyImageUrl);
+                }
+
+                response.Embed.WithDescription(genreDescription.ToString());
+
+                response.Embed.WithFooter($"Genre source: Spotify\n" +
+                                       $"Add a genre to this command to see top artists");
+
+                response.ResponseType = ResponseType.Embed;
+                return response;
+            }
+        }
+        else
+        {
+            var foundGenre = await this._genreService.GetValidGenre(genreOptions);
+
+            if (foundGenre == null)
+            {
+                var artist = await this._artistsService.GetArtistFromDatabase(genreOptions);
+
+                if (artist != null)
+                {
+                    response.Embed.WithTitle($"Genre info for '{artist.Name}'");
+
+                    var genreDescription = new StringBuilder();
+                    foreach (var artistGenre in artist.ArtistGenres)
+                    {
+                        genreDescription.AppendLine($"- **{artistGenre.Name.Transform(To.TitleCase)}**");
+                    }
+
+                    if (artist?.SpotifyImageUrl != null)
+                    {
+                        response.Embed.WithThumbnailUrl(artist.SpotifyImageUrl);
+                    }
+
+                    response.Embed.WithDescription(genreDescription.ToString());
+
+                    response.Embed.WithFooter($"Genre source: Spotify\n" +
+                                           $"Add a genre to this command to see top artists");
+
+                    response.ResponseType = ResponseType.Embed;
+                    return response;
+                }
+
+                response.Embed.WithDescription(
+                    "Sorry, the genre or artist you're searching for do not exist or do not have any stored genres.");
+                response.CommandResponse = CommandResponse.NotFound;
+                response.ResponseType = ResponseType.Embed;
+                return response;
+            }
+
+            genres = new List<string> { foundGenre };
+        }
+
+        if (!genres.Any())
+        {
+            response.Embed.WithDescription(
+                "Sorry, we don't have any registered genres for the artist you're currently listening to.\n\n" +
+                $"Please try again later or manually enter a genre (example: `{context.Prefix}genre hip hop`)");
+            response.CommandResponse = CommandResponse.NotFound;
+            response.ResponseType = ResponseType.Embed;
+            return response;
+        }
+
+        var topArtists = await this._artistsService.GetUserAllTimeTopArtists(context.ContextUser.UserId, true);
+        if (topArtists.Count < 100)
+        {
+            response.Embed.WithDescription("Sorry, you don't have enough top artists yet to use this command.\n\n" +
+                                        "Please try again later.");
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            response.ResponseType = ResponseType.Embed;
+            return response;
+        }
+
+        var genresWithArtists = await this._genreService.GetArtistsForGenres(genres, topArtists);
+
+        if (!genresWithArtists.Any())
+        {
+            response.Embed.WithDescription("Sorry, we couldn't find any top artists for your selected genres.");
+            response.CommandResponse = CommandResponse.NotFound;
+            response.ResponseType = ResponseType.Embed;
+            return response;
+        }
+
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        var pages = new List<PageBuilder>();
+
+        var genre = genresWithArtists.First();
+
+        if (!genre.Artists.Any())
+        {
+            response.Embed.WithDescription(
+                "Sorry, we don't have any registered artists for you for the genre you're searching for.");
+            response.CommandResponse = CommandResponse.NotFound;
+            response.ResponseType = ResponseType.Embed;
+            return response;
+        }
+
+        if (!context.SlashCommand)
+        {
+            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+        }
+        response.EmbedAuthor.WithName($"Top '{genre.GenreName.Transform(To.TitleCase)}' artists for {userTitle}");
+
+        var genrePages = genre.Artists.ChunkBy(10);
+
+        var counter = 1;
+        var pageCounter = 1;
+        foreach (var genrePage in genrePages)
+        {
+            var genrePageString = new StringBuilder();
+            foreach (var genreArtist in genrePage)
+            {
+                genrePageString.AppendLine($"{counter}. **{genreArtist.ArtistName}** ({genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)})");
+                counter++;
+            }
+
+            var footer = $"Genre source: Spotify\n" +
+                         $"Page {pageCounter}/{genrePages.Count} - {genre.Artists.Count} total artists";
+
+            pages.Add(new PageBuilder()
+                .WithDescription(genrePageString.ToString())
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(footer));
+            pageCounter++;
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ResponseType = ResponseType.Paginator;
         return response;
     }
 }

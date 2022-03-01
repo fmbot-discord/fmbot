@@ -167,6 +167,7 @@ namespace FMBot.Bot.Commands.LastFM
         [CommandCategories(CommandCategory.Crowns)]
         public async Task CrownAsync([Remainder] string artistValues = null)
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);

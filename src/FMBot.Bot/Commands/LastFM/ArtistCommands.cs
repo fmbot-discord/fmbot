@@ -72,7 +72,8 @@ public class ArtistCommands : BaseCommandModule
         IOptions<BotSettings> botSettings,
         GenreService genreService,
         FriendsService friendsService,
-        ArtistBuilders artistBuilders, SmallIndexRepository smallIndexRepository) : base(botSettings)
+        ArtistBuilders artistBuilders,
+        SmallIndexRepository smallIndexRepository) : base(botSettings)
     {
         this._artistsService = artistsService;
         this._crownService = crownService;
@@ -831,10 +832,9 @@ public class ArtistCommands : BaseCommandModule
         var userSettings = await this._userService.GetUserSettingsAsync(this.Context.User);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
+        _ = this.Context.Channel.TriggerTypingAsync();
         var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id);
         var filteredGuildUsers = GuildService.FilterGuildUsersAsync(guild);
-
-        _ = this.Context.Channel.TriggerTypingAsync();
 
         var users = filteredGuildUsers.Select(s => s.User).ToList();
         var neighbors = await this._whoKnowArtistService.GetNeighbors(users, userSettings.UserId);

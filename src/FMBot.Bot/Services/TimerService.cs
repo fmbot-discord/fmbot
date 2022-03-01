@@ -226,7 +226,7 @@ namespace FMBot.Bot.Services
 
             this._shardReconnectTimer = new Timer(async _ =>
                 {
-                    Log.Information("ShardReconnectTimer: Running shard reconnect timer");
+                    Log.Debug("ShardReconnectTimer: Running shard reconnect timer");
 
                     var shards = this._client.Shards;
 

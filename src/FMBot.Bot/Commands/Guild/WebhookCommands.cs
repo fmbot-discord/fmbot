@@ -60,6 +60,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
             var botType = this.Context.GetBotType();
 
@@ -99,6 +100,7 @@ namespace FMBot.Bot.Commands.Guild
                 return;
             }
 
+            _ = this.Context.Channel.TriggerTypingAsync();
             var guild = await this._guildService.GetFullGuildAsync(this.Context.Guild.Id, enableCache: false);
             var botType = this.Context.GetBotType();
 
@@ -113,7 +115,7 @@ namespace FMBot.Bot.Commands.Guild
                     await ReplyAsync("The previously registered webhook has been removed from our database.\n" +
                                      "You can now add a new webhook for .fmbot with `.fmaddwebhook`.");
                 }
-                
+
                 this.Context.LogCommandUsed();
             }
             else

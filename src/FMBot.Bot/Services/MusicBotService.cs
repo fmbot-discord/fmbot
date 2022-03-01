@@ -92,9 +92,9 @@ namespace FMBot.Bot.Services
 
             this.Interactivity.DelayedDeleteMessageAsync(
                 await context.Channel.SendMessageAsync(embed: embed.Build()),
-                TimeSpan.FromSeconds(90));
+                TimeSpan.FromSeconds(120));
 
-            Log.Information("BotScrobbling: Scrobbled {trackName} by {artistName} for {listenerCount} users in {guildName} / {guildId}", trackResult.TrackName, trackResult.ArtistName, listenerCount, context.Guild.Name, context.Guild.Id);
+            Log.Debug("BotScrobbling: Scrobbled {trackName} by {artistName} for {listenerCount} users in {guildName} / {guildId}", trackResult.TrackName, trackResult.ArtistName, listenerCount, context.Guild.Name, context.Guild.Id);
         }
 
 
@@ -135,7 +135,7 @@ namespace FMBot.Bot.Services
             {
                 if (await context.Guild.GetVoiceChannelsAsync() is not ImmutableArray<SocketVoiceChannel> channels || !channels.Any())
                 {
-                    Log.Information("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found voice channels", context.Guild.Name, context.Guild.Id);
+                    Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found voice channels", context.Guild.Name, context.Guild.Id);
                     return null;
                 }
 
@@ -144,7 +144,7 @@ namespace FMBot.Bot.Services
 
                 if (targetChannel == null)
                 {
-                    Log.Information("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found voice channel with botId {botId} (did see some voice channels though)", context.Guild.Name, context.Guild.Id, botId);
+                    Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found voice channel with botId {botId} (did see some voice channels though)", context.Guild.Name, context.Guild.Id, botId);
                     return null;
                 }
 
@@ -159,7 +159,7 @@ namespace FMBot.Bot.Services
                                 w.SessionKeyLastFm != null)
                     .ToListAsync();
 
-                Log.Information("BotScrobbling: Found voice channel {channelName} / {channelId} in {guildName} / {guildId} with {listenerCount} .fmbot listeners", targetChannel.Name, targetChannel.Id, context.Guild.Name, context.Guild.Id, users.Count);
+                Log.Debug("BotScrobbling: Found voice channel {channelName} / {channelId} in {guildName} / {guildId} with {listenerCount} .fmbot listeners", targetChannel.Name, targetChannel.Id, context.Guild.Name, context.Guild.Id, users.Count);
 
                 return users;
             }

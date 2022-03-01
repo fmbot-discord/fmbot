@@ -6,5 +6,6 @@ public enum ResponseType
 {
     Text = 1,
     Embed = 2,
-    Paginator = 3
+    Paginator = 3,
+    ImageWithEmbed = 4,
 }
