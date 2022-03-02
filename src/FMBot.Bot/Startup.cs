@@ -62,12 +62,14 @@ namespace FMBot.Bot
             var botUserId = long.Parse(this.Configuration.GetSection("Discord:BotUserId")?.Value ?? "0");
 
             var consoleLevel = LogEventLevel.Warning;
+            var logLevel = LogEventLevel.Information;
 #if DEBUG
             consoleLevel = LogEventLevel.Verbose;
+            logLevel = LogEventLevel.Information;
 #endif
 
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Is(consoleLevel)
+                .MinimumLevel.Is(logLevel)
                 .Enrich.WithExceptionDetails()
                 .Enrich.WithProperty("Environment", !string.IsNullOrEmpty(this.Configuration.GetSection("Environment")?.Value) ? this.Configuration.GetSection("Environment").Value : "unknown")
                 .Enrich.WithProperty("BotUserId", botUserId)

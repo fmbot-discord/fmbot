@@ -28,10 +28,13 @@ namespace FMBot.Bot.Services
         private readonly string _unknownArtistImagePath;
         private readonly string _censoredImagePath;
 
+        private readonly HttpClient _client;
 
-        public ChartService(CensorService censorService)
+        public ChartService(CensorService censorService, IHttpClientFactory httpClientFactory)
         {
             this._censorService = censorService;
+
+            this._client = httpClientFactory.CreateClient();
 
             try
             {
@@ -74,11 +77,9 @@ namespace FMBot.Bot.Services
                     chartImageWidth = 180;
                 }
 
-                var httpClient = new HttpClient();
-
                 if (!chart.ArtistChart)
                 {
-                    await chart.Albums.ParallelForEachAsync(async album =>
+                    foreach (var album in chart.Albums)
                     {
                         var censor = false;
                         var cacheEnabled = true;
@@ -108,7 +109,7 @@ namespace FMBot.Bot.Services
 
                         var fileName = localAlbumId + ".png";
                         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
-                        
+
 
                         if (File.Exists(localPath) && cacheEnabled)
                         {
@@ -119,9 +120,17 @@ namespace FMBot.Bot.Services
                         {
                             if (album.AlbumCoverUrl != null)
                             {
+                                var albumCoverUrl = album.AlbumCoverUrl;
+
+                                if (albumCoverUrl.Contains("lastfm.freetls.fastly.net") && !albumCoverUrl.Contains("/300x300/"))
+                                {
+                                    albumCoverUrl = albumCoverUrl.Replace("/770x0/", "/");
+                                    albumCoverUrl = albumCoverUrl.Replace("/i/u/", "/i/u/300x300/");
+                                }
+
                                 try
                                 {
-                                    var bytes = await httpClient.GetByteArrayAsync(album.AlbumCoverUrl);
+                                    var bytes = await this._client.GetByteArrayAsync(albumCoverUrl);
 
                                     Statistics.LastfmImageCalls.Inc();
 
@@ -172,11 +181,11 @@ namespace FMBot.Bot.Services
                         }
 
                         AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, album);
-                    }, maxDegreeOfParallelism: 2);
+                    }
                 }
                 else
                 {
-                    await chart.Artists.ParallelForEachAsync(async artist =>
+                    foreach (var artist in chart.Artists)
                     {
                         var encodedId = StringExtensions.ReplaceInvalidChars(
                             artist.ArtistUrl.Replace("https://www.last.fm/music/", ""));
@@ -198,7 +207,7 @@ namespace FMBot.Bot.Services
                             {
                                 try
                                 {
-                                    var bytes = await httpClient.GetByteArrayAsync(artist.ArtistImageUrl);
+                                    var bytes = await this._client.GetByteArrayAsync(artist.ArtistImageUrl);
                                     await using var stream = new MemoryStream(bytes);
                                     chartImage = SKBitmap.Decode(stream);
                                 }
@@ -232,7 +241,7 @@ namespace FMBot.Bot.Services
                         }
 
                         AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, artist: artist);
-                    }, maxDegreeOfParallelism: 2);
+                    }
                 }
 
                 SKImage finalImage = null;
