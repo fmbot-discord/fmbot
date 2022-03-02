@@ -17,7 +17,7 @@ namespace FMBot.Bot.Services
                 var updated = false;
                 var api = new Query("fmbot-discord", "1.0", "https://fmbot.xyz");
 
-                if (artist.MusicBrainzDate.HasValue && artist.MusicBrainzDate > DateTime.UtcNow.AddDays(-90))
+                if (artist.MusicBrainzDate.HasValue && artist.MusicBrainzDate > DateTime.UtcNow.AddDays(-120))
                 {
                     return new ArtistUpdated(artist);
                 }
