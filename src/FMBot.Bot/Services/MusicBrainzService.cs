@@ -15,12 +15,13 @@ namespace FMBot.Bot.Services
             try
             {
                 var updated = false;
-                var api = new Query("fmbot-discord", "1.0", "https://fmbot.xyz");
 
                 if (artist.MusicBrainzDate.HasValue && artist.MusicBrainzDate > DateTime.UtcNow.AddDays(-120))
                 {
                     return new ArtistUpdated(artist);
                 }
+
+                var api = new Query("fmbot-discord", "1.0", "https://fmbot.xyz");
 
                 if (artist.Mbid.HasValue)
                 {
