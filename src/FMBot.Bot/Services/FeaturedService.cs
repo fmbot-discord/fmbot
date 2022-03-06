@@ -132,7 +132,6 @@ namespace FMBot.Bot.Services
                         featuredLog.TrackName = trackToFeature.TrackName;
                         featuredLog.AlbumName = trackToFeature.AlbumName;
                         featuredLog.ImageUrl = trackToFeature.AlbumCoverUrl;
-                        featuredLog.SupporterDay = false;
 
                         return featuredLog;
                     case FeaturedMode.TopAlbumsWeekly:
@@ -410,7 +409,7 @@ namespace FMBot.Bot.Services
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();
 
-            var newFeatured = await NewFeatured(botUserId);
+            var newFeatured = await NewFeatured(botUserId, featuredLog.DateTime);
 
             featuredLog.HasFeatured = false;
             featuredLog.AlbumName = newFeatured.AlbumName;

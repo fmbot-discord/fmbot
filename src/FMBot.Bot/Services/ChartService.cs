@@ -30,11 +30,11 @@ namespace FMBot.Bot.Services
 
         private readonly HttpClient _client;
 
-        public ChartService(CensorService censorService, IHttpClientFactory httpClientFactory)
+        public ChartService(CensorService censorService, HttpClient httpClient)
         {
             this._censorService = censorService;
 
-            this._client = httpClientFactory.CreateClient();
+            this._client = httpClient;
 
             try
             {

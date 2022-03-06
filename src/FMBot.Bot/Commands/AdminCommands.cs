@@ -799,18 +799,14 @@ namespace FMBot.Bot.Commands
 
                     var updateDescription = new StringBuilder();
                     updateDescription.AppendLine("**Selected feature**");
-                    updateDescription.AppendLine(feature.FeaturedMode.ToString());
-                    updateDescription.AppendLine(feature.ArtistName);
-                    updateDescription.AppendLine(feature.AlbumName);
+                    updateDescription.AppendLine(feature.Description);
                     updateDescription.AppendLine(feature.ImageUrl);
                     updateDescription.AppendLine();
 
                     var newFeature = await this._featuredService.ReplaceFeatured(feature, this.Context.User.Id);
 
                     updateDescription.AppendLine("**New feature**");
-                    updateDescription.AppendLine(newFeature.FeaturedMode.ToString());
-                    updateDescription.AppendLine(newFeature.ArtistName);
-                    updateDescription.AppendLine(newFeature.AlbumName);
+                    updateDescription.AppendLine(newFeature.Description);
                     updateDescription.AppendLine(newFeature.ImageUrl);
                     updateDescription.AppendLine();
 

@@ -32,13 +32,13 @@ namespace FMBot.Bot.Services
         private readonly IMemoryCache _cache;
         private readonly TrackRepository _trackRepository;
 
-        public TrackService(IHttpClientFactory httpClientFactory, LastFmRepository lastFmRepository, IOptions<BotSettings> botSettings, SpotifyService spotifyService, IMemoryCache memoryCache, TrackRepository trackRepository)
+        public TrackService(HttpClient httpClient, LastFmRepository lastFmRepository, IOptions<BotSettings> botSettings, SpotifyService spotifyService, IMemoryCache memoryCache, TrackRepository trackRepository)
         {
             this._lastFmRepository = lastFmRepository;
             this._spotifyService = spotifyService;
             this._cache = memoryCache;
             this._trackRepository = trackRepository;
-            this._client = httpClientFactory.CreateClient();
+            this._client = httpClient;
             this._botSettings = botSettings.Value;
         }
 
