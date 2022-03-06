@@ -132,7 +132,6 @@ namespace FMBot.Bot.Services
                         featuredLog.TrackName = trackToFeature.TrackName;
                         featuredLog.AlbumName = trackToFeature.AlbumName;
                         featuredLog.ImageUrl = trackToFeature.AlbumCoverUrl;
-                        featuredLog.SupporterDay = false;
 
                         return featuredLog;
                     case FeaturedMode.TopAlbumsWeekly:
