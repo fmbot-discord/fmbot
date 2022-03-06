@@ -28,7 +28,7 @@ namespace FMBot.LastFM.Api
         private readonly string _publicKey;
         private readonly string _publicKeySecret;
 
-        public LastfmApi(IConfiguration configuration, IHttpClientFactory httpClientFactory)
+        public LastfmApi(IConfiguration configuration, HttpClient httpClient)
         {
             // Use a public key and a private key for talking to the Last.fm API
             // This is because the public key is visible when a user authenticates
@@ -36,7 +36,7 @@ namespace FMBot.LastFM.Api
             this._privateKey = configuration.GetSection("LastFm:PrivateKey").Value;
             this._publicKey = configuration.GetSection("LastFm:PublicKey").Value;
             this._publicKeySecret = configuration.GetSection("LastFm:PublicKeySecret").Value;
-            this._client = httpClientFactory.CreateClient();
+            this._client = httpClient;
         }
 
         public async Task<Response<T>> CallApiAsync<T>(Dictionary<string, string> parameters, string call, bool generateSignature = false, bool usePrivateKey = false)

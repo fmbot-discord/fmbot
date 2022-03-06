@@ -136,7 +136,6 @@ namespace FMBot.Bot
                 .AddSingleton<GenreBuilders>()
                 .AddSingleton<GenreService>()
                 .AddSingleton<GuildService>()
-                .AddSingleton<ChartService>()
                 .AddSingleton<IGuildDisabledCommandService, GuildDisabledCommandService>()
                 .AddSingleton<IChannelDisabledCommandService, ChannelDisabledCommandService>()
                 .AddSingleton<IIndexService, IndexService>()
@@ -157,7 +156,6 @@ namespace FMBot.Bot
                 .AddSingleton<MusicBotService>()
                 .AddSingleton<MusicBrainzService>()
                 .AddSingleton<TrackBuilders>()
-                .AddSingleton<TrackService>()
                 .AddSingleton<TrackRepository>()
                 .AddSingleton<UserEventHandler>()
                 .AddSingleton<UserService>()
@@ -168,8 +166,7 @@ namespace FMBot.Bot
                 .AddSingleton<WhoKnowsPlayService>()
                 .AddSingleton<WhoKnowsTrackService>()
                 .AddSingleton<YoutubeService>() // Add random to the collection
-                .AddSingleton<IConfiguration>(this.Configuration) // Add the configuration to the collection
-                .AddHttpClient();
+                .AddSingleton<IConfiguration>(this.Configuration);
 
             // These services can only be added after the config is loaded
             services
@@ -177,10 +174,13 @@ namespace FMBot.Bot
                 .AddSingleton<IndexRepository>()
                 .AddSingleton<SmallIndexRepository>()
                 .AddSingleton<UpdateRepository>()
-                .AddSingleton<IUpdateService, UpdateService>()
-                .AddTransient<ILastfmApi, LastfmApi>()
-                .AddTransient<LastFmRepository>()
-                .AddTransient<InvidiousApi>();
+                .AddSingleton<IUpdateService, UpdateService>();
+
+            services.AddHttpClient<ILastfmApi, LastfmApi>();
+            services.AddHttpClient<ChartService>();
+            services.AddHttpClient<InvidiousApi>();
+            services.AddHttpClient<LastFmRepository>();
+            services.AddHttpClient<TrackService>();
 
             services.AddHealthChecks();
 
