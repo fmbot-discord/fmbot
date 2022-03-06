@@ -410,7 +410,7 @@ namespace FMBot.Bot.Services
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();
 
-            var newFeatured = await NewFeatured(botUserId);
+            var newFeatured = await NewFeatured(botUserId, featuredLog.DateTime);
 
             featuredLog.HasFeatured = false;
             featuredLog.AlbumName = newFeatured.AlbumName;
