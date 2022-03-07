@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Discord;
 using FMBot.Domain;
@@ -14,6 +15,7 @@ using Microsoft.Extensions.Options;
 using Npgsql;
 using Serilog;
 using SpotifyAPI.Web;
+using SpotifyAPI.Web.Http;
 using Artist = FMBot.Persistence.Domain.Models.Artist;
 
 namespace FMBot.Bot.Services.ThirdParty
@@ -27,6 +29,7 @@ namespace FMBot.Bot.Services.ThirdParty
         private readonly TrackRepository _trackRepository;
         private readonly IMemoryCache _cache;
         private readonly MusicBrainzService _musicBrainzService;
+        private readonly HttpClient _httpClient;
 
         public SpotifyService(IDbContextFactory<FMBotDbContext> contextFactory,
             IOptions<BotSettings> botSettings,
@@ -34,7 +37,8 @@ namespace FMBot.Bot.Services.ThirdParty
             TrackRepository trackRepository,
             AlbumRepository albumRepository,
             IMemoryCache cache,
-            MusicBrainzService musicBrainzService)
+            MusicBrainzService musicBrainzService,
+            HttpClient httpClient)
         {
             this._contextFactory = contextFactory;
             this._artistRepository = artistRepository;
@@ -42,6 +46,7 @@ namespace FMBot.Bot.Services.ThirdParty
             this._albumRepository = albumRepository;
             this._cache = cache;
             this._musicBrainzService = musicBrainzService;
+            this._httpClient = httpClient;
             this._botSettings = botSettings.Value;
         }
 
@@ -597,6 +602,7 @@ namespace FMBot.Bot.Services.ThirdParty
         {
             var config = SpotifyClientConfig
                 .CreateDefault()
+                .WithHTTPClient(new NetHttpClient(this._httpClient))
                 .WithAuthenticator(new ClientCredentialsAuthenticator(this._botSettings.Spotify.Key, this._botSettings.Spotify.Secret));
 
             return new SpotifyClient(config);

@@ -149,13 +149,11 @@ namespace FMBot.Bot
                 .AddSingleton<PuppeteerService>()
                 .AddSingleton<Random>()
                 .AddSingleton<SettingService>()
-                .AddSingleton<SpotifyService>()
                 .AddSingleton<StartupService>()
                 .AddSingleton<SupporterService>()
                 .AddSingleton<TimerService>()
                 .AddSingleton<TimeService>()
                 .AddSingleton<MusicBotService>()
-                .AddSingleton<MusicBrainzService>()
                 .AddSingleton<TrackBuilders>()
                 .AddSingleton<TrackRepository>()
                 .AddSingleton<UserEventHandler>()
@@ -182,6 +180,12 @@ namespace FMBot.Bot
             services.AddHttpClient<InvidiousApi>();
             services.AddHttpClient<LastFmRepository>();
             services.AddHttpClient<TrackService>();
+
+            services.AddHttpClient<SpotifyService>(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(10);
+            });
+
             services.AddHttpClient<MusicBrainzService>(client =>
             {
                 client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("fmbot-discord", "1.0"));
