@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -181,6 +182,11 @@ namespace FMBot.Bot
             services.AddHttpClient<InvidiousApi>();
             services.AddHttpClient<LastFmRepository>();
             services.AddHttpClient<TrackService>();
+            services.AddHttpClient<MusicBrainzService>(client =>
+            {
+                client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("fmbot-discord", "1.0"));
+                client.Timeout = TimeSpan.FromSeconds(10);
+            });
 
             services.AddHealthChecks();
 

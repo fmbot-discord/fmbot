@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using FMBot.Domain;
 using FMBot.Persistence.Domain.Models;
@@ -10,7 +11,14 @@ namespace FMBot.Bot.Services
 {
     public class MusicBrainzService
     {
-        public static async Task<ArtistUpdated> AddMusicBrainzDataToArtistAsync(Artist artist)
+        private readonly HttpClient _httpClient;
+
+        public MusicBrainzService(HttpClient httpClient)
+        {
+            this._httpClient = httpClient;
+        }
+
+        public async Task<ArtistUpdated> AddMusicBrainzDataToArtistAsync(Artist artist)
         {
             try
             {
@@ -21,7 +29,7 @@ namespace FMBot.Bot.Services
                     return new ArtistUpdated(artist);
                 }
 
-                var api = new Query("fmbot-discord", "1.0", "https://fmbot.xyz");
+                var api = new Query(this._httpClient);
 
                 if (artist.Mbid.HasValue)
                 {
@@ -51,7 +59,9 @@ namespace FMBot.Bot.Services
                     Statistics.MusicBrainzApiCalls.Inc();
 
                     var musicBrainzArtist =
-                        musicBrainzResults.Results.Select(s => s.Item).FirstOrDefault(f => f.Name?.ToLower() == artist.Name.ToLower());
+                        musicBrainzResults.Results
+                            .OrderByDescending(o => o.Score)
+                            .Select(s => s.Item).FirstOrDefault(f => f.Name?.ToLower() == artist.Name.ToLower());
 
                     if (musicBrainzArtist != null)
                     {

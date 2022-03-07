@@ -26,19 +26,22 @@ namespace FMBot.Bot.Services.ThirdParty
         private readonly AlbumRepository _albumRepository;
         private readonly TrackRepository _trackRepository;
         private readonly IMemoryCache _cache;
+        private readonly MusicBrainzService _musicBrainzService;
 
         public SpotifyService(IDbContextFactory<FMBotDbContext> contextFactory,
             IOptions<BotSettings> botSettings,
             ArtistRepository artistRepository,
             TrackRepository trackRepository,
             AlbumRepository albumRepository,
-            IMemoryCache cache)
+            IMemoryCache cache,
+            MusicBrainzService musicBrainzService)
         {
             this._contextFactory = contextFactory;
             this._artistRepository = artistRepository;
             this._trackRepository = trackRepository;
             this._albumRepository = albumRepository;
             this._cache = cache;
+            this._musicBrainzService = musicBrainzService;
             this._botSettings = botSettings.Value;
         }
 
@@ -77,7 +80,7 @@ namespace FMBot.Bot.Services.ThirdParty
                         LastfmDate = DateTime.UtcNow
                     };
 
-                    var musicBrainzUpdated = await MusicBrainzService.AddMusicBrainzDataToArtistAsync(artistToAdd);
+                    var musicBrainzUpdated = await this._musicBrainzService.AddMusicBrainzDataToArtistAsync(artistToAdd);
 
                     if (musicBrainzUpdated.Updated)
                     {
@@ -147,7 +150,7 @@ namespace FMBot.Bot.Services.ThirdParty
                         .AddOrUpdateArtistAlias(dbArtist.Id, artistNameBeforeCorrect, connection);
                 }
 
-                var musicBrainzUpdate = await MusicBrainzService.AddMusicBrainzDataToArtistAsync(dbArtist);
+                var musicBrainzUpdate = await this._musicBrainzService.AddMusicBrainzDataToArtistAsync(dbArtist);
 
                 if (musicBrainzUpdate.Updated)
                 {
