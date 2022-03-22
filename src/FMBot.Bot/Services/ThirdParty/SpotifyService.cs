@@ -495,7 +495,7 @@ namespace FMBot.Bot.Services.ThirdParty
 
                 return albumToAdd;
             }
-            if (albumInfo.AlbumCoverUrl != null && dbAlbum.LastfmImageUrl == null)
+            if (albumInfo.AlbumCoverUrl != null)
             {
                 dbAlbum.LastfmImageUrl = albumInfo.AlbumCoverUrl;
                 db.Entry(dbAlbum).State = EntityState.Modified;
