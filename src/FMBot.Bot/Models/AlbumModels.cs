@@ -29,6 +29,32 @@ namespace FMBot.Bot.Models
         public string Url { get; }
     }
 
+    public class AlbumAutoCompleteSearchModel
+    {
+        public AlbumAutoCompleteSearchModel(
+            string artist,
+            string album,
+            int? popularity = null)
+        {
+            this.Artist = artist;
+            this.Album = album;
+            this.Name = $"{artist} | {album}";
+        }
+
+        public AlbumAutoCompleteSearchModel(string name)
+        {
+            this.Name = name;
+        }
+
+        public string Name { get; set;  }
+
+        public string Album { get; }
+
+        public string Artist { get; }
+
+        public int? Popularity { get; }
+    }
+
     public class GuildAlbum
     {
         public string ArtistName { get; set; }

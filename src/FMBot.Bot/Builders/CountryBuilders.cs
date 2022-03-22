@@ -148,7 +148,7 @@ public class CountryBuilders
                     response.Embed.WithDescription(description.ToString());
 
                     response.Embed.WithFooter($"Country source: MusicBrainz\n" +
-                                           $"Add a genre to this command to see top artists");
+                                           $"Add a country to this command to see top artists");
 
                     response.ResponseType = ResponseType.Embed;
                     return response;
