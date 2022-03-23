@@ -712,8 +712,8 @@ namespace FMBot.Bot.Commands.LastFM
         }
 
         [Command("remove", RunMode = RunMode.Async)]
-        [Summary("Deletes your personal data from .fmbot")]
-        [Alias("delete", "removedata", "deletedata")]
+        [Summary("Deletes your .fmbot account")]
+        [Alias("delete", "removedata", "deletedata", "logout")]
         [CommandCategories(CommandCategory.UserSettings)]
         public async Task RemoveAsync([Remainder] string confirmation = null)
         {
