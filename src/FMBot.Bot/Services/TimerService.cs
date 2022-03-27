@@ -235,8 +235,9 @@ namespace FMBot.Bot.Services
                         var cacheKey = $"{shard.ShardId}-shard-disconnected";
                         if (this._cache.TryGetValue(cacheKey, out int shardDisconnected))
                         {
-                            if (shardDisconnected > 7)
+                            if (shardDisconnected > 7 && !this._cache.TryGetValue("shard-connecting", out _))
                             {
+                                this._cache.Set("shard-connecting", 1, TimeSpan.FromSeconds(15));
                                 Log.Information("ShardReconnectTimer: Reconnecting shard #{shardId}", shard.ShardId);
                                 _ = shard.StartAsync();
                                 this._cache.Remove(cacheKey);
@@ -244,14 +245,14 @@ namespace FMBot.Bot.Services
                             else
                             {
                                 shardDisconnected++;
-                                this._cache.Set(cacheKey, shardDisconnected, TimeSpan.FromMinutes(20 - shardDisconnected));
+                                this._cache.Set(cacheKey, shardDisconnected, TimeSpan.FromMinutes(25 - shardDisconnected));
                                 Log.Information("ShardReconnectTimer: Shard #{shardId} has been disconnected {shardDisconnected} times", shard.ShardId, shardDisconnected);
                             }
                         }
                         else
                         {
                             Log.Information("ShardReconnectTimer: Shard #{shardId} has been disconnected one time", shard.ShardId);
-                            this._cache.Set(cacheKey, 1, TimeSpan.FromMinutes(20));
+                            this._cache.Set(cacheKey, 1, TimeSpan.FromMinutes(25));
                         }
                     }
                 },
