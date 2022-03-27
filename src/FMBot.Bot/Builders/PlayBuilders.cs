@@ -344,6 +344,10 @@ public class PlayBuilder
                     {
                         response.Embed.WithThumbnailUrl(currentTrack.AlbumCoverUrl);
                     }
+                    else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
+                    {
+                        response.Embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
+                    }
                 }
 
                 break;
@@ -408,6 +412,10 @@ public class PlayBuilder
                     if (safeForChannel.Result)
                     {
                         response.Embed.WithThumbnailUrl(track.AlbumCoverUrl);
+                    }
+                    else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
+                    {
+                        response.Embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
                     }
                 }
             }
@@ -616,6 +624,10 @@ public class PlayBuilder
             if (safeForChannel.Result)
             {
                 response.Embed.WithThumbnailUrl(mileStonePlay.Content.AlbumCoverUrl);
+            }
+            else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
+            {
+                response.Embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
             }
         }
 

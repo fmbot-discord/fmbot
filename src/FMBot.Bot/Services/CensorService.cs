@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Threading.Tasks;
 using Dapper;
 using Discord;
-using Discord.Commands;
 using Discord.WebSocket;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -40,13 +40,13 @@ namespace FMBot.Bot.Services
                 {
                     embed?.WithDescription("Sorry, this album or artist can't be posted due to discord ToS.\n" +
                                            $"You can view the [album cover here]({url}).");
-                    return new CensorResult(false);
+                    return new CensorResult(false, allowedInNsfw.AlternativeCover);
                 }
                 if (guild != null && !((SocketTextChannel)channel).IsNsfw)
                 {
                     embed?.WithDescription("Sorry, this album cover can only be posted in NSFW channels.\n" +
                                                 $"You can mark this channel as NSFW or view the [album cover here]({url}).");
-                    return new CensorResult(false);
+                    return new CensorResult(false, allowedInNsfw.AlternativeCover);
                 }
 
                 return new CensorResult(true, allowedInNsfw.AlternativeCover);

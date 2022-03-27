@@ -219,6 +219,22 @@ public class AlbumCommands : BaseCommandModule
                 return;
             }
 
+            var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
+                album.AlbumName, album.ArtistName, album.AlbumUrl, this._embed);
+            if (!safeForChannel.Result)
+            {
+                if (safeForChannel.AlternativeCover != null)
+                {
+                    albumCoverUrl = safeForChannel.AlternativeCover;
+                }
+                else
+                {
+                    await this.ReplyAsync("", false, this._embed.Build());
+                    this.Context.LogCommandUsed(CommandResponse.Censored);
+                    return;
+                }
+            }
+
             var image = await this._lastFmRepository.GetAlbumImageAsStreamAsync(albumCoverUrl);
             if (image == null)
             {
@@ -227,15 +243,6 @@ public class AlbumCommands : BaseCommandModule
                                             $"[View on last.fm]({album.AlbumUrl})");
                 await this.ReplyAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Error);
-                return;
-            }
-
-            var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
-                album.AlbumName, album.ArtistName, album.AlbumUrl, this._embed);
-            if (!safeForChannel.Result)
-            {
-                await this.ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Censored);
                 return;
             }
 
@@ -550,6 +557,10 @@ public class AlbumCommands : BaseCommandModule
                 {
                     this._embed.WithThumbnailUrl(albumCoverUrl);
                 }
+                else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
+                {
+                    this._embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
+                }
             }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
@@ -702,6 +713,10 @@ public class AlbumCommands : BaseCommandModule
                 {
                     this._embed.WithThumbnailUrl(albumCoverUrl);
                 }
+                else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
+                {
+                    this._embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
+                }
             }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
@@ -828,6 +843,10 @@ public class AlbumCommands : BaseCommandModule
                 if (safeForChannel.Result)
                 {
                     this._embed.WithThumbnailUrl(albumCoverUrl);
+                }
+                else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
+                {
+                    this._embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
                 }
             }
 
