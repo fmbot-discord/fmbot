@@ -879,6 +879,7 @@ public class AlbumCommands : BaseCommandModule
     public async Task AlbumTracksAsync([Remainder] string albumValues = null)
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -892,128 +893,11 @@ public class AlbumCommands : BaseCommandModule
                 return;
             }
 
-            var albumName = $"{album.AlbumName} by {album.ArtistName}";
+            var response = await this._albumBuilders.AlbumTracksAsync(new ContextModel(this.Context, prfx, contextUser),
+                userSettings, userSettings.NewSearchValue);
 
-            var spotifySource = false;
-
-            List<AlbumTrack> albumTracks;
-            if (album.AlbumTracks != null && album.AlbumTracks.Any())
-            {
-                albumTracks = album.AlbumTracks;
-            }
-            else
-            {
-                var dbAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
-                dbAlbum.Tracks = await this._spotifyService.GetExistingAlbumTracks(dbAlbum.Id);
-
-                if (dbAlbum?.Tracks != null && dbAlbum.Tracks.Any())
-                {
-                    albumTracks = dbAlbum.Tracks.Select(s => new AlbumTrack
-                    {
-                        TrackName = s.Name,
-                        ArtistName = album.ArtistName,
-                        Duration = s.DurationMs / 1000
-                    }).ToList();
-                    spotifySource = true;
-                }
-                else
-                {
-                    this._embed.WithDescription(
-                        $"Sorry, but neither Last.fm or Spotify know the tracks for {albumName}.");
-
-                    await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                    this.Context.LogCommandUsed(CommandResponse.NotFound);
-                    return;
-                }
-            }
-
-            var artistUserTracks = await this._trackService.GetArtistUserTracks(userSettings.UserId, album.ArtistName);
-
-            var description = new StringBuilder();
-            var amountOfDiscs = albumTracks.Count(c => c.Rank == 1) == 0 ? 1 : albumTracks.Count(c => c.Rank == 1);
-
-            var pages = new List<PageBuilder>();
-
-            var footer = new StringBuilder();
-
-            footer.AppendLine($"{albumTracks.Count} total tracks");
-            footer.Append(spotifySource ? "Album source: Spotify | " : "Album source: Last.fm | ");
-            footer.Append($"{userSettings.DiscordUserName} has {album.UserPlaycount} total scrobbles on this album");
-
-            var url = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/music/" +
-                      $"{UrlEncoder.Default.Encode(album.ArtistName)}/" +
-                      $"{UrlEncoder.Default.Encode(album.AlbumName)}/";
-
-            var i = 0;
-            var tracksDisplayed = 0;
-            var pageNumber = 1;
-            for (var disc = 1; disc < amountOfDiscs + 1; disc++)
-            {
-                if (amountOfDiscs > 1)
-                {
-                    description.AppendLine($"`Disc {disc}`");
-                }
-
-                for (; i < albumTracks.Count; i++)
-                {
-                    var albumTrack = albumTracks[i];
-
-                    var albumTrackWithPlaycount = artistUserTracks.FirstOrDefault(f =>
-                        StringExtensions.SanitizeTrackNameForComparison(albumTrack.TrackName)
-                            .Equals(StringExtensions.SanitizeTrackNameForComparison(f.Name)));
-
-                    description.Append(
-                        $"{i + 1}.");
-
-                    description.Append(
-                        $" **{albumTrack.TrackName}**");
-
-                    if (albumTrackWithPlaycount != null)
-                    {
-                        description.Append(
-                            $" - *{albumTrackWithPlaycount.Playcount} {StringExtensions.GetPlaysString(albumTrackWithPlaycount.Playcount)}*");
-                    }
-
-                    if (albumTrack.Duration.HasValue)
-                    {
-                        description.Append(albumTrackWithPlaycount == null ? " — " : " - ");
-
-                        var duration = TimeSpan.FromSeconds(albumTrack.Duration.Value);
-                        var formattedTrackLength =
-                            $"{(duration.Hours == 0 ? "" : $"{duration.Hours}:")}{duration.Minutes}:{duration.Seconds:D2}";
-                        description.Append($"`{formattedTrackLength}`");
-                    }
-
-                    description.AppendLine();
-
-                    var pageNumberDesc = $"Page {pageNumber}/{albumTracks.Count / 12 + 1} - ";
-
-                    tracksDisplayed++;
-                    if (tracksDisplayed > 0 && tracksDisplayed % 12 == 0 || tracksDisplayed == albumTracks.Count)
-                    {
-                        var page = new PageBuilder()
-                            .WithDescription(description.ToString())
-                            .WithTitle($"Track playcounts for {albumName}")
-                            .WithFooter(pageNumberDesc + footer);
-
-                        if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
-                        {
-                            page.WithUrl(url);
-                        }
-
-                        pages.Add(page);
-                        description = new StringBuilder();
-                        pageNumber++;
-                    }
-                }
-            }
-
-            var paginator = StringService.BuildStaticPaginator(pages);
-
-            _ = this.Interactivity.SendPaginatorAsync(
-                paginator,
-                this.Context.Channel,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
 
             this.Context.LogCommandUsed();
         }

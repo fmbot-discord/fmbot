@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Discord;
 using Fergun.Interactive;
@@ -13,6 +14,7 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 
@@ -330,6 +332,141 @@ public class AlbumBuilders
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter(pageFooter.ToString()));
             pageCounter++;
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ResponseType = ResponseType.Paginator;
+        return response;
+    }
+
+    public async Task<ResponseModel> AlbumTracksAsync(
+        ContextModel context,
+        UserSettingsModel userSettings,
+        string searchValue)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm);
+        if (albumSearch.Album == null)
+        {
+            return albumSearch.Response;
+        }
+
+        var albumName = $"{albumSearch.Album.AlbumName} by {albumSearch.Album.ArtistName}";
+
+        var spotifySource = false;
+
+        List<AlbumTrack> albumTracks;
+        if (albumSearch.Album.AlbumTracks != null && albumSearch.Album.AlbumTracks.Any())
+        {
+            albumTracks = albumSearch.Album.AlbumTracks;
+        }
+        else
+        {
+            var dbAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumSearch.Album);
+            dbAlbum.Tracks = await this._spotifyService.GetExistingAlbumTracks(dbAlbum.Id);
+
+            if (dbAlbum?.Tracks != null && dbAlbum.Tracks.Any())
+            {
+                albumTracks = dbAlbum.Tracks.Select(s => new AlbumTrack
+                {
+                    TrackName = s.Name,
+                    ArtistName = albumSearch.Album.ArtistName,
+                    Duration = s.DurationMs / 1000
+                }).ToList();
+                spotifySource = true;
+            }
+            else
+            {
+                response.Embed.WithDescription(
+                    $"Sorry, but neither Last.fm or Spotify know the tracks for {albumName}.");
+                response.CommandResponse = CommandResponse.NotFound;
+                return response;
+            }
+        }
+
+        var artistUserTracks = await this._trackService.GetArtistUserTracks(userSettings.UserId, albumSearch.Album.ArtistName);
+
+        var description = new StringBuilder();
+        var amountOfDiscs = albumTracks.Count(c => c.Rank == 1) == 0 ? 1 : albumTracks.Count(c => c.Rank == 1);
+
+        var pages = new List<PageBuilder>();
+
+        var footer = new StringBuilder();
+
+        footer.AppendLine($"{albumTracks.Count} total tracks");
+        footer.Append(spotifySource ? "Album source: Spotify | " : "Album source: Last.fm | ");
+        footer.Append($"{userSettings.DiscordUserName} has {albumSearch.Album.UserPlaycount} total scrobbles on this album");
+
+        var url = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/music/" +
+                  $"{UrlEncoder.Default.Encode(albumSearch.Album.ArtistName)}/" +
+                  $"{UrlEncoder.Default.Encode(albumSearch.Album.AlbumName)}/";
+
+        var i = 0;
+        var tracksDisplayed = 0;
+        var pageNumber = 1;
+        for (var disc = 1; disc < amountOfDiscs + 1; disc++)
+        {
+            if (amountOfDiscs > 1)
+            {
+                description.AppendLine($"`Disc {disc}`");
+            }
+
+            for (; i < albumTracks.Count; i++)
+            {
+                var albumTrack = albumTracks[i];
+
+                var albumTrackWithPlaycount = artistUserTracks.FirstOrDefault(f =>
+                    StringExtensions.SanitizeTrackNameForComparison(albumTrack.TrackName)
+                        .Equals(StringExtensions.SanitizeTrackNameForComparison(f.Name)));
+
+                description.Append(
+                    $"{i + 1}.");
+
+                description.Append(
+                    $" **{albumTrack.TrackName}**");
+
+                if (albumTrackWithPlaycount != null)
+                {
+                    description.Append(
+                        $" - *{albumTrackWithPlaycount.Playcount} {StringExtensions.GetPlaysString(albumTrackWithPlaycount.Playcount)}*");
+                }
+
+                if (albumTrack.Duration.HasValue)
+                {
+                    description.Append(albumTrackWithPlaycount == null ? " — " : " - ");
+
+                    var duration = TimeSpan.FromSeconds(albumTrack.Duration.Value);
+                    var formattedTrackLength =
+                        $"{(duration.Hours == 0 ? "" : $"{duration.Hours}:")}{duration.Minutes}:{duration.Seconds:D2}";
+                    description.Append($"`{formattedTrackLength}`");
+                }
+
+                description.AppendLine();
+
+                var pageNumberDesc = $"Page {pageNumber}/{albumTracks.Count / 12 + 1} - ";
+
+                tracksDisplayed++;
+                if (tracksDisplayed > 0 && tracksDisplayed % 12 == 0 || tracksDisplayed == albumTracks.Count)
+                {
+                    var page = new PageBuilder()
+                        .WithDescription(description.ToString())
+                        .WithTitle($"Track playcounts for {albumName}")
+                        .WithFooter(pageNumberDesc + footer);
+
+                    if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
+                    {
+                        page.WithUrl(url);
+                    }
+
+                    pages.Add(page);
+                    description = new StringBuilder();
+                    pageNumber++;
+                }
+            }
         }
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
