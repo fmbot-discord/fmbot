@@ -339,10 +339,19 @@ public class PlayBuilder
                 if (currentTrack.AlbumCoverUrl != null && embedType != FmEmbedType.EmbedTiny)
                 {
                     var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
-                        currentTrack.AlbumName, currentTrack.ArtistName, currentTrack.AlbumCoverUrl);
+                        currentTrack.AlbumName, currentTrack.ArtistName, currentTrack.AlbumCoverUrl, usePrivateCover: true);
                     if (safeForChannel.Result)
                     {
-                        response.Embed.WithThumbnailUrl(currentTrack.AlbumCoverUrl);
+                        if (safeForChannel.PrivateCover != null)
+                        {
+                            response.EmbedFooter.Text = response.EmbedFooter.Text += safeForChannel.privateCoverText;
+                            response.Embed.WithFooter(response.EmbedFooter);
+                            response.Embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
+                        }
+                        else
+                        {
+                            response.Embed.WithThumbnailUrl(currentTrack.AlbumCoverUrl);
+                        }
                     }
                     else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
                     {
@@ -382,6 +391,7 @@ public class PlayBuilder
             return response;
         }
 
+        string footerText;
         var requesterUserTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
         var embedTitle = !userSettings.DifferentUser
             ? $"{requesterUserTitle}"
@@ -411,7 +421,14 @@ public class PlayBuilder
                         track.AlbumName, track.ArtistName, track.AlbumCoverUrl);
                     if (safeForChannel.Result)
                     {
-                        response.Embed.WithThumbnailUrl(track.AlbumCoverUrl);
+                        if (safeForChannel.PrivateCover != null)
+                        {
+                            response.Embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
+                        }
+                        else
+                        {
+                            response.Embed.WithThumbnailUrl(track.AlbumCoverUrl);
+                        }
                     }
                     else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
                     {
@@ -434,7 +451,6 @@ public class PlayBuilder
 
         response.Embed.WithDescription(fmRecentText);
 
-        string footerText;
         var firstTrack = recentTracks.Content.RecentTracks[0];
         if (firstTrack.NowPlaying)
         {
