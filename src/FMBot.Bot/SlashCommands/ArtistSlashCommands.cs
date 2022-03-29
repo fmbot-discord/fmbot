@@ -68,7 +68,6 @@ public class ArtistSlashCommands : InteractionModuleBase
         }
     }
 
-
     [SlashCommand("artisttracks", "Shows your top tracks for an artist")]
     [UsernameSetRequired]
     public async Task ArtistTracksAsync(
