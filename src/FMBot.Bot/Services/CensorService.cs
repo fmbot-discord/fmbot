@@ -106,6 +106,9 @@ namespace FMBot.Bot.Services
                 new("Bladee", "ICEDANCER",
                     "https://cdn.discordapp.com/attachments/956641038850732052/958456603345047642/0B66141C-64B7-4916-A36A-4551A171FB2F.jpg",
                     "drasil"),
+                new("Kendrick Lamar", "DAMN.",
+                    "https://media.discordapp.net/attachments/764700402868158464/958520925639295036/Kendrick-Lamar-Damn-album-cover-820.png",
+                    "Subwayy301"),
             };
         }
 
