@@ -65,7 +65,7 @@ namespace FMBot.Bot.Services
                     "https://cdn.discordapp.com/attachments/956641038850732052/956658895433134130/IMG_1966.png",
                     "ori with a gun"),
                 new("Kanye West", "My Beautiful Dark Twisted Fantasy",
-                    "https://cdn.discordapp.com/attachments/827661737758687253/956774847147565137/MBDTF-alt.png",
+                    "https://cdn.discordapp.com/attachments/930575892730773555/959154697099444254/MBDTF-alt.png",
                     "ky"),
                 new("Lorde", "Solar Power",
                     "https://cdn.discordapp.com/attachments/956641038850732052/956664140057956464/Screen_Shot_2022-03-24_at_2.49.54_PM.jpg",
