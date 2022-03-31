@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="Inflatable.Lastfm" Version="1.2.0" />
-    <PackageReference Include="prometheus-net" Version="5.0.2" />
+    <PackageReference Include="prometheus-net" Version="6.0.0" />
   </ItemGroup>
 
 </Project>

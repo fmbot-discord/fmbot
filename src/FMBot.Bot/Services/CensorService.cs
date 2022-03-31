@@ -117,7 +117,7 @@ namespace FMBot.Bot.Services
 
         public async Task<CensorResult> IsSafeForChannel(IGuild guild, IChannel channel, string albumName, string artistName, string url, EmbedBuilder embed = null, bool usePrivateCover = false)
         {
-            if (usePrivateCover && DateTime.UtcNow <= new DateTime(2022, 4, 1))
+            if (usePrivateCover && albumName != null && DateTime.UtcNow <= new DateTime(2022, 4, 1))
             {
                 var privateCover = this._privateCovers.FirstOrDefault(f =>
                     f.AlbumName.ToLower() == albumName.ToLower() &&
