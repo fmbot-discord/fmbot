@@ -133,6 +133,7 @@ namespace FMBot.Bot
                 .AddSingleton<CommandHandler>()
                 .AddSingleton<FeaturedService>()
                 .AddSingleton<FriendsService>()
+                .AddSingleton<FriendBuilders>()
                 .AddSingleton<GeniusService>()
                 .AddSingleton<GenreBuilders>()
                 .AddSingleton<GenreService>()

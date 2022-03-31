@@ -29,7 +29,7 @@ public class AlbumSlashCommands : InteractionModuleBase
 
     [SlashCommand("album", "Shows album info for the album you're currently listening to or searching for")]
     [UsernameSetRequired]
-    public async Task ArtistAsync(
+    public async Task AlbumAsync(
         [Summary("Album", "The artist your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))] string name = null)
     {
@@ -40,6 +40,34 @@ public class AlbumSlashCommands : InteractionModuleBase
         try
         {
             var response = await this._albumBuilders.AlbumAsync(new ContextModel(this.Context, contextUser), name);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            this.Context.LogCommandException(e);
+            await FollowupAsync(
+                "Unable to show your album due to an internal error. Please try again later or contact .fmbot support.",
+                ephemeral: true);
+        }
+    }
+
+    [SlashCommand("albumtracks", "Shows album info for the album you're currently listening to or searching for")]
+    [UsernameSetRequired]
+    public async Task AlbumTracksAsync(
+        [Summary("Album", "The artist your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(AlbumAutoComplete))] string name = null,
+        [Summary("User", "The user to show (defaults to self)")] string user = null)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+
+        try
+        {
+            var response = await this._albumBuilders.AlbumTracksAsync(new ContextModel(this.Context, contextUser), userSettings, name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

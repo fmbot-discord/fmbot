@@ -2,11 +2,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
-using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace FMBot.Bot.Services
 {
@@ -19,13 +17,13 @@ namespace FMBot.Bot.Services
             this._contextFactory = contextFactory;
         }
 
-        public async Task<List<Friend>> GetFmFriendsAsync(IUser discordUser)
+        public async Task<List<Friend>> GetFriendsAsync(ulong discordUserId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var user = await db.Users
                 .Include(i => i.Friends)
                 .ThenInclude(i => i.FriendUser)
-                .FirstOrDefaultAsync(f => f.DiscordUserId == discordUser.Id);
+                .FirstAsync(f => f.DiscordUserId == discordUserId);
 
             var friends = user.Friends
                 .Where(w => w.LastFMUserName != null || w.FriendUser.UserNameLastFM != null)
@@ -34,18 +32,9 @@ namespace FMBot.Bot.Services
             return friends;
         }
 
-        public async Task<int> GetNonFmFriendsCount(int userId)
-        {
-            await using var db = this._contextFactory.CreateDbContext();
-            return await db.Friends
-                .AsQueryable()
-                .Where(w => w.UserId == userId && w.FriendUserId == null)
-                .CountAsync();
-        }
-
         public async Task AddLastFmFriendAsync(User contextUser, string lastFmUserName, int? friendUserId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             
             var friend = new Friend
             {
@@ -61,7 +50,7 @@ namespace FMBot.Bot.Services
 
         public async Task<bool> RemoveLastFmFriendAsync(int userId, string lastFmUserName)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var friend = db.Friends
                 .Include(i => i.FriendUser)
                 .FirstOrDefault(f => f.UserId == userId &&
@@ -83,7 +72,7 @@ namespace FMBot.Bot.Services
 
         public async Task RemoveAllFriendsAsync(int userId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var friends = db.Friends
                 .AsQueryable()
                 .Where(f => f.UserId == userId).ToList();
@@ -97,7 +86,7 @@ namespace FMBot.Bot.Services
 
         public async Task RemoveUserFromOtherFriendsAsync(int userId)
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var friends = db.Friends
                 .AsQueryable()
                 .Where(f => f.FriendUserId == userId).ToList();
@@ -111,7 +100,7 @@ namespace FMBot.Bot.Services
 
         public async Task<int> GetTotalFriendCountAsync()
         {
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             return await db.Friends.AsQueryable().CountAsync();
         }
     }
