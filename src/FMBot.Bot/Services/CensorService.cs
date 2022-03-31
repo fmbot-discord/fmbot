@@ -53,7 +53,7 @@ namespace FMBot.Bot.Services
                     "https://cdn.discordapp.com/attachments/956641038850732052/956642823648710696/no_love_deep_web.png",
                     "blinksu"),
                 new("The Weeknd", "Dawn FM",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/956643114272034896/unknown.png",
+                    "https://cdn.discordapp.com/attachments/956641038850732052/956643204676063332/unknown.png",
                     "Cajmo"),
                 new("Joji", "Ballads 1",
                     "https://cdn.discordapp.com/attachments/956641038850732052/956643755472081017/Joji_-_Ballads_1.jpg",
@@ -103,6 +103,9 @@ namespace FMBot.Bot.Services
                 new("Mac DeMarco", "This Old Dog",
                     "https://cdn.discordapp.com/attachments/956641038850732052/958378118492618834/IMG_6796.png",
                     "blackholefriend"),
+                new("Bladee", "ICEDANCER",
+                    "https://cdn.discordapp.com/attachments/956641038850732052/958456603345047642/0B66141C-64B7-4916-A36A-4551A171FB2F.jpg",
+                    "drasil"),
             };
         }
 
@@ -111,7 +114,7 @@ namespace FMBot.Bot.Services
 
         public async Task<CensorResult> IsSafeForChannel(IGuild guild, IChannel channel, string albumName, string artistName, string url, EmbedBuilder embed = null, bool usePrivateCover = false)
         {
-            if (usePrivateCover)
+            if (usePrivateCover && DateTime.UtcNow <= new DateTime(2022, 4, 1))
             {
                 var privateCover = this._privateCovers.FirstOrDefault(f =>
                     f.AlbumName.ToLower() == albumName.ToLower() &&
