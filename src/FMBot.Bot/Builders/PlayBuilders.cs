@@ -339,19 +339,10 @@ public class PlayBuilder
                 if (currentTrack.AlbumCoverUrl != null && embedType != FmEmbedType.EmbedTiny)
                 {
                     var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
-                        currentTrack.AlbumName, currentTrack.ArtistName, currentTrack.AlbumCoverUrl, usePrivateCover: true);
+                        currentTrack.AlbumName, currentTrack.ArtistName, currentTrack.AlbumCoverUrl);
                     if (safeForChannel.Result)
                     {
-                        if (safeForChannel.PrivateCover != null)
-                        {
-                            response.EmbedFooter.Text = response.EmbedFooter.Text += safeForChannel.privateCoverText;
-                            response.Embed.WithFooter(response.EmbedFooter);
-                            response.Embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
-                        }
-                        else
-                        {
-                            response.Embed.WithThumbnailUrl(currentTrack.AlbumCoverUrl);
-                        }
+                        response.Embed.WithThumbnailUrl(currentTrack.AlbumCoverUrl);
                     }
                     else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
                     {
@@ -421,14 +412,7 @@ public class PlayBuilder
                         track.AlbumName, track.ArtistName, track.AlbumCoverUrl);
                     if (safeForChannel.Result)
                     {
-                        if (safeForChannel.PrivateCover != null)
-                        {
-                            response.Embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
-                        }
-                        else
-                        {
-                            response.Embed.WithThumbnailUrl(track.AlbumCoverUrl);
-                        }
+                        response.Embed.WithThumbnailUrl(track.AlbumCoverUrl);
                     }
                     else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
                     {

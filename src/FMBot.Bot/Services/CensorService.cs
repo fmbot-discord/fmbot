@@ -21,114 +21,17 @@ namespace FMBot.Bot.Services
         private readonly IMemoryCache _cache;
         private readonly BotSettings _botSettings;
 
-        private readonly List<PrivateCover> _privateCovers;
-
         public CensorService(IDbContextFactory<FMBotDbContext> contextFactory, IMemoryCache cache, IOptions<BotSettings> botSettings)
         {
             this._contextFactory = contextFactory;
             this._cache = cache;
             this._botSettings = botSettings.Value;
-
-            this._privateCovers = new List<PrivateCover>
-            {
-                new("Eminem", "The Marshall Mathers LP",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/956641456087527424/unknown.png",
-                    "Frikandel"),
-                new("Ecco2k", "E",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/956641740541009950/ecco2k.png",
-                    "Voaz"),
-                new("Weezer", "Weezer",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/956641867095756850/weezer.png",
-                    "twojett"),
-                new("Nirvana", "Nevermind (Remastered)",
-                    "https://i.imgur.com/OMwf8v2.png",
-                    "manlethamlet"),
-                new("Nirvana", "Nevermind",
-                    "https://i.imgur.com/OMwf8v2.png",
-                    "manlethamlet"),
-                new("Tyler, the Creator", "IGOR",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/956642020338856026/fmbotigor.png",
-                    "Pingu"),
-                new("Death Grips", "No Love Deep Web",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/956642823648710696/no_love_deep_web.png",
-                    "blinksu"),
-                new("The Weeknd", "Dawn FM",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/956643204676063332/unknown.png",
-                    "Cajmo"),
-                new("Joji", "Ballads 1",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/956643755472081017/Joji_-_Ballads_1.jpg",
-                    "Winterbay"),
-                new("Radiohead", "OK Computer",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/956655681765769216/IMG_6592.png",
-                    "firefly"),
-                new("Gorillaz", "Plastic Beach",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/956658895433134130/IMG_1966.png",
-                    "ori with a gun"),
-                new("Kanye West", "My Beautiful Dark Twisted Fantasy",
-                    "https://cdn.discordapp.com/attachments/930575892730773555/959154697099444254/MBDTF-alt.png",
-                    "ky"),
-                new("Lorde", "Solar Power",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/956664140057956464/Screen_Shot_2022-03-24_at_2.49.54_PM.jpg",
-                    "arap"),
-                new("Baby Keem", "The Melodic Blue",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/956665642885468240/unknown.png",
-                    "Kefkefk123"),
-                new("Tame Impala", "Currents",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/956667532771729478/unknown.png",
-                    "Fincy"),
-                new("bladee", "Crest",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/957363629567660074/bladee.png",
-                    "kvltkvm"),
-                new("Kanye West", "The Life of Pablo",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/957406020597080094/tlop-alt.png",
-                    "peeno24"),
-                new("Playboi Carti", "Whole Lotta Red",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/957480967465992222/wlr.png",
-                    "Digestive520"),
-                new("Mitski", "Be the Cowboy",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/957523399251464253/even_better_masterpiece.png",
-                    "starifshes"),
-                new("Travis Scott", "ASTROWORLD",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/958273608298418186/a.jpg",
-                    "Lingered"),
-                new("Death Grips", "The Money Store",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/958278631875031070/the_money_store.png",
-                    "Lyren"),
-                new("C418", "Minecraft - Volume Alpha",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/958292660903358464/unknown.png",
-                    "Regor"),
-                new("Frank Ocean", "Blonde",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/958301501405687828/square-1471882460-frank-ocean-blonde.png",
-                    "Subwayy301"),
-                new("Mac DeMarco", "This Old Dog",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/958378118492618834/IMG_6796.png",
-                    "blackholefriend"),
-                new("Bladee", "ICEDANCER",
-                    "https://cdn.discordapp.com/attachments/956641038850732052/958456603345047642/0B66141C-64B7-4916-A36A-4551A171FB2F.jpg",
-                    "drasil"),
-                new("Kendrick Lamar", "DAMN.",
-                    "https://media.discordapp.net/attachments/764700402868158464/958520925639295036/Kendrick-Lamar-Damn-album-cover-820.png",
-                    "Subwayy301"),
-            };
         }
 
-        public record CensorResult(bool Result, string AlternativeCover = null, PrivateCover PrivateCover = null, string privateCoverText = null);
-        public record PrivateCover(string ArtistName, string AlbumName, string Url, string Source);
+        public record CensorResult(bool Result, string AlternativeCover = null);
 
-        public async Task<CensorResult> IsSafeForChannel(IGuild guild, IChannel channel, string albumName, string artistName, string url, EmbedBuilder embed = null, bool usePrivateCover = false)
+        public async Task<CensorResult> IsSafeForChannel(IGuild guild, IChannel channel, string albumName, string artistName, string url, EmbedBuilder embed = null)
         {
-            if (usePrivateCover && albumName != null && DateTime.UtcNow <= new DateTime(2022, 4, 1))
-            {
-                var privateCover = this._privateCovers.FirstOrDefault(f =>
-                    f.AlbumName.ToLower() == albumName.ToLower() &&
-                    f.ArtistName.ToLower() == artistName.ToLower());
-
-                if (privateCover != null)
-                {
-                    return new CensorResult(true, privateCover.Url, privateCover, $"\nAdvanced Copyright Avoidance System Activated! Source: {privateCover.Source}");
-                }
-            }
-
             if (!await AlbumIsSafe(albumName, artistName))
             {
                 var allowedInNsfw = await AlbumIsAllowedInNsfw(albumName, artistName);

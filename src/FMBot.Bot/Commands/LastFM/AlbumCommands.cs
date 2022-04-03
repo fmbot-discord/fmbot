@@ -220,7 +220,7 @@ public class AlbumCommands : BaseCommandModule
             }
 
             var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
-                album.AlbumName, album.ArtistName, album.AlbumUrl, this._embed, usePrivateCover: true);
+                album.AlbumName, album.ArtistName, album.AlbumUrl, this._embed);
 
             if (safeForChannel.AlternativeCover != null)
             {
@@ -247,11 +247,6 @@ public class AlbumCommands : BaseCommandModule
             this._embed.WithDescription($"**{album.ArtistName} - [{album.AlbumName}]({album.AlbumUrl})**");
             this._embedFooter.WithText(
                 $"Album cover requested by {await this._userService.GetUserTitleAsync(this.Context)}");
-
-            if (safeForChannel.PrivateCover != null)
-            {
-                this._embedFooter.Text = this._embedFooter.Text += safeForChannel.privateCoverText;
-            }
 
             this._embed.WithFooter(this._embedFooter);
 
@@ -556,19 +551,10 @@ public class AlbumCommands : BaseCommandModule
             if (albumCoverUrl != null)
             {
                 var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
-                    album.AlbumName, album.ArtistName, album.AlbumUrl, usePrivateCover: true);
+                    album.AlbumName, album.ArtistName, album.AlbumUrl);
                 if (safeForChannel.Result)
                 {
-                    if (safeForChannel.PrivateCover != null)
-                    {
-                        this._embedFooter.Text = this._embedFooter.Text += safeForChannel.privateCoverText;
-                        this._embed.WithFooter(this._embedFooter);
-                        this._embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
-                    }
-                    else
-                    {
-                        this._embed.WithThumbnailUrl(albumCoverUrl);
-                    }
+                    this._embed.WithThumbnailUrl(albumCoverUrl);
                 }
                 else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
                 {
@@ -721,19 +707,10 @@ public class AlbumCommands : BaseCommandModule
             if (albumCoverUrl != null)
             {
                 var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
-                    album.AlbumName, album.ArtistName, album.AlbumUrl, usePrivateCover: true);
+                    album.AlbumName, album.ArtistName, album.AlbumUrl);
                 if (safeForChannel.Result)
                 {
-                    if (safeForChannel.PrivateCover != null)
-                    {
-                        this._embedFooter.Text = this._embedFooter.Text += safeForChannel.privateCoverText;
-                        this._embed.WithFooter(this._embedFooter);
-                        this._embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
-                    }
-                    else
-                    {
-                        this._embed.WithThumbnailUrl(albumCoverUrl);
-                    }
+                    this._embed.WithThumbnailUrl(albumCoverUrl);
                 }
                 else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
                 {
@@ -861,19 +838,10 @@ public class AlbumCommands : BaseCommandModule
             if (albumCoverUrl != null)
             {
                 var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
-                    album.AlbumName, album.ArtistName, album.AlbumUrl, usePrivateCover: true);
+                    album.AlbumName, album.ArtistName, album.AlbumUrl);
                 if (safeForChannel.Result)
                 {
-                    if (safeForChannel.PrivateCover != null)
-                    {
-                        this._embedFooter.Text = this._embedFooter.Text += safeForChannel.privateCoverText;
-                        this._embed.WithFooter(this._embedFooter);
-                        this._embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
-                    }
-                    else
-                    {
-                        this._embed.WithThumbnailUrl(albumCoverUrl);
-                    }
+                    this._embed.WithThumbnailUrl(albumCoverUrl);
                 }
                 else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
                 {
