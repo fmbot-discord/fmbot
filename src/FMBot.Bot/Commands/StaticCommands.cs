@@ -136,7 +136,7 @@ namespace FMBot.Bot.Commands
             embedDescription.AppendLine($"Unfortunately, Last.fm and Spotify sometimes have issues keeping up to date with your current song, which can cause `{prfx}fm` and other commands to lag behind the song you're currently listening to.");
             embedDescription.AppendLine();
             embedDescription.Append("First, **.fmbot is not affiliated with Last.fm**. Your music is tracked by Last.fm, and not by .fmbot. ");
-            embedDescription.AppendLine("This means that this is a Last.fm issue and **not an .fmbot issue**. We can't fix it for you, but we can give you some tips that worked for others.");
+            embedDescription.AppendLine("This means that this is a Last.fm issue and **not an .fmbot issue**. __We can't fix it for you__, but we can give you some tips that worked for others.");
             embedDescription.AppendLine();
             embedDescription.AppendLine("Some things you can try that usually work:");
             embedDescription.AppendLine(" - Restarting your Spotify application");
@@ -145,6 +145,12 @@ namespace FMBot.Bot.Commands
             embedDescription.AppendLine("If the two options above don't work, check out **[the complete guide for this issue on the Last.fm support forums](https://support.last.fm/t/spotify-has-stopped-scrobbling-what-can-i-do/3184)**.");
 
             this._embed.WithDescription(embedDescription.ToString());
+
+            if (PublicProperties.IssuesAtLastFm)
+            {
+                this._embed.AddField("Note:", "⚠️ [Last.fm](https://twitter.com/lastfmstatus) is currently experiencing issues, so the steps listed above might not work. " +
+                                              ".fmbot is not affiliated with Last.fm.");
+            }
 
             var components = new ComponentBuilder()
                 .WithButton("Last.fm settings", style: ButtonStyle.Link, url: "https://www.last.fm/settings/applications")
@@ -383,8 +389,6 @@ namespace FMBot.Bot.Commands
 
                             var selectedCommands = this._service.Commands.Where(w =>
                                 w.Attributes.OfType<CommandCategoriesAttribute>().Select(s => s.Categories).Any(a => a.Contains(selectedCategory))).ToList();
-
-                            Console.WriteLine(selectedCategory);
 
                             if (selectedCommands.Any())
                             {
