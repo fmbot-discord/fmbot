@@ -29,6 +29,8 @@ public class ResponseModel
 
     public StaticPaginator StaticPaginator { get; set; }
 
+    public PagedSelection<string> PagedSelection { get; set; }
+
     public CommandResponse CommandResponse { get; set; }
 }
 

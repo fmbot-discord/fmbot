@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Discord;
 using Fergun.Interactive;
+using Fergun.Interactive.Pagination;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
@@ -454,21 +456,21 @@ public class GenreBuilders
         }
         response.EmbedAuthor.WithName($"Top '{genre.GenreName.Transform(To.TitleCase)}' artists for {userTitle}");
 
-        var genrePages = genre.Artists.ChunkBy(10);
+        var genreArtistsPages = genre.Artists.ChunkBy(10);
 
         var counter = 1;
         var pageCounter = 1;
-        foreach (var genrePage in genrePages)
+        foreach (var genreArtistPage in genreArtistsPages)
         {
             var genrePageString = new StringBuilder();
-            foreach (var genreArtist in genrePage)
+            foreach (var genreArtist in genreArtistPage)
             {
                 genrePageString.AppendLine($"{counter}. **{genreArtist.ArtistName}** ({genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)})");
                 counter++;
             }
 
             var footer = $"Genre source: Spotify\n" +
-                         $"Page {pageCounter}/{genrePages.Count} - {genre.Artists.Count} total artists";
+                         $"Page {pageCounter}/{genreArtistsPages.Count} - {genre.Artists.Count} total artists";
 
             pages.Add(new PageBuilder()
                 .WithDescription(genrePageString.ToString())
@@ -477,8 +479,45 @@ public class GenreBuilders
             pageCounter++;
         }
 
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
-        response.ResponseType = ResponseType.Paginator;
+        var results = new Dictionary<string, List<PageBuilder>>
+        {
+            { "User", pages },
+            { "Server", pages },
+        };
+
+        var options = results
+            .ToDictionary(x => x.Key, x =>
+                new LazyPaginatorBuilder()
+                    .WithPageFactory(index => GeneratePage(x.Value, x.Key, index))
+                    .WithMaxPageIndex(x.Value.Count - 1)
+                    .WithActionOnCancellation(ActionOnStop.DisableInput)
+                    .WithActionOnTimeout(ActionOnStop.DisableInput)
+                    .WithFooter(PaginatorFooter.None)
+                    .WithOptions(DiscordConstants.PaginationEmotes)
+                    .Build() as Paginator);
+
+        var first = options.First().Key;
+        var initialPage = GeneratePage(results[first], first, 0);
+
+        var pagedSelection = new PagedSelectionBuilder<string>()
+            .WithOptions(options)
+            .WithSelectionPage(initialPage)
+            .WithActionOnTimeout(ActionOnStop.DeleteInput)
+            .WithActionOnCancellation(ActionOnStop.DisableInput)
+            .Build();
+
+        response.PagedSelection = pagedSelection;
+        response.ResponseType = ResponseType.PagedSelection;
         return response;
+    }
+
+    private static PageBuilder GeneratePage(IReadOnlyList<PageBuilder> pages, string scraper, int index)
+    {
+        return new PageBuilder()
+            .WithTitle(pages[index].Title)
+            .WithAuthor(pages[index].Author)
+            .WithDescription(pages[index].Description)
+            .WithImageUrl(pages[index].Url)
+            .WithFooter(pages[index].Footer);
     }
 }

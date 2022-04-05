@@ -47,6 +47,12 @@ namespace FMBot.Bot.Extensions
                         context.Channel,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
                     break;
+                case ResponseType.PagedSelection:
+                    _ = interactiveService.SendSelectionAsync(
+                        response.PagedSelection,
+                        context.Channel,
+                        TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
