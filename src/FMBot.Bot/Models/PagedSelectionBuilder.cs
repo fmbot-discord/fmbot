@@ -9,6 +9,7 @@ using Fergun.Interactive;
 using Fergun.Interactive.Extensions;
 using Fergun.Interactive.Pagination;
 using Fergun.Interactive.Selection;
+using FMBot.Bot.Resources;
 
 namespace FMBot.Bot.Models;
 
@@ -118,6 +119,34 @@ public class PagedSelection<TOption> : BaseSelection<KeyValuePair<TOption, Pagin
         {
             KeyValuePair<TOption, Paginator> selected = default;
             string selectedString = null;
+
+            foreach (var value in this.Options)
+            {
+                var stringValue = this.EmoteConverter?.Invoke(value)?.ToString() ?? this.StringConverter?.Invoke(value);
+                if (option != stringValue) continue;
+                selected = value;
+                selectedString = stringValue;
+                break;
+            }
+
+            if (selectedString is null) return InteractiveInputStatus.Ignored;
+
+            this.CurrentOption = selected.Key;
+
+            var isCanceled = this.AllowCancel &&
+                             (this.EmoteConverter?.Invoke(this.CancelOption)?.ToString() ??
+                              this.StringConverter?.Invoke(this.CancelOption)) == selectedString;
+
+            if (isCanceled)
+                return new InteractiveInputResult<KeyValuePair<TOption, Paginator>>(InteractiveInputStatus.Canceled,
+                    selected);
+        }
+        if (input.Data.Type == ComponentType.Button && input.Data.CustomId == DiscordConstants.JumpEmote)
+        {
+            KeyValuePair<TOption, Paginator> selected = default;
+            string selectedString = null;
+
+            option = "Server";
 
             foreach (var value in this.Options)
             {

@@ -479,35 +479,35 @@ public class GenreBuilders
             pageCounter++;
         }
 
-        var results = new Dictionary<string, List<PageBuilder>>
-        {
-            { "User", pages },
-            { "Server", pages },
-        };
+        //var results = new Dictionary<string, List<PageBuilder>>
+        //{
+        //    { "User", pages },
+        //    { "Server", pages },
+        //};
 
-        var options = results
-            .ToDictionary(x => x.Key, x =>
-                new LazyPaginatorBuilder()
-                    .WithPageFactory(index => GeneratePage(x.Value, x.Key, index))
-                    .WithMaxPageIndex(x.Value.Count - 1)
-                    .WithActionOnCancellation(ActionOnStop.DisableInput)
-                    .WithActionOnTimeout(ActionOnStop.DisableInput)
-                    .WithFooter(PaginatorFooter.None)
-                    .WithOptions(DiscordConstants.PaginationEmotes)
-                    .Build() as Paginator);
+        //var options = results
+        //    .ToDictionary(x => x.Key, x =>
+        //        new LazyPaginatorBuilder()
+        //            .WithPageFactory(index => GeneratePage(x.Value, x.Key, index))
+        //            .WithMaxPageIndex(x.Value.Count - 1)
+        //            .WithActionOnCancellation(ActionOnStop.DisableInput)
+        //            .WithActionOnTimeout(ActionOnStop.DisableInput)
+        //            .WithFooter(PaginatorFooter.None)
+        //            .WithOptions(DiscordConstants.PaginationEmotes)
+        //            .Build() as Paginator);
 
-        var first = options.First().Key;
-        var initialPage = GeneratePage(results[first], first, 0);
+        //var first = options.First().Key;
+        //var initialPage = GeneratePage(results[first], first, 0);
 
-        var pagedSelection = new PagedSelectionBuilder<string>()
-            .WithOptions(options)
-            .WithSelectionPage(initialPage)
-            .WithActionOnTimeout(ActionOnStop.DeleteInput)
-            .WithActionOnCancellation(ActionOnStop.DisableInput)
-            .Build();
+        //var pagedSelection = new PagedSelectionBuilder<string>()
+        //    .WithOptions(options)
+        //    .WithSelectionPage(initialPage)
+        //    .WithActionOnTimeout(ActionOnStop.DeleteInput)
+        //    .WithActionOnCancellation(ActionOnStop.DisableInput)
+        //    .Build();
 
-        response.PagedSelection = pagedSelection;
-        response.ResponseType = ResponseType.PagedSelection;
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ResponseType = ResponseType.Paginator;
         return response;
     }
 
@@ -516,7 +516,7 @@ public class GenreBuilders
         return new PageBuilder()
             .WithTitle(pages[index].Title)
             .WithAuthor(pages[index].Author)
-            .WithDescription(pages[index].Description)
+            .WithDescription(pages[index].Description + $"{scraper}")
             .WithImageUrl(pages[index].Url)
             .WithFooter(pages[index].Footer);
     }
