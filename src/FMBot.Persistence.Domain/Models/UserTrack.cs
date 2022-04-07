@@ -2,7 +2,7 @@ namespace FMBot.Persistence.Domain.Models
 {
     public class UserTrack
     {
-        public int UserTrackId { get; set; }
+        public long UserTrackId { get; set; }
 
         public int UserId { get; set; }
 

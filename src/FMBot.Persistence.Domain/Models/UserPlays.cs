@@ -4,7 +4,7 @@ namespace FMBot.Persistence.Domain.Models
 {
     public class UserPlay
     {
-        public int UserPlayId { get; set; }
+        public long UserPlayId { get; set; }
 
         public int UserId { get; set; }
 

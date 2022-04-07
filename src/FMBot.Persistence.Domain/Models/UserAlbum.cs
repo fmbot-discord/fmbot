@@ -4,7 +4,7 @@ namespace FMBot.Persistence.Domain.Models
 {
     public class UserAlbum
     {
-        public int UserAlbumId { get; set; }
+        public long UserAlbumId { get; set; }
 
         public int UserId { get; set; }
 
