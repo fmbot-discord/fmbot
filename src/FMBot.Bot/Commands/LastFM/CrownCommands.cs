@@ -65,6 +65,8 @@ namespace FMBot.Bot.Commands.LastFM
         public async Task UserCrownsAsync([Remainder] string extraOptions = null)
         {
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
 
@@ -77,28 +79,16 @@ namespace FMBot.Bot.Commands.LastFM
 
             var userTitle = await this._userService.GetUserTitleAsync(this.Context);
 
-            var differentUser = false;
-            if (!string.IsNullOrWhiteSpace(extraOptions))
-            {
-                var userSettings = await this._settingService.StringWithDiscordIdForUser(extraOptions);
-
-                if (userSettings != null)
-                {
-                    contextUser = userSettings;
-                    differentUser = true;
-                }
-            }
-
             var crownViewSettings = new CrownViewSettings
             {
                 CrownOrderType = CrownOrderType.Playcount
             };
 
             crownViewSettings = SettingService.SetCrownViewSettings(crownViewSettings, extraOptions);
-            var userCrowns = await this._crownService.GetCrownsForUser(guild, contextUser.UserId, crownViewSettings.CrownOrderType);
+            var userCrowns = await this._crownService.GetCrownsForUser(guild, userSettings.UserId, crownViewSettings.CrownOrderType);
 
-            var title = differentUser
-                ? $"Crowns for {contextUser.UserNameLastFM}, requested by {userTitle}"
+            var title = userSettings.DifferentUser
+                ? $"Crowns for {userSettings.UserNameLastFm}, requested by {userTitle}"
                 : $"Crowns for {userTitle}";
 
             if (!userCrowns.Any())
