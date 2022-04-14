@@ -526,42 +526,54 @@ namespace FMBot.Bot.Commands.Guild
 
                 if (currentDisabledCommands != null && currentDisabledCommands.Any(a => a.Equals(foundCommand.Name.ToLower())))
                 {
-                    enabledCommands.Add(command);
+                    enabledCommands.Add(foundCommand.Name);
                 }
                 else
                 {
-                    disabledCommands.Add(command);
+                    disabledCommands.Add(foundCommand.Name);
                 }
             }
 
             try
             {
-
-
-
                 if (enabledCommands.Any())
                 {
                     await this._guildService.EnableChannelCommandsAsync(this.Context.Channel, enabledCommands, this.Context.Guild.Id);
+
                     var newlyEnabledCommands = new StringBuilder();
-                    foreach (var enabledCommand in enabledCommands)
+                    var maxCommandsToDisplay = enabledCommands.Count > 8 ? 8 : enabledCommands.Count;
+                    for (var index = 0; index < maxCommandsToDisplay; index++)
                     {
+                        var enabledCommand = enabledCommands[index];
                         newlyEnabledCommands.Append($"`{enabledCommand}` ");
                     }
+                    if (enabledCommands.Count > 8)
+                    {
+                        newlyEnabledCommands.Append($" and {enabledCommands.Count - 8} other commands");
+                    }
 
-                    this._embed.AddField("Commands enabled", newlyEnabledCommands.ToString());
+                    this._embed.AddField("Commands enabled", StringExtensions.TruncateLongString(newlyEnabledCommands.ToString(), 1010));
                 }
+
                 if (disabledCommands.Any())
                 {
                     await this._guildService.DisableChannelCommandsAsync(this.Context.Channel, guild.GuildId, disabledCommands, this.Context.Guild.Id);
 
                     var newlyDisabledCommands = new StringBuilder();
-                    foreach (var disabledCommand in disabledCommands)
+                    var maxCommandsToDisplay = disabledCommands.Count > 8 ? 8 : disabledCommands.Count;
+                    for (var index = 0; index < maxCommandsToDisplay; index++)
                     {
+                        var disabledCommand = disabledCommands[index];
                         newlyDisabledCommands.Append($"`{disabledCommand}` ");
                     }
+                    if (disabledCommands.Count > 8)
+                    {
+                        newlyDisabledCommands.Append($" and {disabledCommands.Count - 8} other commands");
+                    }
 
-                    this._embed.AddField("Commands disabled", newlyDisabledCommands.ToString());
+                    this._embed.AddField("Commands disabled", StringExtensions.TruncateLongString(newlyDisabledCommands.ToString(), 1010));
                 }
+
                 if (unknownCommands.Any())
                 {
                     var unavailableCommands = new StringBuilder();
@@ -570,16 +582,22 @@ namespace FMBot.Bot.Commands.Guild
                         unavailableCommands.Append($"`{unknownCommand}` ");
                     }
 
-                    this._embed.AddField("Unknown or unavailable commands", unavailableCommands.ToString());
+                    this._embed.AddField("Unknown or unavailable commands", StringExtensions.TruncateLongString(unavailableCommands.ToString(), 1010));
                 }
 
                 var newDisabledCommands = await this._guildService.GetDisabledCommandsForChannel(this.Context.Channel);
                 this._channelDisabledCommandService.StoreDisabledCommands(newDisabledCommands.ToArray(), this.Context.Channel.Id);
 
                 var currentlyDisabled = new StringBuilder();
-                foreach (var newDisabledCommand in newDisabledCommands)
+                var maxNewCommandsToDisplay = newDisabledCommands.Count > 32 ? 32 : newDisabledCommands.Count;
+                for (var index = 0; index < maxNewCommandsToDisplay; index++)
                 {
+                    var newDisabledCommand = newDisabledCommands[index];
                     currentlyDisabled.Append($"`{newDisabledCommand}` ");
+                }
+                if (newDisabledCommands.Count > 32)
+                {
+                    currentlyDisabled.Append($" and {newDisabledCommands.Count - 32} other commands");
                 }
 
                 this._embed.AddField("Commands currently disabled in this channel", currentlyDisabled.Length > 0 ? currentlyDisabled.ToString() : "All commands enabled.");
