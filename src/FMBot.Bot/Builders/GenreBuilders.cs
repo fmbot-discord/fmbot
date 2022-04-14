@@ -285,7 +285,8 @@ public class GenreBuilders
 
     public async Task<ResponseModel> GenreAsync(
         ContextModel context,
-        string genreOptions)
+        string genreOptions,
+        Guild guild)
     {
         var response = new ResponseModel
         {
@@ -426,9 +427,16 @@ public class GenreBuilders
             return response;
         }
 
-        var genresWithArtists = await this._genreService.GetArtistsForGenres(genres, topArtists);
+        var topGuildArtists = await this._whoKnowsArtistService.GetTopAllTimeArtistsForGuild(guild.GuildId, OrderType.Playcount, limit: null);
 
-        if (!genresWithArtists.Any())
+        var userArtistsWithGenres = await this._genreService.GetArtistsForGenres(genres, topArtists);
+        var guildArtistsWithGenres = await this._genreService.GetArtistsForGenres(genres, topGuildArtists.Select(s => new TopArtist
+        {
+            ArtistName = s.ArtistName,
+            UserPlaycount = s.TotalPlaycount
+        }).ToList());
+
+        if (!userArtistsWithGenres.Any())
         {
             response.Embed.WithDescription("Sorry, we couldn't find any top artists for your selected genres.");
             response.CommandResponse = CommandResponse.NotFound;
@@ -437,14 +445,14 @@ public class GenreBuilders
         }
 
         var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
-        var pages = new List<PageBuilder>();
 
-        var genre = genresWithArtists.First();
+        var userGenre = userArtistsWithGenres.First();
+        var guildGenre = guildArtistsWithGenres.First();
 
-        if (!genre.Artists.Any())
+        if (!userGenre.Artists.Any() || !guildGenre.Artists.Any())
         {
             response.Embed.WithDescription(
-                "Sorry, we don't have any registered artists for you for the genre you're searching for.");
+                "Sorry, we don't have any registered artists for the genre you're searching for.");
             response.CommandResponse = CommandResponse.NotFound;
             response.ResponseType = ResponseType.Embed;
             return response;
@@ -454,70 +462,92 @@ public class GenreBuilders
         {
             response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
         }
-        response.EmbedAuthor.WithName($"Top '{genre.GenreName.Transform(To.TitleCase)}' artists for {userTitle}");
 
-        var genreArtistsPages = genre.Artists.ChunkBy(10);
+        var userGenreArtistPages = userGenre.Artists.ChunkBy(10);
+        var guildGenreArtistPages = guildGenre.Artists.ChunkBy(10);
+
+        var results = new Dictionary<string, List<PageBuilder>>
+        {
+            { "user", GetPageBuilders(userGenreArtistPages, response.EmbedAuthor, userGenre) },
+            { "server", GetPageBuilders(guildGenreArtistPages, response.EmbedAuthor, guildGenre, userGenre.Artists) },
+        };
+
+        var options = results
+            .ToDictionary(x => x.Key, x =>
+                new LazyPaginatorBuilder()
+                    .WithPageFactory(index => GeneratePage(x.Value, x.Key, index, userGenre.GenreName, x.Key == "server" ? context.DiscordGuild.Name : userTitle))
+                    .WithMaxPageIndex(x.Value.Count - 1)
+                    .WithActionOnCancellation(ActionOnStop.DisableInput)
+                    .WithActionOnTimeout(ActionOnStop.DisableInput)
+                    .WithFooter(PaginatorFooter.None)
+                    .WithOptions(x.Key == "server" ? DiscordConstants.PaginationGuildEmotes : DiscordConstants.PaginationUserEmotes)
+                    .Build() as Paginator);
+
+        var first = options.First().Key;
+        var initialPage = GeneratePage(results[first], first, 0, userGenre.GenreName, first == "server" ? context.DiscordGuild.Name : userTitle);
+
+        var pagedSelection = new PagedSelectionBuilder<string>()
+            .WithOptions(options)
+            .WithSelectionPage(initialPage)
+            .WithActionOnTimeout(ActionOnStop.DeleteInput)
+            .WithActionOnCancellation(ActionOnStop.DisableInput)
+            .Build();
+
+        response.PagedSelection = pagedSelection;
+        response.ResponseType = ResponseType.PagedSelection;
+        return response;
+    }
+
+    private List<PageBuilder> GetPageBuilders(List<List<TopArtist>> topArtists, EmbedAuthorBuilder author, TopGenre topGenre, List<TopArtist> allUserTopArtists = null)
+    {
+        var pages = new List<PageBuilder>();
+        if (!topArtists.Any())
+        {
+            pages.Add(new PageBuilder()
+                .WithDescription("No results. Try the other paginator with the button on the bottom right below.")
+                .WithAuthor(author));
+        }
 
         var counter = 1;
         var pageCounter = 1;
-        foreach (var genreArtistPage in genreArtistsPages)
+        foreach (var genreArtistPage in topArtists)
         {
             var genrePageString = new StringBuilder();
             foreach (var genreArtist in genreArtistPage)
             {
-                genrePageString.AppendLine($"{counter}. **{genreArtist.ArtistName}** ({genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)})");
+                var counterString = $"{counter}.";
+                if (allUserTopArtists != null)
+                {
+                    var userTopArtist = allUserTopArtists.FirstOrDefault(f => f.ArtistName.ToLower() == genreArtist.ArtistName.ToLower());
+                    if (userTopArtist != null)
+                    {
+                        counterString = $"**{counter}.**";
+                    }
+                }
+
+                genrePageString.AppendLine($"{counterString} **{genreArtist.ArtistName}** ({genreArtist.UserPlaycount} {StringExtensions.GetPlaysString(genreArtist.UserPlaycount)})");
                 counter++;
             }
 
             var footer = $"Genre source: Spotify\n" +
-                         $"Page {pageCounter}/{genreArtistsPages.Count} - {genre.Artists.Count} total artists";
+                         $"Page {pageCounter}/{topArtists.Count} - {topGenre.Artists.Count} total artists";
 
             pages.Add(new PageBuilder()
                 .WithDescription(genrePageString.ToString())
-                .WithAuthor(response.EmbedAuthor)
+                .WithAuthor(author)
                 .WithFooter(footer));
             pageCounter++;
         }
 
-        //var results = new Dictionary<string, List<PageBuilder>>
-        //{
-        //    { "User", pages },
-        //    { "Server", pages },
-        //};
-
-        //var options = results
-        //    .ToDictionary(x => x.Key, x =>
-        //        new LazyPaginatorBuilder()
-        //            .WithPageFactory(index => GeneratePage(x.Value, x.Key, index))
-        //            .WithMaxPageIndex(x.Value.Count - 1)
-        //            .WithActionOnCancellation(ActionOnStop.DisableInput)
-        //            .WithActionOnTimeout(ActionOnStop.DisableInput)
-        //            .WithFooter(PaginatorFooter.None)
-        //            .WithOptions(DiscordConstants.PaginationEmotes)
-        //            .Build() as Paginator);
-
-        //var first = options.First().Key;
-        //var initialPage = GeneratePage(results[first], first, 0);
-
-        //var pagedSelection = new PagedSelectionBuilder<string>()
-        //    .WithOptions(options)
-        //    .WithSelectionPage(initialPage)
-        //    .WithActionOnTimeout(ActionOnStop.DeleteInput)
-        //    .WithActionOnCancellation(ActionOnStop.DisableInput)
-        //    .Build();
-
-        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
-        response.ResponseType = ResponseType.Paginator;
-        return response;
+        return pages;
     }
 
-    private static PageBuilder GeneratePage(IReadOnlyList<PageBuilder> pages, string scraper, int index)
+    private static PageBuilder GeneratePage(IReadOnlyList<PageBuilder> pages, string scraper, int index, string genre, string userTitle)
     {
         return new PageBuilder()
-            .WithTitle(pages[index].Title)
-            .WithAuthor(pages[index].Author)
-            .WithDescription(pages[index].Description + $"{scraper}")
+            .WithAuthor(pages[index].Author.WithName($"Top '{genre.Transform(To.TitleCase)}' artists for {userTitle}"))
+            .WithDescription(pages[index].Description)
             .WithImageUrl(pages[index].Url)
-            .WithFooter(pages[index].Footer);
+            .WithFooter($"{scraper}\n" + pages[index].Footer.Text);
     }
 }

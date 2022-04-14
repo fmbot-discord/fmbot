@@ -73,37 +73,11 @@ public class PagedSelection<TOption> : BaseSelection<KeyValuePair<TOption, Pagin
     public override ComponentBuilder GetOrAddComponents(bool disableAll, ComponentBuilder builder = null)
     {
         builder ??= new ComponentBuilder();
+        
         var paginator = this.Options[this.CurrentOption];
 
         // add paginator components to the builder
         paginator.GetOrAddComponents(disableAll, builder);
-
-        // select menu
-        var options = new List<SelectMenuOptionBuilder>();
-
-        foreach (var selection in this.Options)
-        {
-            var emote = this.EmoteConverter?.Invoke(selection);
-            var label = this.StringConverter?.Invoke(selection);
-            if (emote is null && label is null)
-                throw new InvalidOperationException(
-                    $"Neither {nameof(this.EmoteConverter)} nor {nameof(this.StringConverter)} returned a valid emote or string.");
-
-            var option = new SelectMenuOptionBuilder()
-                .WithLabel(label)
-                .WithEmote(emote)
-                .WithDefault(Equals(selection.Key, this.CurrentOption))
-                .WithValue(emote?.ToString() ?? label);
-
-            options.Add(option);
-        }
-
-        var selectMenu = new SelectMenuBuilder()
-            .WithCustomId("foobar")
-            .WithOptions(options)
-            .WithDisabled(disableAll);
-
-        builder.WithSelectMenu(selectMenu);
 
         return builder;
     }
@@ -113,64 +87,30 @@ public class PagedSelection<TOption> : BaseSelection<KeyValuePair<TOption, Pagin
     {
         if (input.Message.Id != message.Id || !this.CanInteract(input.User)) return InteractiveInputStatus.Ignored;
 
-        var option = input.Data.Values?.FirstOrDefault();
-
-        if (input.Data.Type == ComponentType.SelectMenu && option is not null)
+        if (input.Data.Type == ComponentType.Button &&
+            input.Data.CustomId is DiscordConstants.JumpToGuildEmote or DiscordConstants.JumpToUserEmote)
         {
+            var option = input.Data.CustomId == DiscordConstants.JumpToGuildEmote ? "server" : "user";
+
             KeyValuePair<TOption, Paginator> selected = default;
-            string selectedString = null;
 
             foreach (var value in this.Options)
             {
-                var stringValue = this.EmoteConverter?.Invoke(value)?.ToString() ?? this.StringConverter?.Invoke(value);
-                if (option != stringValue) continue;
+                var stringValue = this.StringConverter?.Invoke(value);
+                if (option != stringValue)
+                {
+                    continue;
+                }
+
                 selected = value;
-                selectedString = stringValue;
                 break;
             }
 
-            if (selectedString is null) return InteractiveInputStatus.Ignored;
-
             this.CurrentOption = selected.Key;
-
-            var isCanceled = this.AllowCancel &&
-                             (this.EmoteConverter?.Invoke(this.CancelOption)?.ToString() ??
-                              this.StringConverter?.Invoke(this.CancelOption)) == selectedString;
-
-            if (isCanceled)
-                return new InteractiveInputResult<KeyValuePair<TOption, Paginator>>(InteractiveInputStatus.Canceled,
-                    selected);
-        }
-        if (input.Data.Type == ComponentType.Button && input.Data.CustomId == DiscordConstants.JumpEmote)
-        {
-            KeyValuePair<TOption, Paginator> selected = default;
-            string selectedString = null;
-
-            option = "Server";
-
-            foreach (var value in this.Options)
-            {
-                var stringValue = this.EmoteConverter?.Invoke(value)?.ToString() ?? this.StringConverter?.Invoke(value);
-                if (option != stringValue) continue;
-                selected = value;
-                selectedString = stringValue;
-                break;
-            }
-
-            if (selectedString is null) return InteractiveInputStatus.Ignored;
-
-            this.CurrentOption = selected.Key;
-
-            var isCanceled = this.AllowCancel &&
-                             (this.EmoteConverter?.Invoke(this.CancelOption)?.ToString() ??
-                              this.StringConverter?.Invoke(this.CancelOption)) == selectedString;
-
-            if (isCanceled)
-                return new InteractiveInputResult<KeyValuePair<TOption, Paginator>>(InteractiveInputStatus.Canceled,
-                    selected);
         }
 
         var paginator = this.Options[this.CurrentOption];
+
         var (emote, action) = paginator.Emotes.FirstOrDefault(x => x.Key.ToString() == input.Data.CustomId);
 
         if (emote is not null)
@@ -182,11 +122,13 @@ public class PagedSelection<TOption> : BaseSelection<KeyValuePair<TOption, Pagin
 
         var currentPage = await paginator.GetOrLoadCurrentPageAsync().ConfigureAwait(false);
 
+        var components = GetOrAddComponents(false);
+
         await input.UpdateAsync(x =>
         {
             x.Content = currentPage.Text ?? "";
             x.Embeds = currentPage.GetEmbedArray();
-            x.Components = GetOrAddComponents(false).Build();
+            x.Components = components.Build();
         }).ConfigureAwait(false);
 
         return InteractiveInputStatus.Ignored;

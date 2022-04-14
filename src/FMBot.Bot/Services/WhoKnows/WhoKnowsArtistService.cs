@@ -205,8 +205,16 @@ namespace FMBot.Bot.Services.WhoKnows
         }
 
         public async Task<ICollection<GuildArtist>> GetTopAllTimeArtistsForGuild(int guildId,
-            OrderType orderType)
+            OrderType orderType, int? limit = 120)
         {
+            var cacheKey = $"guild-alltime-top-artists-{guildId}";
+
+            var cachedArtistsAvailable = this._cache.TryGetValue(cacheKey, out ICollection<GuildArtist> guildArtists);
+            if (cachedArtistsAvailable)
+            {
+                return guildArtists;
+            }
+
             var sql = "SELECT ua.name AS artist_name, " +
                                 "SUM(ua.playcount) AS total_playcount, " +
                                 "COUNT(ua.user_id) AS listener_count " +
@@ -222,16 +230,23 @@ namespace FMBot.Bot.Services.WhoKnows
                 "ORDER BY total_playcount DESC, listener_count DESC " :
                 "ORDER BY listener_count DESC, total_playcount DESC ";
 
-            sql += "LIMIT 120";
+            if (limit.HasValue)
+            {
+                sql += $"LIMIT {limit}";
+            }
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
             await connection.OpenAsync();
 
-            return (await connection.QueryAsync<GuildArtist>(sql, new
+            guildArtists = (await connection.QueryAsync<GuildArtist>(sql, new
             {
                 guildId
             })).ToList();
+
+            this._cache.Set(cacheKey, guildArtists, TimeSpan.FromMinutes(10));
+
+            return guildArtists;
         }
 
         public async Task<ICollection<GuildArtist>> GetTopAllTimeArtistsForGuildWithListeners(int guildId,
