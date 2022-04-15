@@ -251,7 +251,7 @@ public class PlayCommands : BaseCommandModule
         {
             this.Context.LogCommandException(e);
             await ReplyAsync(
-                "Unable to show your recent tracks on Last.fm due to an internal error. Please try again later or contact .fmbot support.");
+                "Unable to show your recent tracks on Last.fm due to an internal error. Make sure your Last.fm profile contains scrobbles. Please try again later or contact .fmbot support.");
         }
     }
 
