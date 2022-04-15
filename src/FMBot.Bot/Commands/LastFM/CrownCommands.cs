@@ -211,7 +211,7 @@ namespace FMBot.Bot.Commands.LastFM
                 $"{Constants.LastFMUserUrl}{currentCrown.User.UserNameLastFM}/library/music/{HttpUtility.UrlEncode(artist)}";
             this._embed.AddField("Current crown holder",
                 $"**[{name?.UserName ?? currentCrown.User.UserNameLastFM}]({artistUrl})** - " +
-                $"Since **{currentCrown.Created:MMM dd yyyy}** - " +
+                $"Since **<t:{((DateTimeOffset)currentCrown.Created).ToUnixTimeSeconds()}:D>** - " +
                 $"`{currentCrown.StartPlaycount}` to `{currentCrown.CurrentPlaycount}` plays");
 
             var lastCrownCreateDate = currentCrown.Created;
@@ -223,10 +223,8 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     var crownUsername = await this._guildService.GetUserFromGuild(guild, artistCrown.UserId);
 
-                    var toStringFormat = lastCrownCreateDate.Year != artistCrown.Created.Year ? "MMM dd yyyy" : "MMM dd";
-
                     crownHistory.AppendLine($"**{crownUsername?.UserName ?? artistCrown.User.UserNameLastFM}** - " +
-                                            $"**{artistCrown.Created.ToString(toStringFormat)}** to **{lastCrownCreateDate.ToString(toStringFormat)}** - " +
+                                            $"**<t:{((DateTimeOffset)artistCrown.Created).ToUnixTimeSeconds()}:D>** to **<t:{((DateTimeOffset)lastCrownCreateDate).ToUnixTimeSeconds()}:D>** - " +
                                             $"`{artistCrown.StartPlaycount}` to `{artistCrown.CurrentPlaycount}` plays");
                     lastCrownCreateDate = artistCrown.Created;
 
@@ -240,7 +238,7 @@ namespace FMBot.Bot.Commands.LastFM
                     var crownUsername = await this._guildService.GetUserFromGuild(guild, firstCrown.UserId);
                     this._embed.AddField("First crownholder",
                          $"**{crownUsername?.UserName ?? firstCrown.User.UserNameLastFM}** - " +
-                         $"**{firstCrown.Created:MMM dd yyyy}** to **{lastCrownCreateDate:MMM dd yyyy}** - " +
+                         $"**<t:{((DateTimeOffset)firstCrown.Created).ToUnixTimeSeconds()}:D>** to **<t:{((DateTimeOffset)lastCrownCreateDate).ToUnixTimeSeconds()}:D>** - " +
                          $"`{firstCrown.StartPlaycount}` to `{firstCrown.CurrentPlaycount}` plays");
                 }
 
