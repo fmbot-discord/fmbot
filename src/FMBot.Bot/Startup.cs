@@ -103,8 +103,6 @@ namespace FMBot.Bot
         {
             services.Configure<BotSettings>(this.Configuration);
 
-
-
             var discordClient = new DiscordShardedClient(new DiscordSocketConfig
             {
                 LogLevel = LogSeverity.Info,

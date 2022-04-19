@@ -1,5 +1,3 @@
-using System.Drawing;
-
 namespace FMBot.Domain
 {
     public static class Constants

@@ -136,8 +136,6 @@ namespace FMBot.Bot.Services
             await this.StartBotSiteUpdater();
         }
 
-        private record ShardBucket(int BucketId, List<DiscordSocketClient> Shards);
-
         private async Task TestLastFmApi()
         {
             var fmClient = new LastfmClient(this._botSettings.LastFm.PublicKey, this._botSettings.LastFm.PublicKeySecret);

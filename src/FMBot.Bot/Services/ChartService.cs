@@ -23,6 +23,7 @@ namespace FMBot.Bot.Services
         private readonly CensorService _censorService;
 
         private readonly string _fontPath;
+        private readonly string _altFontPath;
         private readonly string _loadingErrorImagePath;
         private readonly string _unknownImagePath;
         private readonly string _unknownArtistImagePath;
@@ -39,6 +40,7 @@ namespace FMBot.Bot.Services
             try
             {
                 this._fontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "arial-unicode-ms.ttf");
+                this._altFontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "worksans-regular.otf");
                 this._loadingErrorImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "loading-error.png");
                 this._unknownImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "unknown.png");
                 this._unknownArtistImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "unknown-artist.png");
@@ -49,6 +51,7 @@ namespace FMBot.Bot.Services
                     Log.Information("Downloading chart files...");
                     var wc = new System.Net.WebClient();
                     wc.DownloadFile("https://fmbot.xyz/fonts/arial-unicode-ms.ttf", this._fontPath);
+                    wc.DownloadFile("https://fmbot.xyz/fonts/worksans-regular.otf", this._altFontPath);
                     wc.DownloadFile("https://fmbot.xyz/img/bot/loading-error.png", this._loadingErrorImagePath);
                     wc.DownloadFile("https://fmbot.xyz/img/bot/unknown.png", this._unknownImagePath);
                     wc.DownloadFile("https://fmbot.xyz/img/bot/unknown-artist.png", this._unknownArtistImagePath);
