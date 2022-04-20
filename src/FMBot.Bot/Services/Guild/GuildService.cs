@@ -88,6 +88,15 @@ namespace FMBot.Bot.Services.Guild
         private async Task RemoveGuildFromCache(ulong discordGuildId)
         {
             this._cache.Remove(CacheKeyForGuild(discordGuildId));
+
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            var guild = await db.Guilds
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
+            if (guild != null)
+            {
+                this._cache.Remove($"guild-alltime-top-artists-{guild.GuildId}");
+            }
         }
 
         private static string CacheKeyForGuild(ulong discordGuildId)

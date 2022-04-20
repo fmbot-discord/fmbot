@@ -339,7 +339,7 @@ public class GenreService
                 {
                     GenreName = selectedGenre,
                     Artists = topArtists
-                        .Where(w => artistGenres.Any(a => a.ToLower().Equals(w.ArtistName.ToLower())))
+                        .Where(w => artistGenres.Any(a => a.Equals(w.ArtistName.ToLower())))
                         .OrderByDescending(o => o.UserPlaycount)
                         .ToList()
                 });

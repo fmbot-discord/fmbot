@@ -97,9 +97,9 @@ public class PuppeteerService
 
     private void AddTitleToChartImage(SKBitmap chartImage, List<GroupedCountries> lines)
     {
-        var textSize = 35;
+        const int textSize = 35;
 
-        var typeface = SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "arial-unicode-ms.ttf"));
+        var typeface = SKTypeface.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "worksans-regular.otf"));
 
         using var textPaint = new SKPaint
         {
@@ -107,6 +107,7 @@ public class PuppeteerService
             IsAntialias = true,
             TextAlign = SKTextAlign.Center,
             Color = SKColors.Black,
+            
             Typeface = typeface
         };
 
@@ -146,7 +147,6 @@ public class PuppeteerService
         for (var index = 0; index < lines.Count; index++)
         {
             var line = lines[index];
-
             using var colorRectanglePaint = new SKPaint
             {
                 TextAlign = SKTextAlign.Center,

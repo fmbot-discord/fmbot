@@ -19,9 +19,7 @@ namespace FMBot.LastFM.Repositories
     public class SmallIndexRepository
     {
         private readonly IMemoryCache _cache;
-
         private readonly IDbContextFactory<FMBotDbContext> _contextFactory;
-
         private readonly string _connectionString;
 
         private readonly LastFmRepository _lastFmRepository;
@@ -85,7 +83,6 @@ namespace FMBot.LastFM.Repositories
             }
 
             this._cache.Remove(concurrencyCacheKey);
-
             Statistics.SmallIndexedUsers.Inc();
         }
 

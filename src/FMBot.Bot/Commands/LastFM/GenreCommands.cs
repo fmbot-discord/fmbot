@@ -117,14 +117,16 @@ namespace FMBot.Bot.Commands.LastFM
         [CommandCategories(CommandCategory.Genres)]
         public async Task GenreInfoAsync([Remainder] string genreOptions = null)
         {
+            _ = this.Context.Channel.TriggerTypingAsync();
+
             var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            _ = this.Context.Channel.TriggerTypingAsync();
-
             try
             {
-                var response = await this._genreBuilders.GenreAsync(new ContextModel(this.Context, prfx, contextUser), genreOptions);
+
+                var guild = await this._guildService.GetGuildAsync(this.Context.Guild.Id);
+                var response = await this._genreBuilders.GenreAsync(new ContextModel(this.Context, prfx, contextUser), genreOptions, guild);
                 await this.Context.SendResponse(this.Interactivity, response);
                 this.Context.LogCommandUsed(response.CommandResponse);
             }
