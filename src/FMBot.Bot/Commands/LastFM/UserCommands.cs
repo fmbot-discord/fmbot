@@ -377,8 +377,7 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     this._embed.WithDescription(
                         "**RateYourMusic** integration has now been enabled for your account.\n\n" +
-                        "All album links should now link to RateYourMusic. Please note that since RYM does not provide an API, you might be routed through DuckDuckGo.\n" +
-                        "This is not the best solution, but it should work for most albums.");
+                        "All album links should now link to RateYourMusic. Please note that since RYM does not provide an API you will be linked to their search page.");
                 }
                 else
                 {
