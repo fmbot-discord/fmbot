@@ -103,7 +103,7 @@ public class ArtistCommands : BaseCommandModule
         "artist",
         "a Gorillaz",
         "artist Gamma Intel")]
-    [Alias("a")]
+    [Alias("a", "ai", "artistinfo")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Artists)]
     public async Task ArtistAsync([Remainder] string artistValues = null)
@@ -299,7 +299,7 @@ public class ArtistCommands : BaseCommandModule
     [Options("weekly/monthly", "Optional goal amount: For example `500` or `2k`", Constants.UserMentionExample)]
     [Examples("apc", "apc 1k q", "apc 400 h @user", "artistpace", "artistpace weekly @user 2500")]
     [UsernameSetRequired]
-    [Alias("apc")]
+    [Alias("apc", "apace", "artistpc")]
     [CommandCategories(CommandCategory.Other)]
     public async Task ArtistPaceAsync([Remainder] string extraOptions = null)
     {

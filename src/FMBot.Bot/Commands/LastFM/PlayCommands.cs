@@ -227,7 +227,7 @@ public class PlayCommands : BaseCommandModule
     [Summary("Shows you or someone else their recent tracks")]
     [Options("Amount of recent tracks to show (max 10)", Constants.UserMentionExample)]
     [Examples("recent", "r", "recent 8", "recent 5 @user", "recent lfm:fm-bot")]
-    [Alias("recenttracks", "recents", "r")]
+    [Alias("recenttracks", "recents", "r", "rc")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
     public async Task RecentAsync([Remainder] string extraOptions = null)
