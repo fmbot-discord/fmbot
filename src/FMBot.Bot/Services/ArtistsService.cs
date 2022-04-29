@@ -274,11 +274,6 @@ namespace FMBot.Bot.Services
                 var ownPlaycount = artist.UserPlaycount.Value;
                 var otherPlaycount = rightUserArtists.TopArtists.First(f => f.ArtistName.Equals(name)).UserPlaycount.Value;
 
-                if (matchedArtists.Count > 30 && otherPlaycount < 5)
-                {
-                    continue;
-                }
-
                 if (ownPlaycount > otherPlaycount)
                 {
                     right += $"**{ownPlaycount}**";
