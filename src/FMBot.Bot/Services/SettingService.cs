@@ -397,7 +397,7 @@ namespace FMBot.Bot.Services
 
             var options = extraOptions.Split(' ');
 
-            if (firstOptionIsLfmUsername)
+            if (firstOptionIsLfmUsername && !string.IsNullOrWhiteSpace(options.First()))
             {
                 var otherUser = await GetDifferentUser(options.First());
 
@@ -413,6 +413,21 @@ namespace FMBot.Bot.Services
                     settingsModel.UserType = otherUser.UserType;
                     settingsModel.UserId = otherUser.UserId;
                     settingsModel.RegisteredLastFm = otherUser.RegisteredLastFm;
+
+                    return settingsModel;
+                }
+
+                if (options.First().Length is >= 3 and <= 15)
+                {
+                    var lfmUserName = options.First().ToLower();
+
+                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName }, true);
+                    settingsModel.UserNameLastFm = lfmUserName;
+                    settingsModel.DiscordUserName = lfmUserName;
+                    settingsModel.SessionKeyLastFm = null;
+                    settingsModel.RegisteredLastFm = null;
+                    settingsModel.UserId = 0;
+                    settingsModel.DifferentUser = true;
 
                     return settingsModel;
                 }

@@ -970,9 +970,12 @@ namespace FMBot.LastFM.Repositories
         // Check if Last.fm user exists
         public async Task<bool> LastFmUserExistsAsync(string lastFmUserName)
         {
-            var lastFmUser = await this.GetLfmUserInfoAsync(lastFmUserName);
+            var dateFromFilter = DateTime.UtcNow.AddDays(-365);
+            var timeFrom = (long?)((DateTimeOffset)dateFromFilter).ToUnixTimeSeconds();
 
-            return lastFmUser != null;
+            var scrobbles = await this.GetRecentTracksAsync(lastFmUserName, fromUnixTimestamp: timeFrom);
+
+            return scrobbles.Success && scrobbles.Content.RecentTracks.Count > 0;
         }
 
         public async Task<Response<TokenResponse>> GetAuthToken()
