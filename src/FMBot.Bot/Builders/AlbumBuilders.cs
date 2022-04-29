@@ -151,7 +151,7 @@ public class AlbumBuilders
         {
             var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
                 albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, albumSearch.Album.AlbumUrl);
-            if (safeForChannel.Result)
+            if (safeForChannel == CensorService.CensorResult.Safe)
             {
                 response.Embed.WithThumbnailUrl(albumCoverUrl);
             }

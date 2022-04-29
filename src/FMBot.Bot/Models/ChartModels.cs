@@ -17,6 +17,7 @@ namespace FMBot.Bot.Models
             this.TitleSetting = TitleSetting.Titles;
             this.SkipWithoutImage = false;
             this.UsePlays = false;
+            this.ContainsNsfw = false;
         }
 
         public List<TopAlbum> Albums { get; set; }
@@ -75,6 +76,7 @@ namespace FMBot.Bot.Models
 
         public bool UsePlays { get; set; }
 
+        public bool ContainsNsfw { get; set; }
         public int? CensoredAlbums { get; set; }
     }
 

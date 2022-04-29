@@ -95,7 +95,7 @@ namespace FMBot.Bot.Services
                         RecentTrack trackToFeature = null;
                         foreach (var track in tracks.Content.RecentTracks.Where(w => w.AlbumName != null && w.AlbumCoverUrl != null))
                         {
-                            if (await this._censorService.AlbumIsSafe(track.AlbumName, track.ArtistName) &&
+                            if (await this._censorService.AlbumResult(track.AlbumName, track.ArtistName) == CensorService.CensorResult.Safe &&
                                 await AlbumNotFeaturedRecently(track.AlbumName, track.ArtistName) &&
                                 await AlbumPopularEnough(track.AlbumName, track.ArtistName))
                             {
@@ -168,7 +168,7 @@ namespace FMBot.Bot.Services
 
                             if (currentAlbum.AlbumCoverUrl != null &&
                                 currentAlbum.AlbumName != null &&
-                                await this._censorService.AlbumIsSafe(currentAlbum.AlbumName, currentAlbum.ArtistName) &&
+                                await this._censorService.AlbumResult(currentAlbum.AlbumName, currentAlbum.ArtistName) == CensorService.CensorResult.Safe &&
                                 await AlbumNotFeaturedRecently(currentAlbum.AlbumName, currentAlbum.ArtistName) &&
                                 await AlbumPopularEnough(currentAlbum.AlbumName, currentAlbum.ArtistName))
                             {
