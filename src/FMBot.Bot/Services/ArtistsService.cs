@@ -358,10 +358,19 @@ namespace FMBot.Bot.Services
                 }
             }).ToList();
 
-            if (artists.Count > 25)
+            var description = $"{Description(leftUserArtists.TopArtists, timePeriod, artistsToShow)}\n";
+
+            var filterAmount = 0;
+            for (var i = 0; i < 100; i++)
             {
-                artists = artists.Where(w => w.OtherPlaycount > 4).ToList();
+                if (artists.Count(w => w.OwnPlaycount >= i && w.OtherPlaycount >= i) <= amount)
+                {
+                    filterAmount = i;
+                    break;
+                }
             }
+
+            artists = artists.Where(w => w.OwnPlaycount >= filterAmount && w.OtherPlaycount >= filterAmount).ToList();
 
             var customTable = artists
                 .Take(amount)
@@ -372,9 +381,7 @@ namespace FMBot.Bot.Services
                     u => u.OtherPlaycount
                 );
 
-
-            var description = $"{Description(leftUserArtists.TopArtists, timePeriod, artistsToShow)}\n" +
-                              $"```{customTable}```";
+            description += $"```{customTable}```";
 
             return description;
         }
