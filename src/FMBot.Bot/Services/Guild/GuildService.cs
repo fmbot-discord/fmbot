@@ -133,26 +133,10 @@ namespace FMBot.Bot.Services.Guild
             return guildUser.GuildPermissions;
         }
 
-        public async Task<GuildUser> GetUserFromGuild(Persistence.Domain.Models.Guild guild, int userId)
+        public static GuildUser GetUserFromGuild(Persistence.Domain.Models.Guild guild, int userId)
         {
             return guild.GuildUsers
                 .FirstOrDefault(f => f.UserId == userId);
-        }
-
-        public async Task<GuildUser> GetUserFromGuild(ulong discordGuildId, int userId)
-        {
-            await using var db = await this._contextFactory.CreateDbContextAsync();
-            var guild = await db.Guilds
-                .AsQueryable()
-                .Include(i => i.GuildUsers)
-                .FirstOrDefaultAsync(f => f.DiscordGuildId == discordGuildId);
-
-            if (guild?.GuildUsers != null && guild.GuildUsers.Any())
-            {
-                return guild.GuildUsers.FirstOrDefault(f => f.UserId == userId);
-            }
-
-            return null;
         }
 
         // Get all guild users
@@ -892,7 +876,7 @@ namespace FMBot.Bot.Services.Guild
             return true;
         }
 
-        public async Task AddReactionsAsync(IUserMessage message, IGuild guild)
+        public async Task AddReactionsAsync(IUserMessage message, IGuild guild, bool partyingFace = false)
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();
             var dbGuild = await db.Guilds
@@ -916,6 +900,12 @@ namespace FMBot.Bot.Services.Guild
                     var emote = Emote.Parse(emoteString);
                     await message.AddReactionAsync(emote);
                 }
+            }
+
+            if (partyingFace)
+            {
+                var emote = new Emoji("🥳");
+                await message.AddReactionAsync(emote);
             }
         }
 

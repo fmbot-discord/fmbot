@@ -170,7 +170,7 @@ namespace FMBot.Bot.Services.Guild
 
                                 if(localFeaturedMsg != null)
                                 {
-                                    await this._guildService.AddReactionsAsync(localFeaturedMsg, guild);
+                                    await this._guildService.AddReactionsAsync(localFeaturedMsg, guild, true);
                                 }
 
                                 return;

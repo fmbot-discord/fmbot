@@ -197,6 +197,7 @@ namespace FMBot.Bot.Commands.LastFM
             try
             {
                 var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+                var guild = await this._guildService.GetGuildForWhoKnows(this.Context.Guild?.Id);
 
                 if (this._timer._currentFeatured == null)
                 {
@@ -210,13 +211,14 @@ namespace FMBot.Bot.Commands.LastFM
                 this._embed.WithThumbnailUrl(this._timer._currentFeatured.ImageUrl);
                 this._embed.AddField("Featured:", this._timer._currentFeatured.Description);
 
-                if (this.Context.Guild != null && this._timer._currentFeatured.UserId.HasValue)
+                var partyingFace = false;
+                if (guild?.GuildUsers != null && guild.GuildUsers.Any() && this._timer._currentFeatured.UserId.HasValue && this._timer._currentFeatured.UserId.Value != 0)
                 {
-                    var guildUser =
-                        await this._guildService.GetUserFromGuild(this.Context.Guild.Id, this._timer._currentFeatured.UserId.Value);
+                    var guildUser = guild.GuildUsers.FirstOrDefault(f => f.UserId == this._timer._currentFeatured.UserId);
 
                     if (guildUser != null)
                     {
+                        partyingFace = true;
                         this._embed.AddField("🥳 Congratulations!", $"This user is in your server under the name {guildUser.UserName}.");
                     }
                 }
@@ -232,7 +234,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (message != null && this.Context.Guild != null)
                 {
-                    await this._guildService.AddReactionsAsync(message, this.Context.Guild);
+                    await this._guildService.AddReactionsAsync(message, this.Context.Guild, partyingFace);
                 }
 
                 this.Context.LogCommandUsed();

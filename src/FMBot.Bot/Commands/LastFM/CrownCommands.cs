@@ -205,7 +205,7 @@ namespace FMBot.Bot.Commands.LastFM
                 .OrderByDescending(o => o.CurrentPlaycount)
                 .First();
 
-            var name = await this._guildService.GetUserFromGuild(guild, currentCrown.UserId);
+            var name = GuildService.GetUserFromGuild(guild, currentCrown.UserId);
 
             var artistUrl =
                 $"{Constants.LastFMUserUrl}{currentCrown.User.UserNameLastFM}/library/music/{HttpUtility.UrlEncode(artist)}";
@@ -221,7 +221,7 @@ namespace FMBot.Bot.Commands.LastFM
 
                 foreach (var artistCrown in artistCrowns.Take(10).Where(w => !w.Active))
                 {
-                    var crownUsername = await this._guildService.GetUserFromGuild(guild, artistCrown.UserId);
+                    var crownUsername = GuildService.GetUserFromGuild(guild, artistCrown.UserId);
 
                     crownHistory.AppendLine($"**{crownUsername?.UserName ?? artistCrown.User.UserNameLastFM}** - " +
                                             $"**<t:{((DateTimeOffset)artistCrown.Created).ToUnixTimeSeconds()}:D>** to **<t:{((DateTimeOffset)lastCrownCreateDate).ToUnixTimeSeconds()}:D>** - " +
@@ -235,7 +235,7 @@ namespace FMBot.Bot.Commands.LastFM
                     crownHistory.AppendLine($"*{artistCrowns.Count(w => !w.Active) - 11} more steals hidden..*");
 
                     var firstCrown = artistCrowns.OrderBy(o => o.Created).First();
-                    var crownUsername = await this._guildService.GetUserFromGuild(guild, firstCrown.UserId);
+                    var crownUsername = GuildService.GetUserFromGuild(guild, firstCrown.UserId);
                     this._embed.AddField("First crownholder",
                          $"**{crownUsername?.UserName ?? firstCrown.User.UserNameLastFM}** - " +
                          $"**<t:{((DateTimeOffset)firstCrown.Created).ToUnixTimeSeconds()}:D>** to **<t:{((DateTimeOffset)lastCrownCreateDate).ToUnixTimeSeconds()}:D>** - " +
