@@ -131,6 +131,8 @@ namespace FMBot.Bot.Services.Guild
             embed.AddField("Time", $"<t:{dateValue}:F>");
             embed.AddField("Resetting", $"`.resetfeatured {featured.FeaturedLogId}`");
 
+            embed.WithFooter(featured.ImageUrl);
+
             var webhookClient = new DiscordWebhookClient(webhook);
             await webhookClient.SendMessageAsync(embeds: new[] { embed.Build() });
         }
