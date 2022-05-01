@@ -205,7 +205,7 @@ public class PlayCommands : BaseCommandModule
                     $"Couldn't add emote reactions to `{prfx}fm`. If you have recently changed changed any of the configured emotes please use `{prfx}serverreactions` to reset the automatic emote reactions.");
             }
 
-            this.Context.LogCommandUsed();
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {

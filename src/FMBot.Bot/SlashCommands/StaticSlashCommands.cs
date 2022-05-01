@@ -18,7 +18,7 @@ public class StaticSlashCommands : InteractionModuleBase
     }
 
     [SlashCommand("outofsync", "Shows info if your Last.fm isn't up to date with Spotify")]
-    public async Task ModeAsync([Summary("private", "Show info privately?")]bool privateResponse = true)
+    public async Task OutOfSyncAsync([Summary("private", "Show info privately?")]bool privateResponse = true)
     {
         var embed = new EmbedBuilder();
 
