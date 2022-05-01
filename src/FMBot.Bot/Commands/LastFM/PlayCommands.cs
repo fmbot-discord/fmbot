@@ -205,7 +205,7 @@ public class PlayCommands : BaseCommandModule
                     $"Couldn't add emote reactions to `{prfx}fm`. If you have recently changed changed any of the configured emotes please use `{prfx}serverreactions` to reset the automatic emote reactions.");
             }
 
-            this.Context.LogCommandUsed();
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
@@ -227,7 +227,7 @@ public class PlayCommands : BaseCommandModule
     [Summary("Shows you or someone else their recent tracks")]
     [Options("Amount of recent tracks to show (max 10)", Constants.UserMentionExample)]
     [Examples("recent", "r", "recent 8", "recent 5 @user", "recent lfm:fm-bot")]
-    [Alias("recenttracks", "recents", "r")]
+    [Alias("recenttracks", "recents", "r", "rc")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
     public async Task RecentAsync([Remainder] string extraOptions = null)

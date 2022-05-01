@@ -28,65 +28,29 @@ namespace FMBot.Bot.Services
             this._botSettings = botSettings.Value;
         }
 
-        public record CensorResult(bool Result, string AlternativeCover = null);
+        public enum CensorResult
+        {
+            Safe = 1,
+            Nsfw = 2,
+            NotSafe = 3
+        }
 
         public async Task<CensorResult> IsSafeForChannel(IGuild guild, IChannel channel, string albumName, string artistName, string url, EmbedBuilder embed = null)
         {
-            if (!await AlbumIsSafe(albumName, artistName))
+            var result = await AlbumResult(albumName, artistName);
+            if (result == CensorResult.NotSafe)
             {
-                var allowedInNsfw = await AlbumIsAllowedInNsfw(albumName, artistName);
-                if (!allowedInNsfw.Result)
-                {
-                    embed?.WithDescription("Sorry, this album or artist can't be posted due to discord ToS.\n" +
-                                           $"You can view the [album cover here]({url}).");
-                    return new CensorResult(false, allowedInNsfw.AlternativeCover);
-                }
-                if (guild != null && !((SocketTextChannel)channel).IsNsfw)
-                {
-                    embed?.WithDescription("Sorry, this album cover can only be posted in NSFW channels.\n" +
-                                                $"You can mark this channel as NSFW or view the [album cover here]({url}).");
-                    return new CensorResult(false, allowedInNsfw.AlternativeCover);
-                }
-
-                return new CensorResult(true, allowedInNsfw.AlternativeCover);
+                embed?.WithDescription("Sorry, this album or artist can't be posted due to discord ToS.\n" +
+                                       $"You can view the [album cover here]({url}).");
+                return result;
             }
 
-            return new CensorResult(true);
-        }
-
-        public async Task<bool> AlbumIsSafe(string albumName, string artistName)
-        {
-            var censoredMusic = await GetCachedCensoredMusic();
-
-            if (censoredMusic
-                    .Where(w => w.Artist)
-                    .Select(s => s.ArtistName.ToLower())
-                    .Contains(artistName.ToLower()))
+            if (result == CensorResult.Nsfw && (guild == null || ((SocketTextChannel)channel).IsNsfw))
             {
-                return false;
+                return CensorResult.Safe;
             }
 
-            if (albumName == null)
-            {
-                return true;
-            }
-
-            if (censoredMusic
-                    .Select(s => s.ArtistName.ToLower())
-                    .Contains(artistName.ToLower()))
-            {
-                var censoredAlbum = censoredMusic
-                    .Where(w => !w.Artist && w.ArtistName.ToLower() == artistName.ToLower() && w.AlbumName != null)
-                    .FirstOrDefault(f => f.AlbumName.ToLower() == albumName.ToLower());
-
-                if (censoredAlbum != null)
-                {
-                    await IncreaseCensoredCount(censoredAlbum.CensoredMusicId);
-                    return false;
-                }
-            }
-
-            return true;
+            return result;
         }
 
         private async Task<List<CensoredMusic>> GetCachedCensoredMusic()
@@ -99,7 +63,7 @@ namespace FMBot.Bot.Services
                 return cachedCensoredMusic;
             }
 
-            await using var db = this._contextFactory.CreateDbContext();
+            await using var db = await this._contextFactory.CreateDbContextAsync();
             var censoredMusic = await db.CensoredMusic
                 .AsQueryable()
                 .ToListAsync();
@@ -114,37 +78,36 @@ namespace FMBot.Bot.Services
             this._cache.Remove("censored-music");
         }
 
-        public async Task<CensorResult> AlbumIsAllowedInNsfw(string albumName, string artistName)
+        public async Task<CensorResult> AlbumResult(string albumName, string artistName)
         {
             var censoredMusic = await GetCachedCensoredMusic();
 
-            var artistAllowedInNSfw = censoredMusic
-                .Where(w => w.Artist && w.SafeForCommands)
+            var censoredArtist = censoredMusic
+                .Where(w => w.Artist)
                 .FirstOrDefault(f => f.ArtistName.ToLower() == artistName.ToLower());
-            if (artistAllowedInNSfw != null)
+            if (censoredArtist != null)
             {
-                await IncreaseCensoredCount(artistAllowedInNSfw.CensoredMusicId);
-                return new CensorResult(true);
+                await IncreaseCensoredCount(censoredArtist.CensoredMusicId);
+                return censoredArtist.SafeForCommands ? CensorResult.Nsfw : CensorResult.NotSafe;
             }
 
             if (censoredMusic
-                    .Where(w => w.SafeForCommands)
                     .Select(s => s.ArtistName.ToLower())
                     .Contains(artistName.ToLower()))
             {
                 var album = censoredMusic
-                    .Where(w => !w.Artist && w.AlbumName != null && w.SafeForCommands)
+                    .Where(w => !w.Artist && w.AlbumName != null)
                     .FirstOrDefault(f => f.ArtistName.ToLower() == artistName.ToLower() &&
                                               f.AlbumName.ToLower() == albumName.ToLower());
 
                 if (album != null)
                 {
                     await IncreaseCensoredCount(album.CensoredMusicId);
-                    return new CensorResult(true, album.AlternativeCoverUrl);
+                    return album.SafeForCommands ? CensorResult.Nsfw : CensorResult.NotSafe;
                 }
             }
 
-            return new CensorResult(false);
+            return CensorResult.Safe;
         }
 
         private async Task IncreaseCensoredCount(int censoredMusicId)

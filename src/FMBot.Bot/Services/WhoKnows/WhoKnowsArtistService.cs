@@ -291,7 +291,8 @@ namespace FMBot.Bot.Services.WhoKnows
         {
             const string sql = "SELECT ua.playcount " +
                                "FROM user_artists AS ua " +
-                               "WHERE ua.user_id = @userId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT))";
+                               "WHERE ua.user_id = @userId AND UPPER(ua.name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                               "ORDER BY playcount DESC";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);

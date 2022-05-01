@@ -231,20 +231,19 @@ namespace FMBot.Bot.Commands.LastFM
                 embedDescription += ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, prfx);
 
                 var nsfwAllowed = this.Context.Guild == null || ((SocketTextChannel)this.Context.Channel).IsNsfw;
-                var chart = await this._chartService.GenerateChartAsync(chartSettings, nsfwAllowed);
+                var chart = await this._chartService.GenerateChartAsync(chartSettings);
 
                 if (chartSettings.CensoredAlbums.HasValue && chartSettings.CensoredAlbums > 0)
                 {
-                    if (nsfwAllowed)
-                    {
-                        embedDescription +=
-                            $"{chartSettings.CensoredAlbums.Value} album(s) filtered due to images that are not allowed to be posted on Discord.\n";
-                    }
-                    else
-                    {
-                        embedDescription +=
-                            $"{chartSettings.CensoredAlbums.Value} album(s) filtered due to nsfw images. Use this command in an nsfw channel to disable this.\n";
-                    }
+                    embedDescription +=
+                        $"{chartSettings.CensoredAlbums.Value} album(s) filtered due to images that are not allowed to be posted on Discord.\n";
+                }
+
+                if (chartSettings.ContainsNsfw && !nsfwAllowed)
+                {
+
+                    embedDescription +=
+                        $"⚠️ Contains NSFW covers - Click to reveal\n";
                 }
 
                 this._embed.WithDescription(embedDescription);
@@ -255,7 +254,8 @@ namespace FMBot.Bot.Commands.LastFM
                 await this.Context.Channel.SendFileAsync(
                     stream,
                     $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png",
-                    embed: this._embed.Build());
+                    embed: this._embed.Build(),
+                    isSpoiler: chartSettings.ContainsNsfw);
                 await stream.DisposeAsync();
 
                 this.Context.LogCommandUsed();
@@ -335,7 +335,7 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 _ = this.Context.Channel.TriggerTypingAsync();
 
-                var chartSettings = new ChartSettings(this.Context.User) {ArtistChart = true};
+                var chartSettings = new ChartSettings(this.Context.User) { ArtistChart = true };
 
                 chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, this.Context);
 
@@ -428,7 +428,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var supporter = await this._supporterService.GetRandomSupporter(this.Context.Guild, user.UserType);
                 embedDescription += ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, prfx);
 
-                var chart = await this._chartService.GenerateChartAsync(chartSettings, true);
+                var chart = await this._chartService.GenerateChartAsync(chartSettings);
 
                 this._embed.WithDescription(embedDescription);
 

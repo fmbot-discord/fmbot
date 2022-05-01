@@ -131,6 +131,8 @@ namespace FMBot.Bot.Services.Guild
             embed.AddField("Time", $"<t:{dateValue}:F>");
             embed.AddField("Resetting", $"`.resetfeatured {featured.FeaturedLogId}`");
 
+            embed.WithFooter(featured.ImageUrl);
+
             var webhookClient = new DiscordWebhookClient(webhook);
             await webhookClient.SendMessageAsync(embeds: new[] { embed.Build() });
         }
@@ -170,7 +172,7 @@ namespace FMBot.Bot.Services.Guild
 
                                 if(localFeaturedMsg != null)
                                 {
-                                    await this._guildService.AddReactionsAsync(localFeaturedMsg, guild);
+                                    await this._guildService.AddReactionsAsync(localFeaturedMsg, guild, true);
                                 }
 
                                 return;

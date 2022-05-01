@@ -222,11 +222,7 @@ public class AlbumCommands : BaseCommandModule
             var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
                 album.AlbumName, album.ArtistName, album.AlbumUrl, this._embed);
 
-            if (safeForChannel.AlternativeCover != null)
-            {
-                albumCoverUrl = safeForChannel.AlternativeCover;
-            }
-            if (!safeForChannel.Result && safeForChannel.AlternativeCover == null)
+            if (safeForChannel == CensorService.CensorResult.NotSafe)
             {
                 await this.ReplyAsync("", false, this._embed.Build());
                 this.Context.LogCommandUsed(CommandResponse.Censored);
@@ -244,7 +240,15 @@ public class AlbumCommands : BaseCommandModule
                 return;
             }
 
-            this._embed.WithDescription($"**{album.ArtistName} - [{album.AlbumName}]({album.AlbumUrl})**");
+            var description = new StringBuilder();
+            description.AppendLine($"**{album.ArtistName} - [{album.AlbumName}]({album.AlbumUrl})**");
+
+            if (safeForChannel == CensorService.CensorResult.Nsfw)
+            {
+                description.AppendLine("⚠️ NSFW - Click to reveal");
+            }
+
+            this._embed.WithDescription(description.ToString());
             this._embedFooter.WithText(
                 $"Album cover requested by {await this._userService.GetUserTitleAsync(this.Context)}");
 
@@ -255,7 +259,8 @@ public class AlbumCommands : BaseCommandModule
                 $"cover-{StringExtensions.ReplaceInvalidChars($"{album.ArtistName}_{album.AlbumName}")}.png",
                 null,
                 false,
-                this._embed.Build());
+                this._embed.Build(),
+                isSpoiler: safeForChannel == CensorService.CensorResult.Nsfw);
 
             await image.DisposeAsync();
             this.Context.LogCommandUsed();
@@ -552,13 +557,9 @@ public class AlbumCommands : BaseCommandModule
             {
                 var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
                     album.AlbumName, album.ArtistName, album.AlbumUrl);
-                if (safeForChannel.Result)
+                if (safeForChannel == CensorService.CensorResult.Safe)
                 {
                     this._embed.WithThumbnailUrl(albumCoverUrl);
-                }
-                else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
-                {
-                    this._embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
                 }
             }
 
@@ -708,13 +709,9 @@ public class AlbumCommands : BaseCommandModule
             {
                 var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
                     album.AlbumName, album.ArtistName, album.AlbumUrl);
-                if (safeForChannel.Result)
+                if (safeForChannel == CensorService.CensorResult.Safe)
                 {
                     this._embed.WithThumbnailUrl(albumCoverUrl);
-                }
-                else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
-                {
-                    this._embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
                 }
             }
 
@@ -839,13 +836,9 @@ public class AlbumCommands : BaseCommandModule
             {
                 var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
                     album.AlbumName, album.ArtistName, album.AlbumUrl);
-                if (safeForChannel.Result)
+                if (safeForChannel == CensorService.CensorResult.Safe)
                 {
                     this._embed.WithThumbnailUrl(albumCoverUrl);
-                }
-                else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
-                {
-                    this._embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
                 }
             }
 

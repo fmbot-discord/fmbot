@@ -36,7 +36,6 @@ namespace FMBot.Bot
 {
     public class Startup
     {
-
         public Startup(string[] args)
         {
             var config = ConfigData.Data;
@@ -158,6 +157,7 @@ namespace FMBot.Bot
                 .AddSingleton<TrackBuilders>()
                 .AddSingleton<TrackRepository>()
                 .AddSingleton<UserEventHandler>()
+                .AddSingleton<UserBuilder>()
                 .AddSingleton<UserService>()
                 .AddSingleton<WebhookService>()
                 .AddSingleton<WhoKnowsService>()

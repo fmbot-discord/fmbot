@@ -213,7 +213,7 @@ namespace FMBot.LastFM.Repositories
 
         private async Task SmallIndex(User user)
         {
-            if (user.LastSmallIndexed > DateTime.UtcNow.AddDays(-7) || user.LastIndexed == null)
+            if (user.LastSmallIndexed > DateTime.UtcNow.AddDays(-15) || user.LastIndexed == null)
             {
                 return;
             }

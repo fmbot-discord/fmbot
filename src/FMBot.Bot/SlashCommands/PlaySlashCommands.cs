@@ -124,7 +124,7 @@ public class PlaySlashCommands : InteractionModuleBase
                 userSettings, amount);
 
             await this.Context.SendResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed();
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {

@@ -6,8 +6,10 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
+using FMBot.Bot.Models;
 using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
@@ -25,6 +27,8 @@ public class UserSlashCommands : InteractionModuleBase
     private readonly GuildService _guildService;
     private readonly FriendsService _friendsService;
     private readonly IIndexService _indexService;
+    private readonly UserBuilder _userBuilder;
+    private readonly SettingService _settingService;
 
     private readonly BotSettings _botSettings;
 
@@ -34,7 +38,11 @@ public class UserSlashCommands : InteractionModuleBase
         LastFmRepository lastFmRepository,
         IOptions<BotSettings> botSettings,
         GuildService guildService,
-        IIndexService indexService, InteractiveService interactivity, FriendsService friendsService)
+        IIndexService indexService,
+        InteractiveService interactivity,
+        FriendsService friendsService,
+        UserBuilder userBuilder,
+        SettingService settingService)
     {
         this._userService = userService;
         this._lastFmRepository = lastFmRepository;
@@ -42,6 +50,8 @@ public class UserSlashCommands : InteractionModuleBase
         this._indexService = indexService;
         this.Interactivity = interactivity;
         this._friendsService = friendsService;
+        this._userBuilder = userBuilder;
+        this._settingService = settingService;
         this._botSettings = botSettings.Value;
     }
 
@@ -277,5 +287,36 @@ public class UserSlashCommands : InteractionModuleBase
 
         await RespondAsync(null, new[] { embed.Build() }, ephemeral: true);
         this.Context.LogCommandUsed();
+    }
+
+    [SlashCommand("featured", "Shows what is currently featured (and the bots avatar)")]
+    public async Task FeaturedAsync()
+    {
+        var response = await this._userBuilder.FeaturedAsync(new ContextModel(this.Context));
+
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
+
+        var message = await this.Context.Interaction.GetOriginalResponseAsync();
+
+        if (message != null && response.CommandResponse == CommandResponse.Ok && this.Context.Guild != null)
+        {
+            await this._guildService.AddReactionsAsync(message, this.Context.Guild, response.Text == "in-server");
+        }
+    }
+
+    [SlashCommand("featuredlog", "Shows you or someone else their featured history")]
+    [UsernameSetRequired]
+    public async Task FeaturedLogAsync(
+        [Summary("User", "The user to view the featured log for (defaults to self)")] string user = null)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings =
+            await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+
+        var response = await this._userBuilder.FeaturedLogAsync(new ContextModel(this.Context, contextUser), userSettings);
+
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 }

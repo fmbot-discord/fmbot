@@ -340,13 +340,9 @@ public class PlayBuilder
                 {
                     var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
                         currentTrack.AlbumName, currentTrack.ArtistName, currentTrack.AlbumCoverUrl);
-                    if (safeForChannel.Result)
+                    if (safeForChannel == CensorService.CensorResult.Safe)
                     {
                         response.Embed.WithThumbnailUrl(currentTrack.AlbumCoverUrl);
-                    }
-                    else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
-                    {
-                        response.Embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
                     }
                 }
 
@@ -410,13 +406,9 @@ public class PlayBuilder
                 {
                     var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
                         track.AlbumName, track.ArtistName, track.AlbumCoverUrl);
-                    if (safeForChannel.Result)
+                    if (safeForChannel == CensorService.CensorResult.Safe)
                     {
                         response.Embed.WithThumbnailUrl(track.AlbumCoverUrl);
-                    }
-                    else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
-                    {
-                        response.Embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
                     }
                 }
             }
@@ -621,13 +613,9 @@ public class PlayBuilder
         {
             var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
                 mileStonePlay.Content.AlbumName, mileStonePlay.Content.ArtistName, mileStonePlay.Content.AlbumCoverUrl);
-            if (safeForChannel.Result)
+            if (safeForChannel == CensorService.CensorResult.Safe)
             {
                 response.Embed.WithThumbnailUrl(mileStonePlay.Content.AlbumCoverUrl);
-            }
-            else if (!safeForChannel.Result && safeForChannel.AlternativeCover != null)
-            {
-                response.Embed.WithThumbnailUrl(safeForChannel.AlternativeCover);
             }
         }
 

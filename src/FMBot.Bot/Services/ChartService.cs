@@ -65,7 +65,7 @@ namespace FMBot.Bot.Services
             }
         }
 
-        public async Task<SKImage> GenerateChartAsync(ChartSettings chart, bool nsfwAllowed)
+        public async Task<SKImage> GenerateChartAsync(ChartSettings chart)
         {
             try
             {
@@ -86,22 +86,16 @@ namespace FMBot.Bot.Services
                     {
                         var censor = false;
                         var cacheEnabled = true;
-                        if (!await this._censorService.AlbumIsSafe(album.AlbumName, album.ArtistName))
+                        var censorResult = await this._censorService.AlbumResult(album.AlbumName, album.ArtistName);
+
+                        if (censorResult == CensorService.CensorResult.NotSafe)
                         {
                             cacheEnabled = false;
                             censor = true;
-
-                            var nsfwResult =
-                                await this._censorService.AlbumIsAllowedInNsfw(album.AlbumName, album.ArtistName);
-                            if (!nsfwAllowed && nsfwResult.Result && nsfwResult.AlternativeCover != null)
-                            {
-                                censor = false;
-                                album.AlbumCoverUrl = nsfwResult.AlternativeCover;
-                            }
-                            else if (nsfwAllowed && nsfwResult.Result)
-                            {
-                                censor = false;
-                            }
+                        }
+                        if (censorResult == CensorService.CensorResult.Nsfw)
+                        {
+                            chart.ContainsNsfw = true;
                         }
 
                         var encodedId = StringExtensions.ReplaceInvalidChars(album.AlbumUrl.Replace("https://www.last.fm/music/", ""));

@@ -25,8 +25,9 @@ namespace FMBot.Bot.Services
                     albumQueryName = albumQueryName.Replace(" - EP", "");
 
                     var escapedAlbumName = Regex.Replace(track.AlbumName, @"([|\\*])", @"\$1");
-                    var albumRymUrl = @"https://duckduckgo.com/?q=%5Csite%3Arateyourmusic.com";
-                    albumRymUrl += HttpUtility.UrlEncode($" \"{albumQueryName}\" \"{track.ArtistName}\"");
+                    var albumRymUrl = @"https://rateyourmusic.com/search?searchterm=";
+                    albumRymUrl += HttpUtility.UrlEncode($"{track.ArtistName} {albumQueryName}");
+                    albumRymUrl += "&searchtype=l";
 
                     return $"[{escapedTrackName}]({track.TrackUrl})\n" +
                            $"By **{track.ArtistName}**" +

@@ -210,7 +210,8 @@ namespace FMBot.Bot.Services.WhoKnows
                                "FROM user_tracks AS ut " +
                                "WHERE ut.user_id = @userId AND " +
                                "UPPER(ut.name) = UPPER(CAST(@trackName AS CITEXT)) AND " +
-                               "UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT))";
+                               "UPPER(ut.artist_name) = UPPER(CAST(@artistName AS CITEXT)) " +
+                               "ORDER BY playcount DESC";
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
             await using var connection = new NpgsqlConnection(this._botSettings.Database.ConnectionString);
