@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -102,7 +101,6 @@ namespace FMBot.Bot.Services
                     return;
                 }
 
-                Regex regex = new Regex(@"\[(.+)\]\(.+\)");
                 var trackResult = await this._trackService.GetTrackFromLink(msg.Embeds.First().Description);
 
                 if (trackResult == null)
