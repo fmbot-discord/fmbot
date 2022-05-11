@@ -32,7 +32,7 @@ Or see our docker package on [Github Packages](https://github.com/fmbot-discord/
 
 <h3>Selfhosting</h3>
 
-Please see https://fmbot.xyz/setup.html.
+Please see https://fmbot.xyz/setup.
 
 <h3>Thanks</h3>
 Thanks to <a href="https://www.jetbrains.com/?from=fmbot">JetBrains</a> for providing a free license of ReSharper.
