@@ -90,6 +90,10 @@ public class CommandHandler
             {
                 await this._musicBotService.ScrobbleHydra(msg, context);
             }
+            if (msg.Author.Username.StartsWith("Cakey Bot"))
+            {
+                await this._musicBotService.ScrobbleCakeyBot(msg, context);
+            }
             return; // Ignore other bots
         }
 
