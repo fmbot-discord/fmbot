@@ -260,20 +260,6 @@ namespace FMBot.Bot.Services
         private async Task<User> GetUserToFeatureAsync(int lastUsedFilter, bool supportersOnly = false)
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();
-            var featuredUsers = await db.Users
-                .AsQueryable()
-                .Where(f => f.Featured == true)
-                .ToListAsync();
-
-            if (featuredUsers.Any())
-            {
-                foreach (var featuredUser in featuredUsers)
-                {
-                    featuredUser.Featured = false;
-                    db.Entry(featuredUser).State = EntityState.Modified;
-                }
-            }
-
             var lastFmUsersToFilter = await db.BottedUsers
                 .AsQueryable()
                 .Where(w => w.BanActive)
@@ -317,11 +303,6 @@ namespace FMBot.Bot.Services
             }
 
             var user = users[RandomNumberGenerator.GetInt32(0, users.Count)];
-
-            user.Featured = true;
-
-            db.Entry(user).State = EntityState.Modified;
-            await db.SaveChangesAsync();
 
             return user;
         }
