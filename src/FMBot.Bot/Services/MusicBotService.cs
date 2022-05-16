@@ -88,8 +88,8 @@ namespace FMBot.Bot.Services
                     msg.Embeds == null ||
                     !msg.Embeds.Any() ||
                     msg.Embeds.Any(a => a.Title == null) ||
-                    (msg.Embeds.Any(a => a.Title != "Now playing") && msg.Embeds.Any(a => a.Title != "Speelt nu")) ||
-                    msg.Embeds.Any(a => a.Description == null))
+                    msg.Embeds.Any(a => a.Description == null) ||
+                    !msg.Embeds.Any(a => a.Description.Contains("Now playing:")))
                 {
                     return;
                 }
@@ -101,7 +101,12 @@ namespace FMBot.Bot.Services
                     return;
                 }
 
-                var trackResult = await this._trackService.GetTrackFromLink(msg.Embeds.First().Description);
+                var pFrom = msg.Embeds.First().Description.IndexOf("Now playing: ", StringComparison.Ordinal) + "Now playing: ".Length;
+                var pTo = msg.Embeds.First().Description.LastIndexOf(" [", StringComparison.Ordinal);
+
+                var result = msg.Embeds.First().Description.Substring(pFrom, pTo - pFrom);
+
+                var trackResult = await this._trackService.GetTrackFromLink(result);
 
                 if (trackResult == null)
                 {
