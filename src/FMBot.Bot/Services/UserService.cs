@@ -214,11 +214,10 @@ namespace FMBot.Bot.Services
                     DiscordUserId = discordUser.Id,
                     UserType = UserType.User,
                     UserNameLastFM = newUserSettings.UserNameLastFM,
-                    TitlesEnabled = true,
-                    ChartTimePeriod = TimePeriod.Monthly,
                     FmEmbedType = newUserSettings.FmEmbedType,
                     FmCountType = newUserSettings.FmCountType,
                     SessionKeyLastFm = newUserSettings.SessionKeyLastFm,
+                    DataSource = DataSource.LastFm,
                     PrivacyLevel = PrivacyLevel.Server
                 };
 
@@ -264,6 +263,7 @@ namespace FMBot.Bot.Services
                     var userSettings = new User
                     {
                         UserNameLastFM = authSession.Content.Session.Name,
+                        DataSource = DataSource.LastFm,
                         SessionKeyLastFm = authSession.Content.Session.Key
                     };
 

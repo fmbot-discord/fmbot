@@ -54,7 +54,9 @@ namespace FMBot.Bot.Commands.LastFM
                 UserService userService,
                 CrownService crownService,
                 IOptions<BotSettings> botSettings,
-                FeaturedService featuredService, UserBuilder userBuilder, InteractiveService interactivity) : base(botSettings)
+                FeaturedService featuredService,
+                UserBuilder userBuilder,
+                InteractiveService interactivity) : base(botSettings)
         {
             this._friendsService = friendsService;
             this._guildService = guildService;
@@ -321,7 +323,8 @@ namespace FMBot.Bot.Commands.LastFM
                                             "For this to work properly you need to make sure .fmbot can see the voice channel and use a supported music bot.\n\n" +
                                             "Only tracks that already exist on Last.fm will be scrobbled. This feature works best with Spotify music.\n\n" +
                                             "Currently supported bots:\n" +
-                                            "- Hydra (Only with Now Playing messages enabled in English)\n");
+                                            "- Hydra (Only with Now Playing messages enabled in English)\n" +
+                                            "- Cakey Bot (Only with Now Playing messages enabled in English)\n");
 
                 if ((newBotScrobblingDisabledSetting == null || newBotScrobblingDisabledSetting == false) && !string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
                 {

@@ -10,15 +10,11 @@ namespace FMBot.Persistence.Domain.Models
 
         public ulong DiscordUserId { get; set; }
 
-        public bool? Featured { get; set; }
-
-        public bool? FeaturedNotificationsEnabled { get; set; }
-
         public bool? Blocked { get; set; }
 
         public UserType UserType { get; set; }
 
-        public bool? TitlesEnabled { get; set; }
+        public DataSource DataSource { get; set; }
 
         public string UserNameLastFM { get; set; }
 
@@ -38,11 +34,7 @@ namespace FMBot.Persistence.Domain.Models
 
         public FmCountType? FmCountType { get; set; }
 
-        public TimePeriod ChartTimePeriod { get; set; }
-
         public PrivacyLevel PrivacyLevel { get; set; }
-
-        public DateTime? LastGeneratedChartDateTimeUtc { get; set; }
 
         public DateTime? LastIndexed { get; set; }
 

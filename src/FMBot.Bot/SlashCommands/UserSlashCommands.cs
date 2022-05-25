@@ -76,7 +76,7 @@ public class UserSlashCommands : InteractionModuleBase
             else
             {
                 reply.AppendLine(
-                    $"You have already logged in before. If you want to change your connected Last.fm account, [click here.]({link}) " +
+                    $"You have already logged in before. If you want to change or reconnect your connected Last.fm account, [click here.]({link}) " +
                     $"Note that this link will expire after 3 minutes.");
                 reply.AppendLine();
                 reply.AppendLine(

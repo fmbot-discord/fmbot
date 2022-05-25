@@ -80,6 +80,50 @@ namespace FMBot.Bot.Services
             }
         }
 
+        public async Task ScrobbleCakeyBot(SocketUserMessage msg, ICommandContext context)
+        {
+            try
+            {
+                if (context.Guild == null ||
+                    msg.Embeds == null ||
+                    !msg.Embeds.Any() ||
+                    msg.Embeds.Any(a => a.Title == null) ||
+                    msg.Embeds.Any(a => a.Description == null) ||
+                    !msg.Embeds.Any(a => a.Description.Contains("Now playing:")))
+                {
+                    return;
+                }
+
+                var usersInChannel = await GetUsersInVoice(context, msg.Author.Id);
+
+                if (usersInChannel == null || usersInChannel.Count == 0)
+                {
+                    return;
+                }
+
+                var pFrom = msg.Embeds.First().Description.IndexOf("Now playing: ", StringComparison.Ordinal) + "Now playing: ".Length;
+                var pTo = msg.Embeds.First().Description.LastIndexOf(" [", StringComparison.Ordinal);
+
+                var result = msg.Embeds.First().Description.Substring(pFrom, pTo - pFrom);
+
+                var trackResult = await this._trackService.GetTrackFromLink(result);
+
+                if (trackResult == null)
+                {
+                    Log.Information("BotScrobbling: Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
+                    return;
+                }
+
+                _ = RegisterTrack(usersInChannel, trackResult);
+
+                _ = SendScrobbleMessage(context, trackResult, usersInChannel.Count);
+            }
+            catch (Exception e)
+            {
+                Log.Error("BotScrobbling: Error in music bot scrobbler (Cakey Bot)", e);
+            }
+        }
+
         private async Task SendScrobbleMessage(ICommandContext context, TrackSearchResult trackResult,
             int listenerCount)
         {
