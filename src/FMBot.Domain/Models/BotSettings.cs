@@ -21,6 +21,8 @@ namespace FMBot.Domain.Models
         public GoogleConfig Google { get; set; }
 
         public BotListConfig BotLists { get; set; }
+
+        public DiscogsConfig Discogs { get; set; }
     }
 
     public class DiscordConfig
@@ -83,6 +85,13 @@ namespace FMBot.Domain.Models
     }
 
     public class SpotifyConfig
+    {
+        public string Key { get; set; }
+
+        public string Secret { get; set; }
+    }
+
+    public class DiscogsConfig
     {
         public string Key { get; set; }
 

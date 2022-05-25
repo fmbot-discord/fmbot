@@ -130,6 +130,8 @@ namespace FMBot.Bot
                 .AddSingleton<CountryBuilders>()
                 .AddSingleton<ClientLogHandler>()
                 .AddSingleton<CommandHandler>()
+                .AddSingleton<DiscogsBuilder>()
+                .AddSingleton<DiscogsService>()
                 .AddSingleton<FeaturedService>()
                 .AddSingleton<FriendsService>()
                 .AddSingleton<FriendBuilders>()

@@ -54,7 +54,9 @@ namespace FMBot.Bot.Commands.LastFM
                 UserService userService,
                 CrownService crownService,
                 IOptions<BotSettings> botSettings,
-                FeaturedService featuredService, UserBuilder userBuilder, InteractiveService interactivity) : base(botSettings)
+                FeaturedService featuredService,
+                UserBuilder userBuilder,
+                InteractiveService interactivity) : base(botSettings)
         {
             this._friendsService = friendsService;
             this._guildService = guildService;
