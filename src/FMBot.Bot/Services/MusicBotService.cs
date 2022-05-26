@@ -194,7 +194,7 @@ namespace FMBot.Bot.Services
 
                 await using var db = await this._contextFactory.CreateDbContextAsync();
 
-                var userIds = targetChannel.Users.Select(s => s.Id);
+                var userIds = targetChannel.ConnectedUsers.Select(s => s.Id);
 
                 var users = await db.Users
                     .AsQueryable()
