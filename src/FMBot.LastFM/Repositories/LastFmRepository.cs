@@ -975,7 +975,7 @@ namespace FMBot.LastFM.Repositories
 
             var scrobbles = await this.GetRecentTracksAsync(lastFmUserName, fromUnixTimestamp: timeFrom);
 
-            return scrobbles.Success && scrobbles.Content.RecentTracks.Count > 0;
+            return scrobbles.Success && scrobbles.Content.RecentTracks.Count > 0 || scrobbles.Error == ResponseStatus.LoginRequired;
         }
 
         public async Task<Response<TokenResponse>> GetAuthToken()
