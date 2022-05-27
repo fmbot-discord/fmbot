@@ -631,7 +631,7 @@ namespace FMBot.Bot.Commands.Guild
 
             if (int.TryParse(command, out var parsedNewCooldown))
             {
-                if (parsedNewCooldown > 1 && parsedNewCooldown < 600)
+                if (parsedNewCooldown is > 1 and <= 600)
                 {
                     newCooldown = parsedNewCooldown;
                 }
