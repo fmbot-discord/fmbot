@@ -33,7 +33,7 @@ public class DiscogsService
 
     public async Task AuthDiscogsTextCommand(ICommandContext context)
     {
-        var oAuthConsumerInformation = new OAuthConsumerInformation("lOFKIklDEtHmeJAHQExo", "xGJqCDwxhzOwmNNXUVBjfiQdxyoouKEO");
+        var oAuthConsumerInformation = new OAuthConsumerInformation(this._botSettings.Discogs.Key, this._botSettings.Discogs.Secret);
         var discogsClient = new DiscogsAuthentifierClient(oAuthConsumerInformation);
 
         var aouth = discogsClient.Authorize(s => Task.FromResult(GetToken(s, context))).Result;
