@@ -593,7 +593,7 @@ public class PlayCommands : BaseCommandModule
             timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
         }
 
-        var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom);
+        var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom, userSettings.SessionKeyLastFm);
 
         var userTitle = $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}";
 
