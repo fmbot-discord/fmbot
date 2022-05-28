@@ -51,6 +51,10 @@ namespace FMBot.LastFM.Repositories
 
             if (queueItem.UpdateQueue)
             {
+                if (user == null)
+                {
+                    return null;
+                }
                 if (user.LastUpdated > DateTime.UtcNow.AddHours(-44))
                 {
                     Log.Debug("Update: Skipped for {userId} | {userNameLastFm}", user.UserId, user.UserNameLastFM);
@@ -76,8 +80,8 @@ namespace FMBot.LastFM.Repositories
             var now = DateTime.UtcNow;
             if (dateFromFilter > now.AddHours(-18))
             {
-                var playsToGet = (int)((DateTime.UtcNow - dateFromFilter).TotalMinutes / 4);
-                count = 12 + playsToGet;
+                var playsToGet = (int)((DateTime.UtcNow - dateFromFilter).TotalMinutes / 3);
+                count = 25 + playsToGet;
                 timeFrom = null;
                 totalPlaycountCorrect = true;
             }
