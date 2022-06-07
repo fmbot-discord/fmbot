@@ -30,22 +30,20 @@ public class DiscogsService
 
     //}
 
-
     public async Task AuthDiscogsTextCommand(ICommandContext context)
     {
         var oAuthConsumerInformation = new OAuthConsumerInformation(this._botSettings.Discogs.Key, this._botSettings.Discogs.Secret);
         var discogsClient = new DiscogsAuthentifierClient(oAuthConsumerInformation);
 
-        var aouth = discogsClient.Authorize(s => Task.FromResult(GetToken(s, context))).Result;
+        var aouth = discogsClient.Authorize(s => Task.FromResult(GetTextCommandToken(s, context))).Result;
 
         Console.WriteLine($"{((aouth != null) ? "Success" : "Fail")}");
         Console.WriteLine($"Token:{aouth?.TokenInformation?.Token}, Token:{aouth?.TokenInformation?.TokenSecret}");
     }
 
-    private static string GetToken(string url, ICommandContext commandContext)
+    private static string GetTextCommandToken(string url, ICommandContext commandContext)
     {
-
-        Console.WriteLine("Please authourize the application and enter the final key in the console");
+        Console.WriteLine("Please authorize the application and enter the final key in the console");
         Process.Start(url);
         string tokenKey = Console.ReadLine();
         tokenKey = string.IsNullOrEmpty(tokenKey) ? null : tokenKey;

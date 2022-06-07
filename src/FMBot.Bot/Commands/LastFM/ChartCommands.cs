@@ -156,9 +156,9 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, chartSettings.TimeSettings, imagesToRequest);
 
-                if (albums.Content.TopAlbums == null || albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
+                if (albums.Content?.TopAlbums == null || albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
                 {
-                    var count = albums.Content.TopAlbums?.Count ?? 0;
+                    var count = albums.Content?.TopAlbums?.Count ?? 0;
 
                     var reply =
                         $"User hasn't listened to enough albums ({count} of required {chartSettings.ImagesNeeded}) for a chart this size. \n" +
@@ -241,7 +241,6 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (chartSettings.ContainsNsfw && !nsfwAllowed)
                 {
-
                     embedDescription +=
                         $"⚠️ Contains NSFW covers - Click to reveal\n";
                 }

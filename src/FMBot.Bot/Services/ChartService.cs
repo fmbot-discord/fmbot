@@ -93,10 +93,8 @@ namespace FMBot.Bot.Services
                             cacheEnabled = false;
                             censor = true;
                         }
-                        if (censorResult == CensorService.CensorResult.Nsfw)
-                        {
-                            chart.ContainsNsfw = true;
-                        }
+
+                        var nsfw = censorResult == CensorService.CensorResult.Nsfw;
 
                         var encodedId = StringExtensions.ReplaceInvalidChars(album.AlbumUrl.Replace("https://www.last.fm/music/", ""));
                         var localAlbumId = StringExtensions.TruncateLongString($"album_{encodedId}", 60);
@@ -167,17 +165,9 @@ namespace FMBot.Bot.Services
                         {
                             chartImage = SKBitmap.Decode(this._censoredImagePath);
                             validImage = false;
-                            if (chart.CensoredAlbums.HasValue)
-                            {
-                                chart.CensoredAlbums++;
-                            }
-                            else
-                            {
-                                chart.CensoredAlbums = 1;
-                            }
                         }
 
-                        AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, album);
+                        AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, album, nsfw: nsfw, censored: censor);
                     }
                 }
                 else
@@ -268,22 +258,38 @@ namespace FMBot.Bot.Services
                             imageList = chart.ChartImages.OrderBy(o => o.Index);
                         }
 
-                        var image = imageList
+                        var chartImage = imageList
                             .Where(w => !chart.SkipWithoutImage || w.ValidImage)
-                            .ElementAt(i).Image;
+                            .ElementAt(i);
 
-                        canvas.DrawBitmap(image, SKRect.Create(offset, offsetTop, image.Width, image.Height));
+                        canvas.DrawBitmap(chartImage.Image, SKRect.Create(offset, offsetTop, chartImage.Image.Width, chartImage.Image.Height));
 
 
                         if (i == (chart.Width - 1) || i - (chart.Width) * heightRow == chart.Width - 1)
                         {
-                            offsetTop += image.Height;
+                            offsetTop += chartImage.Image.Height;
                             heightRow += 1;
                             offset = 0;
                         }
                         else
                         {
-                            offset += image.Width;
+                            offset += chartImage.Image.Width;
+                        }
+
+                        if (chartImage.Nsfw)
+                        {
+                            chart.ContainsNsfw = true;
+                        }
+                        if (chartImage.Censored)
+                        {
+                            if (chart.CensoredAlbums.HasValue)
+                            {
+                                chart.CensoredAlbums++;
+                            }
+                            else
+                            {
+                                chart.CensoredAlbums = 1;
+                            }
                         }
                     }
 
@@ -303,7 +309,13 @@ namespace FMBot.Bot.Services
         }
 
         private void AddImageToChart(ChartSettings chart, SKBitmap chartImage, int chartImageHeight,
-            int chartImageWidth, bool largerImages, bool validImage, TopAlbum album = null, TopArtist artist = null)
+            int chartImageWidth,
+            bool largerImages,
+            bool validImage,
+            TopAlbum album = null,
+            TopArtist artist = null,
+            bool nsfw = false,
+            bool censored = false)
         {
             if (chartImage.Height != chartImageHeight || chartImage.Width != chartImageWidth)
             {
@@ -357,7 +369,7 @@ namespace FMBot.Bot.Services
 
             var index = album != null ? chart.Albums.IndexOf(album) : chart.Artists.IndexOf(artist);
 
-            chart.ChartImages.Add(new ChartImage(chartImage, index, validImage, primaryColor));
+            chart.ChartImages.Add(new ChartImage(chartImage, index, validImage, primaryColor, nsfw, censored));
         }
 
         private void AddTitleToChartImage(SKBitmap chartImage, bool largerImages, TopAlbum album = null, TopArtist artist = null)
