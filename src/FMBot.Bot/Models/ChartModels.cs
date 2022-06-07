@@ -70,6 +70,8 @@ namespace FMBot.Bot.Models
 
         public bool SkipWithoutImage { get; set; }
 
+        public bool SkipNsfw { get; set; }
+
         public bool CustomOptionsEnabled { get; set; }
 
         public bool RainbowSortingEnabled { get; set; }

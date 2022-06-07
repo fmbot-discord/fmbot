@@ -248,8 +248,14 @@ namespace FMBot.Bot.Services
                         }
 
                         var chartImage = imageList
+                            .Where(w => !chart.SkipNsfw || !w.Nsfw)
                             .Where(w => !chart.SkipWithoutImage || w.ValidImage)
-                            .ElementAt(i);
+                            .ElementAtOrDefault(i);
+
+                        if (chartImage == null)
+                        {
+                            continue;
+                        }
 
                         canvas.DrawBitmap(chartImage.Image, SKRect.Create(offset, offsetTop, chartImage.Image.Width, chartImage.Image.Height));
 
@@ -505,6 +511,11 @@ namespace FMBot.Bot.Services
                 chartSettings.SkipWithoutImage = true;
                 chartSettings.CustomOptionsEnabled = true;
             }
+            if (extraOptions.Contains("sfw"))
+            {
+                chartSettings.SkipNsfw = true;
+                chartSettings.CustomOptionsEnabled = true;
+            }
 
             if (extraOptions.Contains("rainbow") ||
                 extraOptions.Contains("pride"))
@@ -568,6 +579,10 @@ namespace FMBot.Bot.Services
             if (chartSettings.SkipWithoutImage)
             {
                 embedDescription += $"- {multiple} without images skipped\n";
+            }
+            if (chartSettings.SkipNsfw)
+            {
+                embedDescription += $"- {multiple} with NSFW images skipped\n";
             }
             if (chartSettings.TitleSetting == TitleSetting.TitlesDisabled)
             {
