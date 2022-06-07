@@ -96,15 +96,10 @@ namespace FMBot.Bot.Services
 
                         var nsfw = censorResult == CensorService.CensorResult.Nsfw;
 
-                        var encodedId = StringExtensions.ReplaceInvalidChars(album.AlbumUrl.Replace("https://www.last.fm/music/", ""));
-                        var localAlbumId = StringExtensions.TruncateLongString($"album_{encodedId}", 60);
-
                         SKBitmap chartImage;
                         var validImage = true;
 
-                        var fileName = localAlbumId + ".png";
-                        var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
-
+                        var localPath = AlbumUrlToCacheFilePath(album.AlbumUrl);
 
                         if (File.Exists(localPath) && cacheEnabled)
                         {
@@ -148,10 +143,7 @@ namespace FMBot.Bot.Services
 
                                 if (validImage && cacheEnabled)
                                 {
-                                    using var image = SKImage.FromBitmap(chartImage);
-                                    using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-                                    await using var stream = File.OpenWrite(localPath);
-                                    data.SaveTo(stream);
+                                    await SaveImageToCache(chartImage, localPath);
                                 }
                             }
                             else
@@ -214,10 +206,7 @@ namespace FMBot.Bot.Services
 
                                 if (validImage)
                                 {
-                                    using var image = SKImage.FromBitmap(chartImage);
-                                    using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-                                    await using var stream = File.OpenWrite(localPath);
-                                    data.SaveTo(stream);
+                                    await SaveImageToCache(chartImage, localPath);
                                 }
                             }
                             else
@@ -306,6 +295,38 @@ namespace FMBot.Bot.Services
                     image.Dispose();
                 }
             }
+        }
+
+        public static string AlbumUrlToCacheFilePath(string albumUrl)
+        {
+            var encodedId = StringExtensions.ReplaceInvalidChars(albumUrl.Replace("https://www.last.fm/music/", ""));
+            var localAlbumId = StringExtensions.TruncateLongString($"album_{encodedId}", 60);
+
+            var fileName = localAlbumId + ".png";
+            var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
+            return localPath;
+        }
+
+        private static async Task SaveImageToCache(SKBitmap chartImage, string localPath)
+        {
+            using var image = SKImage.FromBitmap(chartImage);
+            using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+            await using var stream = File.OpenWrite(localPath);
+            data.SaveTo(stream);
+        }
+
+        public static async Task OverwriteCache(MemoryStream stream, string cacheFilePath)
+        {
+            stream.Position = 0;
+            var chartImage = SKBitmap.Decode(stream);
+
+            if (File.Exists(cacheFilePath))
+            {
+                File.Delete(cacheFilePath);
+                await Task.Delay(100);
+            }
+
+            await SaveImageToCache(chartImage, cacheFilePath);
         }
 
         private void AddImageToChart(ChartSettings chart, SKBitmap chartImage, int chartImageHeight,

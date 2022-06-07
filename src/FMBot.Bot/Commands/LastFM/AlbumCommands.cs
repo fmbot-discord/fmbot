@@ -240,6 +240,10 @@ public class AlbumCommands : BaseCommandModule
                 return;
             }
 
+            var cacheStream = new MemoryStream();
+            await image.CopyToAsync(cacheStream);
+            image.Position = 0;
+
             var description = new StringBuilder();
             description.AppendLine($"**{album.ArtistName} - [{album.AlbumName}]({album.AlbumUrl})**");
 
@@ -262,7 +266,11 @@ public class AlbumCommands : BaseCommandModule
                 this._embed.Build(),
                 isSpoiler: safeForChannel == CensorService.CensorResult.Nsfw);
 
+            var cacheFilePath = ChartService.AlbumUrlToCacheFilePath(album.AlbumUrl);
+            await ChartService.OverwriteCache(cacheStream, cacheFilePath);
+
             await image.DisposeAsync();
+            await cacheStream.DisposeAsync();
             this.Context.LogCommandUsed();
         }
         catch (Exception e)
