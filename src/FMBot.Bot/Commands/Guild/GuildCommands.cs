@@ -616,11 +616,12 @@ namespace FMBot.Bot.Commands.Guild
         [Command("cooldown", RunMode = RunMode.Async)]
         [Summary("Sets a cooldown for the `fm` command in a channel.\n\n" +
                  "To pick a channel, simply use this command in the channel you want the cooldown in.")]
-        [Options("Cooldown in seconds (Min 2 seconds - Max 600 seconds)")]
+        [Options("Cooldown in seconds (Min 2 seconds - Max 1200 seconds)")]
+        [Examples("cooldown 5", "cooldown 1000")]
         [GuildOnly]
         [RequiresIndex]
         [CommandCategories(CommandCategory.ServerSettings)]
-        public async Task FmSetFmCooldownCommand(string command = null)
+        public async Task SetFmCooldownCommand(string command = null)
         {
             _ = this.Context.Channel.TriggerTypingAsync();
 
@@ -631,7 +632,7 @@ namespace FMBot.Bot.Commands.Guild
 
             if (int.TryParse(command, out var parsedNewCooldown))
             {
-                if (parsedNewCooldown > 1 && parsedNewCooldown < 600)
+                if (parsedNewCooldown is > 1 and <= 1200)
                 {
                     newCooldown = parsedNewCooldown;
                 }
@@ -658,7 +659,7 @@ namespace FMBot.Bot.Commands.Guild
                 newFmCooldown.HasValue ? $"{newFmCooldown.Value} seconds" : "No cooldown");
 
             this._embed.WithFooter($"Adjusting .fm cooldown for #{this.Context.Channel.Name}.\n" +
-                                   "Min 2 seconds - Max 600 seconds - Cooldown is per-user.\n" +
+                                   "Min 2 seconds - Max 1200 seconds - Cooldown is per-user.\n" +
                                    "Note that this cooldown can also expire after a bot restart.");
 
             await ReplyAsync("", false, this._embed.Build()).ConfigureAwait(false);

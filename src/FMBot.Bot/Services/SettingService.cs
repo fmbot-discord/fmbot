@@ -471,7 +471,7 @@ namespace FMBot.Bot.Services
 
                     if (foundLfmUser != null)
                     {
-                        settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName }, true);
+                        settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { lfmUserName, $"lfm:{lfmUserName}" }, true);
 
                         settingsModel.DiscordUserName = foundLfmUser.UserNameLastFM;
                         settingsModel.DifferentUser = true;

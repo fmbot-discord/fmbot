@@ -20,6 +20,8 @@ using FMBot.Bot.Services.Guild;
 using FMBot.Domain;
 using FMBot.Domain.Models;
 using Microsoft.Extensions.Options;
+using Swan;
+using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
 namespace FMBot.Bot.Commands
 {
@@ -32,6 +34,7 @@ namespace FMBot.Bot.Commands
         private readonly IPrefixService _prefixService;
         private readonly SupporterService _supporterService;
         private readonly UserService _userService;
+        private readonly MusicBotService _musicBotService;
         private InteractiveService Interactivity { get; }
 
         private static readonly List<DateTimeOffset> StackCooldownTimer = new();
@@ -45,7 +48,8 @@ namespace FMBot.Bot.Commands
                 SupporterService supporterService,
                 UserService userService,
                 IOptions<BotSettings> botSettings,
-                InteractiveService interactivity) : base(botSettings)
+                InteractiveService interactivity,
+                MusicBotService musicBotService) : base(botSettings)
         {
             this._friendService = friendsService;
             this._guildService = guildService;
@@ -54,6 +58,7 @@ namespace FMBot.Bot.Commands
             this._supporterService = supporterService;
             this._userService = userService;
             this.Interactivity = interactivity;
+            this._musicBotService = musicBotService;
         }
 
         [Command("invite", RunMode = RunMode.Async)]
@@ -258,20 +263,29 @@ namespace FMBot.Bot.Commands
 
             var client = this.Context.Client as DiscordShardedClient;
 
-            var onlineShards = new StringBuilder();
-            foreach (var shard in client.Shards.Where(w => w.Latency > 0))
-            {
-                onlineShards.Append($"{shard.ShardId} ({shard.Latency}), ");
-            }
-            this._embed.AddField("Online shards", onlineShards.Length > 0 ? onlineShards.ToString() : "No online shards");
+            var shardDescription = new StringBuilder();
 
-            var offlineShards = new StringBuilder();
-            foreach (var shard in client.Shards.Where(w => w.Latency == 0))
-            {
-                offlineShards.Append($"{shard.ShardId} ({shard.Latency}), ");
-            }
-            this._embed.AddField("Offline shards", offlineShards.Length > 0 ? offlineShards.ToString() : "No offline shards");
+            shardDescription.AppendLine(
+                $"Total shards: `{client.Shards.Count()}`");
+            shardDescription.AppendLine(
+                $"Connected shards: `{client.Shards.Count(c => c.ConnectionState == ConnectionState.Connected)}`");
+            shardDescription.AppendLine(
+                $"Disconnected shards: `{client.Shards.Count(c => c.ConnectionState == ConnectionState.Disconnected)}`");
+            shardDescription.AppendLine(
+                $"Connecting shards: `{client.Shards.Count(c => c.ConnectionState == ConnectionState.Connecting)}`");
+            shardDescription.AppendLine(
+                $"Disconnecting shards: `{client.Shards.Count(c => c.ConnectionState == ConnectionState.Disconnecting)}`");
 
+            shardDescription.AppendLine();
+            shardDescription.AppendLine(
+                $"Min latency: `{client.Shards.Select(s => s.Latency).Min() + "ms`"}");
+            shardDescription.AppendLine(
+                $"Average latency: `{Math.Round(client.Shards.Select(s => s.Latency).Average(), 2) + "ms`"}");
+            shardDescription.AppendLine(
+                $"Max latency: `{client.Shards.Select(s => s.Latency).Max() + "ms`"}");
+
+
+            this._embed.WithDescription(shardDescription.ToString());
             if (this.Context.Guild != null)
             {
                 this._embed.WithFooter(
@@ -279,6 +293,53 @@ namespace FMBot.Bot.Commands
             }
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            this.Context.LogCommandUsed();
+        }
+
+        [Command("debugbotscrobbling", RunMode = RunMode.Async)]
+        [Alias("debugbotscrobble", "debugbotscrobbles", "botscrobbledebug","botscrobblingdebug")]
+        [Summary("Debugging for bot scrobbling")]
+        [ExcludeFromHelp]
+        public async Task DebugBotScrobbles()
+        {
+            var logs = this._musicBotService.BotScrobblingLogs.Where(w => w.GuildId == this.Context.Guild.Id);
+
+            var logPages = logs.OrderByDescending(o => o.DateTime).Chunk(25).ToList();
+            var pageCounter = 1;
+
+            var pages = new List<PageBuilder>();
+            foreach (var logPage in logPages)
+            {
+                var description = new StringBuilder();
+
+                foreach (var log in logPage)
+                {
+                    description.AppendLine($"<t:{log.DateTime.ToUnixEpochDate()}:R> | {log.Log}");
+                }
+
+                pages.Add(new PageBuilder()
+                    .WithDescription(description.ToString())
+                    .WithFooter($"Page {pageCounter}/{logPages.Count()}")
+                    .WithTitle($"Bot scrobbling debug log for {this.Context.Guild.Name} | {this.Context.Guild.Id}"));
+
+                pageCounter++;
+            }
+
+            if (!pages.Any())
+            {
+                pages.Add(new PageBuilder()
+                    .WithDescription("No bot scrobbling logs yet, make sure fmbot can see the 'Now playing' message")
+                    .WithFooter($"Page {pageCounter}/{logPages.Count()}")
+                    .WithTitle($"Bot scrobbling debug log for {this.Context.Guild.Name} | {this.Context.Guild.Id}"));
+            }
+
+            var paginator = StringService.BuildStaticPaginator(pages);
+
+            _ = this.Interactivity.SendPaginatorAsync(
+                paginator,
+                this.Context.Channel,
+                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
+
             this.Context.LogCommandUsed();
         }
 

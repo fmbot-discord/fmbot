@@ -68,7 +68,8 @@ namespace FMBot.Bot.Commands.LastFM
             Constants.CompactTimePeriodList,
             "Disable titles: `notitles` / `nt`",
             "Skip albums with no image: `skipemptyimages` / `s`",
-            "Size: WidthxHeight - `2x2`, `3x3`, `4x5` up to `10x10`",
+            "Skip NSFW albums: `sfw`",
+            "Size: `WidthxHeight` - `2x2`, `3x3`, `4x5`, `20x4` up to 100 total images",
             Constants.UserMentionExample)]
         [Examples("c", "c q 8x8 nt s", "chart 8x8 quarterly notitles skip", "c 10x10 alltime notitles skip", "c @user 7x7 yearly")]
         [Alias("c", "aoty")]
@@ -151,14 +152,18 @@ namespace FMBot.Bot.Commands.LastFM
                 {
                     extraAlbums = chartSettings.Height * 2 + (chartSettings.Height > 5 ? 8 : 2);
                 }
+                if (chartSettings.SkipNsfw)
+                {
+                    extraAlbums = chartSettings.Height;
+                }
 
                 var imagesToRequest = chartSettings.ImagesNeeded + extraAlbums;
 
                 var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, chartSettings.TimeSettings, imagesToRequest);
 
-                if (albums.Content.TopAlbums == null || albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
+                if (albums.Content?.TopAlbums == null || albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
                 {
-                    var count = albums.Content.TopAlbums?.Count ?? 0;
+                    var count = albums.Content?.TopAlbums?.Count ?? 0;
 
                     var reply =
                         $"User hasn't listened to enough albums ({count} of required {chartSettings.ImagesNeeded}) for a chart this size. \n" +
@@ -233,7 +238,7 @@ namespace FMBot.Bot.Commands.LastFM
                 var nsfwAllowed = this.Context.Guild == null || ((SocketTextChannel)this.Context.Channel).IsNsfw;
                 var chart = await this._chartService.GenerateChartAsync(chartSettings);
 
-                if (chartSettings.CensoredAlbums.HasValue && chartSettings.CensoredAlbums > 0)
+                if (chartSettings.CensoredAlbums is > 0)
                 {
                     embedDescription +=
                         $"{chartSettings.CensoredAlbums.Value} album(s) filtered due to images that are not allowed to be posted on Discord.\n";
@@ -241,7 +246,6 @@ namespace FMBot.Bot.Commands.LastFM
 
                 if (chartSettings.ContainsNsfw && !nsfwAllowed)
                 {
-
                     embedDescription +=
                         $"⚠️ Contains NSFW covers - Click to reveal\n";
                 }

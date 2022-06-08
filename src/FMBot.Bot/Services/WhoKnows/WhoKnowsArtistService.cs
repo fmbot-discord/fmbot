@@ -207,7 +207,7 @@ namespace FMBot.Bot.Services.WhoKnows
         public async Task<ICollection<GuildArtist>> GetTopAllTimeArtistsForGuild(int guildId,
             OrderType orderType, int? limit = 120)
         {
-            var cacheKey = $"guild-alltime-top-artists-{guildId}";
+            var cacheKey = $"guild-alltime-top-artists-{guildId}-{orderType}";
 
             var cachedArtistsAvailable = this._cache.TryGetValue(cacheKey, out ICollection<GuildArtist> guildArtists);
             if (cachedArtistsAvailable)

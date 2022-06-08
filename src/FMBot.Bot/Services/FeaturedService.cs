@@ -265,7 +265,7 @@ namespace FMBot.Bot.Services
                 .Where(w => w.BanActive)
                 .Select(s => s.UserNameLastFM.ToLower()).ToListAsync();
 
-            var recentlyFeaturedFilter = DateTime.UtcNow.AddDays(-1);
+            var recentlyFeaturedFilter = supportersOnly ?  DateTime.UtcNow.AddDays(-45) : DateTime.UtcNow.AddDays(-1);
             var recentlyFeaturedUsers = await db.FeaturedLogs
                 .Include(i => i.User)
                 .Where(w => w.DateTime > recentlyFeaturedFilter && w.UserId != null)

@@ -70,6 +70,8 @@ namespace FMBot.Bot.Models
 
         public bool SkipWithoutImage { get; set; }
 
+        public bool SkipNsfw { get; set; }
+
         public bool CustomOptionsEnabled { get; set; }
 
         public bool RainbowSortingEnabled { get; set; }
@@ -82,12 +84,14 @@ namespace FMBot.Bot.Models
 
     public class ChartImage
     {
-        public ChartImage(SKBitmap image, int indexOf, bool validImage, Color? primaryColor)
+        public ChartImage(SKBitmap image, int indexOf, bool validImage, Color? primaryColor, bool nsfw, bool censored)
         {
             this.Image = image;
             this.Index = indexOf;
             this.ValidImage = validImage;
             this.PrimaryColor = primaryColor;
+            this.Nsfw = nsfw;
+            this.Censored = censored;
         }
 
         public SKBitmap Image { get; }
@@ -97,6 +101,10 @@ namespace FMBot.Bot.Models
         public bool ValidImage { get; }
 
         public Color? PrimaryColor { get; }
+
+        public bool Nsfw { get; set; }
+
+        public bool Censored { get; set; }
 
         public int? ColorSortValue { get; set;  }
     }

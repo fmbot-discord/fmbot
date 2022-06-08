@@ -93,20 +93,13 @@ namespace FMBot.Bot.Services
                             cacheEnabled = false;
                             censor = true;
                         }
-                        if (censorResult == CensorService.CensorResult.Nsfw)
-                        {
-                            chart.ContainsNsfw = true;
-                        }
 
-                        var encodedId = StringExtensions.ReplaceInvalidChars(album.AlbumUrl.Replace("https://www.last.fm/music/", ""));
-                        var localAlbumId = StringExtensions.TruncateLongString($"album_{encodedId}", 60);
+                        var nsfw = censorResult == CensorService.CensorResult.Nsfw;
 
                         SKBitmap chartImage;
                         var validImage = true;
 
-                        var fileName = localAlbumId + ".png";
-                        var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
-
+                        var localPath = AlbumUrlToCacheFilePath(album.AlbumUrl);
 
                         if (File.Exists(localPath) && cacheEnabled)
                         {
@@ -150,10 +143,7 @@ namespace FMBot.Bot.Services
 
                                 if (validImage && cacheEnabled)
                                 {
-                                    using var image = SKImage.FromBitmap(chartImage);
-                                    using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-                                    await using var stream = File.OpenWrite(localPath);
-                                    data.SaveTo(stream);
+                                    await SaveImageToCache(chartImage, localPath);
                                 }
                             }
                             else
@@ -167,17 +157,9 @@ namespace FMBot.Bot.Services
                         {
                             chartImage = SKBitmap.Decode(this._censoredImagePath);
                             validImage = false;
-                            if (chart.CensoredAlbums.HasValue)
-                            {
-                                chart.CensoredAlbums++;
-                            }
-                            else
-                            {
-                                chart.CensoredAlbums = 1;
-                            }
                         }
 
-                        AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, album);
+                        AddImageToChart(chart, chartImage, chartImageHeight, chartImageWidth, largerImages, validImage, album, nsfw: nsfw, censored: censor);
                     }
                 }
                 else
@@ -224,10 +206,7 @@ namespace FMBot.Bot.Services
 
                                 if (validImage)
                                 {
-                                    using var image = SKImage.FromBitmap(chartImage);
-                                    using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-                                    await using var stream = File.OpenWrite(localPath);
-                                    data.SaveTo(stream);
+                                    await SaveImageToCache(chartImage, localPath);
                                 }
                             }
                             else
@@ -268,22 +247,44 @@ namespace FMBot.Bot.Services
                             imageList = chart.ChartImages.OrderBy(o => o.Index);
                         }
 
-                        var image = imageList
+                        var chartImage = imageList
+                            .Where(w => !chart.SkipNsfw || !w.Nsfw)
                             .Where(w => !chart.SkipWithoutImage || w.ValidImage)
-                            .ElementAt(i).Image;
+                            .ElementAtOrDefault(i);
 
-                        canvas.DrawBitmap(image, SKRect.Create(offset, offsetTop, image.Width, image.Height));
+                        if (chartImage == null)
+                        {
+                            continue;
+                        }
+
+                        canvas.DrawBitmap(chartImage.Image, SKRect.Create(offset, offsetTop, chartImage.Image.Width, chartImage.Image.Height));
 
 
                         if (i == (chart.Width - 1) || i - (chart.Width) * heightRow == chart.Width - 1)
                         {
-                            offsetTop += image.Height;
+                            offsetTop += chartImage.Image.Height;
                             heightRow += 1;
                             offset = 0;
                         }
                         else
                         {
-                            offset += image.Width;
+                            offset += chartImage.Image.Width;
+                        }
+
+                        if (chartImage.Nsfw)
+                        {
+                            chart.ContainsNsfw = true;
+                        }
+                        if (chartImage.Censored)
+                        {
+                            if (chart.CensoredAlbums.HasValue)
+                            {
+                                chart.CensoredAlbums++;
+                            }
+                            else
+                            {
+                                chart.CensoredAlbums = 1;
+                            }
                         }
                     }
 
@@ -302,8 +303,46 @@ namespace FMBot.Bot.Services
             }
         }
 
+        public static string AlbumUrlToCacheFilePath(string albumUrl)
+        {
+            var encodedId = StringExtensions.ReplaceInvalidChars(albumUrl.Replace("https://www.last.fm/music/", ""));
+            var localAlbumId = StringExtensions.TruncateLongString($"album_{encodedId}", 60);
+
+            var fileName = localAlbumId + ".png";
+            var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", fileName);
+            return localPath;
+        }
+
+        private static async Task SaveImageToCache(SKBitmap chartImage, string localPath)
+        {
+            using var image = SKImage.FromBitmap(chartImage);
+            using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+            await using var stream = File.OpenWrite(localPath);
+            data.SaveTo(stream);
+        }
+
+        public static async Task OverwriteCache(MemoryStream stream, string cacheFilePath)
+        {
+            stream.Position = 0;
+            var chartImage = SKBitmap.Decode(stream);
+
+            if (File.Exists(cacheFilePath))
+            {
+                File.Delete(cacheFilePath);
+                await Task.Delay(100);
+            }
+
+            await SaveImageToCache(chartImage, cacheFilePath);
+        }
+
         private void AddImageToChart(ChartSettings chart, SKBitmap chartImage, int chartImageHeight,
-            int chartImageWidth, bool largerImages, bool validImage, TopAlbum album = null, TopArtist artist = null)
+            int chartImageWidth,
+            bool largerImages,
+            bool validImage,
+            TopAlbum album = null,
+            TopArtist artist = null,
+            bool nsfw = false,
+            bool censored = false)
         {
             if (chartImage.Height != chartImageHeight || chartImage.Width != chartImageWidth)
             {
@@ -357,7 +396,7 @@ namespace FMBot.Bot.Services
 
             var index = album != null ? chart.Albums.IndexOf(album) : chart.Artists.IndexOf(artist);
 
-            chart.ChartImages.Add(new ChartImage(chartImage, index, validImage, primaryColor));
+            chart.ChartImages.Add(new ChartImage(chartImage, index, validImage, primaryColor, nsfw, censored));
         }
 
         private void AddTitleToChartImage(SKBitmap chartImage, bool largerImages, TopAlbum album = null, TopArtist artist = null)
@@ -472,6 +511,11 @@ namespace FMBot.Bot.Services
                 chartSettings.SkipWithoutImage = true;
                 chartSettings.CustomOptionsEnabled = true;
             }
+            if (extraOptions.Contains("sfw"))
+            {
+                chartSettings.SkipNsfw = true;
+                chartSettings.CustomOptionsEnabled = true;
+            }
 
             if (extraOptions.Contains("rainbow") ||
                 extraOptions.Contains("pride"))
@@ -535,6 +579,10 @@ namespace FMBot.Bot.Services
             if (chartSettings.SkipWithoutImage)
             {
                 embedDescription += $"- {multiple} without images skipped\n";
+            }
+            if (chartSettings.SkipNsfw)
+            {
+                embedDescription += $"- {multiple} with NSFW images skipped\n";
             }
             if (chartSettings.TitleSetting == TitleSetting.TitlesDisabled)
             {

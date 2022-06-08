@@ -593,7 +593,7 @@ public class PlayCommands : BaseCommandModule
             timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
         }
 
-        var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom);
+        var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom, userSettings.SessionKeyLastFm);
 
         var userTitle = $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}";
 
@@ -813,25 +813,5 @@ public class PlayCommands : BaseCommandModule
             this.Context.LogCommandException(e);
             await ReplyAsync("Something went wrong while showing listening time leaderboard and the error has been logged. Please try again later or contact staff on our support server.");
         }
-    }
-
-    private async Task<string> FindUser(string user)
-    {
-        if (await this._lastFmRepository.LastFmUserExistsAsync(user))
-        {
-            return user;
-        }
-
-        if (!this._guildService.CheckIfDM(this.Context))
-        {
-            var guildUser = await this._settingService.StringWithDiscordIdForUser(user);
-
-            if (guildUser != null)
-            {
-                return guildUser.UserNameLastFM;
-            }
-        }
-
-        return null;
     }
 }

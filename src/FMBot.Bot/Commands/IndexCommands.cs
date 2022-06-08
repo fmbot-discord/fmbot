@@ -53,8 +53,6 @@ namespace FMBot.Bot.Commands
         [CommandCategories(CommandCategory.ServerSettings)]
         public async Task IndexGuildAsync()
         {
-            _ = this.Context.Channel.TriggerTypingAsync();
-
             var lastIndex = await this._guildService.GetGuildIndexTimestampAsync(this.Context.Guild);
 
             this._embed.WithDescription("<a:loading:821676038102056991> Updating memberlist, this can take a while on larger servers...");
