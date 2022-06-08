@@ -219,7 +219,7 @@ public class CountryBuilders
             }
 
             var footer = $"Country source: MusicBrainz\n" +
-                         $"Page {pageCounter}/{genrePages.Count} - {countryArtists.Count} total artists";
+                         $"Page {pageCounter}/{genrePages.Count} - {countryArtists.Count} total artists - {countryArtists.Sum(s => s.UserPlaycount)} total scrobbles";
 
             pages.Add(new PageBuilder()
                 .WithDescription(genrePageString.ToString())
