@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
@@ -599,6 +600,145 @@ public class AlbumBuilders
 
         await cacheStream.DisposeAsync();
 
+        return response;
+    }
+
+    public async Task<ResponseModel> TopAlbumsAsync(
+        ContextModel context,
+        TopListSettings topListSettings,
+        TimeSettingsModel timeSettings,
+        UserSettingsModel userSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Paginator,
+        };
+
+        var pages = new List<PageBuilder>();
+
+        string userTitle;
+        if (!userSettings.DifferentUser)
+        {
+            userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        }
+        else
+        {
+            userTitle =
+                $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
+        }
+
+        if (!userSettings.DifferentUser && !context.SlashCommand)
+        {
+            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+        }
+
+        var userUrl =
+            $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?{timeSettings.UrlParameter}";
+
+        response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} albums for {userTitle}");
+        response.EmbedAuthor.WithUrl(userUrl);
+
+        const int amount = 200;
+
+        var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount);
+        if (!albums.Success || albums.Content == null)
+        {
+            response.Embed.ErrorResponse(albums.Error, albums.Message, "top albums", context.DiscordUser);
+            response.CommandResponse = CommandResponse.LastFmError;
+            return response;
+        }
+        if (albums.Content?.TopAlbums == null || !albums.Content.TopAlbums.Any())
+        {
+            response.Embed.WithDescription($"Sorry, you or the user you're searching for don't have any top albums in the [selected time period]({userUrl}).");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            return response;
+        }
+
+        var previousTopAlbums = new List<TopAlbum>();
+        if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
+        {
+            var previousAlbumsCall = await this._lastFmRepository
+                .GetTopAlbumsForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, amount);
+
+            if (previousAlbumsCall.Success)
+            {
+                previousTopAlbums.AddRange(previousAlbumsCall.Content.TopAlbums);
+            }
+        }
+
+        var albumPages = albums.Content.TopAlbums
+            .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
+
+        var counter = 1;
+        var pageCounter = 1;
+        var rnd = new Random().Next(0, 4);
+
+        foreach (var albumPage in albumPages)
+        {
+            var albumPageString = new StringBuilder();
+            foreach (var album in albumPage)
+            {
+                var url = album.AlbumUrl;
+                var escapedAlbumName = Regex.Replace(album.AlbumName, @"([|\\*])", @"\$1");
+
+                if (context.ContextUser.RymEnabled == true)
+                {
+                    url = StringExtensions.GetRymUrl(album.AlbumName, album.ArtistName);
+                }
+
+                var name = $"**{album.ArtistName}** - **[{escapedAlbumName}]({url})** ({album.UserPlaycount} {StringExtensions.GetPlaysString(album.UserPlaycount)})";
+
+                if (topListSettings.Billboard && previousTopAlbums.Any())
+                {
+                    var previousTopAlbum = previousTopAlbums.FirstOrDefault(f => f.ArtistName == album.ArtistName && f.AlbumName == album.AlbumName);
+                    int? previousPosition = previousTopAlbum == null ? null : previousTopAlbums.IndexOf(previousTopAlbum);
+
+                    albumPageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition).Text);
+                }
+                else
+                {
+                    albumPageString.Append($"{counter}. ");
+                    albumPageString.AppendLine(name);
+                }
+
+                counter++;
+            }
+
+            var footer = new StringBuilder();
+            footer.Append($"Page {pageCounter}/{albumPages.Count}");
+            if (albums.Content.TotalAmount.HasValue && albums.Content.TotalAmount.Value != amount)
+            {
+                footer.Append($" - {albums.Content.TotalAmount} different albums in this time period");
+            }
+            if (topListSettings.Billboard)
+            {
+                footer.AppendLine();
+                footer.Append(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
+            }
+
+            if (rnd == 1 && !topListSettings.Billboard)
+            {
+                footer.AppendLine();
+                footer.Append("View this list as a billboard by adding 'billboard' or 'bb'");
+            }
+
+            pages.Add(new PageBuilder()
+                .WithDescription(albumPageString.ToString())
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(footer.ToString()));
+            pageCounter++;
+        }
+
+        if (!pages.Any())
+        {
+            pages.Add(new PageBuilder()
+                .WithDescription("No albums played in this time period.")
+                .WithAuthor(response.EmbedAuthor));
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ResponseType = ResponseType.Paginator;
         return response;
     }
 }

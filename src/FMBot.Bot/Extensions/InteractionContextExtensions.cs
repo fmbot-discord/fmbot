@@ -49,47 +49,56 @@ namespace FMBot.Bot.Extensions
                 context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, CommandResponse.LastFmError, commandName);
         }
 
-        public static async Task SendResponse(this IInteractionContext context, InteractiveService interactiveService, ResponseModel response)
+        public static async Task SendResponse(this IInteractionContext context, InteractiveService interactiveService, ResponseModel response, bool ephemeral = false)
         {
             switch (response.ResponseType)
             {
                 case ResponseType.Text:
-                    await context.Interaction.RespondAsync(response.Text, allowedMentions: AllowedMentions.None);
+                    await context.Interaction.RespondAsync(response.Text, allowedMentions: AllowedMentions.None, ephemeral: ephemeral);
                     break;
                 case ResponseType.Embed:
-                    await context.Interaction.RespondAsync(null, new[] { response.Embed.Build() });
-                    break;
-                case ResponseType.Paginator:
-                    _ = interactiveService.SendPaginatorAsync(
-                        response.StaticPaginator,
-                        (SocketInteraction)context.Interaction,
-                        TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        public static async Task SendFollowUpResponse(this IInteractionContext context, InteractiveService interactiveService, ResponseModel response)
-        {
-            switch (response.ResponseType)
-            {
-                case ResponseType.Text:
-                    await context.Interaction.FollowupAsync(response.Text, allowedMentions: AllowedMentions.None);
-                    break;
-                case ResponseType.Embed:
-                    await context.Interaction.FollowupAsync(null, new[] { response.Embed.Build() });
+                    await context.Interaction.RespondAsync(null, new[] { response.Embed.Build() }, ephemeral: ephemeral);
                     break;
                 case ResponseType.Paginator:
                     _ = interactiveService.SendPaginatorAsync(
                         response.StaticPaginator,
                         (SocketInteraction)context.Interaction,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
-                        InteractionResponseType.DeferredChannelMessageWithSource);
+                        ephemeral: ephemeral);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public static async Task SendFollowUpResponse(this IInteractionContext context, InteractiveService interactiveService, ResponseModel response, bool ephemeral = false)
+        {
+            switch (response.ResponseType)
+            {
+                case ResponseType.Text:
+                    await context.Interaction.FollowupAsync(response.Text, allowedMentions: AllowedMentions.None, ephemeral: ephemeral);
+                    break;
+                case ResponseType.Embed:
+                    await context.Interaction.FollowupAsync(null, new[] { response.Embed.Build() }, ephemeral: ephemeral);
+                    break;
+                case ResponseType.Paginator:
+                    _ = interactiveService.SendPaginatorAsync(
+                        response.StaticPaginator,
+                        (SocketInteraction)context.Interaction,
+                        TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds),
+                        InteractionResponseType.DeferredChannelMessageWithSource,
+                        ephemeral: ephemeral);
                     break;
                 case ResponseType.ImageWithEmbed:
-                    await context.Interaction.FollowupWithFileAsync(response.Stream, (response.Spoiler ? "SPOILER_" : "") + response.FileName + ".png", null,
-                        new[] { response.Embed.Build() });
+                    await context.Interaction.FollowupWithFileAsync(response.Stream,
+                        (response.Spoiler
+                            ? "SPOILER_"
+                            : "") +
+                        response.FileName +
+                        ".png",
+                        null,
+                        new[] { response.Embed.Build() },
+                        ephemeral: ephemeral);
                     await response.Stream.DisposeAsync();
                     break;
                 default:

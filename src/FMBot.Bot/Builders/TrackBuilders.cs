@@ -12,7 +12,9 @@ using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
+using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Builders;
@@ -26,8 +28,9 @@ public class TrackBuilders
     private readonly PlayService _playService;
     private readonly SpotifyService _spotifyService;
     private readonly TimeService _timeService;
+    private readonly LastFmRepository _lastFmRepository;
 
-    public TrackBuilders(UserService userService, GuildService guildService, TrackService trackService, WhoKnowsTrackService whoKnowsTrackService, PlayService playService, SpotifyService spotifyService, TimeService timeService)
+    public TrackBuilders(UserService userService, GuildService guildService, TrackService trackService, WhoKnowsTrackService whoKnowsTrackService, PlayService playService, SpotifyService spotifyService, TimeService timeService, LastFmRepository lastFmRepository)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -36,6 +39,7 @@ public class TrackBuilders
         this._playService = playService;
         this._spotifyService = spotifyService;
         this._timeService = timeService;
+        this._lastFmRepository = lastFmRepository;
     }
 
     public async Task<ResponseModel> GuildTracksAsync(
@@ -141,4 +145,126 @@ public class TrackBuilders
         response.ResponseType = ResponseType.Paginator;
         return response;
     }
+
+    public async Task<ResponseModel> TopTracksAsync(
+        ContextModel context,
+        TopListSettings topListSettings,
+        TimeSettingsModel timeSettings,
+        UserSettingsModel userSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Paginator,
+        };
+
+        var pages = new List<PageBuilder>();
+
+        string userTitle;
+        if (!userSettings.DifferentUser)
+        {
+            userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+            if (!context.SlashCommand)
+            {
+                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+            }
+        }
+        else
+        {
+            userTitle =
+                $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
+        }
+
+        var userUrl = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/tracks?{timeSettings.UrlParameter}";
+        response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} tracks for {userTitle}");
+        response.EmbedAuthor.WithUrl(userUrl);
+
+        var topTracks = await this._lastFmRepository.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 200);
+
+        if (!topTracks.Success)
+        {
+            response.Embed.ErrorResponse(topTracks.Error, topTracks.Message, "top tracks", context.DiscordUser);
+            response.CommandResponse = CommandResponse.LastFmError;
+            return response;
+        }
+        if (topTracks.Content?.TopTracks == null || !topTracks.Content.TopTracks.Any())
+        {
+            response.Embed.WithDescription($"Sorry, you or the user you're searching for don't have any top tracks in the [selected time period]({userUrl}).");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            return response;
+        }
+
+        var previousTopTracks = new List<TopTrack>();
+        if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
+        {
+            var previousTopTracksCall = await this._lastFmRepository
+                .GetTopTracksForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200);
+
+            if (previousTopTracksCall.Success)
+            {
+                previousTopTracks.AddRange(previousTopTracksCall.Content.TopTracks);
+            }
+        }
+
+        response.Embed.WithAuthor(response.EmbedAuthor);
+
+        var trackPages = topTracks.Content.TopTracks.ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
+
+        var counter = 1;
+        var pageCounter = 1;
+        var rnd = new Random().Next(0, 4);
+
+        foreach (var trackPage in trackPages)
+        {
+            var trackPageString = new StringBuilder();
+            foreach (var track in trackPage)
+            {
+                var name = $"**{track.ArtistName}** - **[{track.TrackName}]({track.TrackUrl})** ({track.UserPlaycount} {StringExtensions.GetPlaysString(track.UserPlaycount)})";
+
+                if (topListSettings.Billboard && previousTopTracks.Any())
+                {
+                    var previousTopTrack = previousTopTracks.FirstOrDefault(f => f.ArtistName == track.ArtistName && f.AlbumName == track.AlbumName);
+                    int? previousPosition = previousTopTrack == null ? null : previousTopTracks.IndexOf(previousTopTrack);
+
+                    trackPageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition).Text);
+                }
+                else
+                {
+                    trackPageString.Append($"{counter}. ");
+                    trackPageString.AppendLine(name);
+                }
+
+                counter++;
+            }
+
+            var footer = new StringBuilder();
+            footer.Append($"Page {pageCounter}/{trackPages.Count}");
+            if (topTracks.Content.TotalAmount.HasValue)
+            {
+                footer.Append($" - {topTracks.Content.TotalAmount.Value} total tracks in this time period");
+            }
+            if (topListSettings.Billboard)
+            {
+                footer.AppendLine();
+                footer.Append(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
+            }
+
+            if (rnd == 1 && !topListSettings.Billboard)
+            {
+                footer.AppendLine();
+                footer.Append("View this list as a billboard by adding 'billboard' or 'bb'");
+            }
+
+            pages.Add(new PageBuilder()
+                .WithDescription(trackPageString.ToString())
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(footer.ToString()));
+            pageCounter++;
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ResponseType = ResponseType.Paginator;
+        return response;
+    }
 }
+

@@ -202,9 +202,9 @@ public class AlbumCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Albums)]
     public async Task TopAlbumsAsync([Remainder] string extraOptions = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
         _ = this.Context.Channel.TriggerTypingAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
@@ -212,140 +212,13 @@ public class AlbumCommands : BaseCommandModule
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
             var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var pages = new List<PageBuilder>();
+            var response = await this._albumBuilders.TopAlbumsAsync(new ContextModel(this.Context, prfx, contextUser),
+                topListSettings, timeSettings, userSettings);
 
-            string userTitle;
-            if (!userSettings.DifferentUser)
-            {
-                userTitle = await this._userService.GetUserTitleAsync(this.Context);
-            }
-            else
-            {
-                userTitle =
-                    $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
-            }
-
-            if (!userSettings.DifferentUser)
-            {
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            }
-
-            var userUrl =
-                $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?{timeSettings.UrlParameter}";
-
-            this._embedAuthor.WithName($"Top {timeSettings.Description.ToLower()} albums for {userTitle}");
-            this._embedAuthor.WithUrl(userUrl);
-
-            const int amount = 200;
-
-            var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount);
-            if (!albums.Success || albums.Content == null)
-            {
-                this._embed.ErrorResponse(albums.Error, albums.Message, this.Context.Message.Content, this.Context.User);
-                this.Context.LogCommandUsed(CommandResponse.LastFmError);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
-            if (albums.Content?.TopAlbums == null || !albums.Content.TopAlbums.Any())
-            {
-                this._embed.WithDescription($"Sorry, you or the user you're searching for don't have any top albums in the [selected time period]({userUrl}).");
-                this._embed.WithColor(DiscordConstants.WarningColorOrange);
-                await ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                return;
-            }
-
-            var previousTopAlbums = new List<TopAlbum>();
-            if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
-            {
-                var previousAlbumsCall = await this._lastFmRepository
-                    .GetTopAlbumsForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, amount);
-
-                if (previousAlbumsCall.Success)
-                {
-                    previousTopAlbums.AddRange(previousAlbumsCall.Content.TopAlbums);
-                }
-            }
-
-            var albumPages = albums.Content.TopAlbums
-                .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
-
-            var counter = 1;
-            var pageCounter = 1;
-            var rnd = new Random().Next(0, 4);
-
-            foreach (var albumPage in albumPages)
-            {
-                var albumPageString = new StringBuilder();
-                foreach (var album in albumPage)
-                {
-                    var url = album.AlbumUrl;
-                    var escapedAlbumName = Regex.Replace(album.AlbumName, @"([|\\*])", @"\$1");
-
-                    if (contextUser.RymEnabled == true)
-                    {
-                        url = StringExtensions.GetRymUrl(album.AlbumName, album.ArtistName);
-                    }
-
-                    var name = $"**{album.ArtistName}** - **[{escapedAlbumName}]({url})** ({album.UserPlaycount} {StringExtensions.GetPlaysString(album.UserPlaycount)})";
-
-                    if (topListSettings.Billboard && previousTopAlbums.Any())
-                    {
-                        var previousTopAlbum = previousTopAlbums.FirstOrDefault(f => f.ArtistName == album.ArtistName && f.AlbumName == album.AlbumName);
-                        int? previousPosition = previousTopAlbum == null ? null : previousTopAlbums.IndexOf(previousTopAlbum);
-
-                        albumPageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition).Text);
-                    }
-                    else
-                    {
-                        albumPageString.Append($"{counter}. ");
-                        albumPageString.AppendLine(name);
-                    }
-
-                    counter++;
-                }
-
-                var footer = new StringBuilder();
-                footer.Append($"Page {pageCounter}/{albumPages.Count}");
-                if (albums.Content.TotalAmount.HasValue && albums.Content.TotalAmount.Value != amount)
-                {
-                    footer.Append($" - {albums.Content.TotalAmount} different albums in this time period");
-                }
-                if (topListSettings.Billboard)
-                {
-                    footer.AppendLine();
-                    footer.Append(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
-                }
-
-                if (rnd == 1 && !topListSettings.Billboard)
-                {
-                    footer.AppendLine();
-                    footer.Append("View this list as a billboard by adding 'billboard' or 'bb'");
-                }
-
-                pages.Add(new PageBuilder()
-                    .WithDescription(albumPageString.ToString())
-                    .WithAuthor(this._embedAuthor)
-                    .WithFooter(footer.ToString()));
-                pageCounter++;
-            }
-
-            if (!pages.Any())
-            {
-                pages.Add(new PageBuilder()
-                    .WithDescription("No albums played in this time period.")
-                    .WithAuthor(this._embedAuthor));
-            }
-
-            var paginator = StringService.BuildStaticPaginator(pages);
-
-            _ = this.Interactivity.SendPaginatorAsync(
-                paginator,
-                this.Context.Channel,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-
-            this.Context.LogCommandUsed();
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
