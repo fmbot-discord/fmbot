@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using Discord;
 using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
@@ -16,6 +16,7 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
 
 namespace FMBot.Bot.Builders;
@@ -32,8 +33,9 @@ public class AlbumBuilders
     private readonly TimeService _timeService;
     private readonly CensorService _censorService;
     private readonly IUpdateService _updateService;
+    private readonly LastFmRepository _lastFmRepository;
 
-    public AlbumBuilders(UserService userService, GuildService guildService, AlbumService albumService, WhoKnowsAlbumService whoKnowsAlbumService, PlayService playService, SpotifyService spotifyService, TrackService trackService, IUpdateService updateService, TimeService timeService, CensorService censorService)
+    public AlbumBuilders(UserService userService, GuildService guildService, AlbumService albumService, WhoKnowsAlbumService whoKnowsAlbumService, PlayService playService, SpotifyService spotifyService, TrackService trackService, IUpdateService updateService, TimeService timeService, CensorService censorService, LastFmRepository lastFmRepository)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -45,6 +47,7 @@ public class AlbumBuilders
         this._updateService = updateService;
         this._timeService = timeService;
         this._censorService = censorService;
+        this._lastFmRepository = lastFmRepository;
     }
 
     public async Task<ResponseModel> AlbumAsync(
@@ -471,6 +474,131 @@ public class AlbumBuilders
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
         response.ResponseType = ResponseType.Paginator;
+        return response;
+    }
+
+    public async Task<ResponseModel> AlbumPlaysAsync(
+        ContextModel context,
+        UserSettingsModel userSettings,
+        string searchValue)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Text,
+        };
+
+        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm);
+        if (albumSearch.Album == null)
+        {
+            return albumSearch.Response;
+        }
+
+        var reply =
+            $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has `{albumSearch.Album.UserPlaycount}` {StringExtensions.GetPlaysString(albumSearch.Album.UserPlaycount)} " +
+            $"for **{albumSearch.Album.AlbumName.FilterOutMentions()}** by **{albumSearch.Album.ArtistName.FilterOutMentions()}**";
+
+        if (albumSearch.Album.UserPlaycount.HasValue && !userSettings.DifferentUser)
+        {
+            await this._updateService.CorrectUserAlbumPlaycount(context.ContextUser.UserId, albumSearch.Album.ArtistName,
+                albumSearch.Album.AlbumName, albumSearch.Album.UserPlaycount.Value);
+        }
+
+        if (!userSettings.DifferentUser && context.ContextUser.LastUpdated != null)
+        {
+            var playsLastWeek =
+                await this._playService.GetWeekAlbumPlaycountAsync(userSettings.UserId, albumSearch.Album.AlbumName, albumSearch.Album.ArtistName);
+            if (playsLastWeek != 0)
+            {
+                reply += $" (`{playsLastWeek}` last week)";
+            }
+        }
+
+        response.Text = reply;
+
+        return response;
+    }
+
+    public async Task<ResponseModel> CoverAsync(
+        ContextModel context,
+        string searchValue)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ImageWithEmbed,
+        };
+
+        var albumSearch = await this._albumService.SearchAlbum(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM, context.ContextUser.SessionKeyLastFm,
+            useCachedAlbums: true, userId: context.ContextUser.UserId);
+        if (albumSearch.Album == null)
+        {
+            return albumSearch.Response;
+        }
+
+        var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumSearch.Album);
+
+        var albumCoverUrl = albumSearch.Album.AlbumCoverUrl;
+        if (databaseAlbum.SpotifyImageUrl != null)
+        {
+            albumCoverUrl = databaseAlbum.SpotifyImageUrl;
+        }
+
+        if (albumCoverUrl == null)
+        {
+            response.Embed.WithDescription("Sorry, no album cover found for this album: \n" +
+                                        $"{albumSearch.Album.ArtistName} - {albumSearch.Album.AlbumName}\n" +
+                                        $"[View on last.fm]({albumSearch.Album.AlbumUrl})");
+            response.ResponseType = ResponseType.Embed;
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
+
+        var safeForChannel = await this._censorService.IsSafeForChannel(context.DiscordGuild, context.DiscordChannel,
+            albumSearch.Album.AlbumName, albumSearch.Album.ArtistName, albumSearch.Album.AlbumUrl, response.Embed);
+
+        if (safeForChannel == CensorService.CensorResult.NotSafe)
+        {
+            response.CommandResponse = CommandResponse.Censored;
+            return response;
+        }
+
+        var image = await this._lastFmRepository.GetAlbumImageAsStreamAsync(albumCoverUrl);
+        if (image == null)
+        {
+            response.Embed.WithDescription("Sorry, something went wrong while getting album cover for this album: \n" +
+                                        $"{albumSearch.Album.ArtistName} - {albumSearch.Album.AlbumName}\n" +
+                                        $"[View on last.fm]({albumSearch.Album.AlbumUrl})");
+            response.CommandResponse = CommandResponse.Error;
+            return response;
+        }
+
+        var cacheStream = new MemoryStream();
+        await image.CopyToAsync(cacheStream);
+        image.Position = 0;
+
+        var description = new StringBuilder();
+        description.AppendLine($"**{albumSearch.Album.ArtistName} - [{albumSearch.Album.AlbumName}]({albumSearch.Album.AlbumUrl})**");
+
+        if (safeForChannel == CensorService.CensorResult.Nsfw)
+        {
+            description.AppendLine("⚠️ NSFW - Click to reveal");
+        }
+
+        response.Embed.WithDescription(description.ToString());
+        response.EmbedFooter.WithText(
+            $"Album cover requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}");
+
+        response.Embed.WithFooter(response.EmbedFooter);
+        response.Stream = image;
+        response.FileName =
+            $"cover-{StringExtensions.ReplaceInvalidChars($"{albumSearch.Album.ArtistName}_{albumSearch.Album.AlbumName}")}";
+        response.Spoiler = safeForChannel == CensorService.CensorResult.Nsfw;
+
+
+        var cacheFilePath = ChartService.AlbumUrlToCacheFilePath(albumSearch.Album.AlbumUrl);
+        await ChartService.OverwriteCache(cacheStream, cacheFilePath);
+
+        await cacheStream.DisposeAsync();
+
         return response;
     }
 }

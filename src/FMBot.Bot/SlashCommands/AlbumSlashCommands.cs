@@ -30,7 +30,7 @@ public class AlbumSlashCommands : InteractionModuleBase
     [SlashCommand("album", "Shows album info for the album you're currently listening to or searching for")]
     [UsernameSetRequired]
     public async Task AlbumAsync(
-        [Summary("Album", "The artist your want to search for (defaults to currently playing)")]
+        [Summary("Album", "The album your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))] string name = null)
     {
         _ = DeferAsync();
@@ -53,10 +53,36 @@ public class AlbumSlashCommands : InteractionModuleBase
         }
     }
 
+    [SlashCommand("cover", "Cover for current album or the one you're searching for.")]
+    [UsernameSetRequired]
+    public async Task AlbumCoverAsync(
+        [Summary("Album", "The album your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(AlbumAutoComplete))] string name = null)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, contextUser), name);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            this.Context.LogCommandException(e);
+            await FollowupAsync(
+                "Unable to show your album on Last.fm due to an internal error. Please try again later or contact .fmbot support.",
+                ephemeral: true);
+        }
+    }
+
     [SlashCommand("albumtracks", "Shows album info for the album you're currently listening to or searching for")]
     [UsernameSetRequired]
     public async Task AlbumTracksAsync(
-        [Summary("Album", "The artist your want to search for (defaults to currently playing)")]
+        [Summary("Album", "The album your want to search for (defaults to currently playing)")]
         [Autocomplete(typeof(AlbumAutoComplete))] string name = null,
         [Summary("User", "The user to show (defaults to self)")] string user = null)
     {
@@ -76,7 +102,35 @@ public class AlbumSlashCommands : InteractionModuleBase
         {
             this.Context.LogCommandException(e);
             await FollowupAsync(
-                "Unable to show your artist on Last.fm due to an internal error. Please try again later or contact .fmbot support.",
+                "Unable to show your album on Last.fm due to an internal error. Please try again later or contact .fmbot support.",
+                ephemeral: true);
+        }
+    }
+
+    [SlashCommand("albumplays", "Shows playcount for current album or the one you're searching for.")]
+    [UsernameSetRequired]
+    public async Task AlbumPlaysAsync(
+        [Summary("Album", "The album your want to search for (defaults to currently playing)")]
+        [Autocomplete(typeof(AlbumAutoComplete))] string name = null,
+        [Summary("User", "The user to show (defaults to self)")] string user = null)
+    {
+        _ = DeferAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+
+        try
+        {
+            var response = await this._albumBuilders.AlbumPlaysAsync(new ContextModel(this.Context, contextUser), userSettings, name);
+
+            await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            this.Context.LogCommandException(e);
+            await FollowupAsync(
+                "Unable to show your album on Last.fm due to an internal error. Please try again later or contact .fmbot support.",
                 ephemeral: true);
         }
     }

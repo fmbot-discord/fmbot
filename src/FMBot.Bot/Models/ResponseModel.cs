@@ -15,6 +15,7 @@ public class ResponseModel
             .WithColor(DiscordConstants.LastFmColorRed);
         this.EmbedAuthor = new EmbedAuthorBuilder();
         this.EmbedFooter = new EmbedFooterBuilder();
+        this.Spoiler = false;
     }
 
     public EmbedAuthorBuilder EmbedAuthor { get; set; }
@@ -24,6 +25,8 @@ public class ResponseModel
     public ResponseType ResponseType { get; set; }
 
     public Stream Stream { get; set; }
+    public string FileName { get; set; }
+    public bool Spoiler { get; set; }
 
     public string Text { get; set; }
 

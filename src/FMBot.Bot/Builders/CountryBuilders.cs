@@ -14,7 +14,6 @@ using FMBot.Domain.Models;
 using FMBot.Images.Generators;
 using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
-using Humanizer;
 using SkiaSharp;
 using StringExtensions = FMBot.Bot.Extensions.StringExtensions;
 
@@ -461,7 +460,6 @@ public class CountryBuilders
             return response;
         }
 
-
         var countries = await this._countryService.GetTopCountriesForTopArtists(artists.Content.TopArtists, true);
 
         response.Embed.WithFooter($"Country source: Musicbrainz");
@@ -470,6 +468,7 @@ public class CountryBuilders
 
         var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
         response.Stream = encoded.AsStream();
+        response.FileName = "artist-map";
 
         return response;
     }

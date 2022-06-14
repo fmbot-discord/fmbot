@@ -146,35 +146,12 @@ public class AlbumCommands : BaseCommandModule
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(albumValues, contextUser, this.Context);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var album = await this.SearchAlbum(userSettings.NewSearchValue, contextUser.UserNameLastFM, userSettings.SessionKeyLastFm, userSettings.UserNameLastFm);
-        if (album == null)
-        {
-            return;
-        }
+        var response = await this._albumBuilders.AlbumPlaysAsync(new ContextModel(this.Context, prfx, contextUser),userSettings, albumValues);
 
-        var reply =
-            $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has `{album.UserPlaycount}` {StringExtensions.GetPlaysString(album.UserPlaycount)} " +
-            $"for **{album.AlbumName.FilterOutMentions()}** by **{album.ArtistName.FilterOutMentions()}**";
-
-        if (album.UserPlaycount.HasValue && !userSettings.DifferentUser)
-        {
-            await this._updateService.CorrectUserAlbumPlaycount(contextUser.UserId, album.ArtistName,
-                album.AlbumName, album.UserPlaycount.Value);
-        }
-
-        if (!userSettings.DifferentUser && contextUser.LastUpdated != null)
-        {
-            var playsLastWeek =
-                await this._playService.GetWeekAlbumPlaycountAsync(userSettings.UserId, album.AlbumName, album.ArtistName);
-            if (playsLastWeek != 0)
-            {
-                reply += $" (`{playsLastWeek}` last week)";
-            }
-        }
-
-        await this.Context.Channel.SendMessageAsync(reply, allowedMentions: AllowedMentions.None);
-        this.Context.LogCommandUsed();
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("cover", RunMode = RunMode.Async)]
@@ -188,9 +165,10 @@ public class AlbumCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Albums, CommandCategory.Charts)]
     public async Task AlbumCoverAsync([Remainder] string albumValues = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
         _ = this.Context.Channel.TriggerTypingAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
@@ -201,77 +179,10 @@ public class AlbumCommands : BaseCommandModule
                 return;
             }
 
-            var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
+            var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, prfx, contextUser), albumValues);
 
-            var albumCoverUrl = album.AlbumCoverUrl;
-            if (databaseAlbum.SpotifyImageUrl != null)
-            {
-                albumCoverUrl = databaseAlbum.SpotifyImageUrl;
-            }
-
-            if (albumCoverUrl == null)
-            {
-                this._embed.WithDescription("Sorry, no album cover found for this album: \n" +
-                                            $"{album.ArtistName} - {album.AlbumName}\n" +
-                                            $"[View on last.fm]({album.AlbumUrl})");
-                await this.ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return;
-            }
-
-            var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
-                album.AlbumName, album.ArtistName, album.AlbumUrl, this._embed);
-
-            if (safeForChannel == CensorService.CensorResult.NotSafe)
-            {
-                await this.ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Censored);
-                return;
-            }
-
-            var image = await this._lastFmRepository.GetAlbumImageAsStreamAsync(albumCoverUrl);
-            if (image == null)
-            {
-                this._embed.WithDescription("Sorry, something went wrong while getting album cover for this album: \n" +
-                                            $"{album.ArtistName} - {album.AlbumName}\n" +
-                                            $"[View on last.fm]({album.AlbumUrl})");
-                await this.ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Error);
-                return;
-            }
-
-            var cacheStream = new MemoryStream();
-            await image.CopyToAsync(cacheStream);
-            image.Position = 0;
-
-            var description = new StringBuilder();
-            description.AppendLine($"**{album.ArtistName} - [{album.AlbumName}]({album.AlbumUrl})**");
-
-            if (safeForChannel == CensorService.CensorResult.Nsfw)
-            {
-                description.AppendLine("⚠️ NSFW - Click to reveal");
-            }
-
-            this._embed.WithDescription(description.ToString());
-            this._embedFooter.WithText(
-                $"Album cover requested by {await this._userService.GetUserTitleAsync(this.Context)}");
-
-            this._embed.WithFooter(this._embedFooter);
-
-            await this.Context.Channel.SendFileAsync(
-                image,
-                $"cover-{StringExtensions.ReplaceInvalidChars($"{album.ArtistName}_{album.AlbumName}")}.png",
-                null,
-                false,
-                this._embed.Build(),
-                isSpoiler: safeForChannel == CensorService.CensorResult.Nsfw);
-
-            var cacheFilePath = ChartService.AlbumUrlToCacheFilePath(album.AlbumUrl);
-            await ChartService.OverwriteCache(cacheStream, cacheFilePath);
-
-            await image.DisposeAsync();
-            await cacheStream.DisposeAsync();
-            this.Context.LogCommandUsed();
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
