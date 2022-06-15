@@ -298,7 +298,16 @@ namespace FMBot.Bot.Services
                                  a.UserId == userId);
         }
 
-        public async Task<string> GetStreak(int userId, Response<RecentTrackList> recentTracks)
+        public async Task<List<UserStreak>> GetStreaks(int userId)
+        {
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            return await db.UserStreaks
+                .Where(w => w.UserId == userId)
+                .OrderByDescending(o => o.ArtistPlaycount)
+                .ToListAsync();
+        }
+
+        public async Task<UserStreak> GetStreak(int userId, Response<RecentTrackList> recentTracks)
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();
             var lastPlays = await db.UserPlays
@@ -314,11 +323,14 @@ namespace FMBot.Bot.Services
 
             var firstPlay = recentTracks.Content.RecentTracks.First();
 
-            var artistCount = 1;
-            var albumCount = 1;
-            var trackCount = 1;
-
-            var streakStarted = new DateTime?();
+            var streak = new UserStreak
+            {
+                ArtistPlaycount = 1,
+                AlbumPlaycount = 1,
+                TrackPlaycount = 1,
+                StreakEnded = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc),
+                UserId = userId
+            };
 
             var artistContinue = true;
             var albumContinue = true;
@@ -329,8 +341,9 @@ namespace FMBot.Bot.Services
 
                 if (firstPlay.ArtistName.ToLower() == play.ArtistName.ToLower() && artistContinue)
                 {
-                    artistCount++;
-                    streakStarted = play.TimePlayed;
+                    streak.ArtistPlaycount++;
+                    streak.StreakStarted = play.TimePlayed;
+                    streak.ArtistName = play.ArtistName;
                 }
                 else
                 {
@@ -339,8 +352,9 @@ namespace FMBot.Bot.Services
 
                 if (firstPlay.AlbumName != null && play.AlbumName != null && firstPlay.AlbumName.ToLower() == play.AlbumName.ToLower() && albumContinue)
                 {
-                    albumCount++;
-                    streakStarted = play.TimePlayed;
+                    streak.AlbumPlaycount++;
+                    streak.StreakStarted = play.TimePlayed;
+                    streak.AlbumName = play.AlbumName;
                 }
                 else
                 {
@@ -349,8 +363,9 @@ namespace FMBot.Bot.Services
 
                 if (firstPlay.TrackName.ToLower() == play.TrackName.ToLower() && trackContinue)
                 {
-                    trackCount++;
-                    streakStarted = play.TimePlayed;
+                    streak.TrackPlaycount++;
+                    streak.StreakStarted = play.TimePlayed;
+                    streak.TrackName = play.TrackName;
                 }
                 else
                 {
@@ -363,38 +378,75 @@ namespace FMBot.Bot.Services
                 }
             }
 
+            streak.StreakStarted = DateTime.SpecifyKind(streak.StreakStarted, DateTimeKind.Utc);
+
+            return streak;
+        }
+
+        public static string StreakToText(UserStreak streak, bool includeStart = true)
+        {
             var description = new StringBuilder();
-            if (artistCount > 1)
+            if (streak.ArtistPlaycount > 1)
             {
-                description.AppendLine($"Artist: **[{firstPlay.ArtistName}](https://www.last.fm/music/{HttpUtility.UrlEncode(firstPlay.ArtistName)})** - " +
-                                       $"{GetEmojiForStreakCount(artistCount)}*{artistCount} plays in a row*");
+                description.AppendLine($"Artist: **[{streak.ArtistName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)})** - " +
+                                       $"{GetEmojiForStreakCount(streak.ArtistPlaycount.Value)}*{streak.ArtistPlaycount} plays in a row*");
             }
-            if (albumCount > 1)
+            if (streak.AlbumPlaycount > 1)
             {
-                description.AppendLine($"Album: **[{firstPlay.AlbumName}](https://www.last.fm/music/{HttpUtility.UrlEncode(firstPlay.ArtistName)}/{HttpUtility.UrlEncode(firstPlay.AlbumName)})** - " +
-                                       $"{GetEmojiForStreakCount(albumCount)}*{albumCount} plays in a row*");
+                description.AppendLine($"Album: **[{streak.AlbumName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/{HttpUtility.UrlEncode(streak.AlbumName)})** - " +
+                                       $"{GetEmojiForStreakCount(streak.AlbumPlaycount.Value)}*{streak.AlbumPlaycount} plays in a row*");
             }
-            if (trackCount > 1)
+            if (streak.TrackPlaycount > 1)
             {
-                description.AppendLine($"Track: **[{firstPlay.TrackName}](https://www.last.fm/music/{HttpUtility.UrlEncode(firstPlay.ArtistName)}/_/{HttpUtility.UrlEncode(firstPlay.TrackName)})** - " +
-                                       $"{GetEmojiForStreakCount(trackCount)}*{trackCount} plays in a row*");
+                description.AppendLine($"Track: **[{streak.TrackName}](https://www.last.fm/music/{HttpUtility.UrlEncode(streak.ArtistName)}/_/{HttpUtility.UrlEncode(streak.TrackName)})** - " +
+                                       $"{GetEmojiForStreakCount(streak.TrackPlaycount.Value)}*{streak.TrackPlaycount} plays in a row*");
             }
 
-            if (streakStarted.HasValue)
+            if (description.Length == 0)
             {
-                var specifiedDateTime = DateTime.SpecifyKind(streakStarted.Value, DateTimeKind.Utc);
+                return "No active streak found.";
+            }
+
+            if (includeStart)
+            {
+                var specifiedDateTime = DateTime.SpecifyKind(streak.StreakStarted, DateTimeKind.Utc);
                 var dateValue = ((DateTimeOffset)specifiedDateTime).ToUnixTimeSeconds();
 
                 description.AppendLine();
                 description.AppendLine($"Streak started <t:{dateValue}:R>.");
             }
 
-            if (description.Length > 0)
+            return description.ToString();
+        }
+
+        public async Task<string> UpdateOrInsertStreak(UserStreak streak)
+        {
+            const int saveThreshold = 25;
+            if (streak.TrackPlaycount < saveThreshold && streak.AlbumPlaycount < saveThreshold && streak.ArtistPlaycount < saveThreshold)
             {
-                return description.ToString();
+                return $"Only streaks with {saveThreshold} plays or higher are saved.";
             }
 
-            return "No active streak found.";
+            await using var db = await this._contextFactory.CreateDbContextAsync();
+            var existingStreak = await db.UserStreaks.FirstOrDefaultAsync(f =>
+                f.UserId == streak.UserId && f.StreakStarted == streak.StreakStarted);
+
+            if (existingStreak == null)
+            {
+                await db.UserStreaks.AddAsync(streak);
+                await db.SaveChangesAsync();
+                return "Streak has been saved!";
+            }
+
+            existingStreak.StreakEnded = streak.StreakEnded;
+            existingStreak.TrackPlaycount = streak.TrackPlaycount;
+            existingStreak.AlbumPlaycount = streak.AlbumPlaycount;
+            existingStreak.ArtistPlaycount = streak.ArtistPlaycount;
+
+            db.Entry(existingStreak).State = EntityState.Modified;
+            await db.SaveChangesAsync();
+
+            return "Saved streak has been updated!";
         }
 
         private static string GetEmojiForStreakCount(int count)

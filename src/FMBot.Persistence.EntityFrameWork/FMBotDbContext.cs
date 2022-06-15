@@ -25,6 +25,7 @@ namespace FMBot.Persistence.EntityFrameWork
         public virtual DbSet<UserTrack> UserTracks { get; set; }
         public virtual DbSet<UserPlay> UserPlays { get; set; }
         public virtual DbSet<UserCrown> UserCrowns { get; set; }
+        public virtual DbSet<UserStreak> UserStreaks { get; set; }
 
         public virtual DbSet<Artist> Artists { get; set; }
         public virtual DbSet<Album> Albums { get; set; }
@@ -261,6 +262,27 @@ namespace FMBot.Persistence.EntityFrameWork
                 entity.HasOne(sc => sc.User)
                     .WithMany(s => s.Crowns)
                     .HasForeignKey(sc => sc.UserId);
+            });
+
+            modelBuilder.Entity<UserStreak>(entity =>
+            {
+                entity.HasKey(e => e.UserStreakId);
+
+                entity.HasIndex(i => i.UserId);
+
+                entity.Property(e => e.ArtistName)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.AlbumName)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.TrackName)
+                    .HasColumnType("citext");
+
+                entity.HasOne(u => u.User)
+                    .WithMany(a => a.Streaks)
+                    .HasForeignKey(f => f.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<FeaturedLog>(entity =>
