@@ -99,14 +99,8 @@ public class CountryCommands : BaseCommandModule
             var response = await this._countryBuilders.GetTopCountryChart(new ContextModel(this.Context, prfx, contextUser),
                 userSettings, timeSettings, topListSettings);
 
-            await this.Context.Channel.SendFileAsync(
-                response.Stream,
-                $"artist-map.png",
-                null,
-                false,
-                response.Embed.Build());
-
-            this.Context.LogCommandUsed();
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {

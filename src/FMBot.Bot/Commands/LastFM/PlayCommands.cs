@@ -609,49 +609,61 @@ public class PlayCommands : BaseCommandModule
     }
 
     [Command("streak", RunMode = RunMode.Async)]
-    [Summary("Shows you your streak")]
+    [Summary("Shows you or someone else their streak")]
     [UsernameSetRequired]
     [Alias("str", "combo", "cb")]
     [CommandCategories(CommandCategory.Albums, CommandCategory.Artists, CommandCategory.Tracks)]
     public async Task StreakAsync([Remainder] string extraOptions = null)
     {
-        var user = await this._userService.GetUserSettingsAsync(this.Context.User);
-
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        if (user.LastIndexed == null)
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        if (contextUser.LastIndexed == null)
         {
-            await this._indexService.IndexUser(user);
+            await this._indexService.IndexUser(contextUser);
         }
 
         try
         {
-            var userSettings = await this._settingService.GetUser(extraOptions, user, this.Context);
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
             var userWithStreak = await this._userService.GetUserAsync(userSettings.DiscordUserId);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var recentTracks = await this._updateService.UpdateUserAndGetRecentTracks(userWithStreak);
+            var response = await this._playBuilder.StreakAsync(new ContextModel(this.Context, prfx, contextUser),
+                userSettings, userWithStreak);
 
-            if (await GenericEmbedService.RecentScrobbleCallFailedReply(recentTracks, userSettings.UserNameLastFm,
-                    this.Context))
-            {
-                return;
-            }
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            this.Context.LogCommandException(e);
+            await ReplyAsync("Something went wrong while showing streak and the error has been logged. Please try again later or contact staff on our support server.");
+        }
+    }
 
-            var streak = await this._playService.GetStreak(userSettings.UserId, recentTracks);
-            this._embed.WithDescription(streak);
+    [Command("streaks", RunMode = RunMode.Async)]
+    [Summary("Shows you your past streaks")]
+    [UsernameSetRequired]
+    [Alias("strs", "combos", "cbs", "streakhistory", "combohistory", "combolist", "streaklist")]
+    [CommandCategories(CommandCategory.Albums, CommandCategory.Artists, CommandCategory.Tracks)]
+    public async Task StreakHistoryAsync([Remainder] string extraOptions = null)
+    {
+        _ = this.Context.Channel.TriggerTypingAsync();
 
-            this._embedAuthor.WithName($"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}'s streak overview");
-            if (!userSettings.DifferentUser)
-            {
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            }
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-            this._embedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library");
-            this._embed.WithAuthor(this._embedAuthor);
+        try
+        {
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
+            var response = await this._playBuilder.StreakHistoryAsync(new ContextModel(this.Context, prfx, contextUser),
+                userSettings);
 
-            this.Context.LogCommandUsed();
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {

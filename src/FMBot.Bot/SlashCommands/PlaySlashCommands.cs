@@ -134,6 +134,54 @@ public class PlaySlashCommands : InteractionModuleBase
         }
     }
 
+    [SlashCommand("streak", "Shows you or someone else their streak")]
+    [UsernameSetRequired]
+    public async Task StreakAsync(
+        [Summary("User", "The user to show (defaults to self)")] string user = null)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+        var userWithStreak = await this._userService.GetUserAsync(userSettings.DiscordUserId);
+
+        try
+        {
+            var response = await this._playBuilder.StreakAsync(new ContextModel(this.Context, contextUser),
+                userSettings, userWithStreak);
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            this.Context.LogCommandException(e);
+            await ReplyAsync(
+                "Unable to show your streak on Last.fm due to an internal error. Please try again later or contact .fmbot support.");
+        }
+    }
+
+    [SlashCommand("streakhistory", "Shows you or someone else their streak history")]
+    [UsernameSetRequired]
+    public async Task StreakHistory(
+        [Summary("User", "The user to show (defaults to self)")] string user = null)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
+
+        try
+        {
+            var response = await this._playBuilder.StreakHistoryAsync(new ContextModel(this.Context, contextUser), userSettings);
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            this.Context.LogCommandException(e);
+            await ReplyAsync(
+                "Unable to show your streak on Last.fm due to an internal error. Please try again later or contact .fmbot support.");
+        }
+    }
+
     [SlashCommand("overview", "Shows a daily overview")]
     [UsernameSetRequired]
     public async Task OverviewAsync(

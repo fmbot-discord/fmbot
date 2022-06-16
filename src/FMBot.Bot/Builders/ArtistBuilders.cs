@@ -9,6 +9,7 @@ using Fergun.Interactive;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
+using FMBot.Bot.Resources;
 using FMBot.Bot.Services;
 using FMBot.Bot.Services.Guild;
 using FMBot.Bot.Services.ThirdParty;
@@ -261,7 +262,7 @@ public class ArtistBuilders
     {
         var response = new ResponseModel
         {
-            ResponseType = ResponseType.Embed,
+            ResponseType = ResponseType.Paginator,
         };
 
         var artistSearch = await this._artistsService.GetArtist(response, context.DiscordUser, searchValue, context.ContextUser.UserNameLastFM,
@@ -357,7 +358,6 @@ public class ArtistBuilders
         }
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
-        response.ResponseType = ResponseType.Paginator;
         return response;
     }
 
@@ -446,6 +446,130 @@ public class ArtistBuilders
                 .WithDescription(pageString.ToString())
                 .WithAuthor(response.EmbedAuthor)
                 .WithFooter(pageFooter.ToString()));
+            pageCounter++;
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
+        response.ResponseType = ResponseType.Paginator;
+        return response;
+    }
+
+    public async Task<ResponseModel> TopArtistsAsync(
+        ContextModel context,
+        TopListSettings topListSettings,
+        TimeSettingsModel timeSettings,
+        UserSettingsModel userSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Paginator,
+        };
+
+        var pages = new List<PageBuilder>();
+
+        string userTitle;
+        if (!userSettings.DifferentUser)
+        {
+            if (!context.SlashCommand)
+            {
+                response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+            }
+            userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+        }
+        else
+        {
+            userTitle =
+                $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
+        }
+
+        var userUrl =
+            $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/artists?{timeSettings.UrlParameter}";
+
+        response.EmbedAuthor.WithName($"Top {timeSettings.Description.ToLower()} artists for {userTitle}");
+        response.EmbedAuthor.WithUrl(userUrl);
+
+        var artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm,
+            timeSettings, 200, 1);
+
+        if (!artists.Success || artists.Content == null)
+        {
+            response.Embed.ErrorResponse(artists.Error, artists.Message, "top artists", context.DiscordUser);
+            response.CommandResponse = CommandResponse.LastFmError;
+            return response;
+        }
+        if (artists.Content.TopArtists == null || !artists.Content.TopArtists.Any())
+        {
+            response.Embed.WithDescription($"Sorry, you or the user you're searching for don't have any top artists in the [selected time period]({userUrl}).");
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            return response;
+        }
+
+        var previousTopArtists = new List<TopArtist>();
+        if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
+        {
+            var previousArtistsCall = await this._lastFmRepository
+                .GetTopArtistsForCustomTimePeriodAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200);
+
+            if (previousArtistsCall.Success)
+            {
+                previousTopArtists.AddRange(previousArtistsCall.Content.TopArtists);
+            }
+        }
+
+        var artistPages = artists.Content.TopArtists
+            .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
+
+        var counter = 1;
+        var pageCounter = 1;
+        var rnd = new Random().Next(0, 4);
+
+        foreach (var artistPage in artistPages)
+        {
+            var artistPageString = new StringBuilder();
+            foreach (var artist in artistPage)
+            {
+                var name =
+                    $"**[{artist.ArtistName}]({artist.ArtistUrl})** ({artist.UserPlaycount} {StringExtensions.GetPlaysString(artist.UserPlaycount)})";
+
+                if (topListSettings.Billboard && previousTopArtists.Any())
+                {
+                    var previousTopArtist = previousTopArtists.FirstOrDefault(f => f.ArtistName == artist.ArtistName);
+                    int? previousPosition = previousTopArtist == null ? null : previousTopArtists.IndexOf(previousTopArtist);
+
+                    artistPageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition).Text);
+                }
+                else
+                {
+                    artistPageString.Append($"{counter}. ");
+                    artistPageString.AppendLine(name);
+                }
+
+                counter++;
+            }
+
+            var footer = new StringBuilder();
+            footer.Append($"Page {pageCounter}/{artistPages.Count}");
+
+            if (artists.Content.TotalAmount.HasValue)
+            {
+                footer.Append($" - {artists.Content.TotalAmount} different artists in this time period");
+            }
+            if (topListSettings.Billboard)
+            {
+                footer.AppendLine();
+                footer.Append(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
+            }
+
+            if (rnd == 1 && !topListSettings.Billboard)
+            {
+                footer.AppendLine();
+                footer.Append("View this list as a billboard by adding 'billboard' or 'bb'");
+            }
+
+            pages.Add(new PageBuilder()
+                .WithDescription(artistPageString.ToString())
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(footer.ToString()));
             pageCounter++;
         }
 

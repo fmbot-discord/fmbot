@@ -65,5 +65,7 @@ namespace FMBot.Persistence.Domain.Models
         public ICollection<GuildBlockedUser> GuildBlockedUsers { get; set; }
 
         public ICollection<FeaturedLog> FeaturedLogs { get; set; }
+
+        public ICollection<UserStreak> Streaks { get; set; }
     }
 }

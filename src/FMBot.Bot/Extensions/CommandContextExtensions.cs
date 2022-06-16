@@ -53,6 +53,16 @@ namespace FMBot.Bot.Extensions
                         context.Channel,
                         TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
                     break;
+                case ResponseType.ImageWithEmbed:
+                    await context.Channel.SendFileAsync(
+                        response.Stream,
+                        response.FileName + ".png",
+                        null,
+                        false,
+                        response.Embed.Build(),
+                        isSpoiler: response.Spoiler);
+                    await response.Stream.DisposeAsync();
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }

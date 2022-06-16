@@ -279,7 +279,6 @@ public class GenreBuilders
         }
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
-
         return response;
     }
 

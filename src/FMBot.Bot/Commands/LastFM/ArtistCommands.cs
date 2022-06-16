@@ -361,132 +361,22 @@ public class ArtistCommands : BaseCommandModule
 
         try
         {
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
             var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
             var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm);
 
-            var pages = new List<PageBuilder>();
+            var response = await this._artistBuilders.TopArtistsAsync(new ContextModel(this.Context, prfx, contextUser),
+                topListSettings, timeSettings, userSettings);
 
-            string userTitle;
-            if (!userSettings.DifferentUser)
-            {
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                userTitle = await this._userService.GetUserTitleAsync(this.Context);
-            }
-            else
-            {
-                userTitle =
-                    $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
-            }
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
 
-            var userUrl =
-                $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/artists?{timeSettings.UrlParameter}";
-
-            this._embedAuthor.WithName($"Top {timeSettings.Description.ToLower()} artists for {userTitle}");
-            this._embedAuthor.WithUrl(userUrl);
-
-            var artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm,
-                timeSettings, 200, 1);
-
-            if (!artists.Success || artists.Content == null)
-            {
-                this._embed.ErrorResponse(artists.Error, artists.Message, this.Context.Message.Content, this.Context.User);
-                this.Context.LogCommandUsed(CommandResponse.LastFmError);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
-            if (artists.Content.TopArtists == null || !artists.Content.TopArtists.Any())
-            {
-                this._embed.WithDescription($"Sorry, you or the user you're searching for don't have any top artists in the [selected time period]({userUrl}).");
-                this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                this._embed.WithColor(DiscordConstants.WarningColorOrange);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
-
-            var previousTopArtists = new List<TopArtist>();
-            if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
-            {
-                var previousArtistsCall = await this._lastFmRepository
-                    .GetTopArtistsForCustomTimePeriodAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200);
-
-                if (previousArtistsCall.Success)
-                {
-                    previousTopArtists.AddRange(previousArtistsCall.Content.TopArtists);
-                }
-            }
-
-            var artistPages = artists.Content.TopArtists
-                .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
-
-            var counter = 1;
-            var pageCounter = 1;
-            var rnd = new Random().Next(0, 4);
-
-            foreach (var artistPage in artistPages)
-            {
-                var artistPageString = new StringBuilder();
-                foreach (var artist in artistPage)
-                {
-                    var name =
-                        $"**[{artist.ArtistName}]({artist.ArtistUrl})** ({artist.UserPlaycount} {StringExtensions.GetPlaysString(artist.UserPlaycount)})";
-
-                    if (topListSettings.Billboard && previousTopArtists.Any())
-                    {
-                        var previousTopArtist = previousTopArtists.FirstOrDefault(f => f.ArtistName == artist.ArtistName);
-                        int? previousPosition = previousTopArtist == null ? null : previousTopArtists.IndexOf(previousTopArtist);
-
-                        artistPageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition).Text);
-                    }
-                    else
-                    {
-                        artistPageString.Append($"{counter}. ");
-                        artistPageString.AppendLine(name);
-                    }
-
-                    counter++;
-                }
-
-                var footer = new StringBuilder();
-                footer.Append($"Page {pageCounter}/{artistPages.Count}");
-
-                if (artists.Content.TotalAmount.HasValue)
-                {
-                    footer.Append($" - { artists.Content.TotalAmount} different artists in this time period");
-                }
-                if (topListSettings.Billboard)
-                {
-                    footer.AppendLine();
-                    footer.Append(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
-                }
-
-                if (rnd == 1 && !topListSettings.Billboard)
-                {
-                    footer.AppendLine();
-                    footer.Append("View this list as a billboard by adding 'billboard' or 'bb'");
-                }
-
-                pages.Add(new PageBuilder()
-                    .WithDescription(artistPageString.ToString())
-                    .WithAuthor(this._embedAuthor)
-                    .WithFooter(footer.ToString()));
-                pageCounter++;
-            }
-
-            var paginator = StringService.BuildStaticPaginator(pages);
-
-            _ = this.Interactivity.SendPaginatorAsync(
-                paginator,
-                this.Context.Channel,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-
-            this.Context.LogCommandUsed();
-
-            if (!userSettings.DifferentUser && timeSettings.TimePeriod == TimePeriod.AllTime)
-            {
-                await this._smallIndexRepository.UpdateUserArtists(contextUser, artists.Content.TopArtists);
-            }
+            //if (!userSettings.DifferentUser && timeSettings.TimePeriod == TimePeriod.AllTime)
+            //{
+            //    await this._smallIndexRepository.UpdateUserArtists(contextUser, artists.Content.TopArtists);
+            //}
         }
         catch (Exception e)
         {

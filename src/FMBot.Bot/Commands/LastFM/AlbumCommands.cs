@@ -146,35 +146,12 @@ public class AlbumCommands : BaseCommandModule
     {
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(albumValues, contextUser, this.Context);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        var album = await this.SearchAlbum(userSettings.NewSearchValue, contextUser.UserNameLastFM, userSettings.SessionKeyLastFm, userSettings.UserNameLastFm);
-        if (album == null)
-        {
-            return;
-        }
+        var response = await this._albumBuilders.AlbumPlaysAsync(new ContextModel(this.Context, prfx, contextUser),userSettings, albumValues);
 
-        var reply =
-            $"**{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}** has `{album.UserPlaycount}` {StringExtensions.GetPlaysString(album.UserPlaycount)} " +
-            $"for **{album.AlbumName.FilterOutMentions()}** by **{album.ArtistName.FilterOutMentions()}**";
-
-        if (album.UserPlaycount.HasValue && !userSettings.DifferentUser)
-        {
-            await this._updateService.CorrectUserAlbumPlaycount(contextUser.UserId, album.ArtistName,
-                album.AlbumName, album.UserPlaycount.Value);
-        }
-
-        if (!userSettings.DifferentUser && contextUser.LastUpdated != null)
-        {
-            var playsLastWeek =
-                await this._playService.GetWeekAlbumPlaycountAsync(userSettings.UserId, album.AlbumName, album.ArtistName);
-            if (playsLastWeek != 0)
-            {
-                reply += $" (`{playsLastWeek}` last week)";
-            }
-        }
-
-        await this.Context.Channel.SendMessageAsync(reply, allowedMentions: AllowedMentions.None);
-        this.Context.LogCommandUsed();
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
     }
 
     [Command("cover", RunMode = RunMode.Async)]
@@ -188,9 +165,10 @@ public class AlbumCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Albums, CommandCategory.Charts)]
     public async Task AlbumCoverAsync([Remainder] string albumValues = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
         _ = this.Context.Channel.TriggerTypingAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
         try
         {
@@ -201,77 +179,10 @@ public class AlbumCommands : BaseCommandModule
                 return;
             }
 
-            var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(album);
+            var response = await this._albumBuilders.CoverAsync(new ContextModel(this.Context, prfx, contextUser), albumValues);
 
-            var albumCoverUrl = album.AlbumCoverUrl;
-            if (databaseAlbum.SpotifyImageUrl != null)
-            {
-                albumCoverUrl = databaseAlbum.SpotifyImageUrl;
-            }
-
-            if (albumCoverUrl == null)
-            {
-                this._embed.WithDescription("Sorry, no album cover found for this album: \n" +
-                                            $"{album.ArtistName} - {album.AlbumName}\n" +
-                                            $"[View on last.fm]({album.AlbumUrl})");
-                await this.ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.NotFound);
-                return;
-            }
-
-            var safeForChannel = await this._censorService.IsSafeForChannel(this.Context.Guild, this.Context.Channel,
-                album.AlbumName, album.ArtistName, album.AlbumUrl, this._embed);
-
-            if (safeForChannel == CensorService.CensorResult.NotSafe)
-            {
-                await this.ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Censored);
-                return;
-            }
-
-            var image = await this._lastFmRepository.GetAlbumImageAsStreamAsync(albumCoverUrl);
-            if (image == null)
-            {
-                this._embed.WithDescription("Sorry, something went wrong while getting album cover for this album: \n" +
-                                            $"{album.ArtistName} - {album.AlbumName}\n" +
-                                            $"[View on last.fm]({album.AlbumUrl})");
-                await this.ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.Error);
-                return;
-            }
-
-            var cacheStream = new MemoryStream();
-            await image.CopyToAsync(cacheStream);
-            image.Position = 0;
-
-            var description = new StringBuilder();
-            description.AppendLine($"**{album.ArtistName} - [{album.AlbumName}]({album.AlbumUrl})**");
-
-            if (safeForChannel == CensorService.CensorResult.Nsfw)
-            {
-                description.AppendLine("⚠️ NSFW - Click to reveal");
-            }
-
-            this._embed.WithDescription(description.ToString());
-            this._embedFooter.WithText(
-                $"Album cover requested by {await this._userService.GetUserTitleAsync(this.Context)}");
-
-            this._embed.WithFooter(this._embedFooter);
-
-            await this.Context.Channel.SendFileAsync(
-                image,
-                $"cover-{StringExtensions.ReplaceInvalidChars($"{album.ArtistName}_{album.AlbumName}")}.png",
-                null,
-                false,
-                this._embed.Build(),
-                isSpoiler: safeForChannel == CensorService.CensorResult.Nsfw);
-
-            var cacheFilePath = ChartService.AlbumUrlToCacheFilePath(album.AlbumUrl);
-            await ChartService.OverwriteCache(cacheStream, cacheFilePath);
-
-            await image.DisposeAsync();
-            await cacheStream.DisposeAsync();
-            this.Context.LogCommandUsed();
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {
@@ -291,9 +202,9 @@ public class AlbumCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Albums)]
     public async Task TopAlbumsAsync([Remainder] string extraOptions = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
         _ = this.Context.Channel.TriggerTypingAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
@@ -301,140 +212,13 @@ public class AlbumCommands : BaseCommandModule
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
             var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var pages = new List<PageBuilder>();
+            var response = await this._albumBuilders.TopAlbumsAsync(new ContextModel(this.Context, prfx, contextUser),
+                topListSettings, timeSettings, userSettings);
 
-            string userTitle;
-            if (!userSettings.DifferentUser)
-            {
-                userTitle = await this._userService.GetUserTitleAsync(this.Context);
-            }
-            else
-            {
-                userTitle =
-                    $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
-            }
-
-            if (!userSettings.DifferentUser)
-            {
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            }
-
-            var userUrl =
-                $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?{timeSettings.UrlParameter}";
-
-            this._embedAuthor.WithName($"Top {timeSettings.Description.ToLower()} albums for {userTitle}");
-            this._embedAuthor.WithUrl(userUrl);
-
-            const int amount = 200;
-
-            var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, timeSettings, amount);
-            if (!albums.Success || albums.Content == null)
-            {
-                this._embed.ErrorResponse(albums.Error, albums.Message, this.Context.Message.Content, this.Context.User);
-                this.Context.LogCommandUsed(CommandResponse.LastFmError);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
-            if (albums.Content?.TopAlbums == null || !albums.Content.TopAlbums.Any())
-            {
-                this._embed.WithDescription($"Sorry, you or the user you're searching for don't have any top albums in the [selected time period]({userUrl}).");
-                this._embed.WithColor(DiscordConstants.WarningColorOrange);
-                await ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                return;
-            }
-
-            var previousTopAlbums = new List<TopAlbum>();
-            if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
-            {
-                var previousAlbumsCall = await this._lastFmRepository
-                    .GetTopAlbumsForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, amount);
-
-                if (previousAlbumsCall.Success)
-                {
-                    previousTopAlbums.AddRange(previousAlbumsCall.Content.TopAlbums);
-                }
-            }
-
-            var albumPages = albums.Content.TopAlbums
-                .ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
-
-            var counter = 1;
-            var pageCounter = 1;
-            var rnd = new Random().Next(0, 4);
-
-            foreach (var albumPage in albumPages)
-            {
-                var albumPageString = new StringBuilder();
-                foreach (var album in albumPage)
-                {
-                    var url = album.AlbumUrl;
-                    var escapedAlbumName = Regex.Replace(album.AlbumName, @"([|\\*])", @"\$1");
-
-                    if (contextUser.RymEnabled == true)
-                    {
-                        url = StringExtensions.GetRymUrl(album.AlbumName, album.ArtistName);
-                    }
-
-                    var name = $"**{album.ArtistName}** - **[{escapedAlbumName}]({url})** ({album.UserPlaycount} {StringExtensions.GetPlaysString(album.UserPlaycount)})";
-
-                    if (topListSettings.Billboard && previousTopAlbums.Any())
-                    {
-                        var previousTopAlbum = previousTopAlbums.FirstOrDefault(f => f.ArtistName == album.ArtistName && f.AlbumName == album.AlbumName);
-                        int? previousPosition = previousTopAlbum == null ? null : previousTopAlbums.IndexOf(previousTopAlbum);
-
-                        albumPageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition).Text);
-                    }
-                    else
-                    {
-                        albumPageString.Append($"{counter}. ");
-                        albumPageString.AppendLine(name);
-                    }
-
-                    counter++;
-                }
-
-                var footer = new StringBuilder();
-                footer.Append($"Page {pageCounter}/{albumPages.Count}");
-                if (albums.Content.TotalAmount.HasValue && albums.Content.TotalAmount.Value != amount)
-                {
-                    footer.Append($" - {albums.Content.TotalAmount} different albums in this time period");
-                }
-                if (topListSettings.Billboard)
-                {
-                    footer.AppendLine();
-                    footer.Append(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
-                }
-
-                if (rnd == 1 && !topListSettings.Billboard)
-                {
-                    footer.AppendLine();
-                    footer.Append("View this list as a billboard by adding 'billboard' or 'bb'");
-                }
-
-                pages.Add(new PageBuilder()
-                    .WithDescription(albumPageString.ToString())
-                    .WithAuthor(this._embedAuthor)
-                    .WithFooter(footer.ToString()));
-                pageCounter++;
-            }
-
-            if (!pages.Any())
-            {
-                pages.Add(new PageBuilder()
-                    .WithDescription("No albums played in this time period.")
-                    .WithAuthor(this._embedAuthor));
-            }
-
-            var paginator = StringService.BuildStaticPaginator(pages);
-
-            _ = this.Interactivity.SendPaginatorAsync(
-                paginator,
-                this.Context.Channel,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-
-            this.Context.LogCommandUsed();
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {

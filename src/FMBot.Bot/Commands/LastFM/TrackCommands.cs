@@ -627,9 +627,9 @@ public class TrackCommands : BaseCommandModule
     [CommandCategories(CommandCategory.Tracks)]
     public async Task TopTracksAsync([Remainder] string extraOptions = null)
     {
-        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
-
         _ = this.Context.Channel.TriggerTypingAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
         try
         {
@@ -637,118 +637,13 @@ public class TrackCommands : BaseCommandModule
             var topListSettings = SettingService.SetTopListSettings(extraOptions);
             userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
             var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-            var pages = new List<PageBuilder>();
+            var response = await this._trackBuilders.TopTracksAsync(new ContextModel(this.Context, prfx, contextUser),
+                topListSettings, timeSettings, userSettings);
 
-            string userTitle;
-            if (!userSettings.DifferentUser)
-            {
-                userTitle = await this._userService.GetUserTitleAsync(this.Context);
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-            }
-            else
-            {
-                userTitle =
-                    $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
-            }
-
-            var userUrl = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/tracks?{timeSettings.UrlParameter}";
-            this._embedAuthor.WithName($"Top {timeSettings.Description.ToLower()} tracks for {userTitle}");
-            this._embedAuthor.WithUrl(userUrl);
-
-            var topTracks = await this._lastFmRepository.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 200);
-
-            if (!topTracks.Success)
-            {
-                this._embed.ErrorResponse(topTracks.Error, topTracks.Message, this.Context.Message.Content, this.Context.User);
-                await ReplyAsync("", false, this._embed.Build());
-                return;
-            }
-            if (topTracks.Content?.TopTracks == null || !topTracks.Content.TopTracks.Any())
-            {
-                this._embed.WithDescription($"Sorry, you or the user you're searching for don't have any top tracks in the [selected time period]({userUrl}).");
-                this._embed.WithColor(DiscordConstants.WarningColorOrange);
-                await ReplyAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed(CommandResponse.NoScrobbles);
-                return;
-            }
-
-            var previousTopTracks = new List<TopTrack>();
-            if (topListSettings.Billboard && timeSettings.BillboardStartDateTime.HasValue && timeSettings.BillboardEndDateTime.HasValue)
-            {
-                var previousTopTracksCall = await this._lastFmRepository
-                    .GetTopTracksForCustomTimePeriodAsyncAsync(userSettings.UserNameLastFm, timeSettings.BillboardStartDateTime.Value, timeSettings.BillboardEndDateTime.Value, 200);
-
-                if (previousTopTracksCall.Success)
-                {
-                    previousTopTracks.AddRange(previousTopTracksCall.Content.TopTracks);
-                }
-            }
-
-            this._embed.WithAuthor(this._embedAuthor);
-
-            var trackPages = topTracks.Content.TopTracks.ChunkBy(topListSettings.ExtraLarge ? Constants.DefaultExtraLargePageSize : Constants.DefaultPageSize);
-
-            var counter = 1;
-            var pageCounter = 1;
-            var rnd = new Random().Next(0, 4);
-
-            foreach (var trackPage in trackPages)
-            {
-                var trackPageString = new StringBuilder();
-                foreach (var track in trackPage)
-                {
-                    var name = $"**{track.ArtistName}** - **[{track.TrackName}]({track.TrackUrl})** ({track.UserPlaycount} {StringExtensions.GetPlaysString(track.UserPlaycount)})";
-
-                    if (topListSettings.Billboard && previousTopTracks.Any())
-                    {
-                        var previousTopTrack = previousTopTracks.FirstOrDefault(f => f.ArtistName == track.ArtistName && f.AlbumName == track.AlbumName);
-                        int? previousPosition = previousTopTrack == null ? null : previousTopTracks.IndexOf(previousTopTrack);
-
-                        trackPageString.AppendLine(StringService.GetBillboardLine(name, counter - 1, previousPosition).Text);
-                    }
-                    else
-                    {
-                        trackPageString.Append($"{counter}. ");
-                        trackPageString.AppendLine(name);
-                    }
-
-                    counter++;
-                }
-
-                var footer = new StringBuilder();
-                footer.Append($"Page {pageCounter}/{trackPages.Count}");
-                if (topTracks.Content.TotalAmount.HasValue)
-                {
-                    footer.Append($" - {topTracks.Content.TotalAmount.Value} total tracks in this time period");
-                }
-                if (topListSettings.Billboard)
-                {
-                    footer.AppendLine();
-                    footer.Append(StringService.GetBillBoardSettingString(timeSettings, userSettings.RegisteredLastFm));
-                }
-
-                if (rnd == 1 && !topListSettings.Billboard)
-                {
-                    footer.AppendLine();
-                    footer.Append("View this list as a billboard by adding 'billboard' or 'bb'");
-                }
-
-                pages.Add(new PageBuilder()
-                    .WithDescription(trackPageString.ToString())
-                    .WithAuthor(this._embedAuthor)
-                    .WithFooter(footer.ToString()));
-                pageCounter++;
-            }
-
-            var paginator = StringService.BuildStaticPaginator(pages);
-
-            _ = this.Interactivity.SendPaginatorAsync(
-                paginator,
-                this.Context.Channel,
-                TimeSpan.FromMinutes(DiscordConstants.PaginationTimeoutInSeconds));
-
-            this.Context.LogCommandUsed();
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {

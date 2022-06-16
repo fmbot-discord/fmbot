@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -372,8 +373,7 @@ public class PlayBuilder
 
         if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
         {
-            var errorEmbed =
-                GenericEmbedService.RecentScrobbleCallFailedBuilder(recentTracks, userSettings.UserNameLastFm);
+            GenericEmbedService.RecentScrobbleCallFailedBuilder(recentTracks, userSettings.UserNameLastFm);
             response.CommandResponse = CommandResponse.LastFmError;
             return response;
         }
@@ -449,6 +449,116 @@ public class PlayBuilder
 
         response.Embed.WithFooter(response.EmbedFooter);
 
+        return response;
+    }
+
+    public async Task<ResponseModel> StreakAsync(
+        ContextModel context,
+        UserSettingsModel userSettings,
+        User userWithStreak)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed,
+        };
+
+        var recentTracks = await this._updateService.UpdateUserAndGetRecentTracks(userWithStreak);
+
+        if (GenericEmbedService.RecentScrobbleCallFailed(recentTracks))
+        {
+            GenericEmbedService.RecentScrobbleCallFailedBuilder(recentTracks, userSettings.UserNameLastFm);
+            response.CommandResponse = CommandResponse.LastFmError;
+            return response;
+        }
+
+        var streak = await this._playService.GetStreak(userSettings.UserId, recentTracks);
+        var streakText = PlayService.StreakToText(streak);
+        response.Embed.WithDescription(streakText);
+
+        response.EmbedAuthor.WithName($"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()}'s streak overview");
+        if (!userSettings.DifferentUser)
+        {
+            response.EmbedAuthor.WithIconUrl(context.DiscordUser.GetAvatarUrl());
+            var saved = await this._playService.UpdateOrInsertStreak(streak);
+            response.Embed.WithFooter(saved);
+        }
+
+        response.EmbedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library");
+        response.Embed.WithAuthor(response.EmbedAuthor);
+
+        return response;
+    }
+
+    public async Task<ResponseModel> StreakHistoryAsync(
+        ContextModel context,
+        UserSettingsModel userSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Paginator,
+        };
+
+        var streaks = await this._playService.GetStreaks(userSettings.UserId);
+
+        response.EmbedAuthor.WithName(
+            !userSettings.DifferentUser
+                ? $"Streak history for {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}"
+                : $"Streak history for {userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}");
+
+        response.EmbedAuthor.WithUrl($"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library");
+
+        if (!streaks.Any())
+        {
+            response.Embed.WithDescription("No saved streaks found for this user.");
+            response.ResponseType = ResponseType.Embed;
+            response.CommandResponse = CommandResponse.NotFound;
+            return response;
+        }
+
+        var streakPages = streaks.Chunk(4).ToList();
+
+        var counter = 1;
+        var pageCounter = 1;
+        var pages = new List<PageBuilder>();
+        foreach (var page in streakPages)
+        {
+            var pageString = new StringBuilder();
+            foreach (var streak in page)
+            {
+                pageString.Append($"**{counter}. **");
+
+                if ((streak.StreakEnded - streak.StreakStarted).TotalHours <= 20)
+                {
+                    pageString.Append($"<t:{((DateTimeOffset)streak.StreakStarted).ToUnixTimeSeconds()}:f>");
+                    pageString.Append($" til ");
+                    pageString.Append($"<t:{((DateTimeOffset)streak.StreakEnded).ToUnixTimeSeconds()}:t>");
+                    pageString.AppendLine();
+                }
+                else
+                {
+                    pageString.Append($"<t:{((DateTimeOffset)streak.StreakStarted).ToUnixTimeSeconds()}:f>");
+                    pageString.Append($" til ");
+                    pageString.Append($"<t:{((DateTimeOffset)streak.StreakEnded).ToUnixTimeSeconds()}:f>");
+                    pageString.AppendLine();
+                }
+
+                var streakText = PlayService.StreakToText(streak, false);
+                pageString.AppendLine(streakText);
+
+                counter++;
+            }
+
+            var pageFooter = new StringBuilder();
+            pageFooter.Append($"Page {pageCounter}/{streakPages.Count}");
+
+            pages.Add(new PageBuilder()
+                .WithDescription(pageString.ToString())
+                .WithAuthor(response.EmbedAuthor)
+                .WithFooter(pageFooter.ToString()));
+            pageCounter++;
+        }
+
+        response.StaticPaginator = StringService.BuildStaticPaginator(pages);
         return response;
     }
 
