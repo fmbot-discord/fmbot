@@ -30,7 +30,8 @@ public class PuppeteerService
             Headless = true,
             Args = new[]
             {
-                "--no-sandbox"
+                "--no-sandbox",
+                "--font-render-hinting=none"
             }
         });
     }
