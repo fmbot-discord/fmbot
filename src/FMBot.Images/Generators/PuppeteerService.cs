@@ -93,13 +93,13 @@ public class PuppeteerService
         {
             var length = $"{topTrack.ArtistName} - {topTrack.TrackName}".Length;
             var lines = length / 35;
-            extraHeight += lines * 15;
+            extraHeight += lines * 18;
         }
 
         await page.SetViewportAsync(new ViewPortOptions
         {
             Width = 500,
-            Height = 860 + (topTracks.TotalAmount > 0 ? 40 : 0) + extraHeight
+            Height = 860 + (topTracks.TotalAmount > 0 ? 40 : 0) +(user.UserType == UserType.Supporter ? 40 : 0) + extraHeight
         });
 
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pages", "receipt.html");
