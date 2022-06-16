@@ -99,7 +99,7 @@ public class PuppeteerService
         await page.SetViewportAsync(new ViewPortOptions
         {
             Width = 500,
-            Height = 860 + (topTracks.TotalAmount > 0 ? 30 : 0) + extraHeight
+            Height = 860 + (topTracks.TotalAmount > 0 ? 40 : 0) + extraHeight
         });
 
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pages", "receipt.html");
@@ -147,6 +147,7 @@ public class PuppeteerService
         content = content.Replace("{{date-generated}}", DateTime.UtcNow.ToLongDateString());
         content = content.Replace("{{lfm-username}}", user.UserNameLastFm);
         content = content.Replace("{{discord-username}}", user.DiscordUserName);
+        content = content.Replace("{{auth-code}}", user.UserId.ToString());
         content = content.Replace("{{year}}", timeSettings.EndDateTime.HasValue ? timeSettings.EndDateTime.Value.Year.ToString() : DateTime.UtcNow.Year.ToString());
 
         content = content.Replace("{{thanks}}", user.UserType == UserType.Supporter ?
