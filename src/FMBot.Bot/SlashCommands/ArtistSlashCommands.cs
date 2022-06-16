@@ -220,7 +220,7 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         try
         {
-            var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(TimePeriod), timePeriod), TimePeriod.AllTime);
+            var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime);
 
             var response = await this._artistBuilders.TasteAsync(new ContextModel(this.Context, contextUser),
                 new TasteSettings { TasteType = tasteType }, timeSettings, userSettings);

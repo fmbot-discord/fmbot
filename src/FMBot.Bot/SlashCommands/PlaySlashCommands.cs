@@ -232,7 +232,7 @@ public class PlaySlashCommands : InteractionModuleBase
         {
             var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
             var goalAmount = SettingService.GetGoalAmount(amount.ToString(), userInfo.Playcount);
-            var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(TimePeriod), timePeriod), TimePeriod.AllTime);
+            var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime);
 
             long timeFrom;
             if (timeSettings.TimePeriod != TimePeriod.AllTime && timeSettings.PlayDays != null)

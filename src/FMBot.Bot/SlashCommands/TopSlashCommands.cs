@@ -57,7 +57,7 @@ public class TopSlashCommands : InteractionModuleBase
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(TimePeriod), timePeriod), TimePeriod.AllTime);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod);
 
         var topListSettings = new TopListSettings(extraLarge, billboard);
 
@@ -79,7 +79,7 @@ public class TopSlashCommands : InteractionModuleBase
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(TimePeriod), timePeriod), TimePeriod.AllTime);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod);
 
         var topListSettings = new TopListSettings(extraLarge, billboard);
 
@@ -101,7 +101,7 @@ public class TopSlashCommands : InteractionModuleBase
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(TimePeriod), timePeriod), TimePeriod.AllTime);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod);
 
         var topListSettings = new TopListSettings(extraLarge, billboard);
 
@@ -123,7 +123,7 @@ public class TopSlashCommands : InteractionModuleBase
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(TimePeriod), timePeriod), TimePeriod.AllTime);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod);
 
         var topListSettings = new TopListSettings(extraLarge, billboard);
 
@@ -145,7 +145,7 @@ public class TopSlashCommands : InteractionModuleBase
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(TimePeriod), timePeriod), TimePeriod.AllTime);
+        var timeSettings = SettingService.GetTimePeriod(timePeriod);
 
         var topListSettings = new TopListSettings(extraLarge, billboard);
 

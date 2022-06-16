@@ -42,7 +42,7 @@ public class TrackSlashCommands : InteractionModuleBase
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
 
-        var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(TimePeriod), timePeriod));
+        var timeSettings = SettingService.GetTimePeriod(timePeriod);
 
         if (timeSettings.DefaultPicked)
         {
