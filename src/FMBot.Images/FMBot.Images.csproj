@@ -16,9 +16,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FMBot.Domain\FMBot.Domain.csproj" />
+    <ProjectReference Include="..\FMBot.Persistence.Domain\FMBot.Persistence.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Pages\receipt.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Pages\world-light.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

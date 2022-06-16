@@ -37,6 +37,7 @@ namespace FMBot.Bot.Services
             settingsModel.NewSearchValue = options;
             settingsModel.UsePlays = false;
             settingsModel.EndDateTime = DateTime.UtcNow;
+            settingsModel.DefaultPicked = false;
 
             var year = GetYear(options);
             var month = GetMonth(options);
@@ -247,6 +248,7 @@ namespace FMBot.Bot.Services
 
             if (customTimePeriod == false)
             {
+                settingsModel.DefaultPicked = true;
                 if (defaultTimePeriod == TimePeriod.AllTime)
                 {
                     settingsModel.LastStatsTimeSpan = LastStatsTimeSpan.Overall;

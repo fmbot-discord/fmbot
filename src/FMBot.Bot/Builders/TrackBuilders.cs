@@ -14,8 +14,11 @@ using FMBot.Bot.Services.ThirdParty;
 using FMBot.Bot.Services.WhoKnows;
 using FMBot.Domain;
 using FMBot.Domain.Models;
+using FMBot.Images.Generators;
+using FMBot.LastFM.Domain.Types;
 using FMBot.LastFM.Repositories;
 using FMBot.Persistence.Domain.Models;
+using SkiaSharp;
 
 namespace FMBot.Bot.Builders;
 
@@ -29,8 +32,9 @@ public class TrackBuilders
     private readonly SpotifyService _spotifyService;
     private readonly TimeService _timeService;
     private readonly LastFmRepository _lastFmRepository;
+    private readonly PuppeteerService _puppeteerService;
 
-    public TrackBuilders(UserService userService, GuildService guildService, TrackService trackService, WhoKnowsTrackService whoKnowsTrackService, PlayService playService, SpotifyService spotifyService, TimeService timeService, LastFmRepository lastFmRepository)
+    public TrackBuilders(UserService userService, GuildService guildService, TrackService trackService, WhoKnowsTrackService whoKnowsTrackService, PlayService playService, SpotifyService spotifyService, TimeService timeService, LastFmRepository lastFmRepository, PuppeteerService puppeteerService)
     {
         this._userService = userService;
         this._guildService = guildService;
@@ -40,6 +44,7 @@ public class TrackBuilders
         this._spotifyService = spotifyService;
         this._timeService = timeService;
         this._lastFmRepository = lastFmRepository;
+        this._puppeteerService = puppeteerService;
     }
 
     public async Task<ResponseModel> GuildTracksAsync(
@@ -264,6 +269,63 @@ public class TrackBuilders
 
         response.StaticPaginator = StringService.BuildStaticPaginator(pages);
         response.ResponseType = ResponseType.Paginator;
+        return response;
+    }
+
+    public async Task<ResponseModel> GetReceipt(
+        ContextModel context,
+        UserSettingsModel userSettings,
+        TimeSettingsModel timeSettings)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.ImageWithEmbed
+        };
+
+        var userTitle = await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser);
+
+        if (userSettings.DifferentUser)
+        {
+            userTitle =
+                $"{userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(context.DiscordGuild, context.DiscordUser)}";
+        }
+
+        var userUrl = $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/tracks?{timeSettings.UrlParameter}";
+        response.EmbedAuthor.WithName($"Top {timeSettings.Description} tracks for {userTitle}");
+        response.EmbedAuthor.WithUrl(userUrl);
+        response.Embed.WithAuthor(response.EmbedAuthor);
+
+        var topTracks = await this._lastFmRepository.GetTopTracksAsync(userSettings.UserNameLastFm, timeSettings, 20);
+
+        if (!topTracks.Success)
+        {
+            response.Embed.ErrorResponse(topTracks.Error, topTracks.Message, "top tracks", context.DiscordUser);
+            response.CommandResponse = CommandResponse.LastFmError;
+            return response;
+        }
+        if (topTracks.Content?.TopTracks == null || !topTracks.Content.TopTracks.Any())
+        {
+            response.Embed.WithDescription($"Sorry, you or the user you're searching for don't have any top tracks in the [selected time period]({userUrl}).");
+            response.Embed.WithColor(DiscordConstants.WarningColorOrange);
+            response.CommandResponse = CommandResponse.NoScrobbles;
+            return response;
+        }
+
+        long? timeFrom = null;
+        if (timeSettings.TimePeriod != TimePeriod.AllTime && timeSettings.PlayDays != null)
+        {
+            var dateAgo = DateTime.UtcNow.AddDays(-timeSettings.PlayDays.Value);
+            timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
+        }
+
+        var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom, userSettings.SessionKeyLastFm);
+
+        var image = await this._puppeteerService.GetReceipt(userSettings, topTracks.Content, timeSettings, count);
+
+        var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+        response.Stream = encoded.AsStream();
+        response.FileName = "receipt";
+
         return response;
     }
 }

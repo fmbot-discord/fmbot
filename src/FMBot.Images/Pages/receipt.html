@@ -1,0 +1,138 @@
+<html>
+<head>
+    <style>
+        @font-face {
+            font-family: "receipt";
+            src: url("https://fmbot.xyz/fonts/receipt.ttf") format("truetype");
+        }
+
+        body {
+            background-image: url("https://fmbot.xyz/img/bot/receipt.png");
+            font-family: "receipt", "Courier New", Courier, monospace;
+            margin-right: 30px;
+            margin-left: 30px;
+        }
+
+        .receipt {
+            padding-top: 25px;
+            padding-bottom: 25px;
+        }
+
+        .divider {
+            height: 5px;
+            padding-bottom: 0;
+            padding-top: 0;
+            padding-left: 2px;
+        }
+
+        .align-right {
+            text-align: right;
+            padding-right: 0;
+        }
+
+        .align-center {
+            text-align: center;
+        }
+
+        p {
+            margin-block-start: 0;
+            margin-block-end: 0;
+            margin-left: 3px;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .min-width {
+            min-width: 160px;
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt">
+        <h1 class="align-center">.fmbot receipt</h1>
+        <h2 class="align-center bold">
+            {{time-period}}
+        </h2>
+        <br />
+        <p class="date align-center">
+            ORDER #{{order}} FOR {{lfm-username}}
+        </p>
+        <p class="align-center">
+            {{date-generated}}
+        </p>
+        <br />
+        <table>
+            <thead>
+                <tr class="divider">
+                    <td class="divider" colspan="3">----------------------------------------</td>
+                </tr>
+                <tr>
+                    <td>
+                        ITEM
+                    </td>
+                    <td class="align-right">
+                        AMT
+                    </td>
+                </tr>
+                <tr class="divider">
+                    <td class="divider" colspan="3">----------------------------------------</td>
+                </tr>
+            </thead>
+            <tbody>
+                {{tracks}}
+            </tbody>
+        </table>
+        <table>
+            <tbody>
+                <tr class="divider">
+                    <td class="divider align-right" colspan="3">---------------------</td>
+                </tr>
+                <tr>
+                    <td class="min-width"></td>
+                    <td>
+                        SUBTOTAL:
+                    </td>
+                    <td class="align-right">
+                        {{subtotal}}
+                    </td>
+                </tr>
+                <tr class="divider">
+                    <td class="divider align-right" colspan="3">---------------------</td>
+                </tr>
+                {{total-tracks}}
+                <tr class="">
+                    <td class="min-width"></td>
+                    <td>
+                        TOTAL PLAYS:
+                    </td>
+                    <td class="align-right">
+                        {{total-plays}}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <br />
+        <br />
+        <p class="date">
+            CARD #: **** **** **** {{year}}
+        </p>
+        <p class="date">
+            AUTH CODE: 216621
+        </p>
+        <p class="date">
+            CARDHOLDER: {{discord-username}}
+        </p>
+        <br />
+        <p class="align-center">
+            {{thanks}}
+        </p>
+    </div>
+</body>
+</html>

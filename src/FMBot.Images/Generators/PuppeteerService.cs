@@ -1,5 +1,6 @@
 using System.Text;
 using FMBot.Domain.Models;
+using FMBot.Persistence.Domain.Models;
 using PuppeteerSharp;
 using SkiaSharp;
 
@@ -9,9 +10,11 @@ public class PuppeteerService
 {
     private Browser? _browser;
     private readonly Task _initializationTask;
+    private int _orderNr;
 
     public PuppeteerService()
     {
+        this._orderNr = 1;
         this._initializationTask = InitializeAsync();
     }
 
@@ -73,6 +76,78 @@ public class PuppeteerService
         return skImg;
     }
 
+    public async Task<SKBitmap> GetReceipt(UserSettingsModel user, TopTrackList topTracks,
+        TimeSettingsModel timeSettings, long? count)
+    {
+        await this._initializationTask;
+
+        await using var page = await this._browser.NewPageAsync();
+
+        await page.SetViewportAsync(new ViewPortOptions
+        {
+            Width = 500,
+            Height = 900 + (topTracks.TotalAmount > 0 ? 40 : 0)
+        });
+
+        var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pages", "receipt.html");
+
+        var content = await File.ReadAllTextAsync(localPath);
+
+        var tracksToAdd = new StringBuilder();
+        foreach (var topTrack in topTracks.TopTracks.Take(12))
+        {
+            tracksToAdd.Append("<tr>");
+            tracksToAdd.Append("<td>");
+            tracksToAdd.Append($"{topTrack.ArtistName} - {topTrack.TrackName}");
+            tracksToAdd.Append("</td>");
+            tracksToAdd.Append("<td class=\"align-right\">");
+            tracksToAdd.Append($"{topTrack.UserPlaycount}");
+            tracksToAdd.Append("</td>");
+            tracksToAdd.Append("</tr>");
+        }
+
+        content = content.Replace("{{tracks}}", tracksToAdd.ToString());
+
+        content = content.Replace("{{subtotal}}", topTracks.TopTracks.Take(12).Sum(s => s.UserPlaycount.GetValueOrDefault()).ToString());
+        content = content.Replace("{{total-plays}}", count.GetValueOrDefault().ToString());
+
+        if (topTracks.TotalAmount > 0)
+        {
+            var totalTracks = new StringBuilder();
+            tracksToAdd.Append("<tr>");
+            totalTracks.Append("<td class=\"min-width\"></td>");
+            totalTracks.Append("<td>TOTAL TRACKS:</td>");
+            totalTracks.Append($"<td class=\"align-right\">{topTracks.TotalAmount}</td>");
+            tracksToAdd.Append("</tr>");
+
+            content = content.Replace("{{total-tracks}}", totalTracks.ToString());
+        }
+        else
+        {
+            content = content.Replace("{{total-tracks}}", "");
+        }
+
+        content = content.Replace("{{order}}", this._orderNr.ToString());
+        this._orderNr++;
+
+        content = content.Replace("{{time-period}}", timeSettings.Description);
+        content = content.Replace("{{date-generated}}", DateTime.UtcNow.ToLongDateString());
+        content = content.Replace("{{lfm-username}}", user.UserNameLastFm);
+        content = content.Replace("{{discord-username}}", user.DiscordUserName);
+        content = content.Replace("{{year}}", timeSettings.EndDateTime.HasValue ? timeSettings.EndDateTime.Value.Year.ToString() : DateTime.UtcNow.Year.ToString());
+
+        content = content.Replace("{{thanks}}", user.UserType == UserType.Supporter ?
+            "Thank you for being an .fmbot supporter - Dankjewel !" : "Thank you for visiting - Dankjewel !");
+
+        await page.SetContentAsync(content);
+
+        await page.WaitForSelectorAsync("table");
+
+        var img = await page.ScreenshotDataAsync();
+
+        return SKBitmap.FromImage(SKImage.FromEncodedData(img));
+    }
+
     private List<GroupedCountries> GetGroupedCountries(List<TopCountry> artists)
     {
         var list = new List<GroupedCountries>();
@@ -107,7 +182,7 @@ public class PuppeteerService
             IsAntialias = true,
             TextAlign = SKTextAlign.Center,
             Color = SKColors.Black,
-            
+
             Typeface = typeface
         };
 
