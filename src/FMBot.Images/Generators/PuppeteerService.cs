@@ -88,8 +88,8 @@ public class PuppeteerService
         const int amountOfTracks = 12;
 
         var extraHeight = 0;
-
         foreach (var topTrack in topTracks.TopTracks)
+
         {
             var length = $"{topTrack.ArtistName} - {topTrack.TrackName}".Length;
             var lines = length / 35;
@@ -148,6 +148,7 @@ public class PuppeteerService
         content = content.Replace("{{lfm-username}}", user.UserNameLastFm);
         content = content.Replace("{{discord-username}}", user.DiscordUserName);
         content = content.Replace("{{auth-code}}", user.UserId.ToString());
+        content = content.Replace("{{background-offset}}", new Random().Next(10, 1000).ToString());
         content = content.Replace("{{year}}", timeSettings.EndDateTime.HasValue ? timeSettings.EndDateTime.Value.Year.ToString() : DateTime.UtcNow.Year.ToString());
 
         content = content.Replace("{{thanks}}", user.UserType == UserType.Supporter ?
