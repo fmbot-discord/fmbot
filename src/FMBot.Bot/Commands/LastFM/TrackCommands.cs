@@ -657,7 +657,7 @@ public class TrackCommands : BaseCommandModule
     [Discord.Commands.Summary("Shows your track receipt. Based on Receiptify.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
     [Examples("receipt", "receipt 2022", "rc week")]
-    [Alias("rc", "receiptify")]
+    [Alias("rcpt", "receiptify")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
     public async Task ReceiptAsync([Remainder] string extraOptions = null)

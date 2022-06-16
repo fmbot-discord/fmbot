@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Text;
 using FMBot.Domain.Models;
 using FMBot.Persistence.Domain.Models;
@@ -84,10 +85,21 @@ public class PuppeteerService
 
         await using var page = await this._browser.NewPageAsync();
 
+        const int amountOfTracks = 12;
+
+        var extraHeight = 0;
+
+        foreach (var topTrack in topTracks.TopTracks)
+        {
+            var length = $"{topTrack.ArtistName} - {topTrack.TrackName}".Length;
+            var lines = length / 35;
+            extraHeight += lines * 15;
+        }
+
         await page.SetViewportAsync(new ViewPortOptions
         {
             Width = 500,
-            Height = 900 + (topTracks.TotalAmount > 0 ? 40 : 0)
+            Height = 860 + (topTracks.TotalAmount > 0 ? 30 : 0) + extraHeight
         });
 
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pages", "receipt.html");
@@ -95,7 +107,7 @@ public class PuppeteerService
         var content = await File.ReadAllTextAsync(localPath);
 
         var tracksToAdd = new StringBuilder();
-        foreach (var topTrack in topTracks.TopTracks.Take(12))
+        foreach (var topTrack in topTracks.TopTracks.Take(amountOfTracks))
         {
             tracksToAdd.Append("<tr>");
             tracksToAdd.Append("<td>");
@@ -109,7 +121,7 @@ public class PuppeteerService
 
         content = content.Replace("{{tracks}}", tracksToAdd.ToString());
 
-        content = content.Replace("{{subtotal}}", topTracks.TopTracks.Take(12).Sum(s => s.UserPlaycount.GetValueOrDefault()).ToString());
+        content = content.Replace("{{subtotal}}", topTracks.TopTracks.Take(amountOfTracks).Sum(s => s.UserPlaycount.GetValueOrDefault()).ToString());
         content = content.Replace("{{total-plays}}", count.GetValueOrDefault().ToString());
 
         if (topTracks.TotalAmount > 0)
