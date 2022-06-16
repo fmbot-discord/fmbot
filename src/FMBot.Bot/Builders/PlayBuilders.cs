@@ -635,15 +635,14 @@ public class PlayBuilder
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
         long goalAmount,
-        long userTotalPlaycount,
-        long timeFrom)
+        long userTotalPlaycount)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Text,
         };
 
-        var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom, userSettings.SessionKeyLastFm);
+        var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm);
 
         if (count is null or 0)
         {
@@ -652,7 +651,7 @@ public class PlayBuilder
             return response;
         }
 
-        var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
+        var age = DateTimeOffset.FromUnixTimeSeconds(timeSettings.TimeFrom.GetValueOrDefault());
         var totalDays = (DateTime.UtcNow - age).TotalDays;
 
         var playsLeft = goalAmount - userTotalPlaycount;

@@ -313,14 +313,7 @@ public class TrackBuilders
             return response;
         }
 
-        long? timeFrom = null;
-        if (timeSettings.TimePeriod != TimePeriod.AllTime && timeSettings.PlayDays != null)
-        {
-            var dateAgo = DateTime.UtcNow.AddDays(-timeSettings.PlayDays.Value);
-            timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
-        }
-
-        var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom, userSettings.SessionKeyLastFm);
+        var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
 
         var image = await this._puppeteerService.GetReceipt(userSettings, topTracks.Content, timeSettings, count);
 

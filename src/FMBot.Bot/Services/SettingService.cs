@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
@@ -57,22 +58,26 @@ namespace FMBot.Bot.Services
 
                 if (year.HasValue && !month.HasValue)
                 {
+                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { year.Value.ToString() });
                     settingsModel.Description = $"{year}";
-                    settingsModel.AltDescription = $"{year}";
+                    settingsModel.AltDescription = $"year {year}";
                     settingsModel.BillboardTimeDescription = $"{year - 1}";
                     settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddYears(1).AddSeconds(-1);
                 }
                 if (!year.HasValue && month.HasValue)
                 {
+                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { month.Value.ToString(), DateTimeFormatInfo.CurrentInfo.GetMonthName(month.Value) });
                     settingsModel.Description = settingsModel.StartDateTime.Value.ToString("MMMM");
-                    settingsModel.AltDescription = settingsModel.StartDateTime.Value.ToString("MMMM");
+                    settingsModel.AltDescription = $"month {settingsModel.StartDateTime.Value.ToString("MMMM")}";
                     settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
                     settingsModel.BillboardTimeDescription = $"{settingsModel.StartDateTime.Value.AddMonths(-1):MMMM}";
                 }
                 if (year.HasValue && month.HasValue)
                 {
+                    settingsModel.NewSearchValue = ContainsAndRemove(settingsModel.NewSearchValue, new[] { year.Value.ToString(), month.Value.ToString(), DateTimeFormatInfo.CurrentInfo.GetMonthName(month.Value) });
+
                     settingsModel.Description = $"{settingsModel.StartDateTime.Value:MMMM} {year}";
-                    settingsModel.AltDescription = $"{settingsModel.StartDateTime.Value:MMMM} {year}";
+                    settingsModel.AltDescription = $"month {settingsModel.StartDateTime.Value:MMMM} of {year}";
                     settingsModel.EndDateTime = settingsModel.StartDateTime.Value.AddMonths(1).AddSeconds(-1);
                 }
 
@@ -88,6 +93,9 @@ namespace FMBot.Bot.Services
                     settingsModel.EndDateTime.Value.AddDays(-settingsModel.PlayDays.Value);
 
                 settingsModel.UrlParameter = $"from={startDateString}&to={endDateString}";
+
+                settingsModel.TimeFrom = ((DateTimeOffset)settingsModel.StartDateTime).ToUnixTimeSeconds();
+                settingsModel.TimeUntil = ((DateTimeOffset)settingsModel.EndDateTime).ToUnixTimeSeconds();
 
                 return settingsModel;
             }
@@ -173,6 +181,7 @@ namespace FMBot.Bot.Services
                 if (registeredLastFm.HasValue)
                 {
                     settingsModel.PlayDays = (int)(DateTime.UtcNow - registeredLastFm.Value).TotalDays + 1;
+                    settingsModel.StartDateTime = registeredLastFm.Value.AddDays(-1);
                 }
             }
             else if (Contains(options, sixDays) && dailyTimePeriods)
@@ -290,6 +299,16 @@ namespace FMBot.Bot.Services
                     DateTime.UtcNow.AddDays(-daysToGoBack);
 
                 settingsModel.PlayDaysWithBillboard = settingsModel.PlayDays.Value + daysToGoBack;
+            }
+
+            if (settingsModel.TimePeriod != TimePeriod.AllTime && settingsModel.PlayDays != null && settingsModel.StartDateTime == null)
+            {
+                var dateAgo = DateTime.UtcNow.AddDays(-settingsModel.PlayDays.Value);
+                settingsModel.TimeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
+            }
+            else if (settingsModel.StartDateTime.HasValue)
+            {
+                settingsModel.TimeFrom = ((DateTimeOffset)settingsModel.StartDateTime).ToUnixTimeSeconds();
             }
 
             return settingsModel;

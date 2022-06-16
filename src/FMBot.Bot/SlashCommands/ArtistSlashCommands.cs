@@ -107,19 +107,8 @@ public class ArtistSlashCommands : InteractionModuleBase
             var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
             var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(ArtistPaceTimePeriod), timePeriod), TimePeriod.Monthly);
 
-            long timeFrom;
-            if (timeSettings.TimePeriod != TimePeriod.AllTime && timeSettings.PlayDays != null)
-            {
-                var dateAgo = DateTime.UtcNow.AddDays(-timeSettings.PlayDays.Value);
-                timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
-            }
-            else
-            {
-                timeFrom = userInfo.Registered.Unixtime;
-            }
-
             var response = await this._artistBuilders.ArtistPaceAsync(new ContextModel(this.Context, contextUser),
-                userSettings, timeSettings, amount.ToString(), timeFrom, name);
+                userSettings, timeSettings, amount.ToString(), name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed();

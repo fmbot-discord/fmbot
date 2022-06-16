@@ -212,7 +212,7 @@ namespace FMBot.LastFM.Repositories
         }
 
         // Scrobble count from a certain unix timestamp
-        public async Task<long?> GetScrobbleCountFromDateAsync(string lastFmUserName, long? unixTimestamp = null, string sessionKey = null)
+        public async Task<long?> GetScrobbleCountFromDateAsync(string lastFmUserName, long? from = null, string sessionKey = null, long? until = null)
         {
             var queryParams = new Dictionary<string, string>
             {
@@ -229,9 +229,14 @@ namespace FMBot.LastFM.Repositories
                 authorizedCall = true;
             }
 
-            if (unixTimestamp != null)
+            if (from != null)
             {
-                queryParams.Add("from", unixTimestamp.ToString());
+                queryParams.Add("from", from.ToString());
+            }
+
+            if (until != null)
+            {
+                queryParams.Add("to", until.ToString());
             }
 
             var recentTracksCall = await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams, Call.RecentTracks, authorizedCall);

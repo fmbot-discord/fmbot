@@ -583,7 +583,6 @@ public class ArtistBuilders
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
         string amount,
-        long timeFrom,
         string artistName)
     {
         var response = new ResponseModel
@@ -610,7 +609,7 @@ public class ArtistBuilders
 
         goalAmount = SettingService.GetGoalAmount(amount, artistSearch.Artist.UserPlaycount.GetValueOrDefault(0));
 
-        var regularPlayCount = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom, userSettings.SessionKeyLastFm);
+        var regularPlayCount = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm);
 
         if (regularPlayCount is null or 0)
         {
@@ -630,7 +629,7 @@ public class ArtistBuilders
             return response;
         }
 
-        var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
+        var age = DateTimeOffset.FromUnixTimeSeconds(timeSettings.TimeFrom.GetValueOrDefault());
         var totalDays = (DateTime.UtcNow - age).TotalDays;
 
         var playsLeft = goalAmount - artistSearch.Artist.UserPlaycount.GetValueOrDefault(0);
