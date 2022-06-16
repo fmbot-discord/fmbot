@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -29,10 +30,10 @@ public class TrackSlashCommands : InteractionModuleBase
         this.Interactivity = interactivity;
     }
 
-    //[SlashCommand("receipt", "Shows your track receipt. Based on Receiptify.")]
+    [SlashCommand("receipt", "Shows your track receipt. Based on Receiptify.")]
     [UsernameSetRequired]
     public async Task ReceiptAsync(
-        [Summary("Time-period", "Time period")] TimePeriod timePeriod = TimePeriod.Weekly,
+        [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("User", "The user to show (defaults to self)")] string user = null,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {

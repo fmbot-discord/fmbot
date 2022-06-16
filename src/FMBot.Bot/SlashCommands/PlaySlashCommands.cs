@@ -5,6 +5,7 @@ using Discord;
 using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -219,7 +220,7 @@ public class PlaySlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     public async Task PaceAsync(
         [Summary("Amount", "Goal scrobble amount")] int amount = 1,
-        [Summary("Time-period", "Time period to base average playcount on")] TimePeriod timePeriod = TimePeriod.AllTime,
+        [Summary("Time-period", "Time period to base average playcount on")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("User", "The user to show (defaults to self)")] string user = null)
     {
         _ = DeferAsync();

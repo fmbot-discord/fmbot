@@ -210,7 +210,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     public async Task TasteAsync(
         [Summary("User", "The user to compare your taste with")] string user,
-        [Summary("Time-period", "Time period")] TimePeriod timePeriod = TimePeriod.AllTime,
+        [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Type", "Taste view type")] TasteType tasteType = TasteType.Table)
     {
         _ = DeferAsync();
