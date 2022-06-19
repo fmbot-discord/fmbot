@@ -527,19 +527,8 @@ public class PlayCommands : BaseCommandModule
         var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
         var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
 
-        long timeFrom;
-        if (timeSettings.TimePeriod != TimePeriod.AllTime && timeSettings.PlayDays != null)
-        {
-            var dateAgo = DateTime.UtcNow.AddDays(-timeSettings.PlayDays.Value);
-            timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
-        }
-        else
-        {
-            timeFrom = userInfo.Registered.Unixtime;
-        }
-
         var response = await this._playBuilder.PaceAsync(new ContextModel(this.Context, prfx, contextUser),
-            userSettings, timeSettings, goalAmount, userInfo.Playcount, timeFrom);
+            userSettings, timeSettings, goalAmount, userInfo.Playcount, userInfo.Registered.Unixtime);
 
         await this.Context.SendResponse(this.Interactivity, response);
         this.Context.LogCommandUsed(response.CommandResponse);
@@ -583,27 +572,20 @@ public class PlayCommands : BaseCommandModule
 
         _ = this.Context.Channel.TriggerTypingAsync();
 
-        var timeType = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
-        var userSettings = await this._settingService.GetUser(timeType.NewSearchValue, user, this.Context, true);
+        var timeSettings = SettingService.GetTimePeriod(extraOptions, TimePeriod.AllTime);
+        var userSettings = await this._settingService.GetUser(timeSettings.NewSearchValue, user, this.Context, true);
 
-        long? timeFrom = null;
-        if (timeType.TimePeriod != TimePeriod.AllTime && timeType.PlayDays != null)
-        {
-            var dateAgo = DateTime.UtcNow.AddDays(-timeType.PlayDays.Value);
-            timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
-        }
-
-        var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom, userSettings.SessionKeyLastFm);
+        var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm, timeSettings.TimeUntil);
 
         var userTitle = $"{userSettings.DiscordUserName.FilterOutMentions()}{userSettings.UserType.UserTypeToIcon()}";
 
-        if (timeType.TimePeriod == TimePeriod.AllTime)
+        if (timeSettings.TimePeriod == TimePeriod.AllTime)
         {
             await this.Context.Channel.SendMessageAsync($"**{userTitle}** has `{count}` total scrobbles", allowedMentions: AllowedMentions.None);
         }
         else
         {
-            await this.Context.Channel.SendMessageAsync($"**{userTitle}** has `{count}` scrobbles in the {timeType.AltDescription}", allowedMentions: AllowedMentions.None);
+            await this.Context.Channel.SendMessageAsync($"**{userTitle}** has `{count}` scrobbles in the {timeSettings.AltDescription}", allowedMentions: AllowedMentions.None);
         }
         this.Context.LogCommandUsed();
     }

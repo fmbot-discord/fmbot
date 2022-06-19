@@ -107,19 +107,8 @@ public class ArtistSlashCommands : InteractionModuleBase
             var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
             var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(ArtistPaceTimePeriod), timePeriod), TimePeriod.Monthly);
 
-            long timeFrom;
-            if (timeSettings.TimePeriod != TimePeriod.AllTime && timeSettings.PlayDays != null)
-            {
-                var dateAgo = DateTime.UtcNow.AddDays(-timeSettings.PlayDays.Value);
-                timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
-            }
-            else
-            {
-                timeFrom = userInfo.Registered.Unixtime;
-            }
-
             var response = await this._artistBuilders.ArtistPaceAsync(new ContextModel(this.Context, contextUser),
-                userSettings, timeSettings, amount.ToString(), timeFrom, name);
+                userSettings, timeSettings, amount.ToString(), name);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed();
@@ -210,7 +199,7 @@ public class ArtistSlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     public async Task TasteAsync(
         [Summary("User", "The user to compare your taste with")] string user,
-        [Summary("Time-period", "Time period")] TimePeriod timePeriod = TimePeriod.AllTime,
+        [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("Type", "Taste view type")] TasteType tasteType = TasteType.Table)
     {
         _ = DeferAsync();
@@ -220,7 +209,7 @@ public class ArtistSlashCommands : InteractionModuleBase
 
         try
         {
-            var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(TimePeriod), timePeriod), TimePeriod.AllTime);
+            var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime);
 
             var response = await this._artistBuilders.TasteAsync(new ContextModel(this.Context, contextUser),
                 new TasteSettings { TasteType = tasteType }, timeSettings, userSettings);

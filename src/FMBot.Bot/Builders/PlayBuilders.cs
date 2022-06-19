@@ -630,20 +630,29 @@ public class PlayBuilder
         return response;
     }
 
-    public async Task<ResponseModel> PaceAsync(
-        ContextModel context,
+    public async Task<ResponseModel> PaceAsync(ContextModel context,
         UserSettingsModel userSettings,
         TimeSettingsModel timeSettings,
         long goalAmount,
         long userTotalPlaycount,
-        long timeFrom)
+        long? registeredUnixTime = null)
     {
         var response = new ResponseModel
         {
             ResponseType = ResponseType.Text,
         };
 
-        var count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeFrom, userSettings.SessionKeyLastFm);
+        long? count;
+
+        if (timeSettings.TimePeriod == TimePeriod.AllTime)
+        {
+            timeSettings.TimeFrom = registeredUnixTime;
+            count = userTotalPlaycount;
+        }
+        else
+        {
+            count = await this._lastFmRepository.GetScrobbleCountFromDateAsync(userSettings.UserNameLastFm, timeSettings.TimeFrom, userSettings.SessionKeyLastFm);
+        }
 
         if (count is null or 0)
         {
@@ -652,7 +661,7 @@ public class PlayBuilder
             return response;
         }
 
-        var age = DateTimeOffset.FromUnixTimeSeconds(timeFrom);
+        var age = DateTimeOffset.FromUnixTimeSeconds(timeSettings.TimeFrom.GetValueOrDefault());
         var totalDays = (DateTime.UtcNow - age).TotalDays;
 
         var playsLeft = goalAmount - userTotalPlaycount;

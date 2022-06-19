@@ -320,19 +320,8 @@ public class ArtistCommands : BaseCommandModule
                 timeSettings = SettingService.GetTimePeriod("monthly", TimePeriod.Monthly);
             }
 
-            long timeFrom;
-            if (timeSettings.TimePeriod != TimePeriod.AllTime && timeSettings.PlayDays != null)
-            {
-                var dateAgo = DateTime.UtcNow.AddDays(-timeSettings.PlayDays.Value);
-                timeFrom = ((DateTimeOffset)dateAgo).ToUnixTimeSeconds();
-            }
-            else
-            {
-                timeFrom = userInfo.Registered.Unixtime;
-            }
-
             var response = await this._artistBuilders.ArtistPaceAsync(new ContextModel(this.Context, prfx, contextUser),
-                userSettings, timeSettings, timeSettings.NewSearchValue, timeFrom, null);
+                userSettings, timeSettings, timeSettings.NewSearchValue, null);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

@@ -22,6 +22,10 @@ namespace FMBot.Domain.Models
         public int? PlayDays { get; set; }
         public int? PlayDaysWithBillboard { get; set; }
         public string NewSearchValue { get; set; }
+        public bool DefaultPicked { get; set; }
+
+        public long? TimeFrom  { get; set; }
+        public long? TimeUntil  { get; set; }
     }
 
     public class UserSettingsModel

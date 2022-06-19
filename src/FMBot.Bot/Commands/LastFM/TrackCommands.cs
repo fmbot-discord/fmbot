@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -641,6 +642,44 @@ public class TrackCommands : BaseCommandModule
 
             var response = await this._trackBuilders.TopTracksAsync(new ContextModel(this.Context, prfx, contextUser),
                 topListSettings, timeSettings, userSettings);
+
+            await this.Context.SendResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            this.Context.LogCommandException(e);
+            await ReplyAsync("Unable to show Last.fm info due to an internal error.");
+        }
+    }
+
+    [Command("receipt", RunMode = RunMode.Async)]
+    [Discord.Commands.Summary("Shows your track receipt. Based on Receiptify.")]
+    [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
+    [Examples("receipt", "receipt 2022", "rc week")]
+    [Alias("rcpt", "receiptify", "reciept")]
+    [UsernameSetRequired]
+    [CommandCategories(CommandCategory.Tracks)]
+    public async Task ReceiptAsync([Remainder] string extraOptions = null)
+    {
+        _ = this.Context.Channel.TriggerTypingAsync();
+
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var userSettings = await this._settingService.GetUser(extraOptions, contextUser, this.Context);
+            userSettings.RegisteredLastFm ??= await this._indexService.AddUserRegisteredLfmDate(userSettings.UserId);
+            var timeSettings = SettingService.GetTimePeriod(extraOptions, registeredLastFm: userSettings.RegisteredLastFm);
+            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+
+            if (timeSettings.DefaultPicked)
+            {
+                var monthName = DateTime.UtcNow.AddMonths(-1).ToString("MMM", CultureInfo.InvariantCulture);
+                timeSettings = SettingService.GetTimePeriod(monthName, registeredLastFm: userSettings.RegisteredLastFm);
+            }
+
+            var response = await this._trackBuilders.GetReceipt(new ContextModel(this.Context, prfx, contextUser), userSettings, timeSettings);
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);

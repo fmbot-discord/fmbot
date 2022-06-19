@@ -5,6 +5,7 @@ using Discord;
 using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -219,7 +220,7 @@ public class PlaySlashCommands : InteractionModuleBase
     [UsernameSetRequired]
     public async Task PaceAsync(
         [Summary("Amount", "Goal scrobble amount")] int amount = 1,
-        [Summary("Time-period", "Time period to base average playcount on")] TimePeriod timePeriod = TimePeriod.AllTime,
+        [Summary("Time-period", "Time period to base average playcount on")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
         [Summary("User", "The user to show (defaults to self)")] string user = null)
     {
         _ = DeferAsync();
@@ -231,7 +232,7 @@ public class PlaySlashCommands : InteractionModuleBase
         {
             var userInfo = await this._lastFmRepository.GetLfmUserInfoAsync(userSettings.UserNameLastFm);
             var goalAmount = SettingService.GetGoalAmount(amount.ToString(), userInfo.Playcount);
-            var timeSettings = SettingService.GetTimePeriod(Enum.GetName(typeof(TimePeriod), timePeriod), TimePeriod.AllTime);
+            var timeSettings = SettingService.GetTimePeriod(timePeriod, TimePeriod.AllTime);
 
             long timeFrom;
             if (timeSettings.TimePeriod != TimePeriod.AllTime && timeSettings.PlayDays != null)
@@ -245,7 +246,7 @@ public class PlaySlashCommands : InteractionModuleBase
             }
 
             var response = await this._playBuilder.PaceAsync(new ContextModel(this.Context, contextUser),
-                userSettings, timeSettings, goalAmount, userInfo.Playcount, timeFrom);
+                userSettings, timeSettings, goalAmount, userInfo.Playcount, userInfo.Registered.Unixtime);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed();
