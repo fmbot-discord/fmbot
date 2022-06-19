@@ -246,7 +246,7 @@ public class PlaySlashCommands : InteractionModuleBase
             }
 
             var response = await this._playBuilder.PaceAsync(new ContextModel(this.Context, contextUser),
-                userSettings, timeSettings, goalAmount, userInfo.Playcount);
+                userSettings, timeSettings, goalAmount, userInfo.Playcount, userInfo.Registered.Unixtime);
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
             this.Context.LogCommandUsed();
