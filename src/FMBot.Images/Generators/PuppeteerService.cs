@@ -86,20 +86,23 @@ public class PuppeteerService
         await using var page = await this._browser.NewPageAsync();
 
         const int amountOfTracks = 12;
+        const int lineHeight = 25;
 
         var extraHeight = 0;
         foreach (var topTrack in topTracks.TopTracks)
 
         {
             var length = $"{topTrack.ArtistName} - {topTrack.TrackName}".Length;
-            var lines = length / 35;
-            extraHeight += lines * 18;
+            if (length > 36)
+            {
+                extraHeight += lineHeight;
+            }
         }
 
         await page.SetViewportAsync(new ViewPortOptions
         {
             Width = 500,
-            Height = 860 + (topTracks.TotalAmount > 0 ? 40 : 0) +(user.UserType == UserType.Supporter ? 40 : 0) + extraHeight
+            Height = 860 + (topTracks.TotalAmount > 0 ? lineHeight : 0) + (user.UserType == UserType.Supporter ? lineHeight : 0) + extraHeight
         });
 
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pages", "receipt.html");
