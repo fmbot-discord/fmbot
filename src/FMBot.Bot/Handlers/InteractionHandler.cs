@@ -38,6 +38,7 @@ public class InteractionHandler
         this._channelDisabledCommandService = channelDisabledCommandService;
         this._client.SlashCommandExecuted += SlashCommandAsync;
         this._client.AutocompleteExecuted += AutoCompleteAsync;
+        client.UserCommandExecuted += UserCommandAsync;
 
     }
 
@@ -137,6 +138,12 @@ public class InteractionHandler
     }
 
     private async Task AutoCompleteAsync(SocketInteraction socketInteraction)
+    {
+        var context = new ShardedInteractionContext(this._client, socketInteraction);
+        await this._interactionService.ExecuteCommandAsync(context, this._provider);
+    }
+
+    private async Task UserCommandAsync(SocketInteraction socketInteraction)
     {
         var context = new ShardedInteractionContext(this._client, socketInteraction);
         await this._interactionService.ExecuteCommandAsync(context, this._provider);
