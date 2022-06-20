@@ -535,7 +535,7 @@ public class AlbumBuilders
             return albumSearch.Response;
         }
 
-        var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumSearch.Album);
+        var databaseAlbum = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumSearch.Album, true);
 
         var albumCoverUrl = albumSearch.Album.AlbumCoverUrl;
         if (databaseAlbum.SpotifyImageUrl != null)
