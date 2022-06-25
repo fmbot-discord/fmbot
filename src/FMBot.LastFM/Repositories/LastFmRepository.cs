@@ -605,7 +605,7 @@ namespace FMBot.LastFM.Repositories
         public async Task<Response<TopAlbumList>> GetTopAlbumsAsync(string lastFmUserName,
             TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1)
         {
-            if (!timeSettings.StartDateTime.HasValue || !timeSettings.EndDateTime.HasValue)
+            if (!timeSettings.StartDateTime.HasValue || !timeSettings.EndDateTime.HasValue || timeSettings.TimePeriod == TimePeriod.AllTime)
             {
                 return await GetTopAlbumsAsync(lastFmUserName, timeSettings.TimePeriod, count, amountOfPages);
             }
@@ -714,7 +714,7 @@ namespace FMBot.LastFM.Repositories
         public async Task<Response<TopArtistList>> GetTopArtistsAsync(string lastFmUserName,
             TimeSettingsModel timeSettings, long count = 2, long amountOfPages = 1)
         {
-            if (!timeSettings.StartDateTime.HasValue || !timeSettings.EndDateTime.HasValue)
+            if (!timeSettings.StartDateTime.HasValue || !timeSettings.EndDateTime.HasValue || timeSettings.TimePeriod == TimePeriod.AllTime)
             {
                 return await GetTopArtistsAsync(lastFmUserName, timeSettings.TimePeriod, count, amountOfPages);
             }
@@ -823,7 +823,7 @@ namespace FMBot.LastFM.Repositories
         public async Task<Response<TopTrackList>> GetTopTracksAsync(string lastFmUserName,
             TimeSettingsModel timeSettings, int count = 2, int amountOfPages = 1)
         {
-            if (!timeSettings.StartDateTime.HasValue || !timeSettings.EndDateTime.HasValue)
+            if (!timeSettings.StartDateTime.HasValue || !timeSettings.EndDateTime.HasValue || timeSettings.TimePeriod == TimePeriod.AllTime)
             {
                 return await GetTopTracksAsync(lastFmUserName, timeSettings.ApiParameter, count, amountOfPages);
             }
