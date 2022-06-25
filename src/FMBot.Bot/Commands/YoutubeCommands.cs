@@ -90,10 +90,21 @@ namespace FMBot.Bot.Commands
 
                     var reply = $"{name.FilterOutMentions()} searched for: `{querystring.FilterOutMentions()}`";
 
+                    var video = await this._youtubeService.GetVideoResult(youtubeResult.VideoId);
+
                     var user = await this.Context.Guild.GetUserAsync(this.Context.User.Id);
                     if (user.GuildPermissions.EmbedLinks)
                     {
-                        reply += $"\nhttps://youtube.com/watch?v={youtubeResult.VideoId}";
+                        if (video is { IsFamilyFriendly: true })
+                        {
+                            reply += $"\nhttps://youtube.com/watch?v={youtubeResult.VideoId}";
+                        }
+                        else
+                        {
+                            reply += $"\n<https://youtube.com/watch?v={youtubeResult.VideoId}>" +
+                                     $"\n`{youtubeResult.Title}`" +
+                                     $"\n*Embed disabled because video might not be SFW.*";
+                        }
                     }
                     else
                     {
