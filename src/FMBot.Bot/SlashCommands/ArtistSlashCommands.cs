@@ -195,14 +195,21 @@ public class ArtistSlashCommands : InteractionModuleBase
         }
     }
 
+    [UserCommand("Compare taste")]
+    public async Task UserTasteAsync(IUser user)
+    {
+        await TasteAsync(user.Id.ToString(), privateResponse: true);
+    }
+
     [SlashCommand("taste", "Compares your top artists to another users top artists.")]
     [UsernameSetRequired]
     public async Task TasteAsync(
         [Summary("User", "The user to compare your taste with")] string user,
         [Summary("Time-period", "Time period")][Autocomplete(typeof(DateTimeAutoComplete))] string timePeriod = null,
-        [Summary("Type", "Taste view type")] TasteType tasteType = TasteType.Table)
+        [Summary("Type", "Taste view type")] TasteType tasteType = TasteType.Table,
+        [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
-        _ = DeferAsync();
+        _ = DeferAsync(privateResponse);
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -214,8 +221,8 @@ public class ArtistSlashCommands : InteractionModuleBase
             var response = await this._artistBuilders.TasteAsync(new ContextModel(this.Context, contextUser),
                 new TasteSettings { TasteType = tasteType }, timeSettings, userSettings);
 
-            await this.Context.SendFollowUpResponse(this.Interactivity, response);
-            this.Context.LogCommandUsed();
+            await this.Context.SendFollowUpResponse(this.Interactivity, response, privateResponse);
+            this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)
         {

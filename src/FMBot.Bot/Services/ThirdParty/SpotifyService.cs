@@ -435,7 +435,7 @@ namespace FMBot.Bot.Services.ThirdParty
         }
 
 
-        public async Task<Album> GetOrStoreSpotifyAlbumAsync(AlbumInfo albumInfo)
+        public async Task<Album> GetOrStoreSpotifyAlbumAsync(AlbumInfo albumInfo, bool fastSpotifyCacheExpiry = false)
         {
             await using var db = await this._contextFactory.CreateDbContextAsync();
 
@@ -514,7 +514,7 @@ namespace FMBot.Bot.Services.ThirdParty
             }
 
             var monthsToGoBack = !string.IsNullOrEmpty(dbAlbum.SpotifyId) && dbAlbum.ReleaseDate == null ? 1 : 3;
-            if (dbAlbum.SpotifyImageDate < DateTime.UtcNow.AddMonths(-monthsToGoBack))
+            if (dbAlbum.SpotifyImageDate < DateTime.UtcNow.AddMonths(-monthsToGoBack) || dbAlbum.SpotifyId == null && fastSpotifyCacheExpiry)
             {
                 var spotifyAlbum = await GetAlbumFromSpotify(albumInfo.AlbumName, albumInfo.ArtistName.ToLower());
 
