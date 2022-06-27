@@ -76,5 +76,42 @@ namespace FMBot.Youtube.Services
                 return null;
             }
         }
+
+        public async Task<InvidiousVideoResult> GetVideoAsync(string videoId)
+        {
+            var url = this._url + $"api/v1/videos/{videoId}?fields=videoId,title,description,publishedText,viewCount,likeCount,isFamilyFriendly,subCountText";
+
+            var request = new HttpRequestMessage
+            {
+                RequestUri = new Uri(url),
+                Method = HttpMethod.Get
+            };
+
+            try
+            {
+                using var httpResponse = await this._client.SendAsync(request);
+
+                if (httpResponse.StatusCode == HttpStatusCode.NotFound)
+                {
+                    return null;
+                }
+
+                var stream = await httpResponse.Content.ReadAsStreamAsync();
+                using var streamReader = new StreamReader(stream);
+                var requestBody = await streamReader.ReadToEndAsync();
+
+                var jsonSerializerOptions = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+
+                return JsonSerializer.Deserialize<InvidiousVideoResult>(requestBody, jsonSerializerOptions);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Something went wrong while deserializing the stuff from the Invidious API (video)", ex);
+                return null;
+            }
+        }
     }
 }

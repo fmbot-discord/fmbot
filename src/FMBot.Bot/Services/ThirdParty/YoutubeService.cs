@@ -18,5 +18,10 @@ namespace FMBot.Bot.Services.ThirdParty
         {
             return await this._invidiousApi.SearchVideoAsync(searchValue);
         }
+
+        public async Task<InvidiousVideoResult> GetVideoResult(string videoId)
+        {
+            return await this._invidiousApi.GetVideoAsync(videoId);
+        }
     }
 }
