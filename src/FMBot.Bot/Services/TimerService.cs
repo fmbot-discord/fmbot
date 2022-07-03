@@ -378,7 +378,7 @@ namespace FMBot.Bot.Services
                     var fileStream = new FileStream(AppDomain.CurrentDomain.BaseDirectory + "newavatar.png", FileMode.Open);
                     await client.CurrentUser.ModifyAsync(u => u.Avatar = new Image(fileStream));
                     fileStream.Close();
-                    Log.Information("Avatar succesfully changed");
+                    Log.Information("Avatar successfully changed");
                 }
 
                 await Task.Delay(5000);
