@@ -183,7 +183,7 @@ namespace FMBot.Bot.Commands
                 var reply = "";
                 if (addedFriendsList.Count > 0)
                 {
-                    reply += $"Succesfully added {addedFriendsList.Count} {StringExtensions.GetFriendsString(addedFriendsList.Count)}:\n";
+                    reply += $"Successfully added {addedFriendsList.Count} {StringExtensions.GetFriendsString(addedFriendsList.Count)}:\n";
                     foreach (var addedFriend in addedFriendsList)
                     {
                         reply += $"- *[{addedFriend}]({Constants.LastFMUserUrl}{addedFriend})*\n";
@@ -276,7 +276,7 @@ namespace FMBot.Bot.Commands
                 var reply = "";
                 if (removedFriendsList.Count > 0)
                 {
-                    reply += $"Succesfully removed {removedFriendsList.Count} friend(s):\n";
+                    reply += $"Successfully removed {removedFriendsList.Count} friend(s):\n";
                     foreach (var removedFriend in removedFriendsList)
                     {
                         reply += $"- *[{removedFriend}]({Constants.LastFMUserUrl}{removedFriend})*\n";
