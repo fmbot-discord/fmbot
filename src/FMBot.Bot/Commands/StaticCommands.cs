@@ -101,7 +101,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("source", RunMode = RunMode.Async)]
-        [Summary("Info for inviting the bot to a server")]
+        [Summary("Shows links to the source code of .fmbot")]
         [Alias("github", "gitlab", "opensource", "sourcecode", "code")]
         [CommandCategories(CommandCategory.Other)]
         public async Task SourceAsync()
