@@ -11,7 +11,7 @@ namespace FMBot.Domain
 
         public const ulong BotProductionId = 356268235697553409;
 
-        public const ulong BotDevelopId = 493845886166630443;
+        public const ulong BotBetaId = 493845886166630443;
 
         public const string DocsUrl = "https://fmbot.xyz";
 

@@ -72,11 +72,26 @@ namespace FMBot.Bot.Commands
             var embedDescription = new StringBuilder();
             this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
-            embedDescription.AppendLine("- You can invite .fmbot to your own server by **[clicking here](" +
-                                        "https://discord.com/oauth2/authorize?" +
-                                        $"client_id={selfId}" +
-                                        "&scope=bot%20applications.commands" +
-                                        $"&permissions={Constants.InviteLinkPermissions}).**");
+            if (socketCommandContext.Client.CurrentUser.Id == Constants.BotBetaId)
+            {
+                embedDescription.AppendLine("The version of the bot you're currently using is the beta version, which is used to test new features and fixes.");
+                embedDescription.AppendLine();
+
+                embedDescription.AppendLine("Public invites for the beta version are currently closed. You can still add the normal main bot by **[clicking here](" +
+                                            "https://discord.com/oauth2/authorize?" +
+                                            $"client_id={Constants.BotProductionId}" +
+                                            "&scope=bot%20applications.commands" +
+                                            $"&permissions={Constants.InviteLinkPermissions}).**");
+                embedDescription.AppendLine();
+            }
+            else
+            {
+                embedDescription.AppendLine("- You can invite .fmbot to your own server by **[clicking here](" +
+                                            "https://discord.com/oauth2/authorize?" +
+                                            $"client_id={selfId}" +
+                                            "&scope=bot%20applications.commands" +
+                                            $"&permissions={Constants.InviteLinkPermissions}).**");
+            }
 
             embedDescription.AppendLine(
                 "- Join the [.fmbot server](http://server.fmbot.xyz/) for support and updates.");
@@ -927,7 +942,7 @@ namespace FMBot.Bot.Commands
 
         private static bool IsBotSelfHosted(ulong botId)
         {
-            return !botId.Equals(Constants.BotProductionId) && !botId.Equals(Constants.BotDevelopId);
+            return !botId.Equals(Constants.BotProductionId) && !botId.Equals(Constants.BotBetaId);
         }
     }
 }
