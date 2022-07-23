@@ -110,7 +110,7 @@ namespace FMBot.Bot.Commands
             this._embed.WithColor(DiscordConstants.InformationColorBlue);
 
             embedDescription.AppendLine(".fmbot is open-source, non-profit and maintained by volunteers.");
-            embedDescription.AppendLine("The bot is written in C#, uses .NET 6 and Discord.Net Labs.");
+            embedDescription.AppendLine("The bot is written in C#, uses .NET 6 and Discord.Net.");
 
             this._embed.WithDescription(embedDescription.ToString());
 
@@ -118,7 +118,7 @@ namespace FMBot.Bot.Commands
                 "[Main repository](https://github.com/fmbot-discord/fmbot/)\n" +
                 "[Docs repository](https://github.com/fmbot-discord/docs)\n" +
                 "[File an issue](https://github.com/fmbot-discord/fmbot/issues/new/choose)\n" +
-                "[Development instructions](https://fmbot.xyz/setup.html)\n" +
+                "[Development instructions](https://fmbot.xyz/setup/)\n" +
                 "[OpenCollective](https://opencollective.com/fmbot)");
 
             await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
