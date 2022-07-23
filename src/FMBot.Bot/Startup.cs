@@ -126,6 +126,7 @@ namespace FMBot.Bot
                 .AddSingleton<ArtistRepository>()
                 .AddSingleton<CensorService>()
                 .AddSingleton<CrownService>()
+                .AddSingleton<ChartBuilders>()
                 .AddSingleton<CountryService>()
                 .AddSingleton<CountryBuilders>()
                 .AddSingleton<ClientLogHandler>()

@@ -5,7 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
+using Fergun.Interactive;
 using FMBot.Bot.Attributes;
+using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Models;
@@ -23,16 +25,14 @@ namespace FMBot.Bot.Commands.LastFM
     [Name("Charts")]
     public class ChartCommands : BaseCommandModule
     {
-        private readonly AlbumService _albumService;
-        private readonly ArtistsService _artistService;
         private readonly GuildService _guildService;
         private readonly ChartService _chartService;
         private readonly IPrefixService _prefixService;
-        private readonly LastFmRepository _lastFmRepository;
         private readonly SettingService _settingService;
-        private readonly SupporterService _supporterService;
         private readonly UserService _userService;
-        private readonly SpotifyService _spotifyService;
+        private readonly ChartBuilders _chartBuilders;
+
+        private InteractiveService Interactivity { get; }
 
         private static readonly List<DateTimeOffset> StackCooldownTimer = new();
         private static readonly List<SocketUser> StackCooldownTarget = new();
@@ -41,25 +41,17 @@ namespace FMBot.Bot.Commands.LastFM
                 GuildService guildService,
                 ChartService chartService,
                 IPrefixService prefixService,
-                LastFmRepository lastFmRepository,
                 SettingService settingService,
-                SupporterService supporterService,
                 UserService userService,
-                AlbumService albumService,
-                ArtistsService artistService,
-                IOptions<BotSettings> botSettings,
-                SpotifyService spotifyService) : base(botSettings)
+                IOptions<BotSettings> botSettings, ChartBuilders chartBuilders, InteractiveService interactivity) : base(botSettings)
         {
             this._chartService = chartService;
             this._guildService = guildService;
-            this._lastFmRepository = lastFmRepository;
             this._prefixService = prefixService;
             this._settingService = settingService;
-            this._supporterService = supporterService;
             this._userService = userService;
-            this._albumService = albumService;
-            this._artistService = artistService;
-            this._spotifyService = spotifyService;
+            this._chartBuilders = chartBuilders;
+            this.Interactivity = interactivity;
         }
 
         [Command("chart", RunMode = RunMode.Async)]
@@ -135,140 +127,19 @@ namespace FMBot.Bot.Commands.LastFM
                     ArtistChart = false
                 };
 
-                chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, this.Context);
+                chartSettings = this._chartService.SetSettings(chartSettings, otherSettings);
 
-                if (chartSettings.ImagesNeeded > 100)
-                {
-                    const string reply = $"You can't create a chart with more than 100 images (10x10).\n" +
-                                         $"Please try a smaller size.";
+                var response = await this._chartBuilders.AlbumChartAsync(new ContextModel(this.Context, prfx, user), userSettings,
+                    chartSettings);
 
-                    await ReplyAsync(reply);
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                    return;
-                }
-
-                var extraAlbums = 0;
-                if (chartSettings.SkipWithoutImage)
-                {
-                    extraAlbums = chartSettings.Height * 2 + (chartSettings.Height > 5 ? 8 : 2);
-                }
-                if (chartSettings.SkipNsfw)
-                {
-                    extraAlbums = chartSettings.Height;
-                }
-
-                var imagesToRequest = chartSettings.ImagesNeeded + extraAlbums;
-
-                var albums = await this._lastFmRepository.GetTopAlbumsAsync(userSettings.UserNameLastFm, chartSettings.TimeSettings, imagesToRequest);
-
-                if (albums.Content?.TopAlbums == null || albums.Content.TopAlbums.Count < chartSettings.ImagesNeeded)
-                {
-                    var count = albums.Content?.TopAlbums?.Count ?? 0;
-
-                    var reply =
-                        $"User hasn't listened to enough albums ({count} of required {chartSettings.ImagesNeeded}) for a chart this size. \n" +
-                        $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList}).";
-
-                    if (chartSettings.SkipWithoutImage)
-                    {
-                        reply += "\n\n" +
-                                 $"Note that {extraAlbums} extra albums are required because you are skipping albums without an image.";
-                    }
-
-                    await ReplyAsync(reply);
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                    return;
-                }
-
-                var topAlbums = albums.Content.TopAlbums;
-
-                topAlbums = await this._albumService.FillMissingAlbumCovers(topAlbums);
-
-                var albumsWithoutImage = topAlbums.Where(f => f.AlbumCoverUrl == null).ToList();
-
-                var amountToFetch = albumsWithoutImage.Count > 3 ? 3 : albumsWithoutImage.Count;
-                for (var i = 0; i < amountToFetch; i++)
-                {
-                    var albumWithoutImage = albumsWithoutImage[i];
-                    var albumCall = await this._lastFmRepository.GetAlbumInfoAsync(albumWithoutImage.ArtistName, albumWithoutImage.AlbumName, userSettings.UserNameLastFm);
-                    if (albumCall.Success && albumCall.Content?.AlbumUrl != null)
-                    {
-                        var spotifyArtistImage = await this._spotifyService.GetOrStoreSpotifyAlbumAsync(albumCall.Content);
-                        if (spotifyArtistImage?.SpotifyImageUrl != null)
-                        {
-                            var index = topAlbums.FindIndex(f => f.ArtistName == albumWithoutImage.ArtistName &&
-                                                                 f.AlbumName == albumWithoutImage.AlbumName);
-                            topAlbums[index].AlbumCoverUrl = spotifyArtistImage.SpotifyImageUrl;
-                        }
-                    }
-                }
-
-                chartSettings.Albums = topAlbums;
-
-                var embedAuthorDescription = "";
-                if (!userSettings.DifferentUser)
-                {
-                    embedAuthorDescription = $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Chart for " +
-                                             await this._userService.GetUserTitleAsync(this.Context);
-                }
-                else
-                {
-                    embedAuthorDescription =
-                        $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Chart for {userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
-                }
-
-                this._embedAuthor.WithName(embedAuthorDescription);
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                this._embedAuthor.WithUrl(
-                    $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/albums?{chartSettings.TimespanUrlString}");
-
-                var embedDescription = "";
-
-                this._embed.WithAuthor(this._embedAuthor);
-
-                if (!userSettings.DifferentUser)
-                {
-                    this._embedFooter.Text = $"{userSettings.UserNameLastFm} has {user.TotalPlaycount} scrobbles";
-                    this._embed.WithFooter(this._embedFooter);
-                }
-
-                var supporter = await this._supporterService.GetRandomSupporter(this.Context.Guild, user.UserType);
-                embedDescription += ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, prfx);
-
-                var nsfwAllowed = this.Context.Guild == null || ((SocketTextChannel)this.Context.Channel).IsNsfw;
-                var chart = await this._chartService.GenerateChartAsync(chartSettings);
-
-                if (chartSettings.CensoredAlbums is > 0)
-                {
-                    embedDescription +=
-                        $"{chartSettings.CensoredAlbums.Value} album(s) filtered due to images that are not allowed to be posted on Discord.\n";
-                }
-
-                if (chartSettings.ContainsNsfw && !nsfwAllowed)
-                {
-                    embedDescription +=
-                        $"⚠️ Contains NSFW covers - Click to reveal\n";
-                }
-
-                this._embed.WithDescription(embedDescription);
-
-                var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
-                var stream = encoded.AsStream();
-
-                await this.Context.Channel.SendFileAsync(
-                    stream,
-                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png",
-                    embed: this._embed.Build(),
-                    isSpoiler: chartSettings.ContainsNsfw);
-                await stream.DisposeAsync();
-
-                this.Context.LogCommandUsed();
+                await this.Context.SendResponse(this.Interactivity, response);
+                this.Context.LogCommandUsed(response.CommandResponse);
             }
             catch (Exception e)
             {
                 this.Context.LogCommandException(e);
                 await ReplyAsync(
-                    "Sorry, but I was unable to generate a FMChart due to an internal error. Make sure you have scrobbles and Last.fm isn't having issues, and try again later.");
+                    "Sorry, but I was unable to generate an album chart due to an internal error. Make sure you have scrobbles and Last.fm isn't having issues, and try again later.");
             }
         }
 
@@ -341,111 +212,13 @@ namespace FMBot.Bot.Commands.LastFM
 
                 var chartSettings = new ChartSettings(this.Context.User) { ArtistChart = true };
 
-                chartSettings = this._chartService.SetSettings(chartSettings, otherSettings, this.Context);
+                chartSettings = this._chartService.SetSettings(chartSettings, otherSettings);
 
-                var extraArtists = 0;
-                if (chartSettings.SkipWithoutImage)
-                {
-                    extraArtists = chartSettings.Height * 2 + (chartSettings.Height > 5 ? 8 : 2);
-                }
+                var response = await this._chartBuilders.ArtistChartAsync(new ContextModel(this.Context, prfx, user), userSettings,
+                    chartSettings);
 
-                var imagesToRequest = chartSettings.ImagesNeeded + extraArtists;
-
-                var artists = await this._lastFmRepository.GetTopArtistsAsync(userSettings.UserNameLastFm, chartSettings.TimeSettings, imagesToRequest);
-
-                if (artists.Content.TopArtists == null || artists.Content.TopArtists.Count < chartSettings.ImagesNeeded)
-                {
-                    var count = artists.Content.TopArtists?.Count ?? 0;
-
-                    var reply =
-                        $"User hasn't listened to enough artists ({count} of required {chartSettings.ImagesNeeded}) for a chart this size. \n" +
-                        $"Please try a smaller chart or a bigger time period ({Constants.CompactTimePeriodList}).";
-
-                    if (chartSettings.SkipWithoutImage)
-                    {
-                        reply += "\n\n" +
-                                 $"Note that {extraArtists} extra albums are required because you are skipping artists without an image.";
-                    }
-
-                    await ReplyAsync(reply);
-                    this.Context.LogCommandUsed(CommandResponse.WrongInput);
-                    return;
-                }
-
-                var topArtists = artists.Content.TopArtists;
-
-                topArtists = await this._artistService.FillArtistImages(topArtists);
-
-                var artistsWithoutImages = topArtists.Where(w => w.ArtistImageUrl == null).ToList();
-
-                var amountToFetch = artistsWithoutImages.Count > 3 ? 3 : artistsWithoutImages.Count;
-                for (int i = 0; i < amountToFetch; i++)
-                {
-                    var artistWithoutImage = artistsWithoutImages[i];
-
-                    var artistCall = await this._lastFmRepository.GetArtistInfoAsync(artistWithoutImage.ArtistName, userSettings.UserNameLastFm);
-                    if (artistCall.Success && artistCall.Content?.ArtistUrl != null)
-                    {
-                        var spotifyArtistImage = await this._spotifyService.GetOrStoreArtistAsync(artistCall.Content);
-                        if (spotifyArtistImage != null)
-                        {
-                            var index = topArtists.FindIndex(f => f.ArtistName == artistWithoutImage.ArtistName);
-                            topArtists[index].ArtistImageUrl = spotifyArtistImage.SpotifyImageUrl;
-                        }
-                    }
-                }
-
-                chartSettings.Artists = topArtists;
-
-                var embedAuthorDescription = "";
-                if (!userSettings.DifferentUser)
-                {
-                    embedAuthorDescription = $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Artist Chart for " +
-                                             await this._userService.GetUserTitleAsync(this.Context);
-                }
-                else
-                {
-                    embedAuthorDescription =
-                        $"{chartSettings.Width}x{chartSettings.Height} {chartSettings.TimespanString} Artist Chart for {userSettings.UserNameLastFm}, requested by {await this._userService.GetUserTitleAsync(this.Context)}";
-                }
-
-                this._embedAuthor.WithName(embedAuthorDescription);
-                this._embedAuthor.WithIconUrl(this.Context.User.GetAvatarUrl());
-                this._embedAuthor.WithUrl(
-                    $"{Constants.LastFMUserUrl}{userSettings.UserNameLastFm}/library/artists?{chartSettings.TimespanUrlString}");
-
-                var embedDescription = "";
-
-                this._embed.WithAuthor(this._embedAuthor);
-
-                var footer = new StringBuilder();
-
-                footer.AppendLine("Image source: Spotify | Use 'skip' to skip artists without images");
-
-                if (!userSettings.DifferentUser)
-                {
-                    footer.AppendLine($"{userSettings.UserNameLastFm} has {user.TotalPlaycount} scrobbles");
-                }
-
-                this._embed.WithFooter(footer.ToString());
-
-                var supporter = await this._supporterService.GetRandomSupporter(this.Context.Guild, user.UserType);
-                embedDescription += ChartService.AddSettingsToDescription(chartSettings, embedDescription, supporter, prfx);
-
-                var chart = await this._chartService.GenerateChartAsync(chartSettings);
-
-                this._embed.WithDescription(embedDescription);
-
-                var encoded = chart.Encode(SKEncodedImageFormat.Png, 100);
-                var stream = encoded.AsStream();
-
-                await this.Context.Channel.SendFileAsync(
-                    stream,
-                    $"chart-{chartSettings.Width}w-{chartSettings.Height}h-{chartSettings.TimeSettings.TimePeriod}-{userSettings.UserNameLastFm}.png",
-                    embed: this._embed.Build());
-                await stream.DisposeAsync();
-
-                this.Context.LogCommandUsed();
+                await this.Context.SendResponse(this.Interactivity, response);
+                this.Context.LogCommandUsed(response.CommandResponse);
             }
             catch (Exception e)
             {

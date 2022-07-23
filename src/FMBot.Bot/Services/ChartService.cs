@@ -5,8 +5,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Dasync.Collections;
-using Discord.Commands;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
 using FMBot.Domain;
@@ -484,8 +482,7 @@ namespace FMBot.Bot.Services
             bitmapCanvas.DrawText(album.AlbumName, 4, 22, textPaint);
         }
 
-        public ChartSettings SetSettings(ChartSettings currentChartSettings, string[] extraOptions,
-            ICommandContext commandContext)
+        public ChartSettings SetSettings(ChartSettings currentChartSettings, string[] extraOptions)
         {
             var chartSettings = currentChartSettings;
             chartSettings.CustomOptionsEnabled = false;
@@ -531,18 +528,7 @@ namespace FMBot.Bot.Services
 
             foreach (var option in extraOptions.Where(w => !string.IsNullOrWhiteSpace(w) && w.Length is >= 3 and <= 5))
             {
-                var matchFound = Regex.IsMatch(option, "^([1-9]|[1-4][0-9]|50)x([1-9]|[1-9]|[1-4][0-9]|50)$", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(300));
-                if (matchFound)
-                {
-                    var dimensions = option.ToLower().Split('x').Select(value =>
-                    {
-                        var size = int.TryParse(value, out var i) ? i : DefaultChartSize;
-                        return size;
-                    }).ToArray();
-
-                    chartSettings.Width = dimensions[0];
-                    chartSettings.Height = dimensions[1];
-                }
+                GetDimensions(chartSettings, option);
             }
 
             var optionsAsString = "";
@@ -561,8 +547,26 @@ namespace FMBot.Bot.Services
             }
 
             chartSettings.TimeSettings = timeSettings;
-            chartSettings.TimespanString = $"{timeSettings.Description}";
+            chartSettings.TimespanString = timeSettings.Description;
             chartSettings.TimespanUrlString = timeSettings.UrlParameter;
+
+            return chartSettings;
+        }
+
+        public static ChartSettings GetDimensions(ChartSettings chartSettings, string option)
+        {
+            var matchFound = Regex.IsMatch(option, "^([1-9]|[1-4][0-9]|50)x([1-9]|[1-9]|[1-4][0-9]|50)$", RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(300));
+            if (matchFound)
+            {
+                var dimensions = option.ToLower().Split('x').Select(value =>
+                {
+                    var size = int.TryParse(value, out var i) ? i : DefaultChartSize;
+                    return size;
+                }).ToArray();
+
+                chartSettings.Width = dimensions[0];
+                chartSettings.Height = dimensions[1];
+            }
 
             return chartSettings;
         }
