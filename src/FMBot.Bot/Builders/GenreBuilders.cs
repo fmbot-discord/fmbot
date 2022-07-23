@@ -335,7 +335,7 @@ public class GenreBuilders
                 if (artist == null)
                 {
                     response.Embed.WithDescription(
-                        "Sorry, the genre or artist you're searching for do not exist or do not have any stored genres.");
+                        "Sorry, the genre or artist you're searching for does not exist or do not have any stored genres.");
 
                     response.CommandResponse = CommandResponse.NotFound;
                     response.ResponseType = ResponseType.Embed;
@@ -397,7 +397,7 @@ public class GenreBuilders
                 }
 
                 response.Embed.WithDescription(
-                    "Sorry, the genre or artist you're searching for do not exist or do not have any stored genres.");
+                    "Sorry, the genre or artist you're searching for does not exist or do not have any stored genres.");
                 response.CommandResponse = CommandResponse.NotFound;
                 response.ResponseType = ResponseType.Embed;
                 return response;
