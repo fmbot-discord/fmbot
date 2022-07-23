@@ -656,7 +656,7 @@ public class TrackCommands : BaseCommandModule
     [Command("receipt", RunMode = RunMode.Async)]
     [Discord.Commands.Summary("Shows your track receipt. Based on Receiptify.")]
     [Options(Constants.CompactTimePeriodList, Constants.UserMentionExample)]
-    [Examples("receipt", "receipt 2022", "rc week")]
+    [Examples("receipt", "receipt 2022", "rcpt week")]
     [Alias("rcpt", "receiptify", "reciept")]
     [UsernameSetRequired]
     [CommandCategories(CommandCategory.Tracks)]
@@ -675,7 +675,7 @@ public class TrackCommands : BaseCommandModule
 
             if (timeSettings.DefaultPicked)
             {
-                var monthName = DateTime.UtcNow.AddMonths(-1).ToString("MMM", CultureInfo.InvariantCulture);
+                var monthName = DateTime.UtcNow.AddDays(-24).ToString("MMM", CultureInfo.InvariantCulture);
                 timeSettings = SettingService.GetTimePeriod(monthName, registeredLastFm: userSettings.RegisteredLastFm);
             }
 
