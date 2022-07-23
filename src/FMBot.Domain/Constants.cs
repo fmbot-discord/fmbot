@@ -39,6 +39,9 @@ namespace FMBot.Domain
         public const int FeaturedMinute = 0;
         public const int DaysLastUsedForFeatured = 1;
 
+        public const int MaxFriends = 12;
+        public const int MaxFriendsSupporter = 16;
+
         public static readonly int[] PlayCountBreakPoints = {
             50,
             100,

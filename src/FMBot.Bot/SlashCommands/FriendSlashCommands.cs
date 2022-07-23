@@ -1,9 +1,9 @@
 using System;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Interactions;
 using Fergun.Interactive;
 using FMBot.Bot.Attributes;
-using FMBot.Bot.AutoCompleteHandlers;
 using FMBot.Bot.Builders;
 using FMBot.Bot.Extensions;
 using FMBot.Bot.Models;
@@ -40,6 +40,48 @@ public class FriendSlashCommands : InteractionModuleBase
             var response = await this._friendBuilders.FriendsAsync(new ContextModel(this.Context, contextUser));
 
             await this.Context.SendFollowUpResponse(this.Interactivity, response);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            this.Context.LogCommandException(e);
+            await FollowupAsync(
+                "Unable to show your artist on Last.fm due to an internal error. Please try again later or contact .fmbot support.",
+                ephemeral: true);
+        }
+    }
+
+    [UserCommand("Add as friend")]
+    public async Task AddFriendAsync(IUser user)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await this._friendBuilders.AddFriendsAsync(new ContextModel(this.Context, contextUser), new []{ user.Id.ToString() });
+
+            await this.Context.SendResponse(this.Interactivity, response, true);
+            this.Context.LogCommandUsed(response.CommandResponse);
+        }
+        catch (Exception e)
+        {
+            this.Context.LogCommandException(e);
+            await FollowupAsync(
+                "Unable to show your artist on Last.fm due to an internal error. Please try again later or contact .fmbot support.",
+                ephemeral: true);
+        }
+    }
+
+    [UserCommand("Remove friend")]
+    public async Task RemoveFriendAsync(IUser user)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+
+        try
+        {
+            var response = await this._friendBuilders.RemoveFriendsAsync(new ContextModel(this.Context, contextUser), new []{ user.Id.ToString() }, true);
+
+            await this.Context.SendResponse(this.Interactivity, response, true);
             this.Context.LogCommandUsed(response.CommandResponse);
         }
         catch (Exception e)

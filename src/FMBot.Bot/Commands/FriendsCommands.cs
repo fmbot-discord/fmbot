@@ -109,115 +109,10 @@ namespace FMBot.Bot.Commands
 
             try
             {
-                var addedFriendsList = new List<string>();
-                var friendNotFoundList = new List<string>();
-                var duplicateFriendsList = new List<string>();
+                var response = await this._friendBuilders.AddFriendsAsync(new ContextModel(this.Context, prfx, contextUser), enteredFriends);
 
-                var existingFriends = await this._friendsService.GetFriendsAsync(this.Context.User.Id);
-
-                var friendLimitReached = false;
-
-                foreach (var enteredFriendParameter in enteredFriends)
-                {
-                    if (contextUser.UserType == UserType.User && existingFriends.Count >= 12 ||
-                        contextUser.UserType != UserType.User && existingFriends.Count >= 16)
-                    {
-                        friendLimitReached = true;
-                        break;
-                    }
-
-                    var foundFriend = await this._settingService.GetUser(enteredFriendParameter, contextUser, this.Context, true);
-
-                    string friendUsername;
-                    int? friendUserId = null;
-
-                    if (foundFriend.DifferentUser)
-                    {
-                        friendUsername = foundFriend.UserNameLastFm;
-                        friendUserId = foundFriend.UserId;
-                    }
-                    else
-                    {
-                        friendUsername = enteredFriendParameter;
-                    }
-
-                    if (!existingFriends.Where(w => w.LastFMUserName != null).Select(s => s.LastFMUserName.ToLower()).Contains(friendUsername.ToLower()) &&
-                        !existingFriends.Where(w => w.FriendUser != null).Select(s => s.FriendUser.UserNameLastFM.ToLower()).Contains(friendUsername.ToLower()))
-                    {
-                        if (await this._lastFmRepository.LastFmUserExistsAsync(friendUsername))
-                        {
-                            await this._friendsService.AddLastFmFriendAsync(contextUser, friendUsername, friendUserId);
-                            addedFriendsList.Add(friendUsername);
-                            existingFriends.Add(new Friend
-                            {
-                                LastFMUserName = friendUsername
-                            });
-                        }
-                        else
-                        {
-                            friendNotFoundList.Add(friendUsername);
-                        }
-                    }
-                    else
-                    {
-                        duplicateFriendsList.Add(friendUsername);
-                    }
-
-                }
-
-                if (friendLimitReached)
-                {
-                    if (contextUser.UserType == UserType.User)
-                    {
-                        this._embed.AddField("Friend limit reached",
-                            "Sorry, but you can't have more than 12 friends. \n\n" +
-                            $"Did you know that .fmbot supporters can add up to 16 friends? [Get supporter here](https://opencollective.com/fmbot/contribute) or use `{prfx}donate` for more info.");
-                    }
-                    else
-                    {
-                        this._embed.AddField("Friend limit reached",
-                            "Sorry, but you can't have more than 16 friends.");
-                    }
-                }
-
-                var reply = "";
-                if (addedFriendsList.Count > 0)
-                {
-                    reply += $"Successfully added {addedFriendsList.Count} {StringExtensions.GetFriendsString(addedFriendsList.Count)}:\n";
-                    foreach (var addedFriend in addedFriendsList)
-                    {
-                        reply += $"- *[{addedFriend}]({Constants.LastFMUserUrl}{addedFriend})*\n";
-                    }
-                    reply += "\n";
-                }
-                if (friendNotFoundList.Count > 0)
-                {
-                    reply += $"Could not add {addedFriendsList.Count} {StringExtensions.GetFriendsString(friendNotFoundList.Count)}. Please ensure you spelled their name correctly or that they are registered in .fmbot.\n";
-                    foreach (var notFoundFriend in friendNotFoundList)
-                    {
-                        reply += $"- *[{notFoundFriend}]({Constants.LastFMUserUrl}{notFoundFriend})*\n";
-                    }
-                    reply += "\n";
-                }
-                if (duplicateFriendsList.Count > 0)
-                {
-                    reply += $"Could not add {duplicateFriendsList.Count} {StringExtensions.GetFriendsString(duplicateFriendsList.Count)} because you already have them added:\n";
-                    foreach (var dupeFriend in duplicateFriendsList)
-                    {
-                        reply += $"- *[{dupeFriend}]({Constants.LastFMUserUrl}{dupeFriend})*\n";
-                    }
-                }
-
-                this._embed.WithDescription(reply);
-
-                if (contextUser.UserType != UserType.User && !friendLimitReached)
-                {
-                    var userType = contextUser.UserType.ToString().ToLower();
-                    this._embed.WithFooter($"Thank you for being an .fmbot {userType}! You can now add up to 16 friends.");
-                }
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed();
+                await this.Context.SendResponse(this.Interactivity, response);
+                this.Context.LogCommandUsed(response.CommandResponse);
             }
             catch (Exception e)
             {
@@ -245,61 +140,12 @@ namespace FMBot.Bot.Commands
                 return;
             }
 
-            var removedFriendsList = new List<string>();
-            var failedRemoveFriends = new List<string>();
-
             try
             {
-                var existingFriends = await this._friendsService.GetFriendsAsync(this.Context.User.Id);
+                var response = await this._friendBuilders.RemoveFriendsAsync(new ContextModel(this.Context, prfx, contextUser), enteredFriends);
 
-                foreach (var enteredFriendParameter in enteredFriends)
-                {
-                    var foundFriend = await this._settingService.GetUser(enteredFriendParameter, contextUser, this.Context, true);
-
-                    var friendUsername = foundFriend.DifferentUser ? foundFriend.UserNameLastFm : enteredFriendParameter;
-
-                    if (existingFriends.Where(w => w.LastFMUserName != null).Select(s => s.LastFMUserName.ToLower()).Contains(friendUsername.ToLower()) ||
-                        existingFriends.Where(w => w.FriendUser != null).Select(s => s.FriendUser.UserNameLastFM.ToLower()).Contains(friendUsername.ToLower()))
-                    {
-                        var friendSuccessfullyRemoved = await this._friendsService.RemoveLastFmFriendAsync(contextUser.UserId, friendUsername);
-                        if (friendSuccessfullyRemoved)
-                        {
-                            removedFriendsList.Add(friendUsername);
-                        }
-                        else
-                        {
-                            failedRemoveFriends.Add(friendUsername);
-                        }
-                    }
-                }
-
-                var reply = "";
-                if (removedFriendsList.Count > 0)
-                {
-                    reply += $"Successfully removed {removedFriendsList.Count} friend(s):\n";
-                    foreach (var removedFriend in removedFriendsList)
-                    {
-                        reply += $"- *[{removedFriend}]({Constants.LastFMUserUrl}{removedFriend})*\n";
-                    }
-                    reply += "\n";
-                }
-                if (failedRemoveFriends.Count > 0)
-                {
-                    reply += $"Could not remove {failedRemoveFriends.Count} friend(s).\n";
-                    foreach (var failedRemovedFriend in failedRemoveFriends)
-                    {
-                        reply += $"- *[{failedRemovedFriend}]({Constants.LastFMUserUrl}{failedRemovedFriend})*\n";
-                    }
-                    reply += "\n";
-                }
-                if (removedFriendsList.Count == 0 || failedRemoveFriends.Count == 0)
-                {
-                    reply += $"Could not find any friends to remove. Please enter their Last.fm username, mention them or use their Discord id.";
-                }
-
-                this._embed.WithDescription(reply);
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed();
+                await this.Context.SendResponse(this.Interactivity, response);
+                this.Context.LogCommandUsed(response.CommandResponse);
             }
             catch (Exception e)
             {
