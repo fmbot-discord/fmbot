@@ -15,7 +15,7 @@ namespace FMBot.Bot.Extensions
             return botId switch
             {
                 Constants.BotProductionId => BotType.Production,
-                Constants.BotDevelopId => BotType.Develop,
+                Constants.BotBetaId => BotType.Develop,
                 _ => BotType.Local
             };
         }
@@ -25,7 +25,7 @@ namespace FMBot.Bot.Extensions
             return botId switch
             {
                 Constants.BotProductionId => BotType.Production,
-                Constants.BotDevelopId => BotType.Develop,
+                Constants.BotBetaId => BotType.Develop,
                 _ => BotType.Local
             };
         }

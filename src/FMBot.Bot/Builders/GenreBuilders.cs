@@ -335,7 +335,7 @@ public class GenreBuilders
                 if (artist == null)
                 {
                     response.Embed.WithDescription(
-                        "Sorry, the genre or artist you're searching for do not exist or do not have any stored genres.");
+                        "Sorry, the genre or artist you're searching for does not exist or do not have any stored genres.");
 
                     response.CommandResponse = CommandResponse.NotFound;
                     response.ResponseType = ResponseType.Embed;
@@ -397,7 +397,7 @@ public class GenreBuilders
                 }
 
                 response.Embed.WithDescription(
-                    "Sorry, the genre or artist you're searching for do not exist or do not have any stored genres.");
+                    "Sorry, the genre or artist you're searching for does not exist or do not have any stored genres.");
                 response.CommandResponse = CommandResponse.NotFound;
                 response.ResponseType = ResponseType.Embed;
                 return response;
@@ -529,7 +529,7 @@ public class GenreBuilders
             }
 
             var footer = $"Genre source: Spotify\n" +
-                         $"Page {pageCounter}/{topArtists.Count} - {topGenre.Artists.Count} total artists";
+                         $"Page {pageCounter}/{topArtists.Count} - {topGenre.Artists.Count} total artists - {topGenre.Artists.Sum(s => s.UserPlaycount)} total plays";
 
             pages.Add(new PageBuilder()
                 .WithDescription(genrePageString.ToString())

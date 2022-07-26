@@ -386,7 +386,13 @@ namespace FMBot.Bot.Services.ThirdParty
             //Create the auth object
             var spotify = GetSpotifyWebApi();
 
-            var searchRequest = new SearchRequest(SearchRequest.Types.Album, $"{albumName} {artistName}");
+            var searchQuery = $"{albumName} {artistName}";
+            if (searchQuery.Length > 100)
+            {
+                searchQuery = searchQuery[..100];
+            }
+
+            var searchRequest = new SearchRequest(SearchRequest.Types.Album, searchQuery);
 
             var results = await spotify.Search.Item(searchRequest);
             Statistics.SpotifyApiCalls.Inc();

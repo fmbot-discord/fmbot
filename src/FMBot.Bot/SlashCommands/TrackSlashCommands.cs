@@ -46,7 +46,7 @@ public class TrackSlashCommands : InteractionModuleBase
 
         if (timeSettings.DefaultPicked)
         {
-            var monthName = DateTime.UtcNow.AddMonths(-1).ToString("MMM", CultureInfo.InvariantCulture);
+            var monthName = DateTime.UtcNow.AddDays(-24).ToString("MMM", CultureInfo.InvariantCulture);
             timeSettings = SettingService.GetTimePeriod(monthName, registeredLastFm: userSettings.RegisteredLastFm);
         }
 
