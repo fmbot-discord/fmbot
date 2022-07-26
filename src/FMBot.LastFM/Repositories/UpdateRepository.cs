@@ -80,8 +80,8 @@ namespace FMBot.LastFM.Repositories
             var now = DateTime.UtcNow;
             if (dateFromFilter > now.AddHours(-18))
             {
-                var playsToGet = (int)((DateTime.UtcNow - dateFromFilter).TotalMinutes / 3);
-                count = 25 + playsToGet;
+                var playsToGet = (int)((DateTime.UtcNow - dateFromFilter).TotalMinutes / 4);
+                count = 100 + playsToGet;
                 timeFrom = null;
                 totalPlaycountCorrect = true;
             }
@@ -135,6 +135,8 @@ namespace FMBot.LastFM.Repositories
             }
 
             AddRecentPlayToMemoryCache(user.UserId, recentTracks.Content.RecentTracks.First());
+
+            await PlayRepository.InsertLatestPlays(recentTracks.Content.RecentTracks, user.UserId, connection);
 
             var newScrobbles = recentTracks.Content.RecentTracks
                 .Where(w => !w.NowPlaying &&
