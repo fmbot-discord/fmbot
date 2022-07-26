@@ -3,6 +3,7 @@ using System;
 using FMBot.Persistence.EntityFrameWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,13 +12,14 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FMBot.Persistence.EntityFrameWork.Migrations
 {
     [DbContext(typeof(FMBotDbContext))]
-    partial class FMBotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20220621185753_AddTimeScale")]
+    partial class AddTimeScale
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.7")
+                .HasAnnotation("ProductVersion", "6.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
@@ -1059,34 +1061,6 @@ namespace FMBot.Persistence.EntityFrameWork.Migrations
                         .HasDatabaseName("ix_user_plays_user_id");
 
                     b.ToTable("user_plays", (string)null);
-                });
-
-            modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserPlayTs", b =>
-                {
-                    b.Property<string>("AlbumName")
-                        .HasColumnType("citext")
-                        .HasColumnName("album_name");
-
-                    b.Property<string>("ArtistName")
-                        .HasColumnType("citext")
-                        .HasColumnName("artist_name");
-
-                    b.Property<DateTime>("TimePlayed")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("time_played");
-
-                    b.Property<string>("TrackName")
-                        .HasColumnType("citext")
-                        .HasColumnName("track_name");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_user_play_ts_user_id");
-
-                    b.ToTable("user_play_ts", (string)null);
                 });
 
             modelBuilder.Entity("FMBot.Persistence.Domain.Models.UserStreak", b =>

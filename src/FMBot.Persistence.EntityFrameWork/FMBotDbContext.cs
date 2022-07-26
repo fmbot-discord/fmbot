@@ -51,7 +51,7 @@ namespace FMBot.Persistence.EntityFrameWork
                 optionsBuilder.UseNpgsql(this._configuration["Database:ConnectionString"]);
 
                 // Uncomment below connection string when creating migrations, and also comment out the above iconfiguration stuff
-                //optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Username=postgres;Password=password;Database=fmbot;Command Timeout=60;Timeout=60;Persist Security Info=True");
+                //optionsBuilder.UseNpgsql("Host=localhost;Port=5433;Username=postgres;Password=password;Database=fmbot;Command Timeout=60;Timeout=60;Persist Security Info=True");
 
                 optionsBuilder.UseSnakeCaseNamingConvention();
             }
@@ -61,6 +61,7 @@ namespace FMBot.Persistence.EntityFrameWork
         {
             modelBuilder.HasPostgresExtension("citext");
             modelBuilder.HasPostgresExtension("pg_trgm");
+            modelBuilder.HasPostgresExtension("timescaledb");
 
             modelBuilder.Entity<Friend>(entity =>
             {
@@ -242,6 +243,22 @@ namespace FMBot.Persistence.EntityFrameWork
                     .WithMany(a => a.Plays)
                     .HasForeignKey(f => f.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<UserPlayTs>(entity =>
+            {
+                entity.HasNoKey();
+
+                entity.HasIndex(i => i.UserId);
+
+                entity.Property(e => e.TrackName)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.AlbumName)
+                    .HasColumnType("citext");
+
+                entity.Property(e => e.ArtistName)
+                    .HasColumnType("citext");
             });
 
             modelBuilder.Entity<UserCrown>(entity =>

@@ -100,6 +100,22 @@ namespace FMBot.LastFM.Repositories
                                     break;
                                 }
                             }
+                            else if (pageResponse.Error == ResponseStatus.Failure)
+                            {
+                                pageResponse = await this._lastFmApi.CallApiAsync<RecentTracksListLfmResponseModel>(queryParams, Call.RecentTracks, authorizedCall);
+                                if (pageResponse.Success)
+                                {
+                                    recentTracksCall.Content.RecentTracks.Track.AddRange(pageResponse.Content.RecentTracks.Track);
+                                    if (pageResponse.Content.RecentTracks.Track.Count < 1000)
+                                    {
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    break;
+                                }
+                            }
                             else
                             {
                                 break;
