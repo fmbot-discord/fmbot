@@ -75,6 +75,7 @@ namespace FMBot.LastFM.Repositories
             await SetUserPlaycount(user, connection);
 
             var plays = await GetPlaysForUserFromLastFm(user);
+            await PlayRepository.InsertAllPlays(plays, user.UserId, connection);
             await InsertPlaysIntoDatabase(plays, user.UserId, connection);
 
             var artists = await GetArtistsForUserFromLastFm(user);
@@ -149,8 +150,10 @@ namespace FMBot.LastFM.Repositories
         {
             Log.Information($"Getting plays for user {user.UserNameLastFM}");
 
+            var pages = UserHasHigherIndexLimit(user) ? 300 : 25;
+
             var recentPlays = await this._lastFmRepository.GetRecentTracksAsync(user.UserNameLastFM, 1000,
-                sessionKey: user.SessionKeyLastFm, amountOfPages: 5);
+                sessionKey: user.SessionKeyLastFm, amountOfPages: pages);
 
             if (!recentPlays.Success || recentPlays.Content.RecentTracks.Count == 0)
             {
@@ -158,7 +161,7 @@ namespace FMBot.LastFM.Repositories
             }
 
             return recentPlays.Content.RecentTracks
-                .Where(w => !w.NowPlaying && w.TimePlayed.HasValue && w.TimePlayed > DateTime.UtcNow.AddDays(-40))
+                .Where(w => !w.NowPlaying && w.TimePlayed.HasValue)
                 .Select(t => new UserPlay
                 {
                     TrackName = t.TrackName,
@@ -230,6 +233,8 @@ namespace FMBot.LastFM.Repositories
         private static async Task InsertPlaysIntoDatabase(IReadOnlyList<UserPlay> userPlays, int userId,
             NpgsqlConnection connection)
         {
+            userPlays = userPlays.Where(w => w.TimePlayed > DateTime.UtcNow.AddDays(-40)).ToList();
+
             Log.Information($"Inserting {userPlays.Count} plays for user {userId}");
 
             await using var deletePlays = new NpgsqlCommand("DELETE FROM public.user_plays " +

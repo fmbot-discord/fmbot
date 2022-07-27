@@ -529,7 +529,7 @@ public class GenreBuilders
             }
 
             var footer = $"Genre source: Spotify\n" +
-                         $"Page {pageCounter}/{topArtists.Count} - {topGenre.Artists.Count} total artists";
+                         $"Page {pageCounter}/{topArtists.Count} - {topGenre.Artists.Count} total artists - {topGenre.Artists.Sum(s => s.UserPlaycount)} total plays";
 
             pages.Add(new PageBuilder()
                 .WithDescription(genrePageString.ToString())
