@@ -123,8 +123,7 @@ public class AlbumCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync("Unable to show album info due to an internal error.");
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -186,8 +185,7 @@ public class AlbumCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync("Unable to show album cover due to an internal error.");
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -222,8 +220,7 @@ public class AlbumCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync("Unable to show top albums info due to an internal error.");
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -361,8 +358,7 @@ public class AlbumCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync("Something went wrong while using whoknows album. Please report this issue.");
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -515,14 +511,13 @@ public class AlbumCommands : BaseCommandModule
         {
             if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
-                this.Context.LogCommandException(e);
+                await this.Context.HandleCommandException(e, sendReply: false);
                 await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
                                  "Make sure it has permission to 'Embed links' and 'Attach Images'");
             }
             else
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync("Something went wrong while using global whoknows album.");
+                await this.Context.HandleCommandException(e);
             }
         }
     }
@@ -642,14 +637,13 @@ public class AlbumCommands : BaseCommandModule
         {
             if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
-                this.Context.LogCommandException(e);
+                await this.Context.HandleCommandException(e, sendReply: false);
                 await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
                                  "Make sure it has permission to 'Embed links' and 'Attach Images'");
             }
             else
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync("Something went wrong while using friend whoknows album.");
+                await this.Context.HandleCommandException(e);
             }
         }
     }
@@ -682,13 +676,10 @@ public class AlbumCommands : BaseCommandModule
 
             await this.Context.SendResponse(this.Interactivity, response);
             this.Context.LogCommandUsed(response.CommandResponse);
-
-            this.Context.LogCommandUsed();
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync("Something went wrong while using albumtracks. Please report this issue.");
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -738,9 +729,7 @@ public class AlbumCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync(
-                "Something went wrong while using serveralbums. Please report this issue.");
+            await this.Context.HandleCommandException(e);
         }
     }
 

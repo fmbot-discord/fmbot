@@ -40,7 +40,7 @@ public class ChartSlashCommands : InteractionModuleBase
         [Summary("Rainbow", "Experimental rainbow setting")] bool rainbow = false,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
-        _ = DeferAsync();
+        _ = DeferAsync(privateResponse);
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -71,10 +71,7 @@ public class ChartSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await FollowupAsync(
-                "Unable to generate chart due to an internal error. Please try again later or contact .fmbot support.",
-                ephemeral: true);
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -89,7 +86,7 @@ public class ChartSlashCommands : InteractionModuleBase
         [Summary("Rainbow", "Experimental rainbow setting")] bool rainbow = false,
         [Summary("Private", "Only show response to you")] bool privateResponse = false)
     {
-        _ = DeferAsync();
+        _ = DeferAsync(privateResponse);
 
         var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
         var userSettings = await this._settingService.GetUser(user, contextUser, this.Context.Guild, this.Context.User, true);
@@ -119,10 +116,7 @@ public class ChartSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await FollowupAsync(
-                "Unable to generate chart due to an internal error. Please try again later or contact .fmbot support.",
-                ephemeral: true);
+            await this.Context.HandleCommandException(e);
         }
     }
 }

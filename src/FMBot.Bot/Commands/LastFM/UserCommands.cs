@@ -161,8 +161,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync("Unable to show your stats due to an internal error.");
+                await this.Context.HandleCommandException(e);
             }
         }
 
@@ -192,8 +191,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync("Unable to show link profile due to an internal error.");
+                await this.Context.HandleCommandException(e);
             }
         }
 
@@ -228,7 +226,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
+                await this.Context.HandleCommandException(e, sendReply: false);
                 await ReplyAsync(
                     "Unable to show the featured avatar on FMBot due to an internal error. \n" +
                     "The bot might not have changed its avatar since its last startup. Please wait until a new featured user is chosen.");
@@ -257,10 +255,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync(
-                    "Unable to show the featured avatar on FMBot due to an internal error. \n" +
-                    "The bot might not have changed its avatar since its last startup. Please wait until a new featured user is chosen.");
+                await this.Context.HandleCommandException(e);
             }
         }
 
@@ -298,9 +293,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync(
-                    "Error while attempting to toggle rateyourmusic integration");
+                await this.Context.HandleCommandException(e);
             }
         }
 
@@ -345,9 +338,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync(
-                    "Error while attempting to change bot scrobbling setting");
+                await this.Context.HandleCommandException(e);
             }
         }
 

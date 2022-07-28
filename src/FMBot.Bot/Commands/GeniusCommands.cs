@@ -143,10 +143,7 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync(
-                    "Unable to show Last.fm info via Genius due to an internal error. " +
-                    "Please try again later or contact .fmbot support.");
+                await this.Context.HandleCommandException(e);
             }
         }
     }

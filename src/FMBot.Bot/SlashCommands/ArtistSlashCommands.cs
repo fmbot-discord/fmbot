@@ -61,10 +61,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await FollowupAsync(
-                "Unable to show your artist on Last.fm due to an internal error. Please try again later or contact .fmbot support.",
-                ephemeral: true);
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -115,10 +112,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await FollowupAsync(
-                "Unable to show your pace due to an internal error. Please try again later or contact .fmbot support.",
-                ephemeral: true);
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -150,10 +144,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await FollowupAsync(
-                "Unable to show your artist on Last.fm due to an internal error. Please try again later or contact .fmbot support.",
-                ephemeral: true);
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -188,10 +179,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await FollowupAsync(
-                "Unable to show your artist on Last.fm due to an internal error. Please try again later or contact .fmbot support.",
-                ephemeral: true);
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -226,10 +214,7 @@ public class ArtistSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await FollowupAsync(
-                "Unable to show your taste due to an internal error. Please try again later or contact .fmbot support.",
-                ephemeral: true);
+            await this.Context.HandleCommandException(e);
         }
     }
 }

@@ -200,7 +200,7 @@ public class PlayCommands : BaseCommandModule
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e, "Could not add emote reactions");
+                await this.Context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
                 await ReplyAsync(
                     $"Couldn't add emote reactions to `{prfx}fm`. If you have recently changed changed any of the configured emotes please use `{prfx}serverreactions` to reset the automatic emote reactions.");
             }
@@ -211,14 +211,13 @@ public class PlayCommands : BaseCommandModule
         {
             if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
-                this.Context.LogCommandException(e);
+                await this.Context.HandleCommandException(e, sendReply: false);
                 await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
                                  "Make sure it has permission to 'Embed links' and 'Attach Images'");
             }
             else
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync("Something went wrong while showing info from Last.fm. Please try again later or contact staff on our support server.");
+                await this.Context.HandleCommandException(e);
             }
         }
     }
@@ -249,9 +248,7 @@ public class PlayCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync(
-                "Unable to show your recent tracks on Last.fm due to an internal error. Make sure your Last.fm profile contains scrobbles. Please try again later or contact .fmbot support.");
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -281,9 +278,7 @@ public class PlayCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync(
-                "Unable to show your overview on Last.fm due to an internal error. Please try again later or contact .fmbot support.");
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -501,9 +496,7 @@ public class PlayCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync(
-                "Unable to show your year overview due to an internal error. Please try again later or contact .fmbot support.");
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -620,8 +613,7 @@ public class PlayCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync("Something went wrong while showing streak and the error has been logged. Please try again later or contact staff on our support server.");
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -649,8 +641,7 @@ public class PlayCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync("Something went wrong while showing streak and the error has been logged. Please try again later or contact staff on our support server.");
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -725,8 +716,7 @@ public class PlayCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync("Something went wrong while showing playleaderboard and the error has been logged. Please try again later or contact staff on our support server.");
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -804,8 +794,7 @@ public class PlayCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync("Something went wrong while showing listening time leaderboard and the error has been logged. Please try again later or contact staff on our support server.");
+            await this.Context.HandleCommandException(e);
         }
     }
 }

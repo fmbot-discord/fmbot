@@ -99,7 +99,7 @@ public class PlaySlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e, "Could not add emote reactions");
+            await this.Context.HandleCommandException(e, "Could not add emote reactions", sendReply: false);
             await ReplyAsync(
                 $"Couldn't add emote reactions to `/fm`. If you have recently changed changed any of the configured emotes please use `/serverreactions` to reset the automatic emote reactions.");
         }
@@ -129,9 +129,7 @@ public class PlaySlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync(
-                "Unable to show your recent tracks on Last.fm due to an internal error. Please try again later or contact .fmbot support.");
+            await this.Context.HandleCommandException(e, deferFirst: true);
         }
     }
 
@@ -154,9 +152,7 @@ public class PlaySlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync(
-                "Unable to show your streak on Last.fm due to an internal error. Please try again later or contact .fmbot support.");
+            await this.Context.HandleCommandException(e, deferFirst: true);
         }
     }
 
@@ -177,9 +173,7 @@ public class PlaySlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync(
-                "Unable to show your streak on Last.fm due to an internal error. Please try again later or contact .fmbot support.");
+            await this.Context.HandleCommandException(e, deferFirst: true);
         }
     }
 
@@ -209,10 +203,7 @@ public class PlaySlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await FollowupAsync(
-                "Unable to show your overview due to an internal error. Please try again later or contact .fmbot support.",
-                ephemeral: true);
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -253,10 +244,7 @@ public class PlaySlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await FollowupAsync(
-                "Unable to show your pace due to an internal error. Please try again later or contact .fmbot support.",
-                ephemeral: true);
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -284,10 +272,7 @@ public class PlaySlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await FollowupAsync(
-                "Unable to show your milestone due to an internal error. Please try again later or contact .fmbot support.",
-                ephemeral: true);
+            await this.Context.HandleCommandException(e);
         }
     }
 }
