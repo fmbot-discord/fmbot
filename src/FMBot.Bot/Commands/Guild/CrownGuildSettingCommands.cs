@@ -333,7 +333,6 @@ namespace FMBot.Bot.Commands.Guild
             catch (Exception e)
             {
                 await ReplyAsync("Something went wrong while attempting to remove crowns for user, please contact .fmbot staff.");
-                this.Context.LogCommandException(e);
             }
         }
 
@@ -560,8 +559,7 @@ namespace FMBot.Bot.Commands.Guild
             }
             catch (Exception e)
             {
-                await ReplyAsync("Something went wrong while attempting to seed crowns, please contact .fmbot staff.");
-                this.Context.LogCommandException(e);
+                await this.Context.HandleCommandException(e);
             }
         }
 

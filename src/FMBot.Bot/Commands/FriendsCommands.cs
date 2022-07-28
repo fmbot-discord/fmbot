@@ -79,9 +79,7 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync(
-                    "Unable to show friends due to an internal error.");
+                await this.Context.HandleCommandException(e);
             }
         }
 
@@ -116,8 +114,7 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync("Unable to add friend(s) due to an internal error.");
+                await this.Context.HandleCommandException(e);
             }
         }
 
@@ -149,8 +146,7 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync("Unable to remove friend(s) due to an internal error. Please contact .fmbot staff.");
+                await this.Context.HandleCommandException(e);
             }
         }
 
@@ -172,8 +168,7 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync("Unable to remove all friends due to an internal error.");
+                await this.Context.HandleCommandException(e);
             }
         }
     }

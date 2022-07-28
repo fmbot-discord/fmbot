@@ -46,10 +46,7 @@ public class AlbumSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await FollowupAsync(
-                "Unable to show your album due to an internal error. Please try again later or contact .fmbot support.",
-                ephemeral: true);
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -72,10 +69,7 @@ public class AlbumSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await FollowupAsync(
-                "Unable to show your album on Last.fm due to an internal error. Please try again later or contact .fmbot support.",
-                ephemeral: true);
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -100,10 +94,7 @@ public class AlbumSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await FollowupAsync(
-                "Unable to show your album on Last.fm due to an internal error. Please try again later or contact .fmbot support.",
-                ephemeral: true);
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -128,10 +119,7 @@ public class AlbumSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await FollowupAsync(
-                "Unable to show your album on Last.fm due to an internal error. Please try again later or contact .fmbot support.",
-                ephemeral: true);
+            await this.Context.HandleCommandException(e);
         }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices.ComTypes;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
@@ -25,16 +26,30 @@ namespace FMBot.Bot.Extensions
                 context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, commandResponse, commandName);
         }
 
-        public static void LogCommandException(this IInteractionContext context, Exception exception, string message = null)
+        public static async Task HandleCommandException(this IInteractionContext context, Exception exception, string message = null, bool sendReply = true, bool deferFirst = false)
         {
-            string commandName = null;
-            if (context.Interaction is SocketSlashCommand socketSlashCommand)
-            {
-                commandName = socketSlashCommand.CommandName;
-            }
+            var referenceId = CommandContextExtensions.GenerateRandomCode();
 
-            Log.Error(exception, "SlashCommandUsed: {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} ({message}) | {messageContent}",
-                context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, CommandResponse.Error, message, commandName);
+            var commandName = context.Interaction switch
+            {
+                SocketSlashCommand socketSlashCommand => socketSlashCommand.CommandName,
+                SocketUserCommand socketUserCommand => socketUserCommand.CommandName,
+                _ => null
+            };
+
+            Log.Error(exception, "SlashCommandUsed: Error {referenceId} | {discordUserName} / {discordUserId} | {guildName} / {guildId} | {commandResponse} ({message}) | {messageContent}",
+                referenceId, context.User?.Username, context.User?.Id, context.Guild?.Name, context.Guild?.Id, CommandResponse.Error, message, commandName);
+
+            if (sendReply)
+            {
+                if (deferFirst)
+                {
+                    await context.Interaction.DeferAsync(ephemeral: true);
+                }
+
+                await context.Interaction.FollowupAsync($"Sorry, something went wrong while trying to process `{commandName}`. Please try again later.\n" +
+                                                        $"*Reference id: `{referenceId}`*", ephemeral: true);
+            }
         }
 
         public static void LogCommandWithLastFmError(this IInteractionContext context, ResponseStatus? responseStatus)

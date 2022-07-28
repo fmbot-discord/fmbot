@@ -253,9 +253,7 @@ namespace FMBot.Bot.Commands.Guild
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync(
-                    "Something went wrong while creating an export.");
+                await this.Context.HandleCommandException(e);
             }
         }
 

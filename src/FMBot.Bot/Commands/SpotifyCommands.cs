@@ -104,10 +104,7 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync(
-                    "Unable to search for Spotify tracks due to an internal error.  " +
-                    " Please try again later or contact .fmbot support.");
+                await this.Context.HandleCommandException(e);
             }
         }
 
@@ -174,10 +171,7 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync(
-                    "Unable to search for Spotify albums due to an internal error. " +
-                    "Please try again later or contact .fmbot support.");
+                await this.Context.HandleCommandException(e);
             }
         }
 
@@ -247,10 +241,7 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync(
-                    "Unable to search for Spotify artists due to an internal error. " +
-                    "Please try again later or contact .fmbot support.");
+                await this.Context.HandleCommandException(e);
             }
         }
     }
