@@ -148,14 +148,14 @@ public class MusicBotService
 
             // Bot sends only single embed per request
             if (msg.Embeds.Count != 1)
+            {
                 return;
+            }
 
             var targetEmbed = msg.Embeds.First();
 
-            if (
-                !targetEmbed.Title.Contains("Now Playing")
-                || string.IsNullOrEmpty(targetEmbed.Description)
-            )
+            if (!targetEmbed.Title.Contains("Now Playing") ||
+                string.IsNullOrEmpty(targetEmbed.Description))
             {
                 return;
             }
@@ -176,6 +176,7 @@ public class MusicBotService
             {
                 Log.Information("BotScrobbling: Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
                 this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Skipped scrobble because no found track for `{msg.Embeds.First().Description}`"));
+
                 return;
             }
 

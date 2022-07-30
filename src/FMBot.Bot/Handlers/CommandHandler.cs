@@ -148,13 +148,17 @@ public class CommandHandler
         var msg = updatedMessage as SocketUserMessage;
 
         if (msg == null || msg.Author == null || !msg.Author.IsBot || msg.Interaction == null)
+        {
             return;
+        }
 
         var context = new ShardedCommandContext(this._discord, msg);
 
         // Trying to fetch follow-up "Now Playing"
         if (msg.Author.Username.StartsWith("SoundCloud"))
+        {
             await this._musicBotService.ScrobbleSoundCloud(msg, context);
+        }
     }
 
     private async Task ExecuteCommand(SocketUserMessage msg, ShardedCommandContext context, int argPos, string prfx)
