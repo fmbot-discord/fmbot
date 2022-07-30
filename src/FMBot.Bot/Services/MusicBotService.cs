@@ -136,6 +136,60 @@ public class MusicBotService
         }
     }
 
+    public async Task ScrobbleSoundCloud(SocketUserMessage msg, ICommandContext context)
+    {
+        try
+        {
+            // Follow-up messages will be processed on MessageUpdate event
+            if (msg.Flags == MessageFlags.Loading)
+            {
+                return;
+            }
+
+            // Bot sends only single embed per request
+            if (msg.Embeds.Count != 1)
+                return;
+
+            var targetEmbed = msg.Embeds.First();
+
+            if (
+                !targetEmbed.Title.Contains("Now Playing")
+                || string.IsNullOrEmpty(targetEmbed.Description)
+            )
+            {
+                return;
+            }
+
+            this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, "Found 'now playing' message from SoundCloud"));
+
+            // Skip when no one in the voice channel
+            var usersInChannel = await GetUsersInVoice(context, msg.Author.Id);
+            if (usersInChannel == null || usersInChannel.Count == 0)
+            {
+                return;
+            }
+
+            // Bot sending only link with track in the embed description
+            var trackResult = await this._trackService.GetTrackFromLink(targetEmbed.Description);
+
+            if (trackResult == null)
+            {
+                Log.Information("BotScrobbling: Skipped scrobble for {listenerCount} users in {guildName} / {guildId} because no found track for {trackDescription}", usersInChannel.Count, context.Guild.Name, context.Guild.Id, msg.Embeds.First().Description);
+                this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Skipped scrobble because no found track for `{msg.Embeds.First().Description}`"));
+                return;
+            }
+
+            _ = RegisterTrack(usersInChannel, trackResult);
+
+            _ = SendScrobbleMessage(context, trackResult, usersInChannel.Count);
+        }
+        catch (Exception e)
+        {
+            Log.Error("BotScrobbling: Error in music bot scrobbler (SoundCloud)", e);
+            this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Skipped scrobble because error"));
+        }
+    }
+
     private async Task SendScrobbleMessage(ICommandContext context, TrackSearchResult trackResult,
         int listenerCount)
     {
