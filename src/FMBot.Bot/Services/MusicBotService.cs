@@ -154,7 +154,8 @@ public class MusicBotService
 
             var targetEmbed = msg.Embeds.First();
 
-            if (!targetEmbed.Title.Contains("Now Playing") ||
+            if (targetEmbed.Title == null ||
+                !targetEmbed.Title.Contains("Now Playing") ||
                 string.IsNullOrEmpty(targetEmbed.Description))
             {
                 return;
