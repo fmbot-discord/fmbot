@@ -245,11 +245,27 @@ public class MusicBotService
     {
         try
         {
-            if (context.User is not SocketGuildUser guildUser)
+            SocketGuildUser guildUser = null;
+
+            if (context.User is not SocketGuildUser resolvedGuildUser)
             {
-                Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found guild user", context.Guild.Name, context.Guild.Id);
-                this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow, $"Skipped scrobble because no found guild user"));
-                return null;
+                // MessageUpdate event returns SocketWebhookUser instead of SocketGuildUser. In order to continue, we
+                // need to get the SocketGuildUser instance from the guild object.
+                if (context.User is SocketWebhookUser webhookUser)
+                {
+                    guildUser = await context.Guild.GetUserAsync(webhookUser.Id) as SocketGuildUser;
+                }
+
+                if (guildUser is null)
+                {
+                    Log.Debug("BotScrobbling: Skipped scrobble for {guildName} / {guildId} because no found guild user",context.Guild.Name, context.Guild.Id);
+                    this.BotScrobblingLogs.Add(new BotScrobblingLog(context.Guild.Id, DateTime.UtcNow,$"Skipped scrobble because no found guild user"));
+                    return null;
+                }
+            }
+            else
+            {
+                guildUser = resolvedGuildUser;
             }
 
             var voiceChannel = guildUser.VoiceChannel;
