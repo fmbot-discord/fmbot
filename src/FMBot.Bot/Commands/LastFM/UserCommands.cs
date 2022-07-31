@@ -317,7 +317,8 @@ namespace FMBot.Bot.Commands.LastFM
                                             "Only tracks that already exist on Last.fm will be scrobbled. This feature works best with Spotify music.\n\n" +
                                             "Currently supported bots:\n" +
                                             "- Hydra (Only with Now Playing messages enabled in English)\n" +
-                                            "- Cakey Bot (Only with Now Playing messages enabled in English)\n");
+                                            "- Cakey Bot (Only with Now Playing messages enabled in English)\n" +
+                                            "- SoundCloud");
 
                 if ((newBotScrobblingDisabledSetting == null || newBotScrobblingDisabledSetting == false) && !string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
                 {
