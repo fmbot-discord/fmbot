@@ -96,10 +96,24 @@ namespace FMBot.Bot.Services
                         description = description.Split(" ~ ")[0];
                     }
 
-                    var splitDesc = description.Split(" - ", 2);
+                    var splitDesc = description.Split(" - ", 3);
 
-                    var artistName = splitDesc[0];
-                    var trackName = splitDesc[1].Replace("\\", "");
+                    string artistName;
+                    string trackName;
+
+                    // Soundcloud uploader name is often different, so in case of 3 dashes skip the uploader name
+                    if (splitDesc.Length == 3)
+                    {
+                        artistName = splitDesc[1];
+                        trackName = splitDesc[2];
+                    }
+                    else
+                    {
+                        artistName = splitDesc[0];
+                        trackName = splitDesc[1];
+                    }
+
+                    trackName = trackName.Replace("\\", "");
 
                     var queryParams = new Dictionary<string, string>
                     {

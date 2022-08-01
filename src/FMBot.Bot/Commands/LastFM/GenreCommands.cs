@@ -103,8 +103,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync("Unable to show genre info due to an internal error. Please contact .fmbot staff.");
+                await this.Context.HandleCommandException(e);
             }
         }
 
@@ -132,8 +131,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync("Unable to show genre info due to an internal error. Please contact .fmbot staff.");
+                await this.Context.HandleCommandException(e);
             }
         }
 
@@ -288,14 +286,13 @@ namespace FMBot.Bot.Commands.LastFM
             {
                 if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
                 {
-                    this.Context.LogCommandException(e);
+                    await this.Context.HandleCommandException(e, sendReply: false);
                     await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
                                      "Make sure it has permission to 'Embed links' and 'Attach Images'");
                 }
                 else
                 {
-                    this.Context.LogCommandException(e);
-                    await ReplyAsync("Something went wrong while using whoknows.");
+                    await this.Context.HandleCommandException(e);
                 }
             }
         }
@@ -340,9 +337,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync(
-                    "Something went wrong while using servergenres. Please report this issue.");
+                await this.Context.HandleCommandException(e);
             }
         }
     }

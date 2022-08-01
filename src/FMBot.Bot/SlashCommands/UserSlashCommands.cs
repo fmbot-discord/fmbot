@@ -138,9 +138,7 @@ public class UserSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync(
-                "Unable to send you a login link. Please try again later or contact .fmbot support.");
+            await this.Context.HandleCommandException(e, deferFirst: true);
         }
     }
 

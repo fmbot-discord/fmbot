@@ -150,7 +150,7 @@ namespace FMBot.LastFM.Repositories
         {
             Log.Information($"Getting plays for user {user.UserNameLastFM}");
 
-            var pages = UserHasHigherIndexLimit(user) ? 300 : 25;
+            var pages = UserHasHigherIndexLimit(user) ? 500 : 25;
 
             var recentPlays = await this._lastFmRepository.GetRecentTracksAsync(user.UserNameLastFM, 1000,
                 sessionKey: user.SessionKeyLastFm, amountOfPages: pages);

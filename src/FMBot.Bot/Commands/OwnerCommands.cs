@@ -44,8 +44,7 @@ namespace FMBot.Bot.Commands
                 }
                 catch (Exception e)
                 {
-                    this.Context.LogCommandException(e);
-                    await ReplyAsync("Unable to say something due to an internal error.");
+                    await this.Context.HandleCommandException(e);
                 }
             }
         }
@@ -134,8 +133,7 @@ namespace FMBot.Bot.Commands
                 }
                 catch (Exception e)
                 {
-                    this.Context.LogCommandException(e);
-                    await ReplyAsync("Unable to delete server drive info due to an internal error.");
+                    await this.Context.HandleCommandException(e);
                 }
             }
             else
@@ -191,8 +189,7 @@ namespace FMBot.Bot.Commands
                 }
                 catch (Exception e)
                 {
-                    this.Context.LogCommandException(e);
-                    await ReplyAsync("Error while attempting to delete inactive users");
+                    await this.Context.HandleCommandException(e);
                 }
             }
             else

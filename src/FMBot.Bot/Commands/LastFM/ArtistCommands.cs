@@ -328,8 +328,7 @@ public class ArtistCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync("Unable to show artist pace due to an internal error.");
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -369,8 +368,7 @@ public class ArtistCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync("Unable to show Last.fm info due to an internal error.");
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -407,8 +405,7 @@ public class ArtistCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync("Unable to show taste due to an internal error.");
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -440,14 +437,13 @@ public class ArtistCommands : BaseCommandModule
         {
             if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
-                this.Context.LogCommandException(e);
+                await this.Context.HandleCommandException(e, sendReply: false);
                 await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
                                  "Make sure it has permission to 'Embed links' and 'Attach Images'");
             }
             else
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync("Something went wrong while using whoknows.");
+                await this.Context.HandleCommandException(e);
             }
         }
     }
@@ -488,14 +484,13 @@ public class ArtistCommands : BaseCommandModule
         {
             if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
-                this.Context.LogCommandException(e);
+                await this.Context.HandleCommandException(e, sendReply: false);
                 await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
                                  "Make sure it has permission to 'Embed links' and 'Attach Images'");
             }
             else
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync("Something went wrong while using global whoknows.");
+                await this.Context.HandleCommandException(e);
             }
         }
     }
@@ -635,14 +630,13 @@ public class ArtistCommands : BaseCommandModule
         {
             if (!string.IsNullOrEmpty(e.Message) && e.Message.Contains("The server responded with error 50013: Missing Permissions"))
             {
-                this.Context.LogCommandException(e);
+                await this.Context.HandleCommandException(e, sendReply: false);
                 await ReplyAsync("Error while replying: The bot is missing permissions.\n" +
                                  "Make sure it has permission to 'Embed links' and 'Attach Images'");
             }
             else
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync("Something went wrong while using friend whoknows.");
+                await this.Context.HandleCommandException(e);
             }
         }
     }
@@ -692,9 +686,7 @@ public class ArtistCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync(
-                "Something went wrong while using serverartists. Please report this issue.");
+            await this.Context.HandleCommandException(e);
         }
     }
 

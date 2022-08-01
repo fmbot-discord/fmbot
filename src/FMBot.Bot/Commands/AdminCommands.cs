@@ -648,8 +648,7 @@ namespace FMBot.Bot.Commands
                 }
                 catch (Exception e)
                 {
-                    this.Context.LogCommandException(e);
-                    await ReplyAsync($"Something went wrong: {e.Message}");
+                    await this.Context.HandleCommandException(e);
                 }
             }
             else
@@ -821,8 +820,7 @@ namespace FMBot.Bot.Commands
                 }
                 catch (Exception e)
                 {
-                    this.Context.LogCommandException(e);
-                    await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+                    await this.Context.HandleCommandException(e);
                 }
             }
             else
@@ -847,8 +845,7 @@ namespace FMBot.Bot.Commands
                 }
                 catch (Exception e)
                 {
-                    this.Context.LogCommandException(e);
-                    await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+                    await this.Context.HandleCommandException(e);
                 }
             }
             else
@@ -878,8 +875,7 @@ namespace FMBot.Bot.Commands
                 }
                 catch (Exception e)
                 {
-                    this.Context.LogCommandException(e);
-                    await ReplyAsync("The timer service cannot be loaded. Please wait for the bot to fully load.");
+                    await this.Context.HandleCommandException(e);
                 }
             }
             else
@@ -934,8 +930,7 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync("Unable to add " + user.Username + " to the blacklist due to an internal error.", allowedMentions: AllowedMentions.None);
+                await this.Context.HandleCommandException(e);
             }
         }
 
@@ -975,8 +970,7 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync("Unable to remove " + user.Username + " from the blacklist due to an internal error.", allowedMentions: AllowedMentions.None);
+                await this.Context.HandleCommandException(e);
             }
         }
     }

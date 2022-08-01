@@ -574,7 +574,7 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
+                await this.Context.HandleCommandException(e);
             }
         }
 

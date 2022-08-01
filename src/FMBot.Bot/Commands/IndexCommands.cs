@@ -112,9 +112,7 @@ namespace FMBot.Bot.Commands
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync(
-                    "Something went wrong while updating memberlist. Please report this issue.");
+                await this.Context.HandleCommandException(e);
                 await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
             }
         }

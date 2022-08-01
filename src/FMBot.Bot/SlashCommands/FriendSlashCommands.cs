@@ -44,10 +44,7 @@ public class FriendSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await FollowupAsync(
-                "Unable to show your artist on Last.fm due to an internal error. Please try again later or contact .fmbot support.",
-                ephemeral: true);
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -65,10 +62,7 @@ public class FriendSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await FollowupAsync(
-                "Unable to show your artist on Last.fm due to an internal error. Please try again later or contact .fmbot support.",
-                ephemeral: true);
+            await this.Context.HandleCommandException(e, deferFirst: true);
         }
     }
 
@@ -86,10 +80,7 @@ public class FriendSlashCommands : InteractionModuleBase
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await FollowupAsync(
-                "Unable to show your artist on Last.fm due to an internal error. Please try again later or contact .fmbot support.",
-                ephemeral: true);
+            await this.Context.HandleCommandException(e, deferFirst: true);
         }
     }
 }

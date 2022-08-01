@@ -73,8 +73,7 @@ public class CountryCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync("Unable to show country info due to an internal error. Please contact .fmbot staff.");
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -104,8 +103,7 @@ public class CountryCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync("Unable to show country chart due to an internal error.");
+            await this.Context.HandleCommandException(e);
         }
     }
 
@@ -129,8 +127,7 @@ public class CountryCommands : BaseCommandModule
         }
         catch (Exception e)
         {
-            this.Context.LogCommandException(e);
-            await ReplyAsync("Unable to show genre info due to an internal error. Please contact .fmbot staff.");
+            await this.Context.HandleCommandException(e);
         }
     }
 }

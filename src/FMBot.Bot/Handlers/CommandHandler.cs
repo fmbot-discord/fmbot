@@ -62,6 +62,7 @@ public class CommandHandler
         this._cache = cache;
         this._botSettings = botSettings.Value;
         this._discord.MessageReceived += OnMessageReceivedAsync;
+        this._discord.MessageUpdated += OnMessageUpdatedAsync;
     }
 
     private async Task OnMessageReceivedAsync(SocketMessage s)
@@ -93,6 +94,10 @@ public class CommandHandler
             if (msg.Author.Username.StartsWith("Cakey Bot"))
             {
                 await this._musicBotService.ScrobbleCakeyBot(msg, context);
+            }
+            if (msg.Author.Username.StartsWith("SoundCloud"))
+            {
+                await this._musicBotService.ScrobbleSoundCloud(msg, context);
             }
             return; // Ignore other bots
         }
@@ -135,6 +140,24 @@ public class CommandHandler
         {
             await ExecuteCommand(msg, context, argPos, prfx);
             return;
+        }
+    }
+
+    private async Task OnMessageUpdatedAsync(Cacheable<IMessage, ulong> originalMessage, SocketMessage updatedMessage, ISocketMessageChannel sourceChannel)
+    {
+        var msg = updatedMessage as SocketUserMessage;
+
+        if (msg == null || msg.Author == null || !msg.Author.IsBot || msg.Interaction == null)
+        {
+            return;
+        }
+
+        var context = new ShardedCommandContext(this._discord, msg);
+
+        // Trying to fetch follow-up "Now Playing"
+        if (msg.Author.Username.StartsWith("SoundCloud"))
+        {
+            await this._musicBotService.ScrobbleSoundCloud(msg, context);
         }
     }
 

@@ -124,16 +124,14 @@ namespace FMBot.Bot.Commands
                 }
                 catch (Exception e)
                 {
-                    this.Context.LogCommandException(e);
+                    await this.Context.HandleCommandException(e, sendReply: false);
                     await ReplyAsync("No results have been found for this query.\n" +
                                      "It could also be that we've currently exceeded the YouTube ratelimits.");
                 }
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync(
-                    "Unable to show Last.fm info via YouTube due to an internal error. Please try again later or contact .fmbot support.");
+                await this.Context.HandleCommandException(e);
             }
         }
     }

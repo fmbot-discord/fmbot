@@ -137,9 +137,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync(
-                    "Sorry, but I was unable to generate an album chart due to an internal error. Make sure you have scrobbles and Last.fm isn't having issues, and try again later.");
+                await this.Context.HandleCommandException(e);
             }
         }
 
@@ -222,9 +220,7 @@ namespace FMBot.Bot.Commands.LastFM
             }
             catch (Exception e)
             {
-                this.Context.LogCommandException(e);
-                await ReplyAsync(
-                    "Sorry, but I was unable to generate an artist chart due to an internal error. Make sure you have scrobbles and Last.fm isn't having issues, and try again later.");
+                await this.Context.HandleCommandException(e);
             }
         }
     }
