@@ -602,7 +602,7 @@ public class PlayBuilder
             }
 
             response.Embed.AddField(
-                $"{day.Playcount} plays - {StringExtensions.GetListeningTimeString(day.ListeningTime)} - <t:{day.Date.ToUnixEpochDate()}:D>",
+                $"{day.Playcount} {StringExtensions.GetPlaysString(day.Playcount)} - {StringExtensions.GetListeningTimeString(day.ListeningTime)} - <t:{day.Date.ToUnixEpochDate()}:D>",
                 $"{genreString}\n" +
                 $"{day.TopArtist}\n" +
                 $"{day.TopAlbum}\n" +
