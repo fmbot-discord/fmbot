@@ -154,10 +154,13 @@ public class CommandHandler
 
         var context = new ShardedCommandContext(this._discord, msg);
 
-        // Trying to fetch follow-up "Now Playing"
         if (msg.Author.Username.StartsWith("SoundCloud"))
         {
             await this._musicBotService.ScrobbleSoundCloud(msg, context);
+        }
+        if (msg.Author.Username.StartsWith("Cakey"))
+        {
+            await this._musicBotService.ScrobbleCakeyBot(msg, context);
         }
     }
 

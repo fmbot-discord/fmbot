@@ -92,6 +92,11 @@ public class MusicBotService
     {
         try
         {
+            if (msg.Flags == MessageFlags.Loading)
+            {
+                return;
+            }
+
             if (context.Guild == null ||
                 msg.Embeds == null ||
                 !msg.Embeds.Any() ||
@@ -140,7 +145,6 @@ public class MusicBotService
     {
         try
         {
-            // Follow-up messages will be processed on MessageUpdate event
             if (msg.Flags == MessageFlags.Loading)
             {
                 return;
