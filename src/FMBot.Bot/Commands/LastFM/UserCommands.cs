@@ -235,7 +235,7 @@ namespace FMBot.Bot.Commands.LastFM
 
         [Command("featuredlog", RunMode = RunMode.Async)]
         [Summary("Shows you or someone else their featured history")]
-        [Alias("featuredhistory", "recentfeatured", "rf", "recentlyfeatured")]
+        [Alias("featuredhistory", "recentfeatured", "rf", "recentlyfeatured", "fl")]
         [CommandCategories(CommandCategory.Other)]
         [UsernameSetRequired]
         public async Task FeaturedLogAsync([Remainder] string options = null)
