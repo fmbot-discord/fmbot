@@ -154,13 +154,21 @@ public class CommandHandler
 
         var context = new ShardedCommandContext(this._discord, msg);
 
-        if (msg.Author.Username.StartsWith("SoundCloud"))
+
+        if (msg.Flags != MessageFlags.Loading)
         {
-            await this._musicBotService.ScrobbleSoundCloud(msg, context);
-        }
-        if (msg.Author.Username.StartsWith("Cakey"))
-        {
-            await this._musicBotService.ScrobbleCakeyBot(msg, context);
+            if (msg.Author.Username.StartsWith("SoundCloud"))
+            {
+                await this._musicBotService.ScrobbleSoundCloud(msg, context);
+            }
+            if (msg.Author.Username.StartsWith("Cakey"))
+            {
+                await this._musicBotService.ScrobbleCakeyBot(msg, context);
+            }
+            if (msg.Author.Username.StartsWith("Hydra"))
+            {
+                await this._musicBotService.ScrobbleHydra(msg, context);
+            }
         }
     }
 

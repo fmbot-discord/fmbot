@@ -92,11 +92,6 @@ public class MusicBotService
     {
         try
         {
-            if (msg.Flags == MessageFlags.Loading)
-            {
-                return;
-            }
-
             if (context.Guild == null ||
                 msg.Embeds == null ||
                 !msg.Embeds.Any() ||
@@ -145,11 +140,6 @@ public class MusicBotService
     {
         try
         {
-            if (msg.Flags == MessageFlags.Loading)
-            {
-                return;
-            }
-
             // Bot sends only single embed per request
             if (msg.Embeds.Count != 1)
             {
