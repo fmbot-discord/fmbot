@@ -302,6 +302,7 @@ public class ArtistBuilders
             response.Embed.WithDescription(
                 $"{userSettings.DiscordUserName}{userSettings.UserType.UserTypeToIcon()} has no registered tracks for the artist **{artistSearch.Artist.ArtistName}** in .fmbot.");
             response.CommandResponse = CommandResponse.NoScrobbles;
+            response.ResponseType = ResponseType.Embed;
             return response;
         }
 
