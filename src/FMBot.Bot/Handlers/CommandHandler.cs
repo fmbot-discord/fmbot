@@ -298,8 +298,8 @@ public class CommandHandler
             if (lastIndex < DateTime.UtcNow.AddDays(-120))
             {
                 var embed = new EmbedBuilder();
-                embed.WithDescription("Server index data is out of date, it was last updated over 120 days ago.\n" +
-                                      $"Please run `{prfx}index` to re-index this server.");
+                embed.WithDescription("Server member cache is out of date, it was last updated over 120 days ago.\n" +
+                                      $"Please run `{prfx}refreshmembers` to re-index this server.");
                 await context.Channel.SendMessageAsync("", false, embed.Build());
                 context.LogCommandUsed(CommandResponse.IndexRequired);
                 return;
