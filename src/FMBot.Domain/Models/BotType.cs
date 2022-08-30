@@ -4,7 +4,7 @@ namespace FMBot.Domain.Models
     {
         Production = 1,
 
-        Develop = 2,
+        Beta = 2,
 
         Local = 3
     }
