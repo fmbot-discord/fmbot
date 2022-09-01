@@ -114,6 +114,7 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         [SupportsPagination]
         [CommandCategories(CommandCategory.Genres)]
+        [GuildOnly]
         public async Task GenreInfoAsync([Remainder] string genreOptions = null)
         {
             _ = this.Context.Channel.TriggerTypingAsync();

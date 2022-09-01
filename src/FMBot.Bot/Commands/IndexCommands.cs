@@ -47,7 +47,7 @@ namespace FMBot.Bot.Commands
         }
 
         [Command("refreshmembers", RunMode = RunMode.Async)]
-        [Summary("Refreshed the cached member list that .fmbot has for your server.")]
+        [Summary("Refreshes the cached member list that .fmbot has for your server.")]
         [Alias("i", "index", "refresh", "cachemembers", "refreshserver", "serverset")]
         [GuildOnly]
         [CommandCategories(CommandCategory.ServerSettings)]
@@ -66,25 +66,13 @@ namespace FMBot.Bot.Commands
                     guildUsers.Count, this.Context.Guild.Id, this.Context.Guild.Name);
 
                 var usersToFullyUpdate = await this._indexService.GetUsersToFullyUpdate(guildUsers);
-                int registeredUserCount;
-                int? whoKnowsWhitelistedUserCount;
                 var reply = new StringBuilder();
 
-                (registeredUserCount, whoKnowsWhitelistedUserCount) = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
+                var (registeredUserCount, whoKnowsWhitelistedUserCount) = await this._indexService.StoreGuildUsers(this.Context.Guild, guildUsers);
 
                 await this._guildService.UpdateGuildIndexTimestampAsync(this.Context.Guild, DateTime.UtcNow);
-                if (usersToFullyUpdate != null && usersToFullyUpdate.Count == 0 && lastIndex != null)
-                {
-                    reply.AppendLine($"✅ Cached memberlist for server has been updated.");
-                }
-                else if (usersToFullyUpdate == null || usersToFullyUpdate.Count == 0 && lastIndex == null)
-                {
-                    reply.AppendLine("✅ Memberlist for this server has been cached.");
-                }
-                else
-                {
-                    reply.AppendLine($"✅ Cached memberlist for server has been updated.");
-                }
+
+                reply.AppendLine($"✅ Cached memberlist for server has been updated.");
 
                 reply.AppendLine();
                 reply.AppendLine($"This server has a total of {registeredUserCount} registered .fmbot members.");

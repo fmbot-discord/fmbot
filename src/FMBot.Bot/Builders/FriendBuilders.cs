@@ -196,7 +196,7 @@ public class FriendBuilders
             if (foundFriend.DifferentUser)
             {
                 friendUsername = foundFriend.UserNameLastFm;
-                friendUserId = foundFriend.UserId;
+                friendUserId = foundFriend.UserId != 0 ? foundFriend.UserId : null;
             }
             else
             {

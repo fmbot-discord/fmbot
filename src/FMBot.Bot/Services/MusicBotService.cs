@@ -140,12 +140,6 @@ public class MusicBotService
     {
         try
         {
-            // Follow-up messages will be processed on MessageUpdate event
-            if (msg.Flags == MessageFlags.Loading)
-            {
-                return;
-            }
-
             // Bot sends only single embed per request
             if (msg.Embeds.Count != 1)
             {

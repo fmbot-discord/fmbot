@@ -52,7 +52,7 @@ namespace FMBot.Bot.Services.Guild
 
             var botType = context.GetBotType();
 
-            var botTypeName = botType == BotType.Production ? "" : botType == BotType.Develop ? " develop" : " local";
+            var botTypeName = botType == BotType.Production ? "" : botType == BotType.Beta ? " develop" : " local";
             var newWebhook = await socketWebChannel.CreateWebhookAsync($".fmbot{botTypeName} featured", fs,
                 new RequestOptions { AuditLogReason = "Created webhook for .fmbot featured feed." });
 

@@ -4,8 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
+using FMBot.Bot.Extensions;
 using FMBot.Bot.Interfaces;
 using FMBot.Bot.Services.Guild;
+using FMBot.Domain.Models;
 using Serilog;
 
 namespace FMBot.Bot.Handlers
@@ -151,11 +153,19 @@ namespace FMBot.Bot.Handlers
 
         private async Task ClientLeftGuild(SocketGuild guild)
         {
-            Log.Information(
-                "LeftGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.MemberCount);
+            if (BotTypeExtension.GetBotType(this._client.CurrentUser.Id) != BotType.Beta)
+            {
+                Log.Information(
+                    "LeftGuild: {guildName} / {guildId} | {memberCount} members", guild.Name, guild.Id, guild.MemberCount);
 
-            _ = this._channelDisabledCommandService.RemoveDisabledCommandsForGuild(guild.Id);
-            _ = this._guildService.RemoveGuildAsync(guild.Id);
+                _ = this._channelDisabledCommandService.RemoveDisabledCommandsForGuild(guild.Id);
+                _ = this._guildService.RemoveGuildAsync(guild.Id);
+            }
+            else
+            {
+                Log.Information(
+                    "LeftGuild: {guildName} / {guildId} | {memberCount} members (skipped delete)", guild.Name, guild.Id, guild.MemberCount);
+            }
         }
     }
 }
