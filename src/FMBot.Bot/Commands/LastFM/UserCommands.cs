@@ -304,38 +304,16 @@ namespace FMBot.Bot.Commands.LastFM
         [UsernameSetRequired]
         public async Task BotTrackingAsync([Remainder] string option = null)
         {
-            var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
-
             try
             {
-                var user = await this._userService.GetUserSettingsAsync(this.Context.User);
+                var prfx = this._prefixService.GetPrefix(this.Context.Guild?.Id);
+                var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
 
-                var newBotScrobblingDisabledSetting = await this._userService.ToggleBotScrobblingAsync(user, option);
+                var response =
+                    await this._userBuilder.BotScrobblingAsync(new ContextModel(this.Context, prfx, contextUser), option);
 
-                this._embed.WithDescription("Bot scrobbling allows you to automatically scrobble music from Discord music bots to your Last.fm account. " +
-                                            "For this to work properly you need to make sure .fmbot can see the voice channel and use a supported music bot.\n\n" +
-                                            "Only tracks that already exist on Last.fm will be scrobbled. This feature works best with Spotify music.\n\n" +
-                                            "Currently supported bots:\n" +
-                                            "- Hydra (Only with Now Playing messages enabled in English)\n" +
-                                            "- Cakey Bot (Only with Now Playing messages enabled in English)\n" +
-                                            "- SoundCloud");
-
-                if ((newBotScrobblingDisabledSetting == null || newBotScrobblingDisabledSetting == false) && !string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
-                {
-                    this._embed.AddField("Status", "✅ Enabled and ready.");
-                    this._embed.WithFooter($"Use '{prfx}botscrobbling off' to disable.");
-                }
-                else if ((newBotScrobblingDisabledSetting == null || newBotScrobblingDisabledSetting == false) && string.IsNullOrWhiteSpace(user.SessionKeyLastFm))
-                {
-                    this._embed.AddField("Status", $"⚠️ Bot scrobbling is enabled, but you need to login through `{prfx}login` first.");
-                }
-                else
-                {
-                    this._embed.AddField("Status", $"❌ Disabled. Do '{prfx}botscrobbling on' to enable.");
-                }
-
-                await this.Context.Channel.SendMessageAsync("", false, this._embed.Build());
-                this.Context.LogCommandUsed();
+                await this.Context.SendResponse(this.Interactivity, response);
+                this.Context.LogCommandUsed(response.CommandResponse);
             }
             catch (Exception e)
             {

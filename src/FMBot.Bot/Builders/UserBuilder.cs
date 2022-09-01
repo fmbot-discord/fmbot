@@ -80,6 +80,40 @@ public class UserBuilder
         return response;
     }
 
+    public async Task<ResponseModel> BotScrobblingAsync(ContextModel context, string option)
+    {
+        var response = new ResponseModel
+        {
+            ResponseType = ResponseType.Embed
+        };
+
+        var newBotScrobblingDisabledSetting = await this._userService.ToggleBotScrobblingAsync(context.ContextUser, option);
+
+        response.Embed.WithDescription("Bot scrobbling allows you to automatically scrobble music from Discord music bots to your Last.fm account. " +
+                                    "For this to work properly you need to make sure .fmbot can see the voice channel and use a supported music bot.\n\n" +
+                                    "Only tracks that already exist on Last.fm will be scrobbled. This feature works best with Spotify music.\n\n" +
+                                    "Currently supported bots:\n" +
+                                    "- Hydra (Only with Now Playing messages enabled in English)\n" +
+                                    "- Cakey Bot (Only with Now Playing messages enabled in English)\n" +
+                                    "- SoundCloud");
+
+        if ((newBotScrobblingDisabledSetting == null || newBotScrobblingDisabledSetting == false) && !string.IsNullOrWhiteSpace(context.ContextUser.SessionKeyLastFm))
+        {
+            response.Embed.AddField("Status", "✅ Enabled and ready.");
+            response.Embed.WithFooter($"Use '{context.Prefix}botscrobbling off' to disable.");
+        }
+        else if ((newBotScrobblingDisabledSetting == null || newBotScrobblingDisabledSetting == false) && string.IsNullOrWhiteSpace(context.ContextUser.SessionKeyLastFm))
+        {
+            response.Embed.AddField("Status", $"⚠️ Bot scrobbling is enabled, but you need to login through `{context.Prefix}login` first.");
+        }
+        else
+        {
+            response.Embed.AddField("Status", $"❌ Disabled. Do '{context.Prefix}botscrobbling on' to enable.");
+        }
+
+        return response;
+    }
+
     public async Task<ResponseModel> FeaturedLogAsync(ContextModel context, UserSettingsModel userSettings)
     {
         var response = new ResponseModel

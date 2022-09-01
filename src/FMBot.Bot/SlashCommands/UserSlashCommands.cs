@@ -303,6 +303,16 @@ public class UserSlashCommands : InteractionModuleBase
         }
     }
 
+    [SlashCommand("botscrobbling", "Shows info about music bot scrobbling and allows you to change your settings")]
+    public async Task BotScrobblingAsync([Summary("Enabled", "Whether bot scrobbling should be enabled or not")] bool option = false)
+    {
+        var contextUser = await this._userService.GetUserSettingsAsync(this.Context.User);
+        var response = await this._userBuilder.BotScrobblingAsync(new ContextModel(this.Context, contextUser), option.ToString());
+
+        await this.Context.SendResponse(this.Interactivity, response);
+        this.Context.LogCommandUsed(response.CommandResponse);
+    }
+
     [SlashCommand("featuredlog", "Shows you or someone else their featured history")]
     [UsernameSetRequired]
     public async Task FeaturedLogAsync(
